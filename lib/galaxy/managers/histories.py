@@ -124,18 +124,25 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
     ) -> Tuple[List[model.History], int]:
         show_deleted = False
+        show_own = payload.show_own
         show_published = payload.show_published
+        show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
 
+        if not user:
+            message = "Requires user to log in."
+            raise exceptions.RequestParameterInvalidException(message)
+
         query = trans.sa_session.query(self.model_class)
+        query = query.outerjoin(self.model_class.user)
 
         filters = []
-        if not show_published:
+        if show_own or (not show_published and not is_admin):
             filters = [self.model_class.user == user]
-        else:
+        if show_published:
             filters.append(self.model_class.published == true())
-        if user and show_published:
+        if show_shared:
             filters.append(self.user_share_model.user == user)
             query = query.outerjoin(self.model_class.users_shared_with)
         query = query.filter(or_(*filters))
@@ -187,6 +194,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                             term,
                         )
                     )
+
+        if show_published and not is_admin:
+            deleted = False
 
         query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
 

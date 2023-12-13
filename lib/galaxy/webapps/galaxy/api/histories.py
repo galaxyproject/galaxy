@@ -116,8 +116,12 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["title", "description", "slug", "tag"],
 )
 
-ShowPublishedQueryParam: bool = Query(
-    default=False, title="Restrict to published histories and those shared with authenticated user.", description=""
+ShowOwnQueryParam: bool = Query(default=True, title="Show histories owned by user.", description="")
+
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published histories.", description="")
+
+ShowSharedQueryParam: bool = Query(
+    default=False, title="Include histories shared with authenticated user.", description=""
 )
 
 SortByQueryParam: HistorySortByEnum = Query(
@@ -179,13 +183,17 @@ class FastAPIHistories:
         trans: ProvidesUserContext = DependsOnTrans,
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
+        show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
     ) -> HistoryQueryResultList:
         payload = HistoryIndexQueryPayload.construct(
+            show_own=show_own,
             show_published=show_published,
+            show_shared=show_shared,
             sort_by=sort_by,
             sort_desc=sort_desc,
             limit=limit,

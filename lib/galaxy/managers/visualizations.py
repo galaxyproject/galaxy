@@ -75,17 +75,14 @@ class VisualizationManager(sharable.SharableModelManager):
         self, trans: ProvidesUserContext, payload: VisualizationIndexQueryPayload, include_total_count: bool = False
     ) -> Tuple[List[model.Visualization], int]:
         show_deleted = payload.deleted
-        show_shared = payload.show_shared
-        show_published = payload.show_published
         show_own = payload.show_own
+        show_published = payload.show_published
+        show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if show_shared is None:
-            show_shared = not show_deleted
-
-        if show_shared and show_deleted:
-            message = "show_shared and show_deleted cannot both be specified as true"
+        if not user:
+            message = "Requires user to log in."
             raise exceptions.RequestParameterInvalidException(message)
 
         query = trans.sa_session.query(self.model_class)
@@ -153,6 +150,9 @@ class VisualizationManager(sharable.SharableModelManager):
                             term,
                         )
                     )
+
+        if show_published and not is_admin:
+            deleted = False
 
         query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
 

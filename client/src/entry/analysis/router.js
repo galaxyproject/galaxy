@@ -8,9 +8,9 @@ import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import historiesGridConfig from "components/Grid/configs/histories";
+import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
-import GridHistory from "components/Grid/GridHistory";
 import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
@@ -298,11 +298,14 @@ export function getRouter(Galaxy) {
                         props: {
                             gridConfig: historiesGridConfig,
                         },
+                        redirect: redirectAnon(),
                     },
                     {
-                        path: "histories/:actionId",
-                        component: GridHistory,
-                        props: true,
+                        path: "histories/list_shared",
+                        component: GridList,
+                        props: {
+                            gridConfig: historiesSharedGridConfig,
+                        },
                         redirect: redirectAnon(),
                     },
                     {

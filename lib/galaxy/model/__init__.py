@@ -3033,7 +3033,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "slug",
         "tags",
         "update_time",
-        "user",
+        "username",
     ]
     default_name = "Unnamed history"
 
@@ -3066,6 +3066,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def empty(self):
         return self.hid_counter is None or self.hid_counter == 1
+
+    @property
+    def username(self):
+        if self.user:
+            return self.user.username
+        return None
 
     @property
     def count(self):
