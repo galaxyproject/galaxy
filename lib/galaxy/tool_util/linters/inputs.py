@@ -122,7 +122,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
 PARAM_TYPE_CHILD_COMBINATIONS = [
     ("./options", ["data", "select", "drill_down"]),
     ("./options/option", ["drill_down"]),
-    ("./options/column", ["select"]),
+    ("./options/column", ["data", "select"]),
 ]
 
 # TODO lint for valid param type - attribute combinations
@@ -597,6 +597,7 @@ class InputsSelectOptionTextMissing(Linter):
                 lint_ctx.warn(f"Select parameter [{param_name}] has option without text", node=param)
 
 
+
 class InputsSelectOptionDuplicateValue(Linter):
     """
     Lint for select option with same value
@@ -666,7 +667,7 @@ class InputsSelectOptionsMultiple(Linter):
 
 class InputsSelectOptionsDefinesOptions(Linter):
     """
-    Lint dynamic options select for the potential to defile options
+    Lint dynamic options select for the potential to define options
     """
 
     @classmethod

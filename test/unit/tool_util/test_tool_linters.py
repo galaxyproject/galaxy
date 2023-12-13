@@ -484,6 +484,11 @@ INPUTS_TYPE_CHILD_COMBINATIONS = """
                 <column name="x" index="0"/>
             </options>
         </param>
+        <param name="int_param" type="integer">
+            <options>
+                <column name="x" index="0"/>
+            </options>
+        </param>
     </inputs>
 </tool>
 """
@@ -1463,10 +1468,14 @@ def test_inputs_type_child_combinations(lint_ctx):
         in lint_ctx.error_messages
     )
     assert (
-        "Parameter [data_param] './options/column' tags are only allowed for parameters of type ['select']"
+        "Parameter [int_param] './options' tags are only allowed for parameters of type ['data', 'select', 'drill_down']"
         in lint_ctx.error_messages
     )
-    assert len(lint_ctx.error_messages) == 3
+    assert (
+        "Parameter [int_param] './options/column' tags are only allowed for parameters of type ['data', 'select']"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 4
 
 
 def test_inputs_duplicate_names(lint_ctx):
