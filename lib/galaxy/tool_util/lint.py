@@ -341,6 +341,7 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
             continue
 
         for name, value in inspect.getmembers(module):
+            # print(name)
             if callable(value) and name.startswith("lint_"):
                 # Look at the first argument to the linter to decide
                 # if we should lint the XML description or the abstract
@@ -354,7 +355,7 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
                         lint_context.lint(name, value, tool_xml)
                 else:
                     lint_context.lint(name, value, tool_source)
-            elif inspect.isclass(value) and issubclass(value, Linter):
+            elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
                 lint_context.lint(name, value.lint, tool_source)
     return lint_context
 
