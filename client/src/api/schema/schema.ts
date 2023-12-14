@@ -4196,7 +4196,7 @@ export interface components {
              * @description Reference to cached job if job execution was cached.
              * @example 0123456789ABCDEF
              */
-            copied_from_job_id?: string;
+            copied_from_job_id: string;
             /**
              * Create Time
              * Format: date-time
@@ -9027,10 +9027,10 @@ export interface components {
             short_term_storage_request_id: string;
         };
         /**
-         * ShowJobResponse
+         * ShowFullJobResponse
          * @description Basic information about a job.
          */
-        ShowJobResponse: {
+        ShowFullJobResponse: {
             /**
              * Command Line
              * @description The command line produced by the job. Users can see this value if allowed in the configuration, administrator can always see this value.
@@ -9046,7 +9046,7 @@ export interface components {
              * @description Reference to cached job if job execution was cached.
              * @example 0123456789ABCDEF
              */
-            copied_from_job_id?: string;
+            copied_from_job_id: string;
             /**
              * Create Time
              * Format: date-time
@@ -9057,7 +9057,7 @@ export interface components {
              * Job dependencies
              * @description The dependencies of the job.
              */
-            dependencies?: Record<string, never>[];
+            dependencies: Record<string, never>[];
             /**
              * Exit Code
              * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
@@ -9098,7 +9098,7 @@ export interface components {
              * Job Messages
              * @description List with additional information and possible reasons for a failed job.
              */
-            job_messages?: Record<string, never>[];
+            job_messages: Record<string, never>[];
             /**
              * Job Metrics
              * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job. Only administrators can see these metrics.
@@ -9108,12 +9108,12 @@ export interface components {
              * Job Standard Error
              * @description The captured standard error of the job execution.
              */
-            job_stderr?: string;
+            job_stderr: string;
             /**
              * Job Standard Output
              * @description The captured standard output of the job execution.
              */
-            job_stdout?: string;
+            job_stdout: string;
             /**
              * Model class
              * @description The name of the database model class.
@@ -9150,12 +9150,12 @@ export interface components {
              * Standard Error
              * @description Combined tool and job standard error streams.
              */
-            stderr?: string;
+            stderr: string;
             /**
              * Standard Output
              * @description Combined tool and job standard output streams.
              */
-            stdout?: string;
+            stdout: string;
             /**
              * Tool ID
              * @description Identifier of the tool that generated this job.
@@ -9165,12 +9165,12 @@ export interface components {
              * Tool Standard Error
              * @description The captured standard error of the tool executed by the job.
              */
-            tool_stderr?: string;
+            tool_stderr: string;
             /**
              * Tool Standard Output
              * @description The captured standard output of the tool executed by the job.
              */
-            tool_stdout?: string;
+            tool_stdout: string;
             /**
              * Update Time
              * Format: date-time
@@ -15955,7 +15955,9 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["ShowJobResponse"];
+                    "application/json":
+                        | components["schemas"]["EncodedJobDetails"]
+                        | components["schemas"]["ShowFullJobResponse"];
                 };
             };
             /** @description Validation Error */
