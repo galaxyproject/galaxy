@@ -224,7 +224,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             term,
                         )
                     )
-        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false())).distinct()
         if include_total_count:
             total_matches = query.count()
         else:
