@@ -43,7 +43,7 @@ DOCKERIZED_METADATA_JOB_CONFIG = {
     },
     "tools": [
         {"id": "metadata_bam", "environment": "local_docker"},
-        {"id": "composite_output", "environment": "local_docker"},
+        {"id": "composite_output", "environment": "pulsar_embed"},
     ],
 }
 

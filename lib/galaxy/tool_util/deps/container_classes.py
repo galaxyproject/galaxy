@@ -336,7 +336,13 @@ class HasDockerLikeVolumes:
         add_var("job_directory", self.job_info.job_directory)
         add_var("tool_directory", self.job_info.tool_directory)
         add_var("home_directory", self.job_info.home_directory)
-        add_var("galaxy_root", self.app_info.galaxy_root_dir)
+        if self.tool_info.disable_galaxy_root_mount:
+            # TODO: remove the default galaxy_root mount eventually,
+            # this should only be required for very old tools that
+            # import galaxy internals.
+            add_var("galaxy_root", None)
+        else:
+            add_var("galaxy_root", self.app_info.galaxy_root_dir)
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
