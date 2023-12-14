@@ -1851,7 +1851,7 @@ class JobBaseModel(Model):
     )
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
-    galaxy_version: str = Field(
+    galaxy_version: Optional[str] = Field(
         ...,
         title="Galaxy Version",
         description="The (major) version of Galaxy used to create this job.",
