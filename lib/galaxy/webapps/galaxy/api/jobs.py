@@ -49,7 +49,7 @@ from galaxy.schema.jobs import (
     JobOutputAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
-    ShowJobResponse,
+    ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
     DatasetSourceType,
@@ -495,16 +495,17 @@ class FastAPIJobs:
         "/api/jobs/{job_id}",
         name="show_job",
         summary="Return dictionary containing description of job data.",
-        response_model=ShowJobResponse,
-        response_model_exclude_unset=True,
     )
     def show(
         self,
         job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
-        return self.service.show(trans, job_id, bool(full))
+    ) -> Union[EncodedJobDetails, ShowFullJobResponse]:
+        if full:
+            return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
+        else:
+            return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
 
     @router.delete(
         "/api/jobs/{job_id}",
