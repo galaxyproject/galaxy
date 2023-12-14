@@ -1550,6 +1550,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             "tool_stderr",
             "job_stdout",
             "job_stderr",
+            "galaxy_version",
         )
         for attribute in ATTRIBUTES:
             value = job_attrs.get(attribute)
