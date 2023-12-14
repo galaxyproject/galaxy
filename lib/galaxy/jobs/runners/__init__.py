@@ -521,7 +521,9 @@ class BaseJobRunner:
         compute_job_directory: typing.Optional[str] = None,
         compute_tmp_directory: typing.Optional[str] = None,
     ):
-        job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
+        job_directory_type: typing.Literal["galaxy", "pulsar"] = (
+            "galaxy" if compute_working_directory is None else "pulsar"
+        )
         if not compute_working_directory:
             compute_working_directory = job_wrapper.tool_working_directory
 
