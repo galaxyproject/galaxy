@@ -198,6 +198,9 @@ class JobDestinationParams(Model):
         None, title="Handler", description="Name of the process that handled the job.", alias="Handler"
     )
 
+    class Config:
+        extra = Extra.allow  # JobDestinationParams can have extra fields
+
 
 class JobOutput(Model):
     label: Any = Field(default=Required, title="Output label", description="The output label")  # check if this is true
