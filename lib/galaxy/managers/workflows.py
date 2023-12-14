@@ -242,7 +242,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             term,
                         )
                     )
-        stmt = stmt.where(StoredWorkflow.deleted == (true() if show_deleted else false()))
+        stmt = stmt.where(StoredWorkflow.deleted == (true() if show_deleted else false())).distinct()
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
