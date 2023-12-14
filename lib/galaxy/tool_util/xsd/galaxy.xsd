@@ -5623,8 +5623,7 @@ More information can be found on Planemo's documentation for
         A string `[reverse_][SORT_COMP_]SORTBY` describing the desired sort order of the collection elements.
         `SORTBY` can be `filename`, `name`, `designation`, `dbkey` and the optional `SORT_COMP` can be either
         `lexical` or `numeric`. Default is lexical sorting by filename. 
-        Note that lexical sorting is case sensitive, i.e. lower case characters are considered larger than
-        upper case characters (e.g. "Banana" < "apple").
+        Note that lexical sorting is case sensitive, i.e. upper case characters come before lower case characters (e.g. "Apple" < "Banana" < "apple" < "banana").
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
