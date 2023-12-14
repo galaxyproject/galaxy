@@ -106,3 +106,10 @@ export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
 export function isCollectionElement(element: DCESummary): element is DCECollection {
     return element.element_type === "dataset_collection";
 }
+
+/**
+ * Returns true if the given dataset entry is an instance of DatasetDetails.
+ */
+export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
+    return "peek" in entry;
+}
