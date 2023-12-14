@@ -729,6 +729,33 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         self._assert_status_code_is(response, 400)
         self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
+    def test_index_total_matches(self):
+        with self._different_user("isolated.wf.user@test.email"):
+            my_workflow_id = self.workflow_populator.simple_workflow("mine_1")
+            self.workflow_populator.simple_workflow("mine_2")
+            my_email = self.dataset_populator.user_email()
+            with self._different_user():
+                their_shared_workflow_id = self.workflow_populator.simple_workflow("theirs_1")
+                self.workflow_populator.share_with_user(their_shared_workflow_id, my_email)
+                their_workflow_to_import_id = self.workflow_populator.simple_workflow("theirs_2", publish=True)
+                self.workflow_populator.set_tags(their_workflow_to_import_id, ["theirs_2", "test"])
+
+            import_response = self.__import_workflow(their_workflow_to_import_id)
+            self._assert_status_code_is(import_response, 200)
+            imported_wf_id = import_response.json()["id"]
+
+            # add tags to my workflows
+            self.workflow_populator.set_tags(my_workflow_id, ["mine_1", "test"])
+            self.workflow_populator.set_tags(imported_wf_id, ["imported", "test"])
+
+            # We should have 4 workflows now (2 mine, 1 shared with me, 1 imported)
+            expected_number_of_workflows = 4
+            workflows_response = self._get("workflows")
+            self._assert_status_code_is(workflows_response, 200)
+            assert workflows_response.headers["Total_matches"] == f"{expected_number_of_workflows}"
+            workflows = workflows_response.json()
+            assert len(workflows) == expected_number_of_workflows
+
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
 

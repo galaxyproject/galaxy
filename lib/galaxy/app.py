@@ -521,7 +521,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(
-            JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self)
+            JobMetrics, JobMetrics(self.config.job_metrics_config_file, self.config.job_metrics, app=self)
         )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)

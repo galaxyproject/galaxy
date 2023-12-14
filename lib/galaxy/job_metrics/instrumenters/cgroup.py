@@ -91,7 +91,9 @@ class CgroupPlugin(InstrumentPlugin):
         self.verbose = asbool(kwargs.get("verbose", False))
         self.cgroup_mount = kwargs.get("cgroup_mount", "/sys/fs/cgroup")
         params_str = kwargs.get("params", None)
-        if params_str:
+        if isinstance(params_str, list):
+            params = params_str
+        elif params_str:
             params = [v.strip() for v in params_str.split(",")]
         else:
             params = list(TITLES.keys())

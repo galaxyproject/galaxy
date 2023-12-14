@@ -2325,11 +2325,21 @@ galaxy:
   # with Galaxy there you can enable this option.
   #enable_tool_source_display: false
 
-  # XML config file that contains the job metric collection
+  # YAML or XML config file that contains the job metric collection
   # configuration.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #job_metrics_config_file: job_metrics_conf.xml
+
+  # Rather than specifying a job_metrics_config_file, the definition of
+  # the metrics to enable can be embedded into Galaxy's config with this
+  # option. This has no effect if a job_metrics_config_file is used.
+  # The syntax, available instrumenters, and documentation of their
+  # options is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+  # By default, the core plugin is enabled. Setting this option to false
+  # or an empty list disables metrics entirely.
+  #job_metrics: null
 
   # This option allows users to see the job metrics (except for
   # environment variables).
