@@ -466,7 +466,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-class WorkflowInvocationResponse(BaseModel):
+class WorkflowInvocationResponse(Model):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -478,8 +478,8 @@ class WorkflowInvocationResponse(BaseModel):
         title="History ID",
         description="The encoded ID of the history associated with the invocation.",
     )
-    # TODO The uuid version is 1. Is this desired?
-    uuid: Optional[UUID1] = Field(
+    # The uuid version here is 1, which deviates from the other UUIDs used as they are version 4.
+    uuid: Optional[Union[UUID4, UUID1]] = Field(
         ..., title="UUID", description="Universal unique identifier of the workflow invocation."
     )
     state: InvocationState = Field(
@@ -510,7 +510,7 @@ class WorkflowInvocationResponse(BaseModel):
     messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
 
 
-class InvocationJobsSummaryBaseModel(BaseModel):
+class InvocationJobsSummaryBaseModel(Model):
     id: EncodedDatabaseIdField = InvocationIdField
     states: Dict[str, int]  # TODO add field description
     populated_state: JobState  # TODO add field description
