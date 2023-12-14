@@ -188,6 +188,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = self.tool_tag_manager()
         self._init_tools_from_configs(config_filenames)
+        self._tool_panel_views = {}
 
         if self.app.name == "galaxy" and not self.app.is_webapp:
             # Tool panel and such only needed in webapp
@@ -233,7 +234,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             for definition in view_sources.get_definitions():
                 tool_panel_views_list.append(StaticToolPanelView(definition))
 
-        self._tool_panel_views = {}
         for tool_panel_view in tool_panel_views_list:
             self._tool_panel_views[tool_panel_view.to_model().id] = tool_panel_view
 
