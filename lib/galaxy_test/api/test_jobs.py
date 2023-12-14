@@ -353,7 +353,7 @@ steps:
         assert not job_lock_response.json()["active"]
 
         show_jobs_response = self._get(f"jobs/{job_id}", admin=False)
-        self._assert_not_has_keys(show_jobs_response.json(), "external_id")
+        assert show_jobs_response.json()["external_id"] is None
 
         # TODO: Re-activate test case when API accepts privacy settings
         # with self._different_user():
@@ -361,7 +361,8 @@ steps:
         #    self._assert_status_code_is( show_jobs_response, 200 )
 
         show_jobs_response = self._get(f"jobs/{job_id}", admin=True)
-        self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        assert show_jobs_response.json()["external_id"] is not None
+        assert show_jobs_response.json()["command_line"] is not None
 
     def _run_detect_errors(self, history_id, inputs):
         payload = self.dataset_populator.run_tool_payload(
