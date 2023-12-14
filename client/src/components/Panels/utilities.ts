@@ -158,22 +158,13 @@ export function getValidToolsInCurrentView(
     isWorkflowPanel = false,
     excludedSectionIds: string[] = []
 ) {
-    const addedToolTexts: string[] = [];
     const toolEntries = Object.entries(toolsById).filter(([, tool]) => {
-        // filter out duplicate tools (different ids, same exact name+description)
-        // related ticket: https://github.com/galaxyproject/galaxy/issues/16145
-        const toolText = tool.name + tool.description;
-        if (addedToolTexts.includes(toolText)) {
-            return false;
-        } else {
-            addedToolTexts.push(toolText);
-        }
         // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
         return (
             !tool.hidden &&
             tool.disabled !== true &&
             !(isWorkflowPanel && !tool.is_workflow_compatible) &&
-            !excludedSectionIds.includes(tool.panel_section_id || "")
+            !excludedSectionIds.includes(tool.panel_section_id)
         );
     });
     return Object.fromEntries(toolEntries);

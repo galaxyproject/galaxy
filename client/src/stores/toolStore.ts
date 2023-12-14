@@ -27,7 +27,7 @@ export interface Tool {
     link: string;
     min_width: number;
     target: string;
-    panel_section_id: string | null;
+    panel_section_id: string;
     panel_section_name: string | null;
     form_style: string;
     disabled?: boolean;
