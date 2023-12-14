@@ -30,6 +30,4 @@ class XSD(Linter):
                 # us to lookup the node that is reported in the lint context
                 node = tool_xml.xpath(error.path)
                 node = node[0]
-                # line = str(line)
-                # line = line[line.find("ERROR"):]
                 lint_ctx.error(f"Invalid XML: {error.message}", node=node)
