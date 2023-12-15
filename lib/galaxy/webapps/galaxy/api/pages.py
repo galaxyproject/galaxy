@@ -94,17 +94,13 @@ SearchQueryParam: Optional[str] = search_query_param(
 )
 
 
-@router.cbv
 class FastAPIPages:
-    service: PagesService = depends(PagesService)
-
     @router.get(
         "/api/pages",
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
     )
     async def index(
-        self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
@@ -116,6 +112,7 @@ class FastAPIPages:
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
         search: Optional[str] = SearchQueryParam,
+        service: PagesService = depends(PagesService),
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.construct(
@@ -129,7 +126,7 @@ class FastAPIPages:
             offset=offset,
             search=search,
         )
-        pages, total_matches = self.service.index(trans, payload, include_total_count=True)
+        pages, total_matches = service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return pages
 
@@ -139,12 +136,12 @@ class FastAPIPages:
         response_description="The page summary information.",
     )
     def create(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreatePagePayload = Body(...),
+        service: PagesService = depends(PagesService),
     ) -> PageSummary:
         """Get a list with details of all Pages available to the user."""
-        return self.service.create(trans, payload)
+        return service.create(trans, payload)
 
     @router.delete(
         "/api/pages/{id}",
@@ -152,12 +149,12 @@ class FastAPIPages:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     async def delete(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ):
         """Marks the Page with the given ID as deleted."""
-        self.service.delete(trans, id)
+        service.delete(trans, id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -173,15 +170,15 @@ class FastAPIPages:
         },
     )
     async def show_pdf(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ):
         """Return a PDF document of the last revision of the Page.
 
         This feature may not be available in this Galaxy.
         """
-        pdf_bytes = self.service.show_pdf(trans, id)
+        pdf_bytes = service.show_pdf(trans, id)
         return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
     @router.post(
@@ -195,15 +192,15 @@ class FastAPIPages:
         },
     )
     async def prepare_pdf(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> AsyncFile:
         """Return a STS download link for this page to be downloaded as a PDF.
 
         This feature may not be available in this Galaxy.
         """
-        return self.service.prepare_pdf(trans, id)
+        return service.prepare_pdf(trans, id)
 
     @router.get(
         "/api/pages/{id}",
@@ -211,85 +208,85 @@ class FastAPIPages:
         response_description="The page summary information.",
     )
     async def show(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
-        return self.service.show(trans, id)
+        return service.show(trans, id)
 
     @router.get(
         "/api/pages/{id}/sharing",
         summary="Get the current sharing status of the given Page.",
     )
     def sharing(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> SharingStatus:
         """Return the sharing status of the item."""
-        return self.service.shareable_service.sharing(trans, id)
+        return service.shareable_service.sharing(trans, id)
 
     @router.put(
         "/api/pages/{id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.enable_link_access(trans, id)
+        return service.shareable_service.enable_link_access(trans, id)
 
     @router.put(
         "/api/pages/{id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.disable_link_access(trans, id)
+        return service.shareable_service.disable_link_access(trans, id)
 
     @router.put(
         "/api/pages/{id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
-        return self.service.shareable_service.publish(trans, id)
+        return service.shareable_service.publish(trans, id)
 
     @router.put(
         "/api/pages/{id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
+        service: PagesService = depends(PagesService),
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
-        return self.service.shareable_service.unpublish(trans, id)
+        return service.shareable_service.unpublish(trans, id)
 
     @router.put(
         "/api/pages/{id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
         payload: ShareWithPayload = Body(...),
+        service: PagesService = depends(PagesService),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with_users(trans, id, payload)
+        return service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
         "/api/pages/{id}/slug",
@@ -297,11 +294,11 @@ class FastAPIPages:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_slug(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = PageIdPathParam,
         payload: SetSlugPayload = Body(...),
+        service: PagesService = depends(PagesService),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
-        self.service.shareable_service.set_slug(trans, id, payload)
+        service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
