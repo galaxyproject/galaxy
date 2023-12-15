@@ -378,7 +378,7 @@ class HasDockerLikeVolumes:
             outputs_to_working_directory = self.app_info.outputs_to_working_directory
             if "outputs_to_working_directory" in self.destination_info:
                 outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
-            if outputs_to_working_directory:
+            if outputs_to_working_directory and self.job_info.job_type == "tool":
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
                 defaults += ",$working_directory:rw,$default_file_path:default_ro"

@@ -23,6 +23,8 @@ DOCKERIZED_METADATA_JOB_CONFIG = {
             "local_docker": {
                 "runner": "local",
                 "docker_enabled": True,
+                "metadata_strategy": "extended",
+                "outputs_to_working_directory": True,
                 "metadata_config": {
                     "containerize": True,
                     "engine": "docker",

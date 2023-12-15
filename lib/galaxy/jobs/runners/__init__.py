@@ -590,6 +590,7 @@ class BaseJobRunner:
                 tmp_directory=None,
                 home_directory=None,
                 job_directory_type=job_directory_type,
+                job_type="epilog",
             )
 
             return self.app.container_finder.find_container(tool_info, destination_info, job_info)

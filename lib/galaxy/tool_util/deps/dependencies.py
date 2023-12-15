@@ -95,6 +95,8 @@ class JobInfo:
         tmp_directory,
         home_directory,
         job_directory_type: Literal["galaxy", "pulsar"],
+        job_type: Literal["tool", "prolog", "epilog"] = "tool",
+        output_paths: Optional[List[str]] = None,
     ):
         self.working_directory = working_directory
         # Tool files may be remote staged - so this is unintuitively a property
@@ -104,6 +106,7 @@ class JobInfo:
         self.tmp_directory = tmp_directory
         self.home_directory = home_directory
         self.job_directory_type = job_directory_type
+        self.job_type = job_type
 
 
 class DependenciesDescription:
