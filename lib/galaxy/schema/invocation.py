@@ -506,14 +506,23 @@ class WorkflowInvocationResponse(Model):
     output_values: Dict[str, Any] = Field(
         default=Required, title="Output values", description="Output values of the workflow invocation."
     )
-    # TODO Use proper message type here.
-    messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
+    messages: List[InvocationMessageResponseUnion] = Field(
+        default=Required,
+        title="Messages",
+        description="A list of messages about why the invocation did not succeed.",
+    )
 
 
 class InvocationJobsSummaryBaseModel(Model):
     id: EncodedDatabaseIdField = InvocationIdField
-    states: Dict[str, int]  # TODO add field description
-    populated_state: JobState  # TODO add field description
+    states: Dict[JobState, int] = Field(
+        default=Required, title="States", description="The states of all the jobs related to the Invocation."
+    )
+    populated_state: JobState = Field(
+        default=Required,
+        title="Populated state",
+        description="The absolute state of all the jobs related to the Invocation.",
+    )
 
 
 class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
@@ -521,4 +530,4 @@ class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
 
 
 class InvocationStepJobsResponse(InvocationJobsSummaryBaseModel):
-    model: Any  # TODO choose appropriate model class
+    model: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
