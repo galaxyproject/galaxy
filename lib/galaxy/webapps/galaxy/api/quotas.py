@@ -36,19 +36,17 @@ QuotaIdPathParam: DecodedDatabaseIdField = Path(
 
 @router.cbv
 class FastAPIQuota:
-    service: QuotasService = depends(QuotasService)
-
     @router.get(
         "/api/quotas",
         summary="Displays a list with information of quotas that are currently active.",
         require_admin=True,
     )
     def index(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
     ) -> QuotaSummaryList:
         """Displays a list with information of quotas that are currently active."""
-        return self.service.index(trans)
+        return service.index(trans)
 
     @router.get(
         "/api/quotas/deleted",
@@ -56,11 +54,11 @@ class FastAPIQuota:
         require_admin=True,
     )
     def index_deleted(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
     ) -> QuotaSummaryList:
         """Displays a list with information of quotas that have been deleted."""
-        return self.service.index(trans, deleted=True)
+        return service.index(trans, deleted=True)
 
     @router.get(
         "/api/quotas/{id}",
@@ -69,10 +67,12 @@ class FastAPIQuota:
         require_admin=True,
     )
     def show(
-        self, trans: ProvidesUserContext = DependsOnTrans, id: DecodedDatabaseIdField = QuotaIdPathParam
+        trans: ProvidesUserContext = DependsOnTrans,
+        id: DecodedDatabaseIdField = QuotaIdPathParam,
+        service: QuotasService = depends(QuotasService),
     ) -> QuotaDetails:
         """Displays details on a particular active quota."""
-        return self.service.show(trans, id)
+        return service.show(trans, id)
 
     @router.get(
         "/api/quotas/deleted/{id}",
@@ -81,12 +81,12 @@ class FastAPIQuota:
         require_admin=True,
     )
     def show_deleted(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = QuotaIdPathParam,
+        service: QuotasService = depends(QuotasService),
     ) -> QuotaDetails:
         """Displays details on a particular quota that has been deleted."""
-        return self.service.show(trans, id, deleted=True)
+        return service.show(trans, id, deleted=True)
 
     @router.post(
         "/api/quotas",
@@ -94,12 +94,12 @@ class FastAPIQuota:
         require_admin=True,
     )
     def create(
-        self,
         payload: CreateQuotaParams,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
     ) -> CreateQuotaResult:
         """Creates a new quota."""
-        return self.service.create(trans, payload)
+        return service.create(trans, payload)
 
     @router.put(
         "/api/quotas/{id}",
@@ -107,13 +107,13 @@ class FastAPIQuota:
         require_admin=True,
     )
     def update(
-        self,
         payload: UpdateQuotaParams,
         id: DecodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
     ) -> str:
         """Updates an existing quota."""
-        return self.service.update(trans, id, payload)
+        return service.update(trans, id, payload)
 
     @router.delete(
         "/api/quotas/{id}",
@@ -121,21 +121,25 @@ class FastAPIQuota:
         require_admin=True,
     )
     def delete(
-        self,
         id: DecodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: DeleteQuotaPayload = Body(None),  # Optional
+        service: QuotasService = depends(QuotasService),
     ) -> str:
         """Deletes an existing quota."""
-        return self.service.delete(trans, id, payload)
+        return service.delete(trans, id, payload)
 
     @router.post(
         "/api/quotas/{id}/purge",
         summary="Purges a previously deleted quota.",
         require_admin=True,
     )
-    def purge(self, id: DecodedDatabaseIdField = QuotaIdPathParam, trans: ProvidesUserContext = DependsOnTrans) -> str:
-        return self.service.purge(trans, id)
+    def purge(
+        id: DecodedDatabaseIdField = QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
+    ) -> str:
+        return service.purge(trans, id)
 
     @router.post(
         "/api/quotas/deleted/{id}/undelete",
@@ -143,9 +147,9 @@ class FastAPIQuota:
         require_admin=True,
     )
     def undelete(
-        self,
         id: DecodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: QuotasService = depends(QuotasService),
     ) -> str:
         """Restores a previously deleted quota."""
-        return self.service.undelete(trans, id)
+        return service.undelete(trans, id)
