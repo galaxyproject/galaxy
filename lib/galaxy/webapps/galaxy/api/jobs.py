@@ -501,7 +501,7 @@ class FastAPIJobs:
         job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Union[EncodedJobDetails, ShowFullJobResponse]:
+    ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
         if full:
             return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
         else:
