@@ -68,7 +68,6 @@ import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
-import { mapGetters } from "vuex";
 
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
@@ -112,7 +111,6 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
         invocationId() {
             return this.invocation?.id;
         },
