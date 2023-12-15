@@ -8,17 +8,14 @@ from . import (
 router = Router(tags=["configuration"])
 
 
-@router.cbv
 class FastAPIConfiguration:
-    app: ToolShedApp = depends(ToolShedApp)
-
     @router.get(
         "/api/version",
         operation_id="configuration__version",
     )
-    def version(self) -> Version:
+    def version(app: ToolShedApp = depends(ToolShedApp)) -> Version:
         return Version(
-            version_major=self.app.config.version_major,
-            version=self.app.config.version,
+            version_major=app.config.version_major,
+            version=app.config.version,
             api_version="v2",
         )
