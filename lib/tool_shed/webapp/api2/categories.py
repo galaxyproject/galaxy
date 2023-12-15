@@ -27,10 +27,7 @@ from . import (
 router = Router(tags=["categories"])
 
 
-@router.cbv
 class FastAPICategories:
-    category_manager: CategoryManager = depends(CategoryManager)
-
     @router.post(
         "/api/categories",
         description="create a category",
@@ -38,35 +35,43 @@ class FastAPICategories:
         require_admin=True,
     )
     def create(
-        self, trans: SessionRequestContext = DependsOnTrans, request: CreateCategoryRequest = Body(...)
+        trans: SessionRequestContext = DependsOnTrans,
+        request: CreateCategoryRequest = Body(...),
+        category_manager: CategoryManager = depends(CategoryManager),
     ) -> CategoryResponse:
-        category = self.category_manager.create(trans, request)
-        return self.category_manager.to_model(category)
+        category = category_manager.create(trans, request)
+        return category_manager.to_model(category)
 
     @router.get(
         "/api/categories",
         description="index category",
         operation_id="categories__index",
     )
-    def index(self, trans: SessionRequestContext = DependsOnTrans) -> List[CategoryResponse]:
+    def index(
+        trans: SessionRequestContext = DependsOnTrans,
+        category_manager: CategoryManager = depends(CategoryManager),
+    ) -> List[CategoryResponse]:
         """
         Return a list of dictionaries that contain information about each Category.
         """
         deleted = False
-        categories = self.category_manager.index_db(trans, deleted)
-        return [self.category_manager.to_model(c) for c in categories]
+        categories = category_manager.index_db(trans, deleted)
+        return [category_manager.to_model(c) for c in categories]
 
     @router.get(
         "/api/categories/{encoded_category_id}",
         description="show category",
         operation_id="categories__show",
     )
-    def show(self, encoded_category_id: str = CategoryIdPathParam) -> CategoryResponse:
+    def show(
+        encoded_category_id: str = CategoryIdPathParam,
+        category_manager: CategoryManager = depends(CategoryManager),
+    ) -> CategoryResponse:
         """
         Return a list of dictionaries that contain information about each Category.
         """
-        category = self.category_manager.get(encoded_category_id)
-        return self.category_manager.to_model(category)
+        category = category_manager.get(encoded_category_id)
+        return category_manager.to_model(category)
 
     @router.get(
         "/api/categories/{encoded_category_id}/repositories",
@@ -74,7 +79,6 @@ class FastAPICategories:
         operation_id="categories__repositories",
     )
     def repositories(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_category_id: str = CategoryIdPathParam,
         installable: bool = CategoryRepositoriesInstallableQueryParam,
