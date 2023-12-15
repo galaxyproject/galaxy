@@ -45,99 +45,96 @@ log = logging.getLogger(__name__)
 router = Router(tags=["notifications"])
 
 
-@router.cbv
 class FastAPINotifications:
-    service: NotificationService = depends(NotificationService)
-
     @router.get(
         "/api/notifications/status",
         summary="Returns the current status summary of the user's notifications since a particular date.",
     )
     def get_notifications_status(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         since: OffsetNaiveDatetime = Query(),
+        service: NotificationService = depends(NotificationService),
     ) -> NotificationStatusSummary:
         """Anonymous users cannot receive personal notifications, only broadcasted notifications."""
-        return self.service.get_notifications_status(trans, since)
+        return service.get_notifications_status(trans, since)
 
     @router.get(
         "/api/notifications/preferences",
         summary="Returns the current user's preferences for notifications.",
     )
     def get_notification_preferences(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: NotificationService = depends(NotificationService),
     ) -> UserNotificationPreferences:
         """Anonymous users cannot have notification preferences. They will receive only broadcasted notifications."""
-        return self.service.get_user_notification_preferences(trans)
+        return service.get_user_notification_preferences(trans)
 
     @router.put(
         "/api/notifications/preferences",
         summary="Updates the user's preferences for notifications.",
     )
     def update_notification_preferences(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: UpdateUserNotificationPreferencesRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ) -> UserNotificationPreferences:
         """Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
 
         - Can be used to completely enable/disable notifications for a particular type (category)
         or to enable/disable a particular channel on each category.
         """
-        return self.service.update_user_notification_preferences(trans, payload)
+        return service.update_user_notification_preferences(trans, payload)
 
     @router.get(
         "/api/notifications",
         summary="Returns the list of notifications associated with the user.",
     )
     def get_user_notifications(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         limit: Optional[int] = 20,
         offset: Optional[int] = None,
+        service: NotificationService = depends(NotificationService),
     ) -> UserNotificationListResponse:
         """Anonymous users cannot receive personal notifications, only broadcasted notifications.
 
         You can use the `limit` and `offset` parameters to paginate through the notifications.
         """
-        return self.service.get_user_notifications(trans, limit=limit, offset=offset)
+        return service.get_user_notifications(trans, limit=limit, offset=offset)
 
     @router.get(
         "/api/notifications/broadcast/{notification_id}",
         summary="Returns the information of a specific broadcasted notification.",
     )
     def get_broadcasted(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
+        service: NotificationService = depends(NotificationService),
     ) -> BroadcastNotificationResponse:
         """Only Admin users can access inactive notifications (scheduled or recently expired)."""
-        return self.service.get_broadcasted_notification(trans, notification_id)
+        return service.get_broadcasted_notification(trans, notification_id)
 
     @router.get(
         "/api/notifications/broadcast",
         summary="Returns all currently active broadcasted notifications.",
     )
     def get_all_broadcasted(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
+        service: NotificationService = depends(NotificationService),
     ) -> BroadcastNotificationListResponse:
         """Only Admin users can access inactive notifications (scheduled or recently expired)."""
-        return self.service.get_all_broadcasted_notifications(trans)
+        return service.get_all_broadcasted_notifications(trans)
 
     @router.get(
         "/api/notifications/{notification_id}",
         summary="Displays information about a notification received by the user.",
     )
     def show_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
+        service: NotificationService = depends(NotificationService),
     ) -> UserNotificationResponse:
-        user = self.service.get_authenticated_user(trans)
-        return self.service.get_user_notification(user, notification_id)
+        user = service.get_authenticated_user(trans)
+        return service.get_user_notification(user, notification_id)
 
     @router.put(
         "/api/notifications/broadcast/{notification_id}",
@@ -146,13 +143,13 @@ class FastAPINotifications:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def update_broadcasted_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
         payload: NotificationBroadcastUpdateRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ):
         """Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications."""
-        self.service.update_broadcasted_notification(trans, notification_id, payload)
+        service.update_broadcasted_notification(trans, notification_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -161,12 +158,12 @@ class FastAPINotifications:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def update_user_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
         payload: UserNotificationUpdateRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ):
-        self.service.update_user_notification(trans, notification_id, payload)
+        service.update_user_notification(trans, notification_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -174,11 +171,11 @@ class FastAPINotifications:
         summary="Updates a list of notifications with the requested values in a single request.",
     )
     def update_user_notifications(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: UserNotificationsBatchUpdateRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ) -> NotificationsBatchUpdateResponse:
-        return self.service.update_user_notifications(trans, set(payload.notification_ids), payload.changes)
+        return service.update_user_notifications(trans, set(payload.notification_ids), payload.changes)
 
     @router.delete(
         "/api/notifications/{notification_id}",
@@ -186,9 +183,9 @@ class FastAPINotifications:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_user_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         notification_id: DecodedDatabaseIdField = Path(),
+        service: NotificationService = depends(NotificationService),
     ):
         """When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
 
@@ -197,7 +194,7 @@ class FastAPINotifications:
         - Deleted notifications will be permanently deleted when the expiration time is reached.
         """
         delete_request = UserNotificationUpdateRequest(deleted=True)
-        self.service.update_user_notification(trans, notification_id, delete_request)
+        service.update_user_notification(trans, notification_id, delete_request)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -205,12 +202,12 @@ class FastAPINotifications:
         summary="Deletes a list of notifications received by the user in a single request.",
     )
     def delete_user_notifications(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationsBatchRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ) -> NotificationsBatchUpdateResponse:
         delete_request = UserNotificationUpdateRequest(deleted=True)
-        return self.service.update_user_notifications(trans, set(payload.notification_ids), delete_request)
+        return service.update_user_notifications(trans, set(payload.notification_ids), delete_request)
 
     @router.post(
         "/api/notifications",
@@ -218,12 +215,12 @@ class FastAPINotifications:
         require_admin=True,
     )
     def send_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: NotificationCreateRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ) -> NotificationCreatedResponse:
         """Sends a notification to a list of recipients (users, groups or roles)."""
-        return self.service.send_notification(sender_context=trans, payload=payload)
+        return service.send_notification(sender_context=trans, payload=payload)
 
     @router.post(
         "/api/notifications/broadcast",
@@ -231,9 +228,9 @@ class FastAPINotifications:
         require_admin=True,
     )
     def broadcast_notification(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: BroadcastNotificationCreateRequest = Body(),
+        service: NotificationService = depends(NotificationService),
     ) -> NotificationCreatedResponse:
         """Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
         They are typically used to display important information such as maintenance windows or new features.
@@ -248,4 +245,4 @@ class FastAPINotifications:
         - By default, broadcasted notifications are published immediately and expire six months after publication.
         - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
         """
-        return self.service.broadcast(sender_context=trans, payload=payload)
+        return service.broadcast(sender_context=trans, payload=payload)
