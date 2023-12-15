@@ -27,10 +27,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["groups"])
 
 
-@router.cbv
 class FastAPIGroups:
-    manager: GroupsManager = depends(GroupsManager)
-
     @router.get(
         "/api/groups",
         summary="Displays a collection (list) of groups.",
@@ -38,10 +35,10 @@ class FastAPIGroups:
         response_model_exclude_unset=True,
     )
     def index(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
+        manager: GroupsManager = depends(GroupsManager),
     ) -> GroupListResponse:
-        return self.manager.index(trans)
+        return manager.index(trans)
 
     @router.post(
         "/api/groups",
@@ -50,11 +47,11 @@ class FastAPIGroups:
         response_model_exclude_unset=True,
     )
     def create(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         payload: GroupCreatePayload = Body(...),
+        manager: GroupsManager = depends(GroupsManager),
     ) -> GroupListResponse:
-        return self.manager.create(trans, payload)
+        return manager.create(trans, payload)
 
     @router.get(
         "/api/groups/{group_id}",
@@ -63,11 +60,11 @@ class FastAPIGroups:
         name="show_group",
     )
     def show(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = Path(...),
+        manager: GroupsManager = depends(GroupsManager),
     ) -> GroupResponse:
-        return self.manager.show(trans, group_id)
+        return manager.show(trans, group_id)
 
     @router.put(
         "/api/groups/{group_id}",
@@ -76,21 +73,33 @@ class FastAPIGroups:
         response_model_exclude_unset=True,
     )
     def update(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = Path(...),
         payload: GroupCreatePayload = Body(...),
+        manager: GroupsManager = depends(GroupsManager),
     ) -> GroupResponse:
-        return self.manager.update(trans, group_id, payload)
+        return manager.update(trans, group_id, payload)
 
     @router.delete("/api/groups/{group_id}", require_admin=True)
-    def delete(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        self.manager.delete(trans, group_id)
+    def delete(
+        group_id: DecodedDatabaseIdField,
+        trans: ProvidesAppContext = DependsOnTrans,
+        manager: GroupsManager = depends(GroupsManager),
+    ):
+        manager.delete(trans, group_id)
 
     @router.post("/api/groups/{group_id}/purge", require_admin=True)
-    def purge(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        self.manager.purge(trans, group_id)
+    def purge(
+        group_id: DecodedDatabaseIdField,
+        trans: ProvidesAppContext = DependsOnTrans,
+        manager: GroupsManager = depends(GroupsManager),
+    ):
+        manager.purge(trans, group_id)
 
     @router.post("/api/groups/{group_id}/undelete", require_admin=True)
-    def undelete(self, group_id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        self.manager.undelete(trans, group_id)
+    def undelete(
+        group_id: DecodedDatabaseIdField,
+        trans: ProvidesAppContext = DependsOnTrans,
+        manager: GroupsManager = depends(GroupsManager),
+    ):
+        manager.undelete(trans, group_id)
