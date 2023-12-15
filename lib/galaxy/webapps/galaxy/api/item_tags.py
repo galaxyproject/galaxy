@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 router = Router()
 
 
-@router.cbv
 class FastAPIItemTags:
     manager: ItemTagsManager = depends(ItemTagsManager)
 
@@ -41,11 +40,11 @@ class FastAPIItemTags:
                 openapi_extra=extra_path_params,
             )
             def index(
-                self,
                 trans: ProvidesAppContext = DependsOnTrans,
                 item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
+                manager: ItemTagsManager = depends(ItemTagsManager),
             ) -> ItemTagsListResponse:
-                return self.manager.index(trans, tagged_item_class, item_id)
+                return manager.index(trans, tagged_item_class, item_id)
 
             @router.get(
                 f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
@@ -54,12 +53,12 @@ class FastAPIItemTags:
                 openapi_extra=extra_path_params,
             )
             def show(
-                self,
                 trans: ProvidesAppContext = DependsOnTrans,
                 item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
+                manager: ItemTagsManager = depends(ItemTagsManager),
             ) -> ItemTagsResponse:
-                return self.manager.show(trans, tagged_item_class, item_id, tag_name)
+                return manager.show(trans, tagged_item_class, item_id, tag_name)
 
             @router.post(
                 f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
@@ -68,15 +67,15 @@ class FastAPIItemTags:
                 openapi_extra=extra_path_params,
             )
             def create(
-                self,
                 trans: ProvidesAppContext = DependsOnTrans,
                 item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(None),
+                manager: ItemTagsManager = depends(ItemTagsManager),
             ) -> ItemTagsResponse:
                 if payload is None:
                     payload = ItemTagsCreatePayload()
-                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
+                return manager.create(trans, tagged_item_class, item_id, tag_name, payload)
 
             @router.put(
                 f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
@@ -85,13 +84,13 @@ class FastAPIItemTags:
                 openapi_extra=extra_path_params,
             )
             def update(
-                self,
                 trans: ProvidesAppContext = DependsOnTrans,
                 item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(...),
+                manager: ItemTagsManager = depends(ItemTagsManager),
             ) -> ItemTagsResponse:
-                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
+                return manager.create(trans, tagged_item_class, item_id, tag_name, payload)
 
             @router.delete(
                 f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
@@ -100,12 +99,12 @@ class FastAPIItemTags:
                 openapi_extra=extra_path_params,
             )
             def delete(
-                self,
                 trans: ProvidesAppContext = DependsOnTrans,
                 item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
+                manager: ItemTagsManager = depends(ItemTagsManager),
             ) -> bool:
-                return self.manager.delete(trans, tagged_item_class, item_id, tag_name)
+                return manager.delete(trans, tagged_item_class, item_id, tag_name)
 
         return Temp
 
