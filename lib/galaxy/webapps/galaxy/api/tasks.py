@@ -18,14 +18,11 @@ log = logging.getLogger(__name__)
 router = Router(tags=["tasks"])
 
 
-@router.cbv
 class FastAPITasks:
-    manager: AsyncTasksManager = depends(AsyncTasksManager)  # type: ignore[type-abstract]
-
     @router.get(
         "/api/tasks/{task_id}/state",
         summary="Determine state of task ID",
         response_description="String indicating task state.",
     )
-    def state(self, task_id: UUID) -> TaskState:
-        return self.manager.get_state(task_id)
+    def state(task_id: UUID, manager: AsyncTasksManager = depends(AsyncTasksManager)) -> TaskState:  # type: ignore[type-abstract]
+        return manager.get_state(task_id)
