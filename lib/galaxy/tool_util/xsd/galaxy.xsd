@@ -7333,14 +7333,14 @@ and ``contains``. In addition there is ``sim_size`` which is discouraged in favo
       </xs:simpleType>
       <xs:simpleType>
         <xs:restriction base="xs:string">
-          <xs:enumeration value="0"/>
-          <xs:enumeration value="1"/>
           <xs:enumeration value="true"/>
           <xs:enumeration value="false"/>
           <xs:enumeration value="True"/>
           <xs:enumeration value="False"/>
           <xs:enumeration value="yes"/>
           <xs:enumeration value="no"/>
+          <xs:enumeration value="0"/>
+          <xs:enumeration value="1"/>
         </xs:restriction>
       </xs:simpleType>
     </xs:union>
