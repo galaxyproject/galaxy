@@ -38,18 +38,13 @@ DRS_SERVICE_NAME = "Galaxy DRS API"
 DRS_SERVICE_DESCRIPTION = "Serves Galaxy datasets according to the GA4GH DRS specification"
 
 
-@router.cbv
 class DrsApi:
-    service: DatasetsService = depends(DatasetsService)
-    config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
-
     @router.get("/ga4gh/drs/v1/service-info")
-    def service_info(self, request: Request) -> Service:
+    def service_info(request: Request, config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)) -> Service:
         components = request.url.components
         hostname = components.hostname
         assert hostname
         default_organization_id = ".".join(reversed(hostname.split(".")))
-        config = self.config
         organization_id = config.ga4gh_service_id or default_organization_id
         organization_name = config.organization_name or organization_id
         organization_url = config.organization_url or f"{components.scheme}://{components.netloc}"
@@ -79,17 +74,16 @@ class DrsApi:
     @router.get("/ga4gh/drs/v1/objects/{object_id}")
     @router.post("/ga4gh/drs/v1/objects/{object_id}")  # spec specifies both get and post should work.
     def get_object(
-        self,
         request: Request,
         trans: ProvidesHistoryContext = DependsOnTrans,
         object_id: str = ObjectIDParam,
+        service: DatasetsService = depends(DatasetsService),
     ) -> DrsObject:
-        return self.service.get_drs_object(trans, object_id, request_url=request.url)
+        return service.get_drs_object(trans, object_id, request_url=request.url)
 
     @router.get("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
     @router.post("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
     def get_access_url(
-        self,
         request: Request,
         trans: ProvidesHistoryContext = DependsOnTrans,
         object_id: str = ObjectIDParam,
@@ -101,9 +95,13 @@ class DrsApi:
         "/api/drs_download/{object_id}",
         response_class=FileResponse,
     )
-    def download(self, trans: ProvidesHistoryContext = DependsOnTrans, object_id: str = ObjectIDParam):
-        decoded_object_id, hda_ldda = self.service.drs_dataset_instance(object_id)
-        display_data, headers = self.service.display(
+    def download(
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        object_id: str = ObjectIDParam,
+        service: DatasetsService = depends(DatasetsService),
+    ):
+        decoded_object_id, hda_ldda = service.drs_dataset_instance(object_id)
+        display_data, headers = service.display(
             trans, DecodedDatabaseIdField(decoded_object_id), hda_ldda=hda_ldda, filename=None, raw=True
         )
         data_io = cast(IOBase, display_data)
