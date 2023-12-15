@@ -91,6 +91,7 @@
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
             title-tag="h2"
+            body-class="modal-with-selector"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
             <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
@@ -99,7 +100,6 @@
                     :loading="loadingDbKeys"
                     :items="dbkeys"
                     :current-item-id="selectedDbKey"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -107,6 +107,7 @@
             id="change-datatype-of-selected-content"
             title="Change data type?"
             title-tag="h2"
+            body-class="modal-with-selector"
             :ok-disabled="selectedDatatype == null"
             @ok="changeDatatypeOfSelected">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
@@ -116,7 +117,6 @@
                     :loading="loadingDatatypes"
                     :items="datatypes"
                     :current-item-id="selectedDatatype"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -347,3 +347,9 @@ export default {
     },
 };
 </script>
+
+<style>
+.modal-with-selector {
+    overflow: initial;
+}
+</style>

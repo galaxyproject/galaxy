@@ -101,6 +101,6 @@ defineExpose({
 
 .upload-dialog-body {
     height: 500px;
-    overflow: hidden;
+    overflow: initial;
 }
 </style>
