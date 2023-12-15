@@ -15956,8 +15956,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["EncodedJobDetails"]
-                        | components["schemas"]["ShowFullJobResponse"];
+                        | components["schemas"]["ShowFullJobResponse"]
+                        | components["schemas"]["EncodedJobDetails"];
                 };
             };
             /** @description Validation Error */
