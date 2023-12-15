@@ -23,7 +23,7 @@ describe("JobInformation/JobInformation.vue", () => {
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
         axiosMock
             .onGet(
-                "/api/jobs/test_id?full=True&stdout_position=0&stdout_length=50000&stderr_position=0&stderr_length=50000"
+                "/api/jobs/test_id?full=True"
             )
             .reply(200, jobResponse);
     });

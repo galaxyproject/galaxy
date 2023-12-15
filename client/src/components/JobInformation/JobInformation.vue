@@ -1,13 +1,14 @@
 <template>
     <div>
-        <JobDetailsProvider
+        <JobDetailsProvider auto-refresh :job-id="job_id" @update:result="updateJob"/>
+        <JobConsoleOutputProvider
             auto-refresh
             :job-id="job_id"
             :stdout_position="stdout_position"
             :stdout_length="stdout_length"
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
-            @update:result="updateJob" />
+            @update:result="updateConsoleOutputs"/>
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -85,7 +86,7 @@
 
 <script>
 import CopyToClipboard from "components/CopyToClipboard";
-import { JobDetailsProvider } from "components/providers/JobProvider";
+import { JobDetailsProvider, JobConsoleOutputProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { getAppRoot } from "onload/loadConfig";
@@ -99,6 +100,7 @@ export default {
         CodeRow,
         DecodedId,
         JobDetailsProvider,
+        JobConsoleOutputProvider,
         UtcDate,
         CopyToClipboard,
     },
@@ -139,14 +141,29 @@ export default {
         },
         updateJob(job) {
             this.job = job;
-            // Keep stdout in memory and only fetch new text via JobProvider
-            if (job.tool_stdout != null) {
-                this.stdout_text += job.tool_stdout;
-                this.stdout_position += job.tool_stdout.length;
+            // Load stored stdout and stderr
+            if (this.jobIsTerminal) {
+                if (job.tool_stdout) {
+                    this.stdout_text += job.tool_stdout;
+                    this.stdout_position += job.tool_stdout.length;
+                }
+                if (job.tool_stderr) {
+                    this.stderr_text += job.tool_stderr;
+                    this.stderr_position += job.tool_stderr.length;
+                }
             }
-            if (job.tool_stderr != null) {
-                this.stderr_text += job.tool_stderr;
-                this.stderr_position += job.tool_stderr.length;
+        },
+        updateConsoleOutputs(output) {
+            // Keep stdout in memory and only fetch new text via JobProvider
+            if (output && !this.jobIsTerminal) {
+                if (output.stdout != null) {
+                    this.stdout_text += output.stdout;
+                    this.stdout_position += output.stdout.length;
+                }
+                if (output.stderr != null) {
+                    this.stderr_text += output.stderr;
+                    this.stderr_position += output.stderr.length;
+                }
             }
         },
     },
