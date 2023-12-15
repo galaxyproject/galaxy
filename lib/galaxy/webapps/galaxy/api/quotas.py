@@ -34,7 +34,6 @@ QuotaIdPathParam: DecodedDatabaseIdField = Path(
 )
 
 
-@router.cbv
 class FastAPIQuota:
     @router.get(
         "/api/quotas",
