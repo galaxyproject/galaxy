@@ -26,18 +26,15 @@ log = logging.getLogger(__name__)
 router = Router(tags=["metrics"])
 
 
-@router.cbv
 class FastAPIMetrics:
-    manager: MetricsManager = depends(MetricsManager)
-
     @router.post(
         "/api/metrics",
         summary="Records a collection of metrics.",
     )
     def create(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreateMetricsPayload = Body(...),
+        manager: MetricsManager = depends(MetricsManager),
     ) -> Any:
         """Record any metrics sent and return some status object."""
-        return self.manager.create(trans, payload)
+        return manager.create(trans, payload)
