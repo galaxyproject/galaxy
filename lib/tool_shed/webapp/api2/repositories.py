@@ -95,17 +95,13 @@ class RepositoryUpdateRequestFormData(RepositoryUpdateRequest):
     pass
 
 
-@router.cbv
 class FastAPIRepositories:
-    app: ToolShedApp = depends(ToolShedApp)
-
     @router.get(
         "/api/repositories",
         description="Get a list of repositories or perform a search.",
         operation_id="repositories__index",
     )
     def index(
-        self,
         q: Optional[str] = RepositoryIndexQueryParam,
         page: Optional[int] = RepositorySearchPageQueryParam,
         page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
@@ -113,6 +109,7 @@ class FastAPIRepositories:
         owner: Optional[str] = RepositoryIndexOwnerQueryParam,
         name: Optional[str] = RepositoryIndexNameQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> IndexResponse:
         if q:
             assert page is not None
@@ -123,11 +120,11 @@ class FastAPIRepositories:
         # but I think is currently unused. So probably we should just drop it until someone
         # complains.
         # elif params.tool_ids:
-        #    response = index_tool_ids(self.app, params.tool_ids)
+        #    response = index_tool_ids(app, params.tool_ids)
         #    return response
         else:
-            repositories = index_repositories(self.app, name, owner, deleted or False)
-            return [to_model(self.app, r) for r in repositories]
+            repositories = index_repositories(app, name, owner, deleted or False)
+            return [to_model(app, r) for r in repositories]
 
     @router.get(
         "/api/repositories/get_repository_revision_install_info",
@@ -135,7 +132,6 @@ class FastAPIRepositories:
         operation_id="repositories__legacy_install_info",
     )
     def legacy_install_info(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -155,7 +151,6 @@ class FastAPIRepositories:
         operation_id="repositories__install_info",
     )
     def install_info(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         name: str = RequiredRepoNameParam,
         owner: str = RequiredRepoOwnerParam,
@@ -180,12 +175,12 @@ class FastAPIRepositories:
         # response_model=RepositoryMetadata,
     )
     def metadata(
-        self,
         encoded_repository_id: str = RepositoryIdPathParam,
         downloadable_only: bool = DownloadableQueryParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> dict:
         recursive = True
-        as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
+        as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
         # fails 1020 if we try to use the model - I guess repository dependencies
         # are getting lost
         return as_dict
@@ -198,12 +193,12 @@ class FastAPIRepositories:
         response_model=RepositoryMetadata,
     )
     def metadata_internal(
-        self,
         encoded_repository_id: str = RepositoryIdPathParam,
         downloadable_only: bool = DownloadableQueryParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> dict:
         recursive = True
-        as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
+        as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
         return _hack_fastapi_4428(as_dict)
 
     @router.get(
@@ -212,12 +207,12 @@ class FastAPIRepositories:
         operation_id="repositories__get_ordered_installable_revisions",
     )
     def get_ordered_installable_revisions(
-        self,
         owner: Optional[str] = OptionalRepositoryOwnerParam,
         name: Optional[str] = OptionalRepositoryNameParam,
         tsr_id: Optional[str] = OptionalRepositoryIdParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> List[str]:
-        return get_ordered_installable_revisions(self.app, name, owner, tsr_id)
+        return get_ordered_installable_revisions(app, name, owner, tsr_id)
 
     @router.post(
         "/api/repositories/reset_metadata_on_repository",
@@ -225,7 +220,6 @@ class FastAPIRepositories:
         operation_id="repositories__reset_legacy",
     )
     def reset_metadata_on_repository_legacy(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         request: ResetMetadataOnRepositoryRequest = depend_on_either_json_or_form_data(
             ResetMetadataOnRepositoryRequest
@@ -239,7 +233,6 @@ class FastAPIRepositories:
         operation_id="repositories__reset",
     )
     def reset_metadata_on_repository(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
     ) -> ResetMetadataOnRepositoryResponse:
@@ -253,11 +246,11 @@ class FastAPIRepositories:
         "/api/repositories/updates/",
     )
     def updates(
-        self,
         owner: Optional[str] = OptionalRepositoryOwnerParam,
         name: Optional[str] = OptionalRepositoryNameParam,
         changeset_revision: str = RequiredRepositoryChangesetRevisionParam,
         hexlify: Optional[bool] = OptionalHexlifyParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ):
         request = UpdatesRequest(
             name=name,
@@ -265,7 +258,7 @@ class FastAPIRepositories:
             changeset_revision=changeset_revision,
             hexlify=hexlify,
         )
-        return Response(content=check_updates(self.app, request))
+        return Response(content=check_updates(app, request))
 
     @router.post(
         "/api/repositories",
@@ -273,37 +266,37 @@ class FastAPIRepositories:
         operation_id="repositories__create",
     )
     def create(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         request: CreateRepositoryRequest = Body(...),
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> Repository:
         db_repository = create_repository(
             trans,
             request,
         )
-        return to_model(self.app, db_repository)
+        return to_model(app, db_repository)
 
     @router.get(
         "/api/repositories/{encoded_repository_id}",
         operation_id="repositories__show",
     )
     def show(
-        self,
         encoded_repository_id: str = RepositoryIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> DetailedRepository:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        return to_detailed_model(self.app, repository)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
+        return to_detailed_model(app, repository)
 
     @router.get(
         "/api/repositories/{encoded_repository_id}/permissions",
         operation_id="repositories__permissions",
     )
     def permissions(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> RepositoryPermissions:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_update_repo(trans, repository):
             raise InsufficientPermissionsException(
                 "You do not have permission to inspect repository repository permissions."
@@ -319,11 +312,11 @@ class FastAPIRepositories:
         operation_id="repositories__show_allow_push",
     )
     def show_allow_push(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> List[str]:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         return trans.app.security_agent.usernames_that_can_push(repository)
@@ -333,12 +326,12 @@ class FastAPIRepositories:
         operation_id="repositories__add_allow_push",
     )
     def add_allow_push(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         username: str = UsernameIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> List[str]:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.set_allow_push([username])
@@ -350,7 +343,6 @@ class FastAPIRepositories:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_malicious(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         changeset_revision: str = ChangesetRevisionPathParam,
@@ -368,7 +360,6 @@ class FastAPIRepositories:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def unset_malicious(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         changeset_revision: str = ChangesetRevisionPathParam,
@@ -386,11 +377,11 @@ class FastAPIRepositories:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_deprecated(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ):
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.deprecated = True
@@ -405,11 +396,11 @@ class FastAPIRepositories:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def unset_deprecated(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ):
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.deprecated = False
@@ -423,12 +414,12 @@ class FastAPIRepositories:
         operation_id="repositories__remove_allow_push",
     )
     def remove_allow_push(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_repository_id: str = RepositoryIdPathParam,
         username: str = UsernameIdPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> List[str]:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.set_allow_push(None, remove_auth=username)
@@ -440,13 +431,13 @@ class FastAPIRepositories:
         operation_id="repositories__create_revision",
     )
     async def create_changeset_revision(
-        self,
         request: Request,
         encoded_repository_id: str = RepositoryIdPathParam,
         commit_message: Optional[str] = CommitMessageQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
         files: Optional[List[UploadFile]] = None,
         revision_request: RepositoryUpdateRequest = Depends(RepositoryUpdateRequestFormData.as_form),  # type: ignore[attr-defined]
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> RepositoryUpdate:
         try:
             # Code stolen from Marius' work in Galaxy's Tools API.
@@ -459,7 +450,7 @@ class FastAPIRepositories:
                     if isinstance(value, StarletteUploadFile):
                         files2.append(value)
 
-            repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
+            repository = get_repository_in_tool_shed(app, encoded_repository_id)
 
             if not can_update_repo(trans, repository):
                 raise InsufficientPermissionsException("You do not have permission to update this repository.")
@@ -500,12 +491,12 @@ class FastAPIRepositories:
         response_model=RepositoryRevisionReadmes,
     )
     def get_readmes(
-        self,
         encoded_repository_id: str = RepositoryIdPathParam,
         changeset_revision: str = ChangesetRevisionPathParam,
+        app: ToolShedApp = depends(ToolShedApp),
     ) -> dict:
-        repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
-        return readmes(self.app, repository, changeset_revision)
+        repository = get_repository_in_tool_shed(app, encoded_repository_id)
+        return readmes(app, repository, changeset_revision)
 
 
 def _hack_fastapi_4428(as_dict) -> dict:
