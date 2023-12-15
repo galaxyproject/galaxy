@@ -7105,13 +7105,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @default WorkflowInvocationStep
-             * @enum {string}
-             */
-            model: "WorkflowInvocationStep";
+            /** Model */
+            model?: Record<string, never>;
             /**
              * Populated state
              * @description The absolute state of all the jobs related to the Invocation.
