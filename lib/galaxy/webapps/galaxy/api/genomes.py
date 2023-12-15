@@ -64,15 +64,14 @@ def get_id(base, format):
     return base
 
 
-@router.cbv
 class FastAPIGenomes:
-    manager: GenomesManager = depends(GenomesManager)
-
     @router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
     def index(
-        self, trans: ProvidesUserContext = DependsOnTrans, chrom_info: bool = ChromInfoQueryParam
+        trans: ProvidesUserContext = DependsOnTrans,
+        chrom_info: bool = ChromInfoQueryParam,
+        manager: GenomesManager = depends(GenomesManager),
     ) -> List[List[str]]:
-        return self.manager.get_dbkeys(trans.user, chrom_info)
+        return manager.get_dbkeys(trans.user, chrom_info)
 
     @router.get(
         "/api/genomes/{id}",
@@ -80,7 +79,6 @@ class FastAPIGenomes:
         response_description="Information about genome build <id>",
     )
     def show(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
@@ -89,9 +87,10 @@ class FastAPIGenomes:
         low: int = LowQueryParam,
         high: int = HighQueryParam,
         format: str = FormatQueryParam,
+        manager: GenomesManager = depends(GenomesManager),
     ) -> Any:
         id = get_id(id, format)
-        return self.manager.get_genome(trans, id, num, chrom, low, high, reference)
+        return manager.get_genome(trans, id, num, chrom, low, high, reference)
 
     @router.get(
         "/api/genomes/{id}/indexes",
@@ -99,20 +98,19 @@ class FastAPIGenomes:
         response_description="Indexes for a genome id for provided type",
     )
     def indexes(
-        self,
         id: str = IdPathParam,
         type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,
+        manager: GenomesManager = depends(GenomesManager),
     ) -> Any:
         id = get_id(id, format)
-        rval = self.manager.get_indexes(id, type)
+        rval = manager.get_indexes(id, type)
         return Response(rval)
 
     @router.get(
         "/api/genomes/{id}/sequences", summary="Return raw sequence data", response_description="Raw sequence data"
     )
     def sequences(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: str = IdPathParam,
         reference: bool = ReferenceQueryParam,
@@ -120,7 +118,8 @@ class FastAPIGenomes:
         low: int = LowQueryParam,
         high: int = HighQueryParam,
         format: str = FormatQueryParam,
+        manager: GenomesManager = depends(GenomesManager),
     ) -> Any:
         id = get_id(id, format)
-        rval = self.manager.get_sequence(trans, id, chrom, low, high)
+        rval = manager.get_sequence(trans, id, chrom, low, high)
         return Response(rval)
