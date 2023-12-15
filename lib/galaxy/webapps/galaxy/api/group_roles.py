@@ -35,10 +35,7 @@ def group_role_to_model(trans, group_id: int, role) -> GroupRoleResponse:
     return GroupRoleResponse(id=role.id, name=role.name, url=url)
 
 
-@router.cbv
 class FastAPIGroupRoles:
-    manager: GroupRolesManager = depends(GroupRolesManager)
-
     @router.get(
         "/api/groups/{group_id}/roles",
         require_admin=True,
@@ -46,9 +43,11 @@ class FastAPIGroupRoles:
         name="group_roles",
     )
     def index(
-        self, trans: ProvidesAppContext = DependsOnTrans, group_id: DecodedDatabaseIdField = GroupIDParam
+        trans: ProvidesAppContext = DependsOnTrans,
+        group_id: DecodedDatabaseIdField = GroupIDParam,
+        manager: GroupRolesManager = depends(GroupRolesManager),
     ) -> GroupRoleListResponse:
-        group_roles = self.manager.index(trans, group_id)
+        group_roles = manager.index(trans, group_id)
         return GroupRoleListResponse(__root__=[group_role_to_model(trans, group_id, gr.role) for gr in group_roles])
 
     @router.get(
@@ -58,30 +57,30 @@ class FastAPIGroupRoles:
         summary="Displays information about a group role.",
     )
     def show(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = GroupIDParam,
         role_id: DecodedDatabaseIdField = RoleIDParam,
+        manager: GroupRolesManager = depends(GroupRolesManager),
     ) -> GroupRoleResponse:
-        role = self.manager.show(trans, role_id, group_id)
+        role = manager.show(trans, role_id, group_id)
         return group_role_to_model(trans, group_id, role)
 
     @router.put("/api/groups/{group_id}/roles/{role_id}", require_admin=True, summary="Adds a role to a group")
     def update(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = GroupIDParam,
         role_id: DecodedDatabaseIdField = RoleIDParam,
+        manager: GroupRolesManager = depends(GroupRolesManager),
     ) -> GroupRoleResponse:
-        role = self.manager.update(trans, role_id, group_id)
+        role = manager.update(trans, role_id, group_id)
         return group_role_to_model(trans, group_id, role)
 
     @router.delete("/api/groups/{group_id}/roles/{role_id}", require_admin=True, summary="Removes a role from a group")
     def delete(
-        self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = GroupIDParam,
         role_id: DecodedDatabaseIdField = RoleIDParam,
+        manager: GroupRolesManager = depends(GroupRolesManager),
     ) -> GroupRoleResponse:
-        role = self.manager.delete(trans, role_id, group_id)
+        role = manager.delete(trans, role_id, group_id)
         return group_role_to_model(trans, group_id, role)
