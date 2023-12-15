@@ -617,7 +617,7 @@ class DatasetCollectionManager:
             if the_object is not None and the_object.id:
                 context = self.model.context
                 if the_object not in context:
-                    the_object = context.query(type(the_object)).get(the_object.id)
+                    the_object = context.get(type(the_object), the_object.id)
             return the_object
 
         # dataset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
@@ -693,7 +693,7 @@ class DatasetCollectionManager:
 
     def get_dataset_collection(self, trans, encoded_id):
         collection_id = int(trans.app.security.decode_id(encoded_id))
-        collection = trans.sa_session.query(trans.app.model.DatasetCollection).get(collection_id)
+        collection = trans.sa_session.get(trans.app.model.DatasetCollection, collection_id)
         return collection
 
     def apply_rules(self, hdca, rule_set, handle_dataset):
@@ -800,9 +800,7 @@ class DatasetCollectionManager:
         self, trans: ProvidesHistoryContext, id, check_ownership=False, check_accessible=True
     ) -> model.HistoryDatasetCollectionAssociation:
         instance_id = trans.app.security.decode_id(id) if isinstance(id, str) else id
-        collection_instance = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(
-            instance_id
-        )
+        collection_instance = trans.sa_session.get(trans.app.model.HistoryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("History dataset collection association not found")
         # TODO: that sure looks like a bug, we can't check ownership using the history of the object we're checking ownership for ...
@@ -823,9 +821,7 @@ class DatasetCollectionManager:
                 "Functionality (getting library dataset collection with ownership check) unimplemented."
             )
         instance_id = int(trans.security.decode_id(id))
-        collection_instance = trans.sa_session.query(trans.app.model.LibraryDatasetCollectionAssociation).get(
-            instance_id
-        )
+        collection_instance = trans.sa_session.get(trans.app.model.LibraryDatasetCollectionAssociation, instance_id)
         if not collection_instance:
             raise RequestParameterInvalidException("Library dataset collection association not found")
         if check_accessible:
@@ -861,6 +857,6 @@ class DatasetCollectionManager:
         short_term_storage_monitor = self.short_term_storage_monitor
         instance_id = request.history_dataset_collection_association_id
         with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
-            collection_instance = self.model.context.query(model.HistoryDatasetCollectionAssociation).get(instance_id)
+            collection_instance = self.model.context.get(model.HistoryDatasetCollectionAssociation, instance_id)
             with ZipFile(target.path, "w") as zip_f:
                 write_dataset_collection(collection_instance, zip_f)

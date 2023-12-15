@@ -5,7 +5,9 @@ import os
 import re
 import uuid
 from typing import (
+    Any,
     cast,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -59,6 +61,8 @@ log = logging.getLogger(__name__)
 
 def inject_validates(inject):
     if inject == "api_key":
+        return True
+    elif inject == "entry_point_path_for_label":
         return True
     p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
     match = p.match(inject)
@@ -229,10 +233,13 @@ class XmlToolSource(ToolSource):
             template = environment_variable_el.text
             inject = environment_variable_el.get("inject")
             if inject:
-                assert not template, "Cannot specify inject and environment variable template."
                 assert inject_validates(inject)
-            if template:
-                assert not inject, "Cannot specify inject and environment variable template."
+            if inject == "entry_point_path_for_label":
+                assert (
+                    template
+                ), 'Environment variable value must contain entry point label when inject="entry_point_path_for_label".'
+            else:
+                assert not (template and inject), "Cannot specify inject and environment variable template."
             definition = {
                 "name": environment_variable_el.get("name"),
                 "template": template,
@@ -303,8 +310,25 @@ class XmlToolSource(ToolSource):
             name = ep_el.get("name", None)
             if name:
                 name = name.strip()
+            label = ep_el.get("label", None)
+            if label:
+                label = label.strip()
             requires_domain = string_as_bool(ep_el.attrib.get("requires_domain", False))
-            rtt.append(dict(port=port, url=url, name=name, requires_domain=requires_domain))
+            requires_path_in_url = string_as_bool(ep_el.attrib.get("requires_path_in_url", False))
+            requires_path_in_header_named = ep_el.get("requires_path_in_header_named", None)
+            if requires_path_in_header_named:
+                requires_path_in_header_named = requires_path_in_header_named.strip()
+            rtt.append(
+                dict(
+                    port=port,
+                    url=url,
+                    name=name,
+                    label=label,
+                    requires_domain=requires_domain,
+                    requires_path_in_url=requires_path_in_url,
+                    requires_path_in_header_named=requires_path_in_header_named,
+                )
+            )
         return rtt
 
     def parse_hidden(self):
@@ -1273,6 +1297,56 @@ class XmlInputSource(InputSource):
             case_page_source = XmlPageSource(case_elem)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        def file_default_from_elem(elem):
+            # TODO: hashes, created_from_basename, etc...
+            return {"class": "File", "location": elem.get("location")}
+
+        def read_elements(collection_elem):
+            element_dicts = []
+            elements = collection_elem.findall("element")
+            for element in elements:
+                identifier = element.get("name")
+                subcollection_elem = element.find("collection")
+                if subcollection_elem:
+                    collection_type = subcollection_elem.get("collection_type")
+                    element_dicts.append(
+                        {
+                            "class": "Collection",
+                            "identifier": identifier,
+                            "collection_type": collection_type,
+                            "elements": read_elements(subcollection_elem),
+                        }
+                    )
+                else:
+                    element_dict = file_default_from_elem(element)
+                    element_dict["identifier"] = identifier
+                    element_dicts.append(element_dict)
+            return element_dicts
+
+        elem = self.input_elem
+        element_type = self.input_elem.get("type")
+        if element_type == "data":
+            default_elem = elem.find("default")
+            if default_elem is not None:
+                return file_default_from_elem(default_elem)
+            else:
+                return None
+        else:
+            default_elem = elem.find("default")
+            if default_elem is not None:
+                default_elem = elem.find("default")
+                collection_type = default_elem.get("collection_type")
+                name = default_elem.get("name", elem.get("name"))
+                return {
+                    "class": "Collection",
+                    "name": name,
+                    "collection_type": collection_type,
+                    "elements": read_elements(default_elem),
+                }
+            else:
+                return None
 
 
 class ParallelismInfo:

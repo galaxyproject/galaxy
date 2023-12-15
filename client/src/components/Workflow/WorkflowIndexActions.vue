@@ -54,7 +54,7 @@ export default {
     },
     methods: {
         navigateToCreate: function () {
-            this.$router.push("/workflows/create");
+            this.$router.push("/workflows/edit");
         },
         navigateToImport: function () {
             this.$router.push("/workflows/import");

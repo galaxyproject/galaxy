@@ -1,5 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
-import { computed, customRef, ref } from "vue";
+import { computed, customRef, type Ref, ref } from "vue";
+
+import type { GenericUser } from "@/stores/userStore";
 
 import { useHashedUserId } from "./hashedUserId";
 
@@ -8,8 +10,8 @@ import { useHashedUserId } from "./hashedUserId";
  * @param key
  * @param initialValue
  */
-export function useUserLocalStorage<T>(key: string, initialValue: T) {
-    const { hashedUserId } = useHashedUserId();
+export function useUserLocalStorage<T>(key: string, initialValue: T, user?: Ref<GenericUser | null>) {
+    const { hashedUserId } = useHashedUserId(user);
 
     const storedRef = computed(() => {
         if (hashedUserId.value) {

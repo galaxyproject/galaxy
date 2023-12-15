@@ -407,31 +407,31 @@ class HistoryContentsManager(base.SortableManager):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))  # type: ignore[attr-defined]
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
     def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))
             .options(joinedload(component_class.collection))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

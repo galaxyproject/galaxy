@@ -26,7 +26,7 @@ class GoldenPath(Tabular):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
-        AGPFile(dataset.file_name)
+        AGPFile(dataset.get_file_name())
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:

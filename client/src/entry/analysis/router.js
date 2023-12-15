@@ -23,7 +23,6 @@ import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
-import Sharing from "components/Sharing/Sharing";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -60,6 +59,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
@@ -67,6 +67,8 @@ import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
+import Sharing from "@/components/Sharing/SharingPage.vue";
+import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -140,7 +142,18 @@ export function getRouter(Galaxy) {
             {
                 path: "/published/workflow",
                 component: WorkflowPublished,
-                props: (route) => ({ id: route.query.id }),
+                props: (route) => ({
+                    id: route.query.id,
+                    zoom: route.query.zoom ? parseFloat(route.query.zoom) : undefined,
+                    embed: route.query.embed ? parseBool(route.query.embed) : undefined,
+                    showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
+                    showAbout: route.query.about ? parseBool(route.query.about) : undefined,
+                    showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                    showMinimap: route.query.minimap ? parseBool(route.query.minimap) : undefined,
+                    showZoomControls: route.query.zoom_controls ? parseBool(route.query.zoom_controls) : undefined,
+                    initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
+                    initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
+                }),
             },
             {
                 name: "error",
@@ -355,6 +368,12 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
+                        path: "storage/history/:historyId",
+                        name: "HistoryOverviewInAnalysis",
+                        component: HistoryStorageOverview,
+                        props: true,
+                    },
+                    {
                         path: "tours",
                         component: TourList,
                     },
@@ -398,7 +417,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
-                        redirect: redirectAnon(),
+                        redirect: redirectIf(Galaxy.config.fixed_delegated_auth, "/") || redirectAnon(),
                     },
                     {
                         path: "user/notifications",

@@ -4,7 +4,7 @@
         <container type="docker">ylebras/openrefine-docker</container>
     </requirements>
     <entry_points>
-        <entry_point name="Openrefine visualisation" requires_domain="True">
+        <entry_point name="Openrefine visualisation" requires_domain="False" requires_path_in_url="False">
             <port>3333</port>
         </entry_point>
     </entry_points>
@@ -81,4 +81,3 @@ Example input file (TAB separated)::
 ]]>
     </help>
 </tool>
-

@@ -333,9 +333,15 @@ gravity:
     # names.
     # environment: {}
 
-  # Configure dynamic handlers in this section.
+  # Configure dynamic handlers in this section. Below is a simple example
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
-  # handlers: {}
+  #handlers:
+  #  handler:
+  #    processes: 3
+  #    pools:
+  #      - job-handlers
+  #      - workflow-schedulers
+
 galaxy:
 
   # The directory that will be prepended to relative paths in options
@@ -1116,10 +1122,16 @@ galaxy:
   # message, before the 'Your Galaxy Team' signature.
   #custom_activation_email_message: null
 
-  # URL of the support resource for the galaxy instance.  Used in
-  # activation emails.
+  # URL of the support resource for the galaxy instance.  Used outside
+  # of web contexts such as in activation emails and in Galaxy markdown
+  # report generation.
   # Example value 'https://galaxyproject.org/'
   #instance_resource_url: null
+
+  # URL used to access this Galaxy server. Used outside of web contexts
+  # such as in Galaxy markdown report generation.
+  # Example value 'https://usegalaxy.org'
+  #instance_access_url: null
 
   # E-mail domains blocklist is used for filtering out users that are
   # using disposable email addresses at registration.  If their
@@ -1282,15 +1294,13 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+  # Note: the following config should still be used due to lack of
+  # support of data_dir resolution in gx-it-proxy and gravity:
+  #interactivetools_map: database/interactivetools_map.sqlite
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
   #interactivetools_prefix: interactivetool
-
-  # Shorten the uuid portion of the subdomain or path for interactive
-  # tools. Especially useful for avoiding the need for wildcard
-  # certificates by keeping subdomain under 63 chars
-  #interactivetools_shorten_url: false
 
   # Galaxy Interactive Tools (GxITs) can be stopped from within the
   # Galaxy interface, killing the GxIT job without completing its
@@ -2187,6 +2197,28 @@ galaxy:
   # production server.
   #bootstrap_admin_api_key: null
 
+  # The name of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "Not Evil Corporation".
+  # For GA4GH APIs, this is exposed via the service-info endpoint for
+  # the Galaxy DRS API. If unset, one will be generated using
+  # ga4gh_service_id (but only in the context of GA4GH APIs).
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_name: null
+
+  # The URL of the organization that operates this Galaxy instance.
+  # Serves as the default for the GA4GH service organization name and
+  # can be exposed through Galaxy markdown for reports and such. For
+  # instance, "notevilcorp.com".
+  # For GA4GH APIs, this is exposed via the service-info endpoint.
+  # For more information on GA4GH service definitions - check out
+  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
+  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+  #organization_url: null
+
   # Service ID for GA4GH services (exposed via the service-info endpoint
   # for the Galaxy DRS API). If unset, one will be generated using the
   # URL the target API requests are made against.
@@ -2200,22 +2232,6 @@ galaxy:
   # (available via the DRS API) for the above configuration value would
   # be org.usegalaxy.drs.
   #ga4gh_service_id: null
-
-  # Service name for host organization (exposed via the service-info
-  # endpoint for the Galaxy DRS API). If unset, one will be generated
-  # using ga4gh_service_id.
-  # For more information on GA4GH service definitions - check out
-  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
-  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
-  #ga4gh_service_organization_name: null
-
-  # Organization URL for host organization (exposed via the service-info
-  # endpoint for the Galaxy DRS API). If unset, one will be generated
-  # using the URL the target API requests are made against.
-  # For more information on GA4GH service definitions - check out
-  # https://github.com/ga4gh-discovery/ga4gh-service-registry and
-  # https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
-  #ga4gh_service_organization_url: null
 
   # Service environment (exposed via the service-info endpoint for the
   # Galaxy DRS API) for implemented GA4GH services.

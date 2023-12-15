@@ -34,7 +34,7 @@ export default {
     },
     methods: {
         executeWorkflow() {
-            window.location.assign(`${this.root}workflows/run?id=${this.id}`);
+            this.$router.push(`/workflows/run?id=${this.id}`);
         },
     },
 };

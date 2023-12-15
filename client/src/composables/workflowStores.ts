@@ -1,4 +1,4 @@
-import { inject, onScopeDispose, provide } from "vue";
+import { inject, onScopeDispose, provide, type Ref, ref, unref } from "vue";
 
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
@@ -15,14 +15,18 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
  * @param workflowId the workflow to scope to
  * @returns workflow Stores
  */
-export function provideScopedWorkflowStores(workflowId: string) {
+export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
+    if (typeof workflowId === "string") {
+        workflowId = ref(workflowId);
+    }
+
     provide("workflowId", workflowId);
 
-    const connectionStore = useConnectionStore(workflowId);
-    const stateStore = useWorkflowStateStore(workflowId);
-    const stepStore = useWorkflowStepStore(workflowId);
-    const commentStore = useWorkflowCommentStore(workflowId);
-    const toolbarStore = useWorkflowEditorToolbarStore(workflowId);
+    const connectionStore = useConnectionStore(workflowId.value);
+    const stateStore = useWorkflowStateStore(workflowId.value);
+    const stepStore = useWorkflowStepStore(workflowId.value);
+    const commentStore = useWorkflowCommentStore(workflowId.value);
+    const toolbarStore = useWorkflowEditorToolbarStore(workflowId.value);
 
     onScopeDispose(() => {
         connectionStore.$dispose();
@@ -51,19 +55,20 @@ export function provideScopedWorkflowStores(workflowId: string) {
  * @returns workflow stores
  */
 export function useWorkflowStores() {
-    const workflowId = inject("workflowId");
+    const workflowId = inject("workflowId") as Ref<string> | string;
+    const id = unref(workflowId);
 
-    if (typeof workflowId !== "string") {
+    if (typeof id !== "string") {
         throw new Error(
             "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component."
         );
     }
 
-    const connectionStore = useConnectionStore(workflowId);
-    const stateStore = useWorkflowStateStore(workflowId);
-    const stepStore = useWorkflowStepStore(workflowId);
-    const commentStore = useWorkflowCommentStore(workflowId);
-    const toolbarStore = useWorkflowEditorToolbarStore(workflowId);
+    const connectionStore = useConnectionStore(id);
+    const stateStore = useWorkflowStateStore(id);
+    const stepStore = useWorkflowStepStore(id);
+    const commentStore = useWorkflowCommentStore(id);
+    const toolbarStore = useWorkflowEditorToolbarStore(id);
 
     return {
         connectionStore,

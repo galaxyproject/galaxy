@@ -118,7 +118,7 @@ def set_meta_with_tool_provided(
     extension = dataset_instance.extension
     if extension == "_sniff_":
         try:
-            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.file_name, datatypes_registry)
+            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.get_file_name(), datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)

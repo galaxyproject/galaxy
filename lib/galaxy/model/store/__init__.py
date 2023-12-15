@@ -457,6 +457,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
+                    for dataset_association in dataset_instance.dataset.history_associations:
+                        if (
+                            dataset_association is not dataset_instance
+                            and dataset_association.extension == dataset_instance.extension
+                        ):
+                            dataset_association.metadata = dataset_instance.metadata
+                            dataset_association.blurb = dataset_instance.blurb
+                            dataset_association.peek = dataset_instance.peek
+                            dataset_association.info = dataset_instance.info
+                            dataset_association.tool_version = dataset_instance.tool_version
                 if job:
                     dataset_instance.dataset.job_id = job.id
 
@@ -1890,7 +1900,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         file_name, extra_files_path = None, None
         try:
-            _file_name = dataset.file_name
+            _file_name = dataset.get_file_name()
             if os.path.exists(_file_name):
                 file_name = _file_name
         except ObjectNotFound:
@@ -1954,7 +1964,7 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in self.included_datasets:
             for metadata_element in dataset.metadata.values():
                 if isinstance(metadata_element, model.MetadataFile):
-                    metadata_element.update_from_file(metadata_element.file_name)
+                    metadata_element.update_from_file(metadata_element.get_file_name())
 
     def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
@@ -2213,7 +2223,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
         state = dataset.dataset.state
-        if state in [model.Dataset.states.OK] and not dataset.file_name:
+        if state in [model.Dataset.states.OK] and not dataset.get_file_name():
             log.error(
                 f"Dataset [{dataset.id}] does not exists on on object store [{dataset.dataset.object_store_id or 'None'}], while trying to export."
             )

@@ -427,7 +427,10 @@ def __new_subworkflow_module(workflow=TEST_WORKFLOW_YAML):
 
 
 def __assert_has_runtime_input(module, label=None, collection_type=None):
-    inputs = module.get_runtime_inputs()
+    test_step = getattr(module, "test_step", None)
+    if test_step is None:
+        test_step = mock.MagicMock()
+    inputs = module.get_runtime_inputs(test_step)
     assert len(inputs) == 1
     assert "input" in inputs
     input_param = inputs["input"]

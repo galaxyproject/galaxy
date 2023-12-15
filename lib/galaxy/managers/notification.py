@@ -412,8 +412,8 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         user_ids_from_groups_and_roles = set([id for id, in self.sa_session.execute(union_stmt)])
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
-        unique_recipient_users = self.sa_session.query(User).filter(User.id.in_(unique_user_ids)).all()
-        return unique_recipient_users
+        stmt = select(User).where(User.id.in_(unique_user_ids))
+        return self.sa_session.scalars(stmt).all()
 
     def _get_all_user_ids_from_roles_query(self, role_ids: Set[int]) -> Select:
         stmt = (

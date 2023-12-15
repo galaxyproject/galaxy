@@ -1,11 +1,11 @@
 <template>
     <Editor
         v-if="editorConfig"
-        :id="editorConfig.id"
+        :workflow-id="editorConfig.id"
         :data-managers="editorConfig.dataManagers"
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
-        :tags="editorConfig.tags"
+        :workflow-tags="editorConfig.tags"
         :workflows="editorConfig.workflows"
         @update:confirmation="$emit('update:confirmation', $event)" />
 </template>
