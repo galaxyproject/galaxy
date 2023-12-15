@@ -155,6 +155,10 @@ export interface paths {
          */
         get: operations["converted_ext_api_datasets__dataset_id__converted__ext__get"];
     };
+    "/api/datasets/{dataset_id}/extra_files": {
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+    };
     "/api/datasets/{dataset_id}/get_content_as_text": {
         /** Returns dataset content as Text. */
         get: operations["get_content_as_text_api_datasets__dataset_id__get_content_as_text_get"];
@@ -356,6 +360,14 @@ export interface paths {
          * @description Sets the permissions to manage a library folder.
          */
         post: operations["set_permissions_api_folders__id__permissions_post"];
+    };
+    "/api/forms/{id}": {
+        /** Delete */
+        delete: operations["delete_api_forms__id__delete"];
+    };
+    "/api/forms/{id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_forms__id__undelete_post"];
     };
     "/api/ftp_files": {
         /**
@@ -650,8 +662,8 @@ export interface paths {
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/extra_files": {
-        /** Generate list of extra files. */
-        get: operations["extra_files_api_histories__history_id__contents__history_content_id__extra_files_get"];
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
@@ -1389,6 +1401,10 @@ export interface paths {
          * @description Deletes an existing quota.
          */
         delete: operations["delete_api_quotas__id__delete"];
+    };
+    "/api/quotas/{id}/purge": {
+        /** Purges a previously deleted quota. */
+        post: operations["purge_api_quotas__id__purge_post"];
     };
     "/api/remote_files": {
         /**
@@ -3662,6 +3678,11 @@ export interface components {
             error_message: string;
         };
         /**
+         * DatasetExtraFiles
+         * @description A list of extra files associated with a dataset.
+         */
+        DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /**
          * DatasetInheritanceChain
          * @default []
          */
@@ -4535,6 +4556,16 @@ export interface components {
          * @enum {string}
          */
         ExtendedInvocationStepState: "new" | "ready" | "scheduled" | "ok";
+        /** ExtraFileEntry */
+        ExtraFileEntry: {
+            /** @description The class of this entry, either File or Directory. */
+            class: components["schemas"]["ExtraFilesEntryClass"];
+            /**
+             * Path
+             * @description Relative path to the file or directory.
+             */
+            path: string;
+        };
         /** ExtraFiles */
         ExtraFiles: {
             /**
@@ -4547,6 +4578,12 @@ export interface components {
             items_from?: string;
             src: components["schemas"]["Src"];
         };
+        /**
+         * ExtraFilesEntryClass
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtraFilesEntryClass: "Directory" | "File";
         /** FavoriteObject */
         FavoriteObject: {
             /**
@@ -4886,6 +4923,202 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[];
+        };
+        /** GenericInvocationCancellationHistoryDeleted[EncodedDatabaseIdField] */
+        GenericInvocationCancellationHistoryDeleted_EncodedDatabaseIdField_: {
+            /**
+             * History ID
+             * @description History ID of history that was deleted.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "history_deleted";
+        };
+        /** GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField] */
+        GenericInvocationCancellationReviewFailed_EncodedDatabaseIdField_: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "cancelled_on_review";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of paused step that did not pass review.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationCancellationUserRequest[EncodedDatabaseIdField] */
+        GenericInvocationCancellationUserRequest_EncodedDatabaseIdField_: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "user_request";
+        };
+        /** GenericInvocationEvaluationWarningWorkflowOutputNotFound[EncodedDatabaseIdField] */
+        GenericInvocationEvaluationWarningWorkflowOutputNotFound_EncodedDatabaseIdField_: {
+            /**
+             * Output Name
+             * @description Output that was designated as workflow output but that has not been found
+             */
+            output_name: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "workflow_output_not_found";
+            /** Workflow step id of step that caused a warning. */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureCollectionFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureCollectionFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /**
+             * HistoryDatasetCollectionAssociation ID
+             * @description HistoryDatasetCollectionAssociation ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            hdca_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "collection_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureDatasetFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureDatasetFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id?: number;
+            /**
+             * HistoryDatasetAssociation ID
+             * @description HistoryDatasetAssociation ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            hda_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "dataset_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureExpressionEvaluationFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureExpressionEvaluationFailed_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description May contain details to help troubleshoot this problem.
+             */
+            details?: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "expression_evaluation_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureJobFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureJobFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /**
+             * Job ID
+             * @description Job ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            job_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "job_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureOutputNotFound[EncodedDatabaseIdField] */
+        GenericInvocationFailureOutputNotFound_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /** Tool or module output name that was referenced but not produced */
+            output_name: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "output_not_found";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureWhenNotBoolean[EncodedDatabaseIdField] */
+        GenericInvocationFailureWhenNotBoolean_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description Contains details to help troubleshoot this problem.
+             */
+            details: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "when_not_boolean";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationUnexpectedFailure[EncodedDatabaseIdField] */
+        GenericInvocationUnexpectedFailure_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description May contains details to help troubleshoot this problem.
+             */
+            details?: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unexpected_failure";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id?: number;
         };
         /**
          * GroupCreatePayload
@@ -6635,12 +6868,18 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default WorkflowInvocation
-             * @constant
              * @enum {string}
              */
-            model?: "WorkflowInvocation";
+            model: "WorkflowInvocation";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
             populated_state: components["schemas"]["JobState"];
-            /** States */
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
             states: {
                 [key: string]: number | undefined;
             };
@@ -6866,10 +7105,22 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Model */
-            model?: Record<string, never>;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocationStep
+             * @enum {string}
+             */
+            model: "WorkflowInvocationStep";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
             populated_state: components["schemas"]["JobState"];
-            /** States */
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
             states: {
                 [key: string]: number | undefined;
             };
@@ -10492,18 +10743,29 @@ export interface components {
                 [key: string]: components["schemas"]["InvocationInput"] | undefined;
             };
             /**
-             * Message
-             * @description Message of the workflow invocation.
+             * Messages
+             * @description A list of messages about why the invocation did not succeed.
              */
-            messages?: Record<string, never>;
+            messages: (
+                | components["schemas"]["GenericInvocationCancellationReviewFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationCancellationHistoryDeleted_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationCancellationUserRequest_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureDatasetFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureCollectionFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureJobFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureOutputNotFound_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureExpressionEvaluationFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureWhenNotBoolean_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationUnexpectedFailure_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationEvaluationWarningWorkflowOutputNotFound_EncodedDatabaseIdField_"]
+            )[];
             /**
              * Model class
              * @description The name of the database model class.
              * @default WorkflowInvocation
-             * @constant
              * @enum {string}
              */
-            model_class?: "WorkflowInvocation";
+            model_class: "WorkflowInvocation";
             /**
              * Output collections
              * @description Output dataset collections of the workflow invocation.
@@ -10541,10 +10803,9 @@ export interface components {
             update_time: string;
             /**
              * UUID
-             * Format: uuid1
              * @description Universal unique identifier of the workflow invocation.
              */
-            uuid: string;
+            uuid: string | string;
             /**
              * Workflow ID
              * @description The encoded Workflow ID associated with the invocation.
@@ -11449,6 +11710,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["HDADetailed"] | components["schemas"]["HDASummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extra_files_api_datasets__dataset_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Validation Error */
@@ -12399,6 +12687,58 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["LibraryFolderCurrentPermissions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_forms__id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_forms__id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -14383,8 +14723,8 @@ export interface operations {
             };
         };
     };
-    extra_files_api_histories__history_id__contents__history_content_id__extra_files_get: {
-        /** Generate list of extra files. */
+    extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14401,7 +14741,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Validation Error */
@@ -18463,6 +18803,33 @@ export interface operations {
             };
         };
     };
+    purge_api_quotas__id__purge_post: {
+        /** Purges a previously deleted quota. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded identifier of the Quota. */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_api_remote_files_get: {
         /**
          * Displays remote files available to the user.
@@ -19046,23 +19413,11 @@ export interface operations {
          * Lists all available data tables
          * @description Get the list of all available data tables.
          */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-        };
         responses: {
             /** @description A list with details on individual data tables. */
             200: {
                 content: {
                     "application/json": components["schemas"]["ToolDataEntryList"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
