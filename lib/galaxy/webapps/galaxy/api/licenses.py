@@ -21,23 +21,22 @@ LicenseIdPath: str = Path(
 )
 
 
-@router.cbv
 class FastAPILicenses:
-    licenses_manager: LicensesManager = depends(LicensesManager)
-
     @router.get(
         "/api/licenses", summary="Lists all available SPDX licenses", response_description="List of SPDX licenses"
     )
-    async def index(self) -> List[LicenseMetadataModel]:
+    async def index(licenses_manager: LicensesManager = depends(LicensesManager)) -> List[LicenseMetadataModel]:
         """Returns an index with all the available [SPDX licenses](https://spdx.org/licenses/)."""
-        return self.licenses_manager.get_licenses()
+        return licenses_manager.get_licenses()
 
     @router.get(
         "/api/licenses/{id}",
         summary="Gets the SPDX license metadata associated with the short identifier",
         response_description="SPDX license metadata",
     )
-    async def get(self, id=LicenseIdPath) -> LicenseMetadataModel:
+    async def get(
+        id=LicenseIdPath, licenses_manager: LicensesManager = depends(LicensesManager)
+    ) -> LicenseMetadataModel:
         """Returns the license metadata associated with the given
         [SPDX license short ID](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)."""
-        return self.licenses_manager.get_license_by_id(id)
+        return licenses_manager.get_license_by_id(id)
