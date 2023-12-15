@@ -47,7 +47,7 @@ ENV LC_ALL en_US.UTF-8
 # Stage 2.1 - Copy to final image
 #======================================================
 # Remove build artifacts + files not needed in container
-FROM stage1 AS server_build
+FROM $STAGE1_BASE
 
 COPY --from=stage1 /venv /venv
 
