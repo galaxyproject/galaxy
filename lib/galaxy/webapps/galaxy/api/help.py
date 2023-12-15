@@ -16,20 +16,17 @@ log = logging.getLogger(__name__)
 router = Router(tags=["help"])
 
 
-@router.cbv
 class HelpAPI:
-    service: HelpService = depends(HelpService)
-
     @router.get(
         "/api/help/forum/search",
         summary="Search the Galaxy Help forum.",
     )
     def search_forum(
-        self,
         query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
+        service: HelpService = depends(HelpService),
     ) -> HelpForumSearchResponse:
         """Search the Galaxy Help forum using the Discourse API.
 
         **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
         """
-        return self.service.search_forum(query)
+        return service.search_forum(query)
