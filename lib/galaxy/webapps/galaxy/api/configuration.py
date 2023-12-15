@@ -39,16 +39,13 @@ EncodedIdPathParam = Path(
 )
 
 
-@router.cbv
 class FastAPIConfiguration:
-    configuration_manager: ConfigurationManager = depends(ConfigurationManager)
-
     @router.get(
         "/api/whoami",
         summary="Return information about the current authenticated user",
         response_description="Information about the current authenticated user",
     )
-    def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
+    def whoami(trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
         return _user_to_model(trans.user)
 
@@ -58,10 +55,10 @@ class FastAPIConfiguration:
         response_description="Object containing exposable configuration settings",
     )
     def index(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         view: Optional[str] = SerializationViewQueryParam,
         keys: Optional[str] = SerializationKeysQueryParam,
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
     ) -> Dict[str, Any]:
         """
         Return an object containing exposable configuration settings.
@@ -70,16 +67,18 @@ class FastAPIConfiguration:
         Pass in `view` and a comma-seperated list of keys to control which
         configuration settings are returned.
         """
-        return _index(self.configuration_manager, trans, view, keys)
+        return _index(configuration_manager, trans, view, keys)
 
     @router.get(
         "/api/version",
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )
-    def version(self) -> Dict[str, Any]:
+    def version(
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
+    ) -> Dict[str, Any]:
         """Return Galaxy version information: major/minor version, optional extra info."""
-        return self.configuration_manager.version()
+        return configuration_manager.version()
 
     @router.get(
         "/api/configuration/dynamic_tool_confs",
@@ -87,9 +86,11 @@ class FastAPIConfiguration:
         summary="Return dynamic tool configuration files",
         response_description="Dynamic tool configuration files",
     )
-    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+    def dynamic_tool_confs(
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
+    ) -> List[Dict[str, str]]:
         """Return dynamic tool configuration files."""
-        return self.configuration_manager.dynamic_tool_confs()
+        return configuration_manager.dynamic_tool_confs()
 
     @router.get(
         "/api/configuration/decode/{encoded_id}",
@@ -97,9 +98,12 @@ class FastAPIConfiguration:
         summary="Decode a given id",
         response_description="Decoded id",
     )
-    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> Dict[str, int]:
+    def decode_id(
+        encoded_id: str = EncodedIdPathParam,
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
+    ) -> Dict[str, int]:
         """Decode a given id."""
-        return self.configuration_manager.decode_id(encoded_id)
+        return configuration_manager.decode_id(encoded_id)
 
     @router.get(
         "/api/configuration/tool_lineages",
@@ -107,16 +111,20 @@ class FastAPIConfiguration:
         summary="Return tool lineages for tools that have them",
         response_description="Tool lineages for tools that have them",
     )
-    def tool_lineages(self) -> List[Dict[str, Dict]]:
+    def tool_lineages(
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
+    ) -> List[Dict[str, Dict]]:
         """Return tool lineages for tools that have them."""
-        return self.configuration_manager.tool_lineages()
+        return configuration_manager.tool_lineages()
 
     @router.put(
         "/api/configuration/toolbox", require_admin=True, summary="Reload the Galaxy toolbox (but not individual tools)"
     )
-    def reload_toolbox(self):
+    def reload_toolbox(
+        configuration_manager: ConfigurationManager = depends(ConfigurationManager),
+    ):
         """Reload the Galaxy toolbox (but not individual tools)."""
-        self.configuration_manager.reload_toolbox()
+        configuration_manager.reload_toolbox()
 
 
 def _user_to_model(user):
