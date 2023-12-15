@@ -530,4 +530,6 @@ class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
 
 
 class InvocationStepJobsResponse(InvocationJobsSummaryBaseModel):
-    model: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
+    # TODO - this can also be Job or ImplicitCollectionJobs - how to handle this?
+    # model: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
+    model: Any
