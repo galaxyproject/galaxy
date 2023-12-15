@@ -32,18 +32,13 @@ log = logging.getLogger(__name__)
 router = Router(tags=["cloud"])
 
 
-@router.cbv
 class FastAPICloudController:
-    cloud_manager: CloudManager = depends(CloudManager)
-    datasets_serializer: DatasetSerializer = depends(DatasetSerializer)
-
     @router.get(
         "/api/cloud/storage",
         summary="Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented",
         deprecated=True,
     )
     def index(
-        self,
         response: Response,
     ):
         # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
@@ -56,11 +51,12 @@ class FastAPICloudController:
         deprecated=True,
     )
     def get(
-        self,
         payload: CloudObjects = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
+        cloud_manager: CloudManager = depends(CloudManager),
+        datasets_serializer: DatasetSerializer = depends(DatasetSerializer),
     ) -> DatasetSummaryList:
-        datasets = self.cloud_manager.get(
+        datasets = cloud_manager.get(
             trans=trans,
             history_id=payload.history_id,
             bucket_name=payload.bucket,
@@ -70,7 +66,7 @@ class FastAPICloudController:
         )
         rtv = []
         for dataset in datasets:
-            rtv.append(self.datasets_serializer.serialize_to_view(dataset, view="summary"))
+            rtv.append(datasets_serializer.serialize_to_view(dataset, view="summary"))
         return DatasetSummaryList.construct(__root__=rtv)
 
     @router.post(
@@ -79,9 +75,9 @@ class FastAPICloudController:
         deprecated=True,
     )
     def send(
-        self,
         payload: CloudDatasets = Body(default=Required),
         trans: ProvidesHistoryContext = DependsOnTrans,
+        cloud_manager: CloudManager = depends(CloudManager),
     ) -> CloudDatasetsResponse:
         log.info(
             msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
@@ -92,7 +88,7 @@ class FastAPICloudController:
             )
         )
 
-        sent, failed = self.cloud_manager.send(
+        sent, failed = cloud_manager.send(
             trans=trans,
             history_id=payload.history_id,
             bucket_name=payload.bucket,
