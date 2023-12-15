@@ -39,40 +39,38 @@ SelectableQueryParam: bool = Query(
 )
 
 
-@router.cbv
 class FastAPIObjectStore:
-    object_store: BaseObjectStore = depends(BaseObjectStore)
-
     @router.get(
         "/api/object_stores",
         summary="Get a list of (currently only concrete) object stores configured with this Galaxy instance.",
         response_description="A list of the configured object stores.",
     )
     def index(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
+        object_store: BaseObjectStore = depends(BaseObjectStore),
     ) -> List[ConcreteObjectStoreModel]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"
             )
-        selectable_ids = self.object_store.object_store_ids_allowing_selection()
-        return [self._model_for(selectable_id) for selectable_id in selectable_ids]
+        selectable_ids = object_store.object_store_ids_allowing_selection()
+        return [_model_for(selectable_id, object_store) for selectable_id in selectable_ids]
 
     @router.get(
         "/api/object_stores/{object_store_id}",
         summary="Get information about a concrete object store configured with Galaxy.",
     )
     def show_info(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         object_store_id: str = ConcreteObjectStoreIdPathParam,
+        object_store: BaseObjectStore = depends(BaseObjectStore),
     ) -> ConcreteObjectStoreModel:
-        return self._model_for(object_store_id)
+        return _model_for(object_store_id, object_store)
 
-    def _model_for(self, object_store_id: str) -> ConcreteObjectStoreModel:
-        concrete_object_store = self.object_store.get_concrete_store_by_object_store_id(object_store_id)
-        if concrete_object_store is None:
-            raise ObjectNotFound()
-        return concrete_object_store.to_model(object_store_id)
+
+def _model_for(object_store_id: str, object_store: BaseObjectStore) -> ConcreteObjectStoreModel:
+    concrete_object_store = object_store.get_concrete_store_by_object_store_id(object_store_id)
+    if concrete_object_store is None:
+        raise ObjectNotFound()
+    return concrete_object_store.to_model(object_store_id)
