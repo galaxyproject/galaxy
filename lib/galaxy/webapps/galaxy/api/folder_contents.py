@@ -66,10 +66,7 @@ SortDescQueryParam: Optional[bool] = Query(
 )
 
 
-@router.cbv
 class FastAPILibraryFoldersContents:
-    service: LibraryFolderContentsService = depends(LibraryFolderContentsService)
-
     @router.get(
         "/api/folders/{folder_id}/contents",
         summary="Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.",
@@ -81,7 +78,6 @@ class FastAPILibraryFoldersContents:
         },
     )
     def index(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         limit: int = LimitQueryParam,
@@ -90,6 +86,7 @@ class FastAPILibraryFoldersContents:
         include_deleted: Optional[bool] = IncludeDeletedQueryParam,
         order_by: LibraryFolderContentsIndexSortByEnum = SortByQueryParam,
         sort_desc: Optional[bool] = SortDescQueryParam,
+        service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
     ):
         """Returns a list of a folder's contents (files and sub-folders).
 
@@ -111,7 +108,7 @@ class FastAPILibraryFoldersContents:
             order_by=order_by,
             sort_desc=sort_desc,
         )
-        return self.service.index(trans, folder_id, payload)
+        return service.index(trans, folder_id, payload)
 
     @router.post(
         "/api/folders/{folder_id}/contents",
@@ -119,9 +116,9 @@ class FastAPILibraryFoldersContents:
         summary="Creates a new library file from an existing HDA/HDCA.",
     )
     def create(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFilePayload = Body(...),
+        service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
     ):
-        return self.service.create(trans, folder_id, payload)
+        return service.create(trans, folder_id, payload)
