@@ -102,10 +102,7 @@ ExcludeKindQueryParam = Query(
 )
 
 
-@router.cbv
 class FastAPIRemoteFiles:
-    manager: RemoteFilesManager = depends(RemoteFilesManager)
-
     @router.get(
         "/api/remote_files",
         summary="Displays remote files available to the user.",
@@ -117,16 +114,16 @@ class FastAPIRemoteFiles:
         summary="Displays remote files available to the user. Please use /api/remote_files instead.",
     )
     async def index(
-        self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         target: str = TargetQueryParam,
         format: Optional[RemoteFilesFormat] = FormatQueryParam,
         recursive: Optional[bool] = RecursiveQueryParam,
         disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
         writeable: Optional[bool] = WriteableQueryParam,
+        manager: RemoteFilesManager = depends(RemoteFilesManager),
     ) -> AnyRemoteFilesListResponse:
         """Lists all remote files available to the user from different sources."""
-        return self.manager.index(user_ctx, target, format, recursive, disable, writeable)
+        return manager.index(user_ctx, target, format, recursive, disable, writeable)
 
     @router.get(
         "/api/remote_files/plugins",
@@ -134,14 +131,14 @@ class FastAPIRemoteFiles:
         response_description="A list with details about each plugin.",
     )
     async def plugins(
-        self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         browsable_only: Optional[bool] = BrowsableQueryParam,
         include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
         exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
+        manager: RemoteFilesManager = depends(RemoteFilesManager),
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins(
+        return manager.get_files_source_plugins(
             user_ctx,
             browsable_only,
             set(include_kind) if include_kind else None,
@@ -153,13 +150,13 @@ class FastAPIRemoteFiles:
         summary="Creates a new entry (directory/record) on the remote files source.",
     )
     async def create_entry(
-        self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
         payload: CreateEntryPayload = Body(
             ...,
             title="Entry Data",
             description="Information about the entry to create. Depends on the target file source.",
         ),
+        manager: RemoteFilesManager = depends(RemoteFilesManager),
     ) -> CreatedEntryResponse:
         """Creates a new entry on the remote files source."""
-        return self.manager.create_entry(user_ctx, payload)
+        return manager.create_entry(user_ctx, payload)
