@@ -25,22 +25,19 @@ log = logging.getLogger(__name__)
 router = Router(tags=["display_applications"])
 
 
-@router.cbv
 class FastAPIDisplay:
-    manager: DisplayApplicationsManager = depends(DisplayApplicationsManager)
-
     @router.get(
         "/api/display_applications",
         summary="Returns the list of display applications.",
         name="display_applications_index",
     )
     def index(
-        self,
+        manager: DisplayApplicationsManager = depends(DisplayApplicationsManager),
     ) -> List[DisplayApplication]:
         """
         Returns the list of display applications.
         """
-        return self.manager.index()
+        return manager.index()
 
     @router.post(
         "/api/display_applications/reload",
@@ -49,13 +46,13 @@ class FastAPIDisplay:
         require_admin=True,
     )
     def reload(
-        self,
         payload: Optional[Dict[str, List[str]]] = Body(default=None),
+        manager: DisplayApplicationsManager = depends(DisplayApplicationsManager),
     ) -> ReloadFeedback:
         """
         Reloads the list of display applications.
         """
         payload = payload or {}
         ids = payload.get("ids", [])
-        result = self.manager.reload(ids)
+        result = manager.reload(ids)
         return result
