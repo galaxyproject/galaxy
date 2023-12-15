@@ -42,16 +42,12 @@ TOOL_ID_PATH_PARAM: str = Path(
 )
 
 
-@router.cbv
 class FastAPITools:
-    app: ToolShedApp = depends(ToolShedApp)
-
     @router.get(
         "/api/tools",
         operation_id="tools__index",
     )
     def index(
-        self,
         q: str = ToolsIndexQueryParam,
         page: int = RepositorySearchPageQueryParam,
         page_size: int = RepositorySearchPageSizeQueryParam,
@@ -65,11 +61,11 @@ class FastAPITools:
         operation_id="tools__build_search_index",
         require_admin=True,
     )
-    def build_search_index(self) -> BuildSearchIndexResponse:
+    def build_search_index(app: ToolShedApp = depends(ToolShedApp)) -> BuildSearchIndexResponse:
         """Not part of the stable API, just something to simplify
         bootstrapping tool sheds, scripting, testing, etc...
         """
-        config = self.app.config
+        config = app.config
         repos_indexed, tools_indexed = build_index(
             config.whoosh_index_dir,
             config.file_path,
@@ -82,20 +78,18 @@ class FastAPITools:
         )
 
     @router.get("/api/ga4gh/trs/v2/service-info", operation_id="tools_trs_service_info")
-    def service_info(self, request: Request) -> Service:
-        return service_info(self.app, request.url)
+    def service_info(request: Request, app: ToolShedApp = depends(ToolShedApp)) -> Service:
+        return service_info(app, request.url)
 
     @router.get("/api/ga4gh/trs/v2/toolClasses", operation_id="tools__trs_tool_classes")
-    def tool_classes(self) -> List[ToolClass]:
+    def tool_classes() -> List[ToolClass]:
         return tool_classes()
 
     @router.get(
         "/api/ga4gh/trs/v2/tools",
         operation_id="tools__trs_index",
     )
-    def trs_index(
-        self,
-    ):
+    def trs_index():
         # we probably want to be able to query the database at the
         # tool level and such to do this right?
         return []
@@ -105,7 +99,6 @@ class FastAPITools:
         operation_id="tools__trs_get",
     )
     def trs_get(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
     ) -> Tool:
@@ -116,7 +109,6 @@ class FastAPITools:
         operation_id="tools__trs_get_versions",
     )
     def trs_get_versions(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         tool_id: str = TOOL_ID_PATH_PARAM,
     ) -> List[ToolVersion]:
