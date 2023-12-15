@@ -98,18 +98,13 @@ class UiChangePasswordRequest(BaseModel):
 INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
 
 
-@router.cbv
 class FastAPIUsers:
-    app: ToolShedApp = depends(ToolShedApp)
-    user_manager: UserManager = depends(UserManager)
-    api_key_manager: ApiKeyManager = depends(ApiKeyManager)
-
     @router.get(
         "/api/users",
         description="index users",
         operation_id="users__index",
     )
-    def index(self, trans: SessionRequestContext = DependsOnTrans) -> List[User]:
+    def index(trans: SessionRequestContext = DependsOnTrans) -> List[User]:
         deleted = False
         return index(trans.app, deleted)
 
@@ -119,7 +114,7 @@ class FastAPIUsers:
         operation_id="users__create",
         require_admin=True,
     )
-    def create(self, trans: SessionRequestContext = DependsOnTrans, request: CreateUserRequest = Body(...)) -> User:
+    def create(trans: SessionRequestContext = DependsOnTrans, request: CreateUserRequest = Body(...)) -> User:
         return api_create_user(trans, request)
 
     @router.get(
@@ -127,7 +122,7 @@ class FastAPIUsers:
         description="show current user",
         operation_id="users__current",
     )
-    def current(self, trans: SessionRequestContext = DependsOnTrans) -> User:
+    def current(trans: SessionRequestContext = DependsOnTrans) -> User:
         user = trans.user
         if not user:
             raise ObjectNotFound()
@@ -139,7 +134,7 @@ class FastAPIUsers:
         description="show a user",
         operation_id="users__show",
     )
-    def show(self, trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam) -> User:
+    def show(trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam) -> User:
         user = suc.get_user(trans.app, encoded_user_id)
         if user is None:
             raise ObjectNotFound()
@@ -152,10 +147,12 @@ class FastAPIUsers:
         operation_id="users__get_or_create_api_key",
     )
     def get_or_create_api_key(
-        self, trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_user_id: str = UserIdPathParam,
+        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
     ) -> str:
-        user = self._get_user(trans, encoded_user_id)
-        return self.api_key_manager.get_or_create_api_key(user)
+        user = _get_user(trans, encoded_user_id)
+        return api_key_manager.get_or_create_api_key(user)
 
     @router.post(
         "/api/users/{encoded_user_id}/api_key",
@@ -163,10 +160,12 @@ class FastAPIUsers:
         operation_id="users__create_api_key",
     )
     def create_api_key(
-        self, trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam
+        trans: SessionRequestContext = DependsOnTrans,
+        encoded_user_id: str = UserIdPathParam,
+        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
     ) -> str:
-        user = self._get_user(trans, encoded_user_id)
-        return self.api_key_manager.create_api_key(user).key
+        user = _get_user(trans, encoded_user_id)
+        return api_key_manager.create_api_key(user).key
 
     @router.delete(
         "/api/users/{encoded_user_id}/api_key",
@@ -175,24 +174,13 @@ class FastAPIUsers:
         operation_id="users__delete_api_key",
     )
     def delete_api_key(
-        self,
         trans: SessionRequestContext = DependsOnTrans,
         encoded_user_id: str = UserIdPathParam,
+        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
     ):
-        user = self._get_user(trans, encoded_user_id)
-        self.api_key_manager.delete_api_key(user)
+        user = _get_user(trans, encoded_user_id)
+        api_key_manager.delete_api_key(user)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    def _get_user(self, trans: SessionRequestContext, encoded_user_id: str):
-        if encoded_user_id == "current":
-            user = trans.user
-        else:
-            user = suc.get_user(trans.app, encoded_user_id)
-        if user is None:
-            raise ObjectNotFound()
-        if not (trans.user_is_admin or trans.user == user):
-            raise InsufficientPermissionsException()
-        return user
 
     @router.post(
         "/api_internal/register",
@@ -200,7 +188,10 @@ class FastAPIUsers:
         operation_id="users__internal_register",
     )
     def register(
-        self, trans: SessionRequestContext = DependsOnTrans, request: UiRegisterRequest = Body(...)
+        trans: SessionRequestContext = DependsOnTrans,
+        request: UiRegisterRequest = Body(...),
+        app: ToolShedApp = depends(ToolShedApp),
+        user_manager: UserManager = depends(UserManager),
     ) -> UiRegisterResponse:
         honeypot_field = request.bear_field
         if honeypot_field != "":
@@ -210,9 +201,9 @@ class FastAPIUsers:
         username = request.username
         if username == "repos":
             raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
-        self.user_manager.create(email=request.email, username=username, password=request.password)
-        if self.app.config.user_activation_on:
-            is_activation_sent = self.user_manager.send_activation_email(trans, request.email, username)
+        user_manager.create(email=request.email, username=username, password=request.password)
+        if app.config.user_activation_on:
+            is_activation_sent = user_manager.send_activation_email(trans, request.email, username)
             if is_activation_sent:
                 return UiRegisterResponse(email=request.email, activation_sent=True)
             else:
@@ -220,7 +211,7 @@ class FastAPIUsers:
                     email=request.email,
                     activation_sent=False,
                     activation_error=True,
-                    contact_email=self.app.config.error_email_to,
+                    contact_email=app.config.error_email_to,
                 )
         else:
             return UiRegisterResponse(email=request.email)
@@ -232,7 +223,9 @@ class FastAPIUsers:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def change_password(
-        self, trans: SessionRequestContext = DependsOnTrans, request: UiChangePasswordRequest = Body(...)
+        trans: SessionRequestContext = DependsOnTrans,
+        request: UiChangePasswordRequest = Body(...),
+        user_manager: UserManager = depends(UserManager),
     ):
         password = request.password
         current = request.current
@@ -240,7 +233,7 @@ class FastAPIUsers:
             raise InsufficientPermissionsException("Must be logged into use this functionality")
         user_id = trans.user.id
         token = None
-        user, message = self.user_manager.change_password(
+        user, message = user_manager.change_password(
             trans, password=password, current=current, token=token, confirm=password, id=user_id
         )
         if not user:
@@ -253,13 +246,15 @@ class FastAPIUsers:
         operation_id="users__internal_login",
     )
     def internal_login(
-        self, trans: SessionRequestContext = DependsOnTrans, request: UiLoginRequest = Body(...)
+        trans: SessionRequestContext = DependsOnTrans,
+        request: UiLoginRequest = Body(...),
+        user_manager: UserManager = depends(UserManager),
     ) -> UiLoginResponse:
         log.info(f"top of internal_login {trans.session_csrf_token}")
         ensure_csrf_token(trans, request)
         login = request.login
         password = request.password
-        user = self.user_manager.get_user_by_identity(login)
+        user = user_manager.get_user_by_identity(login)
         if user is None:
             raise InsufficientPermissionsException(INVALID_LOGIN_OR_PASSWORD)
         elif user.deleted:
@@ -281,11 +276,23 @@ class FastAPIUsers:
         operation_id="users__internal_logout",
     )
     def internal_logout(
-        self, trans: SessionRequestContext = DependsOnTrans, request: UiLogoutRequest = Body(...)
+        trans: SessionRequestContext = DependsOnTrans, request: UiLogoutRequest = Body(...)
     ) -> UiLogoutResponse:
         ensure_csrf_token(trans, request)
         handle_user_logout(trans, logout_all=request.logout_all)
         return UiLogoutResponse()
+
+
+def _get_user(trans: SessionRequestContext, encoded_user_id: str):
+    if encoded_user_id == "current":
+        user = trans.user
+    else:
+        user = suc.get_user(trans.app, encoded_user_id)
+    if user is None:
+        raise ObjectNotFound()
+    if not (trans.user_is_admin or trans.user == user):
+        raise InsufficientPermissionsException()
+    return user
 
 
 def ensure_csrf_token(trans: SessionRequestContext, request: HasCsrfToken):
