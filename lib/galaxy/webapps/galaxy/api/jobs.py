@@ -178,10 +178,6 @@ class FastAPIJobs:
         id: DecodedDatabaseIdField,
         trans: ProvidesUserContext = DependsOnTrans,
         full: Optional[bool] = False,
-        stdout_position: Optional[int] = None,
-        stdout_length: Optional[int] = None,
-        stderr_position: Optional[int] = None,
-        stderr_length: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Return dictionary containing description of job data
@@ -189,19 +185,11 @@ class FastAPIJobs:
         Parameters
         - id: ID of job to return
         - full: Return extra information ?
-        - stdout_position: The index of the character to begin reading stdout from
-        - stdout_length: How many characters of stdout to read
-        - stderr_position: The index of the character to begin reading stderr from
-        - stderr_length: How many characters of stderr to read
         """
         return self.service.show(
             trans,
             id,
             bool(full),
-            int(stdout_position) if stdout_position else 0,
-            int(stdout_length) if stdout_length else 0,
-            int(stderr_position) if stderr_position else 0,
-            int(stderr_length) if stderr_length else 0,
         )
 
     @router.get("/api/jobs")
@@ -344,6 +332,50 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
+    @expose_api
+    def console_output(
+            self,
+            trans: ProvidesUserContext,
+            id,
+            stdout_position,
+            stdout_length,
+            stderr_position,
+            stderr_length,
+            **kwd
+    ):
+        """
+         * GET /api/jobs/{id}/console_output
+                Get the stdout and/or stderr of a job.
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :type   stdout_position: int
+        :param  stdout_position: The index of the character to begin reading stdout from
+
+        :type   stdout_length: int
+        :param  stdout_length: How many characters of stdout to read
+
+        :type   stderr_position: int
+        :param  stderr_position: The index of the character to begin reading stderr from
+
+        :type   stderr_length: int
+        :param  stderr_length: How many characters of stderr to read
+
+        :rtype:     dict
+        :returns:   dict containing stdout and stderr fields
+        """
+        job = self.__get_job(trans, id)
+        return self.job_manager.get_job_console_output(
+            trans,
+            job,
+            int(stdout_position),
+            int(stdout_length),
+            int(stderr_position),
+            int(stderr_length)
+        )
+
 
     @expose_api_anonymous
     def metrics(self, trans: ProvidesUserContext, **kwd):
