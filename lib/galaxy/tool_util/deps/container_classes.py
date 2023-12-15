@@ -95,6 +95,8 @@ class ContainerProtocol(Protocol):
     Helper class to allow typing for the HasDockerLikeVolumes mixin
     """
 
+    destination_info: Dict[str, Any]
+
     @property
     def app_info(self) -> "AppInfo":
         ...
@@ -373,7 +375,10 @@ class HasDockerLikeVolumes:
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
-            if self.app_info.outputs_to_working_directory:
+            outputs_to_working_directory = self.app_info.outputs_to_working_directory
+            if "outputs_to_working_directory" in self.destination_info:
+                outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
+            if outputs_to_working_directory:
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
                 defaults += ",$working_directory:rw,$default_file_path:default_ro"
