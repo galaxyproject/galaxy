@@ -23,7 +23,7 @@ class CitationsMissing(Linter):
             root = tool_xml.getroot()
         citations = tool_xml.findall("citations")
         if len(citations) == 0:
-            lint_ctx.warn("No citations found, consider adding citations to your tool.", node=root)
+            lint_ctx.warn("No citations found, consider adding citations to your tool.", linter=cls.name(), node=root)
 
 
 class CitationsNoText(Linter):
@@ -38,7 +38,7 @@ class CitationsNoText(Linter):
         for citation in citations:
             citation_type = citation.attrib.get("type")
             if citation_type in ["doi", "bibtex"] and (citation.text is None or not citation.text.strip()):
-                lint_ctx.error(f"Empty {citation_type} citation.", node=citation)
+                lint_ctx.error(f"Empty {citation_type} citation.", linter=cls.name(), node=citation)
 
 
 class CitationsFound(Linter):
@@ -53,7 +53,7 @@ class CitationsFound(Linter):
         citations = tool_xml.find("citations")
 
         if citations is not None and len(citations) > 0:
-            lint_ctx.valid(f"Found {len(citations)} citations.", node=root)
+            lint_ctx.valid(f"Found {len(citations)} citations.", linter=cls.name(), node=root)
 
 
 class CitationsNoValid(Linter):
@@ -69,4 +69,4 @@ class CitationsNoValid(Linter):
         if len(citations) != 1:
             return
         if len(citations[0]) == 0:
-            lint_ctx.warn("Found no valid citations.", node=root)
+            lint_ctx.warn("Found no valid citations.", linter=cls.name(), node=root)

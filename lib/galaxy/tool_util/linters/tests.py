@@ -1,7 +1,8 @@
 """This module contains a linting functions for tool tests."""
 from typing import (
+    Iterator,
     List,
-    Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
@@ -28,7 +29,7 @@ class TestsMissing(Linter):
         if root is None:
             root = tool_xml.getroot()
         if len(tests) == 0 and not is_datasource(tool_xml):
-            lint_ctx.warn("No tests found, most tools should define test cases.", node=root)
+            lint_ctx.warn("No tests found, most tools should define test cases.", linter=cls.name(), node=root)
 
 
 class TestsMissingDatasource(Linter):
@@ -42,7 +43,7 @@ class TestsMissingDatasource(Linter):
         if root is None:
             root = tool_xml.getroot()
         if len(tests) == 0 and is_datasource(tool_xml):
-            lint_ctx.info("No tests found, that should be OK for data_sources.", node=root)
+            lint_ctx.info("No tests found, that should be OK for data_sources.", linter=cls.name(), node=root)
 
 
 class TestsAssertsMultiple(Linter):
@@ -57,7 +58,9 @@ class TestsAssertsMultiple(Linter):
             for ta in ("assert_stdout", "assert_stderr", "assert_command"):
                 if len(test.findall(ta)) > 1:
                     lint_ctx.error(
-                        f"Test {test_idx}: More than one {ta} found. Only the first is considered.", node=test
+                        f"Test {test_idx}: More than one {ta} found. Only the first is considered.",
+                        linter=cls.name(),
+                        node=test,
                     )
 
 
@@ -75,7 +78,9 @@ class TestsAssertsHasNQuant(Linter):
                 if a.tag not in ["has_n_lines", "has_n_columns"]:
                     continue
                 if not (set(a.attrib) & set(["n", "min", "max"])):
-                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
+                    lint_ctx.error(
+                        f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", linter=cls.name(), node=a
+                    )
 
 
 class TestsAssertsHasSizeQuant(Linter):
@@ -92,7 +97,11 @@ class TestsAssertsHasSizeQuant(Linter):
                 if a.tag != "has_size":
                     continue
                 if len(set(a.attrib) & set(["value", "min", "max"])) == 0:
-                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'", node=a)
+                    lint_ctx.error(
+                        f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'",
+                        linter=cls.name(),
+                        node=a,
+                    )
 
 
 class TestsExpectNumOutputs(Linter):
@@ -112,7 +121,9 @@ class TestsExpectNumOutputs(Linter):
                 or asbool(test.attrib.get("expect_failure", False))
             ):
                 lint_ctx.warn(
-                    f"Test {test_idx}: should specify 'expect_num_outputs' if outputs have filters", node=test
+                    f"Test {test_idx}: should specify 'expect_num_outputs' if outputs have filters",
+                    linter=cls.name(),
+                    node=test,
                 )
 
 
@@ -144,7 +155,9 @@ class TestsParamInInputs(Linter):
                         found = True
                         break
                 if not found:
-                    lint_ctx.error(f"Test {test_idx}: Test param {name} not found in the inputs", node=param)
+                    lint_ctx.error(
+                        f"Test {test_idx}: Test param {name} not found in the inputs", linter=cls.name(), node=param
+                    )
 
 
 class TestsOutputName(Linter):
@@ -158,7 +171,11 @@ class TestsOutputName(Linter):
             # note output_collections are covered by xsd, but output is not required to have one by xsd
             for output in test.findall("output"):
                 if not output.attrib.get("name", None):
-                    lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", node=output)
+                    lint_ctx.error(
+                        f"Test {test_idx}: Found {output.tag} tag without a name defined.",
+                        linter=cls.name(),
+                        node=output,
+                    )
 
 
 class TestsOutputDefined(Linter):
@@ -177,6 +194,7 @@ class TestsOutputDefined(Linter):
                 if name not in output_data_or_collection:
                     lint_ctx.error(
                         f"Test {test_idx}: Found {output.tag} tag with unknown name [{name}], valid names {list(output_data_or_collection)}",
+                        linter=cls.name(),
                         node=output,
                     )
 
@@ -206,6 +224,7 @@ class TestsOutputCorresponding(Linter):
                 if output.tag == "output" and corresponding_output.tag != "data":
                     lint_ctx.error(
                         f"Test {test_idx}: test output {name} does not correspond to a 'data' output, but a '{corresponding_output.tag}'",
+                        linter=cls.name(),
                         node=output,
                     )
 
@@ -235,6 +254,7 @@ class TestsOutputCollectionCorresponding(Linter):
                 if output.tag == "output_collection" and corresponding_output.tag != "collection":
                     lint_ctx.error(
                         f"Test {test_idx}: test collection output '{name}' does not correspond to a 'output_collection' output, but a '{corresponding_output.tag}'",
+                        linter=cls.name(),
                         node=output,
                     )
 
@@ -265,6 +285,7 @@ class TestsOutputCompareAttrib(Linter):
                     if attrib in output.attrib and compare not in COMPARE_COMPATIBILITY[attrib]:
                         lint_ctx.error(
                             f'Test {test_idx}: Attribute {attrib} is incompatible with compare="{compare}".',
+                            linter=cls.name(),
                             node=output,
                         )
 
@@ -298,6 +319,7 @@ class TestsOutputCheckDiscovered(Linter):
                 if "count" not in output.attrib and output.find("./discovered_dataset") is None:
                     lint_ctx.error(
                         f"Test {test_idx}: test output '{name}' must have a 'count' attribute and/or 'discovered_dataset' children",
+                        linter=cls.name(),
                         node=output,
                     )
 
@@ -330,6 +352,7 @@ class TestsOutputCollectionCheckDiscovered(Linter):
                 if "count" not in output.attrib and output.find("./element") is None:
                     lint_ctx.error(
                         f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",
+                        linter=cls.name(),
                         node=output,
                     )
 
@@ -362,6 +385,7 @@ class TestsOutputCollectionCheckDiscoveredNested(Linter):
                     if nested_elements is None and element_with_count is None:
                         lint_ctx.error(
                             f"Test {test_idx}: test collection '{name}' must contain nested 'element' tags and/or element children with a 'count' attribute",
+                            linter=cls.name(),
                             node=output,
                         )
 
@@ -379,7 +403,11 @@ class TestsOutputFailing(Linter):
             if not asbool(test.attrib.get("expect_failure", False)):
                 continue
             if test.find("output") is not None or test.find("output_collection") is not None:
-                lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
+                lint_ctx.error(
+                    f"Test {test_idx}: Cannot specify outputs in a test expecting failure.",
+                    linter=cls.name(),
+                    node=test,
+                )
 
 
 class TestsExpectNumOutputsFailing(Linter):
@@ -399,6 +427,7 @@ class TestsExpectNumOutputsFailing(Linter):
             if "expect_num_outputs" in test.attrib:
                 lint_ctx.error(
                     f"Test {test_idx}: Cannot make assumptions on the number of outputs in a test expecting failure.",
+                    linter=cls.name(),
                     node=test,
                 )
 
@@ -412,7 +441,12 @@ class TestsHasExpectations(Linter):
         if not tool_xml:
             return
         tests = tool_xml.findall("./tests/test")
-        _check_and_count_valid(tests, lint_ctx)
+        for test_idx, test in _iter_tests(tests, valid=False):
+            lint_ctx.warn(
+                f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.",
+                linter=cls.name(),
+                node=test,
+            )
 
 
 class TestsNoValid(Linter):
@@ -429,9 +463,9 @@ class TestsNoValid(Linter):
         tests = tool_xml.findall("./tests/test")
         if not tests:
             return
-        num_valid_tests = _check_and_count_valid(tests, None)
+        num_valid_tests = len(list(_iter_tests(tests, valid=True)))
         if num_valid_tests or is_datasource(tool_xml):
-            lint_ctx.valid(f"{num_valid_tests} test(s) found.", node=general_node)
+            lint_ctx.valid(f"{num_valid_tests} test(s) found.", linter=cls.name(), node=general_node)
 
 
 class TestsValid(Linter):
@@ -448,33 +482,25 @@ class TestsValid(Linter):
         tests = tool_xml.findall("./tests/test")
         if not tests:
             return
-        num_valid_tests = _check_and_count_valid(tests, None)
+        num_valid_tests = len(list(_iter_tests(tests, valid=True)))
         if not (num_valid_tests or is_datasource(tool_xml)):
-            lint_ctx.warn("No valid test(s) found.", node=general_node)
+            lint_ctx.warn("No valid test(s) found.", linter=cls.name(), node=general_node)
 
 
-def _check_and_count_valid(tests: List["Element"], lint_ctx: Optional["LintContext"] = None):
-    num_valid = 0
+def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
-        valid = False
-        valid |= bool(set(test.attrib) & set(("expect_failure", "expect_exit_code", "expect_num_outputs")))
+        is_valid = False
+        is_valid |= bool(set(test.attrib) & set(("expect_failure", "expect_exit_code", "expect_num_outputs")))
         for ta in ("assert_stdout", "assert_stderr", "assert_command"):
             if test.find(ta) is not None:
-                valid = True
+                is_valid = True
         found_output_test = test.find("output") is not None or test.find("output_collection") is not None
         if asbool(test.attrib.get("expect_failure", False)):
             if found_output_test or "expect_num_outputs" in test.attrib:
                 continue
-        valid |= found_output_test
-        if not valid:
-            if lint_ctx:
-                lint_ctx.warn(
-                    f"Test {test_idx}: No outputs or expectations defined for tests, this test is likely invalid.",
-                    node=test,
-                )
-        else:
-            num_valid += 1
-    return num_valid
+        is_valid |= found_output_test
+        if is_valid == valid:
+            yield (test_idx, test)
 
 
 def _collect_output_names(tool_xml):

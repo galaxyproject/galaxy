@@ -93,15 +93,23 @@ class Linter(ABC):
         """
         pass
 
+    @classmethod
+    def name(cls) -> str:
+        """
+        get the linter name
+        """
+        return cls.__name__
+
 
 class LintMessage:
     """
     a message from the linter
     """
 
-    def __init__(self, level: str, message: str, **kwargs):
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, **kwargs):
         self.level = level
         self.message = message
+        self.linter = linter
 
     def __eq__(self, other) -> bool:
         """
@@ -118,15 +126,19 @@ class LintMessage:
         return False
 
     def __str__(self) -> str:
-        return f".. {self.level.upper()}: {self.message}"
+        if self.linter:
+            linter = f" ({self.linter})"
+        else:
+            linter = ""
+        return f".. {self.level.upper()}{linter}: {self.message}"
 
     def __repr__(self) -> str:
         return f"LintMessage({self.message})"
 
 
 class XMLLintMessageLine(LintMessage):
-    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
-        super().__init__(level, message)
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[etree.Element] = None):
+        super().__init__(level, message, linter)
         self.line = None
         if node is not None:
             self.line = node.sourceline
@@ -141,8 +153,8 @@ class XMLLintMessageLine(LintMessage):
 
 
 class XMLLintMessageXPath(LintMessage):
-    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
-        super().__init__(level, message)
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[etree.Element] = None):
+        super().__init__(level, message, linter)
         self.xpath = None
         if node is not None:
             tool_xml = node.getroottree()
@@ -242,22 +254,22 @@ class LintContext:
     def error_messages(self) -> List[LintMessage]:
         return [x for x in self.message_list if x.level == "error"]
 
-    def __handle_message(self, level: str, message: str, *args, **kwargs) -> None:
+    def __handle_message(self, level: str, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
         if args:
             message = message % args
-        self.message_list.append(self.lint_message_class(level=level, message=message, **kwargs))
+        self.message_list.append(self.lint_message_class(level=level, message=message, linter=linter, **kwargs))
 
-    def valid(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("check", message, *args, **kwargs)
+    def valid(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("check", message, linter, *args, **kwargs)
 
-    def info(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("info", message, *args, **kwargs)
+    def info(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("info", message, linter, *args, **kwargs)
 
-    def error(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("error", message, *args, **kwargs)
+    def error(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("error", message, linter, *args, **kwargs)
 
-    def warn(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("warning", message, *args, **kwargs)
+    def warn(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("warning", message, linter, *args, **kwargs)
 
     def failed(self, fail_level: Union[LintLevel, str]) -> bool:
         if isinstance(fail_level, str):

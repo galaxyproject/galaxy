@@ -26,7 +26,11 @@ class OutputsMissing(Linter):
         if tool_node is None:
             tool_node = tool_xml.getroot()
         if len(tool_xml.findall("./outputs")) == 0:
-            lint_ctx.warn("Tool contains no outputs section, most tools should produce outputs.", node=tool_node)
+            lint_ctx.warn(
+                "Tool contains no outputs section, most tools should produce outputs.",
+                linter=cls.name(),
+                node=tool_node,
+            )
 
 
 class OutputsOutput(Linter):
@@ -37,7 +41,9 @@ class OutputsOutput(Linter):
             return
         output = tool_xml.find("./outputs/output")
         if output is not None:
-            lint_ctx.warn("Avoid the use of 'output' and replace by 'data' or 'collection'", node=output)
+            lint_ctx.warn(
+                "Avoid the use of 'output' and replace by 'data' or 'collection'", linter=cls.name(), node=output
+            )
 
 
 class OutputsNameInvalidCheetah(Linter):
@@ -49,7 +55,9 @@ class OutputsNameInvalidCheetah(Linter):
         for output in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]"):
             if not is_valid_cheetah_placeholder(output.attrib["name"]):
                 lint_ctx.warn(
-                    f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.', node=output
+                    f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.',
+                    linter=cls.name(),
+                    node=output,
                 )
 
 
@@ -63,7 +71,7 @@ class OutputsNameDuplicated(Linter):
         for output in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]"):
             name = output.attrib["name"]
             if name in names:
-                lint_ctx.error(f"Tool output [{name}] has duplicated name", node=output)
+                lint_ctx.error(f"Tool output [{name}] has duplicated name", linter=cls.name(), node=output)
             names.add(name)
 
 
@@ -80,6 +88,7 @@ class OutputsLabelDuplicatedFilter(Linter):
             if label in labels and output.find(".//filter") is not None:
                 lint_ctx.warn(
                     f"Tool output [{name}] uses duplicated label '{label}', double check if filters imply disjoint cases",
+                    linter=cls.name(),
                     node=output,
                 )
             labels.add(label)
@@ -96,7 +105,7 @@ class OutputsLabelDuplicatedNoFilter(Linter):
             name = output.attrib.get("name", "")
             label = output.attrib.get("label", "${tool.name} on ${on_string}")
             if label in labels and output.find(".//filter") is None:
-                lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
+                lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", linter=cls.name(), node=output)
             labels.add(label)
 
 
@@ -108,7 +117,7 @@ class OutputsCollectionType(Linter):
             return
         for output in tool_xml.findall("./outputs/collection"):
             if "type" not in output.attrib:
-                lint_ctx.warn("Collection output with undefined 'type' found.", node=output)
+                lint_ctx.warn("Collection output with undefined 'type' found.", linter=cls.name(), node=output)
 
 
 class OutputsNumber(Linter):
@@ -121,7 +130,7 @@ class OutputsNumber(Linter):
         if len(outputs) == 0:
             return
         num_outputs = len(outputs[0].findall("./data")) + len(outputs[0].findall("./collection"))
-        lint_ctx.info(f"{num_outputs} outputs found.", node=outputs[0])
+        lint_ctx.info(f"{num_outputs} outputs found.", linter=cls.name(), node=outputs[0])
 
 
 class OutputsFormatInput(Linter):
@@ -130,9 +139,9 @@ class OutputsFormatInput(Linter):
         def _report(output: "Element"):
             message = f"Using format='input' on {output.tag} is deprecated. Use the format_source attribute."
             if Version(str(profile)) <= Version("16.01"):
-                lint_ctx.warn(message, node=output)
+                lint_ctx.warn(message, linter=cls.name(), node=output)
             else:
-                lint_ctx.error(message, node=output)
+                lint_ctx.error(message, linter=cls.name(), node=output)
 
         profile = tool_source.parse_profile()
         tool_xml = getattr(tool_source, "xml_tree", None)
@@ -174,6 +183,7 @@ class OutputsFormat(Linter):
             if not format_set:
                 lint_ctx.warn(
                     f"Tool {output.tag} output {output.attrib.get('name', 'with missing name')} doesn't define an output format.",
+                    linter=cls.name(),
                     node=output,
                 )
 
@@ -185,6 +195,7 @@ class OutputsFormatSourceIncomp(Linter):
             if "format_source" in node.attrib and ("ext" in node.attrib or "format" in node.attrib):
                 lint_ctx.warn(
                     f"Tool {node.tag} output '{node.attrib.get('name', 'with missing name')}' should use either format_source or format/ext",
+                    linter=cls.name(),
                     node=node,
                 )
 

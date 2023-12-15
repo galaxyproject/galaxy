@@ -1610,6 +1610,7 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
 
 
 def test_outputs_duplicated_name_label(lint_ctx):
+    """ """
     tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
     run_lint_module(lint_ctx, outputs, tool_source)
     assert "4 outputs found." in lint_ctx.info_messages
@@ -1909,6 +1910,7 @@ COMPLETE = """<tool id="id" name="name">
                 <option value="a">a</option>
             </param>
         </xml>
+        <template name="a_template">blah fasel</template>
     </macros>
     <inputs>
         <expand macro="test_macro"/>
@@ -1950,12 +1952,22 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
     lint_tool_source_with(lint_ctx, tool_source)
 
     asserts = (
-        ("Select parameter [select] has multiple options with the same value", 5, "/tool/inputs/param[1]"),
-        ("Found param input with no name specified.", 13, "/tool/inputs/param[2]"),
-        ("Invalid XML: Element 'param': The attribute 'type' is required but missing.", 3, "/tool/inputs/param[3]"),
+        (
+            "Select parameter [select] has multiple options with the same value",
+            5,
+            "/tool/inputs/param[1]",
+            "InputsSelectOptionDuplicateValue",
+        ),
+        ("Found param input with no name specified.", 14, "/tool/inputs/param[2]", "InputsName"),
+        (
+            "Invalid XML: Element 'param': The attribute 'type' is required but missing.",
+            3,
+            "/tool/inputs/param[3]",
+            "XSD",
+        ),
     )
     for a in asserts:
-        message, line, xpath = a
+        message, line, xpath, linter = a
         # check message + path combinations
         # found = set([(lint_message.message, lint_message.xpath) for lint_message in lint_ctx_xpath.message_list])
         # path_asserts = set([(a[0], a[2]) for a in asserts])
@@ -1967,12 +1979,14 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
             assert (
                 lint_message.xpath == xpath
             ), f"Assumed xpath {xpath}; found xpath {lint_message.xpath} for: {message}"
+            assert lint_message.linter == linter
         assert found, f"Did not find {message}"
         for lint_message in lint_ctx.message_list:
             if lint_message.message != message:
                 continue
             found = True
             assert lint_message.line == line, f"Assumed line {line}; found line {lint_message.line} for: {message}"
+            assert lint_message.linter == linter
         assert found, f"Did not find {message}"
 
 

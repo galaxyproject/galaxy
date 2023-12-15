@@ -73,7 +73,9 @@ class XMLOrder(Linter):
             if last_key:
                 if last_key > key:
                     lint_ctx.warn(
-                        f"Best practice violation [{tag}] elements should come before [{last_tag}]", node=elem
+                        f"Best practice violation [{tag}] elements should come before [{last_tag}]",
+                        linter=cls.name(),
+                        node=elem,
                     )
             last_tag = tag
             last_key = key

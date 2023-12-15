@@ -28,6 +28,7 @@ class StdIOAbsenceLegacy(Linter):
             if Version(tool_source.parse_profile()) <= Version("16.01"):
                 lint_ctx.info(
                     "No stdio definition found, tool indicates error conditions with output written to stderr.",
+                    linter=cls.name(),
                     node=tool_node,
                 )
 
@@ -49,6 +50,7 @@ class StdIOAbsence(Linter):
             if Version(tool_source.parse_profile()) > Version("16.01"):
                 lint_ctx.info(
                     "No stdio definition found, tool indicates error conditions with non-zero exit codes.",
+                    linter=cls.name(),
                     node=tool_node,
                 )
 
@@ -74,4 +76,6 @@ class StdIORegex(Linter):
                     try:
                         re.compile(match)
                     except Exception as e:
-                        lint_ctx.error(f"Match '{match}' is no valid regular expression: {str(e)}", node=child)
+                        lint_ctx.error(
+                            f"Match '{match}' is no valid regular expression: {str(e)}", linter=cls.name(), node=child
+                        )
