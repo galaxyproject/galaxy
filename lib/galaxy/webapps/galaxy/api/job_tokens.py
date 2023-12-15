@@ -22,7 +22,6 @@ log = logging.getLogger(__name__)
 router = Router(tags=["remote files"])
 
 
-@router.cbv
 class FastAPIJobTokens:
     @router.get(
         "/api/jobs/{job_id}/oidc-tokens",
@@ -34,7 +33,6 @@ class FastAPIJobTokens:
         response_class=PlainTextResponse,
     )
     def get_token(
-        self,
         job_id: EncodedDatabaseIdField,
         job_key: str = Query(
             description=(
@@ -46,24 +44,25 @@ class FastAPIJobTokens:
         ),
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> str:
-        job = self.__authorize_job_access(trans, job_id, job_key)
+        job = _authorize_job_access(trans, job_id, job_key)
         trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, job.user)  # type: ignore[attr-defined]
         tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
         return tokens["id"]
 
-    def __authorize_job_access(self, trans, encoded_job_id, job_key):
-        session = trans.sa_session
-        job_id = trans.security.decode_id(encoded_job_id)
-        job = session.get(Job, job_id)
-        secret = job.destination_params.get("job_secret_base", "jobs_token")
 
-        job_key_internal = trans.security.encode_id(job_id, kind=secret)
-        if not util.safe_str_cmp(job_key_internal, job_key):
-            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
+def _authorize_job_access(trans, encoded_job_id, job_key):
+    session = trans.sa_session
+    job_id = trans.security.decode_id(encoded_job_id)
+    job = session.get(Job, job_id)
+    secret = job.destination_params.get("job_secret_base", "jobs_token")
 
-        # Verify job is active
-        job = session.get(Job, job_id)
-        if job.finished:
-            error_message = "Attempting to get oidc token for a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
-        return job
+    job_key_internal = trans.security.encode_id(job_id, kind=secret)
+    if not util.safe_str_cmp(job_key_internal, job_key):
+        raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
+
+    # Verify job is active
+    job = session.get(Job, job_id)
+    if job.finished:
+        error_message = "Attempting to get oidc token for a job that has already completed."
+        raise exceptions.ItemAccessibilityException(error_message)
+    return job

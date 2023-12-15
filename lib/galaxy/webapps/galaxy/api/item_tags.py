@@ -28,8 +28,6 @@ router = Router()
 
 
 class FastAPIItemTags:
-    manager: ItemTagsManager = depends(ItemTagsManager)
-
     @classmethod
     def create_class(cls, prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params):
         class Temp(cls):
@@ -129,7 +127,7 @@ for prefix, tagged_item in prefixes.items():
             ]
         }
 
-    router.cbv(FastAPIItemTags.create_class(prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params))
+    FastAPIItemTags.create_class(prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params)
 
 
 # TODO: Visualization and Pages once APIs for those are available
