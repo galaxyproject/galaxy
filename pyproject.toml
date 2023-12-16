@@ -58,7 +58,6 @@ docutils = "!=0.17, !=0.17.1"
 dparse = "*"
 edam-ontology = "*"
 fastapi = ">=0.71.0, !=0.89.0, <0.99"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
-fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
