@@ -405,22 +405,19 @@ UninstalledQueryParam: Optional[bool] = Query(
 )
 
 
-@router.cbv
 class FastAPIToolShedRepositories:
-    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
-
     @router.get(
         "/api/tool_shed_repositories",
         summary="Lists installed tool shed repositories.",
         response_description="A list of installed tool shed repository objects.",
     )
     def index(
-        self,
         name: Optional[str] = NameQueryParam,
         owner: Optional[str] = OwnerQueryParam,
         changeset: Optional[str] = ChangesetQueryParam,
         deleted: Optional[bool] = DeletedQueryParam,
         uninstalled: Optional[bool] = UninstalledQueryParam,
+        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
     ) -> List[InstalledToolShedRepository]:
         request = InstalledToolShedRepositoryIndexRequest(
             name=name,
@@ -429,7 +426,7 @@ class FastAPIToolShedRepositories:
             deleted=deleted,
             uninstalled=uninstalled,
         )
-        return self.service.index(request)
+        return service.index(request)
 
     @router.get(
         "/api/tool_shed_repositories/check_for_updates",
@@ -437,15 +434,18 @@ class FastAPIToolShedRepositories:
         response_description="A description of the state and updates message.",
         require_admin=True,
     )
-    def check_for_updates(self, id: Optional[DecodedDatabaseIdField] = None) -> CheckForUpdatesResponse:
-        return self.service.check_for_updates(id and int(id))
+    def check_for_updates(
+        id: Optional[DecodedDatabaseIdField] = None,
+        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
+    ) -> CheckForUpdatesResponse:
+        return service.check_for_updates(id and int(id))
 
     @router.get(
         "/api/tool_shed_repositories/{id}",
         summary="Show installed tool shed repository.",
     )
     def show(
-        self,
         id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
+        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
     ) -> InstalledToolShedRepository:
-        return self.service.show(id)
+        return service.show(id)
