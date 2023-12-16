@@ -73,13 +73,14 @@ router = Router(tags=["tools"])
 FetchDataForm = as_form(FetchDataFormPayload)
 
 
-@router.cbv
 class FetchTools:
-    service: ToolsService = depends(ToolsService)
-
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
-        return self.service.create_fetch(trans, payload)
+    async def fetch_json(
+        payload: FetchDataPayload = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        service: ToolsService = depends(ToolsService),
+    ):
+        return service.create_fetch(trans, payload)
 
     @router.post(
         "/api/tools/fetch",
@@ -87,11 +88,11 @@ class FetchTools:
         route_class_override=FormDataApiRoute,
     )
     async def fetch_form(
-        self,
         request: Request,
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        service: ToolsService = depends(ToolsService),
     ):
         files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
 
@@ -101,7 +102,7 @@ class FetchTools:
             for value in data.values():
                 if isinstance(value, StarletteUploadFile):
                     files2.append(value)
-        return self.service.create_fetch(trans, payload, files2)
+        return service.create_fetch(trans, payload, files2)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
