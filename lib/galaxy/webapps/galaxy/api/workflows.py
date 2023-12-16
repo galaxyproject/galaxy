@@ -1198,17 +1198,13 @@ SkipStepCountsQueryParam: bool = Query(
 )
 
 
-@router.cbv
 class FastAPIWorkflows:
-    service: WorkflowsService = depends(WorkflowsService)
-
     @router.get(
         "/api/workflows",
         summary="Lists stored workflows viewable by the user.",
         response_description="A list with summary stored workflow information per viewable entry.",
     )
     def index(
-        self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         show_deleted: bool = DeletedQueryParam,
@@ -1222,6 +1218,7 @@ class FastAPIWorkflows:
         offset: Optional[int] = OffsetQueryParam,
         search: Optional[str] = SearchQueryParam,
         skip_step_counts: bool = SkipStepCountsQueryParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> List[Dict[str, Any]]:
         """Lists stored workflows viewable by the user."""
         payload = WorkflowIndexPayload.construct(
@@ -1237,7 +1234,7 @@ class FastAPIWorkflows:
             search=search,
             skip_step_counts=skip_step_counts,
         )
-        workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
+        workflows, total_matches = service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return workflows
 
@@ -1246,73 +1243,73 @@ class FastAPIWorkflows:
         summary="Get the current sharing status of the given item.",
     )
     def sharing(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> SharingStatus:
         """Return the sharing status of the item."""
-        return self.service.shareable_service.sharing(trans, id)
+        return service.shareable_service.sharing(trans, id)
 
     @router.put(
         "/api/workflows/{id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.enable_link_access(trans, id)
+        return service.shareable_service.enable_link_access(trans, id)
 
     @router.put(
         "/api/workflows/{id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.disable_link_access(trans, id)
+        return service.shareable_service.disable_link_access(trans, id)
 
     @router.put(
         "/api/workflows/{id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
-        return self.service.shareable_service.publish(trans, id)
+        return service.shareable_service.publish(trans, id)
 
     @router.put(
         "/api/workflows/{id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
-        return self.service.shareable_service.unpublish(trans, id)
+        return service.shareable_service.unpublish(trans, id)
 
     @router.put(
         "/api/workflows/{id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
+        service: WorkflowsService = depends(WorkflowsService),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with_users(trans, id, payload)
+        return service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
         "/api/workflows/{id}/slug",
@@ -1320,13 +1317,13 @@ class FastAPIWorkflows:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_slug(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
+        service: WorkflowsService = depends(WorkflowsService),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
-        self.service.shareable_service.set_slug(trans, id, payload)
+        service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -1334,11 +1331,11 @@ class FastAPIWorkflows:
         summary="Add the deleted flag to a workflow.",
     )
     def delete_workflow(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ):
-        self.service.delete(trans, workflow_id)
+        service.delete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post(
@@ -1346,11 +1343,11 @@ class FastAPIWorkflows:
         summary="Remove the deleted flag from a workflow.",
     )
     def undelete_workflow(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ):
-        self.service.undelete(trans, workflow_id)
+        service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -1358,25 +1355,25 @@ class FastAPIWorkflows:
         summary="List all versions of a workflow.",
     )
     def show_versions(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         instance: Optional[bool] = InstanceQueryParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ):
-        return self.service.get_versions(trans, workflow_id, instance)
+        return service.get_versions(trans, workflow_id, instance)
 
     @router.get(
         "/api/workflows/menu",
         summary="Get workflows present in the tools panel.",
     )
     def get_workflow_menu(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         show_deleted: Optional[bool] = DeletedQueryParam,
         show_hidden: Optional[bool] = HiddenQueryParam,
         missing_tools: Optional[bool] = MissingToolsQueryParam,
         show_published: Optional[bool] = ShowPublishedQueryParam,
         show_shared: Optional[bool] = ShowSharedQueryParam,
+        service: WorkflowsService = depends(WorkflowsService),
     ):
         payload = WorkflowIndexPayload(
             show_published=show_published,
@@ -1385,27 +1382,24 @@ class FastAPIWorkflows:
             show_shared=show_shared,
             missing_tools=missing_tools,
         )
-        return self.service.get_workflow_menu(
+        return service.get_workflow_menu(
             trans,
             payload=payload,
         )
 
 
-@router.cbv
 class FastAPIInvocations:
-    invocations_service: InvocationsService = depends(InvocationsService)
-
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
         summary="Prepare a workflow invocation export-style download.",
     )
     def prepare_store_download(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: PrepareStoreDownloadPayload = Body(...),
+        invocations_service: InvocationsService = depends(InvocationsService),
     ) -> AsyncFile:
-        return self.invocations_service.prepare_store_download(
+        return invocations_service.prepare_store_download(
             trans,
             invocation_id,
             payload,
@@ -1416,12 +1410,12 @@ class FastAPIInvocations:
         summary="Prepare a workflow invocation export-style download and write to supplied URI.",
     )
     def write_store(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: WriteInvocationStoreToPayload = Body(...),
+        invocations_service: InvocationsService = depends(InvocationsService),
     ) -> AsyncTaskResultSummary:
-        rval = self.invocations_service.write_store(
+        rval = invocations_service.write_store(
             trans,
             invocation_id,
             payload,
@@ -1435,10 +1429,10 @@ class FastAPIInvocations:
         deprecated=True,
     )
     def export_invocation_bco(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         merge_history_metadata: Optional[bool] = Query(default=False),
+        invocations_service: InvocationsService = depends(InvocationsService),
     ):
         """
         The BioCompute Object endpoints are in beta - important details such
@@ -1458,7 +1452,7 @@ class FastAPIInvocations:
 
         3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
         """
-        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        bco = _deprecated_generate_bco(trans, invocation_id, merge_history_metadata, invocations_service)
         return json.loads(bco)
 
     # TODO: remove this endpoint after 23.1 release
@@ -1469,10 +1463,10 @@ class FastAPIInvocations:
         deprecated=True,
     )
     def download_invocation_bco(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         merge_history_metadata: Optional[bool] = Query(default=False),
+        invocations_service: InvocationsService = depends(InvocationsService),
     ):
         """
         The BioCompute Object endpoints are in beta - important details such
@@ -1492,7 +1486,7 @@ class FastAPIInvocations:
 
         3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
         """
-        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        bco = _deprecated_generate_bco(trans, invocation_id, merge_history_metadata, invocations_service)
         return StreamingResponse(
             content=BytesIO(bco),
             media_type="application/json",
@@ -1502,13 +1496,17 @@ class FastAPIInvocations:
             },
         )
 
-    # TODO: remove this after 23.1 release
-    def _deprecated_generate_bco(
-        self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
-    ):
-        export_options = BcoExportOptions(
-            galaxy_url=trans.request.url_path,
-            galaxy_version=VERSION,
-            merge_history_metadata=merge_history_metadata or False,
-        )
-        return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
+
+# TODO: remove this after 23.1 release
+def _deprecated_generate_bco(
+    trans,
+    invocation_id: DecodedDatabaseIdField,
+    merge_history_metadata: Optional[bool],
+    invocations_service: InvocationsService,
+):
+    export_options = BcoExportOptions(
+        galaxy_url=trans.request.url_path,
+        galaxy_version=VERSION,
+        merge_history_metadata=merge_history_metadata or False,
+    )
+    return invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
