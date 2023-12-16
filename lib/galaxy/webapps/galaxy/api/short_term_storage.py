@@ -17,18 +17,18 @@ from . import (
 router = Router(tags=["short_term_storage"])
 
 
-@router.cbv
 class FastAPIShortTermStorage:
-    short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor)  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
-
     @router.get(
         "/api/short_term_storage/{storage_request_id}/ready",
         summary="Determine if specified storage request ID is ready for download.",
         response_description="Boolean indicating if the storage is ready.",
     )
-    def is_ready(self, storage_request_id: UUID) -> bool:
-        storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)
-        return self.short_term_storage_monitor.is_ready(storage_target)
+    def is_ready(
+        storage_request_id: UUID,
+        short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor),  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+    ) -> bool:
+        storage_target = short_term_storage_monitor.recover_target(storage_request_id)
+        return short_term_storage_monitor.is_ready(storage_target)
 
     @router.get(
         "/api/short_term_storage/{storage_request_id}",
@@ -44,9 +44,12 @@ class FastAPIShortTermStorage:
             },
         },
     )
-    def serve(self, storage_request_id: UUID):
-        storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)
-        serve_info = self.short_term_storage_monitor.get_serve_info(storage_target)
+    def serve(
+        storage_request_id: UUID,
+        short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor),  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+    ):
+        storage_target = short_term_storage_monitor.recover_target(storage_request_id)
+        serve_info = short_term_storage_monitor.get_serve_info(storage_target)
         if isinstance(serve_info, ShortTermStorageServeCompletedInformation):
             return GalaxyFileResponse(
                 path=serve_info.target.path,
