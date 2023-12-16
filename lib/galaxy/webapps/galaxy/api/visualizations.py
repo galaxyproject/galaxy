@@ -109,16 +109,12 @@ VisualizationIdPathParam: DecodedDatabaseIdField = Path(
 )
 
 
-@router.cbv
 class FastAPIVisualizations:
-    service: VisualizationsService = depends(VisualizationsService)
-
     @router.get(
         "/api/visualizations",
         summary="Returns visualizations for the current user.",
     )
     async def index(
-        self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
@@ -131,6 +127,7 @@ class FastAPIVisualizations:
         sort_by: VisualizationSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> VisualizationSummaryList:
         payload = VisualizationIndexQueryPayload.construct(
             deleted=deleted,
@@ -144,7 +141,7 @@ class FastAPIVisualizations:
             offset=offset,
             search=search,
         )
-        entries, total_matches = self.service.index(trans, payload, include_total_count=True)
+        entries, total_matches = service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return entries
 
@@ -153,73 +150,73 @@ class FastAPIVisualizations:
         summary="Get the current sharing status of the given Visualization.",
     )
     def sharing(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> SharingStatus:
         """Return the sharing status of the item."""
-        return self.service.shareable_service.sharing(trans, id)
+        return service.shareable_service.sharing(trans, id)
 
     @router.put(
         "/api/visualizations/{id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.enable_link_access(trans, id)
+        return service.shareable_service.enable_link_access(trans, id)
 
     @router.put(
         "/api/visualizations/{id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.disable_link_access(trans, id)
+        return service.shareable_service.disable_link_access(trans, id)
 
     @router.put(
         "/api/visualizations/{id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
-        return self.service.shareable_service.publish(trans, id)
+        return service.shareable_service.publish(trans, id)
 
     @router.put(
         "/api/visualizations/{id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
-        return self.service.shareable_service.unpublish(trans, id)
+        return service.shareable_service.unpublish(trans, id)
 
     @router.put(
         "/api/visualizations/{id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: ShareWithPayload = Body(...),
+        service: VisualizationsService = depends(VisualizationsService),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with_users(trans, id, payload)
+        return service.shareable_service.share_with_users(trans, id, payload)
 
     @router.put(
         "/api/visualizations/{id}/slug",
@@ -227,13 +224,13 @@ class FastAPIVisualizations:
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_slug(
-        self,
         trans: ProvidesUserContext = DependsOnTrans,
         id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: SetSlugPayload = Body(...),
+        service: VisualizationsService = depends(VisualizationsService),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
-        self.service.shareable_service.set_slug(trans, id, payload)
+        service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
