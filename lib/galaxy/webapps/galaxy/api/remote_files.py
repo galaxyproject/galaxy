@@ -102,61 +102,62 @@ ExcludeKindQueryParam = Query(
 )
 
 
-class FastAPIRemoteFiles:
-    @router.get(
-        "/api/remote_files",
-        summary="Displays remote files available to the user.",
-        response_description="A list with details about the remote files available to the user.",
-    )
-    @router.get(
-        "/api/ftp_files",
-        deprecated=True,
-        summary="Displays remote files available to the user. Please use /api/remote_files instead.",
-    )
-    async def index(
-        user_ctx: ProvidesUserContext = DependsOnTrans,
-        target: str = TargetQueryParam,
-        format: Optional[RemoteFilesFormat] = FormatQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
-        writeable: Optional[bool] = WriteableQueryParam,
-        manager: RemoteFilesManager = depends(RemoteFilesManager),
-    ) -> AnyRemoteFilesListResponse:
-        """Lists all remote files available to the user from different sources."""
-        return manager.index(user_ctx, target, format, recursive, disable, writeable)
+@router.get(
+    "/api/remote_files",
+    summary="Displays remote files available to the user.",
+    response_description="A list with details about the remote files available to the user.",
+)
+@router.get(
+    "/api/ftp_files",
+    deprecated=True,
+    summary="Displays remote files available to the user. Please use /api/remote_files instead.",
+)
+async def index(
+    user_ctx: ProvidesUserContext = DependsOnTrans,
+    target: str = TargetQueryParam,
+    format: Optional[RemoteFilesFormat] = FormatQueryParam,
+    recursive: Optional[bool] = RecursiveQueryParam,
+    disable: Optional[RemoteFilesDisableMode] = DisableModeQueryParam,
+    writeable: Optional[bool] = WriteableQueryParam,
+    manager: RemoteFilesManager = depends(RemoteFilesManager),
+) -> AnyRemoteFilesListResponse:
+    """Lists all remote files available to the user from different sources."""
+    return manager.index(user_ctx, target, format, recursive, disable, writeable)
 
-    @router.get(
-        "/api/remote_files/plugins",
-        summary="Display plugin information for each of the gxfiles:// URI targets available.",
-        response_description="A list with details about each plugin.",
-    )
-    async def plugins(
-        user_ctx: ProvidesUserContext = DependsOnTrans,
-        browsable_only: Optional[bool] = BrowsableQueryParam,
-        include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
-        exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
-        manager: RemoteFilesManager = depends(RemoteFilesManager),
-    ) -> FilesSourcePluginList:
-        """Display plugin information for each of the gxfiles:// URI targets available."""
-        return manager.get_files_source_plugins(
-            user_ctx,
-            browsable_only,
-            set(include_kind) if include_kind else None,
-            set(exclude_kind) if exclude_kind else None,
-        )
 
-    @router.post(
-        "/api/remote_files",
-        summary="Creates a new entry (directory/record) on the remote files source.",
+@router.get(
+    "/api/remote_files/plugins",
+    summary="Display plugin information for each of the gxfiles:// URI targets available.",
+    response_description="A list with details about each plugin.",
+)
+async def plugins(
+    user_ctx: ProvidesUserContext = DependsOnTrans,
+    browsable_only: Optional[bool] = BrowsableQueryParam,
+    include_kind: Annotated[Optional[List[PluginKind]], IncludeKindQueryParam] = None,
+    exclude_kind: Annotated[Optional[List[PluginKind]], ExcludeKindQueryParam] = None,
+    manager: RemoteFilesManager = depends(RemoteFilesManager),
+) -> FilesSourcePluginList:
+    """Display plugin information for each of the gxfiles:// URI targets available."""
+    return manager.get_files_source_plugins(
+        user_ctx,
+        browsable_only,
+        set(include_kind) if include_kind else None,
+        set(exclude_kind) if exclude_kind else None,
     )
-    async def create_entry(
-        user_ctx: ProvidesUserContext = DependsOnTrans,
-        payload: CreateEntryPayload = Body(
-            ...,
-            title="Entry Data",
-            description="Information about the entry to create. Depends on the target file source.",
-        ),
-        manager: RemoteFilesManager = depends(RemoteFilesManager),
-    ) -> CreatedEntryResponse:
-        """Creates a new entry on the remote files source."""
-        return manager.create_entry(user_ctx, payload)
+
+
+@router.post(
+    "/api/remote_files",
+    summary="Creates a new entry (directory/record) on the remote files source.",
+)
+async def create_entry(
+    user_ctx: ProvidesUserContext = DependsOnTrans,
+    payload: CreateEntryPayload = Body(
+        ...,
+        title="Entry Data",
+        description="Information about the entry to create. Depends on the target file source.",
+    ),
+    manager: RemoteFilesManager = depends(RemoteFilesManager),
+) -> CreatedEntryResponse:
+    """Creates a new entry on the remote files source."""
+    return manager.create_entry(user_ctx, payload)

@@ -382,606 +382,628 @@ def parse_index_jobs_summary_params(
     return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
 
 
-class FastAPIHistoryContents:
-    @router.get(
-        "/api/histories/{history_id}/contents/{type}s",
-        summary="Returns the contents of the given history filtered by type.",
-        operation_id="history_contents__index_typed",
+@router.get(
+    "/api/histories/{history_id}/contents/{type}s",
+    summary="Returns the contents of the given history filtered by type.",
+    operation_id="history_contents__index_typed",
+)
+def index_typed(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
+    type: HistoryContentType = ContentTypePathParam,
+    legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    accept: str = Header(default="application/json", include_in_schema=False),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
+    """
+    Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
+
+    - The contents can be filtered and queried using the appropriate parameters.
+    - The amount of information returned for each item can be customized.
+
+    **Note**: Anonymous users are allowed to get their current history contents.
+    """
+    legacy_params.types = [type]
+    items = service.index(
+        trans,
+        history_id,
+        index_params,
+        legacy_params,
+        serialization_params,
+        filter_query_params,
+        accept,
     )
-    def index_typed(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
-        type: HistoryContentType = ContentTypePathParam,
-        legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        accept: str = Header(default="application/json", include_in_schema=False),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
-        """
-        Return a list of either `HDA`/`HDCA` data for the history with the given ``ID``.
+    return items
 
-        - The contents can be filtered and queried using the appropriate parameters.
-        - The amount of information returned for each item can be customized.
 
-        **Note**: Anonymous users are allowed to get their current history contents.
-        """
-        legacy_params.types = [type]
-        items = service.index(
-            trans,
-            history_id,
-            index_params,
-            legacy_params,
-            serialization_params,
-            filter_query_params,
-            accept,
-        )
-        return items
-
-    @router.get(
-        "/api/histories/{history_id}/contents",
-        name="history_contents",
-        summary="Returns the contents of the given history.",
-        responses={
-            200: {
-                "description": ("The contents of the history that match the query."),
-                "content": {
-                    "application/json": {
-                        "schema": {  # HistoryContentsResult.schema(),
-                            "ref": "#/components/schemas/HistoryContentsResult"
-                        },
-                    },
-                    HistoryContentsWithStatsResult.__accept_type__: {
-                        "schema": {  # HistoryContentsWithStatsResult.schema(),
-                            "ref": "#/components/schemas/HistoryContentsWithStatsResult"
-                        },
+@router.get(
+    "/api/histories/{history_id}/contents",
+    name="history_contents",
+    summary="Returns the contents of the given history.",
+    responses={
+        200: {
+            "description": ("The contents of the history that match the query."),
+            "content": {
+                "application/json": {
+                    "schema": {"ref": "#/components/schemas/HistoryContentsResult"},  # HistoryContentsResult.schema(),
+                },
+                HistoryContentsWithStatsResult.__accept_type__: {
+                    "schema": {  # HistoryContentsWithStatsResult.schema(),
+                        "ref": "#/components/schemas/HistoryContentsWithStatsResult"
                     },
                 },
             },
         },
-        operation_id="history_contents__index",
+    },
+    operation_id="history_contents__index",
+)
+def index(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
+    type: Optional[str] = Query(default=None, include_in_schema=False, deprecated=True),
+    legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    accept: str = Header(default="application/json", include_in_schema=False),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
+    """
+    Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
+
+    - The contents can be filtered and queried using the appropriate parameters.
+    - The amount of information returned for each item can be customized.
+
+    **Note**: Anonymous users are allowed to get their current history contents.
+    """
+    if type is not None:
+        legacy_params.types = parse_content_types(type)
+    items = service.index(
+        trans,
+        history_id,
+        index_params,
+        legacy_params,
+        serialization_params,
+        filter_query_params,
+        accept,
     )
-    def index(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        index_params: HistoryContentsIndexParams = Depends(get_index_query_params),
-        type: Optional[str] = Query(default=None, include_in_schema=False, deprecated=True),
-        legacy_params: LegacyHistoryContentsIndexParams = Depends(get_legacy_index_query_params),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        accept: str = Header(default="application/json", include_in_schema=False),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> Union[HistoryContentsResult, HistoryContentsWithStatsResult]:
-        """
-        Return a list of `HDA`/`HDCA` data for the history with the given ``ID``.
+    return items
 
-        - The contents can be filtered and queried using the appropriate parameters.
-        - The amount of information returned for each item can be customized.
 
-        **Note**: Anonymous users are allowed to get their current history contents.
-        """
-        if type is not None:
-            legacy_params.types = parse_content_types(type)
-        items = service.index(
-            trans,
-            history_id,
-            index_params,
-            legacy_params,
-            serialization_params,
-            filter_query_params,
-            accept,
-        )
-        return items
+@router.get(
+    "/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary",
+    summary="Return detailed information about an `HDA` or `HDCAs` jobs.",
+)
+def show_jobs_summary(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AnyJobStateSummary:
+    """Return detailed information about an `HDA` or `HDCAs` jobs.
 
-    @router.get(
-        "/api/histories/{history_id}/contents/{type}s/{id}/jobs_summary",
-        summary="Return detailed information about an `HDA` or `HDCAs` jobs.",
+    **Warning**: We allow anyone to fetch job state information about any object they
+    can guess an encoded ID for - it isn't considered protected data. This keeps
+    polling IDs as part of state calculation for large histories and collections as
+    efficient as possible.
+    """
+    return service.show_jobs_summary(trans, id, contents_type=type)
+
+
+@router.get(
+    "/api/histories/{history_id}/contents/{type}s/{id}",
+    name="history_content_typed",
+    summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
+    operation_id="history_contents__show",
+)
+def show(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    fuzzy_count: Optional[int] = FuzzyCountQueryParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AnyHistoryContentItem:
+    """
+    Return detailed information about an `HDA` or `HDCA` within a history.
+
+    **Note**: Anonymous users are allowed to get their current history contents.
+    """
+    return service.show(
+        trans,
+        id=id,
+        serialization_params=serialization_params,
+        contents_type=type,
+        fuzzy_count=fuzzy_count,
     )
-    def show_jobs_summary(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AnyJobStateSummary:
-        """Return detailed information about an `HDA` or `HDCAs` jobs.
 
-        **Warning**: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-        """
-        return service.show_jobs_summary(trans, id, contents_type=type)
 
-    @router.get(
-        "/api/histories/{history_id}/contents/{type}s/{id}",
-        name="history_content_typed",
-        summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
-        operation_id="history_contents__show",
+@router.get(
+    "/api/histories/{history_id}/contents/{id}",
+    name="history_content",
+    summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
+    deprecated=True,
+    operation_id="history_contents__show_legacy",
+)
+def show_legacy(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    fuzzy_count: Optional[int] = FuzzyCountQueryParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AnyHistoryContentItem:
+    """
+    Return detailed information about an `HDA` or `HDCA` within a history.
+
+    **Note**: Anonymous users are allowed to get their current history contents.
+    """
+    return service.show(
+        trans,
+        id=id,
+        serialization_params=serialization_params,
+        contents_type=type,
+        fuzzy_count=fuzzy_count,
     )
-    def show(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        fuzzy_count: Optional[int] = FuzzyCountQueryParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AnyHistoryContentItem:
-        """
-        Return detailed information about an `HDA` or `HDCA` within a history.
 
-        **Note**: Anonymous users are allowed to get their current history contents.
-        """
-        return service.show(
-            trans,
-            id=id,
-            serialization_params=serialization_params,
-            contents_type=type,
-            fuzzy_count=fuzzy_count,
-        )
 
-    @router.get(
-        "/api/histories/{history_id}/contents/{id}",
-        name="history_content",
-        summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
-        deprecated=True,
-        operation_id="history_contents__show_legacy",
+@router.post(
+    "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store_download",
+    summary="Prepare a dataset or dataset collection for export-style download.",
+)
+def prepare_store_download(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    payload: StoreExportPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AsyncFile:
+    return service.prepare_store_download(
+        trans,
+        id,
+        contents_type=type,
+        payload=payload,
     )
-    def show_legacy(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        fuzzy_count: Optional[int] = FuzzyCountQueryParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AnyHistoryContentItem:
-        """
-        Return detailed information about an `HDA` or `HDCA` within a history.
 
-        **Note**: Anonymous users are allowed to get their current history contents.
-        """
-        return service.show(
-            trans,
-            id=id,
-            serialization_params=serialization_params,
-            contents_type=type,
-            fuzzy_count=fuzzy_count,
-        )
 
-    @router.post(
-        "/api/histories/{history_id}/contents/{type}s/{id}/prepare_store_download",
-        summary="Prepare a dataset or dataset collection for export-style download.",
+@router.post(
+    "/api/histories/{history_id}/contents/{type}s/{id}/write_store",
+    summary="Prepare a dataset or dataset collection for export-style download and write to supplied URI.",
+)
+def write_store(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    payload: WriteStoreToPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AsyncTaskResultSummary:
+    return service.write_store(
+        trans,
+        id,
+        contents_type=type,
+        payload=payload,
     )
-    def prepare_store_download(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        payload: StoreExportPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AsyncFile:
-        return service.prepare_store_download(
-            trans,
-            id,
-            contents_type=type,
-            payload=payload,
-        )
 
-    @router.post(
-        "/api/histories/{history_id}/contents/{type}s/{id}/write_store",
-        summary="Prepare a dataset or dataset collection for export-style download and write to supplied URI.",
-    )
-    def write_store(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        payload: WriteStoreToPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AsyncTaskResultSummary:
-        return service.write_store(
-            trans,
-            id,
-            contents_type=type,
-            payload=payload,
-        )
 
-    @router.get(
-        "/api/histories/{history_id}/jobs_summary",
-        summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
-    )
-    def index_jobs_summary(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> List[AnyJobStateSummary]:
-        """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
+@router.get(
+    "/api/histories/{history_id}/jobs_summary",
+    summary="Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.",
+)
+def index_jobs_summary(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    params: HistoryContentsIndexJobsSummaryParams = Depends(get_index_jobs_summary_params),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> List[AnyJobStateSummary]:
+    """Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
 
-        **Warning**: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-        """
-        return service.index_jobs_summary(trans, params)
+    **Warning**: We allow anyone to fetch job state information about any object they
+    can guess an encoded ID for - it isn't considered protected data. This keeps
+    polling IDs as part of state calculation for large histories and collections as
+    efficient as possible.
+    """
+    return service.index_jobs_summary(trans, params)
 
-    @router.get(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/download",
-        summary="Download the content of a dataset collection as a `zip` archive.",
-        response_class=StreamingResponse,
-        operation_id="history_contents__download_collection",
-    )
-    def download_dataset_collection_history_content(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Path(
-            description="The encoded database identifier of the History.",
-        ),
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """Download the content of a history dataset collection as a `zip` archive
-        while maintaining approximate collection structure.
-        """
-        archive = service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
 
-    @router.get(
-        "/api/dataset_collections/{id}/download",
-        summary="Download the content of a dataset collection as a `zip` archive.",
-        response_class=StreamingResponse,
-        tags=["dataset collections"],
-        operation_id="dataset_collections__download",
-    )
-    def download_dataset_collection(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """Download the content of a history dataset collection as a `zip` archive
-        while maintaining approximate collection structure.
-        """
-        archive = service.get_dataset_collection_archive_for_download(trans, id)
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
+@router.get(
+    "/api/histories/{history_id}/contents/dataset_collections/{id}/download",
+    summary="Download the content of a dataset collection as a `zip` archive.",
+    response_class=StreamingResponse,
+    operation_id="history_contents__download_collection",
+)
+def download_dataset_collection_history_content(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: Optional[DecodedDatabaseIdField] = Path(
+        description="The encoded database identifier of the History.",
+    ),
+    id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """Download the content of a history dataset collection as a `zip` archive
+    while maintaining approximate collection structure.
+    """
+    archive = service.get_dataset_collection_archive_for_download(trans, id)
+    return StreamingResponse(archive.response(), headers=archive.get_headers())
 
-    @router.post(
-        "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
-        summary="Prepare an short term storage object that the collection will be downloaded to.",
-        include_in_schema=False,
-    )
-    @router.post(
-        "/api/dataset_collections/{id}/prepare_download",
-        summary="Prepare an short term storage object that the collection will be downloaded to.",
-        responses={
-            200: {
-                "description": "Short term storage reference for async monitoring of this download.",
-            },
-            501: {"description": "Required asynchronous tasks required for this operation not available."},
+
+@router.get(
+    "/api/dataset_collections/{id}/download",
+    summary="Download the content of a dataset collection as a `zip` archive.",
+    response_class=StreamingResponse,
+    tags=["dataset collections"],
+    operation_id="dataset_collections__download",
+)
+def download_dataset_collection(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """Download the content of a history dataset collection as a `zip` archive
+    while maintaining approximate collection structure.
+    """
+    archive = service.get_dataset_collection_archive_for_download(trans, id)
+    return StreamingResponse(archive.response(), headers=archive.get_headers())
+
+
+@router.post(
+    "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
+    summary="Prepare an short term storage object that the collection will be downloaded to.",
+    include_in_schema=False,
+)
+@router.post(
+    "/api/dataset_collections/{id}/prepare_download",
+    summary="Prepare an short term storage object that the collection will be downloaded to.",
+    responses={
+        200: {
+            "description": "Short term storage reference for async monitoring of this download.",
         },
-        tags=["dataset collections"],
+        501: {"description": "Required asynchronous tasks required for this operation not available."},
+    },
+    tags=["dataset collections"],
+)
+def prepare_collection_download(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AsyncFile:
+    """The history dataset collection will be written as a `zip` archive to the
+    returned short term storage object. Progress tracking this file's creation
+    can be tracked with the short_term_storage API.
+    """
+    return service.prepare_collection_download(trans, id)
+
+
+@router.post(
+    "/api/histories/{history_id}/contents/{type}s",
+    summary="Create a new `HDA` or `HDCA` in the given History.",
+    operation_id="history_contents__create_typed",
+)
+def create_typed(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    payload: CreateHistoryContentPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    """Create a new `HDA` or `HDCA` in the given History."""
+    return _create(trans, history_id, type, serialization_params, payload, service)
+
+
+@router.post(
+    "/api/histories/{history_id}/contents",
+    summary="Create a new `HDA` or `HDCA` in the given History.",
+    deprecated=True,
+    operation_id="history_contents__create",
+)
+def create(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    payload: CreateHistoryContentPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
+    """Create a new `HDA` or `HDCA` in the given History."""
+    return _create(trans, history_id, type, serialization_params, payload, service)
+
+
+@router.put(
+    "/api/histories/{history_id}/contents/{dataset_id}/permissions",
+    summary="Set permissions of the given history dataset to the given role ids.",
+)
+def update_permissions(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    dataset_id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
+    payload: Dict[str, Any] = Body(
+        default=...,
+        example=UpdateDatasetPermissionsPayload(),
+    ),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> DatasetAssociationRoles:
+    """Set permissions of the given history dataset to the given role ids."""
+    update_payload = get_update_permission_payload(payload)
+    return service.update_permissions(trans, dataset_id, update_payload)
+
+
+@router.put(
+    "/api/histories/{history_id}/contents",
+    summary="Batch update specific properties of a set items contained in the given History.",
+)
+def update_batch(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    payload: UpdateHistoryContentsBatchPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> HistoryContentsResult:
+    """Batch update specific properties of a set items contained in the given History.
+
+    If you provide an invalid/unknown property key the request will not fail, but no changes
+    will be made to the items.
+    """
+    result = service.update_batch(trans, history_id, payload, serialization_params)
+    return HistoryContentsResult.construct(__root__=result)
+
+
+@router.put(
+    "/api/histories/{history_id}/contents/bulk",
+    summary="Executes an operation on a set of items contained in the given History.",
+)
+def bulk_operation(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
+    payload: HistoryContentBulkOperationPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> HistoryContentBulkOperationResult:
+    """Executes an operation on a set of items contained in the given History.
+
+    The items to be processed can be explicitly set or determined by a dynamic query.
+    """
+    return service.bulk_operation(trans, history_id, filter_query_params, payload)
+
+
+@router.put(
+    "/api/histories/{history_id}/contents/{id}/validate",
+    summary="Validates the metadata associated with a dataset within a History.",
+)
+def validate(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> dict:  # TODO: define a response?
+    """Validates the metadata associated with a dataset within a History."""
+    return service.validate(trans, history_id, id)
+
+
+@router.put(
+    "/api/histories/{history_id}/contents/{type}s/{id}",
+    summary="Updates the values for the history content item with the given ``ID`` and path specified type.",
+    operation_id="history_contents__update_typed",
+)
+def update_typed(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    payload: UpdateHistoryContentsPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AnyHistoryContentItem:
+    """Updates the values for the history content item with the given ``ID``."""
+    return service.update(
+        trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
     )
-    def prepare_collection_download(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AsyncFile:
-        """The history dataset collection will be written as a `zip` archive to the
-        returned short term storage object. Progress tracking this file's creation
-        can be tracked with the short_term_storage API.
-        """
-        return service.prepare_collection_download(trans, id)
 
-    @router.post(
-        "/api/histories/{history_id}/contents/{type}s",
-        summary="Create a new `HDA` or `HDCA` in the given History.",
-        operation_id="history_contents__create_typed",
+
+@router.put(
+    "/api/histories/{history_id}/contents/{id}",
+    summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
+    deprecated=True,
+    operation_id="history_contents__update_legacy",
+)
+def update_legacy(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    payload: UpdateHistoryContentsPayload = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AnyHistoryContentItem:
+    """Updates the values for the history content item with the given ``ID``."""
+    return service.update(
+        trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
     )
-    def create_typed(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: CreateHistoryContentPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
-        """Create a new `HDA` or `HDCA` in the given History."""
-        return _create(trans, history_id, type, serialization_params, payload, service)
 
-    @router.post(
-        "/api/histories/{history_id}/contents",
-        summary="Create a new `HDA` or `HDCA` in the given History.",
-        deprecated=True,
-        operation_id="history_contents__create",
+
+@router.delete(
+    "/api/histories/{history_id}/contents/{type}s/{id}",
+    summary="Delete the history content with the given ``ID`` and path specified type.",
+    responses=CONTENT_DELETE_RESPONSES,
+    operation_id="history_contents__delete_typed",
+)
+def delete_typed(
+    response: Response,
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: str = Path(..., description="History ID or any string."),
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypePathParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    purge: Optional[bool] = PurgeQueryParam,
+    recursive: Optional[bool] = RecursiveQueryParam,
+    stop_job: Optional[bool] = StopJobQueryParam,
+    payload: DeleteHistoryContentPayload = Body(None),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """
+    Delete the history content with the given ``ID`` and path specified type.
+
+    **Note**: Currently does not stop any active jobs for which this dataset is an output.
+    """
+    return _delete(
+        response,
+        trans,
+        id,
+        type,
+        serialization_params,
+        purge,
+        recursive,
+        stop_job,
+        payload,
+        service,
     )
-    def create(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        type: Optional[HistoryContentType] = ContentTypeQueryParam(default=None),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: CreateHistoryContentPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
-        """Create a new `HDA` or `HDCA` in the given History."""
-        return _create(trans, history_id, type, serialization_params, payload, service)
 
-    @router.put(
-        "/api/histories/{history_id}/contents/{dataset_id}/permissions",
-        summary="Set permissions of the given history dataset to the given role ids.",
+
+@router.delete(
+    "/api/histories/{history_id}/contents/{id}",
+    summary="Delete the history dataset with the given ``ID``.",
+    responses=CONTENT_DELETE_RESPONSES,
+    operation_id="history_contents__delete_legacy",
+)
+def delete_legacy(
+    response: Response,
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    purge: Optional[bool] = PurgeQueryParam,
+    recursive: Optional[bool] = RecursiveQueryParam,
+    stop_job: Optional[bool] = StopJobQueryParam,
+    payload: DeleteHistoryContentPayload = Body(None),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """
+    Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
+
+    **Note**: Currently does not stop any active jobs for which this dataset is an output.
+    """
+    return _delete(
+        response,
+        trans,
+        id,
+        type,
+        serialization_params,
+        purge,
+        recursive,
+        stop_job,
+        payload,
+        service,
     )
-    def update_permissions(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        dataset_id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
-        payload: Dict[str, Any] = Body(
-            default=...,
-            example=UpdateDatasetPermissionsPayload(),
-        ),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> DatasetAssociationRoles:
-        """Set permissions of the given history dataset to the given role ids."""
-        update_payload = get_update_permission_payload(payload)
-        return service.update_permissions(trans, dataset_id, update_payload)
 
-    @router.put(
-        "/api/histories/{history_id}/contents",
-        summary="Batch update specific properties of a set items contained in the given History.",
+
+@router.get(
+    "/api/histories/{history_id}/contents/archive/{filename}.{format}",
+    summary="Build and return a compressed archive of the selected history contents.",
+    operation_id="history_contents__archive_named",
+)
+def archive_named(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    filename: str = ArchiveFilenamePathParam,
+    format: str = Path(
+        description="Output format of the archive.",
+        deprecated=True,  # Looks like is not really used?
+    ),
+    dry_run: Optional[bool] = DryRunQueryParam,
+    filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """Build and return a compressed archive of the selected history contents.
+
+    **Note**: this is a volatile endpoint and settings and behavior may change."""
+    archive = service.archive(trans, history_id, filter_query_params, filename, dry_run)
+    if isinstance(archive, HistoryContentsArchiveDryRunResult):
+        return archive
+    return StreamingResponse(archive.response(), headers=archive.get_headers())
+
+
+@router.get(
+    "/api/histories/{history_id}/contents/archive",
+    summary="Build and return a compressed archive of the selected history contents.",
+    operation_id="history_contents__archive",
+)
+def archive(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    filename: Optional[str] = ArchiveFilenameQueryParam,
+    dry_run: Optional[bool] = DryRunQueryParam,
+    filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+):
+    """Build and return a compressed archive of the selected history contents.
+
+    **Note**: this is a volatile endpoint and settings and behavior may change."""
+    archive = service.archive(trans, history_id, filter_query_params, filename, dry_run)
+    if isinstance(archive, HistoryContentsArchiveDryRunResult):
+        return archive
+    return StreamingResponse(archive.response(), headers=archive.get_headers())
+
+
+@router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
+def create_from_store(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    create_payload: CreateHistoryContentFromStore = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> List[AnyHistoryContentItem]:
+    """
+    Create history contents from model store.
+    Input can be a tarfile created with build_objects script distributed
+    with galaxy-data, from an exported history with files stripped out,
+    or hand-crafted JSON dictionary.
+    """
+    return service.create_from_store(trans, history_id, create_payload, serialization_params)
+
+
+@router.post(
+    "/api/histories/{history_id}/contents/datasets/{id}/materialize",
+    summary="Materialize a deferred dataset into real, usable dataset.",
+)
+def materialize_dataset(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    id: DecodedDatabaseIdField = HistoryItemIDPathParam,
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AsyncTaskResultSummary:
+    materialize_request = MaterializeDatasetInstanceRequest.construct(
+        history_id=history_id,
+        source=DatasetSourceType.hda,
+        content=id,
     )
-    def update_batch(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: UpdateHistoryContentsBatchPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> HistoryContentsResult:
-        """Batch update specific properties of a set items contained in the given History.
+    rval = service.materialize(trans, materialize_request)
+    return rval
 
-        If you provide an invalid/unknown property key the request will not fail, but no changes
-        will be made to the items.
-        """
-        result = service.update_batch(trans, history_id, payload, serialization_params)
-        return HistoryContentsResult.construct(__root__=result)
 
-    @router.put(
-        "/api/histories/{history_id}/contents/bulk",
-        summary="Executes an operation on a set of items contained in the given History.",
+@router.post(
+    "/api/histories/{history_id}/materialize",
+    summary="Materialize a deferred library or HDA dataset into real, usable dataset in specified history.",
+)
+def materialize_to_history(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
+    service: HistoriesContentsService = depends(HistoriesContentsService),
+) -> AsyncTaskResultSummary:
+    materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.construct(
+        history_id=history_id, **materialize_api_payload.dict()
     )
-    def bulk_operation(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        filter_query_params: ValueFilterQueryParams = Depends(get_value_filter_query_params),
-        payload: HistoryContentBulkOperationPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> HistoryContentBulkOperationResult:
-        """Executes an operation on a set of items contained in the given History.
-
-        The items to be processed can be explicitly set or determined by a dynamic query.
-        """
-        return service.bulk_operation(trans, history_id, filter_query_params, payload)
-
-    @router.put(
-        "/api/histories/{history_id}/contents/{id}/validate",
-        summary="Validates the metadata associated with a dataset within a History.",
-    )
-    def validate(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> dict:  # TODO: define a response?
-        """Validates the metadata associated with a dataset within a History."""
-        return service.validate(trans, history_id, id)
-
-    @router.put(
-        "/api/histories/{history_id}/contents/{type}s/{id}",
-        summary="Updates the values for the history content item with the given ``ID`` and path specified type.",
-        operation_id="history_contents__update_typed",
-    )
-    def update_typed(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: UpdateHistoryContentsPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AnyHistoryContentItem:
-        """Updates the values for the history content item with the given ``ID``."""
-        return service.update(
-            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
-        )
-
-    @router.put(
-        "/api/histories/{history_id}/contents/{id}",
-        summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
-        deprecated=True,
-        operation_id="history_contents__update_legacy",
-    )
-    def update_legacy(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: UpdateHistoryContentsPayload = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AnyHistoryContentItem:
-        """Updates the values for the history content item with the given ``ID``."""
-        return service.update(
-            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
-        )
-
-    @router.delete(
-        "/api/histories/{history_id}/contents/{type}s/{id}",
-        summary="Delete the history content with the given ``ID`` and path specified type.",
-        responses=CONTENT_DELETE_RESPONSES,
-        operation_id="history_contents__delete_typed",
-    )
-    def delete_typed(
-        response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: str = Path(..., description="History ID or any string."),
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypePathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        purge: Optional[bool] = PurgeQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        stop_job: Optional[bool] = StopJobQueryParam,
-        payload: DeleteHistoryContentPayload = Body(None),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """
-        Delete the history content with the given ``ID`` and path specified type.
-
-        **Note**: Currently does not stop any active jobs for which this dataset is an output.
-        """
-        return _delete(
-            response,
-            trans,
-            id,
-            type,
-            serialization_params,
-            purge,
-            recursive,
-            stop_job,
-            payload,
-            service,
-        )
-
-    @router.delete(
-        "/api/histories/{history_id}/contents/{id}",
-        summary="Delete the history dataset with the given ``ID``.",
-        responses=CONTENT_DELETE_RESPONSES,
-        operation_id="history_contents__delete_legacy",
-    )
-    def delete_legacy(
-        response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        type: HistoryContentType = ContentTypeQueryParam(default=HistoryContentType.dataset),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        purge: Optional[bool] = PurgeQueryParam,
-        recursive: Optional[bool] = RecursiveQueryParam,
-        stop_job: Optional[bool] = StopJobQueryParam,
-        payload: DeleteHistoryContentPayload = Body(None),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """
-        Delete the history content with the given ``ID`` and query specified type (defaults to dataset).
-
-        **Note**: Currently does not stop any active jobs for which this dataset is an output.
-        """
-        return _delete(
-            response,
-            trans,
-            id,
-            type,
-            serialization_params,
-            purge,
-            recursive,
-            stop_job,
-            payload,
-            service,
-        )
-
-    @router.get(
-        "/api/histories/{history_id}/contents/archive/{filename}.{format}",
-        summary="Build and return a compressed archive of the selected history contents.",
-        operation_id="history_contents__archive_named",
-    )
-    def archive_named(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        filename: str = ArchiveFilenamePathParam,
-        format: str = Path(
-            description="Output format of the archive.",
-            deprecated=True,  # Looks like is not really used?
-        ),
-        dry_run: Optional[bool] = DryRunQueryParam,
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
-        archive = service.archive(trans, history_id, filter_query_params, filename, dry_run)
-        if isinstance(archive, HistoryContentsArchiveDryRunResult):
-            return archive
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
-
-    @router.get(
-        "/api/histories/{history_id}/contents/archive",
-        summary="Build and return a compressed archive of the selected history contents.",
-        operation_id="history_contents__archive",
-    )
-    def archive(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        filename: Optional[str] = ArchiveFilenameQueryParam,
-        dry_run: Optional[bool] = DryRunQueryParam,
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ):
-        """Build and return a compressed archive of the selected history contents.
-
-        **Note**: this is a volatile endpoint and settings and behavior may change."""
-        archive = service.archive(trans, history_id, filter_query_params, filename, dry_run)
-        if isinstance(archive, HistoryContentsArchiveDryRunResult):
-            return archive
-        return StreamingResponse(archive.response(), headers=archive.get_headers())
-
-    @router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
-    def create_from_store(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        create_payload: CreateHistoryContentFromStore = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> List[AnyHistoryContentItem]:
-        """
-        Create history contents from model store.
-        Input can be a tarfile created with build_objects script distributed
-        with galaxy-data, from an exported history with files stripped out,
-        or hand-crafted JSON dictionary.
-        """
-        return service.create_from_store(trans, history_id, create_payload, serialization_params)
-
-    @router.post(
-        "/api/histories/{history_id}/contents/datasets/{id}/materialize",
-        summary="Materialize a deferred dataset into real, usable dataset.",
-    )
-    def materialize_dataset(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryItemIDPathParam,
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AsyncTaskResultSummary:
-        materialize_request = MaterializeDatasetInstanceRequest.construct(
-            history_id=history_id,
-            source=DatasetSourceType.hda,
-            content=id,
-        )
-        rval = service.materialize(trans, materialize_request)
-        return rval
-
-    @router.post(
-        "/api/histories/{history_id}/materialize",
-        summary="Materialize a deferred library or HDA dataset into real, usable dataset in specified history.",
-    )
-    def materialize_to_history(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
-        service: HistoriesContentsService = depends(HistoriesContentsService),
-    ) -> AsyncTaskResultSummary:
-        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.construct(
-            history_id=history_id, **materialize_api_payload.dict()
-        )
-        rval = service.materialize(trans, materialize_request)
-        return rval
+    rval = service.materialize(trans, materialize_request)
+    return rval
 
 
 def _create(

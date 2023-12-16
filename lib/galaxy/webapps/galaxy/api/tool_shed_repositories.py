@@ -405,47 +405,48 @@ UninstalledQueryParam: Optional[bool] = Query(
 )
 
 
-class FastAPIToolShedRepositories:
-    @router.get(
-        "/api/tool_shed_repositories",
-        summary="Lists installed tool shed repositories.",
-        response_description="A list of installed tool shed repository objects.",
+@router.get(
+    "/api/tool_shed_repositories",
+    summary="Lists installed tool shed repositories.",
+    response_description="A list of installed tool shed repository objects.",
+)
+def index(
+    name: Optional[str] = NameQueryParam,
+    owner: Optional[str] = OwnerQueryParam,
+    changeset: Optional[str] = ChangesetQueryParam,
+    deleted: Optional[bool] = DeletedQueryParam,
+    uninstalled: Optional[bool] = UninstalledQueryParam,
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
+) -> List[InstalledToolShedRepository]:
+    request = InstalledToolShedRepositoryIndexRequest(
+        name=name,
+        owner=owner,
+        changeset=changeset,
+        deleted=deleted,
+        uninstalled=uninstalled,
     )
-    def index(
-        name: Optional[str] = NameQueryParam,
-        owner: Optional[str] = OwnerQueryParam,
-        changeset: Optional[str] = ChangesetQueryParam,
-        deleted: Optional[bool] = DeletedQueryParam,
-        uninstalled: Optional[bool] = UninstalledQueryParam,
-        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
-    ) -> List[InstalledToolShedRepository]:
-        request = InstalledToolShedRepositoryIndexRequest(
-            name=name,
-            owner=owner,
-            changeset=changeset,
-            deleted=deleted,
-            uninstalled=uninstalled,
-        )
-        return service.index(request)
+    return service.index(request)
 
-    @router.get(
-        "/api/tool_shed_repositories/check_for_updates",
-        summary="Check for updates to the specified repository, or all installed repositories.",
-        response_description="A description of the state and updates message.",
-        require_admin=True,
-    )
-    def check_for_updates(
-        id: Optional[DecodedDatabaseIdField] = None,
-        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
-    ) -> CheckForUpdatesResponse:
-        return service.check_for_updates(id and int(id))
 
-    @router.get(
-        "/api/tool_shed_repositories/{id}",
-        summary="Show installed tool shed repository.",
-    )
-    def show(
-        id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
-        service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
-    ) -> InstalledToolShedRepository:
-        return service.show(id)
+@router.get(
+    "/api/tool_shed_repositories/check_for_updates",
+    summary="Check for updates to the specified repository, or all installed repositories.",
+    response_description="A description of the state and updates message.",
+    require_admin=True,
+)
+def check_for_updates(
+    id: Optional[DecodedDatabaseIdField] = None,
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
+) -> CheckForUpdatesResponse:
+    return service.check_for_updates(id and int(id))
+
+
+@router.get(
+    "/api/tool_shed_repositories/{id}",
+    summary="Show installed tool shed repository.",
+)
+def show(
+    id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService),
+) -> InstalledToolShedRepository:
+    return service.show(id)

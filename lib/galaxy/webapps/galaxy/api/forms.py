@@ -26,24 +26,24 @@ log = logging.getLogger(__name__)
 router = Router(tags=["forms"])
 
 
-class FastAPIForms:
-    @router.delete("/api/forms/{id}", require_admin=True)
-    def delete(
-        id: DecodedDatabaseIdField,
-        trans: ProvidesUserContext = DependsOnTrans,
-        form_manager: FormManager = depends(FormManager),
-    ):
-        form = form_manager.get(trans, id)
-        form_manager.delete(trans, form)
+@router.delete("/api/forms/{id}", require_admin=True)
+def delete(
+    id: DecodedDatabaseIdField,
+    trans: ProvidesUserContext = DependsOnTrans,
+    form_manager: FormManager = depends(FormManager),
+):
+    form = form_manager.get(trans, id)
+    form_manager.delete(trans, form)
 
-    @router.post("/api/forms/{id}/undelete", require_admin=True)
-    def undelete(
-        id: DecodedDatabaseIdField,
-        trans: ProvidesUserContext = DependsOnTrans,
-        form_manager: FormManager = depends(FormManager),
-    ):
-        form = form_manager.get(trans, id)
-        form_manager.undelete(trans, form)
+
+@router.post("/api/forms/{id}/undelete", require_admin=True)
+def undelete(
+    id: DecodedDatabaseIdField,
+    trans: ProvidesUserContext = DependsOnTrans,
+    form_manager: FormManager = depends(FormManager),
+):
+    form = form_manager.get(trans, id)
+    form_manager.undelete(trans, form)
 
 
 class FormDefinitionAPIController(BaseGalaxyAPIController):

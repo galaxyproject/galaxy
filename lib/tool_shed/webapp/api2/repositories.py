@@ -29,12 +29,12 @@ from tool_shed.managers.repositories import (
     check_updates,
     create_repository,
     get_install_info,
-    get_ordered_installable_revisions,
+    get_ordered_installable_revisions as _get_ordered_installable_revisions,
     get_repository_metadata_dict,
     get_repository_metadata_for_management,
     index_repositories,
     readmes,
-    reset_metadata_on_repository,
+    reset_metadata_on_repository as _reset_metadata_on_repository,
     search,
     to_detailed_model,
     to_model,
@@ -95,408 +95,425 @@ class RepositoryUpdateRequestFormData(RepositoryUpdateRequest):
     pass
 
 
-class FastAPIRepositories:
-    @router.get(
-        "/api/repositories",
-        description="Get a list of repositories or perform a search.",
-        operation_id="repositories__index",
-    )
-    def index(
-        q: Optional[str] = RepositoryIndexQueryParam,
-        page: Optional[int] = RepositorySearchPageQueryParam,
-        page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
-        deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
-        owner: Optional[str] = RepositoryIndexOwnerQueryParam,
-        name: Optional[str] = RepositoryIndexNameQueryParam,
-        trans: SessionRequestContext = DependsOnTrans,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> IndexResponse:
-        if q:
-            assert page is not None
-            assert page_size is not None
-            search_results = search(trans, q, page, page_size)
-            return RepositorySearchResults(**search_results)
-        # See API notes - was added in https://github.com/galaxyproject/galaxy/pull/3626/files
-        # but I think is currently unused. So probably we should just drop it until someone
-        # complains.
-        # elif params.tool_ids:
-        #    response = index_tool_ids(app, params.tool_ids)
-        #    return response
-        else:
-            repositories = index_repositories(app, name, owner, deleted or False)
-            return [to_model(app, r) for r in repositories]
+@router.get(
+    "/api/repositories",
+    description="Get a list of repositories or perform a search.",
+    operation_id="repositories__index",
+)
+def index(
+    q: Optional[str] = RepositoryIndexQueryParam,
+    page: Optional[int] = RepositorySearchPageQueryParam,
+    page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
+    deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
+    owner: Optional[str] = RepositoryIndexOwnerQueryParam,
+    name: Optional[str] = RepositoryIndexNameQueryParam,
+    trans: SessionRequestContext = DependsOnTrans,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> IndexResponse:
+    if q:
+        assert page is not None
+        assert page_size is not None
+        search_results = search(trans, q, page, page_size)
+        return RepositorySearchResults(**search_results)
+    # See API notes - was added in https://github.com/galaxyproject/galaxy/pull/3626/files
+    # but I think is currently unused. So probably we should just drop it until someone
+    # complains.
+    # elif params.tool_ids:
+    #    response = index_tool_ids(app, params.tool_ids)
+    #    return response
+    else:
+        repositories = index_repositories(app, name, owner, deleted or False)
+        return [to_model(app, r) for r in repositories]
 
-    @router.get(
-        "/api/repositories/get_repository_revision_install_info",
-        description="Get information used by the install client to install this repository.",
-        operation_id="repositories__legacy_install_info",
+
+@router.get(
+    "/api/repositories/get_repository_revision_install_info",
+    description="Get information used by the install client to install this repository.",
+    operation_id="repositories__legacy_install_info",
+)
+def legacy_install_info(
+    trans: SessionRequestContext = DependsOnTrans,
+    name: str = RequiredRepoNameParam,
+    owner: str = RequiredRepoOwnerParam,
+    changeset_revision: str = RequiredChangesetParam,
+) -> list:
+    legacy_install_info = get_install_info(
+        trans,
+        name,
+        owner,
+        changeset_revision,
     )
-    def legacy_install_info(
-        trans: SessionRequestContext = DependsOnTrans,
-        name: str = RequiredRepoNameParam,
-        owner: str = RequiredRepoOwnerParam,
-        changeset_revision: str = RequiredChangesetParam,
-    ) -> list:
-        legacy_install_info = get_install_info(
-            trans,
-            name,
-            owner,
-            changeset_revision,
+    return list(legacy_install_info)
+
+
+@router.get(
+    "/api/repositories/install_info",
+    description="Get information used by the install client to install this repository.",
+    operation_id="repositories__install_info",
+)
+def install_info(
+    trans: SessionRequestContext = DependsOnTrans,
+    name: str = RequiredRepoNameParam,
+    owner: str = RequiredRepoOwnerParam,
+    changeset_revision: str = RequiredChangesetParam,
+) -> InstallInfo:
+    # A less problematic version of the above API, but I guess we
+    # need to maintain the older version for older Galaxy API clients
+    # for... sometime... or forever.
+    legacy_install_info = get_install_info(
+        trans,
+        name,
+        owner,
+        changeset_revision,
+    )
+    return from_legacy_install_info(legacy_install_info)
+
+
+@router.get(
+    "/api/repositories/{encoded_repository_id}/metadata",
+    description="Get information about repository metadata",
+    operation_id="repositories__metadata",
+    # See comment below.
+    # response_model=RepositoryMetadata,
+)
+def metadata(
+    encoded_repository_id: str = RepositoryIdPathParam,
+    downloadable_only: bool = DownloadableQueryParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> dict:
+    recursive = True
+    as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
+    # fails 1020 if we try to use the model - I guess repository dependencies
+    # are getting lost
+    return as_dict
+    # return _hack_fastapi_4428(as_dict)
+
+
+@router.get(
+    "/api_internal/repositories/{encoded_repository_id}/metadata",
+    description="Get information about repository metadata",
+    operation_id="repositories__internal_metadata",
+    response_model=RepositoryMetadata,
+)
+def metadata_internal(
+    encoded_repository_id: str = RepositoryIdPathParam,
+    downloadable_only: bool = DownloadableQueryParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> dict:
+    recursive = True
+    as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
+    return _hack_fastapi_4428(as_dict)
+
+
+@router.get(
+    "/api/repositories/get_ordered_installable_revisions",
+    description="Get an ordered list of the repository changeset revisions that are installable",
+    operation_id="repositories__get_ordered_installable_revisions",
+)
+def get_ordered_installable_revisions(
+    owner: Optional[str] = OptionalRepositoryOwnerParam,
+    name: Optional[str] = OptionalRepositoryNameParam,
+    tsr_id: Optional[str] = OptionalRepositoryIdParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> List[str]:
+    return _get_ordered_installable_revisions(app, name, owner, tsr_id)
+
+
+@router.post(
+    "/api/repositories/reset_metadata_on_repository",
+    description="reset metadata on a repository",
+    operation_id="repositories__reset_legacy",
+)
+def reset_metadata_on_repository_legacy(
+    trans: SessionRequestContext = DependsOnTrans,
+    request: ResetMetadataOnRepositoryRequest = depend_on_either_json_or_form_data(ResetMetadataOnRepositoryRequest),
+) -> ResetMetadataOnRepositoryResponse:
+    return _reset_metadata_on_repository(trans, request.repository_id)
+
+
+@router.post(
+    "/api/repositories/{encoded_repository_id}/reset_metadata",
+    description="reset metadata on a repository",
+    operation_id="repositories__reset",
+)
+def reset_metadata_on_repository(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+) -> ResetMetadataOnRepositoryResponse:
+    return _reset_metadata_on_repository(trans, encoded_repository_id)
+
+
+@router.get(
+    "/api/repositories/updates",
+    operation_id="repositories__update",
+)
+@router.get(
+    "/api/repositories/updates/",
+)
+def updates(
+    owner: Optional[str] = OptionalRepositoryOwnerParam,
+    name: Optional[str] = OptionalRepositoryNameParam,
+    changeset_revision: str = RequiredRepositoryChangesetRevisionParam,
+    hexlify: Optional[bool] = OptionalHexlifyParam,
+    app: ToolShedApp = depends(ToolShedApp),
+):
+    request = UpdatesRequest(
+        name=name,
+        owner=owner,
+        changeset_revision=changeset_revision,
+        hexlify=hexlify,
+    )
+    return Response(content=check_updates(app, request))
+
+
+@router.post(
+    "/api/repositories",
+    description="create a new repository",
+    operation_id="repositories__create",
+)
+def create(
+    trans: SessionRequestContext = DependsOnTrans,
+    request: CreateRepositoryRequest = Body(...),
+    app: ToolShedApp = depends(ToolShedApp),
+) -> Repository:
+    db_repository = create_repository(
+        trans,
+        request,
+    )
+    return to_model(app, db_repository)
+
+
+@router.get(
+    "/api/repositories/{encoded_repository_id}",
+    operation_id="repositories__show",
+)
+def show(
+    encoded_repository_id: str = RepositoryIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> DetailedRepository:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    return to_detailed_model(app, repository)
+
+
+@router.get(
+    "/api/repositories/{encoded_repository_id}/permissions",
+    operation_id="repositories__permissions",
+)
+def permissions(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> RepositoryPermissions:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_update_repo(trans, repository):
+        raise InsufficientPermissionsException(
+            "You do not have permission to inspect repository repository permissions."
         )
-        return list(legacy_install_info)
+    return RepositoryPermissions(
+        allow_push=trans.app.security_agent.usernames_that_can_push(repository),
+        can_manage=can_manage_repo(trans, repository),
+        can_push=can_update_repo(trans, repository),
+    )
 
-    @router.get(
-        "/api/repositories/install_info",
-        description="Get information used by the install client to install this repository.",
-        operation_id="repositories__install_info",
-    )
-    def install_info(
-        trans: SessionRequestContext = DependsOnTrans,
-        name: str = RequiredRepoNameParam,
-        owner: str = RequiredRepoOwnerParam,
-        changeset_revision: str = RequiredChangesetParam,
-    ) -> InstallInfo:
-        # A less problematic version of the above API, but I guess we
-        # need to maintain the older version for older Galaxy API clients
-        # for... sometime... or forever.
-        legacy_install_info = get_install_info(
-            trans,
-            name,
-            owner,
-            changeset_revision,
-        )
-        return from_legacy_install_info(legacy_install_info)
 
-    @router.get(
-        "/api/repositories/{encoded_repository_id}/metadata",
-        description="Get information about repository metadata",
-        operation_id="repositories__metadata",
-        # See comment below.
-        # response_model=RepositoryMetadata,
-    )
-    def metadata(
-        encoded_repository_id: str = RepositoryIdPathParam,
-        downloadable_only: bool = DownloadableQueryParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> dict:
-        recursive = True
-        as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
-        # fails 1020 if we try to use the model - I guess repository dependencies
-        # are getting lost
-        return as_dict
-        # return _hack_fastapi_4428(as_dict)
+@router.get(
+    "/api/repositories/{encoded_repository_id}/allow_push",
+    operation_id="repositories__show_allow_push",
+)
+def show_allow_push(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> List[str]:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("You do not have permission to update this repository.")
+    return trans.app.security_agent.usernames_that_can_push(repository)
 
-    @router.get(
-        "/api_internal/repositories/{encoded_repository_id}/metadata",
-        description="Get information about repository metadata",
-        operation_id="repositories__internal_metadata",
-        response_model=RepositoryMetadata,
-    )
-    def metadata_internal(
-        encoded_repository_id: str = RepositoryIdPathParam,
-        downloadable_only: bool = DownloadableQueryParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> dict:
-        recursive = True
-        as_dict = get_repository_metadata_dict(app, encoded_repository_id, recursive, downloadable_only)
-        return _hack_fastapi_4428(as_dict)
 
-    @router.get(
-        "/api/repositories/get_ordered_installable_revisions",
-        description="Get an ordered list of the repository changeset revisions that are installable",
-        operation_id="repositories__get_ordered_installable_revisions",
-    )
-    def get_ordered_installable_revisions(
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
-        tsr_id: Optional[str] = OptionalRepositoryIdParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> List[str]:
-        return get_ordered_installable_revisions(app, name, owner, tsr_id)
+@router.post(
+    "/api/repositories/{encoded_repository_id}/allow_push/{username}",
+    operation_id="repositories__add_allow_push",
+)
+def add_allow_push(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    username: str = UsernameIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> List[str]:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("You do not have permission to update this repository.")
+    repository.set_allow_push([username])
+    return trans.app.security_agent.usernames_that_can_push(repository)
 
-    @router.post(
-        "/api/repositories/reset_metadata_on_repository",
-        description="reset metadata on a repository",
-        operation_id="repositories__reset_legacy",
-    )
-    def reset_metadata_on_repository_legacy(
-        trans: SessionRequestContext = DependsOnTrans,
-        request: ResetMetadataOnRepositoryRequest = depend_on_either_json_or_form_data(
-            ResetMetadataOnRepositoryRequest
-        ),
-    ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, request.repository_id)
 
-    @router.post(
-        "/api/repositories/{encoded_repository_id}/reset_metadata",
-        description="reset metadata on a repository",
-        operation_id="repositories__reset",
-    )
-    def reset_metadata_on_repository(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-    ) -> ResetMetadataOnRepositoryResponse:
-        return reset_metadata_on_repository(trans, encoded_repository_id)
+@router.put(
+    "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious",
+    operation_id="repositories__set_malicious",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def set_malicious(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    changeset_revision: str = ChangesetRevisionPathParam,
+):
+    repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
+    repository_metadata.malicious = True
+    trans.sa_session.add(repository_metadata)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get(
-        "/api/repositories/updates",
-        operation_id="repositories__update",
-    )
-    @router.get(
-        "/api/repositories/updates/",
-    )
-    def updates(
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
-        changeset_revision: str = RequiredRepositoryChangesetRevisionParam,
-        hexlify: Optional[bool] = OptionalHexlifyParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ):
-        request = UpdatesRequest(
-            name=name,
-            owner=owner,
-            changeset_revision=changeset_revision,
-            hexlify=hexlify,
-        )
-        return Response(content=check_updates(app, request))
 
-    @router.post(
-        "/api/repositories",
-        description="create a new repository",
-        operation_id="repositories__create",
-    )
-    def create(
-        trans: SessionRequestContext = DependsOnTrans,
-        request: CreateRepositoryRequest = Body(...),
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> Repository:
-        db_repository = create_repository(
-            trans,
-            request,
-        )
-        return to_model(app, db_repository)
+@router.delete(
+    "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious",
+    operation_id="repositories__unset_malicious",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def unset_malicious(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    changeset_revision: str = ChangesetRevisionPathParam,
+):
+    repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
+    repository_metadata.malicious = False
+    trans.sa_session.add(repository_metadata)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get(
-        "/api/repositories/{encoded_repository_id}",
-        operation_id="repositories__show",
-    )
-    def show(
-        encoded_repository_id: str = RepositoryIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> DetailedRepository:
+
+@router.put(
+    "/api/repositories/{encoded_repository_id}/deprecated",
+    operation_id="repositories__set_deprecated",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def set_deprecated(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+):
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("You do not have permission to update this repository.")
+    repository.deprecated = True
+    trans.sa_session.add(repository)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/api/repositories/{encoded_repository_id}/deprecated",
+    operation_id="repositories__unset_deprecated",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def unset_deprecated(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+):
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("You do not have permission to update this repository.")
+    repository.deprecated = False
+    trans.sa_session.add(repository)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/api/repositories/{encoded_repository_id}/allow_push/{username}",
+    operation_id="repositories__remove_allow_push",
+)
+def remove_allow_push(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    username: str = UsernameIdPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> List[str]:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("You do not have permission to update this repository.")
+    repository.set_allow_push(None, remove_auth=username)
+    return trans.app.security_agent.usernames_that_can_push(repository)
+
+
+@router.post(
+    "/api/repositories/{encoded_repository_id}/changeset_revision",
+    description="upload new revision to the repository",
+    operation_id="repositories__create_revision",
+)
+async def create_changeset_revision(
+    request: Request,
+    encoded_repository_id: str = RepositoryIdPathParam,
+    commit_message: Optional[str] = CommitMessageQueryParam,
+    trans: SessionRequestContext = DependsOnTrans,
+    files: Optional[List[UploadFile]] = None,
+    revision_request: RepositoryUpdateRequest = Depends(RepositoryUpdateRequestFormData.as_form),  # type: ignore[attr-defined]
+    app: ToolShedApp = depends(ToolShedApp),
+) -> RepositoryUpdate:
+    try:
+        # Code stolen from Marius' work in Galaxy's Tools API.
+
+        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+        if not files2:
+            data = await request.form()
+            for value in data.values():
+                if isinstance(value, StarletteUploadFile):
+                    files2.append(value)
+
         repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        return to_detailed_model(app, repository)
 
-    @router.get(
-        "/api/repositories/{encoded_repository_id}/permissions",
-        operation_id="repositories__permissions",
-    )
-    def permissions(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> RepositoryPermissions:
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
         if not can_update_repo(trans, repository):
-            raise InsufficientPermissionsException(
-                "You do not have permission to inspect repository repository permissions."
-            )
-        return RepositoryPermissions(
-            allow_push=trans.app.security_agent.usernames_that_can_push(repository),
-            can_manage=can_manage_repo(trans, repository),
-            can_push=can_update_repo(trans, repository),
-        )
-
-    @router.get(
-        "/api/repositories/{encoded_repository_id}/allow_push",
-        operation_id="repositories__show_allow_push",
-    )
-    def show_allow_push(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> List[str]:
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
-        return trans.app.security_agent.usernames_that_can_push(repository)
 
-    @router.post(
-        "/api/repositories/{encoded_repository_id}/allow_push/{username}",
-        operation_id="repositories__add_allow_push",
-    )
-    def add_allow_push(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        username: str = UsernameIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> List[str]:
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
-        repository.set_allow_push([username])
-        return trans.app.security_agent.usernames_that_can_push(repository)
-
-    @router.put(
-        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious",
-        operation_id="repositories__set_malicious",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def set_malicious(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        changeset_revision: str = ChangesetRevisionPathParam,
-    ):
-        repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
-        repository_metadata.malicious = True
-        trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.delete(
-        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/malicious",
-        operation_id="repositories__unset_malicious",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def unset_malicious(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        changeset_revision: str = ChangesetRevisionPathParam,
-    ):
-        repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
-        repository_metadata.malicious = False
-        trans.sa_session.add(repository_metadata)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.put(
-        "/api/repositories/{encoded_repository_id}/deprecated",
-        operation_id="repositories__set_deprecated",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def set_deprecated(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ):
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
-        repository.deprecated = True
-        trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.delete(
-        "/api/repositories/{encoded_repository_id}/deprecated",
-        operation_id="repositories__unset_deprecated",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def unset_deprecated(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ):
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
-        repository.deprecated = False
-        trans.sa_session.add(repository)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.delete(
-        "/api/repositories/{encoded_repository_id}/allow_push/{username}",
-        operation_id="repositories__remove_allow_push",
-    )
-    def remove_allow_push(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        username: str = UsernameIdPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> List[str]:
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        if not can_manage_repo(trans, repository):
-            raise InsufficientPermissionsException("You do not have permission to update this repository.")
-        repository.set_allow_push(None, remove_auth=username)
-        return trans.app.security_agent.usernames_that_can_push(repository)
-
-    @router.post(
-        "/api/repositories/{encoded_repository_id}/changeset_revision",
-        description="upload new revision to the repository",
-        operation_id="repositories__create_revision",
-    )
-    async def create_changeset_revision(
-        request: Request,
-        encoded_repository_id: str = RepositoryIdPathParam,
-        commit_message: Optional[str] = CommitMessageQueryParam,
-        trans: SessionRequestContext = DependsOnTrans,
-        files: Optional[List[UploadFile]] = None,
-        revision_request: RepositoryUpdateRequest = Depends(RepositoryUpdateRequestFormData.as_form),  # type: ignore[attr-defined]
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> RepositoryUpdate:
+        assert trans.user
+        assert files2
+        the_file = files2[0]
+        with tempfile.NamedTemporaryFile(
+            dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+        ) as dest:
+            upload_file_like: IO[bytes] = the_file.file
+            shutil.copyfileobj(upload_file_like, dest)  # type: ignore[misc] # https://github.com/python/mypy/issues/15031
+        the_file.file.close()
+        filename = dest.name
         try:
-            # Code stolen from Marius' work in Galaxy's Tools API.
+            message = upload_tar_and_set_metadata(
+                trans,
+                trans.request.host,
+                repository,
+                filename,
+                commit_message or revision_request.commit_message or "Uploaded",
+            )
+            return RepositoryUpdate(__root__=ValidRepostiroyUpdateMessage(message=message))
+        finally:
+            if os.path.exists(filename):
+                os.remove(filename)
+    except Exception:
+        import logging
 
-            files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
-            # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-            if not files2:
-                data = await request.form()
-                for value in data.values():
-                    if isinstance(value, StarletteUploadFile):
-                        files2.append(value)
+        log = logging.getLogger(__name__)
+        log.exception("Problem in here...")
+        raise
 
-            repository = get_repository_in_tool_shed(app, encoded_repository_id)
 
-            if not can_update_repo(trans, repository):
-                raise InsufficientPermissionsException("You do not have permission to update this repository.")
-
-            assert trans.user
-            assert files2
-            the_file = files2[0]
-            with tempfile.NamedTemporaryFile(
-                dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-            ) as dest:
-                upload_file_like: IO[bytes] = the_file.file
-                shutil.copyfileobj(upload_file_like, dest)  # type: ignore[misc] # https://github.com/python/mypy/issues/15031
-            the_file.file.close()
-            filename = dest.name
-            try:
-                message = upload_tar_and_set_metadata(
-                    trans,
-                    trans.request.host,
-                    repository,
-                    filename,
-                    commit_message or revision_request.commit_message or "Uploaded",
-                )
-                return RepositoryUpdate(__root__=ValidRepostiroyUpdateMessage(message=message))
-            finally:
-                if os.path.exists(filename):
-                    os.remove(filename)
-        except Exception:
-            import logging
-
-            log = logging.getLogger(__name__)
-            log.exception("Problem in here...")
-            raise
-
-    @router.get(
-        "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
-        description="fetch readmes for repository revision",
-        operation_id="repositories__readmes",
-        response_model=RepositoryRevisionReadmes,
-    )
-    def get_readmes(
-        encoded_repository_id: str = RepositoryIdPathParam,
-        changeset_revision: str = ChangesetRevisionPathParam,
-        app: ToolShedApp = depends(ToolShedApp),
-    ) -> dict:
-        repository = get_repository_in_tool_shed(app, encoded_repository_id)
-        return readmes(app, repository, changeset_revision)
+@router.get(
+    "/api/repositories/{encoded_repository_id}/revisions/{changeset_revision}/readmes",
+    description="fetch readmes for repository revision",
+    operation_id="repositories__readmes",
+    response_model=RepositoryRevisionReadmes,
+)
+def get_readmes(
+    encoded_repository_id: str = RepositoryIdPathParam,
+    changeset_revision: str = ChangesetRevisionPathParam,
+    app: ToolShedApp = depends(ToolShedApp),
+) -> dict:
+    repository = get_repository_in_tool_shed(app, encoded_repository_id)
+    return readmes(app, repository, changeset_revision)
 
 
 def _hack_fastapi_4428(as_dict) -> dict:

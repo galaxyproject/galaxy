@@ -30,7 +30,7 @@ from tool_shed.context import SessionRequestContext
 from tool_shed.managers.users import (
     api_create_user,
     get_api_user,
-    index,
+    index as _index,
 )
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import (
@@ -98,189 +98,198 @@ class UiChangePasswordRequest(BaseModel):
 INVALID_LOGIN_OR_PASSWORD = "Invalid login or password"
 
 
-class FastAPIUsers:
-    @router.get(
-        "/api/users",
-        description="index users",
-        operation_id="users__index",
-    )
-    def index(trans: SessionRequestContext = DependsOnTrans) -> List[User]:
-        deleted = False
-        return index(trans.app, deleted)
+@router.get(
+    "/api/users",
+    description="index users",
+    operation_id="users__index",
+)
+def index(trans: SessionRequestContext = DependsOnTrans) -> List[User]:
+    deleted = False
+    return _index(trans.app, deleted)
 
-    @router.post(
-        "/api/users",
-        description="create a user",
-        operation_id="users__create",
-        require_admin=True,
-    )
-    def create(trans: SessionRequestContext = DependsOnTrans, request: CreateUserRequest = Body(...)) -> User:
-        return api_create_user(trans, request)
 
-    @router.get(
-        "/api/users/current",
-        description="show current user",
-        operation_id="users__current",
-    )
-    def current(trans: SessionRequestContext = DependsOnTrans) -> User:
-        user = trans.user
-        if not user:
-            raise ObjectNotFound()
+@router.post(
+    "/api/users",
+    description="create a user",
+    operation_id="users__create",
+    require_admin=True,
+)
+def create(trans: SessionRequestContext = DependsOnTrans, request: CreateUserRequest = Body(...)) -> User:
+    return api_create_user(trans, request)
 
-        return get_api_user(trans.app, user)
 
-    @router.get(
-        "/api/users/{encoded_user_id}",
-        description="show a user",
-        operation_id="users__show",
-    )
-    def show(trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam) -> User:
-        user = suc.get_user(trans.app, encoded_user_id)
-        if user is None:
-            raise ObjectNotFound()
-        return get_api_user(trans.app, user)
+@router.get(
+    "/api/users/current",
+    description="show current user",
+    operation_id="users__current",
+)
+def current(trans: SessionRequestContext = DependsOnTrans) -> User:
+    user = trans.user
+    if not user:
+        raise ObjectNotFound()
 
-    @router.get(
-        "/api/users/{encoded_user_id}/api_key",
-        name="get_or_create_api_key",
-        summary="Return the user's API key",
-        operation_id="users__get_or_create_api_key",
-    )
-    def get_or_create_api_key(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_user_id: str = UserIdPathParam,
-        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
-    ) -> str:
-        user = _get_user(trans, encoded_user_id)
-        return api_key_manager.get_or_create_api_key(user)
+    return get_api_user(trans.app, user)
 
-    @router.post(
-        "/api/users/{encoded_user_id}/api_key",
-        summary="Creates a new API key for the user",
-        operation_id="users__create_api_key",
-    )
-    def create_api_key(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_user_id: str = UserIdPathParam,
-        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
-    ) -> str:
-        user = _get_user(trans, encoded_user_id)
-        return api_key_manager.create_api_key(user).key
 
-    @router.delete(
-        "/api/users/{encoded_user_id}/api_key",
-        summary="Delete the current API key of the user",
-        status_code=status.HTTP_204_NO_CONTENT,
-        operation_id="users__delete_api_key",
-    )
-    def delete_api_key(
-        trans: SessionRequestContext = DependsOnTrans,
-        encoded_user_id: str = UserIdPathParam,
-        api_key_manager: ApiKeyManager = depends(ApiKeyManager),
-    ):
-        user = _get_user(trans, encoded_user_id)
-        api_key_manager.delete_api_key(user)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.get(
+    "/api/users/{encoded_user_id}",
+    description="show a user",
+    operation_id="users__show",
+)
+def show(trans: SessionRequestContext = DependsOnTrans, encoded_user_id: str = UserIdPathParam) -> User:
+    user = suc.get_user(trans.app, encoded_user_id)
+    if user is None:
+        raise ObjectNotFound()
+    return get_api_user(trans.app, user)
 
-    @router.post(
-        "/api_internal/register",
-        description="register a user",
-        operation_id="users__internal_register",
-    )
-    def register(
-        trans: SessionRequestContext = DependsOnTrans,
-        request: UiRegisterRequest = Body(...),
-        app: ToolShedApp = depends(ToolShedApp),
-        user_manager: UserManager = depends(UserManager),
-    ) -> UiRegisterResponse:
-        honeypot_field = request.bear_field
-        if honeypot_field != "":
-            message = "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully."
-            raise RequestParameterInvalidException(message)
 
-        username = request.username
-        if username == "repos":
-            raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
-        user_manager.create(email=request.email, username=username, password=request.password)
-        if app.config.user_activation_on:
-            is_activation_sent = user_manager.send_activation_email(trans, request.email, username)
-            if is_activation_sent:
-                return UiRegisterResponse(email=request.email, activation_sent=True)
-            else:
-                return UiRegisterResponse(
-                    email=request.email,
-                    activation_sent=False,
-                    activation_error=True,
-                    contact_email=app.config.error_email_to,
-                )
+@router.get(
+    "/api/users/{encoded_user_id}/api_key",
+    name="get_or_create_api_key",
+    summary="Return the user's API key",
+    operation_id="users__get_or_create_api_key",
+)
+def get_or_create_api_key(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_user_id: str = UserIdPathParam,
+    api_key_manager: ApiKeyManager = depends(ApiKeyManager),
+) -> str:
+    user = _get_user(trans, encoded_user_id)
+    return api_key_manager.get_or_create_api_key(user)
+
+
+@router.post(
+    "/api/users/{encoded_user_id}/api_key",
+    summary="Creates a new API key for the user",
+    operation_id="users__create_api_key",
+)
+def create_api_key(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_user_id: str = UserIdPathParam,
+    api_key_manager: ApiKeyManager = depends(ApiKeyManager),
+) -> str:
+    user = _get_user(trans, encoded_user_id)
+    return api_key_manager.create_api_key(user).key
+
+
+@router.delete(
+    "/api/users/{encoded_user_id}/api_key",
+    summary="Delete the current API key of the user",
+    status_code=status.HTTP_204_NO_CONTENT,
+    operation_id="users__delete_api_key",
+)
+def delete_api_key(
+    trans: SessionRequestContext = DependsOnTrans,
+    encoded_user_id: str = UserIdPathParam,
+    api_key_manager: ApiKeyManager = depends(ApiKeyManager),
+):
+    user = _get_user(trans, encoded_user_id)
+    api_key_manager.delete_api_key(user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/api_internal/register",
+    description="register a user",
+    operation_id="users__internal_register",
+)
+def register(
+    trans: SessionRequestContext = DependsOnTrans,
+    request: UiRegisterRequest = Body(...),
+    app: ToolShedApp = depends(ToolShedApp),
+    user_manager: UserManager = depends(UserManager),
+) -> UiRegisterResponse:
+    honeypot_field = request.bear_field
+    if honeypot_field != "":
+        message = "You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully."
+        raise RequestParameterInvalidException(message)
+
+    username = request.username
+    if username == "repos":
+        raise RequestParameterInvalidException("Cannot create a user with the username 'repos'")
+    user_manager.create(email=request.email, username=username, password=request.password)
+    if app.config.user_activation_on:
+        is_activation_sent = user_manager.send_activation_email(trans, request.email, username)
+        if is_activation_sent:
+            return UiRegisterResponse(email=request.email, activation_sent=True)
         else:
-            return UiRegisterResponse(email=request.email)
-
-    @router.put(
-        "/api_internal/change_password",
-        description="reset a user",
-        operation_id="users__internal_change_password",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def change_password(
-        trans: SessionRequestContext = DependsOnTrans,
-        request: UiChangePasswordRequest = Body(...),
-        user_manager: UserManager = depends(UserManager),
-    ):
-        password = request.password
-        current = request.current
-        if trans.user is None:
-            raise InsufficientPermissionsException("Must be logged into use this functionality")
-        user_id = trans.user.id
-        token = None
-        user, message = user_manager.change_password(
-            trans, password=password, current=current, token=token, confirm=password, id=user_id
-        )
-        if not user:
-            raise RequestParameterInvalidException(message)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.put(
-        "/api_internal/login",
-        description="login to web UI",
-        operation_id="users__internal_login",
-    )
-    def internal_login(
-        trans: SessionRequestContext = DependsOnTrans,
-        request: UiLoginRequest = Body(...),
-        user_manager: UserManager = depends(UserManager),
-    ) -> UiLoginResponse:
-        log.info(f"top of internal_login {trans.session_csrf_token}")
-        ensure_csrf_token(trans, request)
-        login = request.login
-        password = request.password
-        user = user_manager.get_user_by_identity(login)
-        if user is None:
-            raise InsufficientPermissionsException(INVALID_LOGIN_OR_PASSWORD)
-        elif user.deleted:
-            message = (
-                "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+            return UiRegisterResponse(
+                email=request.email,
+                activation_sent=False,
+                activation_error=True,
+                contact_email=app.config.error_email_to,
             )
-            if trans.app.config.error_email_to is not None:
-                message += f" Contact: {trans.app.config.error_email_to}."
-            raise InsufficientPermissionsException(message)
-        elif not trans.app.auth_manager.check_password(user, password, trans.request):
-            raise InsufficientPermissionsException(INVALID_LOGIN_OR_PASSWORD)
-        else:
-            handle_user_login(trans, user)
-        return UiLoginResponse()
+    else:
+        return UiRegisterResponse(email=request.email)
 
-    @router.put(
-        "/api_internal/logout",
-        description="logout of web UI",
-        operation_id="users__internal_logout",
+
+@router.put(
+    "/api_internal/change_password",
+    description="reset a user",
+    operation_id="users__internal_change_password",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def change_password(
+    trans: SessionRequestContext = DependsOnTrans,
+    request: UiChangePasswordRequest = Body(...),
+    user_manager: UserManager = depends(UserManager),
+):
+    password = request.password
+    current = request.current
+    if trans.user is None:
+        raise InsufficientPermissionsException("Must be logged into use this functionality")
+    user_id = trans.user.id
+    token = None
+    user, message = user_manager.change_password(
+        trans, password=password, current=current, token=token, confirm=password, id=user_id
     )
-    def internal_logout(
-        trans: SessionRequestContext = DependsOnTrans, request: UiLogoutRequest = Body(...)
-    ) -> UiLogoutResponse:
-        ensure_csrf_token(trans, request)
-        handle_user_logout(trans, logout_all=request.logout_all)
-        return UiLogoutResponse()
+    if not user:
+        raise RequestParameterInvalidException(message)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put(
+    "/api_internal/login",
+    description="login to web UI",
+    operation_id="users__internal_login",
+)
+def internal_login(
+    trans: SessionRequestContext = DependsOnTrans,
+    request: UiLoginRequest = Body(...),
+    user_manager: UserManager = depends(UserManager),
+) -> UiLoginResponse:
+    log.info(f"top of internal_login {trans.session_csrf_token}")
+    ensure_csrf_token(trans, request)
+    login = request.login
+    password = request.password
+    user = user_manager.get_user_by_identity(login)
+    if user is None:
+        raise InsufficientPermissionsException(INVALID_LOGIN_OR_PASSWORD)
+    elif user.deleted:
+        message = (
+            "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+        )
+        if trans.app.config.error_email_to is not None:
+            message += f" Contact: {trans.app.config.error_email_to}."
+        raise InsufficientPermissionsException(message)
+    elif not trans.app.auth_manager.check_password(user, password, trans.request):
+        raise InsufficientPermissionsException(INVALID_LOGIN_OR_PASSWORD)
+    else:
+        handle_user_login(trans, user)
+    return UiLoginResponse()
+
+
+@router.put(
+    "/api_internal/logout",
+    description="logout of web UI",
+    operation_id="users__internal_logout",
+)
+def internal_logout(
+    trans: SessionRequestContext = DependsOnTrans, request: UiLogoutRequest = Body(...)
+) -> UiLogoutResponse:
+    ensure_csrf_token(trans, request)
+    handle_user_logout(trans, logout_all=request.logout_all)
+    return UiLogoutResponse()
 
 
 def _get_user(trans: SessionRequestContext, encoded_user_id: str):

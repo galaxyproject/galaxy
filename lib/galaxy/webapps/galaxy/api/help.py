@@ -16,17 +16,16 @@ log = logging.getLogger(__name__)
 router = Router(tags=["help"])
 
 
-class HelpAPI:
-    @router.get(
-        "/api/help/forum/search",
-        summary="Search the Galaxy Help forum.",
-    )
-    def search_forum(
-        query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
-        service: HelpService = depends(HelpService),
-    ) -> HelpForumSearchResponse:
-        """Search the Galaxy Help forum using the Discourse API.
+@router.get(
+    "/api/help/forum/search",
+    summary="Search the Galaxy Help forum.",
+)
+def search_forum(
+    query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
+    service: HelpService = depends(HelpService),
+) -> HelpForumSearchResponse:
+    """Search the Galaxy Help forum using the Discourse API.
 
-        **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
-        """
-        return service.search_forum(query)
+    **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+    """
+    return service.search_forum(query)

@@ -22,32 +22,31 @@ log = logging.getLogger(__name__)
 router = Router(tags=["remote files"])
 
 
-class FastAPIJobTokens:
-    @router.get(
-        "/api/jobs/{job_id}/oidc-tokens",
-        summary="Get a fresh OIDC token",
-        description="Allows remote job running mechanisms to get a fresh OIDC token that "
-        "can be used on remote side to authorize user. "
-        "It is not meant to represent part of Galaxy's stable, user facing API",
-        tags=["oidc_tokens"],
-        response_class=PlainTextResponse,
-    )
-    def get_token(
-        job_id: EncodedDatabaseIdField,
-        job_key: str = Query(
-            description=(
-                "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
-            ),
+@router.get(
+    "/api/jobs/{job_id}/oidc-tokens",
+    summary="Get a fresh OIDC token",
+    description="Allows remote job running mechanisms to get a fresh OIDC token that "
+    "can be used on remote side to authorize user. "
+    "It is not meant to represent part of Galaxy's stable, user facing API",
+    tags=["oidc_tokens"],
+    response_class=PlainTextResponse,
+)
+def get_token(
+    job_id: EncodedDatabaseIdField,
+    job_key: str = Query(
+        description=(
+            "A key used to authenticate this request as acting on" "behalf or a job runner for the specified job"
         ),
-        provider: str = Query(
-            description=("OIDC provider name"),
-        ),
-        trans: ProvidesAppContext = DependsOnTrans,
-    ) -> str:
-        job = _authorize_job_access(trans, job_id, job_key)
-        trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, job.user)  # type: ignore[attr-defined]
-        tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
-        return tokens["id"]
+    ),
+    provider: str = Query(
+        description=("OIDC provider name"),
+    ),
+    trans: ProvidesAppContext = DependsOnTrans,
+) -> str:
+    job = _authorize_job_access(trans, job_id, job_key)
+    trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, job.user)  # type: ignore[attr-defined]
+    tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
+    return tokens["id"]
 
 
 def _authorize_job_access(trans, encoded_job_id, job_key):

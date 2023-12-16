@@ -12,15 +12,14 @@ from . import (
 router = Router(tags=["authenticate"])
 
 
-class FastAPIAuthenticate:
-    @router.get(
-        "/api/authenticate/baseauth",
-        summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
-        operation_id="authenticate__baseauth",
-    )
-    def get_api_key(
-        request: Request, authentication_service: AuthenticationService = depends(AuthenticationService)
-    ) -> APIKeyResponse:
-        authorization = request.headers.get("Authorization")
-        auth = {"HTTP_AUTHORIZATION": authorization}
-        return authentication_service.get_api_key(auth, request)
+@router.get(
+    "/api/authenticate/baseauth",
+    summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
+    operation_id="authenticate__baseauth",
+)
+def get_api_key(
+    request: Request, authentication_service: AuthenticationService = depends(AuthenticationService)
+) -> APIKeyResponse:
+    authorization = request.headers.get("Authorization")
+    auth = {"HTTP_AUTHORIZATION": authorization}
+    return authentication_service.get_api_key(auth, request)

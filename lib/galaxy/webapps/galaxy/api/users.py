@@ -148,570 +148,591 @@ UserCreationBody = Body(default=Required, title="Create User", description="The 
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
-class FastAPIUsers:
-    @router.put(
-        "/api/users/current/recalculate_disk_usage",
-        summary=RecalculateDiskUsageSummary,
-        responses=RecalculateDiskUsageResponseDescriptions,
-    )
-    @router.put(
-        "/api/users/recalculate_disk_usage",
-        summary=RecalculateDiskUsageSummary,
-        responses=RecalculateDiskUsageResponseDescriptions,
-        deprecated=True,
-    )
-    def recalculate_disk_usage(
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: UsersService = depends(UsersService),
-    ):
-        """This route will be removed in a future version.
+@router.put(
+    "/api/users/current/recalculate_disk_usage",
+    summary=RecalculateDiskUsageSummary,
+    responses=RecalculateDiskUsageResponseDescriptions,
+)
+@router.put(
+    "/api/users/recalculate_disk_usage",
+    summary=RecalculateDiskUsageSummary,
+    responses=RecalculateDiskUsageResponseDescriptions,
+    deprecated=True,
+)
+def recalculate_disk_usage(
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: UsersService = depends(UsersService),
+):
+    """This route will be removed in a future version.
 
-        Please use `/api/users/current/recalculate_disk_usage` instead.
-        """
-        user_id = getattr(trans.user, "id", None)
-        if not user_id:
-            raise exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
-        else:
-            result = service.recalculate_disk_usage(trans, user_id)
-            return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
-
-    @router.put(
-        "/api/users/{user_id}/recalculate_disk_usage",
-        summary=RecalculateDiskUsageSummary,
-        responses=RecalculateDiskUsageResponseDescriptions,
-        require_admin=True,
-    )
-    def recalculate_disk_usage_by_user_id(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ):
+    Please use `/api/users/current/recalculate_disk_usage` instead.
+    """
+    user_id = getattr(trans.user, "id", None)
+    if not user_id:
+        raise exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
+    else:
         result = service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
-    @router.get(
-        "/api/users/deleted",
-        name="get_deleted_users",
-        description="Return a collection of deleted users. Only admins can see deleted users.",
-    )
-    def index_deleted(
-        trans: ProvidesUserContext = DependsOnTrans,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> List[Union[UserModel, LimitedUserModel]]:
-        return service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
-    @router.post(
-        "/api/users/deleted/{user_id}/undelete",
-        name="undelete_user",
-        summary="Restore a deleted user. Only admins can restore users.",
-        require_admin=True,
-    )
-    def undelete(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> DetailedUserModel:
-        user = service.get_user(trans=trans, user_id=user_id)
-        service.user_manager.undelete(user)
-        return service.user_to_detailed_model(user)
+@router.put(
+    "/api/users/{user_id}/recalculate_disk_usage",
+    summary=RecalculateDiskUsageSummary,
+    responses=RecalculateDiskUsageResponseDescriptions,
+    require_admin=True,
+)
+def recalculate_disk_usage_by_user_id(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+):
+    result = service.recalculate_disk_usage(trans, user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
-    @router.get(
-        "/api/users/deleted/{user_id}",
-        name="get_deleted_user",
-        summary="Return information about a deleted user. Only admins can see deleted users.",
-    )
-    def show_deleted(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> AnyUserModel:
-        return service.show_user(trans=trans, user_id=user_id, deleted=True)
 
-    @router.get(
-        "/api/users/{user_id}/api_key",
-        name="get_or_create_api_key",
-        summary="Return the user's API key",
-    )
-    def get_or_create_api_key(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> str:
-        return service.get_or_create_api_key(trans, user_id)
+@router.get(
+    "/api/users/deleted",
+    name="get_deleted_users",
+    description="Return a collection of deleted users. Only admins can see deleted users.",
+)
+def index_deleted(
+    trans: ProvidesUserContext = DependsOnTrans,
+    f_email: Optional[str] = FilterEmailQueryParam,
+    f_name: Optional[str] = FilterNameQueryParam,
+    f_any: Optional[str] = FilterAnyQueryParam,
+    service: UsersService = depends(UsersService),
+) -> List[Union[UserModel, LimitedUserModel]]:
+    return service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
-    @router.get(
-        "/api/users/{user_id}/api_key/detailed",
-        name="get_api_key_detailed",
-        summary="Return the user's API key with extra information.",
-        responses={
-            200: {
-                "model": APIKeyModel,
-                "description": "The API key of the user.",
-            },
-            204: {
-                "description": "The user doesn't have an API key.",
-            },
+
+@router.post(
+    "/api/users/deleted/{user_id}/undelete",
+    name="undelete_user",
+    summary="Restore a deleted user. Only admins can restore users.",
+    require_admin=True,
+)
+def undelete(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> DetailedUserModel:
+    user = service.get_user(trans=trans, user_id=user_id)
+    service.user_manager.undelete(user)
+    return service.user_to_detailed_model(user)
+
+
+@router.get(
+    "/api/users/deleted/{user_id}",
+    name="get_deleted_user",
+    summary="Return information about a deleted user. Only admins can see deleted users.",
+)
+def show_deleted(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> AnyUserModel:
+    return service.show_user(trans=trans, user_id=user_id, deleted=True)
+
+
+@router.get(
+    "/api/users/{user_id}/api_key",
+    name="get_or_create_api_key",
+    summary="Return the user's API key",
+)
+def get_or_create_api_key(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> str:
+    return service.get_or_create_api_key(trans, user_id)
+
+
+@router.get(
+    "/api/users/{user_id}/api_key/detailed",
+    name="get_api_key_detailed",
+    summary="Return the user's API key with extra information.",
+    responses={
+        200: {
+            "model": APIKeyModel,
+            "description": "The API key of the user.",
         },
-    )
-    def get_api_key(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ):
-        api_key = service.get_api_key(trans, user_id)
-        return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
+        204: {
+            "description": "The user doesn't have an API key.",
+        },
+    },
+)
+def get_api_key(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+):
+    api_key = service.get_api_key(trans, user_id)
+    return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.post("/api/users/{user_id}/api_key", name="create_api_key", summary="Create a new API key for the user")
-    def create_api_key(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> str:
-        return service.create_api_key(trans, user_id).key
 
-    @router.delete(
-        "/api/users/{user_id}/api_key",
-        name="delete_api_key",
-        summary="Delete the current API key of the user",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def delete_api_key(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ):
-        service.delete_api_key(trans, user_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/api/users/{user_id}/api_key", name="create_api_key", summary="Create a new API key for the user")
+def create_api_key(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> str:
+    return service.create_api_key(trans, user_id).key
 
-    @router.get(
-        "/api/users/{user_id}/usage",
-        name="get_user_usage",
-        summary="Return the user's quota usage summary broken down by quota source",
-    )
-    def usage(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        service: UsersService = depends(UsersService),
-        user_serializer: users.UserSerializer = depends(users.UserSerializer),
-    ) -> List[UserQuotaUsage]:
-        if user := service.get_user_full(trans, user_id, False):
-            rval = user_serializer.serialize_disk_usage(user)
-            return rval
-        else:
-            return []
 
-    @router.get(
-        "/api/users/{user_id}/usage/{label}",
-        name="get_user_usage_for_label",
-        summary="Return the user's quota usage summary for a given quota source label",
-    )
-    def usage_for(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        label: str = QuotaSourceLabelPathParam,
-        service: UsersService = depends(UsersService),
-        user_serializer: users.UserSerializer = depends(users.UserSerializer),
-    ) -> Optional[UserQuotaUsage]:
-        effective_label: Optional[str] = label
-        if label == "__null__":
-            effective_label = None
-        if user := service.get_user_full(trans, user_id, False):
-            rval = user_serializer.serialize_disk_usage_for(user, effective_label)
-            return rval
-        else:
-            return None
+@router.delete(
+    "/api/users/{user_id}/api_key",
+    name="delete_api_key",
+    summary="Delete the current API key of the user",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_api_key(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+):
+    service.delete_api_key(trans, user_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get(
-        "/api/users/{user_id}/beacon",
-        name="get_beacon_settings",
-        summary="Return information about beacon share settings",
-    )
-    def get_beacon(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
-        user = service.get_user(trans, user_id)
 
-        enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
+@router.get(
+    "/api/users/{user_id}/usage",
+    name="get_user_usage",
+    summary="Return the user's quota usage summary broken down by quota source",
+)
+def usage(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    service: UsersService = depends(UsersService),
+    user_serializer: users.UserSerializer = depends(users.UserSerializer),
+) -> List[UserQuotaUsage]:
+    if user := service.get_user_full(trans, user_id, False):
+        rval = user_serializer.serialize_disk_usage(user)
+        return rval
+    else:
+        return []
 
-        return UserBeaconSetting(enabled=enabled)
 
-    @router.post(
-        "/api/users/{user_id}/beacon",
-        name="set_beacon_settings",
-        summary="Change beacon setting",
-    )
-    def set_beacon(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        payload: UserBeaconSetting = Body(...),
-        service: UsersService = depends(UsersService),
-    ) -> UserBeaconSetting:
-        """
-        **Warning**: This endpoint is experimental and might change or disappear in future versions.
-        """
-        user = service.get_user(trans, user_id)
+@router.get(
+    "/api/users/{user_id}/usage/{label}",
+    name="get_user_usage_for_label",
+    summary="Return the user's quota usage summary for a given quota source label",
+)
+def usage_for(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    label: str = QuotaSourceLabelPathParam,
+    service: UsersService = depends(UsersService),
+    user_serializer: users.UserSerializer = depends(users.UserSerializer),
+) -> Optional[UserQuotaUsage]:
+    effective_label: Optional[str] = label
+    if label == "__null__":
+        effective_label = None
+    if user := service.get_user_full(trans, user_id, False):
+        rval = user_serializer.serialize_disk_usage_for(user, effective_label)
+        return rval
+    else:
+        return None
 
-        user.preferences["beacon_enabled"] = payload.enabled
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
 
-        return payload
+@router.get(
+    "/api/users/{user_id}/beacon",
+    name="get_beacon_settings",
+    summary="Return information about beacon share settings",
+)
+def get_beacon(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> UserBeaconSetting:
+    """
+    **Warning**: This endpoint is experimental and might change or disappear in future versions.
+    """
+    user = service.get_user(trans, user_id)
 
-    @router.delete(
-        "/api/users/{user_id}/favorites/{object_type}/{object_id}",
-        name="remove_favorite",
-        summary="Remove the object from user's favorites",
-    )
-    def remove_favorite(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        object_type: FavoriteObjectType = ObjectTypePathParam,
-        object_id: str = ObjectIDPathParam,
-        service: UsersService = depends(UsersService),
-    ) -> FavoriteObjectsSummary:
-        user = service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-                if object_id in favorite_tools:
-                    del favorite_tools[favorite_tools.index(object_id)]
-                    favorites["tools"] = favorite_tools
-                    user.preferences["favorites"] = json.dumps(favorites)
-                    with transaction(trans.sa_session):
-                        trans.sa_session.commit()
-                else:
-                    raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
-        return favorites
+    enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
 
-    @router.put(
-        "/api/users/{user_id}/favorites/{object_type}",
-        name="set_favorite",
-        summary="Add the object to user's favorites",
-    )
-    def set_favorite(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        object_type: FavoriteObjectType = ObjectTypePathParam,
-        payload: FavoriteObject = FavoriteObjectBody,
-        service: UsersService = depends(UsersService),
-    ) -> FavoriteObjectsSummary:
-        user = service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            tool_id = payload.object_id
-            tool = trans.app.toolbox.get_tool(tool_id)
-            if not tool:
-                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
-            if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            if "tools" in favorites:
-                favorite_tools = favorites["tools"]
-            else:
-                favorite_tools = []
-            if tool_id not in favorite_tools:
-                favorite_tools.append(tool_id)
+    return UserBeaconSetting(enabled=enabled)
+
+
+@router.post(
+    "/api/users/{user_id}/beacon",
+    name="set_beacon_settings",
+    summary="Change beacon setting",
+)
+def set_beacon(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    payload: UserBeaconSetting = Body(...),
+    service: UsersService = depends(UsersService),
+) -> UserBeaconSetting:
+    """
+    **Warning**: This endpoint is experimental and might change or disappear in future versions.
+    """
+    user = service.get_user(trans, user_id)
+
+    user.preferences["beacon_enabled"] = payload.enabled
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+
+    return payload
+
+
+@router.delete(
+    "/api/users/{user_id}/favorites/{object_type}/{object_id}",
+    name="remove_favorite",
+    summary="Remove the object from user's favorites",
+)
+def remove_favorite(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    object_type: FavoriteObjectType = ObjectTypePathParam,
+    object_id: str = ObjectIDPathParam,
+    service: UsersService = depends(UsersService),
+) -> FavoriteObjectsSummary:
+    user = service.get_user(trans, user_id)
+    favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
+    if object_type.value == "tools":
+        if "tools" in favorites:
+            favorite_tools = favorites["tools"]
+            if object_id in favorite_tools:
+                del favorite_tools[favorite_tools.index(object_id)]
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
-        return favorites
+            else:
+                raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
+    return favorites
 
-    @router.put(
-        "/api/users/{user_id}/theme/{theme}",
-        name="set_theme",
-        summary="Set the user's theme choice",
-    )
-    def set_theme(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        theme: str = ThemePathParam,
-        service: UsersService = depends(UsersService),
-    ) -> str:
-        user = service.get_user(trans, user_id)
-        user.preferences["theme"] = theme
+
+@router.put(
+    "/api/users/{user_id}/favorites/{object_type}",
+    name="set_favorite",
+    summary="Add the object to user's favorites",
+)
+def set_favorite(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    object_type: FavoriteObjectType = ObjectTypePathParam,
+    payload: FavoriteObject = FavoriteObjectBody,
+    service: UsersService = depends(UsersService),
+) -> FavoriteObjectsSummary:
+    user = service.get_user(trans, user_id)
+    favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
+    if object_type.value == "tools":
+        tool_id = payload.object_id
+        tool = trans.app.toolbox.get_tool(tool_id)
+        if not tool:
+            raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
+        if not tool.allow_user_access(user):
+            raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
+        if "tools" in favorites:
+            favorite_tools = favorites["tools"]
+        else:
+            favorite_tools = []
+        if tool_id not in favorite_tools:
+            favorite_tools.append(tool_id)
+            favorites["tools"] = favorite_tools
+            user.preferences["favorites"] = json.dumps(favorites)
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+    return favorites
+
+
+@router.put(
+    "/api/users/{user_id}/theme/{theme}",
+    name="set_theme",
+    summary="Set the user's theme choice",
+)
+def set_theme(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    theme: str = ThemePathParam,
+    service: UsersService = depends(UsersService),
+) -> str:
+    user = service.get_user(trans, user_id)
+    user.preferences["theme"] = theme
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
+    return theme
+
+
+@router.put(
+    "/api/users/{user_id}/custom_builds/{key}",
+    name="add_custom_builds",
+    summary="Add new custom build.",
+)
+def add_custom_builds(
+    key: str = CustomBuildKeyPathParam,
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    payload: CustomBuildCreationPayload = CustomBuildCreationBody,
+    service: UsersService = depends(UsersService),
+) -> Any:
+    user = service.get_user(trans, user_id)
+    dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+    name = payload.name
+    len_type = payload.len_type
+    len_value = payload.len_value
+    if len_type not in ["file", "fasta", "text"] or not len_value:
+        raise exceptions.RequestParameterInvalidException("Please specify a valid data source type.")
+    if not name or not key:
+        raise exceptions.RequestParameterMissingException("You must specify values for all the fields.")
+    elif key in dbkeys:
+        raise exceptions.DuplicatedIdentifierException(
+            "There is already a custom build with that key. Delete it first if you want to replace it."
+        )
+    else:
+        # Have everything needed; create new build.
+        build_dict = {"name": name}
+        if len_type in ["text", "file"]:
+            # Create new len file
+            new_len = trans.app.model.HistoryDatasetAssociation(
+                extension="len", create_dataset=True, sa_session=trans.sa_session
+            )
+            trans.sa_session.add(new_len)
+            new_len.name = name
+            new_len.visible = False
+            new_len.state = trans.app.model.Job.states.OK
+            new_len.info = "custom build .len file"
+            try:
+                trans.app.object_store.create(new_len.dataset)
+            except ObjectInvalid:
+                raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
+            counter = 0
+            lines_skipped = 0
+            with open(new_len.get_file_name(), "w") as f:
+                # LEN files have format:
+                #   <chrom_name><tab><chrom_length>
+                for line in len_value.split("\n"):
+                    # Splits at the last whitespace in the line
+                    lst = line.strip().rsplit(None, 1)
+                    if not lst or len(lst) < 2:
+                        lines_skipped += 1
+                        continue
+                    # TODO Does name length_str fit here?
+                    chrom, length_str = lst[0], lst[1]
+                    try:
+                        length = int(length_str)
+                    except ValueError:
+                        lines_skipped += 1
+                        continue
+                    if chrom != escape(chrom):
+                        build_dict["message"] = "Invalid chromosome(s) with HTML detected and skipped."
+                        lines_skipped += 1
+                        continue
+                    counter += 1
+                    f.write(f"{chrom}\t{length}\n")
+            build_dict["len"] = new_len.id
+            build_dict["count"] = str(counter)
+        else:
+            build_dict["fasta"] = trans.security.decode_id(len_value)
+            dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
+            try:
+                new_len = dataset.get_converted_dataset(trans, "len")
+                new_linecount = new_len.get_converted_dataset(trans, "linecount")
+                build_dict["len"] = new_len.id
+                build_dict["linecount"] = new_linecount.id
+            except Exception:
+                raise exceptions.ToolExecutionError("Failed to convert dataset.")
+        dbkeys[key] = build_dict
+        user.preferences["dbkeys"] = json.dumps(dbkeys)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
-        return theme
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.put(
-        "/api/users/{user_id}/custom_builds/{key}",
-        name="add_custom_builds",
-        summary="Add new custom build.",
-    )
-    def add_custom_builds(
-        key: str = CustomBuildKeyPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        payload: CustomBuildCreationPayload = CustomBuildCreationBody,
-        service: UsersService = depends(UsersService),
-    ) -> Any:
-        user = service.get_user(trans, user_id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        name = payload.name
-        len_type = payload.len_type
-        len_value = payload.len_value
-        if len_type not in ["file", "fasta", "text"] or not len_value:
-            raise exceptions.RequestParameterInvalidException("Please specify a valid data source type.")
-        if not name or not key:
-            raise exceptions.RequestParameterMissingException("You must specify values for all the fields.")
-        elif key in dbkeys:
-            raise exceptions.DuplicatedIdentifierException(
-                "There is already a custom build with that key. Delete it first if you want to replace it."
-            )
-        else:
-            # Have everything needed; create new build.
-            build_dict = {"name": name}
-            if len_type in ["text", "file"]:
-                # Create new len file
-                new_len = trans.app.model.HistoryDatasetAssociation(
-                    extension="len", create_dataset=True, sa_session=trans.sa_session
-                )
-                trans.sa_session.add(new_len)
-                new_len.name = name
-                new_len.visible = False
-                new_len.state = trans.app.model.Job.states.OK
-                new_len.info = "custom build .len file"
-                try:
-                    trans.app.object_store.create(new_len.dataset)
-                except ObjectInvalid:
-                    raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
-                counter = 0
-                lines_skipped = 0
-                with open(new_len.get_file_name(), "w") as f:
-                    # LEN files have format:
-                    #   <chrom_name><tab><chrom_length>
-                    for line in len_value.split("\n"):
-                        # Splits at the last whitespace in the line
-                        lst = line.strip().rsplit(None, 1)
-                        if not lst or len(lst) < 2:
-                            lines_skipped += 1
-                            continue
-                        # TODO Does name length_str fit here?
-                        chrom, length_str = lst[0], lst[1]
-                        try:
-                            length = int(length_str)
-                        except ValueError:
-                            lines_skipped += 1
-                            continue
-                        if chrom != escape(chrom):
-                            build_dict["message"] = "Invalid chromosome(s) with HTML detected and skipped."
-                            lines_skipped += 1
-                            continue
-                        counter += 1
-                        f.write(f"{chrom}\t{length}\n")
-                build_dict["len"] = new_len.id
-                build_dict["count"] = str(counter)
-            else:
-                build_dict["fasta"] = trans.security.decode_id(len_value)
-                dataset = trans.sa_session.get(HistoryDatasetAssociation, int(build_dict["fasta"]))
-                try:
-                    new_len = dataset.get_converted_dataset(trans, "len")
-                    new_linecount = new_len.get_converted_dataset(trans, "linecount")
-                    build_dict["len"] = new_len.id
-                    build_dict["linecount"] = new_linecount.id
-                except Exception:
-                    raise exceptions.ToolExecutionError("Failed to convert dataset.")
-            dbkeys[key] = build_dict
-            user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    @router.get(
-        "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."
-    )
-    def get_custom_builds(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> CustomBuildsCollection:
-        user = service.get_user(trans, user_id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        valid_dbkeys = {}
-        update = False
-        for key, dbkey in dbkeys.items():
-            if "count" not in dbkey and "linecount" in dbkey:
-                chrom_count_dataset = trans.sa_session.get(HistoryDatasetAssociation, dbkey["linecount"])
-                if (
-                    chrom_count_dataset
-                    and not chrom_count_dataset.deleted
-                    and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
-                ):
-                    chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
-                    dbkey["count"] = chrom_count
-                    valid_dbkeys[key] = dbkey
-                    update = True
-            else:
+@router.get(
+    "/api/users/{user_id}/custom_builds", name="get_custom_builds", summary=" Returns collection of custom builds."
+)
+def get_custom_builds(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> CustomBuildsCollection:
+    user = service.get_user(trans, user_id)
+    dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+    valid_dbkeys = {}
+    update = False
+    for key, dbkey in dbkeys.items():
+        if "count" not in dbkey and "linecount" in dbkey:
+            chrom_count_dataset = trans.sa_session.get(HistoryDatasetAssociation, dbkey["linecount"])
+            if (
+                chrom_count_dataset
+                and not chrom_count_dataset.deleted
+                and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
+            ):
+                chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
+                dbkey["count"] = chrom_count
                 valid_dbkeys[key] = dbkey
-        if update:
-            user.preferences["dbkeys"] = json.dumps(valid_dbkeys)
-        dbkey_collection = []
-        for key, attributes in valid_dbkeys.items():
-            attributes["id"] = key
-            dbkey_collection.append(attributes)
-        return CustomBuildsCollection.construct(__root__=dbkey_collection)
-
-    @router.delete(
-        "/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build"
-    )
-    def delete_custom_builds(
-        key: str = CustomBuildKeyPathParam,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> DeletedCustomBuild:
-        user = service.get_user(trans, user_id)
-        dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
-        if key and key in dbkeys:
-            del dbkeys[key]
-            user.preferences["dbkeys"] = json.dumps(dbkeys)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            return DeletedCustomBuild(message=f"Deleted {key}.")
+                update = True
         else:
-            raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
+            valid_dbkeys[key] = dbkey
+    if update:
+        user.preferences["dbkeys"] = json.dumps(valid_dbkeys)
+    dbkey_collection = []
+    for key, attributes in valid_dbkeys.items():
+        attributes["id"] = key
+        dbkey_collection.append(attributes)
+    return CustomBuildsCollection.construct(__root__=dbkey_collection)
 
-    @router.post(
-        "/api/users",
-        name="create_user",
-        summary="Create a new Galaxy user. Only admins can create users for now.",
-    )
-    def create(
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
-        service: UsersService = depends(UsersService),
-    ) -> CreatedUserModel:
-        if isinstance(payload, UserCreationPayload):
-            email = payload.email
-            username = payload.username
-            password = payload.password
-        if isinstance(payload, RemoteUserCreationPayload):
-            email = payload.remote_user_email
-            username = ""
-            password = ""
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
-            raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
-        if trans.app.config.use_remote_user and trans.user_is_admin:
-            user = service.user_manager.get_or_create_remote_user(remote_user_email=email)
-        elif trans.user_is_admin:
-            message = "\n".join(
-                (
-                    validate_email(trans, email),
-                    validate_password(trans, password, password),
-                    validate_publicname(trans, username),
-                )
-            ).rstrip()
-            if message:
-                raise exceptions.RequestParameterInvalidException(message)
-            else:
-                user = service.user_manager.create(email=email, username=username, password=password)
+
+@router.delete("/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build")
+def delete_custom_builds(
+    key: str = CustomBuildKeyPathParam,
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+) -> DeletedCustomBuild:
+    user = service.get_user(trans, user_id)
+    dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
+    if key and key in dbkeys:
+        del dbkeys[key]
+        user.preferences["dbkeys"] = json.dumps(dbkeys)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return DeletedCustomBuild(message=f"Deleted {key}.")
+    else:
+        raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
+
+
+@router.post(
+    "/api/users",
+    name="create_user",
+    summary="Create a new Galaxy user. Only admins can create users for now.",
+)
+def create(
+    trans: ProvidesUserContext = DependsOnTrans,
+    payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
+    service: UsersService = depends(UsersService),
+) -> CreatedUserModel:
+    if isinstance(payload, UserCreationPayload):
+        email = payload.email
+        username = payload.username
+        password = payload.password
+    if isinstance(payload, RemoteUserCreationPayload):
+        email = payload.remote_user_email
+        username = ""
+        password = ""
+    if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+        raise exceptions.ConfigDoesNotAllowException("User creation is not allowed in this Galaxy instance")
+    if trans.app.config.use_remote_user and trans.user_is_admin:
+        user = service.user_manager.get_or_create_remote_user(remote_user_email=email)
+    elif trans.user_is_admin:
+        message = "\n".join(
+            (
+                validate_email(trans, email),
+                validate_password(trans, password, password),
+                validate_publicname(trans, username),
+            )
+        ).rstrip()
+        if message:
+            raise exceptions.RequestParameterInvalidException(message)
         else:
-            raise exceptions.NotImplemented()
-        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
-        return item
+            user = service.user_manager.create(email=email, username=username, password=password)
+    else:
+        raise exceptions.NotImplemented()
+    item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
+    return item
 
-    @router.get(
-        "/api/users",
-        name="get_users",
-        description="Return a collection of users. Filters will only work if enabled in config or user is admin.",
-        response_model_exclude_unset=True,
-    )
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        deleted: bool = UsersDeletedQueryParam,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> List[Union[UserModel, LimitedUserModel]]:
-        return service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
-    @router.get(
-        "/api/users/{user_id}",
-        name="get_user",
-        summary="Return information about a specified or the current user. Only admin can see deleted or other users",
-    )
-    def show(
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        deleted: Optional[bool] = UserDeletedQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> AnyUserModel:
-        user_deleted = deleted or False
-        return service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
+@router.get(
+    "/api/users",
+    name="get_users",
+    description="Return a collection of users. Filters will only work if enabled in config or user is admin.",
+    response_model_exclude_unset=True,
+)
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    deleted: bool = UsersDeletedQueryParam,
+    f_email: Optional[str] = FilterEmailQueryParam,
+    f_name: Optional[str] = FilterNameQueryParam,
+    f_any: Optional[str] = FilterAnyQueryParam,
+    service: UsersService = depends(UsersService),
+) -> List[Union[UserModel, LimitedUserModel]]:
+    return service.get_index(trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any)
 
-    @router.put(
-        "/api/users/{user_id}", name="update_user", summary="Update the values of a user. Only admin can update others."
-    )
-    def update(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        payload: Dict[Any, Any] = UserUpdateBody,
-        deleted: Optional[bool] = UserDeletedQueryParam,
-        service: UsersService = depends(UsersService),
-    ) -> DetailedUserModel:
-        deleted = deleted or False
-        current_user = trans.user
-        user_to_update = service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
-        service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
-        return service.user_to_detailed_model(user_to_update)
 
-    @router.delete(
-        "/api/users/{user_id}",
-        name="delete_user",
-        summary="Delete a user. Only admins can delete others or purge users.",
-    )
-    def delete(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        payload: Optional[UserDeletionPayload] = UserDeletionBody,
-        service: UsersService = depends(UsersService),
-    ) -> DetailedUserModel:
-        user_to_update = service.user_manager.by_id(user_id)
-        if payload:
-            purge = payload.purge
+@router.get(
+    "/api/users/{user_id}",
+    name="get_user",
+    summary="Return information about a specified or the current user. Only admin can see deleted or other users",
+)
+def show(
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    deleted: Optional[bool] = UserDeletedQueryParam,
+    service: UsersService = depends(UsersService),
+) -> AnyUserModel:
+    user_deleted = deleted or False
+    return service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
+
+
+@router.put(
+    "/api/users/{user_id}", name="update_user", summary="Update the values of a user. Only admin can update others."
+)
+def update(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    payload: Dict[Any, Any] = UserUpdateBody,
+    deleted: Optional[bool] = UserDeletedQueryParam,
+    service: UsersService = depends(UsersService),
+) -> DetailedUserModel:
+    deleted = deleted or False
+    current_user = trans.user
+    user_to_update = service.get_non_anonymous_user_full(trans, user_id, deleted=deleted)
+    service.user_deserializer.deserialize(user_to_update, payload, user=current_user, trans=trans)
+    return service.user_to_detailed_model(user_to_update)
+
+
+@router.delete(
+    "/api/users/{user_id}",
+    name="delete_user",
+    summary="Delete a user. Only admins can delete others or purge users.",
+)
+def delete(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    payload: Optional[UserDeletionPayload] = UserDeletionBody,
+    service: UsersService = depends(UsersService),
+) -> DetailedUserModel:
+    user_to_update = service.user_manager.by_id(user_id)
+    if payload:
+        purge = payload.purge
+    else:
+        purge = False
+    if trans.user_is_admin:
+        if purge:
+            log.debug("Purging user %s", user_to_update)
+            service.user_manager.purge(user_to_update)
         else:
-            purge = False
-        if trans.user_is_admin:
-            if purge:
-                log.debug("Purging user %s", user_to_update)
-                service.user_manager.purge(user_to_update)
-            else:
-                service.user_manager.delete(user_to_update)
+            service.user_manager.delete(user_to_update)
+    else:
+        if trans.user == user_to_update:
+            service.user_manager.delete(user_to_update)
         else:
-            if trans.user == user_to_update:
-                service.user_manager.delete(user_to_update)
-            else:
-                raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
-        return service.user_to_detailed_model(user_to_update)
+            raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
+    return service.user_to_detailed_model(user_to_update)
 
-    @router.post(
-        "/api/users/{user_id}/send_activation_email",
-        name="send_activation_email",
-        summary="Sends activation email to user.",
-        require_admin=True,
-    )
-    def send_activation_email(
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-        service: UsersService = depends(UsersService),
-    ):
-        user = trans.sa_session.query(trans.model.User).get(user_id)
-        if not user:
-            raise exceptions.ObjectNotFound("User not found for given id.")
-        if not service.user_manager.send_activation_email(trans, user.email, user.username):
-            raise exceptions.MessageException("Unable to send activation email.")
+
+@router.post(
+    "/api/users/{user_id}/send_activation_email",
+    name="send_activation_email",
+    summary="Sends activation email to user.",
+    require_admin=True,
+)
+def send_activation_email(
+    trans: ProvidesUserContext = DependsOnTrans,
+    user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    service: UsersService = depends(UsersService),
+):
+    user = trans.sa_session.query(trans.model.User).get(user_id)
+    if not user:
+        raise exceptions.ObjectNotFound("User not found for given id.")
+    if not service.user_manager.send_activation_email(trans, user.email, user.username):
+        raise exceptions.MessageException("Unable to send activation email.")
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

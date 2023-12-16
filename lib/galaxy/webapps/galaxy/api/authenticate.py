@@ -50,14 +50,13 @@ class AuthenticationController(BaseGalaxyAPIController):
         # trans.response.headers['Access-Control-Allow-Methods'] = 'POST, PUT, GET, OPTIONS, DELETE'
 
 
-class FastAPIAuthenticate:
-    @router.get(
-        "/api/authenticate/baseauth",
-        summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
-    )
-    def get_api_key(
-        request: Request, authentication_service: AuthenticationService = depends(AuthenticationService)
-    ) -> APIKeyResponse:
-        authorization = request.headers.get("Authorization")
-        auth = {"HTTP_AUTHORIZATION": authorization}
-        return authentication_service.get_api_key(auth, request)
+@router.get(
+    "/api/authenticate/baseauth",
+    summary="Returns returns an API key for authenticated user based on BaseAuth headers.",
+)
+def get_api_key(
+    request: Request, authentication_service: AuthenticationService = depends(AuthenticationService)
+) -> APIKeyResponse:
+    authorization = request.headers.get("Authorization")
+    auth = {"HTTP_AUTHORIZATION": authorization}
+    return authentication_service.get_api_key(auth, request)

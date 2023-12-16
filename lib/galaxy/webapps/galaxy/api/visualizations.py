@@ -109,129 +109,135 @@ VisualizationIdPathParam: DecodedDatabaseIdField = Path(
 )
 
 
-class FastAPIVisualizations:
-    @router.get(
-        "/api/visualizations",
-        summary="Returns visualizations for the current user.",
+@router.get(
+    "/api/visualizations",
+    summary="Returns visualizations for the current user.",
+)
+async def index(
+    response: Response,
+    trans: ProvidesUserContext = DependsOnTrans,
+    deleted: bool = DeletedQueryParam,
+    limit: Optional[int] = LimitQueryParam,
+    offset: Optional[int] = OffsetQueryParam,
+    user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+    show_own: bool = ShowOwnQueryParam,
+    show_published: bool = ShowPublishedQueryParam,
+    show_shared: bool = ShowSharedQueryParam,
+    sort_by: VisualizationSortByEnum = SortByQueryParam,
+    sort_desc: bool = SortDescQueryParam,
+    search: Optional[str] = SearchQueryParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> VisualizationSummaryList:
+    payload = VisualizationIndexQueryPayload.construct(
+        deleted=deleted,
+        user_id=user_id,
+        show_published=show_published,
+        show_own=show_own,
+        show_shared=show_shared,
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+        limit=limit,
+        offset=offset,
+        search=search,
     )
-    async def index(
-        response: Response,
-        trans: ProvidesUserContext = DependsOnTrans,
-        deleted: bool = DeletedQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
-        show_own: bool = ShowOwnQueryParam,
-        show_published: bool = ShowPublishedQueryParam,
-        show_shared: bool = ShowSharedQueryParam,
-        sort_by: VisualizationSortByEnum = SortByQueryParam,
-        sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> VisualizationSummaryList:
-        payload = VisualizationIndexQueryPayload.construct(
-            deleted=deleted,
-            user_id=user_id,
-            show_published=show_published,
-            show_own=show_own,
-            show_shared=show_shared,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
-        )
-        entries, total_matches = service.index(trans, payload, include_total_count=True)
-        response.headers["total_matches"] = str(total_matches)
-        return entries
+    entries, total_matches = service.index(trans, payload, include_total_count=True)
+    response.headers["total_matches"] = str(total_matches)
+    return entries
 
-    @router.get(
-        "/api/visualizations/{id}/sharing",
-        summary="Get the current sharing status of the given Visualization.",
-    )
-    def sharing(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> SharingStatus:
-        """Return the sharing status of the item."""
-        return service.shareable_service.sharing(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/enable_link_access",
-        summary="Makes this item accessible by a URL link.",
-    )
-    def enable_link_access(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> SharingStatus:
-        """Makes this item accessible by a URL link and return the current sharing status."""
-        return service.shareable_service.enable_link_access(trans, id)
+@router.get(
+    "/api/visualizations/{id}/sharing",
+    summary="Get the current sharing status of the given Visualization.",
+)
+def sharing(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> SharingStatus:
+    """Return the sharing status of the item."""
+    return service.shareable_service.sharing(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/disable_link_access",
-        summary="Makes this item inaccessible by a URL link.",
-    )
-    def disable_link_access(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> SharingStatus:
-        """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return service.shareable_service.disable_link_access(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/publish",
-        summary="Makes this item public and accessible by a URL link.",
-    )
-    def publish(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> SharingStatus:
-        """Makes this item publicly available by a URL link and return the current sharing status."""
-        return service.shareable_service.publish(trans, id)
+@router.put(
+    "/api/visualizations/{id}/enable_link_access",
+    summary="Makes this item accessible by a URL link.",
+)
+def enable_link_access(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> SharingStatus:
+    """Makes this item accessible by a URL link and return the current sharing status."""
+    return service.shareable_service.enable_link_access(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/unpublish",
-        summary="Removes this item from the published list.",
-    )
-    def unpublish(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> SharingStatus:
-        """Removes this item from the published list and return the current sharing status."""
-        return service.shareable_service.unpublish(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/share_with_users",
-        summary="Share this item with specific users.",
-    )
-    def share_with_users(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        payload: ShareWithPayload = Body(...),
-        service: VisualizationsService = depends(VisualizationsService),
-    ) -> ShareWithStatus:
-        """Shares this item with specific users and return the current sharing status."""
-        return service.shareable_service.share_with_users(trans, id, payload)
+@router.put(
+    "/api/visualizations/{id}/disable_link_access",
+    summary="Makes this item inaccessible by a URL link.",
+)
+def disable_link_access(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> SharingStatus:
+    """Makes this item inaccessible by a URL link and return the current sharing status."""
+    return service.shareable_service.disable_link_access(trans, id)
 
-    @router.put(
-        "/api/visualizations/{id}/slug",
-        summary="Set a new slug for this shared item.",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def set_slug(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
-        payload: SetSlugPayload = Body(...),
-        service: VisualizationsService = depends(VisualizationsService),
-    ):
-        """Sets a new slug to access this item by URL. The new slug must be unique."""
-        service.shareable_service.set_slug(trans, id, payload)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.put(
+    "/api/visualizations/{id}/publish",
+    summary="Makes this item public and accessible by a URL link.",
+)
+def publish(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> SharingStatus:
+    """Makes this item publicly available by a URL link and return the current sharing status."""
+    return service.shareable_service.publish(trans, id)
+
+
+@router.put(
+    "/api/visualizations/{id}/unpublish",
+    summary="Removes this item from the published list.",
+)
+def unpublish(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    service: VisualizationsService = depends(VisualizationsService),
+) -> SharingStatus:
+    """Removes this item from the published list and return the current sharing status."""
+    return service.shareable_service.unpublish(trans, id)
+
+
+@router.put(
+    "/api/visualizations/{id}/share_with_users",
+    summary="Share this item with specific users.",
+)
+def share_with_users(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    payload: ShareWithPayload = Body(...),
+    service: VisualizationsService = depends(VisualizationsService),
+) -> ShareWithStatus:
+    """Shares this item with specific users and return the current sharing status."""
+    return service.shareable_service.share_with_users(trans, id, payload)
+
+
+@router.put(
+    "/api/visualizations/{id}/slug",
+    summary="Set a new slug for this shared item.",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def set_slug(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = VisualizationIdPathParam,
+    payload: SetSlugPayload = Body(...),
+    service: VisualizationsService = depends(VisualizationsService),
+):
+    """Sets a new slug to access this item by URL. The new slug must be unique."""
+    service.shareable_service.set_slug(trans, id, payload)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, UsesAnnotations):

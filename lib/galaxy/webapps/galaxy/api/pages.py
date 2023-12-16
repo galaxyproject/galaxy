@@ -94,211 +94,222 @@ SearchQueryParam: Optional[str] = search_query_param(
 )
 
 
-class FastAPIPages:
-    @router.get(
-        "/api/pages",
-        summary="Lists all Pages viewable by the user.",
-        response_description="A list with summary page information.",
+@router.get(
+    "/api/pages",
+    summary="Lists all Pages viewable by the user.",
+    response_description="A list with summary page information.",
+)
+async def index(
+    response: Response,
+    trans: ProvidesUserContext = DependsOnTrans,
+    deleted: bool = DeletedQueryParam,
+    user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+    show_published: bool = ShowPublishedQueryParam,
+    show_shared: bool = ShowSharedQueryParam,
+    sort_by: PageSortByEnum = SortByQueryParam,
+    sort_desc: bool = SortDescQueryParam,
+    limit: int = LimitQueryParam,
+    offset: int = OffsetQueryParam,
+    search: Optional[str] = SearchQueryParam,
+    service: PagesService = depends(PagesService),
+) -> PageSummaryList:
+    """Get a list with summary information of all Pages available to the user."""
+    payload = PageIndexQueryPayload.construct(
+        deleted=deleted,
+        user_id=user_id,
+        show_published=show_published,
+        show_shared=show_shared,
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+        limit=limit,
+        offset=offset,
+        search=search,
     )
-    async def index(
-        response: Response,
-        trans: ProvidesUserContext = DependsOnTrans,
-        deleted: bool = DeletedQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
-        show_published: bool = ShowPublishedQueryParam,
-        show_shared: bool = ShowSharedQueryParam,
-        sort_by: PageSortByEnum = SortByQueryParam,
-        sort_desc: bool = SortDescQueryParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParam,
-        service: PagesService = depends(PagesService),
-    ) -> PageSummaryList:
-        """Get a list with summary information of all Pages available to the user."""
-        payload = PageIndexQueryPayload.construct(
-            deleted=deleted,
-            user_id=user_id,
-            show_published=show_published,
-            show_shared=show_shared,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
-        )
-        pages, total_matches = service.index(trans, payload, include_total_count=True)
-        response.headers["total_matches"] = str(total_matches)
-        return pages
+    pages, total_matches = service.index(trans, payload, include_total_count=True)
+    response.headers["total_matches"] = str(total_matches)
+    return pages
 
-    @router.post(
-        "/api/pages",
-        summary="Create a page and return summary information.",
-        response_description="The page summary information.",
-    )
-    def create(
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: CreatePagePayload = Body(...),
-        service: PagesService = depends(PagesService),
-    ) -> PageSummary:
-        """Get a list with details of all Pages available to the user."""
-        return service.create(trans, payload)
 
-    @router.delete(
-        "/api/pages/{id}",
-        summary="Marks the specific Page as deleted.",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    async def delete(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ):
-        """Marks the Page with the given ID as deleted."""
-        service.delete(trans, id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/api/pages",
+    summary="Create a page and return summary information.",
+    response_description="The page summary information.",
+)
+def create(
+    trans: ProvidesUserContext = DependsOnTrans,
+    payload: CreatePagePayload = Body(...),
+    service: PagesService = depends(PagesService),
+) -> PageSummary:
+    """Get a list with details of all Pages available to the user."""
+    return service.create(trans, payload)
 
-    @router.get(
-        "/api/pages/{id}.pdf",
-        summary="Return a PDF document of the last revision of the Page.",
-        response_class=StreamingResponse,
-        responses={
-            200: {
-                "description": "PDF document with the last revision of the page.",
-                "content": {"application/pdf": {}},
-            },
-            501: {"description": "PDF conversion service not available."},
+
+@router.delete(
+    "/api/pages/{id}",
+    summary="Marks the specific Page as deleted.",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+):
+    """Marks the Page with the given ID as deleted."""
+    service.delete(trans, id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/api/pages/{id}.pdf",
+    summary="Return a PDF document of the last revision of the Page.",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "PDF document with the last revision of the page.",
+            "content": {"application/pdf": {}},
         },
-    )
-    async def show_pdf(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ):
-        """Return a PDF document of the last revision of the Page.
+        501: {"description": "PDF conversion service not available."},
+    },
+)
+async def show_pdf(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+):
+    """Return a PDF document of the last revision of the Page.
 
-        This feature may not be available in this Galaxy.
-        """
-        pdf_bytes = service.show_pdf(trans, id)
-        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+    This feature may not be available in this Galaxy.
+    """
+    pdf_bytes = service.show_pdf(trans, id)
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
-    @router.post(
-        "/api/pages/{id}/prepare_download",
-        summary="Return a PDF document of the last revision of the Page.",
-        responses={
-            200: {
-                "description": "Short term storage reference for async monitoring of this download.",
-            },
-            501: {"description": "PDF conversion service not available."},
+
+@router.post(
+    "/api/pages/{id}/prepare_download",
+    summary="Return a PDF document of the last revision of the Page.",
+    responses={
+        200: {
+            "description": "Short term storage reference for async monitoring of this download.",
         },
-    )
-    async def prepare_pdf(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> AsyncFile:
-        """Return a STS download link for this page to be downloaded as a PDF.
+        501: {"description": "PDF conversion service not available."},
+    },
+)
+async def prepare_pdf(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> AsyncFile:
+    """Return a STS download link for this page to be downloaded as a PDF.
 
-        This feature may not be available in this Galaxy.
-        """
-        return service.prepare_pdf(trans, id)
+    This feature may not be available in this Galaxy.
+    """
+    return service.prepare_pdf(trans, id)
 
-    @router.get(
-        "/api/pages/{id}",
-        summary="Return a page summary and the content of the last revision.",
-        response_description="The page summary information.",
-    )
-    async def show(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> PageDetails:
-        """Return summary information about a specific Page and the content of the last revision."""
-        return service.show(trans, id)
 
-    @router.get(
-        "/api/pages/{id}/sharing",
-        summary="Get the current sharing status of the given Page.",
-    )
-    def sharing(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> SharingStatus:
-        """Return the sharing status of the item."""
-        return service.shareable_service.sharing(trans, id)
+@router.get(
+    "/api/pages/{id}",
+    summary="Return a page summary and the content of the last revision.",
+    response_description="The page summary information.",
+)
+async def show(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> PageDetails:
+    """Return summary information about a specific Page and the content of the last revision."""
+    return service.show(trans, id)
 
-    @router.put(
-        "/api/pages/{id}/enable_link_access",
-        summary="Makes this item accessible by a URL link.",
-    )
-    def enable_link_access(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> SharingStatus:
-        """Makes this item accessible by a URL link and return the current sharing status."""
-        return service.shareable_service.enable_link_access(trans, id)
 
-    @router.put(
-        "/api/pages/{id}/disable_link_access",
-        summary="Makes this item inaccessible by a URL link.",
-    )
-    def disable_link_access(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> SharingStatus:
-        """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return service.shareable_service.disable_link_access(trans, id)
+@router.get(
+    "/api/pages/{id}/sharing",
+    summary="Get the current sharing status of the given Page.",
+)
+def sharing(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> SharingStatus:
+    """Return the sharing status of the item."""
+    return service.shareable_service.sharing(trans, id)
 
-    @router.put(
-        "/api/pages/{id}/publish",
-        summary="Makes this item public and accessible by a URL link.",
-    )
-    def publish(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> SharingStatus:
-        """Makes this item publicly available by a URL link and return the current sharing status."""
-        return service.shareable_service.publish(trans, id)
 
-    @router.put(
-        "/api/pages/{id}/unpublish",
-        summary="Removes this item from the published list.",
-    )
-    def unpublish(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        service: PagesService = depends(PagesService),
-    ) -> SharingStatus:
-        """Removes this item from the published list and return the current sharing status."""
-        return service.shareable_service.unpublish(trans, id)
+@router.put(
+    "/api/pages/{id}/enable_link_access",
+    summary="Makes this item accessible by a URL link.",
+)
+def enable_link_access(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> SharingStatus:
+    """Makes this item accessible by a URL link and return the current sharing status."""
+    return service.shareable_service.enable_link_access(trans, id)
 
-    @router.put(
-        "/api/pages/{id}/share_with_users",
-        summary="Share this item with specific users.",
-    )
-    def share_with_users(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        payload: ShareWithPayload = Body(...),
-        service: PagesService = depends(PagesService),
-    ) -> ShareWithStatus:
-        """Shares this item with specific users and return the current sharing status."""
-        return service.shareable_service.share_with_users(trans, id, payload)
 
-    @router.put(
-        "/api/pages/{id}/slug",
-        summary="Set a new slug for this shared item.",
-        status_code=status.HTTP_204_NO_CONTENT,
-    )
-    def set_slug(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
-        payload: SetSlugPayload = Body(...),
-        service: PagesService = depends(PagesService),
-    ):
-        """Sets a new slug to access this item by URL. The new slug must be unique."""
-        service.shareable_service.set_slug(trans, id, payload)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.put(
+    "/api/pages/{id}/disable_link_access",
+    summary="Makes this item inaccessible by a URL link.",
+)
+def disable_link_access(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> SharingStatus:
+    """Makes this item inaccessible by a URL link and return the current sharing status."""
+    return service.shareable_service.disable_link_access(trans, id)
+
+
+@router.put(
+    "/api/pages/{id}/publish",
+    summary="Makes this item public and accessible by a URL link.",
+)
+def publish(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> SharingStatus:
+    """Makes this item publicly available by a URL link and return the current sharing status."""
+    return service.shareable_service.publish(trans, id)
+
+
+@router.put(
+    "/api/pages/{id}/unpublish",
+    summary="Removes this item from the published list.",
+)
+def unpublish(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    service: PagesService = depends(PagesService),
+) -> SharingStatus:
+    """Removes this item from the published list and return the current sharing status."""
+    return service.shareable_service.unpublish(trans, id)
+
+
+@router.put(
+    "/api/pages/{id}/share_with_users",
+    summary="Share this item with specific users.",
+)
+def share_with_users(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    payload: ShareWithPayload = Body(...),
+    service: PagesService = depends(PagesService),
+) -> ShareWithStatus:
+    """Shares this item with specific users and return the current sharing status."""
+    return service.shareable_service.share_with_users(trans, id, payload)
+
+
+@router.put(
+    "/api/pages/{id}/slug",
+    summary="Set a new slug for this shared item.",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def set_slug(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = PageIdPathParam,
+    payload: SetSlugPayload = Body(...),
+    service: PagesService = depends(PagesService),
+):
+    """Sets a new slug to access this item by URL. The new slug must be unique."""
+    service.shareable_service.set_slug(trans, id, payload)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -129,308 +129,323 @@ DisplayChunkSizeQueryParam = Query(
 )
 
 
-class FastAPIDatasets:
-    @router.get(
-        "/api/datasets",
-        summary="Search datasets or collections using a query system.",
-    )
-    def index(
-        trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Query(
-            default=None,
-            description="Optional identifier of a History. Use it to restrict the search within a particular History.",
+@router.get(
+    "/api/datasets",
+    summary="Search datasets or collections using a query system.",
+)
+def index(
+    trans=DependsOnTrans,
+    history_id: Optional[DecodedDatabaseIdField] = Query(
+        default=None,
+        description="Optional identifier of a History. Use it to restrict the search within a particular History.",
+    ),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    service: DatasetsService = depends(DatasetsService),
+) -> List[AnyHistoryContentItem]:
+    return service.index(trans, history_id, serialization_params, filter_query_params)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/storage",
+    summary="Display user-facing storage details related to the objectstore a dataset resides in.",
+)
+def show_storage(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetStorageDetails:
+    return service.show_storage(trans, dataset_id, hda_ldda)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/inheritance_chain",
+    summary="For internal use, this endpoint may change without warning.",
+    include_in_schema=True,  # Can be changed to False if we don't really want to expose this
+)
+def show_inheritance_chain(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetInheritanceChain:
+    return service.show_inheritance_chain(trans, dataset_id, hda_ldda)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/get_content_as_text",
+    summary="Returns dataset content as Text.",
+)
+def get_content_as_text(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetTextContentDetails:
+    return service.get_content_as_text(trans, dataset_id)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/converted/{ext}",
+    summary="Return information about datasets made by converting this dataset to a new format.",
+)
+def converted_ext(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    ext: str = Path(
+        ...,
+        description="File extension of the new format to convert this dataset to.",
+    ),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    service: DatasetsService = depends(DatasetsService),
+) -> AnyHDA:
+    """
+    Return information about datasets made by converting this dataset to a new format.
+
+    If there is no existing converted dataset for the format in `ext`, one will be created.
+
+    **Note**: `view` and `keys` are also available to control the serialization of the dataset.
+    """
+    return service.converted_ext(trans, dataset_id, ext, serialization_params)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/converted",
+    summary=("Return a a map with all the existing converted datasets associated with this instance."),
+)
+def converted(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> ConvertedDatasetsMap:
+    """
+    Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
+    """
+    return service.converted(trans, dataset_id)
+
+
+@router.put(
+    "/api/datasets/{dataset_id}/permissions",
+    summary="Set permissions of the given history dataset to the given role ids.",
+)
+def update_permissions(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
+    payload: Dict[str, Any] = Body(
+        default=...,
+        example=UpdateDatasetPermissionsPayload(),
+    ),
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetAssociationRoles:
+    """Set permissions of the given history dataset to the given role ids."""
+    update_payload = get_update_permission_payload(payload)
+    return service.update_permissions(trans, dataset_id, update_payload)
+
+
+@router.get(
+    "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
+    summary="Get the list of extra files/directories associated with a dataset.",
+    tags=["histories"],
+)
+def extra_files_history(
+    trans=DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetExtraFiles:
+    return service.extra_files(trans, history_content_id)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/extra_files",
+    summary="Get the list of extra files/directories associated with a dataset.",
+)
+def extra_files(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    service: DatasetsService = depends(DatasetsService),
+) -> DatasetExtraFiles:
+    return service.extra_files(trans, dataset_id)
+
+
+@router.get(
+    "/api/histories/{history_id}/contents/{history_content_id}/display",
+    name="history_contents_display",
+    summary="Displays (preview) or downloads dataset content.",
+    tags=["histories"],
+    response_class=StreamingResponse,
+)
+@router.head(
+    "/api/histories/{history_id}/contents/{history_content_id}/display",
+    name="history_contents_display",
+    summary="Check if dataset content can be previewed or downloaded.",
+    tags=["histories"],
+)
+def display_history_content(
+    request: Request,
+    trans=DependsOnTrans,
+    history_id: Optional[DecodedDatabaseIdField] = HistoryIDPathParam,
+    history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    preview: bool = PreviewQueryParam,
+    filename: Optional[str] = FilenameQueryParam,
+    to_ext: Optional[str] = ToExtQueryParam,
+    raw: bool = RawQueryParam,
+    offset: Optional[int] = DisplayOffsetQueryParam,
+    ck_size: Optional[int] = DisplayChunkSizeQueryParam,
+    service: DatasetsService = depends(DatasetsService),
+):
+    """Streams the dataset for download or the contents preview to be displayed in a browser."""
+    return _display(request, trans, history_content_id, preview, filename, to_ext, raw, service, offset, ck_size)
+
+
+@router.get(
+    "/api/datasets/{history_content_id}/display",
+    summary="Displays (preview) or downloads dataset content.",
+    response_class=StreamingResponse,
+)
+@router.head(
+    "/api/datasets/{history_content_id}/display",
+    summary="Check if dataset content can be previewed or downloaded.",
+)
+def display(
+    request: Request,
+    trans=DependsOnTrans,
+    history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    preview: bool = PreviewQueryParam,
+    filename: Optional[str] = FilenameQueryParam,
+    to_ext: Optional[str] = ToExtQueryParam,
+    raw: bool = RawQueryParam,
+    offset: Optional[int] = DisplayOffsetQueryParam,
+    ck_size: Optional[int] = DisplayChunkSizeQueryParam,
+    service: DatasetsService = depends(DatasetsService),
+):
+    """Streams the dataset for download or the contents preview to be displayed in a browser."""
+    return _display(request, trans, history_content_id, preview, filename, to_ext, raw, service, offset, ck_size)
+
+
+@router.get(
+    "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
+    summary="Returns the metadata file associated with this history item.",
+    name="get_metadata_file",
+    tags=["histories"],
+    operation_id="history_contents__get_metadata_file",
+    response_class=GalaxyFileResponse,
+)
+def get_metadata_file_history_content(
+    trans=DependsOnTrans,
+    history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+    history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    metadata_file: str = Query(
+        ...,
+        description="The name of the metadata file to retrieve.",
+    ),
+    service: DatasetsService = depends(DatasetsService),
+):
+    return _get_metadata_file(trans, history_content_id, metadata_file, service)
+
+
+@router.get(
+    "/api/datasets/{history_content_id}/metadata_file",
+    summary="Returns the metadata file associated with this history item.",
+    response_class=GalaxyFileResponse,
+    operation_id="datasets__get_metadata_file",
+)
+@router.head(
+    "/api/datasets/{history_content_id}/metadata_file",
+    summary="Check if metadata file can be downloaded.",
+)
+def get_metadata_file_datasets(
+    trans=DependsOnTrans,
+    history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    metadata_file: str = Query(
+        ...,
+        description="The name of the metadata file to retrieve.",
+    ),
+    service: DatasetsService = depends(DatasetsService),
+):
+    return _get_metadata_file(trans, history_content_id, metadata_file, service)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}",
+    summary="Displays information about and/or content of a dataset.",
+)
+def show(
+    request: Request,
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    hda_ldda: DatasetSourceType = Query(
+        default=DatasetSourceType.hda,
+        description=("The type of information about the dataset to be requested."),
+    ),
+    data_type: Optional[RequestDataType] = Query(
+        default=None,
+        description=(
+            "The type of information about the dataset to be requested. "
+            "Each of these values may require additional parameters in the request and "
+            "may return different responses."
         ),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
-        service: DatasetsService = depends(DatasetsService),
-    ) -> List[AnyHistoryContentItem]:
-        return service.index(trans, history_id, serialization_params, filter_query_params)
+    ),
+    serialization_params: SerializationParams = Depends(query_serialization_params),
+    service: DatasetsService = depends(DatasetsService),
+):
+    """
+    **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
+    and return different kinds of responses, the documentation here will be limited.
+    To get more information please check the source code.
+    """
+    exclude_params = {"hda_ldda", "data_type"}
+    exclude_params.update(SerializationParams.__fields__.keys())
+    extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/storage",
-        summary="Display user-facing storage details related to the objectstore a dataset resides in.",
-    )
-    def show_storage(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetStorageDetails:
-        return service.show_storage(trans, dataset_id, hda_ldda)
+    return service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/inheritance_chain",
-        summary="For internal use, this endpoint may change without warning.",
-        include_in_schema=True,  # Can be changed to False if we don't really want to expose this
-    )
-    def show_inheritance_chain(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetInheritanceChain:
-        return service.show_inheritance_chain(trans, dataset_id, hda_ldda)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/get_content_as_text",
-        summary="Returns dataset content as Text.",
-    )
-    def get_content_as_text(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetTextContentDetails:
-        return service.get_content_as_text(trans, dataset_id)
+@router.get(
+    "/api/datasets/{dataset_id}/content/{content_type}",
+    summary="Retrieve information about the content of a dataset.",
+)
+def get_structured_content(
+    request: Request,
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    content_type: DatasetContentType = DatasetContentType.data,
+    service: DatasetsService = depends(DatasetsService),
+):
+    content, headers = service.get_structured_content(trans, dataset_id, content_type, **request.query_params)
+    return Response(content=content, headers=headers)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/converted/{ext}",
-        summary="Return information about datasets made by converting this dataset to a new format.",
-    )
-    def converted_ext(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        ext: str = Path(
-            ...,
-            description="File extension of the new format to convert this dataset to.",
-        ),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        service: DatasetsService = depends(DatasetsService),
-    ) -> AnyHDA:
-        """
-        Return information about datasets made by converting this dataset to a new format.
 
-        If there is no existing converted dataset for the format in `ext`, one will be created.
+@router.delete(
+    "/api/datasets",
+    summary="Deletes or purges a batch of datasets.",
+)
+def delete_batch(
+    trans=DependsOnTrans,
+    payload: DeleteDatasetBatchPayload = Body(...),
+    service: DatasetsService = depends(DatasetsService),
+) -> DeleteDatasetBatchResult:
+    """
+    Deletes or purges a batch of datasets.
+    **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
+    no other checks or restrictions are made.
+    """
+    return service.delete_batch(trans, payload)
 
-        **Note**: `view` and `keys` are also available to control the serialization of the dataset.
-        """
-        return service.converted_ext(trans, dataset_id, ext, serialization_params)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/converted",
-        summary=("Return a a map with all the existing converted datasets associated with this instance."),
-    )
-    def converted(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> ConvertedDatasetsMap:
-        """
-        Return a map of `<converted extension> : <converted id>` containing all the *existing* converted datasets.
-        """
-        return service.converted(trans, dataset_id)
-
-    @router.put(
-        "/api/datasets/{dataset_id}/permissions",
-        summary="Set permissions of the given history dataset to the given role ids.",
-    )
-    def update_permissions(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
-        payload: Dict[str, Any] = Body(
-            default=...,
-            example=UpdateDatasetPermissionsPayload(),
-        ),
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetAssociationRoles:
-        """Set permissions of the given history dataset to the given role ids."""
-        update_payload = get_update_permission_payload(payload)
-        return service.update_permissions(trans, dataset_id, update_payload)
-
-    @router.get(
-        "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
-        summary="Get the list of extra files/directories associated with a dataset.",
-        tags=["histories"],
-    )
-    def extra_files_history(
-        trans=DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetExtraFiles:
-        return service.extra_files(trans, history_content_id)
-
-    @router.get(
-        "/api/datasets/{dataset_id}/extra_files",
-        summary="Get the list of extra files/directories associated with a dataset.",
-    )
-    def extra_files(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DatasetExtraFiles:
-        return service.extra_files(trans, dataset_id)
-
-    @router.get(
-        "/api/histories/{history_id}/contents/{history_content_id}/display",
-        name="history_contents_display",
-        summary="Displays (preview) or downloads dataset content.",
-        tags=["histories"],
-        response_class=StreamingResponse,
-    )
-    @router.head(
-        "/api/histories/{history_id}/contents/{history_content_id}/display",
-        name="history_contents_display",
-        summary="Check if dataset content can be previewed or downloaded.",
-        tags=["histories"],
-    )
-    def display_history_content(
-        request: Request,
-        trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = HistoryIDPathParam,
-        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        preview: bool = PreviewQueryParam,
-        filename: Optional[str] = FilenameQueryParam,
-        to_ext: Optional[str] = ToExtQueryParam,
-        raw: bool = RawQueryParam,
-        offset: Optional[int] = DisplayOffsetQueryParam,
-        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        """Streams the dataset for download or the contents preview to be displayed in a browser."""
-        return _display(request, trans, history_content_id, preview, filename, to_ext, raw, service, offset, ck_size)
-
-    @router.get(
-        "/api/datasets/{history_content_id}/display",
-        summary="Displays (preview) or downloads dataset content.",
-        response_class=StreamingResponse,
-    )
-    @router.head(
-        "/api/datasets/{history_content_id}/display",
-        summary="Check if dataset content can be previewed or downloaded.",
-    )
-    def display(
-        request: Request,
-        trans=DependsOnTrans,
-        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        preview: bool = PreviewQueryParam,
-        filename: Optional[str] = FilenameQueryParam,
-        to_ext: Optional[str] = ToExtQueryParam,
-        raw: bool = RawQueryParam,
-        offset: Optional[int] = DisplayOffsetQueryParam,
-        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        """Streams the dataset for download or the contents preview to be displayed in a browser."""
-        return _display(request, trans, history_content_id, preview, filename, to_ext, raw, service, offset, ck_size)
-
-    @router.get(
-        "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
-        summary="Returns the metadata file associated with this history item.",
-        name="get_metadata_file",
-        tags=["histories"],
-        operation_id="history_contents__get_metadata_file",
-        response_class=GalaxyFileResponse,
-    )
-    def get_metadata_file_history_content(
-        trans=DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        metadata_file: str = Query(
-            ...,
-            description="The name of the metadata file to retrieve.",
-        ),
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        return _get_metadata_file(trans, history_content_id, metadata_file, service)
-
-    @router.get(
-        "/api/datasets/{history_content_id}/metadata_file",
-        summary="Returns the metadata file associated with this history item.",
-        response_class=GalaxyFileResponse,
-        operation_id="datasets__get_metadata_file",
-    )
-    @router.head(
-        "/api/datasets/{history_content_id}/metadata_file",
-        summary="Check if metadata file can be downloaded.",
-    )
-    def get_metadata_file_datasets(
-        trans=DependsOnTrans,
-        history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        metadata_file: str = Query(
-            ...,
-            description="The name of the metadata file to retrieve.",
-        ),
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        return _get_metadata_file(trans, history_content_id, metadata_file, service)
-
-    @router.get(
-        "/api/datasets/{dataset_id}",
-        summary="Displays information about and/or content of a dataset.",
-    )
-    def show(
-        request: Request,
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        hda_ldda: DatasetSourceType = Query(
-            default=DatasetSourceType.hda,
-            description=("The type of information about the dataset to be requested."),
-        ),
-        data_type: Optional[RequestDataType] = Query(
-            default=None,
-            description=(
-                "The type of information about the dataset to be requested. "
-                "Each of these values may require additional parameters in the request and "
-                "may return different responses."
-            ),
-        ),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        """
-        **Note**: Due to the multipurpose nature of this endpoint, which can receive a wild variety of parameters
-        and return different kinds of responses, the documentation here will be limited.
-        To get more information please check the source code.
-        """
-        exclude_params = {"hda_ldda", "data_type"}
-        exclude_params.update(SerializationParams.__fields__.keys())
-        extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
-
-        return service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
-
-    @router.get(
-        "/api/datasets/{dataset_id}/content/{content_type}",
-        summary="Retrieve information about the content of a dataset.",
-    )
-    def get_structured_content(
-        request: Request,
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        content_type: DatasetContentType = DatasetContentType.data,
-        service: DatasetsService = depends(DatasetsService),
-    ):
-        content, headers = service.get_structured_content(trans, dataset_id, content_type, **request.query_params)
-        return Response(content=content, headers=headers)
-
-    @router.delete(
-        "/api/datasets",
-        summary="Deletes or purges a batch of datasets.",
-    )
-    def delete_batch(
-        trans=DependsOnTrans,
-        payload: DeleteDatasetBatchPayload = Body(...),
-        service: DatasetsService = depends(DatasetsService),
-    ) -> DeleteDatasetBatchResult:
-        """
-        Deletes or purges a batch of datasets.
-        **Warning**: only the ownership of the datasets (and upload state for HDAs) is checked,
-        no other checks or restrictions are made.
-        """
-        return service.delete_batch(trans, payload)
-
-    @router.put(
-        "/api/datasets/{dataset_id}/hash",
-        summary="Compute dataset hash for dataset and update model",
-    )
-    def compute_hash(
-        trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
-        payload: ComputeDatasetHashPayload = Body(...),
-        service: DatasetsService = depends(DatasetsService),
-    ) -> AsyncTaskResultSummary:
-        return service.compute_hash(trans, dataset_id, payload, hda_ldda=hda_ldda)
+@router.put(
+    "/api/datasets/{dataset_id}/hash",
+    summary="Compute dataset hash for dataset and update model",
+)
+def compute_hash(
+    trans=DependsOnTrans,
+    dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    hda_ldda: DatasetSourceType = DatasetSourceQueryParam,
+    payload: ComputeDatasetHashPayload = Body(...),
+    service: DatasetsService = depends(DatasetsService),
+) -> AsyncTaskResultSummary:
+    return service.compute_hash(trans, dataset_id, payload, hda_ldda=hda_ldda)
 
 
 def _display(

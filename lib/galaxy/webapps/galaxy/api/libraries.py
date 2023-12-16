@@ -55,160 +55,167 @@ UndeleteQueryParam: Optional[bool] = Query(
 )
 
 
-class FastAPILibraries:
-    @router.get(
-        "/api/libraries",
-        summary="Returns a list of summary data for all libraries.",
-    )
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        deleted: Optional[bool] = DeletedQueryParam,
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummaryList:
-        """Returns a list of summary data for all libraries."""
-        return service.index(trans, deleted)
+@router.get(
+    "/api/libraries",
+    summary="Returns a list of summary data for all libraries.",
+)
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    deleted: Optional[bool] = DeletedQueryParam,
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummaryList:
+    """Returns a list of summary data for all libraries."""
+    return service.index(trans, deleted)
 
-    @router.get(
-        "/api/libraries/deleted",
-        summary="Returns a list of summary data for all libraries marked as deleted.",
-    )
-    def index_deleted(
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummaryList:
-        """Returns a list of summary data for all libraries marked as deleted."""
-        return service.index(trans, True)
 
-    @router.get(
-        "/api/libraries/{id}",
-        summary="Returns summary information about a particular library.",
-    )
-    def show(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummary:
-        """Returns summary information about a particular library."""
-        return service.show(trans, id)
+@router.get(
+    "/api/libraries/deleted",
+    summary="Returns a list of summary data for all libraries marked as deleted.",
+)
+def index_deleted(
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummaryList:
+    """Returns a list of summary data for all libraries marked as deleted."""
+    return service.index(trans, True)
 
-    @router.post(
-        "/api/libraries",
-        summary="Creates a new library and returns its summary information.",
-        require_admin=True,
-    )
-    def create(
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: CreateLibraryPayload = Body(...),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummary:
-        """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
-        return service.create(trans, payload)
 
-    @router.post(
-        "/api/libraries/from_store",
-        summary="Create libraries from a model store.",
-        require_admin=True,
-    )
-    def create_from_store(
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: CreateLibrariesFromStore = Body(...),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> List[LibrarySummary]:
-        return service.create_from_store(trans, payload)
+@router.get(
+    "/api/libraries/{id}",
+    summary="Returns summary information about a particular library.",
+)
+def show(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = LibraryIdPathParam,
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummary:
+    """Returns summary information about a particular library."""
+    return service.show(trans, id)
 
-    @router.patch(
-        "/api/libraries/{id}",
-        summary="Updates the information of an existing library.",
-    )
-    def update(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
-        payload: UpdateLibraryPayload = Body(...),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummary:
-        """
-        Updates the information of an existing library.
-        """
-        return service.update(trans, id, payload)
 
-    @router.delete(
-        "/api/libraries/{id}",
-        summary="Marks the specified library as deleted (or undeleted).",
-        require_admin=True,
-    )
-    def delete(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
-        undelete: Optional[bool] = UndeleteQueryParam,
-        payload: Optional[DeleteLibraryPayload] = Body(default=None),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> LibrarySummary:
-        """Marks the specified library as deleted (or undeleted).
-        Currently, only admin users can delete or restore libraries."""
-        if payload:
-            undelete = payload.undelete
-        return service.delete(trans, id, undelete)
+@router.post(
+    "/api/libraries",
+    summary="Creates a new library and returns its summary information.",
+    require_admin=True,
+)
+def create(
+    trans: ProvidesUserContext = DependsOnTrans,
+    payload: CreateLibraryPayload = Body(...),
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummary:
+    """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
+    return service.create(trans, payload)
 
-    @router.get(
-        "/api/libraries/{id}/permissions",
-        summary="Gets the current or available permissions of a particular library.",
-    )
-    def get_permissions(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
-        scope: Optional[LibraryPermissionScope] = Query(
-            None,
-            title="Scope",
-            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
-        ),
-        is_library_access: Optional[bool] = Query(
-            None,
-            title="Is Library Access",
-            description="Indicates whether the roles available for the library access are requested.",
-        ),
-        page: int = Query(
-            default=1, title="Page", description="The page number to retrieve when paginating the available roles."
-        ),
-        page_limit: int = Query(
-            default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
-        ),
-        q: Optional[str] = Query(
-            None, title="Query", description="Optional search text to retrieve only the roles matching this query."
-        ),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
-        """Gets the current or available permissions of a particular library.
-        The results can be paginated and additionally filtered by a query."""
-        return service.get_permissions(
-            trans,
-            id,
-            scope,
-            is_library_access,
-            page,
-            page_limit,
-            q,
-        )
 
-    @router.post(
-        "/api/libraries/{id}/permissions",
-        summary="Sets the permissions to access and manipulate a library.",
+@router.post(
+    "/api/libraries/from_store",
+    summary="Create libraries from a model store.",
+    require_admin=True,
+)
+def create_from_store(
+    trans: ProvidesUserContext = DependsOnTrans,
+    payload: CreateLibrariesFromStore = Body(...),
+    service: LibrariesService = depends(LibrariesService),
+) -> List[LibrarySummary]:
+    return service.create_from_store(trans, payload)
+
+
+@router.patch(
+    "/api/libraries/{id}",
+    summary="Updates the information of an existing library.",
+)
+def update(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = LibraryIdPathParam,
+    payload: UpdateLibraryPayload = Body(...),
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummary:
+    """
+    Updates the information of an existing library.
+    """
+    return service.update(trans, id, payload)
+
+
+@router.delete(
+    "/api/libraries/{id}",
+    summary="Marks the specified library as deleted (or undeleted).",
+    require_admin=True,
+)
+def delete(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = LibraryIdPathParam,
+    undelete: Optional[bool] = UndeleteQueryParam,
+    payload: Optional[DeleteLibraryPayload] = Body(default=None),
+    service: LibrariesService = depends(LibrariesService),
+) -> LibrarySummary:
+    """Marks the specified library as deleted (or undeleted).
+    Currently, only admin users can delete or restore libraries."""
+    if payload:
+        undelete = payload.undelete
+    return service.delete(trans, id, undelete)
+
+
+@router.get(
+    "/api/libraries/{id}/permissions",
+    summary="Gets the current or available permissions of a particular library.",
+)
+def get_permissions(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = LibraryIdPathParam,
+    scope: Optional[LibraryPermissionScope] = Query(
+        None,
+        title="Scope",
+        description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
+    ),
+    is_library_access: Optional[bool] = Query(
+        None,
+        title="Is Library Access",
+        description="Indicates whether the roles available for the library access are requested.",
+    ),
+    page: int = Query(
+        default=1, title="Page", description="The page number to retrieve when paginating the available roles."
+    ),
+    page_limit: int = Query(
+        default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
+    ),
+    q: Optional[str] = Query(
+        None, title="Query", description="Optional search text to retrieve only the roles matching this query."
+    ),
+    service: LibrariesService = depends(LibrariesService),
+) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
+    """Gets the current or available permissions of a particular library.
+    The results can be paginated and additionally filtered by a query."""
+    return service.get_permissions(
+        trans,
+        id,
+        scope,
+        is_library_access,
+        page,
+        page_limit,
+        q,
     )
-    def set_permissions(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = LibraryIdPathParam,
-        action: Optional[LibraryPermissionAction] = Query(
-            default=None,
-            title="Action",
-            description="Indicates what action should be performed on the Library.",
-        ),
-        payload: Union[
-            LibraryPermissionsPayload,
-            LegacyLibraryPermissionsPayload,
-        ] = Body(...),
-        service: LibrariesService = depends(LibrariesService),
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
-        """Sets the permissions to access and manipulate a library."""
-        payload_dict = payload.dict(by_alias=True)
-        if isinstance(payload, LibraryPermissionsPayload) and action is not None:
-            payload_dict["action"] = action
-        return service.set_permissions(trans, id, payload_dict)
+
+
+@router.post(
+    "/api/libraries/{id}/permissions",
+    summary="Sets the permissions to access and manipulate a library.",
+)
+def set_permissions(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: DecodedDatabaseIdField = LibraryIdPathParam,
+    action: Optional[LibraryPermissionAction] = Query(
+        default=None,
+        title="Action",
+        description="Indicates what action should be performed on the Library.",
+    ),
+    payload: Union[
+        LibraryPermissionsPayload,
+        LegacyLibraryPermissionsPayload,
+    ] = Body(...),
+    service: LibrariesService = depends(LibrariesService),
+) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
+    """Sets the permissions to access and manipulate a library."""
+    payload_dict = payload.dict(by_alias=True)
+    if isinstance(payload, LibraryPermissionsPayload) and action is not None:
+        payload_dict["action"] = action
+    return service.set_permissions(trans, id, payload_dict)

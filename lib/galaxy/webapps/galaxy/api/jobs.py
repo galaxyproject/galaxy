@@ -197,326 +197,336 @@ SearchJobBody = Body(default=Required, title="Search job", description="The valu
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
-class FastAPIJobs:
-    @router.get("/api/jobs")
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
-        user_details: bool = UserDetailsQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
-        view: JobIndexViewEnum = ViewQueryParam,
-        tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
-        tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
-        date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
-        date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
-        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
-        workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
-        invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
-        order_by: JobIndexSortByEnum = SortByQueryParam,
-        search: Optional[str] = SearchQueryParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        service: JobsService = depends(JobsService),
-    ) -> List[Dict[str, Any]]:
-        payload = JobIndexPayload.construct(
-            states=states,
-            user_details=user_details,
-            user_id=user_id,
-            view=view,
-            tool_ids=tool_ids,
-            tool_ids_like=tool_ids_like,
-            date_range_min=date_range_min,
-            date_range_max=date_range_max,
-            history_id=history_id,
-            workflow_id=workflow_id,
-            invocation_id=invocation_id,
-            order_by=order_by,
-            search=search,
-            limit=limit,
-            offset=offset,
-        )
-        return service.index(trans, payload)
-
-    @router.get(
-        "/api/jobs/{job_id}/common_problems",
-        name="check_common_problems",
-        summary="Check inputs and job for common potential problems to aid in error reporting",
+@router.get("/api/jobs")
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
+    user_details: bool = UserDetailsQueryParam,
+    user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+    view: JobIndexViewEnum = ViewQueryParam,
+    tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
+    tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+    date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
+    date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
+    history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
+    workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
+    invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+    order_by: JobIndexSortByEnum = SortByQueryParam,
+    search: Optional[str] = SearchQueryParam,
+    limit: int = LimitQueryParam,
+    offset: int = OffsetQueryParam,
+    service: JobsService = depends(JobsService),
+) -> List[Dict[str, Any]]:
+    payload = JobIndexPayload.construct(
+        states=states,
+        user_details=user_details,
+        user_id=user_id,
+        view=view,
+        tool_ids=tool_ids,
+        tool_ids_like=tool_ids_like,
+        date_range_min=date_range_min,
+        date_range_max=date_range_max,
+        history_id=history_id,
+        workflow_id=workflow_id,
+        invocation_id=invocation_id,
+        order_by=order_by,
+        search=search,
+        limit=limit,
+        offset=offset,
     )
-    def common_problems(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> JobInputSummary:
-        job = service.get_job(trans=trans, job_id=job_id)
-        seen_ids = set()
-        has_empty_inputs = False
-        has_duplicate_inputs = False
-        for job_input_assoc in job.input_datasets:
-            input_dataset_instance = job_input_assoc.dataset
-            if input_dataset_instance is None:
-                continue
-            if input_dataset_instance.get_total_size() == 0:
-                has_empty_inputs = True
-            input_instance_id = input_dataset_instance.id
-            if input_instance_id in seen_ids:
-                has_duplicate_inputs = True
-            else:
-                seen_ids.add(input_instance_id)
-        # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
-        # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
-        # TODO: sniff inputs (add flag to allow checking files?)
-        return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
+    return service.index(trans, payload)
 
-    @router.put(
-        "/api/jobs/{job_id}/resume",
-        name="resume_paused_job",
-        summary="Resumes a paused job.",
-    )
-    def resume(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[JobOutputAssociation]:
-        job = service.get_job(trans, job_id=job_id)
-        if not job:
-            raise exceptions.ObjectNotFound("Could not access job with the given id")
-        if job.state == job.states.PAUSED:
-            job.resume()
+
+@router.get(
+    "/api/jobs/{job_id}/common_problems",
+    name="check_common_problems",
+    summary="Check inputs and job for common potential problems to aid in error reporting",
+)
+def common_problems(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> JobInputSummary:
+    job = service.get_job(trans=trans, job_id=job_id)
+    seen_ids = set()
+    has_empty_inputs = False
+    has_duplicate_inputs = False
+    for job_input_assoc in job.input_datasets:
+        input_dataset_instance = job_input_assoc.dataset
+        if input_dataset_instance is None:
+            continue
+        if input_dataset_instance.get_total_size() == 0:
+            has_empty_inputs = True
+        input_instance_id = input_dataset_instance.id
+        if input_instance_id in seen_ids:
+            has_duplicate_inputs = True
         else:
-            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
-        associations = service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
-        for association in associations:
-            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
-        return output_associations
+            seen_ids.add(input_instance_id)
+    # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
+    # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
+    # TODO: sniff inputs (add flag to allow checking files?)
+    return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
 
-    @router.post(
-        "/api/jobs/{job_id}/error",
-        name="report_error",
-        summary="Submits a bug report via the API.",
+
+@router.put(
+    "/api/jobs/{job_id}/resume",
+    name="resume_paused_job",
+    summary="Resumes a paused job.",
+)
+def resume(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[JobOutputAssociation]:
+    job = service.get_job(trans, job_id=job_id)
+    if not job:
+        raise exceptions.ObjectNotFound("Could not access job with the given id")
+    if job.state == job.states.PAUSED:
+        job.resume()
+    else:
+        exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
+    associations = service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+    output_associations = []
+    for association in associations:
+        output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+    return output_associations
+
+
+@router.post(
+    "/api/jobs/{job_id}/error",
+    name="report_error",
+    summary="Submits a bug report via the API.",
+)
+def error(
+    payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> JobErrorSummary:
+    # Get dataset on which this error was triggered
+    dataset_id = payload.dataset_id
+    dataset = service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+    # Get job
+    job = service.get_job(trans, job_id)
+    if dataset.creating_job.id != job.id:
+        raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
+    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+    email = payload.email
+    if not email and not trans.anonymous:
+        email = trans.user.email
+    messages = trans.app.error_reports.default_error_plugin.submit_report(
+        dataset=dataset,
+        job=job,
+        tool=tool,
+        user_submission=True,
+        user=trans.user,
+        email=email,
+        message=payload.message,
     )
-    def error(
-        payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> JobErrorSummary:
-        # Get dataset on which this error was triggered
-        dataset_id = payload.dataset_id
-        dataset = service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
-        # Get job
-        job = service.get_job(trans, job_id)
-        if dataset.creating_job.id != job.id:
-            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        email = payload.email
-        if not email and not trans.anonymous:
-            email = trans.user.email
-        messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset=dataset,
-            job=job,
-            tool=tool,
-            user_submission=True,
-            user=trans.user,
-            email=email,
-            message=payload.message,
+    return JobErrorSummary(messages=messages)
+
+
+@router.get(
+    "/api/jobs/{job_id}/inputs",
+    name="get_inputs",
+    summary="Returns input datasets created by a job.",
+)
+def inputs(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[JobInputAssociation]:
+    job = service.get_job(trans=trans, job_id=job_id)
+    associations = service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+    input_associations = []
+    for association in associations:
+        input_associations.append(JobInputAssociation(name=association.name, dataset=association.dataset))
+    return input_associations
+
+
+@router.get(
+    "/api/jobs/{job_id}/outputs",
+    name="get_outputs",
+    summary="Returns output datasets created by a job.",
+)
+def outputs(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[JobOutputAssociation]:
+    job = service.get_job(trans=trans, job_id=job_id)
+    associations = service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+    output_associations = []
+    for association in associations:
+        output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+    return output_associations
+
+
+@router.get(
+    "/api/jobs/{job_id}/parameters_display",
+    name="resolve_parameters_display",
+    summary="Resolve parameters as a list for nested display.",
+)
+def parameters_display_by_job(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> JobDisplayParametersSummary:
+    """
+    Resolve parameters as a list for nested display.
+    This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+    this endpoint will change frequently.
+    """
+    hda_ldda_str = hda_ldda or "hda"
+    job = service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
+    return summarize_job_parameters(trans, job)
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/parameters_display",
+    name="resolve_parameters_display",
+    summary="Resolve parameters as a list for nested display.",
+    deprecated=True,
+)
+def parameters_display_by_dataset(
+    dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+    hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> JobDisplayParametersSummary:
+    """
+    Resolve parameters as a list for nested display.
+    This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+    this endpoint will change frequently.
+    """
+    job = service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
+    return summarize_job_parameters(trans, job)
+
+
+@router.get(
+    "/api/jobs/{job_id}/metrics",
+    name="get_metrics",
+    summary="Return job metrics for specified job.",
+)
+def metrics_by_job(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[Optional[JobMetric]]:
+    hda_ldda_str = hda_ldda or "hda"
+    job = service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
+    return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
+
+
+@router.get(
+    "/api/datasets/{dataset_id}/metrics",
+    name="get_metrics",
+    summary="Return job metrics for specified job.",
+    deprecated=True,
+)
+def metrics_by_dataset(
+    dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+    hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[Optional[JobMetric]]:
+    job = service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
+    return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
+
+
+@router.get(
+    "/api/jobs/{job_id}/destination_params",
+    name="destination_params_job",
+    summary="Return destination parameters for specified job.",
+    require_admin=True,
+)
+def destination_params(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> JobDestinationParams:
+    job = service.get_job(trans, job_id=job_id)
+    return JobDestinationParams(**summarize_destination_params(trans, job))
+
+
+@router.post(
+    "/api/jobs/search",
+    name="search_jobs",
+    summary="Return jobs for current user",
+)
+def search(
+    payload: Annotated[SearchJobsPayload, SearchJobBody],
+    trans: ProvidesHistoryContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> List[EncodedJobDetails]:
+    """
+    This method is designed to scan the list of previously run jobs and find records of jobs that had
+    the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+    recycle the old results.
+    """
+    tool_id = payload.tool_id
+
+    tool = trans.app.toolbox.get_tool(tool_id)
+    if tool is None:
+        raise exceptions.ObjectNotFound("Requested tool not found")
+    inputs = payload.inputs
+    # Find files coming in as multipart file data and add to inputs.
+    for k, v in payload.__annotations__.items():
+        if k.startswith("files_") or k.startswith("__files_"):
+            inputs[k] = v
+    request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
+    all_params, all_errors, _, _ = tool.expand_incoming(trans=trans, incoming=inputs, request_context=request_context)
+    if any(all_errors):
+        return []
+    params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
+    jobs = []
+    for param_dump, param in zip(params_dump, all_params):
+        job = service.job_search.by_tool_input(
+            trans=trans,
+            tool_id=tool_id,
+            tool_version=tool.version,
+            param=param,
+            param_dump=param_dump,
+            job_state=payload.state,
         )
-        return JobErrorSummary(messages=messages)
+        if job:
+            jobs.append(job)
+    return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
-    @router.get(
-        "/api/jobs/{job_id}/inputs",
-        name="get_inputs",
-        summary="Returns input datasets created by a job.",
-    )
-    def inputs(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[JobInputAssociation]:
-        job = service.get_job(trans=trans, job_id=job_id)
-        associations = service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
-        input_associations = []
-        for association in associations:
-            input_associations.append(JobInputAssociation(name=association.name, dataset=association.dataset))
-        return input_associations
 
-    @router.get(
-        "/api/jobs/{job_id}/outputs",
-        name="get_outputs",
-        summary="Returns output datasets created by a job.",
-    )
-    def outputs(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[JobOutputAssociation]:
-        job = service.get_job(trans=trans, job_id=job_id)
-        associations = service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
-        for association in associations:
-            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
-        return output_associations
+@router.get(
+    "/api/jobs/{job_id}",
+    name="show_job",
+    summary="Return dictionary containing description of job data.",
+)
+def show(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    full: Annotated[Optional[bool], FullShowQueryParam] = False,
+    trans: ProvidesUserContext = DependsOnTrans,
+    service: JobsService = depends(JobsService),
+) -> Dict[str, Any]:
+    return service.show(trans, job_id, bool(full))
 
-    @router.get(
-        "/api/jobs/{job_id}/parameters_display",
-        name="resolve_parameters_display",
-        summary="Resolve parameters as a list for nested display.",
-    )
-    def parameters_display_by_job(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
-        hda_ldda_str = hda_ldda or "hda"
-        job = service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return summarize_job_parameters(trans, job)
 
-    @router.get(
-        "/api/datasets/{dataset_id}/parameters_display",
-        name="resolve_parameters_display",
-        summary="Resolve parameters as a list for nested display.",
-        deprecated=True,
-    )
-    def parameters_display_by_dataset(
-        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> JobDisplayParametersSummary:
-        """
-        Resolve parameters as a list for nested display.
-        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-        this endpoint will change frequently.
-        """
-        job = service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return summarize_job_parameters(trans, job)
-
-    @router.get(
-        "/api/jobs/{job_id}/metrics",
-        name="get_metrics",
-        summary="Return job metrics for specified job.",
-    )
-    def metrics_by_job(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[Optional[JobMetric]]:
-        hda_ldda_str = hda_ldda or "hda"
-        job = service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
-        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
-
-    @router.get(
-        "/api/datasets/{dataset_id}/metrics",
-        name="get_metrics",
-        summary="Return job metrics for specified job.",
-        deprecated=True,
-    )
-    def metrics_by_dataset(
-        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[Optional[JobMetric]]:
-        job = service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
-        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
-
-    @router.get(
-        "/api/jobs/{job_id}/destination_params",
-        name="destination_params_job",
-        summary="Return destination parameters for specified job.",
-        require_admin=True,
-    )
-    def destination_params(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> JobDestinationParams:
-        job = service.get_job(trans, job_id=job_id)
-        return JobDestinationParams(**summarize_destination_params(trans, job))
-
-    @router.post(
-        "/api/jobs/search",
-        name="search_jobs",
-        summary="Return jobs for current user",
-    )
-    def search(
-        payload: Annotated[SearchJobsPayload, SearchJobBody],
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> List[EncodedJobDetails]:
-        """
-        This method is designed to scan the list of previously run jobs and find records of jobs that had
-        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-        recycle the old results.
-        """
-        tool_id = payload.tool_id
-
-        tool = trans.app.toolbox.get_tool(tool_id)
-        if tool is None:
-            raise exceptions.ObjectNotFound("Requested tool not found")
-        inputs = payload.inputs
-        # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.__annotations__.items():
-            if k.startswith("files_") or k.startswith("__files_"):
-                inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
-        if any(all_errors):
-            return []
-        params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
-        jobs = []
-        for param_dump, param in zip(params_dump, all_params):
-            job = service.job_search.by_tool_input(
-                trans=trans,
-                tool_id=tool_id,
-                tool_version=tool.version,
-                param=param,
-                param_dump=param_dump,
-                job_state=payload.state,
-            )
-            if job:
-                jobs.append(job)
-        return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
-
-    @router.get(
-        "/api/jobs/{job_id}",
-        name="show_job",
-        summary="Return dictionary containing description of job data.",
-    )
-    def show(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        full: Annotated[Optional[bool], FullShowQueryParam] = False,
-        trans: ProvidesUserContext = DependsOnTrans,
-        service: JobsService = depends(JobsService),
-    ) -> Dict[str, Any]:
-        return service.show(trans, job_id, bool(full))
-
-    @router.delete(
-        "/api/jobs/{job_id}",
-        name="cancel_job",
-        summary="Cancels specified job",
-    )
-    def delete(
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        trans: ProvidesUserContext = DependsOnTrans,
-        payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
-        service: JobsService = depends(JobsService),
-    ) -> bool:
-        job = service.get_job(trans=trans, job_id=job_id)
-        if payload:
-            message = payload.message
-        else:
-            message = None
-        return service.job_manager.stop(job, message=message)
+@router.delete(
+    "/api/jobs/{job_id}",
+    name="cancel_job",
+    summary="Cancels specified job",
+)
+def delete(
+    job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+    trans: ProvidesUserContext = DependsOnTrans,
+    payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
+    service: JobsService = depends(JobsService),
+) -> bool:
+    job = service.get_job(trans=trans, job_id=job_id)
+    if payload:
+        message = payload.message
+    else:
+        message = None
+    return service.job_manager.stop(job, message=message)
 
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):

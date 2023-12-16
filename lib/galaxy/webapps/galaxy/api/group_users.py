@@ -34,78 +34,80 @@ def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
     return GroupUserResponse(id=user.id, email=user.email, url=url)
 
 
-class FastAPIGroupUsers:
-    @router.get(
-        "/api/groups/{group_id}/users",
-        require_admin=True,
-        summary="Displays a collection (list) of groups.",
-        name="group_users",
-    )
-    def index(
-        trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        manager: GroupUsersManager = depends(GroupUsersManager),
-    ) -> GroupUserListResponse:
-        """
-        GET /api/groups/{encoded_group_id}/users
-        Displays a collection (list) of groups.
-        """
-        group_users = manager.index(trans, group_id)
-        return GroupUserListResponse(__root__=[group_user_to_model(trans, group_id, gr) for gr in group_users])
+@router.get(
+    "/api/groups/{group_id}/users",
+    require_admin=True,
+    summary="Displays a collection (list) of groups.",
+    name="group_users",
+)
+def index(
+    trans: ProvidesAppContext = DependsOnTrans,
+    group_id: DecodedDatabaseIdField = GroupIDParam,
+    manager: GroupUsersManager = depends(GroupUsersManager),
+) -> GroupUserListResponse:
+    """
+    GET /api/groups/{encoded_group_id}/users
+    Displays a collection (list) of groups.
+    """
+    group_users = manager.index(trans, group_id)
+    return GroupUserListResponse(__root__=[group_user_to_model(trans, group_id, gr) for gr in group_users])
 
-    @router.get(
-        "/api/groups/{group_id}/user/{user_id}",
-        alias="/api/groups/{group_id}/users/{user_id}",
-        name="group_user",
-        require_admin=True,
-        summary="Displays information about a group user.",
-    )
-    def show(
-        trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
-        manager: GroupUsersManager = depends(GroupUsersManager),
-    ) -> GroupUserResponse:
-        """
-        Displays information about a group user.
-        """
-        user = manager.show(trans, user_id, group_id)
-        return group_user_to_model(trans, group_id, user)
 
-    @router.put(
-        "/api/groups/{group_id}/users/{user_id}",
-        alias="/api/groups/{group_id}/user/{user_id}",
-        require_admin=True,
-        summary="Adds a user to a group",
-    )
-    def update(
-        trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
-        manager: GroupUsersManager = depends(GroupUsersManager),
-    ) -> GroupUserResponse:
-        """
-        PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
-        Adds a user to a group
-        """
-        user = manager.update(trans, user_id, group_id)
-        return group_user_to_model(trans, group_id, user)
+@router.get(
+    "/api/groups/{group_id}/user/{user_id}",
+    alias="/api/groups/{group_id}/users/{user_id}",
+    name="group_user",
+    require_admin=True,
+    summary="Displays information about a group user.",
+)
+def show(
+    trans: ProvidesAppContext = DependsOnTrans,
+    group_id: DecodedDatabaseIdField = GroupIDParam,
+    user_id: DecodedDatabaseIdField = UserIDParam,
+    manager: GroupUsersManager = depends(GroupUsersManager),
+) -> GroupUserResponse:
+    """
+    Displays information about a group user.
+    """
+    user = manager.show(trans, user_id, group_id)
+    return group_user_to_model(trans, group_id, user)
 
-    @router.delete(
-        "/api/groups/{group_id}/user/{user_id}",
-        alias="/api/groups/{group_id}/users/{user_id}",
-        require_admin=True,
-        summary="Removes a user from a group",
-    )
-    def delete(
-        trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
-        manager: GroupUsersManager = depends(GroupUsersManager),
-    ) -> GroupUserResponse:
-        """
-        DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
-        Removes a user from a group
-        """
-        user = manager.delete(trans, user_id, group_id)
-        return group_user_to_model(trans, group_id, user)
+
+@router.put(
+    "/api/groups/{group_id}/users/{user_id}",
+    alias="/api/groups/{group_id}/user/{user_id}",
+    require_admin=True,
+    summary="Adds a user to a group",
+)
+def update(
+    trans: ProvidesAppContext = DependsOnTrans,
+    group_id: DecodedDatabaseIdField = GroupIDParam,
+    user_id: DecodedDatabaseIdField = UserIDParam,
+    manager: GroupUsersManager = depends(GroupUsersManager),
+) -> GroupUserResponse:
+    """
+    PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
+    Adds a user to a group
+    """
+    user = manager.update(trans, user_id, group_id)
+    return group_user_to_model(trans, group_id, user)
+
+
+@router.delete(
+    "/api/groups/{group_id}/user/{user_id}",
+    alias="/api/groups/{group_id}/users/{user_id}",
+    require_admin=True,
+    summary="Removes a user from a group",
+)
+def delete(
+    trans: ProvidesAppContext = DependsOnTrans,
+    group_id: DecodedDatabaseIdField = GroupIDParam,
+    user_id: DecodedDatabaseIdField = UserIDParam,
+    manager: GroupUsersManager = depends(GroupUsersManager),
+) -> GroupUserResponse:
+    """
+    DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}
+    Removes a user from a group
+    """
+    user = manager.delete(trans, user_id, group_id)
+    return group_user_to_model(trans, group_id, user)

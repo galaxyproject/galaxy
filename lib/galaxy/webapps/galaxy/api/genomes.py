@@ -64,62 +64,62 @@ def get_id(base, format):
     return base
 
 
-class FastAPIGenomes:
-    @router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        chrom_info: bool = ChromInfoQueryParam,
-        manager: GenomesManager = depends(GenomesManager),
-    ) -> List[List[str]]:
-        return manager.get_dbkeys(trans.user, chrom_info)
+@router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    chrom_info: bool = ChromInfoQueryParam,
+    manager: GenomesManager = depends(GenomesManager),
+) -> List[List[str]]:
+    return manager.get_dbkeys(trans.user, chrom_info)
 
-    @router.get(
-        "/api/genomes/{id}",
-        summary="Return information about build <id>",
-        response_description="Information about genome build <id>",
-    )
-    def show(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: str = IdPathParam,
-        reference: bool = ReferenceQueryParam,
-        num: int = NumQueryParam,
-        chrom: str = ChromQueryParam,
-        low: int = LowQueryParam,
-        high: int = HighQueryParam,
-        format: str = FormatQueryParam,
-        manager: GenomesManager = depends(GenomesManager),
-    ) -> Any:
-        id = get_id(id, format)
-        return manager.get_genome(trans, id, num, chrom, low, high, reference)
 
-    @router.get(
-        "/api/genomes/{id}/indexes",
-        summary="Return all available indexes for a genome id for provided type",
-        response_description="Indexes for a genome id for provided type",
-    )
-    def indexes(
-        id: str = IdPathParam,
-        type: str = IndexTypeQueryParam,
-        format: str = FormatQueryParam,
-        manager: GenomesManager = depends(GenomesManager),
-    ) -> Any:
-        id = get_id(id, format)
-        rval = manager.get_indexes(id, type)
-        return Response(rval)
+@router.get(
+    "/api/genomes/{id}",
+    summary="Return information about build <id>",
+    response_description="Information about genome build <id>",
+)
+def show(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: str = IdPathParam,
+    reference: bool = ReferenceQueryParam,
+    num: int = NumQueryParam,
+    chrom: str = ChromQueryParam,
+    low: int = LowQueryParam,
+    high: int = HighQueryParam,
+    format: str = FormatQueryParam,
+    manager: GenomesManager = depends(GenomesManager),
+) -> Any:
+    id = get_id(id, format)
+    return manager.get_genome(trans, id, num, chrom, low, high, reference)
 
-    @router.get(
-        "/api/genomes/{id}/sequences", summary="Return raw sequence data", response_description="Raw sequence data"
-    )
-    def sequences(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: str = IdPathParam,
-        reference: bool = ReferenceQueryParam,
-        chrom: str = ChromQueryParam,
-        low: int = LowQueryParam,
-        high: int = HighQueryParam,
-        format: str = FormatQueryParam,
-        manager: GenomesManager = depends(GenomesManager),
-    ) -> Any:
-        id = get_id(id, format)
-        rval = manager.get_sequence(trans, id, chrom, low, high)
-        return Response(rval)
+
+@router.get(
+    "/api/genomes/{id}/indexes",
+    summary="Return all available indexes for a genome id for provided type",
+    response_description="Indexes for a genome id for provided type",
+)
+def indexes(
+    id: str = IdPathParam,
+    type: str = IndexTypeQueryParam,
+    format: str = FormatQueryParam,
+    manager: GenomesManager = depends(GenomesManager),
+) -> Any:
+    id = get_id(id, format)
+    rval = manager.get_indexes(id, type)
+    return Response(rval)
+
+
+@router.get("/api/genomes/{id}/sequences", summary="Return raw sequence data", response_description="Raw sequence data")
+def sequences(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: str = IdPathParam,
+    reference: bool = ReferenceQueryParam,
+    chrom: str = ChromQueryParam,
+    low: int = LowQueryParam,
+    high: int = HighQueryParam,
+    format: str = FormatQueryParam,
+    manager: GenomesManager = depends(GenomesManager),
+) -> Any:
+    id = get_id(id, format)
+    rval = manager.get_sequence(trans, id, chrom, low, high)
+    return Response(rval)

@@ -66,59 +66,59 @@ SortDescQueryParam: Optional[bool] = Query(
 )
 
 
-class FastAPILibraryFoldersContents:
-    @router.get(
-        "/api/folders/{folder_id}/contents",
-        summary="Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.",
-        responses={
-            200: {
-                "description": "The contents of the folder that match the query parameters.",
-                "model": LibraryFolderContentsIndexResult,
-            },
+@router.get(
+    "/api/folders/{folder_id}/contents",
+    summary="Returns a list of a folder's contents (files and sub-folders) with additional metadata about the folder.",
+    responses={
+        200: {
+            "description": "The contents of the folder that match the query parameters.",
+            "model": LibraryFolderContentsIndexResult,
         },
+    },
+)
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    limit: int = LimitQueryParam,
+    offset: int = OffsetQueryParam,
+    search_text: Optional[str] = SearchQueryParam,
+    include_deleted: Optional[bool] = IncludeDeletedQueryParam,
+    order_by: LibraryFolderContentsIndexSortByEnum = SortByQueryParam,
+    sort_desc: Optional[bool] = SortDescQueryParam,
+    service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
+):
+    """Returns a list of a folder's contents (files and sub-folders).
+
+    Additional metadata for the folder is provided in the response as a separate object containing data
+    for breadcrumb path building, permissions and other folder's details.
+
+    *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
+
+    **Security note**:
+    - Accessing a library folder or sub-folder requires only access to the parent library.
+    - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
+    - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
+    """
+    payload = LibraryFolderContentsIndexQueryPayload(
+        limit=limit,
+        offset=offset,
+        search_text=search_text,
+        include_deleted=include_deleted,
+        order_by=order_by,
+        sort_desc=sort_desc,
     )
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        search_text: Optional[str] = SearchQueryParam,
-        include_deleted: Optional[bool] = IncludeDeletedQueryParam,
-        order_by: LibraryFolderContentsIndexSortByEnum = SortByQueryParam,
-        sort_desc: Optional[bool] = SortDescQueryParam,
-        service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
-    ):
-        """Returns a list of a folder's contents (files and sub-folders).
+    return service.index(trans, folder_id, payload)
 
-        Additional metadata for the folder is provided in the response as a separate object containing data
-        for breadcrumb path building, permissions and other folder's details.
 
-        *Note*: When sorting, folders always have priority (they show-up before any dataset regardless of the sorting).
-
-        **Security note**:
-        - Accessing a library folder or sub-folder requires only access to the parent library.
-        - Deleted folders can only be accessed by admins or users with `MODIFY` permission.
-        - Datasets may be public, private or restricted (to a group of users). Listing deleted datasets has the same requirements as folders.
-        """
-        payload = LibraryFolderContentsIndexQueryPayload(
-            limit=limit,
-            offset=offset,
-            search_text=search_text,
-            include_deleted=include_deleted,
-            order_by=order_by,
-            sort_desc=sort_desc,
-        )
-        return service.index(trans, folder_id, payload)
-
-    @router.post(
-        "/api/folders/{folder_id}/contents",
-        name="add_history_datasets_to_library",
-        summary="Creates a new library file from an existing HDA/HDCA.",
-    )
-    def create(
-        trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        payload: CreateLibraryFilePayload = Body(...),
-        service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
-    ):
-        return service.create(trans, folder_id, payload)
+@router.post(
+    "/api/folders/{folder_id}/contents",
+    name="add_history_datasets_to_library",
+    summary="Creates a new library file from an existing HDA/HDCA.",
+)
+def create(
+    trans: ProvidesUserContext = DependsOnTrans,
+    folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    payload: CreateLibraryFilePayload = Body(...),
+    service: LibraryFolderContentsService = depends(LibraryFolderContentsService),
+):
+    return service.create(trans, folder_id, payload)

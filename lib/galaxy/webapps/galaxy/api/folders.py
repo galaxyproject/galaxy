@@ -45,113 +45,117 @@ UndeleteQueryParam: Optional[bool] = Query(
 )
 
 
-class FastAPILibraryFolders:
-    @router.get(
-        "/api/folders/{id}",
-        summary="Displays information about a particular library folder.",
-    )
-    def show(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> LibraryFolderDetails:
-        """Returns detailed information about the library folder with the given ID."""
-        return service.show(trans, id)
+@router.get(
+    "/api/folders/{id}",
+    summary="Displays information about a particular library folder.",
+)
+def show(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> LibraryFolderDetails:
+    """Returns detailed information about the library folder with the given ID."""
+    return service.show(trans, id)
 
-    @router.post(
-        "/api/folders/{id}",
-        summary="Create a new library folder underneath the one specified by the ID.",
-    )
-    def create(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        payload: CreateLibraryFolderPayload = Body(...),
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> LibraryFolderDetails:
-        """Returns detailed information about the newly created library folder."""
-        return service.create(trans, id, payload)
 
-    @router.put(
-        "/api/folders/{id}",
-        summary="Updates the information of an existing library folder.",
-    )
-    @router.patch("/api/folders/{id}")
-    def update(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        payload: UpdateLibraryFolderPayload = Body(...),
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> LibraryFolderDetails:
-        """Updates the information of an existing library folder."""
-        return service.update(trans, id, payload)
+@router.post(
+    "/api/folders/{id}",
+    summary="Create a new library folder underneath the one specified by the ID.",
+)
+def create(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    payload: CreateLibraryFolderPayload = Body(...),
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> LibraryFolderDetails:
+    """Returns detailed information about the newly created library folder."""
+    return service.create(trans, id, payload)
 
-    @router.delete(
-        "/api/folders/{id}",
-        summary="Marks the specified library folder as deleted (or undeleted).",
-    )
-    def delete(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        undelete: Optional[bool] = UndeleteQueryParam,
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> LibraryFolderDetails:
-        """Marks the specified library folder as deleted (or undeleted)."""
-        return service.delete(trans, id, undelete)
 
-    @router.get(
-        "/api/folders/{id}/permissions",
-        summary="Gets the current or available permissions of a particular library folder.",
-    )
-    def get_permissions(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        scope: Optional[LibraryPermissionScope] = Query(
-            None,
-            title="Scope",
-            description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
-        ),
-        page: int = Query(
-            default=1, title="Page", description="The page number to retrieve when paginating the available roles."
-        ),
-        page_limit: int = Query(
-            default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
-        ),
-        q: Optional[str] = Query(
-            None, title="Query", description="Optional search text to retrieve only the roles matching this query."
-        ),
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
-        """Gets the current or available permissions of a particular library.
-        The results can be paginated and additionally filtered by a query."""
-        return service.get_permissions(
-            trans,
-            id,
-            scope,
-            page,
-            page_limit,
-            q,
-        )
+@router.put(
+    "/api/folders/{id}",
+    summary="Updates the information of an existing library folder.",
+)
+@router.patch("/api/folders/{id}")
+def update(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    payload: UpdateLibraryFolderPayload = Body(...),
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> LibraryFolderDetails:
+    """Updates the information of an existing library folder."""
+    return service.update(trans, id, payload)
 
-    @router.post(
-        "/api/folders/{id}/permissions",
-        summary="Sets the permissions to manage a library folder.",
+
+@router.delete(
+    "/api/folders/{id}",
+    summary="Marks the specified library folder as deleted (or undeleted).",
+)
+def delete(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    undelete: Optional[bool] = UndeleteQueryParam,
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> LibraryFolderDetails:
+    """Marks the specified library folder as deleted (or undeleted)."""
+    return service.delete(trans, id, undelete)
+
+
+@router.get(
+    "/api/folders/{id}/permissions",
+    summary="Gets the current or available permissions of a particular library folder.",
+)
+def get_permissions(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    scope: Optional[LibraryPermissionScope] = Query(
+        None,
+        title="Scope",
+        description="The scope of the permissions to retrieve. Either the `current` permissions or the `available`.",
+    ),
+    page: int = Query(
+        default=1, title="Page", description="The page number to retrieve when paginating the available roles."
+    ),
+    page_limit: int = Query(
+        default=10, title="Page Limit", description="The maximum number of permissions per page when paginating."
+    ),
+    q: Optional[str] = Query(
+        None, title="Query", description="Optional search text to retrieve only the roles matching this query."
+    ),
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
+    """Gets the current or available permissions of a particular library.
+    The results can be paginated and additionally filtered by a query."""
+    return service.get_permissions(
+        trans,
+        id,
+        scope,
+        page,
+        page_limit,
+        q,
     )
-    def set_permissions(
-        trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        action: Optional[LibraryFolderPermissionAction] = Query(
-            default=None,
-            title="Action",
-            description=(
-                "Indicates what action should be performed on the Library. "
-                f"Currently only `{LibraryFolderPermissionAction.set_permissions.value}` is supported."
-            ),
+
+
+@router.post(
+    "/api/folders/{id}/permissions",
+    summary="Sets the permissions to manage a library folder.",
+)
+def set_permissions(
+    trans: ProvidesUserContext = DependsOnTrans,
+    id: LibraryFolderDatabaseIdField = FolderIdPathParam,
+    action: Optional[LibraryFolderPermissionAction] = Query(
+        default=None,
+        title="Action",
+        description=(
+            "Indicates what action should be performed on the Library. "
+            f"Currently only `{LibraryFolderPermissionAction.set_permissions.value}` is supported."
         ),
-        payload: LibraryFolderPermissionsPayload = Body(...),
-        service: LibraryFoldersService = depends(LibraryFoldersService),
-    ) -> LibraryFolderCurrentPermissions:
-        """Sets the permissions to manage a library folder."""
-        payload_dict = payload.dict(by_alias=True)
-        if isinstance(payload, LibraryFolderPermissionsPayload) and action is not None:
-            payload_dict["action"] = action
-        return service.set_permissions(trans, id, payload_dict)
+    ),
+    payload: LibraryFolderPermissionsPayload = Body(...),
+    service: LibraryFoldersService = depends(LibraryFoldersService),
+) -> LibraryFolderCurrentPermissions:
+    """Sets the permissions to manage a library folder."""
+    payload_dict = payload.dict(by_alias=True)
+    if isinstance(payload, LibraryFolderPermissionsPayload) and action is not None:
+        payload_dict["action"] = action
+    return service.set_permissions(trans, id, payload_dict)

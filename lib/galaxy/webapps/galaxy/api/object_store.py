@@ -39,34 +39,34 @@ SelectableQueryParam: bool = Query(
 )
 
 
-class FastAPIObjectStore:
-    @router.get(
-        "/api/object_stores",
-        summary="Get a list of (currently only concrete) object stores configured with this Galaxy instance.",
-        response_description="A list of the configured object stores.",
-    )
-    def index(
-        trans: ProvidesUserContext = DependsOnTrans,
-        selectable: bool = SelectableQueryParam,
-        object_store: BaseObjectStore = depends(BaseObjectStore),
-    ) -> List[ConcreteObjectStoreModel]:
-        if not selectable:
-            raise RequestParameterInvalidException(
-                "The object store index query currently needs to be called with selectable=true"
-            )
-        selectable_ids = object_store.object_store_ids_allowing_selection()
-        return [_model_for(selectable_id, object_store) for selectable_id in selectable_ids]
+@router.get(
+    "/api/object_stores",
+    summary="Get a list of (currently only concrete) object stores configured with this Galaxy instance.",
+    response_description="A list of the configured object stores.",
+)
+def index(
+    trans: ProvidesUserContext = DependsOnTrans,
+    selectable: bool = SelectableQueryParam,
+    object_store: BaseObjectStore = depends(BaseObjectStore),
+) -> List[ConcreteObjectStoreModel]:
+    if not selectable:
+        raise RequestParameterInvalidException(
+            "The object store index query currently needs to be called with selectable=true"
+        )
+    selectable_ids = object_store.object_store_ids_allowing_selection()
+    return [_model_for(selectable_id, object_store) for selectable_id in selectable_ids]
 
-    @router.get(
-        "/api/object_stores/{object_store_id}",
-        summary="Get information about a concrete object store configured with Galaxy.",
-    )
-    def show_info(
-        trans: ProvidesUserContext = DependsOnTrans,
-        object_store_id: str = ConcreteObjectStoreIdPathParam,
-        object_store: BaseObjectStore = depends(BaseObjectStore),
-    ) -> ConcreteObjectStoreModel:
-        return _model_for(object_store_id, object_store)
+
+@router.get(
+    "/api/object_stores/{object_store_id}",
+    summary="Get information about a concrete object store configured with Galaxy.",
+)
+def show_info(
+    trans: ProvidesUserContext = DependsOnTrans,
+    object_store_id: str = ConcreteObjectStoreIdPathParam,
+    object_store: BaseObjectStore = depends(BaseObjectStore),
+) -> ConcreteObjectStoreModel:
+    return _model_for(object_store_id, object_store)
 
 
 def _model_for(object_store_id: str, object_store: BaseObjectStore) -> ConcreteObjectStoreModel:
