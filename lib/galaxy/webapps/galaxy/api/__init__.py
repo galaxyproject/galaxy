@@ -38,7 +38,6 @@ from fastapi.security import (
     APIKeyHeader,
     APIKeyQuery,
 )
-from fastapi_utils.cbv import cbv
 from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.datastructures import Headers
@@ -441,15 +440,6 @@ class FrameworkRouter(APIRouter):
                 kwd["dependencies"] = [self.admin_user_dependency]
 
         return kwd
-
-    @property
-    def cbv(self):
-        """Short-hand for frequently used Galaxy-pattern of FastAPI class based views.
-
-        Creates a class-based view for for this router, for more information see:
-        https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
-        """
-        return cbv(self)
 
 
 class Router(FrameworkRouter):
