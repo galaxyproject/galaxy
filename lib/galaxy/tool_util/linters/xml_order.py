@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 TAG_ORDER = [
     "description",
     "macros",
+    "options",
     "edam_topics",
     "edam_operations",
     "xrefs",
