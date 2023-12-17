@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class CWLValid(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+        raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         try:
             schema_loader.process_definition(raw_reference)
         except Exception:
@@ -25,7 +25,7 @@ class CWLValid(Linter):
 class CWLInValid(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+        raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         try:
             schema_loader.process_definition(raw_reference)
         except Exception as e:
@@ -35,7 +35,7 @@ class CWLInValid(Linter):
 class CWLVersionMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+        raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version is None:
             lint_ctx.error("CWL file does not contain a 'cwlVersion'")
@@ -44,7 +44,7 @@ class CWLVersionMissing(Linter):
 class CWLVersionUnknown(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+        raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version not in ["v1.0"]:
             lint_ctx.warn(f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.")
@@ -53,7 +53,7 @@ class CWLVersionUnknown(Linter):
 class CWLVersionGood(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        raw_reference = schema_loader.raw_process_reference(tool_source._source_path)
+        raw_reference = schema_loader.raw_process_reference(tool_source.source_path)
         cwl_version = raw_reference.process_object.get("cwlVersion", None)
         if cwl_version in ["v1.0"]:
             lint_ctx.info(f"Modern CWL version [{cwl_version}].")
