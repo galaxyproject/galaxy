@@ -1883,6 +1883,11 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
+    def workflow_report_pdf(self, workflow_id: str, invocation_id: str) -> Response:
+        response = self._get(f"workflows/{workflow_id}/invocations/{invocation_id}/report.pdf")
+        api_asserts.assert_status_code_is(response, 200)
+        return response
+
     def download_workflow(
         self, workflow_id: str, style: Optional[str] = None, history_id: Optional[str] = None
     ) -> dict:
