@@ -420,7 +420,12 @@ class InvocationUpdatePayload(Model):
 
 
 class InvocationIOBase(Model):
-    id: EncodedDatabaseIdField = Field(
+    # TODO - resolve
+    # the tests in test/integration/test_workflow_tasks.py ,
+    # between line 42 and 56 fail, if this id is not allowed be None
+    # They all fail, when trying to populate the response of the show_invocation operation
+    # Is it intended to allow None here?
+    id: Optional[EncodedDatabaseIdField] = Field(
         default=Required, title="ID", description="The encoded ID of the dataset/dataset collection."
     )
     workflow_step_id: EncodedDatabaseIdField = Field(
