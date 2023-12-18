@@ -319,6 +319,7 @@ class InvocationStep(Model):
     id: EncodedDatabaseIdField = schema.EntityIdField
     update_time: Optional[datetime] = schema.UpdateTimeField
     job_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
         title="Job ID",
         description="The encoded ID of the job associated with this workflow invocation step.",
     )
@@ -328,14 +329,14 @@ class InvocationStep(Model):
         description="The encoded ID of the workflow step associated with this workflow invocation step.",
     )
     subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
-        default=Required,
+        default=None,
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
     # TODO The state can differ from InvocationStepState is this intended?
     # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
     state: Optional[ExtendedInvocationStepState] = Field(
-        ...,
+        default=None,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
@@ -346,7 +347,7 @@ class InvocationStep(Model):
         description="The index of the workflow step in the workflow.",
     )
     workflow_step_label: Optional[str] = Field(
-        default=Required,
+        default=None,
         title="Step label",
         description="The label of the workflow step",
     )
@@ -426,7 +427,7 @@ class InvocationIOBase(Model):
     # They all fail, when trying to populate the response of the show_invocation operation
     # Is it intended to allow None here?
     id: Optional[EncodedDatabaseIdField] = Field(
-        default=Required, title="ID", description="The encoded ID of the dataset/dataset collection."
+        default=None, title="ID", description="The encoded ID of the dataset/dataset collection."
     )
     workflow_step_id: EncodedDatabaseIdField = Field(
         ...,
@@ -437,7 +438,7 @@ class InvocationIOBase(Model):
 
 class InvocationInput(InvocationIOBase):
     label: Optional[str] = Field(
-        default=Required,
+        default=None,
         title="Label",
         description="Label of the workflow step associated with the input dataset/dataset collection.",
     )
@@ -485,7 +486,7 @@ class WorkflowInvocationResponse(Model):
     )
     # The uuid version here is 1, which deviates from the other UUIDs used as they are version 4.
     uuid: Optional[Union[UUID4, UUID1]] = Field(
-        ..., title="UUID", description="Universal unique identifier of the workflow invocation."
+        default=None, title="UUID", description="Universal unique identifier of the workflow invocation."
     )
     state: InvocationState = Field(
         default=Required, title="Invocation state", description="State of workflow invocation."
