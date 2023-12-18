@@ -26,7 +26,10 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.path import safe_relpath
-from . import ConcreteObjectStore
+from . import (
+    ConcreteObjectStore,
+    DiskPath,
+)
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -122,6 +125,9 @@ class PithosObjectStore(ConcreteObjectStore):
         as_dict = super().to_dict()
         as_dict.update(self.config_dict)
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(object_store_cache_path=self.staging_path)
 
     def _authenticate(self):
         auth = self.config_dict["auth"]

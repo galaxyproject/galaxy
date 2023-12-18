@@ -366,7 +366,7 @@ class HasDockerLikeVolumes:
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
                 defaults = "$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
-            defaults += ",$galaxy_root:default_ro"
+            defaults += ",$galaxy_root:default_ro,$working_directory:rw"
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
@@ -381,9 +381,17 @@ class HasDockerLikeVolumes:
             if outputs_to_working_directory and self.job_info.job_type == "tool":
                 # Should need default_file_path (which is of course an estimate given
                 # object stores anyway).
-                defaults += ",$working_directory:rw,$default_file_path:default_ro"
+                outputs_mount_mode = "default_ro"
             else:
-                defaults += ",$working_directory:rw,$default_file_path:rw"
+                outputs_mount_mode = "rw"
+            output_paths = None
+            if self.job_info.output_paths:
+                output_paths = self.job_info.output_paths
+            elif self.app_info.default_file_path:
+                output_paths = {self.app_info.default_file_path}
+            if output_paths:
+                outputs_mount = ",".join([f"{p}:{outputs_mount_mode}" for p in output_paths])
+                defaults += f",{outputs_mount}"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:default_ro"

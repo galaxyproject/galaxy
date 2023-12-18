@@ -34,6 +34,7 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 from galaxy.model.base import transaction
+from galaxy.objectstore import get_disk_paths
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -591,6 +592,7 @@ class BaseJobRunner:
                 home_directory=None,
                 job_directory_type=job_directory_type,
                 job_type="epilog",
+                output_paths=get_disk_paths(self.app.object_store),
             )
 
             return self.app.container_finder.find_container(tool_info, destination_info, job_info)

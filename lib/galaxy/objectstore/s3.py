@@ -31,7 +31,10 @@ from galaxy.util import (
     which,
 )
 from galaxy.util.path import safe_relpath
-from . import ConcreteObjectStore
+from . import (
+    ConcreteObjectStore,
+    DiskPath,
+)
 from .caching import (
     CacheTarget,
     enable_cache_monitor,
@@ -239,6 +242,9 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(object_store_cache_path=self.staging_path, extra_dirs=self.extra_dirs)
 
     @property
     def cache_target(self) -> CacheTarget:

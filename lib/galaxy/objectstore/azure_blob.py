@@ -26,7 +26,10 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from . import ConcreteObjectStore
+from . import (
+    ConcreteObjectStore,
+    DiskPath,
+)
 from .caching import (
     CacheTarget,
     enable_cache_monitor,
@@ -142,6 +145,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
             }
         )
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(object_store_cache_path=self.staging_path)
 
     ###################
     # Private Methods #
