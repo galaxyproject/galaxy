@@ -53,6 +53,15 @@ describe("WorkflowInvocationState.vue", () => {
         const wrapper = await mountWorkflowInvocationState(null);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
     });
+
+    it("determines that invocation and job states are not terminal with non-terminal invocation", async () => {
+        const invocation = {
+            ...invocationData,
+            state: "new",
+        };
+        const wrapper = await mountWorkflowInvocationState(invocation);
+        expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
+    });
 });
 
 function isInvocationAndJobTerminal(wrapper: Wrapper<Vue>): boolean {
