@@ -1,12 +1,26 @@
+"""
+Original implementation by David Montague (@dmontagu)
+https://github.com/dmontagu/fastapi-utils
+"""
 from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
-from typing import Any, TypeVar, get_type_hints
+from typing import (
+    Any,
+    get_type_hints,
+    TypeVar,
+)
 
-from fastapi import APIRouter, Depends
+from fastapi import (
+    APIRouter,
+    Depends,
+)
 from pydantic.typing import is_classvar
-from starlette.routing import Route, WebSocketRoute
+from starlette.routing import (
+    Route,
+    WebSocketRoute,
+)
 
 T = TypeVar("T")
 
@@ -84,8 +98,8 @@ def _init_cbv(cls: type[Any]) -> None:
             setattr(self, dep_name, dep_value)
         old_init(self, *args, **kwargs)
 
-    setattr(cls, "__signature__", new_signature)
-    setattr(cls, "__init__", new_init)
+    setattr(cls, "__signature__", new_signature)  # noqa: B010
+    setattr(cls, "__init__", new_init)  # noqa: B010
     setattr(cls, CBV_CLASS_KEY, True)
 
 
@@ -102,4 +116,4 @@ def _update_cbv_route_endpoint_signature(cls: type[Any], route: Route | WebSocke
         parameter.replace(kind=inspect.Parameter.KEYWORD_ONLY) for parameter in old_parameters[1:]
     ]
     new_signature = old_signature.replace(parameters=new_parameters)
-    setattr(route.endpoint, "__signature__", new_signature)
+    setattr(route.endpoint, "__signature__", new_signature)  # noqa: B010
