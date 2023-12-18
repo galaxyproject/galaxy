@@ -1852,7 +1852,7 @@ class JobBaseModel(Model):
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     galaxy_version: Optional[str] = Field(
-        ...,
+        default=None,
         title="Galaxy Version",
         description="The (major) version of Galaxy used to create this job.",
         example="21.05",
