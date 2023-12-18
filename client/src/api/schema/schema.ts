@@ -4190,13 +4190,13 @@ export interface components {
              * Command Version
              * @description Tool version indicated during job execution.
              */
-            command_version: string;
+            command_version?: string;
             /**
              * Copied from Job-ID
              * @description Reference to cached job if job execution was cached.
              * @example 0123456789ABCDEF
              */
-            copied_from_job_id: string;
+            copied_from_job_id?: string;
             /**
              * Create Time
              * Format: date-time
@@ -9040,13 +9040,13 @@ export interface components {
              * Command Version
              * @description Tool version indicated during job execution.
              */
-            command_version: string;
+            command_version?: string;
             /**
              * Copied from Job-ID
              * @description Reference to cached job if job execution was cached.
              * @example 0123456789ABCDEF
              */
-            copied_from_job_id: string;
+            copied_from_job_id?: string;
             /**
              * Create Time
              * Format: date-time
