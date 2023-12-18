@@ -6819,12 +6819,12 @@ export interface components {
              * @description The encoded ID of the dataset/dataset collection.
              * @example 0123456789ABCDEF
              */
-            id: string;
+            id?: string;
             /**
              * Label
              * @description Label of the workflow step associated with the input dataset/dataset collection.
              */
-            label: string;
+            label?: string;
             /**
              * Source
              * @description Source type of the input dataset/dataset collection.
@@ -6891,7 +6891,7 @@ export interface components {
              * @description The encoded ID of the dataset/dataset collection.
              * @example 0123456789ABCDEF
              */
-            id: string;
+            id?: string;
             /**
              * Source
              * @description Source model of the output dataset.
@@ -6912,7 +6912,7 @@ export interface components {
              * @description The encoded ID of the dataset/dataset collection.
              * @example 0123456789ABCDEF
              */
-            id: string;
+            id?: string;
             /**
              * Source
              * @description Source model of the output dataset collection.
@@ -7050,13 +7050,13 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state: components["schemas"]["ExtendedInvocationStepState"];
+            state?: components["schemas"]["ExtendedInvocationStepState"];
             /**
              * Subworkflow invocation ID
              * @description The encoded ID of the subworkflow invocation.
              * @example 0123456789ABCDEF
              */
-            subworkflow_invocation_id: string;
+            subworkflow_invocation_id?: string;
             /**
              * Update Time
              * Format: date-time
@@ -7073,7 +7073,7 @@ export interface components {
              * Step label
              * @description The label of the workflow step
              */
-            workflow_step_label: string;
+            workflow_step_label?: string;
             /**
              * UUID
              * Format: uuid4
@@ -10800,7 +10800,7 @@ export interface components {
              * UUID
              * @description Universal unique identifier of the workflow invocation.
              */
-            uuid: string | string;
+            uuid?: string | string;
             /**
              * Workflow ID
              * @description The encoded Workflow ID associated with the invocation.
