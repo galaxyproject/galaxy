@@ -49,7 +49,7 @@ export function useKeyedCache<T>(
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            if (!loadingItem.value[id] && shouldFetch(item)) {
+            if (shouldFetch(item)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
@@ -71,6 +71,10 @@ export function useKeyedCache<T>(
 
     async function fetchItemById(params: FetchParams) {
         const itemId = params.id;
+        const isAlreadyLoading = loadingItem.value[itemId] ?? false;
+        if (isAlreadyLoading) {
+            return;
+        }
         set(loadingItem.value, itemId, true);
         try {
             const fetchItem = unref(fetchItemHandler);
