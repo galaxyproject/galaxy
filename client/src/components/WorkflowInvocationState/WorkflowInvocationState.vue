@@ -2,6 +2,7 @@
     <b-tabs v-if="invocation">
         <b-tab title="Summary" active>
             <WorkflowInvocationSummary
+                class="invocation-summary"
                 :invocation="invocation"
                 :index="index"
                 :invocation-and-job-terminal="invocationAndJobTerminal"
