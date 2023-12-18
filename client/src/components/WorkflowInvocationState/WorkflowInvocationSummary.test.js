@@ -4,7 +4,6 @@ import { getLocalVue } from "tests/jest/helpers";
 import invocationData from "../Workflow/test/json/invocation.json";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary";
 
-
 const localVue = getLocalVue();
 
 describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
