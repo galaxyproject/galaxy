@@ -4218,7 +4218,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -6631,7 +6631,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -9057,7 +9057,7 @@ export interface components {
              * Job dependencies
              * @description The dependencies of the job.
              */
-            dependencies: Record<string, never>[];
+            dependencies?: Record<string, never>[];
             /**
              * Exit Code
              * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
@@ -9073,7 +9073,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -9098,7 +9098,7 @@ export interface components {
              * Job Messages
              * @description List with additional information and possible reasons for a failed job.
              */
-            job_messages: Record<string, never>[];
+            job_messages?: Record<string, never>[];
             /**
              * Job Metrics
              * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job. Only administrators can see these metrics.
@@ -9108,12 +9108,12 @@ export interface components {
              * Job Standard Error
              * @description The captured standard error of the job execution.
              */
-            job_stderr: string;
+            job_stderr?: string;
             /**
              * Job Standard Output
              * @description The captured standard output of the job execution.
              */
-            job_stdout: string;
+            job_stdout?: string;
             /**
              * Model class
              * @description The name of the database model class.
@@ -9150,12 +9150,12 @@ export interface components {
              * Standard Error
              * @description Combined tool and job standard error streams.
              */
-            stderr: string;
+            stderr?: string;
             /**
              * Standard Output
              * @description Combined tool and job standard output streams.
              */
-            stdout: string;
+            stdout?: string;
             /**
              * Tool ID
              * @description Identifier of the tool that generated this job.
@@ -9165,12 +9165,12 @@ export interface components {
              * Tool Standard Error
              * @description The captured standard error of the tool executed by the job.
              */
-            tool_stderr: string;
+            tool_stderr?: string;
             /**
              * Tool Standard Output
              * @description The captured standard output of the tool executed by the job.
              */
-            tool_stdout: string;
+            tool_stdout?: string;
             /**
              * Update Time
              * Format: date-time
