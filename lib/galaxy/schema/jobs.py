@@ -159,7 +159,7 @@ class EncodedDatasetJobInfo(EncodedDataItemSourceId):
 
 class EncodedJobDetails(JobSummary):
     command_version: Optional[str] = Field(
-        ...,
+        default=None,
         title="Command Version",
         description="Tool version indicated during job execution.",
     )
@@ -182,7 +182,7 @@ class EncodedJobDetails(JobSummary):
         description="Dictionary mapping all the tool outputs (by name) to the corresponding data references.",
     )
     copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
-        default=Required,
+        default=None,
         title="Copied from Job-ID",
         description="Reference to cached job if job execution was cached.",
     )
