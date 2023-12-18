@@ -112,18 +112,16 @@ export default {
         clearTimeout(this.stepStatesInterval);
     },
     methods: {
-        pollStepStatesUntilTerminal: function () {
+        pollStepStatesUntilTerminal: async function () {
             if (!this.invocation || !this.invocationSchedulingTerminal) {
-                this.invocationStore.fetchInvocationForId({ id: this.invocationId }).then((response) => {
-                    this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
-                });
+                await this.invocationStore.fetchInvocationForId({ id: this.invocationId });
+                this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
             }
         },
-        pollJobStatesUntilTerminal: function () {
+        pollJobStatesUntilTerminal: async function () {
             if (!this.jobStatesTerminal) {
-                this.invocationStore.fetchInvocationJobsSummaryForId({ id: this.invocationId }).then((response) => {
-                    this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
-                });
+                await this.invocationStore.fetchInvocationJobsSummaryForId({ id: this.invocationId });
+                this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
             }
         },
         onError: function (e) {
