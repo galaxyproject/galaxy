@@ -38,7 +38,6 @@ from fastapi.security import (
     APIKeyHeader,
     APIKeyQuery,
 )
-from fastapi_utils.cbv import cbv
 from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.datastructures import Headers
@@ -71,6 +70,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.galaxy.api.cbv import cbv
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
