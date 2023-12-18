@@ -10,9 +10,7 @@
                 @invocation-cancelled="cancelWorkflowScheduling" />
         </b-tab>
         <b-tab title="Details">
-            <WorkflowInvocationDetails
-                :invocation="invocation"
-                :invocation-and-job-terminal="invocationAndJobTerminal" />
+            <WorkflowInvocationDetails :invocation="invocation" />
         </b-tab>
         <!-- <b-tab title="Workflow Overview">
             <p>TODO: Insert readonly version of workflow editor here</p>
