@@ -15,8 +15,9 @@ from fastapi import (
     Depends,
     FastAPI,
 )
-from fastapi_utils.cbv import cbv
 from starlette.testclient import TestClient
+
+from galaxy.webapps.galaxy.api.cbv import cbv
 
 
 def test_cbv() -> None:
