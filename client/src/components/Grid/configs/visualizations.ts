@@ -69,7 +69,6 @@ const fields: FieldArray = [
         key: "title",
         type: "operations",
         width: 40,
-        condition: (data: VisualizationEntry) => !data.deleted,
         operations: [
             {
                 title: "Open",
