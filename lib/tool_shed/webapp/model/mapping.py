@@ -35,13 +35,11 @@ def init(
     engine_options = engine_options or {}
     # Create the database engine
     engine = build_engine(url, engine_options)
-    # Connect the metadata to the database.
-    metadata.bind = engine
 
     result = ToolShedModelMapping([tool_shed.webapp.model], engine=engine)
 
     if create_tables:
-        metadata.create_all()
+        metadata.create_all(bind=engine)
 
     result.create_tables = create_tables
 
