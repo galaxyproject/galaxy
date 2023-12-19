@@ -156,8 +156,7 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
     are clicked.
     """
     dictified = element.to_dict(view="element")
-    element_object = element.element_object
-    if element_object is not None:
+    if (element_object := element.element_object) is not None:
         object_details = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,

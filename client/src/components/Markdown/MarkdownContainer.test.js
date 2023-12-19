@@ -11,6 +11,13 @@ import MountTarget from "./MarkdownContainer.vue";
 jest.mock("utils/redirect");
 withPrefix.mockImplementation((url) => url);
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
+
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);
 

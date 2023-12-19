@@ -13,16 +13,20 @@ import {
 
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
-interface User extends QuotaUsageResponse {
+export interface User extends QuotaUsageResponse {
     id: string;
     email: string;
     tags_used: string[];
     isAnonymous: false;
+    is_admin?: boolean;
 }
 
-interface AnonymousUser {
+export interface AnonymousUser {
     isAnonymous: true;
+    is_admin?: false;
 }
+
+export type GenericUser = User | AnonymousUser;
 
 interface Preferences {
     theme: string;
@@ -30,12 +34,20 @@ interface Preferences {
 }
 
 export const useUserStore = defineStore("userStore", () => {
-    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools");
-    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false);
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
+    // explicitly pass current User, because userStore might not exist yet
+    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
+    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
+
     let loadPromise: Promise<void> | null = null;
+
+    function $reset() {
+        currentUser.value = null;
+        currentPreferences.value = null;
+        loadPromise = null;
+    }
 
     const isAnonymous = computed(() => {
         return !("email" in (currentUser.value || []));
@@ -117,6 +129,7 @@ export const useUserStore = defineStore("userStore", () => {
     function toggleActivityBar() {
         showActivityBar.value = !showActivityBar.value;
     }
+
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
@@ -136,5 +149,6 @@ export const useUserStore = defineStore("userStore", () => {
         removeFavoriteTool,
         toggleActivityBar,
         toggleSideBar,
+        $reset,
     };
 });

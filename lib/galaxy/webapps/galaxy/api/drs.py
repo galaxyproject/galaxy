@@ -51,8 +51,8 @@ class DrsApi:
         default_organization_id = ".".join(reversed(hostname.split(".")))
         config = self.config
         organization_id = config.ga4gh_service_id or default_organization_id
-        organization_name = config.ga4gh_service_organization_name or organization_id
-        organization_url = config.ga4gh_service_organization_url or f"{components.scheme}://{components.netloc}"
+        organization_name = config.organization_name or organization_id
+        organization_url = config.organization_url or f"{components.scheme}://{components.netloc}"
 
         organization = ServiceOrganization(
             url=organization_url,
@@ -63,9 +63,8 @@ class DrsApi:
             artifact="drs",
             version="1.2.0",
         )
-        environment = config.ga4gh_service_environment
         extra_kwds = {}
-        if environment:
+        if environment := config.ga4gh_service_environment:
             extra_kwds["environment"] = environment
         return Service(
             id=organization_id + ".drs",

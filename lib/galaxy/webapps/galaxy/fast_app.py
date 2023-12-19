@@ -46,6 +46,10 @@ api_tags_metadata = [
         "description": "Operations with group roles.",
     },
     {
+        "name": "groups",
+        "description": "Operations with groups.",
+    },
+    {
         "name": "group_users",
         "description": "Operations with group users.",
     },
@@ -95,8 +99,7 @@ class GalaxyCORSMiddleware(CORSMiddleware):
 
 
 def add_galaxy_middleware(app: FastAPI, gx_app):
-    x_frame_options = gx_app.config.x_frame_options
-    if x_frame_options:
+    if x_frame_options := gx_app.config.x_frame_options:
 
         @app.middleware("http")
         async def add_x_frame_options(request: Request, call_next):

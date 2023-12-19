@@ -107,6 +107,12 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory,
 )
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
@@ -144,12 +150,6 @@ from galaxy.web import (
 )
 from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
-from galaxy.web.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.web_stack import (
     application_stack_instance,
     ApplicationStack,
@@ -521,7 +521,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(
-            JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self)
+            JobMetrics, JobMetrics(self.config.job_metrics_config_file, self.config.job_metrics, app=self)
         )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
@@ -741,6 +741,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                 self, self.config.oidc_config_file, self.config.oidc_backends_config_file
             )
 
+            # If there is only a single external authentication provider in use
+            # TODO: Future work will expand on this and provide an interface for
+            # multiple auth providers allowing explicit authenticated association.
+            self.config.fixed_delegated_auth = (
+                len(list(self.config.oidc)) == 1 and len(list(self.auth_manager.authenticators)) == 0
+            )
+
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
             self.prune_history_audit_task = IntervalTask(
                 func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
@@ -839,8 +846,7 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
 class ExecutionTimerFactory:
     def __init__(self, config):
-        statsd_host = getattr(config, "statsd_host", None)
-        if statsd_host:
+        if statsd_host := getattr(config, "statsd_host", None):
             from galaxy.web.statsd_client import GalaxyStatsdClient
 
             self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(

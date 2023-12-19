@@ -6,6 +6,7 @@ from datetime import (
     datetime,
 )
 
+import sqlalchemy
 from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
@@ -27,7 +28,6 @@ from sqlalchemy.sql import select
 
 from galaxy import model
 from galaxy.exceptions import (
-    AdminRequiredException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -41,9 +41,13 @@ from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    ImplicitCollectionJobsJobAssociation,
     Job,
     JobParameter,
     User,
+    Workflow,
+    WorkflowInvocation,
+    WorkflowInvocationStep,
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
@@ -100,76 +104,50 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(self, trans, payload: JobIndexQueryPayload):
+    def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
         is_admin = trans.user_is_admin
         user_details = payload.user_details
-
         decoded_user_id = payload.user_id
+        history_id = payload.history_id
+        workflow_id = payload.workflow_id
+        invocation_id = payload.invocation_id
+        search = payload.search
+        order_by = payload.order_by
 
-        if is_admin:
-            if decoded_user_id is not None:
-                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
-            else:
-                query = trans.sa_session.query(model.Job)
-            if user_details:
-                query = query.outerjoin(model.Job.user)
-
-        else:
-            if user_details:
-                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise AdminRequiredException("Only admins can index the jobs of others")
-            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
-
-        def build_and_apply_filters(query, objects, filter_func):
+        def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
                 if isinstance(objects, (str, date, datetime)):
-                    query = query.filter(filter_func(objects))
+                    stmt = stmt.where(filter_func(objects))
                 elif isinstance(objects, list):
                     t = []
                     for obj in objects:
                         t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
+                    stmt = stmt.where(or_(*t))
+            return stmt
 
-        query = build_and_apply_filters(query, payload.states, lambda s: model.Job.state == s)
-        query = build_and_apply_filters(query, payload.tool_ids, lambda t: model.Job.tool_id == t)
-        query = build_and_apply_filters(query, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
-        query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
-        query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
-
-        history_id = payload.history_id
-        workflow_id = payload.workflow_id
-        invocation_id = payload.invocation_id
-        if history_id is not None:
-            query = query.filter(model.Job.history_id == history_id)
-        if workflow_id or invocation_id:
+        def add_workflow_jobs():
+            wfi_step = select(WorkflowInvocationStep)
             if workflow_id is not None:
                 wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .join(model.WorkflowInvocation)
-                    .join(model.Workflow)
-                    .filter(
-                        model.Workflow.stored_workflow_id == workflow_id,
-                    )
-                    .subquery()
+                    wfi_step.join(WorkflowInvocation).join(Workflow).where(Workflow.stored_workflow_id == workflow_id)
                 )
             elif invocation_id is not None:
-                wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == invocation_id)
-                    .subquery()
-                )
-            query1 = query.join(wfi_step)
-            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+                wfi_step = wfi_step.where(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
+            wfi_step = wfi_step.subquery()
+
+            stmt1 = stmt.join(wfi_step)
+            stmt2 = stmt.join(ImplicitCollectionJobsJobAssociation).join(
                 wfi_step,
-                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
+                ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
                 == wfi_step.c.implicit_collection_jobs_id,
             )
-            query = query1.union(query2)
+            # Ensure the result is models, not tuples
+            sq = stmt1.union(stmt2).subquery()
+            # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection (`sq.c`).
+            # Ref: https://github.com/galaxyproject/galaxy/pull/16852#issuecomment-1804676322
+            return select(aliased(Job, sq)), sq.c
 
-        search = payload.search
-        if search:
+        def add_search_criteria(stmt):
             search_filters = {
                 "tool": "tool",
                 "t": "tool",
@@ -191,36 +169,63 @@ class JobManager:
                         "h": "handler",
                     }
                 )
+            assert search
             parsed_search = parse_filters_structured(search, search_filters)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
                     if key == "user":
-                        query = query.filter(text_column_filter(model.User.email, term))
+                        stmt = stmt.where(text_column_filter(User.email, term))
                     elif key == "tool":
-                        query = query.filter(text_column_filter(model.Job.tool_id, term))
+                        stmt = stmt.where(text_column_filter(Job.tool_id, term))
                     elif key == "handler":
-                        query = query.filter(text_column_filter(model.Job.handler, term))
+                        stmt = stmt.where(text_column_filter(Job.handler, term))
                     elif key == "runner":
-                        query = query.filter(text_column_filter(model.Job.job_runner_name, term))
+                        stmt = stmt.where(text_column_filter(Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    columns = [model.Job.tool_id]
+                    columns = [Job.tool_id]
                     if user_details:
-                        columns.append(model.User.email)
+                        columns.append(User.email)
                     if is_admin:
-                        columns.append(model.Job.handler)
-                        columns.append(model.Job.job_runner_name)
-                    query = query.filter(raw_text_column_filter(columns, term))
+                        columns.append(Job.handler)
+                        columns.append(Job.job_runner_name)
+                    stmt = stmt.filter(raw_text_column_filter(columns, term))
+            return stmt
 
-        if payload.order_by == JobIndexSortByEnum.create_time:
-            order_by = model.Job.create_time.desc()
+        stmt = select(Job)
+
+        if is_admin:
+            if decoded_user_id is not None:
+                stmt = stmt.where(Job.user_id == decoded_user_id)
+            if user_details:
+                stmt = stmt.outerjoin(Job.user)
         else:
-            order_by = model.Job.update_time.desc()
-        query = query.order_by(order_by)
+            stmt = stmt.where(Job.user_id == trans.user.id)
 
-        query = query.offset(payload.offset)
-        query = query.limit(payload.limit)
-        return query
+        stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
+        stmt = build_and_apply_filters(stmt, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
+        stmt = build_and_apply_filters(stmt, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
+
+        if history_id is not None:
+            stmt = stmt.where(Job.history_id == history_id)
+
+        order_by_columns = Job
+        if workflow_id or invocation_id:
+            stmt, order_by_columns = add_workflow_jobs()
+
+        if search:
+            stmt = add_search_criteria(stmt)
+
+        if order_by == JobIndexSortByEnum.create_time:
+            stmt = stmt.order_by(order_by_columns.create_time.desc())
+        else:
+            stmt = stmt.order_by(order_by_columns.update_time.desc())
+
+        stmt = stmt.offset(payload.offset)
+        stmt = stmt.limit(payload.limit)
+        return trans.sa_session.scalars(stmt)
 
     def job_lock(self) -> JobLock:
         return JobLock(active=self.app.job_manager.job_lock)
@@ -232,7 +237,7 @@ class JobManager:
         return self.job_lock()
 
     def get_accessible_job(self, trans, decoded_job_id):
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+        job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
         belongs_to_user = (
@@ -588,8 +593,7 @@ class JobSearch:
                     )
             else:
                 job_parameter_conditions = [model.Job.id == job[0]]
-            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
-            job = query.first()
+            job = get_job(self.sa_session, *job_parameter_conditions)
             if job is None:
                 continue
             n_parameters = 0
@@ -674,7 +678,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
         elif job_source_type == "WorkflowInvocation":
-            invocation_state = sa_session.query(model.WorkflowInvocation).get(job_source_id).state
+            invocation_state = sa_session.get(model.WorkflowInvocation, job_source_id).state
             workflow_invocation_states[job_source_id] = invocation_state
             workflow_invocation_job_sources = []
             for (
@@ -697,10 +701,10 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
     implicit_collection_jobs_summaries = {}
 
     for job_id in job_ids:
-        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.query(model.Job).get(job_id))
+        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.get(Job, job_id))
     for implicit_collection_jobs_id in implicit_collection_job_ids:
         implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(
-            sa_session, sa_session.query(model.ImplicitCollectionJobs).get(implicit_collection_jobs_id)
+            sa_session, sa_session.get(model.ImplicitCollectionJobs, implicit_collection_jobs_id)
         )
 
     rval = []
@@ -864,8 +868,7 @@ def summarize_destination_params(trans, job):
         "Runner Job ID": job.job_runner_external_id,
         "Handler": job.handler,
     }
-    job_destination_params = job.destination_params
-    if job_destination_params:
+    if job_destination_params := job.destination_params:
         destination_params.update(job_destination_params)
     return destination_params
 
@@ -876,6 +879,8 @@ def summarize_job_parameters(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    # More client logic here than is ideal but it is hard to reason about
+    # tool parameter types on the client relative to the server.
 
     def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
         if upgrade_messages is None:
@@ -1063,3 +1068,8 @@ def get_jobs_to_check_at_startup(session: Session, track_jobs_in_database: bool,
         stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
 
     return session.scalars(stmt)
+
+
+def get_job(session, *where_clauses):
+    stmt = select(Job).where(*where_clauses).limit(1)
+    return session.scalars(stmt).first()

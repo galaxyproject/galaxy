@@ -27,7 +27,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,
@@ -63,8 +63,6 @@ class PagesService(ServiceBase):
         self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
     ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
-
-        :param deleted: Display deleted pages
 
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information

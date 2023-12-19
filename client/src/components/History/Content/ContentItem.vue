@@ -1,9 +1,9 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
-        :data-state="state"
+        :data-state="dataState"
         tabindex="0"
         role="button"
         @keydown="onKeyDown">
@@ -43,7 +43,11 @@
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
                     </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
-                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                        <icon
+                            fixed-width
+                            :icon="contentState.icon"
+                            :spin="contentState.spin"
+                            :title="item.populated_state_message || contentState.text" />
                     </span>
                     <span class="id hid">{{ id }}:</span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
@@ -89,7 +93,7 @@
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
-                v-if="expandDataset"
+                v-if="expandDataset && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
@@ -170,6 +174,12 @@ export default {
             if (this.isPlaceholder) {
                 return "placeholder";
             }
+            if (this.item.populated_state === "failed") {
+                return "failed_populated_state";
+            }
+            if (this.item.populated_state === "new") {
+                return "new_populated_state";
+            }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
                     if (this.item.job_state_summary[state] > 0) {
@@ -180,6 +190,9 @@ export default {
                 return this.item.state;
             }
             return "ok";
+        },
+        dataState() {
+            return this.state === "new_populated_state" ? "new" : this.state;
         },
         tags() {
             return this.item.tags;
@@ -211,6 +224,9 @@ export default {
                 visualize: `/visualizations?dataset_id=${id}`,
             };
         },
+        isBeingUsed() {
+            return Object.values(this.itemUrls).includes(this.$route.path) ? "being-used" : "";
+        },
     },
     methods: {
         onKeyDown(event) {
@@ -240,7 +256,14 @@ export default {
                 const url = entryPointsForHda[0].target;
                 window.open(url, "_blank");
             } else {
-                this.$router.push(this.itemUrls.display, { title: this.name });
+                // vue-router 4 supports a native force push with clean URLs,
+                // but we're using a workaround with a __vkey__ bit as a workaround
+                // Only conditionally force to keep urls clean most of the time.
+                if (this.$router.currentRoute.path === this.itemUrls.display) {
+                    this.$router.push(this.itemUrls.display, { title: this.name, force: true });
+                } else {
+                    this.$router.push(this.itemUrls.display, { title: this.name });
+                }
             }
         },
         onDelete(recursive = false) {
@@ -288,6 +311,11 @@ export default {
     // improve focus visibility
     &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.being-used {
+        border-left: 0.25rem solid $brand-primary;
+        margin-left: 0rem !important;
     }
 }
 </style>

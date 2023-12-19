@@ -586,7 +586,7 @@ class FileParameter(MetadataParameter):
     def to_string(self, value):
         if not value:
             return str(self.spec.no_value)
-        return value.file_name
+        return value.get_file_name()
 
     def to_safe_string(self, value):
         # We do not sanitize file names
@@ -633,12 +633,12 @@ class FileParameter(MetadataParameter):
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             session.add(new_value)
             try:
-                new_value.update_from_file(value.file_name)
+                new_value.update_from_file(value.get_file_name())
             except AssertionError:
                 tmp_session = session(target_context.parent)
                 with transaction(tmp_session):
                     tmp_session.commit()
-                new_value.update_from_file(value.file_name)
+                new_value.update_from_file(value.get_file_name())
             return self.unwrap(new_value)
         return None
 
@@ -664,13 +664,12 @@ class FileParameter(MetadataParameter):
             if mf is None:
                 mf = self.new_file(dataset=parent, **value.kwds)
             # Ensure the metadata file gets updated with content
-            file_name = value.file_name
+            file_name = value.get_file_name()
             if path_rewriter:
                 # Job may have run with a different (non-local) tmp/working
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             mf.update_from_file(file_name)
-            os.unlink(file_name)
             value = mf.id
         return value
 
@@ -713,8 +712,7 @@ class MetadataTempFile:
             self.tmp_dir = metadata_tmp_files_dir
         self._filename = None
 
-    @property
-    def file_name(self):
+    def get_file_name(self):
         if self._filename is None:
             # we need to create a tmp file, accessable across all nodes/heads, save the name, and return it
             self._filename = abspath(tempfile.NamedTemporaryFile(dir=self.tmp_dir, prefix="metadata_temp_file_").name)
@@ -722,7 +720,7 @@ class MetadataTempFile:
         return self._filename
 
     def to_JSON(self):
-        return {"__class__": self.__class__.__name__, "filename": self.file_name, "kwds": self.kwds}
+        return {"__class__": self.__class__.__name__, "filename": self.get_file_name(), "kwds": self.kwds}
 
     @classmethod
     def from_JSON(cls, json_dict):
@@ -742,9 +740,9 @@ class MetadataTempFile:
                 for value in json.load(fh).values():
                     if cls.is_JSONified_value(value):
                         value = cls.from_JSON(value)
-                    if isinstance(value, cls) and os.path.exists(value.file_name):
-                        log.debug("Cleaning up abandoned MetadataTempFile file: %s", value.file_name)
-                        os.unlink(value.file_name)
+                    if isinstance(value, cls) and os.path.exists(value.get_file_name()):
+                        log.debug("Cleaning up abandoned MetadataTempFile file: %s", value.get_file_name())
+                        os.unlink(value.get_file_name())
         except Exception as e:
             log.debug("Failed to cleanup MetadataTempFile temp files from %s: %s", filename, unicodify(e))
 

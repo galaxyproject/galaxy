@@ -15,7 +15,10 @@ from galaxy.util import (
     galaxy_directory,
     parse_xml,
 )
-from galaxy.util.resources import resource_path
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 
 TOOLS_DIRECTORY = os.path.abspath(os.path.join(galaxy_directory(), "test/functional/tools/"))
 
@@ -51,8 +54,8 @@ def test_xml_parsing() -> None:
 
 
 def test_parsing_manual() -> None:
-    path = resource_path(__package__, "example_data_managers/manual.xml")
-    tree = parse_xml(path)
+    with as_file(resource_path(__package__, "example_data_managers/manual.xml")) as path:
+        tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
     description = convert_data_tables_xml(data_manager_el)
@@ -61,8 +64,8 @@ def test_parsing_manual() -> None:
 
 
 def test_parsing_mothur() -> None:
-    path = resource_path(__package__, "example_data_managers/mothur.xml")
-    tree = parse_xml(path)
+    with as_file(resource_path(__package__, "example_data_managers/mothur.xml")) as path:
+        tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
     description = convert_data_tables_xml(data_manager_el)
@@ -72,9 +75,12 @@ def test_parsing_mothur() -> None:
 
 @dataclass
 class OutputDataset:
-    file_name: str
+    file_name_: str
     extra_files_path: str
     ext: str = "data_manager_json"
+
+    def get_file_name(self, sync_cache=True) -> str:
+        return self.file_name_
 
     def extra_files_path_exists(self) -> bool:
         return os.path.exists(self.extra_files_path)

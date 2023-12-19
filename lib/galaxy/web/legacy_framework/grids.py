@@ -682,9 +682,8 @@ class Grid:
         # Maintain sort state in generated urls
         extra_url_args = {}
         # Determine whether use_default_filter flag is set.
-        use_default_filter_str = kwargs.get("use_default_filter")
         use_default_filter = False
-        if use_default_filter_str:
+        if use_default_filter_str := kwargs.get("use_default_filter"):
             use_default_filter = use_default_filter_str.lower() == "true"
         # Process filtering arguments to (a) build a query that represents the filter and (b) build a
         # dictionary that denotes the current filter.

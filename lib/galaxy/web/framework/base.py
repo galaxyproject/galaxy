@@ -222,6 +222,12 @@ class WebApplication:
         rc = routes.request_config()
         rc.mapper = self.mapper
         rc.mapper_dict = map_match
+        server_port = environ["SERVER_PORT"]
+        if isinstance(server_port, int):
+            # Workaround bug in the routes package, which would concatenate this
+            # without casting to str in
+            # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
+            environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory(environ)
@@ -420,8 +426,7 @@ class Request(webob.Request):
     @lazy_property
     def cookies(self):
         cookies = SimpleCookie()
-        cookie_header = self.environ.get("HTTP_COOKIE")
-        if cookie_header:
+        if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
             galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
             if galaxy_cookies:
@@ -542,6 +547,9 @@ def send_file(start_response, trans, body):
         trans.response.headers["accept-ranges"] = "bytes"
         start = None
         end = None
+        if trans.request.method == "HEAD":
+            trans.response.headers["content-length"] = os.path.getsize(body.name)
+            body = b""
         if trans.request.range:
             start = int(trans.request.range.start)
             file_size = int(trans.response.headers["content-length"])
@@ -549,7 +557,8 @@ def send_file(start_response, trans, body):
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206
-        body = iterate_file(body, start, end)
+        if body:
+            body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 

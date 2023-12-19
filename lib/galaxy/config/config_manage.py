@@ -203,6 +203,8 @@ OPTION_ACTIONS: Dict[str, _OptionAction] = {
     "legacy_eager_objectstore_initialization": _DeprecatedAndDroppedAction(),
     "enable_openid": _DeprecatedAndDroppedAction(),
     "openid_consumer_cache_path": _DeprecatedAndDroppedAction(),
+    "ga4gh_service_organization_name": _RenameAction("organization_name"),
+    "ga4gh_service_organization_url": _RenameAction("organization_url"),
 }
 
 
@@ -426,8 +428,7 @@ def _replace_file(args: Namespace, f: StringIO, app_desc: App, from_path: str, t
 def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     schema = app_desc.schema
     f = StringIO()
-    description = getattr(schema, "description", None)
-    if description:
+    if description := getattr(schema, "description", None):
         description = description.lstrip()
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
@@ -517,8 +518,7 @@ def _warn(message: str) -> None:
 
 def _get_option_desc(option: Dict[str, Any]) -> str:
     desc = option["desc"]
-    parent_dir = option.get("path_resolves_to")
-    if parent_dir:
+    if parent_dir := option.get("path_resolves_to"):
         path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
         return f"{desc}\n{path_resolves}" if desc else path_resolves
     return desc

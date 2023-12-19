@@ -22,7 +22,10 @@ import requests
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -61,8 +64,12 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
-        data = {"path": self.input_hda.file_name, "job_key": job_key}
+        data = {"path": self.input_hda.get_file_name(), "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        head_response = requests.head(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(head_response)
+        assert head_response.text == ""
+        assert head_response.headers["content-length"] == str(len(TEST_INPUT_TEXT))
         response = requests.get(get_url, params=data)
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
@@ -134,6 +141,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session.commit()
         job = model.Job()
         job.history = history
+        ensure_object_added_to_session(job, object_in_session=history)
         job.user = user
         job.handler = "unknown-handler"
         job.state = state

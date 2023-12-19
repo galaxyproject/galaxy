@@ -186,7 +186,7 @@ class HistoryContentsManager(base.SortableManager):
             cast(func.sum(subquery.c.active), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted
@@ -407,31 +407,31 @@ class HistoryContentsManager(base.SortableManager):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))  # type: ignore[attr-defined]
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
     def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))
             .options(joinedload(component_class.collection))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -568,8 +568,7 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-        column_filter = get_filter(attr, op, val)
-        if column_filter is not None:
+        if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 

@@ -140,8 +140,7 @@ class RenameDatasetAction(DefaultJobAction):
             if step_input and hasattr(step_input, "name"):
                 input_names[input_key] = step_input.name
 
-        new_name = cls._gen_new_name(action, input_names, replacement_dict)
-        if new_name:
+        if new_name := cls._gen_new_name(action, input_names, replacement_dict):
             for name, step_output in step_outputs.items():
                 if action.output_name == "" or name == action.output_name:
                     step_output.name = new_name
@@ -248,8 +247,7 @@ class RenameDatasetAction(DefaultJobAction):
             if has_collection and hasattr(has_collection, "name"):
                 input_names[input_assoc.name] = has_collection.name
 
-        new_name = cls._gen_new_name(action, input_names, replacement_dict)
-        if new_name:
+        if new_name := cls._gen_new_name(action, input_names, replacement_dict):
             for dataset_assoc in job.output_datasets:
                 if action.output_name == "" or dataset_assoc.name == action.output_name:
                     dataset_assoc.dataset.name = new_name

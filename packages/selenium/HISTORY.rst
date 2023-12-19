@@ -4,10 +4,22 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 23.1.1 (2023-10-23)
@@ -74,6 +86,8 @@ No recorded changes since last release
 Enhancements
 ============
 
+* 
+* 
 * Port selenium setup to non-deprecated selenium options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16215 <https://github.com/galaxyproject/galaxy/pull/16215>`_
 
 -------------------
@@ -85,6 +99,8 @@ Enhancements
 Enhancements
 ============
 
+* 
+* 
 * 
 * 
 * 

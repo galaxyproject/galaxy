@@ -58,22 +58,22 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
+from galaxy.short_term_storage import ShortTermStorageMonitor
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
-from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
 log = get_logger(__name__)
 
 
-@lru_cache()
+@lru_cache
 def setup_data_table_manager(app):
     app._configure_tool_data_tables(from_shed_config=False)
 
 
-@lru_cache()
+@lru_cache
 def cached_create_tool_from_representation(app, raw_tool_source):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
@@ -152,7 +152,7 @@ def change_datatype(
         log.info(f"Changing datatype is not allowed for {model_class} {dataset_instance.id}")
         return
     if datatype == "auto":
-        path = dataset_instance.dataset.file_name
+        path = dataset_instance.dataset.get_file_name()
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
     with transaction(sa_session):

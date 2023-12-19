@@ -177,6 +177,12 @@ class ExtraFileEntry(Model):
     )
 
 
+class DatasetExtraFiles(Model):
+    """A list of extra files associated with a dataset."""
+
+    __root__: List[ExtraFileEntry]
+
+
 class DatasetTextContentDetails(Model):
     item_data: Optional[str] = Field(
         description="First chunk of text content (maximum 1MB) of the dataset.",
@@ -590,7 +596,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                         dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
                     )
                 else:
-                    file_path = dataset_instance.file_name
+                    file_path = dataset_instance.get_file_name()
                 rval = open(file_path, "rb")
             else:
                 if offset is not None:
@@ -648,7 +654,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        file_path = hda.metadata.get(metadata_file).file_name
+        file_path = hda.metadata.get(metadata_file).get_file_name()
         if open_file:
             return open(file_path, "rb"), headers
         return file_path, headers
@@ -850,15 +856,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         # Get datasources and check for messages.
         data_sources = dataset.get_datasources(trans)
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        return_message = self._get_highest_priority_msg(messages_list)
-        if return_message:
+        if return_message := self._get_highest_priority_msg(messages_list):
             return return_message
 
         extra_info = None
@@ -953,8 +957,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         registry = self.data_provider_registry

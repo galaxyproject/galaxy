@@ -56,8 +56,7 @@ def test_job_count():
 
 
 def __assert_job_count_is(expected_count, rule_helper, **kwds):
-    actual_count = rule_helper.job_count(**kwds)
-    if expected_count != actual_count:
+    if expected_count != (actual_count := rule_helper.job_count(**kwds)):
         raise AssertionError(f"Expected job count {expected_count}, actual job count {actual_count} for params {kwds}")
 
 

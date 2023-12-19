@@ -340,8 +340,7 @@ class ToolNotFoundException(Exception):
 
 def create_tool_from_source(app, tool_source, config_file=None, **kwds):
     # Allow specifying a different tool subclass to instantiate
-    tool_module = tool_source.parse_tool_module()
-    if tool_module is not None:
+    if (tool_module := tool_source.parse_tool_module()) is not None:
         module, cls = tool_module
         mod = __import__(module, globals(), locals(), [cls])
         ToolClass = getattr(mod, cls)
@@ -444,8 +443,7 @@ class ToolBox(AbstractToolBox):
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
-        old_toolbox = getattr(app, "toolbox", None)
-        if old_toolbox:
+        if old_toolbox := getattr(app, "toolbox", None):
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()
@@ -826,8 +824,7 @@ class Tool(Dictifiable):
             self.job_search = self.app.job_search
 
     def remove_from_cache(self):
-        source_path = self.tool_source.source_path
-        if source_path:
+        if source_path := self.tool_source.source_path:
             for region in self.app.toolbox.cache_regions.values():
                 region.delete(source_path)
 
@@ -1093,8 +1090,7 @@ class Tool(Dictifiable):
 
         # Versioning for tools
         self.version_string_cmd = None
-        version_command = tool_source.parse_version_command()
-        if version_command is not None:
+        if (version_command := tool_source.parse_version_command()) is not None:
             self.version_string_cmd = version_command.strip()
 
             version_cmd_interpreter = tool_source.parse_version_command_interpreter()
@@ -1261,8 +1257,7 @@ class Tool(Dictifiable):
                         raise
 
         # User interface hints
-        uihints_elem = root.find("uihints")
-        if uihints_elem is not None:
+        if (uihints_elem := root.find("uihints")) is not None:
             for key, value in uihints_elem.attrib.items():
                 self.uihints[key] = value
 
@@ -1272,8 +1267,7 @@ class Tool(Dictifiable):
             return
 
         root = tool_source.root
-        conf_parent_elem = root.find("configfiles")
-        if conf_parent_elem is not None:
+        if (conf_parent_elem := root.find("configfiles")) is not None:
             inputs_elem = conf_parent_elem.find("inputs")
             if inputs_elem is not None:
                 name = inputs_elem.get("name")
@@ -1300,13 +1294,11 @@ class Tool(Dictifiable):
             return
 
         # Trackster configuration.
-        trackster_conf = tool_source.root.find("trackster_conf")
-        if trackster_conf is not None:
+        if (trackster_conf := tool_source.root.find("trackster_conf")) is not None:
             self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
     def parse_tests(self):
-        tests_source = self.tool_source
-        if tests_source:
+        if tests_source := self.tool_source:
             try:
                 self.__tests = json.dumps([t.to_dict() for t in parse_tests(self, tests_source)], indent=None)
             except Exception:
@@ -1335,9 +1327,8 @@ class Tool(Dictifiable):
         return repository_base_dir
 
     def test_data_path(self, filename):
-        repository_dir = self._repository_dir
         test_data = None
-        if repository_dir:
+        if repository_dir := self._repository_dir:
             test_data = self.__walk_test_data(dir=repository_dir, filename=filename)
         else:
             if self.tool_dir:
@@ -1380,8 +1371,7 @@ class Tool(Dictifiable):
     def parse_command(self, tool_source):
         """ """
         # Command line (template). Optional for tools that do not invoke a local program
-        command = tool_source.parse_command()
-        if command is not None:
+        if (command := tool_source.parse_command()) is not None:
             self.command = command.lstrip()  # get rid of leading whitespace
             # Must pre-pend this AFTER processing the cheetah command template
             self.interpreter = tool_source.parse_interpreter()
@@ -1637,8 +1627,7 @@ class Tool(Dictifiable):
         enctypes.
         """
         param = ToolParameter.build(self, input_source)
-        param_enctype = param.get_required_enctype()
-        if param_enctype:
+        if param_enctype := param.get_required_enctype():
             enctypes.add(param_enctype)
         # If parameter depends on any other paramters, we must refresh the
         # form when it changes
@@ -2343,8 +2332,7 @@ class Tool(Dictifiable):
         if os.path.exists(os.path.join(tool_path, "Dockerfile")):
             tarball_files.append((os.path.join(tool_path, "Dockerfile"), "Dockerfile"))
         # Find tests, and check them for test data.
-        tests = tool.tests
-        if tests is not None:
+        if (tests := tool.tests) is not None:
             for test in tests:
                 # Add input file tuples to the list.
                 for input in test.inputs:
@@ -2651,8 +2639,7 @@ class Tool(Dictifiable):
                 source = hdca_source_dict
             else:
                 return None
-            key = f"{value.hid}_{id}"
-            if key in source:
+            if (key := f"{value.hid}_{id}") in source:
                 return source[key]
             elif id in source:
                 return source[id]
@@ -2868,7 +2855,7 @@ class ExpressionTool(Tool):
                 # Skip filtered outputs
                 continue
             if val.output_type == "data":
-                with open(out_data[key].file_name) as f:
+                with open(out_data[key].get_file_name()) as f:
                     src = json.load(f)
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
                 dataset_id = src["id"]
@@ -3373,10 +3360,9 @@ class MergeCollectionTool(DatabaseOperationTool):
         for incoming_repeat in incoming["inputs"]:
             input_lists.append(incoming_repeat["input"])
 
-        advanced = incoming.get("advanced", None)
         dupl_actions = "keep_first"
         suffix_pattern = None
-        if advanced is not None:
+        if (advanced := incoming.get("advanced", None)) is not None:
             dupl_actions = advanced["conflict"]["duplicate_options"]
 
             if dupl_actions in ["suffix_conflict", "suffix_every", "suffix_conflict_rest"]:
@@ -3508,7 +3494,7 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
         dataset_instance: model.DatasetInstance = element.element_object
         if dataset_instance.has_data():
             # We have data, but it might just be a compressed archive of nothing
-            file_name = dataset_instance.file_name
+            file_name = dataset_instance.get_file_name()
             _, fh = get_fileobj_raw(file_name, mode="rb")
             if len(fh.read(1)):
                 return True
@@ -3568,7 +3554,7 @@ class SortTool(DatabaseOperationTool):
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
                 try:
-                    with open(hda.file_name) as fh:
+                    with open(hda.get_file_name()) as fh:
                         sorted_elements = [old_elements_dict[line.strip()] for line in fh]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
@@ -3619,7 +3605,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 copied_value = dce_object.copy(flush=False)
             new_elements[new_label] = copied_value
 
-        new_labels_path = new_labels_dataset_assoc.file_name
+        new_labels_path = new_labels_dataset_assoc.get_file_name()
         with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
@@ -3743,7 +3729,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     )
             new_elements[dce.element_identifier] = copied_value
 
-        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags_path = new_tags_dataset_assoc.get_file_name()
         with open(new_tags_path) as fh:
             new_tags = fh.readlines(1024 * 1000000)
         # We have a tabular file, where the first column is an existing element identifier,
@@ -3768,7 +3754,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         filtered_elements = {}
         discarded_elements = {}
 
-        filtered_path = filter_dataset_assoc.file_name
+        filtered_path = filter_dataset_assoc.get_file_name()
         with open(filtered_path) as fh:
             filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
 

@@ -56,7 +56,6 @@ from galaxy.structured_app import (
     MinimalManagerApp,
 )
 from galaxy.util.hash_util import new_secure_hash_v2
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -422,19 +421,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # get all the taggable model TagAssociations
         if not tag_models:
             tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
-        # create a union of subqueries for each for this user - getting only the tname and user_value
-        all_tags_query = None
-        for tag_model in tag_models:
-            subq = self.session().query(tag_model.user_tname, tag_model.user_value).filter(tag_model.user == user)
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
 
-        # if nothing init'd the query, bail
-        if all_tags_query is None:
+        if not tag_models:
             return []
 
+        # create a union of select statements for each tag model for this user - getting only the tname and user_value
+        all_stmts = []
+        for tag_model in tag_models:
+            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
+            all_stmts.append(stmt)
+        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
+
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tags = all_tags_query.distinct().all()
-        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
+        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
+        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
         # consider named tags while sorting
         return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
@@ -500,13 +500,25 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
+    def impersonate(self, trans, user):
+        if not trans.app.config.allow_user_impersonation:
+            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+        if user:
+            trans.handle_user_logout()
+            trans.handle_user_login(user)
+        else:
+            raise exceptions.Message("Please provide a valid user.")
+
     def send_activation_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
         """
         activation_token = self.__get_activation_token(trans, email)
-        activation_link = url_for(
-            controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
+        activation_link = trans.url_builder(
+            "/user/activate",
+            activation_token=activation_token,
+            email=escape(email),
+            qualified=True,
         )
         template_context = {
             "name": escape(username),
@@ -559,7 +571,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                reset_url = url_for(controller="login", action="start", token=prt.token)
+                reset_url = trans.url_builder("/login/start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
                     trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
@@ -763,11 +775,12 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        history_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: Dict[str, base.Deserializer] = {
+            "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
         }
-        self.deserializers.update(history_deserializers)
+        self.deserializers.update(user_deserializers)
 
     def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
         preferred_object_store_id = val

@@ -468,13 +468,14 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None:
             return self.false_path
         else:
-            return str(self.unsanitized.file_name)
+            return str(self.unsanitized.get_file_name())
+
+    @property
+    def file_name(self) -> str:
+        return str(self)
 
     def __getattr__(self, key: Any) -> Any:
-        if self.false_path is not None and key == "file_name":
-            # Path to dataset was rewritten for this job.
-            return self.false_path
-        elif key in ("extra_files_path", "files_path"):
+        if key in ("extra_files_path", "files_path"):
             if not self.compute_environment:
                 # Only happens in WrappedParameters context, refactor!
                 return self.unsanitized.extra_files_path
@@ -792,9 +793,8 @@ class ElementIdentifierMapper:
             self.identifier_key_dict = {}
 
     def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
-        identifier_key = self.identifier_key_dict.get(dataset_value, None)
         element_identifier = None
-        if identifier_key:
+        if identifier_key := self.identifier_key_dict.get(dataset_value, None):
             element_identifier = input_values.get(identifier_key, None)
 
         return element_identifier

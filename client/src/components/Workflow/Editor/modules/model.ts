@@ -10,6 +10,7 @@ interface Workflow {
     report: any;
     steps: Steps;
     comments: WorkflowComment[];
+    tags: string[];
 }
 
 /**
@@ -80,6 +81,7 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
     const creator = workflow.creator;
     const annotation = workflow.annotation;
     const name = workflow.name;
+    const tags = workflow.tags;
 
     const commentStore = useWorkflowCommentStore(id);
     commentStore.resolveCommentsInFrames();
@@ -87,5 +89,5 @@ export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "versio
 
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
-    return { steps, report, license, creator, annotation, name, comments };
+    return { steps, report, license, creator, annotation, name, comments, tags };
 }

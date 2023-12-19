@@ -243,10 +243,9 @@ class ToolPanelManager:
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir(
             self.app, repository
         )
-        metadata = repository.metadata_
         # Create a dictionary of tool guid and tool config file name for each tool in the repository.
         guids_and_configs = {}
-        if "tools" in metadata:
+        if "tools" in (metadata := repository.metadata_):
             for tool_dict in metadata["tools"]:
                 guid = tool_dict["guid"]
                 tool_config = tool_dict["tool_config"]

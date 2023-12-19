@@ -54,7 +54,7 @@ class FastAPIToolData:
         "/api/tool_data",
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        require_admin=True,
+        require_admin=False,
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""

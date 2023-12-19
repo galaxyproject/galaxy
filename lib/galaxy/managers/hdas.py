@@ -19,6 +19,7 @@ from sqlalchemy import (
     and_,
     asc,
     desc,
+    exists,
     false,
     func,
     nulls_first,
@@ -41,6 +42,11 @@ from galaxy.managers import (
     secured,
     taggable,
     users,
+)
+from galaxy.model import (
+    Job,
+    JobStateHistory,
+    JobToOutputDatasetAssociation,
 )
 from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
@@ -261,28 +267,13 @@ class HDAManager(
         """
         Return True if the hda's job was resubmitted at any point.
         """
-        job_states = model.Job.states
-        query = self._job_state_history_query(hda).filter(model.JobStateHistory.state == job_states.RESUBMITTED)
-        return self.app.model.context.query(query.exists()).scalar()
-
-    def _job_state_history_query(self, hda):
-        """
-        Return a query of the job's state history for the job that created this hda.
-        """
-        session = self.app.model.context
-        JobToOutputDatasetAssociation = model.JobToOutputDatasetAssociation
-        JobStateHistory = model.JobStateHistory
-
-        # TODO: this does not play well with copied hdas
-        # NOTE: don't eagerload (JODA will load the hda were using!)
-        hda_id = hda.id
-        query = (
-            session.query(JobToOutputDatasetAssociation, JobStateHistory)
-            .filter(JobToOutputDatasetAssociation.dataset_id == hda_id)
-            .filter(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id)
-            .enable_eagerloads(False)
+        stmt = select(
+            exists()
+            .where(JobToOutputDatasetAssociation.dataset_id == hda.id)
+            .where(JobStateHistory.job_id == JobToOutputDatasetAssociation.job_id)
+            .where(JobStateHistory.state == Job.states.RESUBMITTED)
         )
-        return query
+        return self.session().scalar(stmt)
 
     def data_conversion_status(self, hda):
         """
@@ -311,11 +302,11 @@ class HDAManager(
         # For now, cannot get data from non-text datasets.
         if not isinstance(hda.datatype, datatypes.data.Text):
             return truncated, hda_data
-        if not os.path.exists(hda.file_name):
+        if not os.path.exists(hda.get_file_name()):
             return truncated, hda_data
 
-        truncated = preview and os.stat(hda.file_name).st_size > MAX_PEEK_SIZE
-        hda_data = open(hda.file_name).read(MAX_PEEK_SIZE)
+        truncated = preview and os.stat(hda.get_file_name()).st_size > MAX_PEEK_SIZE
+        hda_data = open(hda.get_file_name()).read(MAX_PEEK_SIZE)
         return truncated, hda_data
 
     # .... annotatable

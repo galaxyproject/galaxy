@@ -56,8 +56,7 @@ class HasSettings(type):
             if base_settings:
                 settings.update(base_settings)
         # get settings defined in this class
-        new_settings = attributes.pop("settings", None)
-        if new_settings:
+        if new_settings := attributes.pop("settings", None):
             settings.update(new_settings)
         attributes["settings"] = settings
         return type.__new__(cls, name, base_classes, attributes)

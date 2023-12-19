@@ -250,6 +250,11 @@ class ToolDataTable(Dictifiable):
                 self.add_entry(
                     entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
                 )
+            except MessageException as e:
+                if e.type == "warning":
+                    log.warning(str(e))
+                else:
+                    log.error(str(e))
             except Exception as e:
                 log.error(str(e))
         return self._loaded_content_version
@@ -686,7 +691,8 @@ class TabularToolDataTable(ToolDataTable):
                 self.data.append(fields)
             else:
                 raise MessageException(
-                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False."
+                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.",
+                    type="warning",
                 )
         else:
             raise MessageException(
@@ -888,9 +894,11 @@ class DirectoryAsExtraFiles(HasExtraFiles):
         return True
 
 
-class OutputDataset(HasExtraFiles):
+class OutputDataset(HasExtraFiles, Protocol):
     ext: str
-    file_name: str
+
+    def get_file_name(self, sync_cache=True) -> str:
+        ...
 
 
 class ToolDataTableManager(Dictifiable):
@@ -1219,7 +1227,7 @@ def _data_manager_dict(out_data: Dict[str, OutputDataset], ensure_single_output:
         found_output = True
 
         try:
-            output_dict = json.loads(open(output_dataset.file_name).read())
+            output_dict = json.loads(open(output_dataset.get_file_name()).read())
         except Exception as e:
             log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
             continue

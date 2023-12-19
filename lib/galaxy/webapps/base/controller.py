@@ -8,10 +8,6 @@ from typing import (
     Optional,
 )
 
-from sqlalchemy import (
-    select,
-    true,
-)
 from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
@@ -32,7 +28,15 @@ from galaxy.managers import (
     users,
     workflows,
 )
-from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.forms import (
+    get_filtered_form_definitions_current,
+    get_form_definitions,
+    get_form_definitions_current,
+)
+from galaxy.managers.sharable import (
+    slug_exists,
+    SlugBuilder,
+)
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -221,8 +225,7 @@ class BaseAPIController(BaseController):
 
     # TODO: this will be replaced by lib.galaxy.schema.FilterQueryParams.build_order_by
     def _parse_order_by(self, manager, order_by_string):
-        ORDER_BY_SEP_CHAR = ","
-        if ORDER_BY_SEP_CHAR in order_by_string:
+        if (ORDER_BY_SEP_CHAR := ",") in order_by_string:
             return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
         return manager.parse_order_by(order_by_string)
 
@@ -622,48 +625,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             error("Visualization not found")
         else:
             return self.security_check(trans, visualization, check_ownership, check_accessible)
-
-    def get_visualizations_by_user(self, trans, user):
-        """Return query results of visualizations filtered by a user."""
-        stmt = select(model.Visualization).filter(model.Visualization.user == user).order_by(model.Visualization.title)
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_visualizations_shared_with_user(self, trans, user):
-        """Return query results for visualizations shared with the given user."""
-        # The second `where` clause removes duplicates when a user shares with themselves.
-        stmt = (
-            select(model.Visualization)
-            .join(model.VisualizationUserShareAssociation)
-            .where(model.VisualizationUserShareAssociation.user_id == user.id)
-            .where(model.Visualization.user_id != user.id)
-            .order_by(model.Visualization.title)
-        )
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_published_visualizations(self, trans, exclude_user=None):
-        """
-        Return query results for published visualizations optionally excluding the user in `exclude_user`.
-        """
-        stmt = select(model.Visualization).filter(model.Visualization.published == true())
-        if exclude_user:
-            stmt = stmt.filter(model.Visualization.user != exclude_user)
-        stmt = stmt.order_by(model.Visualization.title)
-        return trans.sa_session.scalars(stmt).all()
-
-    # TODO: move into model (to_dict)
-    def get_visualization_summary_dict(self, visualization):
-        """
-        Return a set of summary attributes for a visualization in dictionary form.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        # TODO: deleted
-        # TODO: importable
-        return {
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "dbkey": visualization.dbkey,
-        }
 
     def get_visualization_dict(self, visualization):
         """
@@ -1066,10 +1027,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             title_err = "visualization name is required"
         elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif (
-            slug
-            and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first()
-        ):
+        elif slug and slug_exists(trans.sa_session, trans.model.Visualization, user, slug, ignore_deleted=True):
             slug_err = "visualization identifier must be unique"
 
         if title_err or slug_err:
@@ -1110,8 +1068,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         # If there are no messages (messages indicate data is not ready/available), get data.
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        message = self._get_highest_priority_msg(messages_list)
-        if message:
+        if message := self._get_highest_priority_msg(messages_list):
             rval = message
         else:
             # HACK: chromatin interactions tracks use data as source.
@@ -1233,11 +1190,11 @@ class UsesFormDefinitionsMixin:
         of all the forms from the form_definition table.
         """
         if all_versions:
-            return trans.sa_session.query(trans.app.model.FormDefinition)
+            return get_form_definitions(trans.sa_session)
         if filter:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).filter_by(**filter)
+            fdc_list = get_filtered_form_definitions_current(trans.sa_session, filter)
         else:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent)
+            fdc_list = get_form_definitions_current(trans.sa_session)
         if form_type == "All":
             return [fdc.latest_form for fdc in fdc_list]
         else:
@@ -1311,7 +1268,7 @@ class SharableMixin:
         item = self.get_item(trans, id)
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query(item.__class__).filter_by(user=item.user, slug=new_slug).count() == 0:
+            if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()

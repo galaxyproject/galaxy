@@ -22,6 +22,7 @@ from urllib.parse import (
 
 from a2wsgi.wsgi import build_environ
 from fastapi import (
+    APIRouter,
     Form,
     Header,
     Query,
@@ -40,7 +41,6 @@ from fastapi.security import (
     HTTPBearer,
 )
 from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter
 from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.datastructures import Headers
@@ -221,9 +221,8 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
-        root_path = scope.get("root_path")
         url = self.base
-        if root_path:
+        if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
 
@@ -361,8 +360,8 @@ class RestVerb(str, Enum):
     options = "OPTIONS"
 
 
-class FrameworkRouter(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy."""
+class FrameworkRouter(APIRouter):
+    """A FastAPI Router tailored to Galaxy."""
 
     admin_user_dependency: Any
 
@@ -565,8 +564,7 @@ class IndexQueryTag(NamedTuple):
 
     def as_markdown(self):
         desc = self.description
-        alias = self.alias
-        if alias:
+        if alias := self.alias:
             desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
         if self.admin_only:
             desc += " This tag is only available for requests using admin keys and/or sessions."

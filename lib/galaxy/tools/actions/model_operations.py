@@ -126,8 +126,7 @@ class ModelOperationToolAction(DefaultToolAction):
             hdca_tags=hdca_tags,
             tag_handler=tag_handler,
         )
-        mapped_over_elements = output_collections.dataset_collection_elements
-        if mapped_over_elements:
+        if mapped_over_elements := output_collections.dataset_collection_elements:
             for name, value in out_data.items():
                 if name in mapped_over_elements:
                     value.visible = False

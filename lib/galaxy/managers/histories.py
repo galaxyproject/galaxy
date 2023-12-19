@@ -16,9 +16,9 @@ from typing import (
 )
 
 from sqlalchemy import (
-    and_,
     asc,
     desc,
+    exists,
     false,
     func,
     select,
@@ -44,6 +44,11 @@ from galaxy.managers.base import (
     StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.model import (
+    History,
+    HistoryUserShareAssociation,
+    Job,
+)
 from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -126,7 +131,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
-    def most_recent(self, user, filters=None, current_history=None, **kwargs):
+    def most_recent(self, user, filters=None, current_history=None):
         """
         Return the most recently update history for the user.
 
@@ -135,10 +140,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
-        desc_update_time = desc(self.model_class.update_time)
-        filters = combine_lists(filters, self.model_class.user_id == user.id)
-        # TODO: normalize this return value
-        return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
+        filters = combine_lists(filters, History.user_id == user.id)
+        stmt = select(History).where(*filters).order_by(History.update_time.desc()).limit(1)
+        return self.session().scalars(stmt).first()
 
     # .... purgable
     def purge(self, history, flush=True, **kwargs):
@@ -218,13 +222,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # TODO: defer to jobModelManager (if there was one)
         # TODO: genericize the params to allow other filters
-        jobs = (
-            self.session()
-            .query(model.Job)
-            .filter(model.Job.history == history)
-            .filter(model.Job.state.in_(model.Job.non_ready_states))
-        )
-        return jobs
+        stmt = select(Job).where(Job.history == history).where(Job.state.in_(Job.non_ready_states))
+        return self.session().scalars(stmt)
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -342,17 +341,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return extra
 
     def is_history_shared_with(self, history: model.History, user: model.User) -> bool:
-        return bool(
-            self.session()
-            .query(self.user_share_model)
-            .filter(
-                and_(
-                    self.user_share_model.table.c.user_id == user.id,
-                    self.user_share_model.table.c.history_id == history.id,
-                )
-            )
-            .first()
+        stmt = select(
+            exists()
+            .where(HistoryUserShareAssociation.user_id == user.id)
+            .where(HistoryUserShareAssociation.history_id == history.id)
         )
+        return self.session().scalar(stmt)
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.

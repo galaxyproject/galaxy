@@ -286,8 +286,7 @@ class HasDriver:
         self, timeout_exception: SeleniumTimeoutException, message: str
     ) -> SeleniumTimeoutException:
         msg = message
-        timeout_msg = timeout_exception.msg
-        if timeout_msg:
+        if timeout_msg := timeout_exception.msg:
             msg += f" {timeout_msg}"
         return SeleniumTimeoutException(
             msg=msg,

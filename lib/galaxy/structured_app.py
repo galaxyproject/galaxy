@@ -95,6 +95,7 @@ class MinimalApp(BasicSharedApp):
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
+    server_starttime: int
 
 
 class MinimalManagerApp(MinimalApp):

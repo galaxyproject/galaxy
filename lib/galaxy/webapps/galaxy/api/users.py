@@ -172,7 +172,25 @@ class FastAPIUsers:
 
         Please use `/api/users/current/recalculate_disk_usage` instead.
         """
-        result = self.service.recalculate_disk_usage(trans)
+        user_id = getattr(trans.user, "id", None)
+        if not user_id:
+            raise exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
+        else:
+            result = self.service.recalculate_disk_usage(trans, user_id)
+            return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
+
+    @router.put(
+        "/api/users/{user_id}/recalculate_disk_usage",
+        summary=RecalculateDiskUsageSummary,
+        responses=RecalculateDiskUsageResponseDescriptions,
+        require_admin=True,
+    )
+    def recalculate_disk_usage_by_user_id(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
     @router.get(
@@ -276,8 +294,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
     ) -> List[UserQuotaUsage]:
-        user = self.service.get_user_full(trans, user_id, False)
-        if user:
+        if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
         else:
@@ -294,11 +311,10 @@ class FastAPIUsers:
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
     ) -> Optional[UserQuotaUsage]:
-        user = self.service.get_user_full(trans, user_id, False)
         effective_label: Optional[str] = label
         if label == "__null__":
             effective_label = None
-        if user:
+        if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage_for(user, effective_label)
             return rval
         else:
@@ -468,7 +484,7 @@ class FastAPIUsers:
                     trans.sa_session.commit()
                 counter = 0
                 lines_skipped = 0
-                with open(new_len.file_name, "w") as f:
+                with open(new_len.get_file_name(), "w") as f:
                     # LEN files have format:
                     #   <chrom_name><tab><chrom_length>
                     for line in len_value.split("\n"):
@@ -528,7 +544,7 @@ class FastAPIUsers:
                     and not chrom_count_dataset.deleted
                     and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
                 ):
-                    chrom_count = int(open(chrom_count_dataset.file_name).readline())
+                    chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
                     dbkey["count"] = chrom_count
                     valid_dbkeys[key] = dbkey
                     update = True
@@ -675,6 +691,23 @@ class FastAPIUsers:
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
+
+    @router.post(
+        "/api/users/{user_id}/send_activation_email",
+        name="send_activation_email",
+        summary="Sends activation email to user.",
+        require_admin=True,
+    )
+    def send_activation_email(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        user = trans.sa_session.query(trans.model.User).get(user_id)
+        if not user:
+            raise exceptions.ObjectNotFound("User not found for given id.")
+        if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
+            raise exceptions.MessageException("Unable to send activation email.")
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -907,8 +940,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if user.username != username:
                 user.username = username
         # Update user custom form
-        user_info_form_id = payload.get("info|form_id")
-        if user_info_form_id:
+        if user_info_form_id := payload.get("info|form_id"):
             prefix = "info|"
             user_info_form = trans.sa_session.get(FormDefinition, trans.security.decode_id(user_info_form_id))
             user_info_values = {}

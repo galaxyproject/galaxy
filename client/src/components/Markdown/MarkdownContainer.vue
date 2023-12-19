@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
 
+import { useConfig } from "@/composables/config";
+
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
@@ -8,6 +10,7 @@ import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
 import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
 import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
 import HistoryLink from "./Elements/HistoryLink.vue";
+import InstanceUrl from "./Elements/InstanceUrl.vue";
 import InvocationTime from "./Elements/InvocationTime.vue";
 import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
@@ -16,6 +19,8 @@ import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
 import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
+
+const { config, isConfigLoaded } = useConfig();
 
 const toggle = ref(false);
 const props = defineProps({
@@ -78,11 +83,47 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
                 <pre><code>{{ time }}</code></pre>
             </div>
             <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
-                <WorkflowImage :workflow-id="args.workflow_id" :size="args.size || 'lg'" />
+                <WorkflowImage
+                    :workflow-id="args.workflow_id"
+                    :size="args.size || 'lg'"
+                    :workflow-version="args.workflow_checkpoint || undefined" />
             </div>
             <div v-else-if="name == 'workflow_license'" class="workflow-license">
                 <WorkflowLicense :license-id="workflows[args.workflow_id]['license']" />
             </div>
+            <InstanceUrl
+                v-else-if="name == 'instance_citation_link'"
+                :href="config.citation_url"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl v-else-if="name == 'instance_terms_link'" :href="config.terms_url" :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl
+                v-else-if="name == 'instance_support_link'"
+                :href="config.support_url"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl
+                v-else-if="name == 'instance_help_link'"
+                :href="config.helpsite_url"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl
+                v-else-if="name == 'instance_resources_link'"
+                :href="config.instance_resource_url"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl
+                v-else-if="name == 'instance_access_link'"
+                :href="config.instance_access_url"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
+            <InstanceUrl
+                v-else-if="name == 'instance_organization_link'"
+                :href="config.ga4gh_service_organization_url"
+                :title="config.ga4gh_service_organization_name"
+                :loading="!isConfigLoaded">
+            </InstanceUrl>
             <HistoryLink v-else-if="name == 'history_link'" :args="args" :histories="histories" />
             <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
@@ -93,6 +134,7 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
+                :workflow-version="args.workflow_checkpoint"
                 :workflows="workflows" />
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay

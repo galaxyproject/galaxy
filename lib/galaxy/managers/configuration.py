@@ -17,7 +17,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.structured_app import StructuredApp
-from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
 
@@ -183,7 +182,7 @@ class ConfigSerializer(base.ModelSerializer):
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
-            "server_startttime": lambda item, key, **context: server_starttime,
+            "server_starttime": lambda item, key, **context: self.app.server_starttime,
             "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
             "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
             "registration_warning_message": _use_config,
@@ -206,6 +205,7 @@ class ConfigSerializer(base.ModelSerializer):
             ),
             "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
             "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
@@ -213,6 +213,13 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            "instance_resource_url": _use_config,
+            "instance_access_url": _use_config,
+            "organization_name": _use_config,
+            "organization_url": _use_config,
+            "fixed_delegated_auth": _defaults_to(False),
+            "help_forum_api_url": _use_config,
+            "enable_help_forum_tool_panel_integration": _use_config,
         }
 
 

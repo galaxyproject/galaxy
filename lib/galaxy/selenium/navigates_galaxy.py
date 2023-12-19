@@ -564,10 +564,9 @@ class NavigatesGalaxy(HasDriver):
         )
 
     def get_logged_in_user(self) -> Optional[Dict[str, Any]]:
-        user_dict = self.api_get("users/current")
         # for user's not logged in - this just returns a {} so lets
         # key this on an id being available?
-        if "id" in user_dict:
+        if "id" in (user_dict := self.api_get("users/current")):
             return user_dict
         else:
             return None
@@ -586,8 +585,7 @@ class NavigatesGalaxy(HasDriver):
             return self.api_post(f"users/{user_id}/api_key")
 
     def get_user_id(self) -> Optional[str]:
-        user = self.get_logged_in_user()
-        if user is not None:
+        if (user := self.get_logged_in_user()) is not None:
             return user["id"]
         else:
             return None
@@ -1516,13 +1514,17 @@ class NavigatesGalaxy(HasDriver):
         self.click_button_new_workflow()
         self.sleep_for(self.wait_types.UX_RENDER)
         name = self._get_random_name()
-        name_component = self.components.workflows.create.name
+        name_component = self.components.workflow_editor.edit_name
         if clear_placeholder:
             name_component.wait_for_visible().clear()
         name_component.wait_for_and_send_keys(name)
         annotation = annotation or self._get_random_name()
-        self.components.workflows.create.annotation.wait_for_and_send_keys(annotation)
-        self.components.workflows.create.submit.wait_for_and_click()
+        self.components.workflow_editor.edit_annotation.wait_for_and_send_keys(annotation)
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def invocation_index_table_elements(self):
@@ -2072,8 +2074,7 @@ class NavigatesGalaxy(HasDriver):
             element = self.tour_wait_for_element_present(element_str)
             assert element is not None
 
-        textinsert = step.get("textinsert", None)
-        if textinsert is not None:
+        if (textinsert := step.get("textinsert", None)) is not None:
             element.send_keys(textinsert)
 
         tour_callback.handle_step(step, step_index)
@@ -2207,10 +2208,6 @@ class NavigatesGalaxy(HasDriver):
         self.assert_absent_or_hidden(editor)
 
     def share_ensure_by_user_available(self, sharing_component):
-        collapse = sharing_component.share_with_collapse
-        collapse.wait_for_visible()
-        if collapse.has_class("collapsed"):
-            collapse.wait_for_and_click()
         sharing_component.share_with_multiselect.wait_for_visible()
 
     def share_unshare_with_user(self, sharing_component, email):

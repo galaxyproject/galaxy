@@ -44,8 +44,8 @@ def service_info(app: ToolShedApp, request_url: URL):
     default_organization_id = ".".join(reversed(hostname.split(".")))
     config = app.config
     organization_id = cast(str, config.ga4gh_service_id or default_organization_id)
-    organization_name = cast(str, config.ga4gh_service_organization_name or organization_id)
-    organization_url = cast(str, config.ga4gh_service_organization_url or f"{components.scheme}://{components.netloc}")
+    organization_name = cast(str, config.organization_name or organization_id)
+    organization_url = cast(str, config.organization_url or f"{components.scheme}://{components.netloc}")
 
     organization = Organization(
         url=organization_url,
@@ -56,9 +56,8 @@ def service_info(app: ToolShedApp, request_url: URL):
         artifact="trs",
         version="2.1.0",
     )
-    environment = config.ga4gh_service_environment
     extra_kwds = {}
-    if environment:
+    if environment := config.ga4gh_service_environment:
         extra_kwds["environment"] = environment
     return Service(
         id=organization_id + ".trs",

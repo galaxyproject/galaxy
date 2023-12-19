@@ -13,7 +13,9 @@ for arg in "$@"; do
 done
 
 # Don't display the pip progress bar when running under CI
-[ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
+if [ "$CI" = 'true' ]; then
+    export PIP_PROGRESS_BAR=off
+fi
 
 # Change to packages directory.
 cd "$(dirname "$0")"
@@ -30,7 +32,11 @@ if [ $FOR_PULSAR -eq 0 ]; then
 fi
 
 # ensure ordered by dependency DAG
-while read -r package_dir; do
+while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
+    if [ -z "$package_dir" ]; then
+        # Skip empty lines
+        continue
+    fi
     printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
 
     cd "$package_dir"

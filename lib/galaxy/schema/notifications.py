@@ -8,7 +8,6 @@ from typing import (
 )
 
 from pydantic import (
-    AnyUrl,
     Field,
     Required,
 )
@@ -22,6 +21,10 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import Model
+from galaxy.schema.types import (
+    AbsoluteOrRelativeUrl,
+    OffsetNaiveDatetime,
+)
 
 
 class NotificationVariant(str, Enum):
@@ -72,7 +75,9 @@ class ActionLink(Model):
     action_name: str = Field(
         Required, title="Action name", description="The name of the action, will be the button title."
     )
-    link: AnyUrl = Field(Required, title="Link", description="The link to be opened when the button is clicked.")
+    link: AbsoluteOrRelativeUrl = Field(
+        Required, title="Link", description="The link to be opened when the button is clicked."
+    )
 
 
 # Create the corresponding model for the registered category below and
@@ -244,12 +249,12 @@ class NotificationCreateData(Model):
     category: NotificationCategory = NotificationCategoryField
     variant: NotificationVariant = NotificationVariantField
     content: AnyNotificationContent
-    publication_time: Optional[datetime] = Field(
+    publication_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
@@ -349,12 +354,12 @@ class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
         title="Variant",
         description="The variant of the notification. Used to express the importance of the notification.",
     )
-    publication_time: Optional[datetime] = Field(
+    publication_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",

@@ -18,7 +18,7 @@
             title="Save As a New Workflow"
             ok-title="Save"
             cancel-title="Cancel"
-            @ok="doSaveAs">
+            @ok="doSaveAs(false)">
             <b-form-group label="Name">
                 <b-form-input v-model="saveAsName" />
             </b-form-group>
@@ -41,7 +41,8 @@
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
-                    {{ name }}
+                    <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
+                    <i v-else>Create New Workflow</i>
                 </div>
             </div>
             <WorkflowGraph
@@ -68,9 +69,11 @@
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <WorkflowOptions
+                            :is-new-temp-workflow="isNewTempWorkflow"
                             :has-changes="hasChanges"
                             :has-invalid-connections="hasInvalidConnections"
                             @onSave="onSave"
+                            @onCreate="onCreate"
                             @onSaveAs="onSaveAs"
                             @onRun="onRun"
                             @onDownload="onDownload"
@@ -83,7 +86,7 @@
                     </div>
                 </div>
                 <div ref="right-panel" class="unified-panel-body workflow-right p-2">
-                    <div>
+                    <div v-if="!initialLoading">
                         <FormTool
                             v-if="hasActiveNodeTool"
                             :key="activeStep.id"
@@ -118,6 +121,7 @@
                             :license="license"
                             :creator="creator"
                             @onVersion="onVersion"
+                            @onTags="onTags"
                             @onLicense="onLicense"
                             @onCreator="onCreator" />
                         <WorkflowLint
@@ -161,15 +165,18 @@
 
 <script>
 import axios from "axios";
+import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
-import Vue, { computed, onUnmounted, ref } from "vue";
+import Vue, { computed, onUnmounted, ref, unref } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { LastQueue } from "@/utils/promise-queue";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
@@ -207,17 +214,17 @@ export default {
         WorkflowGraph,
     },
     props: {
-        id: {
+        workflowId: {
             type: String,
-            required: true,
+            default: undefined,
         },
         initialVersion: {
             type: Number,
-            required: true,
+            default: undefined,
         },
-        tags: {
+        workflowTags: {
             type: Array,
-            required: true,
+            default: () => [],
         },
         moduleSections: {
             type: Array,
@@ -235,7 +242,10 @@ export default {
     setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
 
-        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(props.id);
+        const uid = unref(useUid("workflow-editor-"));
+        const id = ref(props.workflowId || uid);
+
+        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id);
 
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
@@ -248,14 +258,19 @@ export default {
         });
 
         const hasChanges = ref(false);
+        const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
         stepStore.$subscribe((_mutation, _state) => {
-            hasChanges.value = true;
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
         });
 
         commentStore.$subscribe((_mutation, _state) => {
-            hasChanges.value = true;
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
         });
 
         function resetStores() {
@@ -271,6 +286,7 @@ export default {
         });
 
         return {
+            id,
             connectionStore,
             hasChanges,
             hasInvalidConnections,
@@ -285,6 +301,7 @@ export default {
             datatypesMapperLoading,
             stateStore,
             resetStores,
+            initialLoading,
         };
     },
     data() {
@@ -299,7 +316,8 @@ export default {
             license: null,
             creator: null,
             annotation: null,
-            name: null,
+            name: "Unnamed Workflow",
+            tags: this.workflowTags,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
@@ -333,6 +351,9 @@ export default {
         hasActiveNodeTool() {
             return this.activeStep?.type == "tool";
         },
+        isNewTempWorkflow() {
+            return !this.workflowId;
+        },
     },
     watch: {
         id(newId, oldId) {
@@ -341,23 +362,29 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation) {
+            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName) {
+            if (newName != oldName && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
         },
+        initialVersion(newVal, oldVal) {
+            if (newVal != oldVal && oldVal === undefined) {
+                this.version = this.initialVersion;
+            }
+        },
     },
-    created() {
+    async created() {
         this.lastQueue = new LastQueue();
-        this._loadCurrent(this.id, this.version);
+        await this._loadCurrent(this.id, this.version);
         hide_modal();
+        this.initialLoading = false;
     },
     methods: {
         onUpdateStep(step) {
@@ -505,9 +532,9 @@ export default {
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
-        doSaveAs() {
-            const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
-            const rename_annotation = this.saveAsAnnotation ?? "";
+        async doSaveAs(create = false) {
+            const rename_name = create ? this.name : this.saveAsName ?? `SavedAs_${this.name}`;
+            const rename_annotation = create ? this.annotation || "" : this.saveAsAnnotation ?? "";
 
             // This is an old web controller endpoint that wants form data posted...
             const formData = new FormData();
@@ -516,16 +543,20 @@ export default {
             formData.append("from_tool_form", true);
             formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
 
-            axios
-                .post(`${getAppRoot()}workflow/save_workflow_as`, formData)
-                .then((response) => {
-                    this.onWorkflowMessage("Workflow saved as", "success");
-                    this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed, please contact an administrator.");
-                });
+            try {
+                const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
+                const newId = response.data;
+
+                if (!create) {
+                    this.name = rename_name;
+                    this.annotation = rename_annotation;
+                }
+
+                this.hasChanges = false;
+                await this.routeToWorkflow(newId);
+            } catch (e) {
+                this.onWorkflowError("Saving workflow failed, please contact an administrator.");
+            }
         },
         onSaveAs() {
             this.showSaveAsModal = true;
@@ -549,6 +580,59 @@ export default {
         onAnnotation(nodeId, newAnnotation) {
             const step = { ...this.steps[nodeId], annotation: newAnnotation };
             this.onUpdateStep(step);
+        },
+        async routeToWorkflow(id) {
+            // map scoped stores to existing stores, before updating the id
+            const { addScopePointer } = useScopePointerStore();
+            addScopePointer(id, this.id);
+
+            this.id = id;
+            await this.onSave();
+            this.hasChanges = false;
+            this.$router.replace({ query: { id } });
+        },
+        async onCreate() {
+            if (!this.nameValidate()) {
+                return;
+            }
+            try {
+                // if nothing other than payload vars changed, just use `create` endpoint
+                if (!this.hasChanges) {
+                    const payload = {
+                        workflow_name: this.name,
+                        workflow_annotation: this.annotation || "",
+                        workflow_tags: this.tags,
+                    };
+                    const { data } = await axios.put(`${getAppRoot()}workflow/create`, payload);
+                    const { id, message } = data;
+
+                    await this.routeToWorkflow(id);
+                    Toast.success(message);
+                } else {
+                    // otherwise, use `save_as` endpoint to include steps, etc.
+                    await this.doSaveAs(true);
+                    const stepCount = Object.keys(this.steps).length;
+                    Toast.success(
+                        `Created workflow ${this.name} with ${stepCount} ${stepCount === 1 ? "step" : "steps"}.`
+                    );
+                }
+            } catch (e) {
+                this.onWorkflowError("Creating workflow failed"),
+                    e || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    };
+            }
+        },
+        nameValidate() {
+            if (!this.name) {
+                Toast.error("Please provide a name for your workflow.");
+                this.onAttributes();
+                return false;
+            }
+            return true;
         },
         onSetData(stepId, newData) {
             this.lastQueue
@@ -611,6 +695,9 @@ export default {
             });
         },
         onSave(hideProgress = false) {
+            if (!this.nameValidate()) {
+                return;
+            }
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
@@ -695,18 +782,24 @@ export default {
             await Vue.nextTick();
             this.hasChanges = has_changes;
         },
-        _loadCurrent(id, version) {
-            this.resetStores();
-            this.onWorkflowMessage("Loading workflow...", "progress");
-            this.lastQueue
-                .enqueue(loadWorkflow, { id, version })
-                .then((data) => {
-                    fromSimple(id, data);
-                    this._loadEditorData(data);
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Loading workflow failed...", response);
-                });
+        async _loadCurrent(id, version) {
+            if (!this.isNewTempWorkflow) {
+                this.resetStores();
+                this.onWorkflowMessage("Loading workflow...", "progress");
+
+                try {
+                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    await fromSimple(id, data);
+                    await this._loadEditorData(data);
+                } catch (e) {
+                    this.onWorkflowError("Loading workflow failed...", e);
+                }
+            }
+        },
+        onTags(tags) {
+            if (this.tags != tags) {
+                this.tags = tags;
+            }
         },
         onLicense(license) {
             if (this.license != license) {

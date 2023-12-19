@@ -106,7 +106,7 @@ class SetMetadataToolAction(ToolAction):
         # add parameters to job_parameter table
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
         incoming["__ORIGINAL_DATASET_STATE__"] = dataset.state
-        input_paths = [DatasetPath(dataset.id, real_path=dataset.file_name, mutable=False)]
+        input_paths = [DatasetPath(dataset.id, real_path=dataset.get_file_name(), mutable=False)]
         app.object_store.create(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         job_working_dir = app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, "registry.xml")

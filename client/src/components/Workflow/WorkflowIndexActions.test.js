@@ -35,7 +35,7 @@ describe("WorkflowIndexActions", () => {
     describe("naviation", () => {
         it("should create a workflow when create is clicked", async () => {
             await wrapper.find(ROOT_COMPONENT.workflows.new_button.selector).trigger("click");
-            expect(getCurrentPath($router)).toBe("/workflows/create");
+            expect(getCurrentPath($router)).toBe("/workflows/edit");
         });
 
         it("should import a workflow when create is clicked", async () => {

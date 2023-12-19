@@ -7,20 +7,14 @@ from paste.httpexceptions import (
     HTTPNotFound,
 )
 from sqlalchemy import (
-    desc,
     false,
     or_,
     text,
     true,
 )
-from sqlalchemy.orm import (
-    joinedload,
-    undefer,
-)
 
 from galaxy import (
     model,
-    util,
     web,
 )
 from galaxy.managers.hdas import HDAManager
@@ -31,17 +25,13 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    sanitize_text,
-    unicodify,
-)
+from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import (
     decode_dbkey,
     GenomeRegion,
 )
-from galaxy.visualization.plugins import registry
 from galaxy.web.framework.helpers import (
     grids,
     time_ago,
@@ -174,137 +164,9 @@ class TracksterSelectionGrid(grids.Grid):
         )
 
 
-class VisualizationListGrid(grids.Grid):
-    def get_url_args(item):
-        """
-        Returns dictionary used to create item link.
-        """
-        url_kwargs = dict(controller="visualization", id=item.id)
-        # TODO: hack to build link to saved visualization - need trans in this function instead in order to do
-        # link_data = trans.app.visualizations_registry.get_visualizations( trans, item )
-        if item.type in registry.VisualizationsRegistry.BUILT_IN_VISUALIZATIONS:
-            url_kwargs["action"] = item.type
-        else:
-            url_kwargs["__route_name__"] = "saved_visualization"
-            url_kwargs["visualization_name"] = item.type
-            url_kwargs["action"] = "saved"
-        return url_kwargs
-
-    def get_display_name(self, trans, item):
-        if trans.app.visualizations_registry and item.type in trans.app.visualizations_registry.plugins:
-            plugin = trans.app.visualizations_registry.plugins[item.type]
-            return plugin.config.get("name", item.type)
-        return item.type
-
-    # Grid definition
-    title = "Saved Visualizations"
-    model_class = model.Visualization
-    default_sort_key = "-update_time"
-    default_filter = dict(title="All", deleted="False", tags="All", sharing="All")
-    columns = [
-        grids.TextColumn("Title", key="title", attach_popup=True, link=get_url_args),
-        grids.TextColumn("Type", method="get_display_name"),
-        grids.TextColumn("Build", key="dbkey"),
-        grids.IndividualTagsColumn(
-            "Tags",
-            key="tags",
-            model_tag_association_class=model.VisualizationTagAssociation,
-            filterable="advanced",
-            grid_name="VisualizationListGrid",
-        ),
-        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
-        grids.GridColumn("Created", key="create_time", format=time_ago),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    operations = [
-        grids.GridOperation("Open", allow_multiple=False, url_args=get_url_args),
-        grids.GridOperation(
-            "Edit Attributes", allow_multiple=False, url_args=dict(controller="", action="visualizations/edit")
-        ),
-        grids.GridOperation("Copy", allow_multiple=False, condition=(lambda item: not item.deleted)),
-        grids.GridOperation(
-            "Share or Publish",
-            allow_multiple=False,
-            condition=(lambda item: not item.deleted),
-            url_args=dict(controller="", action="visualizations/sharing"),
-        ),
-        grids.GridOperation(
-            "Delete",
-            condition=(lambda item: not item.deleted),
-            confirm="Are you sure you want to delete this visualization?",
-        ),
-    ]
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter_by(user=trans.user, deleted=False)
-
-
-class VisualizationAllPublishedGrid(grids.Grid):
-    # Grid definition
-    use_panels = True
-    title = "Published Visualizations"
-    model_class = model.Visualization
-    default_sort_key = "update_time"
-    default_filter = dict(title="All", username="All")
-    columns = [
-        grids.PublicURLColumn("Title", key="title", filterable="advanced"),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.VisualizationAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
-        grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn(
-            "Community Tags",
-            key="tags",
-            model_tag_association_class=model.VisualizationTagAssociation,
-            filterable="advanced",
-            grid_name="VisualizationAllPublishedGrid",
-        ),
-        grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search title, annotation, owner, and tags",
-            cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        # See optimization description comments and TODO for tags in matching public histories query.
-        return (
-            trans.sa_session.query(self.model_class)
-            .join(self.model_class.user)
-            .options(
-                joinedload(self.model_class.user).load_only("username"),
-                joinedload(self.model_class.annotations),
-                undefer("average_rating"),
-            )
-        )
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
-
-
 class VisualizationController(
     BaseUIController, SharableMixin, UsesVisualizationMixin, UsesAnnotations, UsesItemRatings
 ):
-    _visualization_list_grid = VisualizationListGrid()
-    _published_list_grid = VisualizationAllPublishedGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _library_datasets_grid = LibraryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
@@ -345,53 +207,6 @@ class VisualizationController(
     @web.json
     def list_tracks(self, trans, **kwargs):
         return self._tracks_grid(trans, **kwargs)
-
-    @web.expose
-    @web.json
-    def list_published(self, trans, *args, **kwargs):
-        grid = self._published_list_grid(trans, **kwargs)
-        grid["shared_by_others"] = self._get_shared(trans)
-        return grid
-
-    @web.legacy_expose_api
-    @web.require_login("use Galaxy visualizations", use_panels=True)
-    def list(self, trans, **kwargs):
-        message = kwargs.get("message")
-        status = kwargs.get("status")
-        if "operation" in kwargs and "id" in kwargs:
-            session = trans.sa_session
-            operation = kwargs["operation"].lower()
-            ids = util.listify(kwargs["id"])
-            for id in ids:
-                if operation == "delete":
-                    item = self.get_visualization(trans, id)
-                    item.deleted = True
-                if operation == "copy":
-                    self.copy(trans, **kwargs)
-            with transaction(session):
-                session.commit()
-        kwargs["embedded"] = True
-        if message and status:
-            kwargs["message"] = sanitize_text(message)
-            kwargs["status"] = status
-        grid = self._visualization_list_grid(trans, **kwargs)
-        grid["shared_by_others"] = self._get_shared(trans)
-        return grid
-
-    def _get_shared(self, trans):
-        """Identify shared visualizations"""
-        shared_by_others = (
-            trans.sa_session.query(model.VisualizationUserShareAssociation)
-            .filter_by(user=trans.get_user())
-            .join(model.Visualization.table)
-            .filter(model.Visualization.deleted == false())
-            .order_by(desc(model.Visualization.update_time))
-            .all()
-        )
-        return [
-            {"username": v.visualization.user.username, "slug": v.visualization.slug, "title": v.visualization.title}
-            for v in shared_by_others
-        ]
 
     #
     # -- Functions for operating on visualizations. --

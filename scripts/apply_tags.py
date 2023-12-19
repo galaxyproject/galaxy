@@ -136,9 +136,8 @@ class ApplyTagsHistory:
         self_tags = self.collect_hash_tags(own_tags[dataset_id])
         # find unique tags from all parents
         all_tags_set = set(all_tags)
-        self_tags_set = set(self_tags)
         # update tags if there are new tags from parents
-        if all_tags_set != self_tags_set:
+        if all_tags_set != (self_tags_set := set(self_tags)):
             if not all_tags_set.issubset(self_tags_set):
                 # append the tags of the child itself
                 all_tags.extend(self_tags)

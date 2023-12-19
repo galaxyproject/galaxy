@@ -135,8 +135,7 @@ class BaseMetadataGenerator:
                 tool_conf_name = os.path.join(tool_path, tool_conf_name)
             tools[tool_conf_name] = tool
         root = tree.getroot()
-        data_manager_tool_path = root.get("tool_path", None)
-        if data_manager_tool_path:
+        if data_manager_tool_path := root.get("tool_path", None):
             relative_data_manager_dir = os.path.join(relative_data_manager_dir, data_manager_tool_path)
         for i, data_manager_elem in enumerate(root.findall("data_manager")):
             tool_file = data_manager_elem.get("tool_file", None)

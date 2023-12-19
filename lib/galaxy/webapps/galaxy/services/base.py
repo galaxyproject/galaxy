@@ -31,11 +31,11 @@ from galaxy.model.store import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import ready_name_for_url
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageTarget,
 )
+from galaxy.util import ready_name_for_url
 
 
 def ensure_celery_tasks_enabled(config):

@@ -1,6 +1,7 @@
 import os
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
 )
@@ -29,7 +30,7 @@ def playwright_browser(class_context: BrowserContext) -> Generator[ShedBrowser, 
 
 test_browser = os.environ.get("TOOL_SHED_TEST_BROWSER", DEFAULT_BROWSER)
 if test_browser == "twill":
-    shed_browser = pytest.fixture(scope="class")(twill_browser)
+    shed_browser: Callable[..., Generator[ShedBrowser, None, None]] = pytest.fixture(scope="class")(twill_browser)
 elif test_browser == "playwright":
     shed_browser = pytest.fixture(scope="class")(playwright_browser)
 else:

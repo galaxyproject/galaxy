@@ -29,7 +29,9 @@ class EnvPlugin(InstrumentPlugin):
 
     def __init__(self, **kwargs):
         variables_str = kwargs.get("variables", None)
-        if variables_str:
+        if isinstance(variables_str, list):
+            self.variables = variables_str
+        elif variables_str:
             self.variables = [v.strip() for v in variables_str.split(",")]
         else:
             self.variables = None

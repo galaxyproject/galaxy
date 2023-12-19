@@ -18,7 +18,10 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -31,6 +34,7 @@ from galaxy.schema.invocation import (
     InvocationWarningWorkflowOutputNotFound,
     WarningReason,
 )
+from galaxy.tools.parameters.basic import raw_to_galaxy
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
@@ -192,7 +196,7 @@ class WorkflowInvoker:
             log.debug(
                 f"Workflow invocation [{workflow_invocation.id}] exceeded maximum number of seconds allowed for scheduling [{maximum_duration}], failing."
             )
-            workflow_invocation.state = model.WorkflowInvocation.states.FAILED
+            workflow_invocation.set_state(model.WorkflowInvocation.states.FAILED)
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
 
@@ -224,6 +228,7 @@ class WorkflowInvoker:
                     workflow_invocation_step = WorkflowInvocationStep()
                     assert workflow_invocation_step
                     workflow_invocation_step.workflow_invocation = workflow_invocation
+                    ensure_object_added_to_session(workflow_invocation_step, object_in_session=workflow_invocation)
                     workflow_invocation_step.workflow_step = step
                     workflow_invocation_step.state = "new"
 
@@ -263,7 +268,7 @@ class WorkflowInvoker:
             state = model.WorkflowInvocation.states.READY
         else:
             state = model.WorkflowInvocation.states.SCHEDULED
-        workflow_invocation.state = state
+        workflow_invocation.set_state(state)
 
         # All jobs ran successfully, so we can save now
         self.trans.sa_session.add(workflow_invocation)
@@ -327,6 +332,8 @@ STEP_OUTPUT_DELAYED = object()
 
 
 class ModuleInjector(Protocol):
+    trans: "WorkRequestContext"
+
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
 
@@ -399,7 +406,7 @@ class WorkflowProgress:
                 raise MessageException(public_message)
             runtime_state = step_states[step_id].value
             assert step.module
-            step.state = step.module.decode_runtime_state(runtime_state)
+            step.state = step.module.decode_runtime_state(step, runtime_state)
 
             invocation_step = step_invocations_by_id.get(step_id, None)
             if invocation_step and invocation_step.state == "scheduled":
@@ -408,7 +415,7 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, step: "WorkflowStep", input_dict: Dict[str, Any]) -> Any:
+    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]) -> Any:
         replacement: Union[
             modules.NoReplacement,
             model.DatasetCollectionInstance,
@@ -416,6 +423,7 @@ class WorkflowProgress:
         ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
+        is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
             if input_dict["input_type"] == "dataset" and multiple:
@@ -431,9 +439,12 @@ class WorkflowProgress:
                 else:
                     replacement = temp
             else:
-                is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
-
+        else:
+            for step_input in step.inputs:
+                if step_input.name == prefixed_name and step_input.default_value_set:
+                    if is_data:
+                        replacement = raw_to_galaxy(trans, step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True) -> Any:
@@ -633,6 +644,8 @@ class WorkflowProgress:
         when_values=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
+        subworkflow_invocation.handler = self.workflow_invocation.handler
+        subworkflow_invocation.scheduler = self.workflow_invocation.scheduler
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
         subworkflow_progress = self.subworkflow_progress(
             subworkflow_invocation,
@@ -693,6 +706,9 @@ class WorkflowProgress:
             subworkflow_collection_info=subworkflow_collection_info,
             when_values=when_values,
         )
+
+    def raw_to_galaxy(self, value: dict):
+        return raw_to_galaxy(self.module_injector.trans, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         try:

@@ -11,13 +11,14 @@ from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
     Callable,
-    List,
     Tuple,
 )
 
+import sqlalchemy
 from sqlalchemy import (
     desc,
     false,
+    func,
     or_,
     select,
     true,
@@ -44,10 +45,15 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
     Page,
     PageRevision,
+    PageTagAssociation,
     PageUserShareAssociation,
+    StoredWorkflow,
     User,
+    Visualization,
 )
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -134,7 +140,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[List[model.Page], int]:
+    ) -> Tuple[sqlalchemy.engine.Result, int]:
         show_deleted = payload.deleted
         show_shared = payload.show_shared
         is_admin = trans.user_is_admin
@@ -147,34 +153,34 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        query = trans.sa_session.query(model.Page)
+        stmt = select(Page)
 
         if not is_admin:
-            filters = [model.Page.user == trans.user]
+            filters = [Page.user == trans.user]
             if payload.show_published:
-                filters.append(model.Page.published == true())
+                filters.append(Page.published == true())
             if user and show_shared:
-                filters.append(model.PageUserShareAssociation.user == user)
-                query = query.outerjoin(model.Page.users_shared_with)
-            query = query.filter(or_(*filters))
+                filters.append(PageUserShareAssociation.user == user)
+                stmt = stmt.outerjoin(Page.users_shared_with)
+            stmt = stmt.where(or_(*filters))
 
         if not show_deleted:
-            query = query.filter(model.Page.deleted == false())
+            stmt = stmt.where(Page.deleted == false())
         elif not is_admin:
             # don't let non-admins see other user's deleted pages
-            query = query.filter(or_(model.Page.deleted == false(), model.Page.user == user))
+            stmt = stmt.where(or_(Page.deleted == false(), Page.user == user))
 
         if payload.user_id:
-            query = query.filter(model.Page.user_id == payload.user_id)
+            stmt = stmt.where(Page.user_id == payload.user_id)
 
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
             def p_tag_filter(term_text: str, quoted: bool):
-                nonlocal query
-                alias = aliased(model.PageTagAssociation)
-                query = query.outerjoin(model.Page.tags.of_type(alias))
+                nonlocal stmt
+                alias = aliased(PageTagAssociation)
+                stmt = stmt.outerjoin(Page.tags.of_type(alias))
                 return tag_filter(alias, term_text, quoted)
 
             for term in parsed_search.terms:
@@ -183,32 +189,32 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                     q = term.text
                     if key == "tag":
                         pg = p_tag_filter(term.text, term.quoted)
-                        query = query.filter(pg)
+                        stmt = stmt.where(pg)
                     elif key == "title":
-                        query = query.filter(text_column_filter(model.Page.title, term))
+                        stmt = stmt.where(text_column_filter(Page.title, term))
                     elif key == "slug":
-                        query = query.filter(text_column_filter(model.Page.slug, term))
+                        stmt = stmt.where(text_column_filter(Page.slug, term))
                     elif key == "user":
-                        query = append_user_filter(query, model.Page, term)
+                        stmt = append_user_filter(stmt, Page, term)
                     elif key == "is":
                         if q == "published":
-                            query = query.filter(model.Page.published == true())
+                            stmt = stmt.where(Page.published == true())
                         if q == "importable":
-                            query = query.filter(model.Page.importable == true())
+                            stmt = stmt.where(Page.importable == true())
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
-                            query = query.filter(model.PageUserShareAssociation.user == user)
+                            stmt = stmt.where(PageUserShareAssociation.user == user)
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
-                    alias = aliased(model.User)
-                    query = query.outerjoin(model.Page.user.of_type(alias))
-                    query = query.filter(
+                    alias = aliased(User)
+                    stmt = stmt.outerjoin(Page.user.of_type(alias))
+                    stmt = stmt.where(
                         raw_text_column_filter(
                             [
-                                model.Page.title,
-                                model.Page.slug,
+                                Page.title,
+                                Page.slug,
                                 tf,
                                 alias.username,
                             ],
@@ -216,18 +222,18 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                         )
                     )
         if include_total_count:
-            total_matches = query.count()
+            total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
-        sort_column = getattr(model.Page, payload.sort_by)
+        sort_column = getattr(Page, payload.sort_by)
         if payload.sort_desc:
             sort_column = sort_column.desc()
-        query = query.order_by(sort_column)
+        stmt = stmt.order_by(sort_column)
         if payload.limit is not None:
-            query = query.limit(payload.limit)
+            stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
-            query = query.offset(payload.offset)
-        return query, total_matches
+            stmt = stmt.offset(payload.offset)
+        return trans.sa_session.scalars(stmt), total_matches
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
@@ -240,9 +246,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.ObjectAttributeInvalidException(
                 "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             )
-        elif (
-            trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload.slug, deleted=False).first()
-        ):
+        elif page_exists(trans.sa_session, user, payload.slug):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         if payload.invocation_id:
@@ -259,8 +263,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page = trans.app.model.Page()
         page.title = payload.title
         page.slug = payload.slug
-        page_annotation = payload.annotation
-        if page_annotation is not None:
+        if (page_annotation := payload.annotation) is not None:
             page_annotation = sanitize_html(page_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
 
@@ -604,20 +607,20 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
     item_name = ""
     if item_class == "History":
-        history = trans.sa_session.query(model.History).get(decoded_item_id)
+        history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == "StoredWorkflow":
-        wf = trans.sa_session.query(model.StoredWorkflow).get(decoded_item_id)
+        wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
         item_name = wf.name
     elif item_class == "Visualization":
-        visualization = trans.sa_session.query(model.Visualization).get(decoded_item_id)
+        visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
@@ -662,3 +665,8 @@ def page_exists(session: Session, user: User, slug: str) -> bool:
 
 def _build_page_query(select_clause, user: User, slug: str):
     return select_clause.where(Page.user == user).where(Page.slug == slug).where(Page.deleted == false()).limit(1)
+
+
+def get_count(session, statement):
+    stmt = select(func.count()).select_from(statement)
+    return session.scalar(stmt)

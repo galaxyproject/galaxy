@@ -308,10 +308,12 @@ MOCK_DATASET_EXT = "bam"
 class MockDataset:
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
-        self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
         self.tags = []
+
+    def get_file_name(self, sync_cache=True):
+        return MOCK_DATASET_PATH
 
 
 class MockTool:

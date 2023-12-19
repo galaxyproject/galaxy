@@ -96,8 +96,7 @@ class UsesAnnotations:
         return add_item_annotation(db_session, user, item, annotation)
 
     def delete_item_annotation(self, db_session, user, item):
-        annotation_assoc = get_item_annotation_obj(db_session, user, item)
-        if annotation_assoc:
+        if annotation_assoc := get_item_annotation_obj(db_session, user, item):
             db_session.delete(annotation_assoc)
             with transaction(db_session):
                 db_session.commit()

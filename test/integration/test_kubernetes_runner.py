@@ -4,6 +4,7 @@
 import collections
 import json
 import os
+import shlex
 import string
 import subprocess
 import tempfile
@@ -18,10 +19,7 @@ import pytest
 from typing_extensions import Literal
 
 from galaxy.tool_util.verify.wait import timeout_type
-from galaxy.util import (
-    shlex_join,
-    unicodify,
-)
+from galaxy.util import unicodify
 from galaxy_test.base.populators import (
     DatasetPopulator,
     DEFAULT_TIMEOUT,
@@ -361,7 +359,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
                 if allow_wait and "is waiting to start" in p.stderr:
                     return None
                 raise Exception(
-                    f"Command '{shlex_join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
+                    f"Command '{shlex.join(log_cmd)}' failed with exit code: {p.returncode}.\nstdout: {p.stdout}\nstderr: {p.stderr}"
                 )
             return p.stdout
 

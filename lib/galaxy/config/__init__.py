@@ -59,11 +59,10 @@ from ..version import (
 if TYPE_CHECKING:
     from galaxy.model import User
 
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib_resources import files
 
 log = logging.getLogger(__name__)
 
@@ -637,6 +636,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "fetch_url_whitelist": "fetch_url_allowlist",
         "containers_resolvers_config_file": "container_resolvers_config_file",
         "activation_email": "email_from",
+        "ga4gh_service_organization_name": "organization_name",
+        "ga4gh_service_organization_url": "organization_url",
     }
 
     deprecated_options = list(renamed_options.keys()) + [
@@ -683,7 +684,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {
         "build_sites_config_file",
         "datatypes_config_file",
-        "job_metrics_config_file",
         "tool_data_table_config_path",
         "tool_config_file",
     }
@@ -859,13 +859,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
-        self.tool_path = self._in_root_dir(self.tool_path)
+        if not running_from_source and kwargs.get("tool_path") is None:
+            try:
+                self.tool_path = str(files("galaxy.tools") / "bundled")
+            except ModuleNotFoundError:
+                # Might not be a full galaxy installation
+                self.tool_path = self._in_root_dir(self.tool_path)
+        else:
+            self.tool_path = self._in_root_dir(self.tool_path)
         self.tool_data_path = self._in_root_dir(self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path") is None:
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         self.oidc: Dict[str, Dict] = {}
+        self.fixed_delegated_auth: bool = False
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get("integrated_tool_panel_tracking_directory")
         if integrated_tool_panel_tracking_directory:
@@ -1170,7 +1178,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         log_destination = kwargs.get("log_destination")
         log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))
         log_rotate_count = int(kwargs.get("log_rotate_count", 0))
-        galaxy_daemon_log_destination = os.environ.get("GALAXY_DAEMON_LOG")
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
                 "class": "logging.StreamHandler",
@@ -1189,7 +1196,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 "maxBytes": log_rotate_size,
                 "backupCount": log_rotate_count,
             }
-        if galaxy_daemon_log_destination:
+        if galaxy_daemon_log_destination := os.environ.get("GALAXY_DAEMON_LOG"):
             LOGGING_CONFIG_DEFAULT["handlers"]["files"] = {
                 "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",

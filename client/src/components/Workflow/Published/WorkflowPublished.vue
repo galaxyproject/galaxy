@@ -23,9 +23,48 @@ import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
 
-const props = defineProps<{
-    id: string;
-}>();
+const props = defineProps({
+    id: {
+        type: String,
+        required: true,
+    },
+    zoom: {
+        type: Number,
+        default: 0.75,
+    },
+    embed: {
+        type: Boolean,
+        default: false,
+    },
+    showButtons: {
+        type: Boolean,
+        default: true,
+    },
+    showAbout: {
+        type: Boolean,
+        default: true,
+    },
+    showHeading: {
+        type: Boolean,
+        default: true,
+    },
+    showMinimap: {
+        type: Boolean,
+        default: true,
+    },
+    showZoomControls: {
+        type: Boolean,
+        default: true,
+    },
+    initialX: {
+        type: Number,
+        default: -20,
+    },
+    initialY: {
+        type: Number,
+        default: -20,
+    },
+});
 
 const workflowInfo = ref<
     | {
@@ -48,7 +87,11 @@ const { datatypesMapper } = useDatatypesMapper();
 
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
-stateStore.setScale(0.75);
+watch(
+    () => props.zoom,
+    () => stateStore.setScale(props.zoom),
+    { immediate: true }
+);
 
 watch(
     () => props.id,
@@ -102,16 +145,23 @@ function logInTitle(title: string) {
         return title;
     }
 }
+
+const initialPosition = computed(() => ({
+    x: -props.initialX * props.zoom,
+    y: -props.initialY * props.zoom,
+}));
+
+const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
-        <FlexPanel v-if="showToolbox" side="left">
+        <ActivityBar v-if="!props.embed && showActivityBar" />
+        <FlexPanel v-if="!props.embed && showToolbox" side="left">
             <ToolPanel />
         </FlexPanel>
 
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="container-root m-3 w-100 overflow-auto d-flex flex-column">
             <div v-if="loading">
                 <Heading h1 separator size="xl">
                     <FontAwesomeIcon icon="fa-spinner" spin />
@@ -128,21 +178,27 @@ function logInTitle(title: string) {
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div class="workflow-preview d-flex flex-column">
-                    <span class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-center align-items-center mb-2">
-                        <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
+                    <span
+                        v-if="props.showHeading || props.showButtons"
+                        class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-end align-items-center mb-2">
+                        <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                            <span v-if="props.showAbout"> Workflow Preview </span>
+                            <span v-else> {{ workflowInfo.name }} </span>
+                        </Heading>
 
-                        <span>
+                        <span v-if="props.showButtons">
                             <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
                                 <FontAwesomeIcon icon="fa-download" />
                                 Download
                             </b-button>
 
                             <b-button
+                                v-if="!props.embed"
                                 :href="importUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Import Workflow')"
                                 data-description="workflow import"
-                                target="blank"
+                                target="_blank"
                                 variant="secondary"
                                 size="md">
                                 <FontAwesomeIcon icon="fa-edit" />
@@ -150,6 +206,7 @@ function logInTitle(title: string) {
                             </b-button>
 
                             <b-button
+                                v-if="!props.embed"
                                 :to="runUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Run Workflow')"
@@ -157,6 +214,17 @@ function logInTitle(title: string) {
                                 size="md">
                                 <FontAwesomeIcon icon="fa-play" />
                                 Run
+                            </b-button>
+
+                            <b-button
+                                v-if="props.embed"
+                                :href="viewUrl"
+                                target="blank"
+                                variant="primary"
+                                size="md"
+                                class="view-button font-weight-bold">
+                                <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
+                                View In Galaxy
                             </b-button>
                         </span>
                     </span>
@@ -166,17 +234,29 @@ function logInTitle(title: string) {
                             v-if="workflow && datatypesMapper"
                             :steps="workflow.steps"
                             :datatypes-mapper="datatypesMapper"
+                            :initial-position="initialPosition"
+                            :show-minimap="props.showMinimap"
+                            :show-zoom-controls="props.showZoomControls"
                             readonly />
                     </b-card>
                 </div>
 
-                <WorkflowInformation v-if="workflowInfo" :workflow-info="workflowInfo" />
+                <WorkflowInformation
+                    v-if="props.showAbout && workflowInfo"
+                    :workflow-info="workflowInfo"
+                    :embedded="props.embed" />
             </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
+.container-root {
+    container-type: inline-size;
+}
+
 .published-workflow {
     display: flex;
     flex-grow: 1;
@@ -195,8 +275,10 @@ function logInTitle(title: string) {
         max-width: 500px;
         height: 100%;
     }
+}
 
-    @media only screen and (max-width: 1100px) {
+@container (max-width: 900px) {
+    .published-workflow {
         flex-direction: column;
         height: unset;
 
@@ -209,5 +291,10 @@ function logInTitle(title: string) {
             height: unset;
         }
     }
+}
+
+.view-button {
+    --fa-secondary-color: #{$brand-toggle};
+    --fa-secondary-opacity: 1;
 }
 </style>
