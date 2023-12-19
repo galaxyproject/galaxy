@@ -4349,7 +4349,7 @@ export interface components {
              * Command Version
              * @description Tool version indicated during job execution.
              */
-            command_version: string;
+            command_version?: string;
             /**
              * Copied from Job-ID
              * @description Reference to cached job if job execution was cached.
@@ -4377,7 +4377,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -7223,7 +7223,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -7385,7 +7385,7 @@ export interface components {
              * @description The (major) version of Galaxy used to create this job.
              * @example 21.05
              */
-            galaxy_version: string;
+            galaxy_version?: string;
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -7510,6 +7510,12 @@ export interface components {
              */
             value: string;
         };
+        /**
+         * JobMetricCollection
+         * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job.
+         * @default []
+         */
+        JobMetricCollection: components["schemas"]["JobMetric"][];
         /** JobOutput */
         JobOutput: {
             /**
@@ -9773,6 +9779,163 @@ export interface components {
              * Format: uuid
              */
             short_term_storage_request_id: string;
+        };
+        /**
+         * ShowFullJobResponse
+         * @description Basic information about a job.
+         */
+        ShowFullJobResponse: {
+            /**
+             * Command Line
+             * @description The command line produced by the job. Users can see this value if allowed in the configuration, administrator can always see this value.
+             */
+            command_line?: string;
+            /**
+             * Command Version
+             * @description Tool version indicated during job execution.
+             */
+            command_version?: string;
+            /**
+             * Copied from Job-ID
+             * @description Reference to cached job if job execution was cached.
+             * @example 0123456789ABCDEF
+             */
+            copied_from_job_id?: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Job dependencies
+             * @description The dependencies of the job.
+             */
+            dependencies?: Record<string, never>[];
+            /**
+             * Exit Code
+             * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
+             */
+            exit_code?: number;
+            /**
+             * External ID
+             * @description The job id used by the external job runner (Condor, Pulsar, etc.)Only administrator can see this value.
+             */
+            external_id?: string;
+            /**
+             * Galaxy Version
+             * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
+             */
+            galaxy_version?: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Inputs
+             * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
+             * @default {}
+             */
+            inputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Job Messages
+             * @description List with additional information and possible reasons for a failed job.
+             */
+            job_messages?: Record<string, never>[];
+            /**
+             * Job Metrics
+             * @description Collections of metrics provided by `JobInstrumenter` plugins on a particular job. Only administrators can see these metrics.
+             */
+            job_metrics?: components["schemas"]["JobMetricCollection"];
+            /**
+             * Job Standard Error
+             * @description The captured standard error of the job execution.
+             */
+            job_stderr?: string;
+            /**
+             * Job Standard Output
+             * @description The captured standard output of the job execution.
+             */
+            job_stdout?: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model_class: "Job";
+            /**
+             * Output collections
+             * @default {}
+             */
+            output_collections?: {
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+            };
+            /**
+             * Outputs
+             * @description Dictionary mapping all the tool outputs (by name) to the corresponding data references.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Parameters
+             * @description Object containing all the parameters of the tool associated with this job. The specific parameters depend on the tool itself.
+             */
+            params: Record<string, never>;
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Standard Error
+             * @description Combined tool and job standard error streams.
+             */
+            stderr?: string;
+            /**
+             * Standard Output
+             * @description Combined tool and job standard output streams.
+             */
+            stdout?: string;
+            /**
+             * Tool ID
+             * @description Identifier of the tool that generated this job.
+             */
+            tool_id: string;
+            /**
+             * Tool Standard Error
+             * @description The captured standard error of the tool executed by the job.
+             */
+            tool_stderr?: string;
+            /**
+             * Tool Standard Output
+             * @description The captured standard output of the tool executed by the job.
+             */
+            tool_stdout?: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * User Email
+             * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
+             */
+            user_email?: string;
         };
         /**
          * Src
@@ -16936,7 +17099,9 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["ShowFullJobResponse"]
+                        | components["schemas"]["EncodedJobDetails"];
                 };
             };
             /** @description Validation Error */
