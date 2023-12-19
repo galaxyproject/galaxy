@@ -556,6 +556,7 @@ class BaseJobRunner:
             tmp_directory=compute_tmp_directory,
             home_directory=job_wrapper.home_directory(),
             job_directory_type=job_directory_type,
+            output_paths=get_disk_paths(self.app.object_store) if job_directory_type == "galaxy" else None,
         )
 
         destination_info = job_wrapper.job_destination.params
