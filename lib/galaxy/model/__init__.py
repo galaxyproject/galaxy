@@ -942,7 +942,7 @@ WHERE user_id = :user_id and quota_source_label = :label
                 "user_id": self.id,
                 "label": quota_source_label,
             }
-            row = sa_session.execute(statement, params).fetchone()
+            row = sa_session.execute(text(statement), params).fetchone()
             if row is not None:
                 rval = row[0]
             else:
