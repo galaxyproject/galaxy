@@ -344,6 +344,23 @@ class HasDockerLikeVolumes:
         add_var("tool_data_path", self.app_info.tool_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
+        # Provide storage template variable to both pulsar and galaxy,
+        # but only add it to defaults for galaxy. Only makes sense
+        # if embedded pulsar is used without path rewriting.
+        outputs_to_working_directory = self.app_info.outputs_to_working_directory
+        if "outputs_to_working_directory" in self.destination_info:
+            outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
+        if outputs_to_working_directory and self.job_info.job_type == "tool":
+            # Provide RO access to inputs
+            storage_mount_mode = "default_ro"
+        else:
+            # Need to write to storage (outputs_to_working_directory: false or containerized metadata)
+            storage_mount_mode = "rw"
+        storage_mounts = None
+        if self.job_info.output_paths:
+            storage_mounts = ",".join([f"{p}:{storage_mount_mode}" for p in self.job_info.output_paths])
+        add_var("storage", storage_mounts)
+
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
@@ -369,23 +386,7 @@ class HasDockerLikeVolumes:
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
-            outputs_to_working_directory = self.app_info.outputs_to_working_directory
-            if "outputs_to_working_directory" in self.destination_info:
-                outputs_to_working_directory = asbool(self.destination_info["outputs_to_working_directory"])
-            if outputs_to_working_directory and self.job_info.job_type == "tool":
-                # Should need default_file_path (which is of course an estimate given
-                # object stores anyway).
-                outputs_mount_mode = "default_ro"
-            else:
-                outputs_mount_mode = "rw"
-            output_paths = None
-            if self.job_info.output_paths:
-                output_paths = self.job_info.output_paths
-            elif self.app_info.default_file_path:
-                output_paths = {self.app_info.default_file_path}
-            if output_paths:
-                outputs_mount = ",".join([f"{p}:{outputs_mount_mode}" for p in output_paths])
-                defaults += f",{outputs_mount}"
+            defaults += ",$storage"
 
         if self.app_info.library_import_dir:
             defaults += ",$library_import_dir:default_ro"
