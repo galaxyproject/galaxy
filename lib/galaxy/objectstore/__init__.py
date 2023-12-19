@@ -361,7 +361,6 @@ class BaseObjectStore(ObjectStore):
         self.galaxy_enable_quotas = config.enable_quotas
         extra_dirs = {}
         extra_dirs["job_work"] = config.jobs_directory
-        extra_dirs["temp"] = config.new_file_path
         extra_dirs.update({e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])})
         self.extra_dirs = extra_dirs
 
@@ -1492,24 +1491,6 @@ def build_object_store_from_config(
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
     else:
         return objectstore_class(config=config, config_dict=config_dict, **objectstore_constructor_kwds)
-
-
-def local_extra_dirs(func):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
-
-    def wraps(self, *args, **kwargs):
-        if kwargs.get("base_dir", None) is None:
-            return func(self, *args, **kwargs)
-        else:
-            for c in self.__class__.__mro__:
-                if c.__name__ == "DiskObjectStore":
-                    return getattr(c, func.__name__)(self, *args, **kwargs)
-            raise Exception(
-                "Could not call DiskObjectStore's %s method, does your "
-                "Object Store plugin inherit from DiskObjectStore?" % func.__name__
-            )
-
-    return wraps
 
 
 def config_to_dict(config):
