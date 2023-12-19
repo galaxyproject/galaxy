@@ -24,16 +24,18 @@ COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column
 class TestShedRepositoriesApi(ShedApiTestCase):
     def test_create(self):
         populator = self.populator
-        category_id = populator.new_category(prefix="testcreate").id
+        category1_id = populator.new_category(prefix="testcreate").id
+        populator.assert_category_has_n_repositories(category1_id, 0)
 
-        repos_by_category = populator.repositories_by_category(category_id)
-        repos = repos_by_category.repositories
-        assert len(repos) == 0
+        populator.new_repository(category1_id)
+        populator.assert_category_has_n_repositories(category1_id, 1)
 
-        populator.new_repository(category_id)
-        repos_by_category = populator.repositories_by_category(category_id)
-        repos = repos_by_category.repositories
-        assert len(repos) == 1
+        # Test creating repository with multiple categories
+        category2_id = populator.new_category(prefix="testcreate").id
+        populator.assert_category_has_n_repositories(category2_id, 0)
+        populator.new_repository([category1_id, category2_id])
+        populator.assert_category_has_n_repositories(category1_id, 2)
+        populator.assert_category_has_n_repositories(category2_id, 1)
 
     def test_update_repository(self):
         populator = self.populator
