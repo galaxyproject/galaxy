@@ -442,7 +442,9 @@ class ToolBox(AbstractToolBox):
             default_panel_view=default_panel_view,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
-
+        # Load built-in converters
+        if app.config.display_builtin_converters:
+            self.load_builtin_converters()
         if old_toolbox := getattr(app, "toolbox", None):
             self.dependency_manager = old_toolbox.dependency_manager
         else:

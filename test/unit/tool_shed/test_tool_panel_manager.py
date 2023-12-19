@@ -25,20 +25,20 @@ class TestToolPanelManager(BaseToolBoxTestCase):
         assert section_id == "tid"
         assert len(section.elems) == 1  # tool.xml
         assert section.id == "tid"
-        assert len(toolbox._tool_panel) == 1
+        assert len(toolbox._tool_panel) == 2  # section + built-in converters section
 
         section_id, section = tpm.handle_tool_panel_section(toolbox, new_tool_panel_section_label="tid2")
         assert section_id == "tid2"
         assert len(section.elems) == 0  # new section
         assert section.id == "tid2"
-        assert len(toolbox._tool_panel) == 2
+        assert len(toolbox._tool_panel) == 3  # 2 sections + built-in converters section
 
         # Test re-fetch new section by same id.
         section_id, section = tpm.handle_tool_panel_section(toolbox, new_tool_panel_section_label="tid2")
         assert section_id == "tid2"
         assert len(section.elems) == 0  # new section
         assert section.id == "tid2"
-        assert len(toolbox._tool_panel) == 2
+        assert len(toolbox._tool_panel) == 3  # 2 sections + built-in converters section
 
     def test_add_tool_to_panel(self):
         self._init_ts_tool(guid=DEFAULT_GUID)

@@ -158,6 +158,10 @@ class MockApp(di.Container, GalaxyDataTestApp):
     def toolbox(self) -> ToolBox:
         return self._toolbox
 
+    @toolbox.setter
+    def toolbox(self, toolbox: ToolBox):
+        self._toolbox = toolbox
+
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
         # need to wait.
@@ -258,6 +262,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
+        self.display_builtin_converters = True
         self.enable_notification_system = True
 
     @property

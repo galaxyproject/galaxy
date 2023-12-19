@@ -239,13 +239,14 @@ class TestToolBox(BaseToolBoxTestCase):
         self.__verify_two_test_tools()
 
         # Assert tools merged in tool panel.
-        assert len(self.toolbox._tool_panel) == 1
+        assert len(self.toolbox._tool_panel) == 2  # 1 tool (w 2 versions) + built-in converters
 
     def test_get_section_by_label(self):
         self._add_config(
             """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
         )
-        assert len(self.toolbox._tool_panel) == 1
+        print(self.toolbox._tool_panel)
+        assert len(self.toolbox._tool_panel) == 2  # section + built-in converters
         section = self.toolbox._tool_panel["tid"]
         tool_panel_section_key, section_by_label = self.toolbox.get_section(
             section_id="nope", new_label="Completely unrelated", create_if_needed=True
@@ -292,7 +293,7 @@ class TestToolBox(BaseToolBoxTestCase):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id(stored_workflow.id)
         self._add_config(f"""<toolbox><workflow id="{encoded_id}" /></toolbox>""")
-        assert len(self.toolbox._tool_panel) == 1
+        assert len(self.toolbox._tool_panel) == 2  # workflow + built-in converters section
         panel_workflow = next(iter(self.toolbox._tool_panel.values()))
         assert panel_workflow == stored_workflow.latest_workflow
         # TODO: test to_dict with workflows
@@ -303,7 +304,7 @@ class TestToolBox(BaseToolBoxTestCase):
         self._add_config(
             f"""<toolbox><section id="tid" name="TID"><workflow id="{encoded_id}" /></section></toolbox>"""
         )
-        assert len(self.toolbox._tool_panel) == 1
+        assert len(self.toolbox._tool_panel) == 2  # workflow + built-in converters section
         section = self.toolbox._tool_panel["tid"]
         assert len(section.elems) == 1
         panel_workflow = next(iter(section.elems.values()))
@@ -311,14 +312,14 @@ class TestToolBox(BaseToolBoxTestCase):
 
     def test_label_in_panel(self):
         self._add_config("""<toolbox><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></toolbox>""")
-        assert len(self.toolbox._tool_panel) == 2
+        assert len(self.toolbox._tool_panel) == 3  # 2 labels + built-in converters section
         self.__check_test_labels(self.toolbox._tool_panel)
 
     def test_label_in_section(self):
         self._add_config(
             """<toolbox><section id="tid" name="TID"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>"""
         )
-        assert len(self.toolbox._tool_panel) == 1
+        assert len(self.toolbox._tool_panel) == 2  # section + built-in converters section
         section = self.toolbox._tool_panel["tid"]
         self.__check_test_labels(section.elems)
 
@@ -336,7 +337,12 @@ class TestToolBox(BaseToolBoxTestCase):
             self._add_config({"items": [section]}, name="tool_conf.json")
 
     def __check_test_labels(self, panel_dict):
-        assert list(panel_dict.keys()) == ["label_lab1", "label_lab2"]
+        # if panel_dict is the complete panel it will contain builtin_converters
+        # if its a section then not
+        assert list(panel_dict.keys()) in (
+            ["label_lab1", "label_lab2", "builtin_converters"],
+            ["label_lab1", "label_lab2"],
+        )
         label1 = next(iter(panel_dict.values()))
         assert label1.id == "lab1"
         assert label1.text == "Label 1"
@@ -412,7 +418,7 @@ class TestToolBox(BaseToolBoxTestCase):
         self._init_tool(filename="tool_v02.xml", version="0.2")
 
     def __verify_tool_panel_for_default_lineage(self):
-        assert len(self.toolbox._tool_panel) == 1
+        assert len(self.toolbox._tool_panel) == 2  # tool + built-in-converters section
         tool = self.toolbox._tool_panel["tool_test_tool"]
         assert tool.version == "0.2", tool.version
         assert tool.id == "test_tool"
