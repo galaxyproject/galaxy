@@ -1,35 +1,37 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+interface Job {
+    tool_stdout?: string;
+    tool_stderr?: string;
+}
+
+type JobsMap = {
+    [key: string]: Job;
+};
+
+interface ToolStdProps {
+    jobId: string;
+    name: "tool_stderr" | "tool_stdout";
+    jobs: JobsMap;
+}
+
+const props = defineProps<ToolStdProps>();
+
+const jobContent = computed(() => {
+    const job = props.jobs[props.jobId];
+    return job && job[props.name];
+});
+</script>
+
 <template>
     <b-card nobody class="content-height">
-        <div :class="name" :job_id="args.job_id">
+        <div :class="name" :job_id="jobId">
             <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
         </div>
     </b-card>
 </template>
 
-<script>
-export default {
-    props: {
-        args: {
-            type: Object,
-            required: true,
-        },
-        name: {
-            type: String,
-            required: true,
-        },
-        jobs: {
-            type: Object,
-            default: null,
-        },
-    },
-    computed: {
-        jobContent() {
-            const job = this.jobs[this.args.job_id];
-            return job && job[this.name];
-        },
-    },
-};
-</script>
 <style scoped>
 .content-height {
     max-height: 15rem;

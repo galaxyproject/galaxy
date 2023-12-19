@@ -171,7 +171,11 @@ function argToBoolean(args, name, booleanDefault) {
                 v-else-if="name == 'history_dataset_collection_display'"
                 :args="args"
                 :collections="collections" />
-            <ToolStd v-else-if="['tool_stdout', 'tool_stderr'].includes(name)" :args="args" :name="name" :jobs="jobs" />
+            <ToolStd
+                v-else-if="['tool_stdout', 'tool_stderr'].includes(name)"
+                :job-id="args.job_id"
+                :name="name"
+                :jobs="jobs" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
                 :args="args"
