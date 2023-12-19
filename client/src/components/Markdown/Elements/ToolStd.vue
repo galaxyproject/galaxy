@@ -1,34 +1,70 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, toRef, watch } from "vue";
 
-interface Job {
-    tool_stdout?: string;
-    tool_stderr?: string;
-}
+import { useJobStore } from "@/stores/jobStore";
 
-type JobsMap = {
-    [key: string]: Job;
-};
+import { useMappingJobs } from "./handlesMappingJobs";
+
+import JobSelection from "./JobSelection.vue";
 
 interface ToolStdProps {
-    jobId: string;
+    jobId?: string;
+    implicitCollectionJobsId?: string;
     name: "tool_stderr" | "tool_stdout";
-    jobs: JobsMap;
 }
 
-const props = defineProps<ToolStdProps>();
+const props = withDefaults(defineProps<ToolStdProps>(), {
+    jobId: null,
+    implicitCollectionJobsId: null,
+});
+
+const jobStore = useJobStore();
+
+const jobIdRef = toRef(props, "jobId");
+const implicitCollectionJobsIdRef = toRef(props, "implicitCollectionJobsId");
+
+const { selectJobOptions, selectedJob, targetJobId } = useMappingJobs(jobIdRef, implicitCollectionJobsIdRef);
+
+async function init() {
+    if (targetJobId.value) {
+        jobStore.fetchJob(targetJobId.value);
+    }
+}
+
+watch(
+    targetJobId,
+    () => {
+        init();
+    },
+    { immediate: true }
+);
 
 const jobContent = computed(() => {
-    const job = props.jobs[props.jobId];
-    return job && job[props.name];
+    let content: string | undefined;
+    if (targetJobId.value) {
+        const job = jobStore.getJob(targetJobId.value);
+        content = job && job[props.name];
+    }
+    if (!content && props.name == "tool_stdout") {
+        content = "*No Standard Output Available*";
+    } else if (!content) {
+        content = "*No Standard Error Available*";
+    }
+    return content;
 });
 </script>
 
 <template>
     <b-card nobody class="content-height">
-        <div :class="name" :job_id="jobId">
-            <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
-        </div>
+        <JobSelection
+            v-model="selectedJob"
+            :job-id="jobId"
+            :implicit-collection-jobs-id="implicitCollectionJobsId"
+            :select-job-options="selectJobOptions">
+            <div :class="name" :job_id="targetJobId">
+                <pre><code class="word-wrap-normal">{{ jobContent }}</code></pre>
+            </div>
+        </JobSelection>
     </b-card>
 </template>
 

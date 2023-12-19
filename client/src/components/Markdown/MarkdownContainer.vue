@@ -49,10 +49,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    jobs: {
-        type: Object,
-        default: null,
-    },
     time: {
         type: String,
         default: null,
@@ -174,8 +170,8 @@ function argToBoolean(args, name, booleanDefault) {
             <ToolStd
                 v-else-if="['tool_stdout', 'tool_stderr'].includes(name)"
                 :job-id="args.job_id"
-                :name="name"
-                :jobs="jobs" />
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
+                :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
                 :args="args"

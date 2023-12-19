@@ -54,7 +54,6 @@
                     :collections="collections"
                     :histories="histories"
                     :invocations="invocations"
-                    :jobs="jobs"
                     :time="time"
                     :version="version"
                     :workflows="workflows" />
@@ -134,7 +133,6 @@ export default {
             histories: {},
             collections: {},
             workflows: {},
-            jobs: {},
             invocations: {},
             loading: true,
             workflowID: "",
@@ -193,7 +191,6 @@ export default {
                 this.histories = config.histories || {};
                 this.collections = config.history_dataset_collections || {};
                 this.workflows = config.workflows || {};
-                this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
                 this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
