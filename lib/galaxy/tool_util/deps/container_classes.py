@@ -250,14 +250,7 @@ class Volume:
         else:
             path = f"{self.source}:{self.target}"
 
-        # TODO remove this, we require quite recent singularity anyway
-        # for a while singularity did not allow to specify the bind type rw
-        # (which is the default). so we omit this default
-        # see https://github.com/hpcng/singularity/pull/5487
-        if self.container_type == SINGULARITY_CONTAINER_TYPE and self.mode == "rw":
-            return path
-        else:
-            return f"{path}:{self.mode}"
+        return f"{path}:{self.mode}"
 
 
 def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
@@ -284,13 +277,13 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/a/b:ro', '/a/b/c:ro']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/a/b', '/a/b/c']
+    ['/a/b:rw', '/a/b/c:rw']
     >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
     ['/x:/a/b:ro', '/y:/a/b/c:ro']
     >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
-    ['/x:/a/b', '/y:/a/b/c']
+    ['/x:/a/b:rw', '/y:/a/b/c:rw']
     >>> preprocess_volumes("/x:/x,/y:/x", SINGULARITY_CONTAINER_TYPE)
-    ['/y:/x']
+    ['/y:/x:rw']
     """
 
     if not volumes_raw_str:
@@ -306,6 +299,7 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
                 for rw_path in rw_paths:
                     if in_directory(rw_path, volume.target):
                         mode = "rw"
+                        break
         volume.mode = mode
 
     # remove duplicate targets
