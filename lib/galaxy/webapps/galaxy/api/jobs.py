@@ -49,6 +49,7 @@ from galaxy.schema.jobs import (
     JobOutputAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
+    ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
     DatasetSourceType,
@@ -500,8 +501,11 @@ class FastAPIJobs:
         job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Dict[str, Any]:
-        return self.service.show(trans, job_id, bool(full))
+    ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
+        if full:
+            return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
+        else:
+            return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
 
     @router.delete(
         "/api/jobs/{job_id}",
