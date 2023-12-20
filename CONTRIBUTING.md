@@ -15,7 +15,7 @@ best to communicate with Galaxy developers early. The primary venue for this is
 the [GitHub issue tracker](https://github.com/galaxyproject/galaxy/issues).
 Browse through existing GitHub issues and if one seems related, comment on it.
 For more direct communication, Galaxy developers are generally available on
-the [galaxy Matrix space](https://matrix.to/#/#galaxyproject:matrix.org), in
+the [Galaxy Matrix space](https://matrix.to/#/#galaxyproject:matrix.org), in
 particular on the [galaxyprojec/dev channel](https://matrix.to/#/#galaxyproject_dev:gitter.im)
 and in the various [Working Group](https://galaxyproject.org/community/wg/)
 channels.
