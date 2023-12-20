@@ -1774,6 +1774,45 @@ class Magres(GenericMolFile):
     """Report on a MAGRES calculation"""
 
     file_ext = "magres"
+    meta_error = False
+    MetadataElement(
+        name="data_block_names",
+        default=[],
+        desc="Names of the data blocks",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="atom_data",
+        default=[],
+        desc="Atom symbols and positions",
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
+        name="number_of_atoms",
+        desc="Number of atoms",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="chemical_formula",
+        desc="Chemical formula",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="is_periodic",
+        desc="Periodic boundary conditions",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="lattice_parameters",
+        desc="Lattice parameters",
+        readonly=True,
+        visible=True,
+    )
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a MAGRES log
@@ -1787,3 +1826,83 @@ class Magres(GenericMolFile):
         False
         """
         return file_prefix.startswith("#$magres-abinitio-v")
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Find Atom IDs for metadata.
+        """
+        self.meta_error = False
+        if ase_io is None:
+            # Don't have optional dependency, can't set advanced values
+            return
+        else:
+            # enhanced metadata
+            try:
+                ase_data = ase_io.read(dataset.get_file_name(), index=":", format="magres")
+            except Exception as e:
+                log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
+                self.meta_error = True
+                return
+
+            atom_data = []
+            chemical_formula = []
+            is_periodic = []
+            lattice_parameters = []
+            try:
+                for block in ase_data:
+                    atom_data.append(
+                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
+                    )
+                    chemical_formula.append(block.get_chemical_formula())
+                    pbc = block.get_pbc()
+                    try:
+                        p = bool(pbc)
+                    except ValueError:  # pbc is an array
+                        p = bool(pbc.any())
+                    is_periodic.append(p)
+                    lattice_parameters.append(list(block.get_cell().cellpar()))
+            except Exception as e:
+                log.warning("%s, set_meta Exception during ASE metadata collection: %s", self, unicodify(e))
+                self.meta_error = True
+                return
+
+            dataset.metadata.number_of_molecules = len(ase_data)
+            dataset.metadata.atom_data = atom_data
+            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
+            dataset.metadata.chemical_formula = chemical_formula
+            dataset.metadata.is_periodic = is_periodic
+            dataset.metadata.lattice_parameters = list(lattice_parameters)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.info = self.get_dataset_info(dataset.metadata)
+            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
+            dataset.blurb = f"MAGRES file containing {dataset.metadata.number_of_molecules} {structure_string}"
+
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def get_dataset_info(self, metadata):
+        if self.meta_error:
+            info = "Error finding metadata. The file may be formatted incorrectly."
+        elif ase_io:
+            # enhanced info
+            info_list = []
+            info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
+            if metadata.is_periodic[0]:
+                info_list.append("Periodic:\nYes")
+                info_list.append(
+                    f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
+                )
+            else:
+                info_list.append("Periodic:\nNo")
+            info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
+        else:
+            info = """
+Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+You can still use this dataset in tools and workflows.
+For full metadata, ask your admin to install the 'ase' Python package."""
+
+        return info

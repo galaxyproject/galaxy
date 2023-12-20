@@ -74,6 +74,7 @@ The following individuals have contributed code to Galaxy:
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
 * Aysam Guerler <aysam.guerler@gmail.com>
 * Simon Guest <simon.guest@agresearch.co.nz>
+* Nalin Gupta <nalin.gupta@stfc.ac.uk>
 * Jianbin He <jbhe@bx.psu.edu>
 * Peter van Heusden <pvh@sanbi.ac.za>
 * Morita Hideyuki <h-morita@esm.co.jp>
