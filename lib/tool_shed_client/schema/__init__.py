@@ -113,7 +113,7 @@ class CreateRepositoryRequest(BaseModel):
         alias="type",
         title="Type",
     )
-    category_ids: str = Field(
+    category_ids: Optional[Union[List[str], str]] = Field(
         ...,
         alias="category_ids[]",
         title="Category IDs",

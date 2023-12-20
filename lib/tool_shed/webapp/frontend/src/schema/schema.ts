@@ -305,7 +305,7 @@ export interface components {
         /** CreateRepositoryRequest */
         CreateRepositoryRequest: {
             /** Category IDs */
-            "category_ids[]": string
+            "category_ids[]": string[] | string
             /** Description */
             description?: string
             /** Homepage Url */
