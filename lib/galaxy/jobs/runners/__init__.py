@@ -588,7 +588,7 @@ class BaseJobRunner:
             job_info = JobInfo(
                 working_directory=working_directory or job_wrapper.working_directory,
                 tool_directory=None,
-                job_directory=None,
+                job_directory=job_wrapper.working_directory,
                 tmp_directory=None,
                 home_directory=None,
                 job_directory_type=job_directory_type,

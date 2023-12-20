@@ -1627,7 +1627,7 @@ def persist_extra_files(
                 )
 
 
-def get_disk_paths(objectstore: BaseObjectStore) -> Set[str]:
+def get_disk_paths(objectstore: BaseObjectStore, include_extra_dirs=False) -> Set[str]:
     backends = objectstore.get_concrete_store_backends()
     paths = set()
     for backend in backends:
@@ -1636,7 +1636,7 @@ def get_disk_paths(objectstore: BaseObjectStore) -> Set[str]:
             paths.add(disk_path.file_path)
         if disk_path.object_store_cache_path:
             paths.add(disk_path.object_store_cache_path)
-        if disk_path.extra_dirs:
+        if include_extra_dirs and disk_path.extra_dirs:
             for extra_dir in disk_path.extra_dirs.values():
                 paths.add(extra_dir)
     return paths
