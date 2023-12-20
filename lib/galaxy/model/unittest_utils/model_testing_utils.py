@@ -263,4 +263,4 @@ def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
 def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
     url = make_url(connection_url)
     url = url.set(database=database)
-    return DbUrl(str(url))
+    return DbUrl(url.render_as_string(hide_password=False))
