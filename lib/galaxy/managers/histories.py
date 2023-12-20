@@ -29,9 +29,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import aliased
 from typing_extensions import Literal
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
+from galaxy import model
+from galaxy.exceptions import (
+    RequestParameterInvalidException,
+    MessageException,
+    ObjectNotFound,
 )
 from galaxy.managers import (
     deletable,
@@ -91,7 +93,6 @@ log = logging.getLogger(__name__)
 
 INDEX_SEARCH_FILTERS = {
     "name": "name",
-    "annotation": "annotation",
     "tag": "tag",
     "is": "is",
 }
@@ -132,7 +133,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         if not user:
             message = "Requires user to log in."
-            raise exceptions.RequestParameterInvalidException(message)
+            raise RequestParameterInvalidException(message)
 
         query = trans.sa_session.query(self.model_class)
         query = query.outerjoin(self.model_class.user)
@@ -178,7 +179,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         elif q == "shared_with_me":
                             if not show_published:
                                 message = "Can only use tag is:shared_with_me if show_published parameter also true."
-                                raise exceptions.RequestParameterInvalidException(message)
+                                raise RequestParameterInvalidException(message)
                             query = query.filter(self.user_share_model.user == user)
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
@@ -196,7 +197,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     )
 
         if show_published and not is_admin:
-            deleted = False
+            show_deleted = False
 
         query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
 
@@ -331,7 +332,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by(default)
-        raise glx_exceptions.RequestParameterInvalidException(
+        raise RequestParameterInvalidException(
             "Unknown order_by", order_by=order_by_string, available=["create_time", "update_time", "name", "size"]
         )
 
@@ -507,7 +508,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         record to restore the history and its datasets as a new copy.
         """
         if history.archive_export_id is not None and history.purged and not force:
-            raise glx_exceptions.RequestParameterInvalidException(
+            raise RequestParameterInvalidException(
                 "Cannot restore an archived (and purged) history that is associated with an archive export record. "
                 "Please try importing it back as a new copy from the associated archive export record instead. "
                 "You can still force the un-archiving of the purged history by setting the 'force' parameter."
@@ -717,11 +718,11 @@ class HistoryExportManager:
         if jeha_id != "latest":
             matching_exports = [e for e in matching_exports if e.id == jeha_id]
         if len(matching_exports) == 0:
-            raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+            raise ObjectNotFound("Failed to find target history export")
 
         jeha = matching_exports[0]
         if not jeha.ready:
-            raise glx_exceptions.MessageException("Export not available or not yet ready.")
+            raise MessageException("Export not available or not yet ready.")
 
         return jeha
 

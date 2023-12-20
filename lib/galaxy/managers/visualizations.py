@@ -152,7 +152,7 @@ class VisualizationManager(sharable.SharableModelManager):
                     )
 
         if show_published and not is_admin:
-            deleted = False
+            show_deleted = False
 
         query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
 

@@ -212,7 +212,7 @@ const fields: FieldArray = [
  * Declare filter options
  */
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
-    title: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",

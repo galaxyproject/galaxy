@@ -1,23 +1,13 @@
-import {
-    faExchangeAlt,
-    faEye,
-    faPlus,
-    faShareAlt,
-    faSignature,
-    faTrash,
-    faTrashRestore,
-    faUsers,
-} from "@fortawesome/free-solid-svg-icons";
+import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistory, historiesQuery, purgeHistory, undeleteHistory } from "@/api/histories";
+import { historiesQuery } from "@/api/histories";
 import { updateTags } from "@/api/tags";
-import { useHistoryStore } from "@/stores/historyStore";
-import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
+import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
-import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -100,7 +90,7 @@ const fields: FieldArray = [
  * Declare filter options
  */
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
-    title: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",
