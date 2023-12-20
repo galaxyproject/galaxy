@@ -31,9 +31,9 @@ from typing_extensions import Literal
 
 from galaxy import model
 from galaxy.exceptions import (
-    RequestParameterInvalidException,
     MessageException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.managers import (
     deletable,

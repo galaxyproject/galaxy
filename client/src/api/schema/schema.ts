@@ -14932,6 +14932,56 @@ export interface operations {
     extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
         /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
+    index_query_api_histories_query_get: {
+        /** Returns histories available to the current user. */
+        parameters?: {
+            /** @description The maximum number of items to return. */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Sort index by this specified attribute */
+            /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `name`
+             * : The history's name.
+             *
+             * `annotation`
+             * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Historys: `title`, `description`, `slug`, `tag`.
+             */
+            query?: {
+                limit?: number;
+                offset?: number;
+                show_own?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+                sort_by?: "create_time" | "name" | "update_time" | "username";
+                sort_desc?: boolean;
+                search?: string;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string | null;
