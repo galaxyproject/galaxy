@@ -231,13 +231,13 @@ class ToolShedPopulator:
             api_asserts.assert_status_code_is_ok(response)
         return RepositoryUpdate(__root__=response.json())
 
-    def new_repository(self, category_id, prefix=DEFAULT_PREFIX) -> Repository:
+    def new_repository(self, category_ids: Union[List[str], str], prefix: str = DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
         synopsis = random_name(prefix=prefix)
         request = CreateRepositoryRequest(
             name=name,
             synopsis=synopsis,
-            category_ids=category_id,
+            category_ids=category_ids,
         )
         return self.create_repository(request)
 
@@ -281,6 +281,11 @@ class ToolShedPopulator:
         response = self._api_interactor.get(f"categories/{category_id}/repositories")
         response.raise_for_status()
         return RepositoriesByCategory(**response.json())
+
+    def assert_category_has_n_repositories(self, category_id: str, n: int):
+        category_repos = self.repositories_by_category(category_id)
+        assert category_repos.repository_count == n
+        assert len(category_repos.repositories) == n
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
