@@ -8293,6 +8293,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
             .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
+            .limit(1)
             .scalar_subquery()
         )
         sa_session.execute(update(Job.table).where(Job.id == job_subq).values({"state": Job.states.DELETING}))
