@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import DirectiveHelpSection from "./DirectiveHelpSection.vue";
+
 interface MarkdownHelpProps {
     mode: "report" | "page";
 }
@@ -102,26 +104,16 @@ history_dataset_as_image(output=normalized_result_plot)
 </pre
             >
 
-            <dl>
-                <dt><tt>history_dataset_display</tt></dt>
-                <dd>Embed a dataset description in the resulting document.</dd>
-                <dt><tt>history_dataset_collection_display</tt></dt>
-                <dd>Embed a dataset collection description in the resulting document.</dd>
-                <dt><tt>history_dataset_as_image</tt></dt>
-                <dd>
-                    Embed a dataset as an image in the resulting document - the dataset should be an image datatype.
-                </dd>
-                <dt><tt>history_dataset_peek</tt></dt>
-                <dd>
-                    Embed Galaxy's metadata attribute 'peek' into the resulting document - this is datatype dependent
-                    metadata but usually this is a few lines from the start of a file.
-                </dd>
-                <dt><tt>history_dataset_info</tt></dt>
-                <dd>
-                    Embed Galaxy's metadata attribute 'info' into the resulting document - this is datatype dependent
-                    metadata but usually this is the program output that generated the dataset.
-                </dd>
-            </dl>
+            <DirectiveHelpSection
+                :mode="mode"
+                :directives="[
+                    'history_dataset_display',
+                    'history_dataset_collection_display',
+                    'history_dataset_as_image',
+                    'history_dataset_as_table',
+                    'history_dataset_peek',
+                    'history_dataset_info',
+                ]" />
 
             <h3>Workflow Commands</h3>
 
@@ -143,10 +135,9 @@ workflow_display()
 ```
             </pre>
 
-            <dl>
-                <dt><tt>workflow_display</tt></dt>
-                <dd>Embed a description of the workflow itself in the resulting document.</dd>
-            </dl>
+            <DirectiveHelpSection
+                :mode="mode"
+                :directives="['workflow_license', 'workflow_display', 'workflow_image', 'invocation_time']" />
 
             <h3>Job Commands</h3>
 
@@ -172,17 +163,9 @@ job_parameters(step=mapping)
 ```
             </pre>
 
-            <dt><tt>tool_stderr</tt></dt>
-            <dd>Embed the tool standard error stream for this job in the resulting document.</dd>
-            <dt><tt>tool_stdout</tt></dt>
-            <dd>Embed the tool standard output stream for this job in the resulting document.</dd>
-            <dt><tt>job_metrics</tt></dt>
-            <dd>
-                Embed the job metrics for this job in the resulting document (if Galaxy is configured and you have
-                permission).
-            </dd>
-            <dt><tt>job_parameters</tt></dt>
-            <dd>Embed the tool parameters for this job in the resulting document.</dd>
+            <DirectiveHelpSection
+                :mode="mode"
+                :directives="['tool_stderr', 'tool_stdout', 'job_metrics', 'job_parameters']" />
         </div>
     </b-modal>
 </template>

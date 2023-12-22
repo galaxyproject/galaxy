@@ -29,6 +29,10 @@ history_dataset_embedded:
   side_panel_name: Embedded Dataset
 history_dataset_as_table:
   side_panel_name: Embedded Dataset as table
+  help: |
+    Embed a dataset in the resulting document as a table. This only works for datasets with tabular
+    datatypes. This command works a lot like "history_dataset_embedded" but provides specialized options
+    for controlling the way tabular data is displayed in the resulting document.
 history_dataset_type:
   side_panel_name: Dataset Type
 history_dataset_link:
@@ -37,8 +41,16 @@ history_dataset_name:
   side_panel_name: Name of Dataset
 history_dataset_peek:
   side_panel_name: Peek into Dataset
+  help: |
+    Display a dataset metadata's "peek" field in the resulting document - this is datatype dependent
+    metadata but usually this is a few lines from the start of a file.
+
 history_dataset_info:
   side_panel_name: Dataset Details
+  help: |
+    Display a dataset metadata's "info" field in the resulting document. This info field is
+    usually based on the output of the tool run and sometimes contains useful metadata about a
+    dataset.
 
 history_link:
   side_panel_name: Link to Import
@@ -54,6 +66,11 @@ invocation_time:
     page: Time a Workflow
 
   side_panel_description: was invoked
+  help:
+    report: |
+      Display this workflow run's invocation time in the resulting document.
+    page: |
+      Display a workflow run's invocation time in the resulting document.
 
 invocation_inputs:
   side_panel_name: Invocation Inputs
@@ -63,15 +80,30 @@ invocation_outputs:
 
 workflow_license:
   side_panel_name: Workflow License
+  help:
+    report: |
+      Display this workflow's license in the resulting document.
+    page: |
+      Display a workflow's license in the resulting document.
 
 workflow_image:
   side_panel_name: Workflow (as image)
+  help:
+    report: |
+      Embed a rough image this workflow in the resulting document.
+    page: |
+      Embed a rough image a workflow in the resulting document.
 
 workflow_display:
   side_panel_name:
     report: Current Workflow
     page: Display a Workflow
   side_panel_description: containing all steps
+  help:
+    report: |
+      Embed a text description of this workflow's steps in the resulting document.
+    page: |
+      Embed a text description of a workflow's steps in the resulting document.
 
 generate_galaxy_version:
   side_panel_name: Galaxy Version
@@ -97,15 +129,24 @@ generate_time:
 job_metrics:
   side_panel_name: Job Metrics
   side_panel_description: as table
+  help: |
+    Embed the job metrics for this job in the resulting document (if Galaxy is configured and you have
+    permission).
 
 job_parameters:
   side_panel_name: Job Parameters
   side_panel_description: as table
+  help: |
+    Embed the tool parameters for a job in the resulting document.
 
 tool_stdout:
   side_panel_name: Tool Output
   side_panel_description: of job run
+  help: |
+    Embed the tool standard output stream for a job in the resulting document.
 
 tool_stderr:
   side_panel_name: Tool Error
   side_panel_description: of job run
+  help: |
+    Embed the tool standard error stream for a job in the resulting document.
