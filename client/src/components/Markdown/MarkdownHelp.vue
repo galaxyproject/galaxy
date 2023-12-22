@@ -1,11 +1,12 @@
-<script setup>
-import { datasetCommandsHtml, markdownGeneralHelpHtml } from "components/Markdown/help";
+<script setup lang="ts">
 import { ref } from "vue";
 
-const modal = ref(null);
+import { datasetCommandsHtml, markdownGeneralHelpHtml } from "./help";
+
+const show = ref(false);
 
 function showMarkdownHelp() {
-    modal.value.show();
+    show.value = true;
 }
 
 defineExpose({
@@ -14,7 +15,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal ref="modal" hide-footer>
+    <b-modal v-model="show" hide-footer>
         <template v-slot:modal-title>
             <h2 class="mb-0">Markdown Help</h2>
         </template>
