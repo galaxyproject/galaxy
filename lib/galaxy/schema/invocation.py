@@ -34,6 +34,10 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     CreateTimeField,
     DataItemSourceType,
+    IMPLICIT_COLLECTION_JOBS_MODEL_CLASS,
+    INVOCATION_MODEL_CLASS,
+    INVOCATION_STEP_MODEL_CLASS,
+    JOB_MODEL_CLASS,
     JobState,
     Model,
     UpdateTimeField,
@@ -315,7 +319,7 @@ class InvocationStepCollectionOutput(Model):
 class InvocationStep(Model):
     """Information about workflow invocation step"""
 
-    model_class: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
+    model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
     id: EncodedDatabaseIdField = schema.EntityIdField
     update_time: Optional[datetime] = schema.UpdateTimeField
     job_id: Optional[EncodedDatabaseIdField] = Field(
@@ -491,7 +495,7 @@ class WorkflowInvocationResponse(Model):
     state: InvocationState = Field(
         default=Required, title="Invocation state", description="State of workflow invocation."
     )
-    model_class: schema.INVOCATION_MODEL_CLASS = ModelClassField(schema.INVOCATION_MODEL_CLASS)
+    model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
     steps: List[InvocationStep] = Field(
         default=Required, title="Steps", description="Steps of the workflow invocation."
     )
@@ -532,10 +536,16 @@ class InvocationJobsSummaryBaseModel(Model):
 
 
 class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
-    model: schema.INVOCATION_MODEL_CLASS = ModelClassField(schema.INVOCATION_MODEL_CLASS)
+    model: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 
-class InvocationStepJobsResponse(InvocationJobsSummaryBaseModel):
-    # TODO - this can also be Job or ImplicitCollectionJobs - how to handle this?
-    # model: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
-    model: Any
+class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
+    model: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
+
+
+class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
+    model: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
+
+
+class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
+    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)
