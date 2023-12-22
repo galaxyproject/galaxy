@@ -8,8 +8,8 @@ interface ToolLinkPopoverProps {
 }
 
 withDefaults(defineProps<ToolLinkPopoverProps>(), {
-    toolId: null,
-    toolVersion: null,
+    toolId: undefined,
+    toolVersion: undefined,
 });
 
 // default boundary of scrollParent doesn't work well at all in the workflow display list
