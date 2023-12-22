@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -51,7 +52,9 @@ from galaxy.schema.invocation import (
     InvocationMessageResponseModel,
     InvocationReport,
     InvocationStep,
-    InvocationStepJobsResponse,
+    InvocationStepJobsResponseCollectionJobsModel,
+    InvocationStepJobsResponseJobModel,
+    InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
     WorkflowInvocationResponse,
 )
@@ -1239,6 +1242,24 @@ LegacyJobStateQueryParam = Annotated[
 ]
 
 
+HistoryIdQueryParam: Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        default=None,
+        description="Optional identifier of a History. Use it to restrict the search within a particular History.",
+    ),
+]
+
+
+JobIdQueryParam = Annotated[
+    DecodedDatabaseIdField,
+    Query(
+        title="Job ID",
+        description="The ID of the job",
+    ),
+]
+
+
 @router.cbv
 class FastAPIInvocations:
     invocations_service: InvocationsService = depends(InvocationsService)
@@ -1497,7 +1518,13 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ) -> List[InvocationStepJobsResponse]:
+    ) -> List[
+        Union[
+            InvocationStepJobsResponseStepModel,
+            InvocationStepJobsResponseJobModel,
+            InvocationStepJobsResponseCollectionJobsModel,
+        ]
+    ]:
         """
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
@@ -1505,7 +1532,14 @@ class FastAPIInvocations:
         efficient as possible.
         """
         step_jobs_summary = self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
-        return [InvocationStepJobsResponse(**summary) for summary in step_jobs_summary]
+        return [
+            InvocationStepJobsResponseStepModel(**summary)
+            if summary["model"] == "WorkflowInvocationStep"
+            else InvocationStepJobsResponseJobModel(**summary)
+            if summary["model"] == "Job"
+            else InvocationStepJobsResponseCollectionJobsModel(**summary)
+            for summary in step_jobs_summary
+        ]
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary",
@@ -1521,7 +1555,13 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ) -> List[InvocationStepJobsResponse]:
+    ) -> List[
+        Union[
+            InvocationStepJobsResponseStepModel,
+            InvocationStepJobsResponseJobModel,
+            InvocationStepJobsResponseCollectionJobsModel,
+        ]
+    ]:
         """An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_step_jobs_summary(trans, invocation_id)
 
