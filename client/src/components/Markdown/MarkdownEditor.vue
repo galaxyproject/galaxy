@@ -33,7 +33,7 @@
                 </div>
             </div>
         </div>
-        <MarkdownHelp ref="help" />
+        <MarkdownHelp ref="help" :mode="mode" />
     </div>
 </template>
 
@@ -78,6 +78,10 @@ export default {
         title: {
             type: String,
             default: null,
+        },
+        mode: {
+            type: String,
+            default: "report",
         },
     },
     data() {
