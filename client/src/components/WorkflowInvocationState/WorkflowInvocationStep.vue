@@ -95,7 +95,6 @@ import WorkflowIcons from "components/Workflow/icons";
 import { mapActions, mapState } from "pinia";
 import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
-import { mapActions as vuexMapActions, mapGetters } from "vuex";
 
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
@@ -126,7 +125,6 @@ export default {
     computed: {
         ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
         ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
-        ...mapGetters(["getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
         },
@@ -156,7 +154,6 @@ export default {
     methods: {
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         ...mapActions(useToolStore, ["fetchToolForId"]),
-        ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                 this.fetchToolForId(this.workflowStep.tool_id);
