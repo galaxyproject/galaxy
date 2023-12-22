@@ -59,6 +59,7 @@ PAGE_MODEL_CLASS = Literal["Page"]
 INVOCATION_MODEL_CLASS = Literal["WorkflowInvocation"]
 INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
 INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
+IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = Literal["ImplicitCollectionJobs"]
 
 OptionalNumberT = Optional[Union[int, float]]
 
