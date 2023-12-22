@@ -197,7 +197,6 @@ steps:
             invocation_id = summary.invocation_id
             report_pdf = self.workflow_populator.workflow_report_pdf(workflow_id, invocation_id)
             assert report_pdf.headers["content-type"] == "application/pdf"
-            # assert report_pdf.headers["content-disposition"] == 'attachment;'
             assert ".pdf" in report_pdf.headers["content-disposition"]
 
     def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:
