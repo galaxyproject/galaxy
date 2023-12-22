@@ -62,7 +62,7 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-graphene-sqlalchemy = "3.0.0b3"  # need a beta release to be compat. with starlette plugin
+graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
 gravity = ">=1.0.4"
 gunicorn = "*"
 gxformat2 = "*"
