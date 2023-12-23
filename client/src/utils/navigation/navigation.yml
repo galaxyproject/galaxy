@@ -408,8 +408,8 @@ published_histories:
 
 shared_histories:
   selectors:
-    _: ".histories-shared-with-you-by-others"
-    histories: "#grid-table-body tr"
+    _: '#histories-shared-grid'
+    histories: '.grid-table tr'
 
 history_copy_elements:
   selectors:
@@ -430,8 +430,13 @@ collection_builders:
     name: "input.collection-name"
 
 histories:
-  labels:
-    import_button: 'Import history'
+  selectors:
+    advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
+    advanced_search_name_input: '#histories-advanced-filter-name'
+    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags'
+    advanced_search_submit: '#histories-advanced-filter-submit'
+    import_button: '[data-description="grid action import new history"]'
+    histories: '.grid-table tr'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'

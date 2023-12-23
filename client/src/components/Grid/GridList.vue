@@ -300,13 +300,7 @@ watch(operationMessage, () => {
         </table>
         <div class="flex-grow-1 h-100" />
         <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
-            <BPagination
-                v-model="currentPage"
-                :total-rows="totalRows"
-                :per-page="limit"
-                class="m-0"
-                size="sm"
-                aria-controls="grid-table" />
+            <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
         </div>
     </div>
 </template>

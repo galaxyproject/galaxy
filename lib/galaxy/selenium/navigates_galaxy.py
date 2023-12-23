@@ -1706,12 +1706,11 @@ class NavigatesGalaxy(HasDriver):
     def histories_get_history_names(self):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
-        grid = self.wait_for_selector("#grid-table-body")
+        grid = self.wait_for_selector("#histories-grid")
         for row in grid.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
             name = td[1].text if td[0].text == "" else td[0].text
-            if name != "No items" and not name.startswith("No matching entries found"):
-                names.append(name)
+            names.append(name)
         return names
 
     @edit_details

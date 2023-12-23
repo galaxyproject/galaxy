@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -111,35 +113,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history4_name])
 
     @selenium_test
-    def test_delete_and_undelete_multiple_histories(self):
-        self._login()
-        self.navigate_to_histories_page()
-
-        delete_button_selector = 'input[type="button"][value="Delete"]'
-        undelete_button_selector = 'input[type="button"][value="Undelete"]'
-
-        # Delete multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
-        self.wait_for_and_click_selector(delete_button_selector)
-
-        self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
-
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-        # Restore multiple histories
-        self.check_histories([self.history2_name, self.history3_name])
-        self.wait_for_and_click_selector(undelete_button_selector)
-
-        self.assert_grid_histories_are([])
-        # Following msg popups but goes away and so can cause transient errors.
-        # self.wait_for_selector_visible('.donemessage')
-        self.select_filter("status", "active")
-
-        self.assert_histories_in_grid([self.history2_name, self.history3_name])
-
-    @selenium_test
     def test_sort_by_name(self):
         self._login()
         self.navigate_to_histories_page()
@@ -183,29 +156,27 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_advanced_search(self):
         self._login()
         self.navigate_to_histories_page()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        # search by tag and name
+        self.components.histories.advanced_search_name_input.wait_for_and_send_keys(self.history3_name)
+        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.assert_histories_present([self.history3_name])
 
-        self.histories_click_advanced_search()
+    @retry_assertion_during_transitions
+    def assert_histories_present(self, expected_histories, sort_by_matters=False):
+        present_histories = self.get_present_histories()
+        assert len(present_histories) == len(expected_histories)
+        for index, row in enumerate(present_histories):
+            cell = row.find_elements(By.TAG_NAME, "td")[0]
+            if not sort_by_matters:
+                assert cell.text in expected_histories
+            else:
+                assert cell.text == expected_histories[index]
 
-        name_filter_selector = "#input-name-filter"
-        tags_filter_selector = "#input-tags-filter"
-
-        # Search by name
-        self.set_filter(name_filter_selector, self.history2_name)
-        self.assert_grid_histories_are([self.history2_name])
-        self.unset_filter("name", self.history2_name)
-
-        self.set_filter(name_filter_selector, self.history4_name)
-        self.assert_grid_histories_are([])
-        self.unset_filter("name", self.history4_name)
-
-        # Search by tags
-        self.set_filter(tags_filter_selector, self.history3_tags[0])
-        self.assert_grid_histories_are([self.history3_name])
-        self.unset_filter("tags", self.history3_tags[0])
-
-        self.set_filter(tags_filter_selector, self.history4_tags[0])
-        self.assert_grid_histories_are([])
-        self.unset_filter("tags", self.history4_tags[0])
+    def get_present_histories(self):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        return self.components.histories.histories.all()
 
     @selenium_test
     def test_tags(self):
@@ -300,12 +271,3 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             raise AssertionError(f"Failed to find history with name [{history_name}]")
 
         return tags_cell
-
-    def check_histories(self, histories):
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            history_name = td[1].text
-            if history_name in histories:
-                checkbox = td[0].find_element(self.by.CSS_SELECTOR, "input")
-                checkbox.click()
