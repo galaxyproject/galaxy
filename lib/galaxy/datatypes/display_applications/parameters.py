@@ -1,11 +1,12 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
+from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import quote_plus
 
 from galaxy.model.base import transaction
+from galaxy.schema.schema import DatasetState
 from galaxy.util import string_as_bool
-from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 
 DEFAULT_DATASET_NAME = "dataset"
@@ -57,6 +58,13 @@ class DisplayApplicationParameter:
         return fill_template(self.url, context=other_values)
 
 
+@dataclass
+class DatasetLikeObject:
+    file_name: str
+    state: DatasetState
+    extension: str
+
+
 class DisplayApplicationDataParameter(DisplayApplicationParameter):
     """Parameter that returns a file_name containing the requested content"""
 
@@ -95,27 +103,29 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             )
         return None
 
-    def _get_dataset_like_object(self, other_values):
+    def _get_dataset_like_object(self, other_values) -> Optional[DatasetLikeObject]:
         # this returned object has file_name, state, and states attributes equivalent to a DatasetAssociation
         data = other_values.get(self.dataset, None)
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):
             data = data.value
-        if data.state != data.states.OK:
+        if data.state != DatasetState.OK:
             return None
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
-            return Bunch(file_name=rval.get_file_name(), state=data.state, states=data.states, extension="data")
-        elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
+            return DatasetLikeObject(file_name=rval.get_file_name(), state=data.state, extension="data")
+        elif (
+            self.formats and self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats))
+        ):
             for ext in self.extensions:
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
-                    return rval
+                    return DatasetLikeObject(file_name=rval.get_file_name(), state=rval.state, extension=rval.extension)
             direct_match, target_ext, _ = data.find_conversion_destination(self.formats)
             assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
-        return data
+        return DatasetLikeObject(file_name=data.get_file_name(), state=data.state, extension=data.extension)
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
         data = self._get_dataset_like_object(other_values)
@@ -154,22 +164,22 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                     trans.sa_session.add(assoc)
                     with transaction(trans.sa_session):
                         trans.sa_session.commit()
-                elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
+                elif converted_dataset and converted_dataset.state == DatasetState.ERROR:
                     raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)
 
     def is_preparing(self, other_values):
         value = self._get_dataset_like_object(other_values)
-        if value and value.state in (value.states.NEW, value.states.UPLOAD, value.states.QUEUED, value.states.RUNNING):
+        if value and value.state in (DatasetState.NEW, DatasetState.UPLOAD, DatasetState.QUEUED, DatasetState.RUNNING):
             return True
         return False
 
     def ready(self, other_values):
         value = self._get_dataset_like_object(other_values)
         if value:
-            if value.state == value.states.OK:
+            if value.state == DatasetState.OK:
                 return True
-            elif value.state == value.states.ERROR:
+            elif value.state == DatasetState.ERROR:
                 raise Exception(f"A data display parameter is in the error state: {self.name}")
         return False
 
