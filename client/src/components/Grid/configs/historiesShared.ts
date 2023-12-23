@@ -28,6 +28,8 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         show_published: false,
+        show_own: false,
+        show_shared: true,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];
@@ -91,6 +93,7 @@ const fields: FieldArray = [
  */
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    user: { placeholder: "user", type: String, handler: contains("username"), menuItem: true },
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",
