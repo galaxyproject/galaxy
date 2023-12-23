@@ -218,7 +218,7 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: Any = Field(default=Required, title="Value", description="The values of the job parameter")
+    value: Optional[Any] = Field(default=None, title="Value", description="The values of the job parameter")
     notes: Optional[str] = Field(default=None, title="Notes", description="Notes associated with the job parameter.")
 
 
