@@ -673,7 +673,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                     ), f"Extra file content requested ({action_param_extra}), but allow_extra_files_access is False."
                                     file_name = os.path.join(value.extra_files_path, action_param_extra)
                                 else:
-                                    file_name = value.get_file_name()
+                                    file_name = value.file_name
                                 content_length = os.path.getsize(file_name)
                                 rval = open(file_name, "rb")
                             except OSError as e:

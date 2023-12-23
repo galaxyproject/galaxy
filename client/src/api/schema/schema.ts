@@ -6809,7 +6809,7 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value: Record<string, never>;
+            value?: Record<string, never>;
         };
         /**
          * JobSourceType
