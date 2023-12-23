@@ -1,7 +1,7 @@
 cffi==1.16.0 ; python_version >= "3.8" and python_version < "3.12"
 cryptography==41.0.7 ; python_version >= "3.8" and python_version < "3.12"
 mypy-extensions==1.0.0 ; python_version >= "3.8" and python_version < "3.12"
-mypy==1.7.1 ; python_version >= "3.8" and python_version < "3.12"
+mypy==1.8.0 ; python_version >= "3.8" and python_version < "3.12"
 pycparser==2.21 ; python_version >= "3.8" and python_version < "3.12"
 pydantic==1.10.13 ; python_version >= "3.8" and python_version < "3.12"
 tomli==2.0.1 ; python_version >= "3.8" and python_version < "3.11"
