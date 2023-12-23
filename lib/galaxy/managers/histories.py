@@ -136,10 +136,10 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             message = "Requires user to log in."
             raise RequestParameterInvalidException(message)
 
-        stmt = select(self.model_class).outerjoin(self.model_class.user)
+        stmt = select(self.model_class).outerjoin(model.User)
 
         filters = []
-        if show_own or (not show_published and not is_admin):
+        if show_own or (not show_published and not show_shared and not is_admin):
             filters = [self.model_class.user == user]
         if show_published:
             filters.append(self.model_class.published == true())
@@ -177,8 +177,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         if q == "importable":
                             stmt = stmt.where(self.model_class.importable == true())
                         elif q == "shared_with_me":
-                            if not show_published:
-                                message = "Can only use tag is:shared_with_me if show_published parameter also true."
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise RequestParameterInvalidException(message)
                             stmt = stmt.where(self.user_share_model.user == user)
                 elif isinstance(term, RawTextTerm):
@@ -205,7 +205,10 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
-        sort_column = getattr(model.History, payload.sort_by)
+        if payload.sort_by == "username":
+            sort_column = model.User.username
+        else:
+            sort_column = getattr(model.History, payload.sort_by)
         if payload.sort_desc:
             sort_column = sort_column.desc()
         stmt = stmt.order_by(sort_column)
