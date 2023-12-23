@@ -944,7 +944,7 @@ StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
 )
 
-InvocationIDPathParam: DecodedDatabaseIdField = Path(
+InvocationIDPathParam = Path(
     ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
 )
 
@@ -1452,7 +1452,7 @@ class FastAPIInvocations:
     def invocation_step(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        invocation_id: Union[DecodedDatabaseIdField, str] = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
     ) -> InvocationStep:
         """An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored."""
@@ -1471,7 +1471,7 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        invocation_id: Union[DecodedDatabaseIdField, str] = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
     ) -> InvocationStep:
         """An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored."""
