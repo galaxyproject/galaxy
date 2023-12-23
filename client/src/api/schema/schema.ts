@@ -7097,16 +7097,77 @@ export interface components {
              */
             src?: "hdca";
         };
-        /** InvocationStepJobsResponse */
-        InvocationStepJobsResponse: {
+        /** InvocationStepJobsResponseCollectionJobsModel */
+        InvocationStepJobsResponseCollectionJobsModel: {
             /**
              * ID
              * @description The encoded ID of the workflow invocation.
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Model */
-            model?: Record<string, never>;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default ImplicitCollectionJobs
+             * @enum {string}
+             */
+            model: "ImplicitCollectionJobs";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationStepJobsResponseJobModel */
+        InvocationStepJobsResponseJobModel: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model: "Job";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationStepJobsResponseStepModel */
+        InvocationStepJobsResponseStepModel: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocationStep
+             * @enum {string}
+             */
+            model: "WorkflowInvocationStep";
             /**
              * Populated state
              * @description The absolute state of all the jobs related to the Invocation.
@@ -7563,7 +7624,7 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value: Record<string, never>;
+            value?: Record<string, never>;
         };
         /**
          * JobSourceType
@@ -16790,7 +16851,11 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStepJobsResponse"][];
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */
@@ -16814,7 +16879,7 @@ export interface operations {
             /** @description The encoded database identifier of the Invocation. */
             /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
-                invocation_id: string;
+                invocation_id: string | string;
                 step_id: string;
             };
         };
@@ -21644,7 +21709,11 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStepJobsResponse"][];
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */
@@ -21670,7 +21739,7 @@ export interface operations {
             /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
                 workflow_id: string;
-                invocation_id: string;
+                invocation_id: string | string;
                 step_id: string;
             };
         };
@@ -22104,7 +22173,11 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStepJobsResponse"][];
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
                 };
             };
             /** @description Validation Error */
@@ -22131,7 +22204,7 @@ export interface operations {
             /** @description The encoded database identifier of the WorkflowInvocationStep. */
             path: {
                 workflow_id: string;
-                invocation_id: string;
+                invocation_id: string | string;
                 step_id: string;
             };
         };
