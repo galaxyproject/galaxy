@@ -11064,7 +11064,9 @@ User.preferences = association_proxy("_preferences", "value", creator=UserPrefer
 # See https://github.com/sqlalchemy/sqlalchemy/discussions/7638 for approach
 session_partition = select(
     GalaxySession,
-    func.row_number().over(order_by=GalaxySession.update_time, partition_by=GalaxySession.user_id).label("index"),
+    func.row_number()
+    .over(order_by=GalaxySession.update_time.desc(), partition_by=GalaxySession.user_id)
+    .label("index"),
 ).alias()
 partitioned_session = aliased(GalaxySession, session_partition)
 User.current_galaxy_session = relationship(
