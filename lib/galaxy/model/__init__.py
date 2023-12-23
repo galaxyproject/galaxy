@@ -1822,6 +1822,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         else:
             rval = super().to_dict(view=view)
         rval["tool_id"] = self.tool_id
+        rval["tool_version"] = self.tool_version
         rval["history_id"] = self.history_id
         if system_details or view == "admin_job_list":
             # System level details that only admins should have.

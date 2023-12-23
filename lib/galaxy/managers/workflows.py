@@ -1129,6 +1129,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             step_dict = {}
             step_dict["order_index"] = step.order_index
+            step_dict["type"] = step.type
             if step.annotations:
                 step_dict["annotation"] = step.annotations[0].annotation
             try:
@@ -1139,6 +1140,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
+                step_dict["tool_id"] = step.tool_id
+                step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == "subworkflow":
