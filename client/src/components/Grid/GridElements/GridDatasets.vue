@@ -18,10 +18,11 @@ interface HistoryStats {
         active?: number;
     };
     contents_states: {
+        error?: number;
         ok?: number;
+        new?: number;
         running?: number;
         queued?: number;
-        new?: number;
     };
 }
 const historyStats: Ref<HistoryStats | null> = ref(null);
@@ -49,22 +50,18 @@ onMounted(() => {
         <span v-if="historyStats.nice_size" class="mr-2">
             {{ historyStats.nice_size }}
         </span>
-        <span v-if="historyStats.contents_states">
-            <span
-                v-for="(stateCount, state) of historyStats.contents_states"
-                :key="state"
-                :class="`stats state-color-${state}`"
-                :title="`${state} datasets`">
-                {{ stateCount }}
-            </span>
+        <span
+            v-for="(stateCount, state) of historyStats.contents_states"
+            :key="state"
+            :class="`stats state-color-${state}`"
+            :title="`${state} datasets`">
+            {{ stateCount }}
         </span>
-        <span v-if="historyStats.contents_states">
-            <span v-if="historyStats.contents_active.deleted" class="stats state-color-deleted" title="Deleted datasets"
-                >{{ historyStats.contents_active.deleted }}
-            </span>
-            <span v-if="historyStats.contents_active.hidden" class="stats state-color-hidden" title="Hidden datasets">
-                {{ historyStats.contents_active.hidden }}</span
-            >
+        <span v-if="historyStats.contents_active.deleted" class="stats state-color-deleted" title="Deleted datasets">
+            {{ historyStats.contents_active.deleted }}
+        </span>
+        <span v-if="historyStats.contents_active.hidden" class="stats state-color-hidden" title="Hidden datasets">
+            {{ historyStats.contents_active.hidden }}
         </span>
     </span>
 </template>
@@ -72,14 +69,14 @@ onMounted(() => {
 <style lang="scss" scoped>
 @import "~bootstrap/scss/bootstrap.scss";
 .grid-datasets {
+    @extend .d-flex;
     white-space: nowrap;
     .stats {
         @extend .rounded;
         @extend .px-1;
+        @extend .mr-1;
         border-width: 1px;
         border-style: solid;
-        text-align: center;
-        display: inline-block;
     }
 }
 </style>
