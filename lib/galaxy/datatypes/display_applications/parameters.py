@@ -63,6 +63,7 @@ class DatasetLikeObject:
     file_name: str
     state: DatasetState
     extension: str
+    dbkey: Optional[str]
 
 
 class DisplayApplicationDataParameter(DisplayApplicationParameter):
@@ -114,18 +115,24 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
-            return DatasetLikeObject(file_name=rval.get_file_name(), state=data.state, extension="data")
+            return DatasetLikeObject(
+                file_name=rval.get_file_name(), state=data.state, extension="data", dbkey=data.dbkey
+            )
         elif (
             self.formats and self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats))
         ):
             for ext in self.extensions:
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
-                    return DatasetLikeObject(file_name=rval.get_file_name(), state=rval.state, extension=rval.extension)
+                    return DatasetLikeObject(
+                        file_name=rval.get_file_name(), state=rval.state, extension=rval.extension, dbkey=data.dbkey
+                    )
             direct_match, target_ext, _ = data.find_conversion_destination(self.formats)
             assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
-        return DatasetLikeObject(file_name=data.get_file_name(), state=data.state, extension=data.extension)
+        return DatasetLikeObject(
+            file_name=data.get_file_name(), state=data.state, extension=data.extension, dbkey=data.dbkey
+        )
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
         data = self._get_dataset_like_object(other_values)
