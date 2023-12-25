@@ -60,7 +60,7 @@ class BaseModelTestCase(TestCase):
         for arg in args:
             session.add(arg)
             if flush:
-                session.flush()
+                session.commit()
         if kwargs.get("expunge", not flush):
             cls.expunge()
         return arg  # Return last or only arg.
@@ -699,7 +699,7 @@ class TestMappings(BaseModelTestCase):
         self.persist(user, galaxy_session)
         assert user.current_galaxy_session == galaxy_session
         new_galaxy_session = model.GalaxySession()
-        new_galaxy_session.user = user
+        user.galaxy_sessions.append(new_galaxy_session)
         self.persist(user, new_galaxy_session)
         assert user.current_galaxy_session == new_galaxy_session
 

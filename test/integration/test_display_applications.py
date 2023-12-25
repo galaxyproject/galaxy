@@ -6,6 +6,7 @@ from .test_containerized_jobs import ContainerizedIntegrationTestCase
 
 
 class TestDisplayApplicationTestCase(ContainerizedIntegrationTestCase):
+    dataset_populator: DatasetPopulator
     container_type = "docker"
 
     def setUp(self):
