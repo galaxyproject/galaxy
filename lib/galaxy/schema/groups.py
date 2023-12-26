@@ -3,7 +3,10 @@ from typing import (
     Optional,
 )
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    RootModel,
+)
 from typing_extensions import Literal
 
 from galaxy.schema.fields import (
@@ -42,10 +45,10 @@ class GroupResponse(Model):
     )
 
 
-class GroupListResponse(Model):
+class GroupListResponse(RootModel):
     """Response schema for listing groups."""
 
-    __root__: List[GroupResponse]
+    root: List[GroupResponse]
 
 
 class GroupCreatePayload(Model):

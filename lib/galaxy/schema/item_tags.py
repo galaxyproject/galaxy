@@ -3,7 +3,10 @@ from typing import (
     Optional,
 )
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    RootModel,
+)
 
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model
@@ -30,10 +33,10 @@ class ItemTagsResponse(Model):
     )
 
 
-class ItemTagsListResponse(Model):
+class ItemTagsListResponse(RootModel):
     """Response schema for listing item tags."""
 
-    __root__: List[ItemTagsResponse]
+    root: List[ItemTagsResponse]
 
 
 class ItemTagsCreatePayload(Model):

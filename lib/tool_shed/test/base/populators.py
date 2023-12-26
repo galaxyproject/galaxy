@@ -130,7 +130,7 @@ class ToolShedPopulator:
             response = self.upload_revision_raw(repository_id, repo_tar, commit_message)
             if assert_ok:
                 api_asserts.assert_status_code_is_ok(response)
-                assert RepositoryUpdate(__root__=response.json()).is_ok
+                assert RepositoryUpdate(root=response.json()).is_ok
         return repository_id
 
     def setup_test_data_repo(

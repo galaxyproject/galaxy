@@ -8142,12 +8142,12 @@ class WorkflowComment(Base, RepresentById):
         if self.child_comments:
             comment_dict["child_comments"] = [comment.order_index for comment in self.child_comments]
 
-        WorkflowCommentModel(__root__=comment_dict)
+        WorkflowCommentModel(root=comment_dict)
 
         return comment_dict
 
     def from_dict(dict):
-        WorkflowCommentModel(__root__=dict)
+        WorkflowCommentModel(root=dict)
 
         comment = WorkflowComment()
         comment.order_index = dict.get("id", 0)

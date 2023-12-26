@@ -482,7 +482,7 @@ class FastAPIRepositories:
                     filename,
                     commit_message or revision_request.commit_message or "Uploaded",
                 )
-                return RepositoryUpdate(__root__=ValidRepostiroyUpdateMessage(message=message))
+                return RepositoryUpdate(root=ValidRepostiroyUpdateMessage(message=message))
             finally:
                 if os.path.exists(filename):
                     os.remove(filename)
@@ -509,6 +509,4 @@ class FastAPIRepositories:
 
 
 def _hack_fastapi_4428(as_dict) -> dict:
-    # https://github.com/tiangolo/fastapi/pull/4428#issuecomment-1145429263
-    # after pydantic2 swap to really returning the object
-    return RepositoryMetadata(__root__=as_dict).dict()["__root__"]
+    return RepositoryMetadata(root=as_dict)

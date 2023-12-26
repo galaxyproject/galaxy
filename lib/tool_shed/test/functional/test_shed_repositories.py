@@ -255,7 +255,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
     def _get_only_revision(self, repository: HasRepositoryId) -> RepositoryRevisionMetadata:
         populator = self.populator
         repository_metadata = populator.get_metadata(repository)
-        metadata_for_revisions = repository_metadata.__root__
+        metadata_for_revisions = repository_metadata.root
         assert len(metadata_for_revisions) == 1
         only_key = list(metadata_for_revisions.keys())[0]
         assert only_key.startswith("0:")

@@ -48,8 +48,8 @@ class RepositoryPermissions(BaseModel):
     can_push: bool
 
 
-class RepositoryRevisionReadmes(BaseModel):
-    __root__: Dict[str, str]
+class RepositoryRevisionReadmes(RootModel):
+    root: Dict[str, str]
 
 
 class CreateUserRequest(BaseModel):

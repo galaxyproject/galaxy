@@ -178,10 +178,10 @@ class ExtraFileEntry(Model):
     )
 
 
-class DatasetExtraFiles(Model):
+class DatasetExtraFiles(RootModel):
     """A list of extra files associated with a dataset."""
 
-    __root__: List[ExtraFileEntry]
+    root: List[ExtraFileEntry]
 
 
 class DatasetTextContentDetails(Model):

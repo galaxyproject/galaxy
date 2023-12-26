@@ -14,6 +14,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    RootModel,
     Field,
 )
 
@@ -65,8 +66,8 @@ class DescriptorType(Enum):
     SMK = "SMK"
 
 
-class DescriptorTypeVersion(BaseModel):
-    __root__: str = Field(
+class DescriptorTypeVersion(RootModel):
+    root: str = Field(
         ...,
         description="The language version for a given descriptor type. The version should correspond to the actual declared version of the descriptor. For example, tools defined in CWL could have a version of `v1.0.2` whereas WDL tools may have a version of `1.0` or `draft-2`",
     )
@@ -165,7 +166,7 @@ class ToolVersion(BaseModel):
     descriptor_type_version: Optional[Dict[str, List[DescriptorTypeVersion]]] = Field(
         None,
         description="A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.",
-        example='{\n  "WDL": ["1.0", "1.0"],\n  "CWL": ["v1.0.2"],\n  "NFL": ["DSL2"]\n}\n',
+        examples=['{\n  "WDL": ["1.0", "1.0"],\n  "CWL": ["v1.0.2"],\n  "NFL": ["DSL2"]\n}\n'],
     )
     containerfile: Optional[bool] = Field(
         None,
