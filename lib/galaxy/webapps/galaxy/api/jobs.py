@@ -23,7 +23,6 @@ from fastapi import (
     Path,
     Query,
 )
-from pydantic import Required
 from typing_extensions import Annotated
 
 from galaxy import exceptions
@@ -193,8 +192,8 @@ HdaLddaQueryParam: DatasetSourceType = Query(
 JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
 DatasetIdPathParam: DecodedDatabaseIdField = Path(title="Dataset ID", description="The ID of the dataset")
 
-ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
-SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
+ReportErrorBody = Body(default=..., title="Report error", description="The values to report an Error")
+SearchJobBody = Body(default=..., title="Search job", description="The values to search an Job")
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 

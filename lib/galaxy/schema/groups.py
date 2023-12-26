@@ -3,10 +3,7 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field
 from typing_extensions import Literal
 
 from galaxy.schema.fields import (
@@ -24,15 +21,15 @@ class GroupResponse(Model):
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
     id: EncodedDatabaseIdField = Field(
-        Required,
+        ...,
         title="group ID",
     )
     name: str = Field(
-        Required,
+        ...,
         title="name of the group",
     )
     url: str = Field(
-        Required,
+        ...,
         title="URL for the group",
     )
     roles_url: Optional[str] = Field(
@@ -55,7 +52,7 @@ class GroupCreatePayload(Model):
     """Payload schema for creating a group."""
 
     name: str = Field(
-        Required,
+        ...,
         title="name of the group",
     )
     user_ids: List[DecodedDatabaseIdField] = Field(

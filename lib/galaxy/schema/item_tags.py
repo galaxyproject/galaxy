@@ -3,10 +3,7 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field
 
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model
@@ -16,15 +13,15 @@ class ItemTagsResponse(Model):
     """Response schema for showing an item tag."""
 
     model_class: str = Field(
-        Required,
+        ...,
         title="model class",
     )
     id: EncodedDatabaseIdField = Field(
-        Required,
+        ...,
         title="item tag ID",
     )
     user_tname: str = Field(
-        Required,
+        ...,
         title="name of the item tag",
     )
     user_value: Optional[str] = Field(
