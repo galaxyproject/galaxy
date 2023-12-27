@@ -130,7 +130,7 @@ class FastAPIQuota:
         summary="Purges a previously deleted quota.",
         require_admin=True,
     )
-    def purge(self, id: DecodedDatabaseIdField = QuotaIdPathParam, trans: ProvidesUserContext = DependsOnTrans) -> str:
+    def purge(self, id: QuotaIdPathParam, trans: ProvidesUserContext = DependsOnTrans) -> str:
         return self.service.purge(trans, id)
 
     @router.post(

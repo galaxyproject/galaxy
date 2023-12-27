@@ -184,8 +184,8 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage_by_user_id(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
@@ -703,8 +703,8 @@ class FastAPIUsers:
     )
     def send_activation_email(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         user = trans.sa_session.query(trans.model.User).get(user_id)
         if not user:
