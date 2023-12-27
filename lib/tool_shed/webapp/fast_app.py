@@ -13,6 +13,7 @@ from fastapi import (
     Depends,
     FastAPI,
 )
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
@@ -28,7 +29,6 @@ from galaxy.webapps.base.api import (
     add_request_id_middleware,
     include_all_package_routers,
 )
-from fastapi.openapi.utils import get_openapi
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.api2 import (
     ensure_valid_session,

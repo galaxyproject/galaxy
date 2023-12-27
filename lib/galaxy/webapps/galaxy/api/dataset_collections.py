@@ -6,6 +6,7 @@ from fastapi import (
     Path,
     Query,
 )
+from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -114,11 +115,14 @@ class FastAPIDatasetCollections:
     def contents(
         self,
         hdca_id: HistoryHDCAIDPathParam,
+        parent_id: Annotated[
+            DecodedDatabaseIdField,
+            Path(
+                ...,
+                description="Parent collection ID describing what collection the contents belongs to.",
+            ),
+        ],
         trans: ProvidesHistoryContext = DependsOnTrans,
-        parent_id: DecodedDatabaseIdField = Path(
-            ...,
-            description="Parent collection ID describing what collection the contents belongs to.",
-        ),
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
         limit: Optional[int] = Query(
             default=None,
