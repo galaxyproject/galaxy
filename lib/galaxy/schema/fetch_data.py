@@ -18,10 +18,7 @@ from typing_extensions import (
 )
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    HistoryIdField,
-    Model,
-)
+from galaxy.schema.schema import Model
 from galaxy.schema.types import CoercedStringType
 
 
@@ -245,7 +242,7 @@ class FilesPayload(Model):
 
 
 class BaseDataPayload(FetchBaseModel):
-    history_id: DecodedDatabaseIdField = HistoryIdField
+    history_id: DecodedDatabaseIdField
     model_config = ConfigDict(extra="allow")
 
     @field_validator("targets", mode="before", check_fields=False)

@@ -146,12 +146,6 @@ HistoryDatasetAssociationId = Annotated[EncodedDatabaseIdField, Field(..., title
 JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
-EntityIdField = Field(
-    ...,
-    title="ID",
-    description="The encoded ID of this entity.",
-)
-
 DatasetStateField: DatasetState = Field(
     ...,
     title="State",
@@ -851,7 +845,7 @@ class HDAObject(Model):
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: DatasetState = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
-    history_id: DecodedDatabaseIdField = HistoryIdField
+    history_id: HistoryID
     tags: List[str]
     model_config = ConfigDict(extra="allow")
 
@@ -1052,11 +1046,11 @@ class HistoryContentItemBase(Model):
 
 
 class HistoryContentItem(HistoryContentItemBase):
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField
 
 
 class EncodedHistoryContentItem(HistoryContentItemBase):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
 
 
 class UpdateContentItem(HistoryContentItem):
@@ -1298,9 +1292,6 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
 AnyHistoryView = Union[
     HistorySummary,
     HistoryDetailed,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
 ]
 
 
@@ -1851,7 +1842,7 @@ class JobImportHistoryResponse(JobBaseModel):
 
 
 class ItemStateSummary(Model):
-    id: DecodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     states: Dict[JobState, int] = Field(
         {}, title="States", description=("A dictionary of job states and the number of jobs in that state.")
@@ -1907,15 +1898,15 @@ class DatasetSourceIdBase(Model):
 
 
 class DatasetSourceId(DatasetSourceIdBase):
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField
 
 
 class EncodedDatasetSourceId(DatasetSourceIdBase):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
 
 
 class EncodedDataItemSourceId(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     src: DataItemSourceType = Field(
         ...,
         title="Source",
@@ -2049,7 +2040,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model):
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField
     model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -2591,7 +2582,7 @@ class ImportToolDataBundleDatasetSource(Model):
     src: Literal["hda", "ldda"] = Field(
         title="src", description="Indicates that the tool data should be resolved from a dataset."
     )
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DecodedDatabaseIdField
 
 
 ImportToolDataBundleSource = Union[ImportToolDataBundleDatasetSource, ImportToolDataBundleUriSource]
@@ -3170,10 +3161,13 @@ class CustomHistoryItem(Model):
 
 AnyHDA = Union[HDADetailed, HDASummary]
 AnyHDCA = Union[HDCADetailed, HDCASummary]
-AnyHistoryContentItem = Union[
-    AnyHDA,
-    AnyHDCA,
-    CustomHistoryItem,
+AnyHistoryContentItem = Annotated[
+    Union[
+        AnyHDA,
+        AnyHDCA,
+        CustomHistoryItem,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
@@ -3619,7 +3613,7 @@ class PageSummaryList(RootModel):
 
 
 class DatasetSummary(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
     state: DatasetState = DatasetStateField

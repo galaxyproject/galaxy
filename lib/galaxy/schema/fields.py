@@ -22,6 +22,7 @@ class Security:
 
 
 def ensure_valid_id(v: str) -> str:
+    assert isinstance(v, str)
     len_v = len(v)
     if len_v % ENCODED_ID_LENGTH_MULTIPLE:
         raise ValueError("Invalid id length, must be multiple of 16")

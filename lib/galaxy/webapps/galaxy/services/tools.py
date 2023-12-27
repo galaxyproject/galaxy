@@ -61,7 +61,7 @@ class ToolsService(ServiceBase):
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[List[UploadFile]] = None,
     ):
-        payload = fetch_payload.dict(exclude_unset=True)
+        payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
         clean_payload = {}
@@ -212,10 +212,10 @@ class ToolsService(ServiceBase):
             # so it's possible to figure out which newly created elements
             # correspond with which tool file outputs
             output_dict["output_name"] = output_name
-            outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
+            outputs.append(output_dict)
 
         for job in vars.get("jobs", []):
-            rval["jobs"].append(self.encode_all_ids(job.to_dict(view="collection"), recursive=True))
+            rval["jobs"].append(job.to_dict(view="collection"))
 
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
@@ -239,6 +239,7 @@ class ToolsService(ServiceBase):
             output_dict["output_name"] = output_name
             rval["implicit_collections"].append(output_dict)
 
+        trans.security.encode_all_ids(rval, recursive=True)
         return rval
 
     def _search(self, q, view):

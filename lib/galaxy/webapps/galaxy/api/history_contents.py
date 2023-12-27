@@ -750,7 +750,7 @@ class FastAPIHistoryContents:
         will be made to the items.
         """
         result = self.service.update_batch(trans, history_id, payload, serialization_params)
-        return HistoryContentsResult.model_construct(root=result)
+        return HistoryContentsResult(root=result)
 
     @router.put(
         "/api/histories/{history_id}/contents/bulk",
@@ -995,7 +995,7 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AsyncTaskResultSummary:
-        materialize_request = MaterializeDatasetInstanceRequest.model_construct(
+        materialize_request = MaterializeDatasetInstanceRequest(
             history_id=history_id,
             source=DatasetSourceType.hda,
             content=id,
@@ -1013,7 +1013,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
     ) -> AsyncTaskResultSummary:
-        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.model_construct(
+        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest(
             history_id=history_id, **materialize_api_payload.model_dump()
         )
         rval = self.service.materialize(trans, materialize_request)

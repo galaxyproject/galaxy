@@ -599,7 +599,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
-        return DatasetAssociationRoles.model_construct(**roles)
+        return DatasetAssociationRoles(**roles)
 
     def update(
         self,
@@ -703,7 +703,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         success_count = len(contents) - len(errors)
-        return HistoryContentBulkOperationResult.model_construct(success_count=success_count, errors=errors)
+        return HistoryContentBulkOperationResult(success_count=success_count, errors=errors)
 
     def validate(self, trans, history_id: DecodedDatabaseIdField, history_content_id: DecodedDatabaseIdField):
         """
@@ -843,7 +843,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         # if dry_run, return the structure as json for debugging
         if dry_run:
-            return HistoryContentsArchiveDryRunResult.model_construct(root=paths_and_files)
+            return HistoryContentsArchiveDryRunResult(root=paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
         archive = ZipstreamWrapper(
@@ -936,6 +936,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         legacy_params_dict = legacy_params.model_dump(exclude_defaults=True)
         if ids := legacy_params_dict.get("ids"):
             legacy_params_dict["ids"] = self.decode_ids(ids)
+        else:
+            legacy_params_dict.pop("ids", None)
 
         object_store_ids = None
         if (shareable := legacy_params.shareable) is not None:
@@ -947,7 +949,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             self._serialize_legacy_content_item(trans, content, legacy_params_dict.get("dataset_details"))
             for content in contents
         ]
-        return HistoryContentsResult.model_construct(root=items)
+        return HistoryContentsResult(root=items)
 
     def __index_v2(
         self,
@@ -1023,7 +1025,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         detailed = dataset_details and (dataset_details == "all" or (encoded_content_id in dataset_details))
         if isinstance(content, HistoryDatasetAssociation):
             view = "detailed" if detailed else "summary"
-            return self.hda_serializer.serialize_to_view(content, view=view, user=trans.user, trans=trans)
+            return self.hda_serializer.serialize_to_view(
+                content, view=view, user=trans.user, trans=trans, encode_id=False
+            )
         elif isinstance(content, HistoryDatasetCollectionAssociation):
             view = "element" if detailed else "collection"
             return self.__collection_dict(trans, content, view=view)
@@ -1062,13 +1066,15 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             if rval.get("url"):
                 rval["url"] = trans.url_builder(
                     "history_content_typed",
-                    history_id=rval["history_id"],
-                    id=rval["id"],
+                    history_id=self.encode_id(rval["history_id"]),
+                    id=self.encode_id(rval["id"]),
                     type=rval["history_content_type"],
                 )
             if rval.get("contents_url"):
                 rval["contents_url"] = trans.url_builder(
-                    "contents_dataset_collection", hdca_id=rval["id"], parent_id=self.encode_id(content.collection_id)
+                    "contents_dataset_collection",
+                    hdca_id=self.encode_id(rval["id"]),
+                    parent_id=self.encode_id(content.collection_id),
                 )
         return rval
 
@@ -1095,7 +1101,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         serialization_params.default_view = "detailed"
         hda = self.hda_manager.get_accessible(id, trans.user)
         return self.hda_serializer.serialize_to_view(
-            hda, user=trans.user, trans=trans, **serialization_params.model_dump()
+            hda, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )
 
     def __show_dataset_collection(

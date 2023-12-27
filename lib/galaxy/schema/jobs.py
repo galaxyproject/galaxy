@@ -21,7 +21,6 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
-    EntityIdField,
     JobMetricCollection,
     JobState,
     JobSummary,
@@ -139,7 +138,7 @@ class SrcItem(Model):
 
 
 class EncodedHdcaSourceId(SrcItem):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     src: Literal[DataItemSourceType.hdca] = Field(
         default=...,
         title="Source",

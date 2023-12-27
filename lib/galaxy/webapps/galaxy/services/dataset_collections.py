@@ -270,12 +270,11 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]),
                 )
-            trans.security.encode_all_ids(result, recursive=True)
             return result
 
         rval = [serialize_element(el) for el in contents]
         try:
-            return DatasetCollectionContentElements.model_construct(root=rval)
+            return DatasetCollectionContentElements(root=rval)
         except ValidationError:
             log.exception(
                 f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"

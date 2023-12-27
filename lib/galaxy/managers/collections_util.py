@@ -145,7 +145,6 @@ def dictify_dataset_collection_instance(
             element_func = dictify_element_reference
         dict_value["elements"] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
 
-    security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 

@@ -249,7 +249,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             job_dict[
                 "message"
             ] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
-            return JobImportHistoryResponse.model_construct(**job_dict)
+            return JobImportHistoryResponse(**job_dict)
 
         new_history = None
         # if a history id was passed, copy that history
@@ -589,12 +589,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         if up_to_date and jeha.ready:
             serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-            return (JobExportHistoryArchiveModel.model_construct(**serialized_jeha), ready)
+            return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
                 serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
-                return (JobExportHistoryArchiveModel.model_construct(**serialized_jeha), ready)
+                return (JobExportHistoryArchiveModel(**serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
                 return (JobIdResponse(job_id=job.id), ready)
