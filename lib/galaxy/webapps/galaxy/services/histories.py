@@ -674,7 +674,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         serialization_params.default_view = default_view
         serialized_history = self.serializer.serialize_to_view(
-            history, user=trans.user, trans=trans, **serialization_params.dict()
+            history, user=trans.user, trans=trans, encode_id=False, **serialization_params.model_dump()
         )
         return serialized_history
 
