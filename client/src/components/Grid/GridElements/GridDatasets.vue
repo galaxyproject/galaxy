@@ -70,7 +70,7 @@ onMounted(() => {
 @import "~bootstrap/scss/bootstrap.scss";
 .grid-datasets {
     @extend .d-flex;
-    white-space: nowrap;
+    @extend .text-nowrap;
     .stats {
         @extend .rounded;
         @extend .px-1;

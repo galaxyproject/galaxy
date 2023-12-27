@@ -124,7 +124,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
+        self.wait_for_and_click_selector('[data-description="grid sort key name"]')
         actual_histories = self.get_histories()
 
         expected_histories = [self.history2_name, self.history3_name]
@@ -238,10 +238,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)
-
-    def select_filter(self, filter_key, filter_value):
-        filter_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(filter_selector)
 
     def get_history_tags_cell(self, history_name):
         tags_cell = None

@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -247,13 +247,17 @@ watch(operationMessage, () => {
                     class="text-nowrap px-2"
                     :data-description="`grid header ${fieldIndex}`">
                     <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                        <BLink @click="onSort(fieldEntry.key)">
+                        <BButton
+                            variant="link"
+                            class="text-nowrap font-weight-bold"
+                            :data-description="`grid sort key ${fieldEntry.key}`"
+                            @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
                                 <FontAwesomeIcon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
                                 <FontAwesomeIcon v-else icon="caret-down" data-description="grid sort desc" />
                             </span>
-                        </BLink>
+                        </BButton>
                     </span>
                     <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
                 </th>

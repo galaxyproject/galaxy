@@ -133,17 +133,17 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: HistoryEntry) => !data.deleted,
                 handler: async (data: HistoryEntry) => {
-                    if (confirm(_l("Are you sure that you want to delete this history?"))) {
+                    if (confirm(_l("Are you sure that you want to permanently delete this history?"))) {
                         try {
                             await purgeHistory({ history_id: String(data.id) });
                             return {
                                 status: "success",
-                                message: `'${data.name}' has been deleted.`,
+                                message: `'${data.name}' has been permanently deleted.`,
                             };
                         } catch (e) {
                             return {
                                 status: "danger",
-                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                                message: `Failed to permanently delete '${data.name}': ${errorMessageAsString(e)}`,
                             };
                         }
                     }
