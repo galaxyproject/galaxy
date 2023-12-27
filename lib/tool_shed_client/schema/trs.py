@@ -14,8 +14,8 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    RootModel,
     Field,
+    RootModel,
 )
 
 
