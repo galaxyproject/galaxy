@@ -139,6 +139,12 @@ AccessibleField: bool = Field(
     description="Whether this item is accessible to the current user due to permissions.",
 )
 
+DatasetCollectionId = Annotated[EncodedDatabaseIdField, Field(..., title="Dataset Collection ID")]
+DatasetCollectionElementId = Annotated[EncodedDatabaseIdField, Field(..., title="Dataset Collection Element ID")]
+HistoryID = Annotated[EncodedDatabaseIdField, Field(..., title="History ID")]
+HistoryDatasetAssociationId = Annotated[EncodedDatabaseIdField, Field(..., title="History Dataset Association ID")]
+JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
+
 
 EntityIdField = Field(
     ...,
@@ -573,7 +579,7 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 
-    id: DecodedDatabaseIdField = EntityIdField
+    id: HistoryID
     name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
@@ -829,7 +835,7 @@ class DCSummary(Model):
     """Dataset Collection summary information."""
 
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DatasetCollectionId
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     collection_type: CollectionType = CollectionTypeField
@@ -841,7 +847,7 @@ class DCSummary(Model):
 class HDAObject(Model):
     """History Dataset Association Object"""
 
-    id: DecodedDatabaseIdField = EntityIdField
+    id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: DatasetState = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
@@ -853,7 +859,7 @@ class HDAObject(Model):
 class DCObject(Model):
     """Dataset Collection Object"""
 
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DatasetCollectionId
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
@@ -865,7 +871,7 @@ class DCObject(Model):
 class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
-    id: DecodedDatabaseIdField = EntityIdField
+    id: DatasetCollectionElementId
     model_class: DCE_MODEL_CLASS = ModelClassField(DCE_MODEL_CLASS)
     element_index: int = Field(
         ...,
@@ -1177,7 +1183,7 @@ class HistorySummary(HistoryBase):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
-    id: DecodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     name: str = Field(
         ...,
         title="Name",
@@ -1248,7 +1254,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Size",
         description="The total size of the contents of this history in bytes.",
     )
-    user_id: DecodedDatabaseIdField = Field(
+    user_id: EncodedDatabaseIdField = Field(
         ...,
         title="User ID",
         description="The encoded ID of the user that owns this History.",
@@ -1804,15 +1810,11 @@ class CustomBuildsMetadataResponse(Model):
 class JobIdResponse(Model):
     """Contains the ID of the job associated with a particular request."""
 
-    job_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Job ID",
-        description="The encoded database ID of the job that is currently processing a particular request.",
-    )
+    job_id: JobId
 
 
 class JobBaseModel(Model):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: JobId
     history_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="History ID",
