@@ -249,7 +249,7 @@ ContentsUrlField = Field(
     description="The relative URL to access the contents of this History.",
 )
 
-UserIdField = Field(title="ID", description="Encoded ID of the user")
+UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
 UserDescriptionField = Field(title="Description", description="Description of the user")
 UserNameField = Field(default=..., title="user_name", description="The name of the user.")
@@ -292,7 +292,7 @@ class RequireOneSetOption(Model):
 
 
 class BaseUserModel(Model):
-    id: EncodedDatabaseIdField = UserIdField
+    id: UserId
     username: str = UserNameField
     email: str = UserEmailField
     deleted: bool = UserDeletedField
@@ -309,7 +309,7 @@ class UserModel(BaseUserModel):
 class LimitedUserModel(Model):
     """This is used when config options (expose_user_name and expose_user_email) are in place."""
 
-    id: EncodedDatabaseIdField = UserIdField
+    id: UserId
     username: Optional[str] = None
     email: Optional[str] = None
 
@@ -2574,7 +2574,7 @@ class GroupRoleListResponse(RootModel):
 
 
 class GroupUserResponse(Model):
-    id: EncodedDatabaseIdField = UserIdField
+    id: EncodedDatabaseIdField
     email: str = UserEmailField
     url: RelativeUrl = RelativeUrlField
 
