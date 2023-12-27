@@ -328,7 +328,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.model_dump()
+                content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
             )
             for content in contents
         ]

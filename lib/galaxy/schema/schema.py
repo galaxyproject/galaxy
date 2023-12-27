@@ -1244,8 +1244,8 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Size",
         description="The total size of the contents of this history in bytes.",
     )
-    user_id: EncodedDatabaseIdField = Field(
-        ...,
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
         title="User ID",
         description="The encoded ID of the user that owns this History.",
     )

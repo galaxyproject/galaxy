@@ -76,7 +76,7 @@ class JobsService(ServiceBase):
         decoded_user_id = payload.user_id
 
         if not is_admin:
-            self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user.id)
+            self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user and trans.user.id)
 
         jobs = self.job_manager.index_query(trans, payload)
         out = []
@@ -92,7 +92,11 @@ class JobsService(ServiceBase):
         return out
 
     def _check_nonadmin_access(
-        self, view: str, user_details: bool, decoded_user_id: Optional[DecodedDatabaseIdField], trans_user_id: int
+        self,
+        view: str,
+        user_details: bool,
+        decoded_user_id: Optional[DecodedDatabaseIdField],
+        trans_user_id: Optional[int],
     ):
         """Verify admin-only resources are not being accessed."""
         if view == JobIndexViewEnum.admin_job_list:
