@@ -9,7 +9,6 @@ from pydantic import (
 from typing_extensions import (
     Annotated,
     get_args,
-    TypeAliasType,
 )
 
 from galaxy.security.idencoding import IdEncodingHelper
@@ -42,7 +41,7 @@ def ensure_valid_folder_id(v):
     return v
 
 
-_DecodedDatabaseIdField = Annotated[
+DecodedDatabaseIdField = Annotated[
     int,
     BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
     BeforeValidator(ensure_valid_id),
@@ -57,7 +56,7 @@ _DecodedDatabaseIdField = Annotated[
     ),
 ]
 
-_EncodedDatabaseIdField = Annotated[
+EncodedDatabaseIdField = Annotated[
     str,
     BeforeValidator(lambda database_id: Security.security.encode_id(database_id)),
     WithJsonSchema(
@@ -70,7 +69,7 @@ _EncodedDatabaseIdField = Annotated[
     ),
 ]
 
-_LibraryFolderDatabaseIdField = Annotated[
+LibraryFolderDatabaseIdField = Annotated[
     int,
     BeforeValidator(lambda database_id: Security.security.decode_id(database_id)),
     BeforeValidator(ensure_valid_folder_id),
@@ -87,7 +86,7 @@ _LibraryFolderDatabaseIdField = Annotated[
     ),
 ]
 
-_EncodedLibraryFolderDatabaseIdField = Annotated[
+EncodedLibraryFolderDatabaseIdField = Annotated[
     str,
     BeforeValidator(lambda database_id: f"F{Security.security.encode_id(database_id)}"),
     WithJsonSchema(
@@ -99,14 +98,6 @@ _EncodedLibraryFolderDatabaseIdField = Annotated[
         mode="validation",
     ),
 ]
-
-# It seems TypeAliasType is required for annotation to be picked up
-DecodedDatabaseIdField = TypeAliasType("DecodedDatabaseIdField", _DecodedDatabaseIdField)
-EncodedDatabaseIdField = TypeAliasType("EncodedDatabaseIdField", _EncodedDatabaseIdField)
-LibraryFolderDatabaseIdField = TypeAliasType("LibraryFolderDatabaseIdField", _LibraryFolderDatabaseIdField)
-EncodedLibraryFolderDatabaseIdField = TypeAliasType(
-    "EncodedLibraryFolderDatabaseIdField", _EncodedLibraryFolderDatabaseIdField
-)
 
 
 def literal_to_value(arg):
