@@ -19,7 +19,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.screenshot("histories_saved_grid")
-        self.click_grid_popup_option(self.history2_name, "Switch")
+        self.select_grid_operation(self.history2_name, "Switch")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         @retry_assertion_during_transitions
@@ -32,7 +32,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_history_view(self):
         self._login()
         self.navigate_to_histories_page()
-        self.click_grid_popup_option(self.history2_name, "View")
+        self.select_grid_operation(self.history2_name, "View")
         history_name = self.wait_for_selector("[data-description='name display']")
         assert history_name.text == self.history2_name
 
@@ -42,7 +42,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.click_grid_popup_option(self.history2_name, "Share and Publish")
+        self.select_grid_operation(self.history2_name, "Share and Publish")
         self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
@@ -58,7 +58,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.click_grid_popup_option("Unnamed history", "Rename")
+        self.select_grid_operation("Unnamed history", "Rename")
 
         # Rename the history
         history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")
@@ -77,19 +77,23 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Delete the history
-        self.click_grid_popup_option(self.history2_name, "Delete")
+        self.select_grid_operation(self.history2_name, "Delete")
+        alert = self.driver.switch_to.alert
+        alert.accept()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_grid([self.history2_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.components.histories.advanced_search_filter(filter="deleted").wait_for_and_click()
+        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
-        self.click_grid_popup_option(self.history2_name, "Undelete")
+        self.select_grid_operation(self.history2_name, "Restore")
 
         self.assert_grid_histories_are([])
-        self.select_filter("status", "active")
+        self.components.histories.reset_input.wait_for_and_click()
 
         self.assert_histories_in_grid([self.history2_name])
 
@@ -101,14 +105,17 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
         self.assert_histories_in_grid([self.history4_name])
 
-        self.click_grid_popup_option(self.history4_name, "Delete Permanently")
+        self.select_grid_operation(self.history4_name, "Delete Permanently")
         alert = self.driver.switch_to.alert
         alert.accept()
 
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_histories_in_grid([self.history4_name], False)
 
-        self.histories_click_advanced_search()
-        self.select_filter("status", "deleted")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.components.histories.advanced_search_filter(filter="deleted").wait_for_and_click()
+        self.components.histories.advanced_search_submit.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history4_name])
 

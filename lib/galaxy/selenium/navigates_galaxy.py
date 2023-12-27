@@ -540,7 +540,7 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
-    def click_grid_popup_option(self, item_name, option_label):
+    def select_grid_operation(self, item_name, option_label):
         target_item = None
         grid = self.components.grids.body.wait_for_visible()
         for row in grid.find_elements(By.TAG_NAME, "tr"):
