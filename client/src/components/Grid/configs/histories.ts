@@ -78,7 +78,6 @@ const fields: FieldArray = [
             {
                 title: "View",
                 icon: faEye,
-                condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
                     emit(`/histories/view?id=${data.id}`);
                 },
@@ -131,7 +130,7 @@ const fields: FieldArray = [
             {
                 title: "Delete Permanently",
                 icon: faTrash,
-                condition: (data: HistoryEntry) => !data.deleted,
+                condition: (data: HistoryEntry) => !data.purged,
                 handler: async (data: HistoryEntry) => {
                     if (confirm(_l("Are you sure that you want to permanently delete this history?"))) {
                         try {
@@ -152,7 +151,7 @@ const fields: FieldArray = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: HistoryEntry) => !!data.deleted,
+                condition: (data: HistoryEntry) => !!data.deleted && !data.purged,
                 handler: async (data: HistoryEntry) => {
                     try {
                         await undeleteHistory({ history_id: String(data.id) });

@@ -129,7 +129,7 @@ describe("GridList", () => {
         expect(wrapper.find("[data-description='grid cell 0-1'] > button").text()).toBe("link-1");
         expect(wrapper.find("[data-description='grid cell 1-1'] > button").text()).toBe("link-2");
         const firstHeader = wrapper.find("[data-description='grid header 0']");
-        expect(firstHeader.find("a").text()).toBe("id");
+        expect(firstHeader.find("button").text()).toBe("id");
         await firstHeader.find("[data-description='grid sort asc']").trigger("click");
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
         expect(testGrid.getData.mock.calls[1]).toEqual([0, 25, "", "id", false]);

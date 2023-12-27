@@ -45,7 +45,7 @@ function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfigu
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
                 <button
-                    v-if="operation && operation.condition && hasCondition(operation.condition)"
+                    v-if="operation && (!operation.condition || hasCondition(operation.condition))"
                     class="dropdown-item"
                     :data-description="`grid operation ${operation.title.toLowerCase()}`"
                     @click.prevent="emit('execute', operation)">
