@@ -98,7 +98,7 @@ class DatatypeConverter(BaseModel):
         ...,  # Mark this field as required
         title="Tool identifier",
         description="The converter tool identifier",
-        example="CONVERTER_Bam_Bai_0",
+        examples=["CONVERTER_Bam_Bai_0"],
     )
 
 
@@ -111,17 +111,17 @@ class DatatypeEDAMDetails(BaseModel):
         ...,  # Mark this field as required
         title="Prefix IRI",
         description="The EDAM prefixed Resource Identifier",
-        example="format_1782",
+        examples=["format_1782"],
     )
     label: Optional[str] = Field(
         title="Label",
         description="The EDAM label",
-        example="NCBI gene report format",
+        examples=["NCBI gene report format"],
     )
     definition: Optional[str] = Field(
         title="Definition",
         description="The EDAM definition",
-        example="Entry (gene) format of the NCBI database.",
+        examples=["Entry (gene) format of the NCBI database."],
     )
 
 

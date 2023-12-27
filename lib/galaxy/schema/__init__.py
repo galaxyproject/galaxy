@@ -33,13 +33,13 @@ class ValueFilterQueryParams(BaseModel):
         default=None,
         title="Filter Query",
         description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-        example="create_time-gt",
+        examples=["create_time-gt"],
     )
     qv: Optional[Union[List[str], str]] = Field(
         default=None,
         title="Filter Value",
         description="The value to filter by.",
-        example="2015-01-29",
+        examples=["2015-01-29"],
     )
 
 
@@ -71,7 +71,7 @@ class FilterQueryParams(ValueFilterQueryParams, PaginationQueryParams):
             "by '-asc' or '-dsc' for ascending and descending order respectively. "
             "Orders can be stacked as a comma-separated list of values."
         ),
-        example="name-dsc,create_time",
+        examples=["name-dsc,create_time"],
     )
 
 
@@ -85,7 +85,7 @@ class SerializationParams(BaseModel):
             "The name of the view used to serialize this item. "
             "This will return a predefined set of attributes of the item."
         ),
-        example="summary",
+        examples=["summary"],
     )
     keys: Optional[List[str]] = Field(
         default=None,
