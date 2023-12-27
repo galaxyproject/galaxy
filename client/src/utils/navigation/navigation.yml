@@ -433,10 +433,13 @@ histories:
   selectors:
     advanced_search_toggle: '#histories-grid [data-description="toggle advanced search"]'
     advanced_search_name_input: '#histories-advanced-filter-name'
-    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags'
+    advanced_search_filter: '#histories-grid [data-description="filter ${filter}"] .btn'
     advanced_search_submit: '#histories-advanced-filter-submit'
-    import_button: '[data-description="grid action import new history"]'
+    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags'
     histories: '.grid-table tr'
+    import_button: '[data-description="grid action import new history"]'
+    reset_input: '#histories-grid [data-description="reset query"]'
+    search_input: '#histories-grid input.search-query[data-description="filter text input"]'
   sharing:
     selectors:
       unshare_user_button: '.share_with_view .multiselect__tag-icon'
@@ -1048,8 +1051,8 @@ libraries:
 
 grids:
   selectors:
-    body: '#grid-table-body'
-    free_text_search: '#input-free-text-search-filter'
+    body: '.grid-table'
+    free_text_search: '[data-description="filter text input"]'
 
 gies:
   jupyter:

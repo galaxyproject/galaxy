@@ -541,20 +541,22 @@ class NavigatesGalaxy(HasDriver):
         return history_item_selector_state
 
     def click_grid_popup_option(self, item_name, option_label):
-        item_button = None
+        target_item = None
         grid = self.components.grids.body.wait_for_visible()
         for row in grid.find_elements(By.TAG_NAME, "tr"):
-            name_cell = row.find_elements(By.TAG_NAME, "td")[1]
-            if name_cell.text == item_name:
-                item_button = name_cell
+            name_cell = row.find_elements(By.TAG_NAME, "td")[0]
+            if item_name in name_cell.text:
+                target_item = name_cell
                 break
 
-        if item_button is None:
+        if target_item is None:
             raise AssertionError(f"Failed to find item with name [{item_name}]")
 
-        popup_menu_button = item_button.find_element(By.CSS_SELECTOR, ".dropdown-toggle")
+        popup_menu_button = target_item.find_element(By.CSS_SELECTOR, "button")
         popup_menu_button.click()
-        popup_option = self.driver.find_element(By.LINK_TEXT, option_label)
+        popup_option = target_item.find_element(
+            By.CSS_SELECTOR, f"[data-description='grid operation {option_label.lower()}'"
+        )
         popup_option.click()
 
     def published_grid_search_for(self, search_term=None):

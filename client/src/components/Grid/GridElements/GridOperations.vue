@@ -47,6 +47,7 @@ function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfigu
                 <button
                     v-if="operation && operation.condition && hasCondition(operation.condition)"
                     class="dropdown-item"
+                    :data-description="`grid operation ${operation.title.toLowerCase()}`"
                     @click.prevent="emit('execute', operation)">
                     <icon :icon="operation.icon" />
                     <span v-localize>{{ operation.title }}</span>

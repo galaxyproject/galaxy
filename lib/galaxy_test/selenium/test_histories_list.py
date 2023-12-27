@@ -42,13 +42,13 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.click_grid_popup_option(self.history2_name, "Share or Publish")
+        self.click_grid_popup_option(self.history2_name, "Share and Publish")
         self.make_accessible_and_publishable()
 
         self.navigate_to_histories_page()
-
-        self.histories_click_advanced_search()
-        self.select_filter("sharing", "published")
+        self.components.histories.advanced_search_toggle.wait_for_and_click()
+        self.components.histories.advanced_search_filter(filter="published").wait_for_and_click()
+        self.components.histories.advanced_search_submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.assert_histories_in_grid([self.history2_name])
@@ -134,22 +134,11 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_standard_search(self):
         self._login()
         self.navigate_to_histories_page()
-
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history2_name)
-        self.send_enter(search_input)
-
         self.sleep_for(self.wait_types.UX_RENDER)
-
+        self.components.histories.search_input.wait_for_and_send_keys(self.history2_name)
         self.assert_grid_histories_are([self.history2_name])
-
-        self.unset_filter("free-text-search", self.history2_name)
-        search_input = self.components.grids.free_text_search.wait_for_visible()
-        search_input.send_keys(self.history4_name)
-        self.send_enter(search_input)
-
-        self.sleep_for(self.wait_types.UX_RENDER)
-
+        self.components.histories.reset_input.wait_for_and_click()
+        self.components.histories.search_input.wait_for_and_send_keys(self.history4_name)
         self.assert_grid_histories_are([])
 
     @selenium_test
@@ -222,17 +211,6 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
     def get_histories(self):
         return self.histories_get_history_names()
-
-    def set_filter(self, selector, value):
-        filter_input = self.wait_for_selector_clickable(selector)
-        filter_input.send_keys(value)
-        self.send_enter(filter_input)
-        self.sleep_for(self.wait_types.UX_RENDER)
-
-    def unset_filter(self, filter_key, filter_value):
-        close_button_selector = f'a[filter_key="{filter_key}"][filter_val="{filter_value}"]'
-        self.wait_for_and_click_selector(close_button_selector)
-        self.sleep_for(self.wait_types.UX_RENDER)
 
     def setup_shared_state(self):
         TestSavedHistories.user_email = self._get_random_email()
