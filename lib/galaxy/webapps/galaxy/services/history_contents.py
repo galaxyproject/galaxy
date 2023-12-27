@@ -97,7 +97,6 @@ from galaxy.schema.schema import (
     HistoryContentsArchiveDryRunResult,
     HistoryContentSource,
     HistoryContentsResult,
-    HistoryContentStats,
     HistoryContentsWithStatsResult,
     HistoryContentType,
     JobSourceType,
@@ -999,9 +998,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 history,
                 filters=filters,
             )
-            stats = HistoryContentStats.model_construct(total_matches=total_matches)
-            return HistoryContentsWithStatsResult.model_construct(contents=items, stats=stats)
-        return HistoryContentsResult.model_construct(root=items)
+            return HistoryContentsWithStatsResult(contents=items, stats={"total_matches": total_matches})
+        return HistoryContentsResult(root=items)
 
     def _handle_extra_serialization_for_media_type(
         self,
@@ -1057,7 +1055,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             raise exceptions.UnknownContentsType(f"Unknown contents type: {content.content_type}")
 
         rval = serializer.serialize_to_view(
-            content, user=trans.user, trans=trans, view=view, **serialization_params_dict
+            content, user=trans.user, trans=trans, view=view, encode_id=False, **serialization_params_dict
         )
         # Override URL generation to use UrlBuilder
         if trans.url_builder:

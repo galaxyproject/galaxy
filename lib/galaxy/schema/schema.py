@@ -579,12 +579,12 @@ class Visualization(Model):  # TODO annotate this model
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 
-    id: HistoryID
+    id: EncodedDatabaseIdField
     name: Optional[str] = Field(
         title="Name",
         description="The name of the item.",
     )
-    history_id: DecodedDatabaseIdField = HistoryIdField
+    history_id: HistoryID
     hid: int = Field(
         ...,
         title="HID",
@@ -637,7 +637,7 @@ class HDACommon(HistoryItemCommon):
 class HDASummary(HDACommon):
     """History Dataset Association summary information."""
 
-    dataset_id: DecodedDatabaseIdField = Field(
+    dataset_id: EncodedDatabaseIdField = Field(
         ...,
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
@@ -1006,7 +1006,7 @@ class HDCASummary(HDCACommon):
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
-    job_source_id: Optional[DecodedDatabaseIdField] = Field(
+    job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
         description="The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.",
@@ -1022,11 +1022,7 @@ class HDCASummary(HDCACommon):
         description="Overview of the job states working inside the dataset collection.",
     )
     contents_url: RelativeUrl = ContentsUrlField
-    collection_id: DecodedDatabaseIdField = Field(
-        ...,
-        title="Collection ID",
-        description="The encoded ID of the dataset collection associated with this HDCA.",
-    )
+    collection_id: DatasetCollectionId
 
 
 class HDCADetailed(HDCASummary):
