@@ -203,7 +203,7 @@ const fields: FieldArray = [
     },
     {
         key: "sharing",
-        title: "Shared",
+        title: "Status",
         type: "sharing",
     },
 ];

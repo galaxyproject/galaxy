@@ -8,8 +8,10 @@ library.add(faGlobe, faShareAlt, faLink, faUsers);
 
 interface SharingIndicatorsProps {
     object: {
+        deleted?: boolean;
         importable?: boolean;
         published?: boolean;
+        purged?: boolean;
         shared?: boolean;
     };
 }
@@ -17,7 +19,9 @@ const props = defineProps<SharingIndicatorsProps>();
 </script>
 
 <template>
-    <span>
+    <span v-if="props.object.purged" v-localize> Purged </span>
+    <span v-else-if="props.object.deleted" v-localize> Deleted </span>
+    <span v-else>
         <BButton
             v-if="props.object.published"
             v-b-tooltip.hover.noninteractive
