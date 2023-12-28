@@ -34,7 +34,7 @@ class GroupsManager:
         """
         rval = []
         for group in get_not_deleted_groups(trans.sa_session):
-            item = group.to_dict(value_mapper={"id": Security.security.encode_id})
+            item = group.to_dict()
             encoded_id = Security.security.encode_id(group.id)
             item["url"] = self._url_for(trans, "group", id=encoded_id)
             rval.append(item)
@@ -61,7 +61,7 @@ class GroupsManager:
             sa_session.commit()
 
         encoded_id = Security.security.encode_id(group.id)
-        item = group.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        item = group.to_dict(view="element")
         item["url"] = self._url_for(trans, "group", id=encoded_id)
         return [item]
 
@@ -71,7 +71,7 @@ class GroupsManager:
         """
         encoded_id = Security.security.encode_id(group_id)
         group = self._get_group(trans.sa_session, group_id)
-        item = group.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        item = group.to_dict(view="element")
         item["url"] = self._url_for(trans, "group", id=encoded_id)
         item["users_url"] = self._url_for(trans, "group_users", group_id=encoded_id)
         item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
@@ -98,7 +98,7 @@ class GroupsManager:
             sa_session.commit()
 
         encoded_id = Security.security.encode_id(group.id)
-        item = group.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        item = group.to_dict(view="element")
         item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
         return item
 
