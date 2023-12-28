@@ -2517,26 +2517,26 @@ class WorkflowToExport(Model):
 
 # Roles -----------------------------------------------------------------
 
-RoleIdField = Field(title="ID", description="Encoded ID of the role")
-RoleNameField = Field(title="Name", description="Name of the role")
-RoleDescriptionField = Field(title="Description", description="Description of the role")
+RoleIdField = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the role")]
+RoleNameField = Annotated[str, Field(title="Name", description="Name of the role")]
+RoleDescriptionField = Annotated[str, Field(title="Description", description="Description of the role")]
 
 
 class BasicRoleModel(Model):
-    id: EncodedDatabaseIdField = RoleIdField
-    name: str = RoleNameField
+    id: RoleIdField
+    name: RoleNameField
     type: str = Field(title="Type", description="Type or category of the role")
 
 
 class RoleModelResponse(BasicRoleModel):
-    description: Optional[str] = RoleDescriptionField
-    url: RelativeUrl = RelativeUrlField
+    description: Optional[RoleDescriptionField]
+    url: RelativeUrlField
     model_class: Literal["Role"] = ModelClassField("Role")
 
 
 class RoleDefinitionModel(Model):
-    name: str = RoleNameField
-    description: str = RoleDescriptionField
+    name: RoleNameField
+    description: RoleDescriptionField
     user_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="User IDs", default=[])
     group_ids: Optional[List[DecodedDatabaseIdField]] = Field(title="Group IDs", default=[])
 
