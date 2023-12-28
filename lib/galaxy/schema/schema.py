@@ -2923,7 +2923,7 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
 
 class LibraryFolderDetails(Model):
     model_class: Literal["LibraryFolder"] = ModelClassField("LibraryFolder")
-    id: LibraryFolderDatabaseIdField = Field(
+    id: EncodedLibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the library folder.",
@@ -2935,12 +2935,12 @@ class LibraryFolderDetails(Model):
         title="Item Count",
         description="A detailed description of the library folder.",
     )
-    parent_library_id: DecodedDatabaseIdField = Field(
+    parent_library_id: EncodedDatabaseIdField = Field(
         ...,
         title="Parent Library ID",
         description="Encoded ID of the Library this folder belongs to.",
     )
-    parent_id: Optional[LibraryFolderDatabaseIdField] = Field(
+    parent_id: Optional[EncodedLibraryFolderDatabaseIdField] = Field(
         None,
         title="Parent Folder ID",
         description="Encoded ID of the parent folder. Empty if it's the root folder.",

@@ -9,6 +9,7 @@ from fastapi import (
     Path,
     Query,
 )
+from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
@@ -29,9 +30,10 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: LibraryFolderDatabaseIdField = Path(
-    ..., title="Folder ID", description="The encoded identifier of the library folder."
-)
+FolderIdPathParam = Annotated[
+    LibraryFolderDatabaseIdField,
+    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
+]
 
 LimitQueryParam: int = Query(default=10, title="Limit", description="Maximum number of contents to return.")
 
@@ -82,8 +84,8 @@ class FastAPILibraryFoldersContents:
     )
     def index(
         self,
+        folder_id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
         search_text: Optional[str] = SearchQueryParam,
@@ -120,8 +122,8 @@ class FastAPILibraryFoldersContents:
     )
     def create(
         self,
+        folder_id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFilePayload = Body(...),
     ):
         return self.service.create(trans, folder_id, payload)

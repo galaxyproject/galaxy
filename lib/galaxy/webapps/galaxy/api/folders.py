@@ -12,6 +12,7 @@ from fastapi import (
     Path,
     Query,
 )
+from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
@@ -36,13 +37,14 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: LibraryFolderDatabaseIdField = Path(
-    ..., title="Folder ID", description="The encoded identifier of the library folder."
-)
+FolderIdPathParam = Annotated[
+    LibraryFolderDatabaseIdField,
+    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
+]
 
-UndeleteQueryParam: Optional[bool] = Query(
-    default=None, title="Undelete", description="Whether to restore a deleted library folder."
-)
+UndeleteQueryParam = Annotated[
+    Optional[bool], Query(title="Undelete", description="Whether to restore a deleted library folder.")
+]
 
 
 @router.cbv
@@ -67,8 +69,8 @@ class FastAPILibraryFolders:
     )
     def create(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFolderPayload = Body(...),
     ) -> LibraryFolderDetails:
         """Returns detailed information about the newly created library folder."""
@@ -94,9 +96,9 @@ class FastAPILibraryFolders:
     )
     def delete(
         self,
+        id: FolderIdPathParam,
+        undelete: UndeleteQueryParam = None,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
-        undelete: Optional[bool] = UndeleteQueryParam,
     ) -> LibraryFolderDetails:
         """Marks the specified library folder as deleted (or undeleted)."""
         return self.service.delete(trans, id, undelete)
