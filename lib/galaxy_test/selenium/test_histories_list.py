@@ -181,16 +181,17 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         # Insert a tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-new-tag-input-wrapper input")
-        tag_area.click()
-        tag_area.send_keys(self.history2_tags[0])
-        self.send_enter(tag_area)
-
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
+        tag_button.click()
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
+        tag_input.send_keys(self.history2_tags[0])
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element(self.by.CSS_SELECTOR, ".ti-tag-center")
+        tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)
@@ -241,14 +242,14 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
     def get_history_tags_cell(self, history_name):
         tags_cell = None
-        grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements(self.by.CSS_SELECTOR, "tr"):
-            td = row.find_elements(self.by.CSS_SELECTOR, "td")
-            if td[1].text == history_name:
-                tags_cell = td[4]
+        grid = self.wait_for_selector("#histories-grid")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            if td[0].text == history_name:
+                tags_cell = td[3]
                 break
 
         if tags_cell is None:
-            raise AssertionError(f"Failed to find history with name [{history_name}]")
+            raise AssertionError(f"Failed to find tag cell for history with name [{history_name}]")
 
         return tags_cell
