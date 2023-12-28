@@ -559,6 +559,20 @@ class NavigatesGalaxy(HasDriver):
         )
         popup_option.click()
 
+    def select_grid_cell(self, grid_name, item_name, column_index=3):
+        cell = None
+        grid = self.wait_for_selector(grid_name)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            if td[0].text == item_name:
+                cell = td[column_index]
+                break
+
+        if cell is None:
+            raise AssertionError(f"Failed to find cell for item with name [{item_name}]")
+
+        return cell
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             self.navigation.grids.free_text_search,

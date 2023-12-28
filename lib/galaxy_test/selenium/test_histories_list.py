@@ -180,17 +180,11 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Insert a tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
-        tag_button.click()
-        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
-        tag_input.send_keys(self.history2_tags[0])
-        self.send_enter(tag_input)
-        self.send_escape(tag_input)
-        self.sleep_for(self.wait_types.UX_RENDER)
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, 3)
+        self.add_tag(tags_cell, self.history2_tags[0])
 
         # Search by tag
-        tags_cell = self.get_history_tags_cell(self.history2_name)
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, 3)
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
@@ -220,6 +214,15 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def get_histories(self):
         return self.histories_get_history_names()
 
+    def add_tag(self, tags_cell, tag):
+        tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")
+        tag_button.click()
+        tag_input = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags input")
+        tag_input.send_keys(tag)
+        self.send_enter(tag_input)
+        self.send_escape(tag_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
     def setup_shared_state(self):
         TestSavedHistories.user_email = self._get_random_email()
         TestSavedHistories.history1_name = self._get_random_name()
@@ -239,17 +242,3 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)
-
-    def get_history_tags_cell(self, history_name):
-        tags_cell = None
-        grid = self.wait_for_selector("#histories-grid")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            if td[0].text == history_name:
-                tags_cell = td[3]
-                break
-
-        if tags_cell is None:
-            raise AssertionError(f"Failed to find tag cell for history with name [{history_name}]")
-
-        return tags_cell
