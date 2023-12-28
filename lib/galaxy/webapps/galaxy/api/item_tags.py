@@ -7,6 +7,7 @@ from fastapi import (
     Body,
     Path,
 )
+from typing_extensions import Annotated
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.item_tags import ItemTagsManager
@@ -42,8 +43,8 @@ class FastAPIItemTags:
             )
             def index(
                 self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
                 trans: ProvidesAppContext = DependsOnTrans,
-                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
             ) -> ItemTagsListResponse:
                 return self.manager.index(trans, tagged_item_class, item_id)
 
@@ -55,8 +56,8 @@ class FastAPIItemTags:
             )
             def show(
                 self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
                 trans: ProvidesAppContext = DependsOnTrans,
-                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
             ) -> ItemTagsResponse:
                 return self.manager.show(trans, tagged_item_class, item_id, tag_name)
@@ -69,8 +70,8 @@ class FastAPIItemTags:
             )
             def create(
                 self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
                 trans: ProvidesAppContext = DependsOnTrans,
-                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(None),
             ) -> ItemTagsResponse:
@@ -86,8 +87,8 @@ class FastAPIItemTags:
             )
             def update(
                 self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
                 trans: ProvidesAppContext = DependsOnTrans,
-                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(...),
             ) -> ItemTagsResponse:
@@ -101,8 +102,8 @@ class FastAPIItemTags:
             )
             def delete(
                 self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
                 trans: ProvidesAppContext = DependsOnTrans,
-                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
             ) -> bool:
                 return self.manager.delete(trans, tagged_item_class, item_id, tag_name)
