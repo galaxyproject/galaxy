@@ -41,25 +41,25 @@ class FilesSourcePlugin(Model):
         ...,
         title="ID",
         description="The `FilesSource` plugin identifier",
-        example="_import",
+        examples=["_import"],
     )
     type: str = Field(
         ...,
         title="Type",
         description="The type of the plugin.",
-        example="gximport",
+        examples=["gximport"],
     )
     label: str = Field(
         ...,
         title="Label",
         description="The display label for this plugin.",
-        example="Library Import Directory",
+        examples=["Library Import Directory"],
     )
     doc: str = Field(
         ...,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
-        example="Galaxy's library import directory",
+        examples=["Galaxy's library import directory"],
     )
     browsable: bool = Field(
         ...,
@@ -70,7 +70,7 @@ class FilesSourcePlugin(Model):
         ...,
         title="Writeable",
         description="Whether this files source plugin allows write access.",
-        example=False,
+        examples=[False],
     )
     requires_roles: Optional[str] = Field(
         None,
@@ -90,7 +90,7 @@ class BrowsableFilesSourcePlugin(FilesSourcePlugin):
         ...,
         title="URI root",
         description="The URI root used by this type of plugin.",
-        example="gximport://",
+        examples=["gximport://"],
     )
     model_config = ConfigDict(extra="allow")
 
@@ -165,7 +165,7 @@ class CreateEntryPayload(Model):
         ...,
         title="Name",
         description="The name of the entry to create.",
-        example="my_new_entry",
+        examples=["my_new_entry"],
     )
 
 
@@ -174,13 +174,13 @@ class CreatedEntryResponse(Model):
         ...,
         title="Name",
         description="The name of the created entry.",
-        example="my_new_entry",
+        examples=["my_new_entry"],
     )
     uri: str = Field(
         ...,
         title="URI",
         description="The URI of the created entry.",
-        example="gxfiles://my_new_entry",
+        examples=["gxfiles://my_new_entry"],
     )
     external_link: Optional[str] = Field(
         default=None,

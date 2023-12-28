@@ -498,7 +498,7 @@ class TagCollection(RootModel):
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
-        example=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
+        examples=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
     )
 
 
@@ -532,7 +532,7 @@ class Hyperlink(Model):
     """Represents some text with an Hyperlink."""
 
     target: str = Field(
-        ..., title="Target", description="Specifies where to open the linked document.", example="_blank"
+        ..., title="Target", description="Specifies where to open the linked document.", examples=["_blank"]
     )
     href: AnyUrl = Field(
         ...,
@@ -605,7 +605,7 @@ class HistoryItemCommon(HistoryItemBase):
         default=None,
         title="Type - ID",
         description="The type and the encoded ID of this item. Used for caching.",
-        example="dataset-616e371b2cc6c62e",
+        examples=["dataset-616e371b2cc6c62e"],
     )
     type: str = Field(
         ...,
@@ -641,7 +641,7 @@ class HDASummary(HDACommon):
         ...,
         title="Extension",
         description="The extension of the dataset.",
-        example="txt",
+        examples=["txt"],
     )
     purged: bool = Field(
         ...,
@@ -727,7 +727,7 @@ class HDADetailed(HDASummary):
         ...,
         title="Data Type",
         description="The fully qualified name of the class implementing the data type of this dataset.",
-        example="galaxy.datatypes.data.Text",
+        examples=["galaxy.datatypes.data.Text"],
     )
     peek: Optional[str] = Field(
         default=None,
@@ -1829,7 +1829,7 @@ class JobBaseModel(Model):
         default=None,
         title="Galaxy Version",
         description="The (major) version of Galaxy used to create this job.",
-        example="21.05",
+        examples=["21.05"],
     )
 
 
@@ -2711,7 +2711,7 @@ class LibrarySummary(LibraryLegacySummary):
         ...,
         title="Create Time Pretty",
         description="Nice time representation of the creation date.",
-        example="2 months ago",
+        examples=["2 months ago"],
     )
     public: bool = Field(
         ...,

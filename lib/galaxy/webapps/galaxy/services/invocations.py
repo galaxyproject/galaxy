@@ -80,7 +80,7 @@ class InvocationSerializationParams(BaseModel):
             "The name of the view used to serialize this item. "
             "This will return a predefined set of attributes of the item."
         ),
-        example="element",
+        examples=["element"],
     )
     step_details: bool = Field(
         default=False,

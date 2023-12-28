@@ -17,7 +17,7 @@ LicenseIdPath: str = Path(
     ...,  # Mark this Path parameter as required
     title="SPDX license short ID",
     description="The [SPDX license short identifier](https://spdx.github.io/spdx-spec/appendix-I-SPDX-license-list/)",
-    example="Apache-2.0",
+    examples=["Apache-2.0"],
 )
 
 

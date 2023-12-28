@@ -147,10 +147,10 @@ class ToolVersion(BaseModel):
     url: str = Field(
         ...,
         description="The URL for this tool version in this registry.",
-        example="http://agora.broadinstitute.org/tools/123456/versions/1",
+        examples=["http://agora.broadinstitute.org/tools/123456/versions/1"],
     )
     id: str = Field(
-        ..., description="An identifier of the version of this tool for this particular tool registry.", example="v1"
+        ..., description="An identifier of the version of this tool for this particular tool registry.", examples=["v1"]
     )
     is_production: Optional[bool] = Field(
         None,
@@ -194,7 +194,7 @@ class Tool(BaseModel):
     url: str = Field(
         ...,
         description="The URL for this tool in this registry.",
-        example="http://agora.broadinstitute.org/tools/123456",
+        examples=["http://agora.broadinstitute.org/tools/123456"],
     )
     id: str = Field(..., description="A unique identifier of the tool, scoped to this registry.", example=123456)
     aliases: Optional[List[str]] = Field(

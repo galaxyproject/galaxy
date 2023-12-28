@@ -60,14 +60,14 @@ class ContributionEnum(Enum):
 class Contributor(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
+    name: str = Field(..., description="Name of contributor", examples=["Charles Darwin"])
     affiliation: Optional[str] = Field(
-        None, description="Organization the particular contributor is affiliated with", example=["HMS Beagle"]
+        None, description="Organization the particular contributor is affiliated with", examples=["HMS Beagle"]
     )
     email: Optional[EmailStr] = Field(
         None,
         description="electronic means for identification and communication purposes",
-        example=["name@example.edu"],
+        examples=["name@example.edu"],
     )
     contribution: List[ContributionEnum] = Field(
         ..., description="type of contribution determined according to PAV ontology"
@@ -75,7 +75,7 @@ class Contributor(BaseModel):
     orcid: Optional[AnyUrl] = Field(
         None,
         description="Field to record author information. ORCID identifiers allow for the author to curate their information after submission. ORCID identifiers must be valid and must have the prefix ‘https://orcid.org/’",
-        example=["http://orcid.org/0000-0002-1825-0097"],
+        examples=["http://orcid.org/0000-0002-1825-0097"],
     )
 
 
@@ -89,7 +89,7 @@ class OutputSubdomainItem(BaseModel):
     mediatype: str = Field(
         ...,
         description="https://www.iana.org/assignments/media-types/",
-        example=["text/csv"],
+        examples=["text/csv"],
         pattern="^(.*)$",
         title="mediatype",
     )

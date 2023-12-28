@@ -82,7 +82,7 @@ JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
         "The ID of the specific Job Export History Association or "
         "`latest` (default) to download the last generated archive."
     ),
-    example="latest",
+    examples=["latest"],
 )
 
 AllHistoriesQueryParam = Query(

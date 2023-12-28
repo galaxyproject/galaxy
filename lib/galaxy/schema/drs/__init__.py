@@ -22,26 +22,26 @@ class ServiceType(BaseModel):
     group: str = Field(
         ...,
         description="Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).",
-        example="org.ga4gh",
+        examples=["org.ga4gh"],
     )
     artifact: str = Field(
         ...,
         description="Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.",
-        example="beacon",
+        examples=["beacon"],
     )
     version: str = Field(
         ...,
         description="Version of the API or specification. GA4GH specifications use semantic versioning.",
-        example="1.0.0",
+        examples=["1.0.0"],
     )
 
 
 class Organization(BaseModel):
     name: str = Field(
-        ..., description="Name of the organization responsible for the service", example="My organization"
+        ..., description="Name of the organization responsible for the service", examples=["My organization"]
     )
     url: AnyUrl = Field(
-        ..., description="URL of the website of the organization (RFC 3986 format)", example="https://example.com"
+        ..., description="URL of the website of the organization (RFC 3986 format)", examples=["https://example.com"]
     )
 
 
@@ -49,45 +49,45 @@ class Service(BaseModel):
     id: str = Field(
         ...,
         description="Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.",
-        example="org.ga4gh.myservice",
+        examples=["org.ga4gh.myservice"],
     )
-    name: str = Field(..., description="Name of this service. Should be human readable.", example="My project")
+    name: str = Field(..., description="Name of this service. Should be human readable.", examples=["My project"])
     type: ServiceType
     description: Optional[str] = Field(
         None,
         description="Description of the service. Should be human readable and provide information about the service.",
-        example="This service provides...",
+        examples=["This service provides..."],
     )
     organization: Organization = Field(..., description="Organization providing the service")
     contactUrl: Optional[AnyUrl] = Field(
         None,
         description="URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).",
-        example="mailto:support@example.com",
+        examples=["mailto:support@example.com"],
     )
     documentationUrl: Optional[AnyUrl] = Field(
         None,
         description="URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.",
-        example="https://docs.myservice.example.com",
+        examples=["https://docs.myservice.example.com"],
     )
     createdAt: Optional[datetime] = Field(
         None,
         description="Timestamp describing when the service was first deployed and available (RFC 3339 format)",
-        example="2019-06-04T12:58:19Z",
+        examples=["2019-06-04T12:58:19Z"],
     )
     updatedAt: Optional[datetime] = Field(
         None,
         description="Timestamp describing when the service was last updated (RFC 3339 format)",
-        example="2019-06-04T12:58:19Z",
+        examples=["2019-06-04T12:58:19Z"],
     )
     environment: Optional[str] = Field(
         None,
         description="Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.",
-        example="test",
+        examples=["test"],
     )
     version: str = Field(
         ...,
         description="Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.",
-        example="1.0.0",
+        examples=["1.0.0"],
     )
 
 
@@ -96,7 +96,7 @@ class Artifact(Enum):
 
 
 class Type(BaseModel):
-    artifact: Artifact = Field(..., example="drs")
+    artifact: Artifact = Field(..., examples=["drs"])
 
 
 class DrsService(BaseModel):
@@ -115,7 +115,7 @@ class Checksum(BaseModel):
     type: str = Field(
         ...,
         description="The digest method used to create the checksum.\nThe value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://www.iana.org/assignments/named-information/named-information.xhtml#hash-alg[IANA Named Information Hash Algorithm Registry]. Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].\nGA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future. Until then, if implementers do choose such an algorithm (e.g. because it's implemented by their storage provider), they SHOULD use an existing standard `type` value such as `md5`, `etag`, `crc32c`, `trunc512`, or `sha1`.",
-        example="sha-256",
+        examples=["sha-256"],
     )
 
 
@@ -124,7 +124,7 @@ class AccessURL(BaseModel):
     headers: Optional[List[str]] = Field(
         None,
         description="An optional list of headers to include in the HTTP request to `url`. These headers can be used to provide auth tokens required to fetch the object bytes.",
-        example="Authorization: Basic Z2E0Z2g6ZHJz",
+        examples=["Authorization: Basic Z2E0Z2g6ZHJz"],
     )
 
 
@@ -171,7 +171,7 @@ class AccessMethod(BaseModel):
     region: Optional[str] = Field(
         None,
         description="Name of the region in the cloud service provider that the object belongs to.",
-        example="us-east-1",
+        examples=["us-east-1"],
     )
     authorizations: Optional[Authorizations] = None
 
@@ -188,7 +188,7 @@ class ContentsObject(BaseModel):
     drs_uri: Optional[List[str]] = Field(
         None,
         description="A list of full DRS identifier URI paths that may be used to obtain the object. These URIs may be external to this DRS instance.",
-        example="drs://drs.example.org/314159",
+        examples=["drs://drs.example.org/314159"],
     )
     contents: Optional[List[ContentsObject]] = Field(
         None,
@@ -205,7 +205,7 @@ class DrsObject(BaseModel):
     self_uri: str = Field(
         ...,
         description="A drs:// hostname-based URI, as defined in the DRS documentation, that tells clients how to access this object.\nThe intent of this field is to make DRS objects self-contained, and therefore easier for clients to store and pass around.  For example, if you arrive at this DRS JSON by resolving a compact identifier-based DRS URI, the `self_uri` presents you with a hostname and properly encoded DRS ID for use in subsequent `access` endpoint calls.",
-        example="drs://drs.example.org/314159",
+        examples=["drs://drs.example.org/314159"],
     )
     size: int = Field(
         ...,
@@ -224,7 +224,7 @@ class DrsObject(BaseModel):
         description="A string representing a version.\n(Some systems may use checksum, a RFC3339 timestamp, or an incrementing version number.)",
     )
     mime_type: Optional[str] = Field(
-        None, description="A string providing the mime-type of the `DrsObject`.", example="application/json"
+        None, description="A string providing the mime-type of the `DrsObject`.", examples=["application/json"]
     )
     checksums: List[Checksum] = Field(
         ...,

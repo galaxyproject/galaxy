@@ -32,7 +32,7 @@ ToolDataTableName = Path(
     ...,  # Mark this field as required
     title="Data table name",
     description="The name of the tool data table",
-    example="all_fasta",
+    examples=["all_fasta"],
 )
 
 ToolDataTableFieldName = Path(

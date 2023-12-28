@@ -139,14 +139,14 @@ FilterQueryQueryParam: Optional[List[str]] = Query(
     default=None,
     title="Filter Query",
     description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-    example="create_time-gt",
+    examples=["create_time-gt"],
 )
 
 FilterValueQueryParam: Optional[List[str]] = Query(
     default=None,
     title="Filter Value",
     description="The value to filter by.",
-    example="2015-01-29",
+    examples=["2015-01-29"],
 )
 
 OffsetQueryParam: Optional[int] = Query(

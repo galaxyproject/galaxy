@@ -18,12 +18,12 @@ class ParametricDomainItem(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     param: str = Field(
-        ..., description="Specific variables for the computational workflow", example=["seed"], title="param"
+        ..., description="Specific variables for the computational workflow", examples=["seed"], title="param"
     )
     value: str = Field(
         ...,
         description="Specific (non-default) parameter values for the computational workflow",
-        example=["14"],
+        examples=["14"],
         title="value",
     )
     step: str = Field(

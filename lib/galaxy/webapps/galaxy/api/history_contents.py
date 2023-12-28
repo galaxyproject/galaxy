@@ -90,14 +90,14 @@ def ContentTypeQueryParam(default: Optional[HistoryContentType]):
         default=default,
         title="Content Type",
         description="The type of the target history element.",
-        example=HistoryContentType.dataset,
+        examples=[HistoryContentType.dataset],
     )
 
 
 ContentTypePathParam = Path(
     title="Content Type",
     description="The type of the target history element.",
-    example=HistoryContentType.dataset,
+    examples=[HistoryContentType.dataset],
 )
 
 FuzzyCountQueryParam = Query(
@@ -162,7 +162,7 @@ def get_index_query_params(
             "Only `dev` value is allowed. Set it to use the latest version of this endpoint. "
             "**All parameters marked as `deprecated` will be ignored when this parameter is set.**"
         ),
-        example="dev",
+        examples=["dev"],
     ),
     dataset_details: Optional[str] = Query(
         default=None,
