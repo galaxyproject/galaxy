@@ -629,6 +629,7 @@ class HDACommon(HistoryItemCommon):
             description="This is always `dataset` for datasets.",
         ),
     ]
+    copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
 
 
 class HDASummary(HDACommon):
@@ -844,12 +845,15 @@ class DCSummary(Model):
 class HDAObject(Model):
     """History Dataset Association Object"""
 
+    # TODO: Does it need to be serialized differently from HDASummary ?
+    # If so at least merge models
     id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: DatasetState = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: HistoryID
     tags: List[str]
+    copied_from_ldda_id: Optional[EncodedDatabaseIdField] = None
     model_config = ConfigDict(extra="allow")
 
 
