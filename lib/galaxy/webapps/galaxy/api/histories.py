@@ -177,7 +177,7 @@ class FastAPIHistories:
         "/api/histories/query",
         summary="Returns histories available to the current user.",
     )
-    async def index_query(
+    async def query(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,

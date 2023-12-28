@@ -523,7 +523,7 @@ export interface paths {
     };
     "/api/histories/query": {
         /** Returns histories available to the current user. */
-        get: operations["index_query_api_histories_query_get"];
+        get: operations["query_api_histories_query_get"];
     };
     "/api/histories/shared_with_me": {
         /** Return all histories that are shared with the current user. */
@@ -14933,6 +14933,7 @@ export interface operations {
         /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
     index_query_api_histories_query_get: {
+    query_api_histories_query_get: {
         /** Returns histories available to the current user. */
         parameters?: {
             /** @description The maximum number of items to return. */

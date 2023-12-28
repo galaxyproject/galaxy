@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistory, historiesQuery, purgeHistory, undeleteHistory } from "@/api/histories";
+import { deleteHistory, historiesQuery, undeleteHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -134,7 +134,7 @@ const fields: FieldArray = [
                 handler: async (data: HistoryEntry) => {
                     if (confirm(_l("Are you sure that you want to permanently delete this history?"))) {
                         try {
-                            await purgeHistory({ history_id: String(data.id) });
+                            await deleteHistory({ history_id: String(data.id), purge: true });
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been permanently deleted.`,
