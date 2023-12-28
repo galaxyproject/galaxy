@@ -114,12 +114,15 @@ class DatasetCollectionPopulatedState(str, Enum):
 
 # Generic and common Field annotations that can be reused across models
 
-RelativeUrlField: RelativeUrl = Field(
-    ...,
-    title="URL",
-    description="The relative URL to access this item.",
-    deprecated=True,
-)
+RelativeUrlField = Annotated[
+    RelativeUrl,
+    Field(
+        ...,
+        title="URL",
+        description="The relative URL to access this item.",
+        deprecated=True,
+    ),
+]
 
 DownloadUrlField: RelativeUrl = Field(
     ...,
@@ -614,7 +617,7 @@ class HistoryItemCommon(HistoryItemBase):
     )
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-    url: RelativeUrl = RelativeUrlField
+    url: RelativeUrlField
     tags: TagCollection
 
 
@@ -1194,7 +1197,7 @@ class HistorySummary(HistoryBase):
         title="Archived",
         description="Whether this item has been archived and is no longer active.",
     )
-    url: RelativeUrl = RelativeUrlField
+    url: RelativeUrlField
     published: bool = Field(
         ...,
         title="Published",
@@ -2049,7 +2052,7 @@ class StoredWorkflowSummary(Model):
         title="Name",
         description="The name of the history.",
     )
-    url: RelativeUrl = RelativeUrlField
+    url: RelativeUrlField
     published: bool = Field(
         ...,
         title="Published",
@@ -2547,9 +2550,9 @@ RoleNameIdTuple = List[str]  # Tuple[str, DecodedDatabaseIdField]
 
 
 class GroupRoleResponse(Model):
-    id: EncodedDatabaseIdField = RoleIdField
-    name: str = RoleNameField
-    url: RelativeUrl = RelativeUrlField
+    id: RoleIdField
+    name: RoleNameField
+    url: RelativeUrlField
 
 
 class GroupRoleListResponse(RootModel):
@@ -2563,7 +2566,7 @@ class GroupRoleListResponse(RootModel):
 class GroupUserResponse(Model):
     id: EncodedDatabaseIdField
     email: str = UserEmailField
-    url: RelativeUrl = RelativeUrlField
+    url: RelativeUrlField
 
 
 class GroupUserListResponse(RootModel):
