@@ -38,7 +38,7 @@ function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfigu
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
-            class="ui-link font-weight-bold">
+            class="ui-link font-weight-bold text-nowrap">
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="font-weight-bold">{{ title }}</span>
         </button>
