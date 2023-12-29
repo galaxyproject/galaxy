@@ -674,14 +674,6 @@ def populate_api_routes(webapp, app):
     # )
 
     webapp.mapper.connect(
-        "list_invocations",
-        "/api/invocations",
-        controller="workflows",
-        action="index_invocations",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "create_invovactions_from_store",
         "/api/invocations/from_store",
         controller="workflows",
@@ -697,13 +689,6 @@ def populate_api_routes(webapp, app):
     }
     for noun, suffix in invoke_names.items():
         name = f"{noun}{suffix}"
-        webapp.mapper.connect(
-            f"list_workflow_{name}",
-            "/api/workflows/{workflow_id}/%s" % noun,
-            controller="workflows",
-            action="index_invocations",
-            conditions=dict(method=["GET"]),
-        )
         webapp.mapper.connect(
             f"workflow_{name}",
             "/api/workflows/{workflow_id}/%s" % noun,
