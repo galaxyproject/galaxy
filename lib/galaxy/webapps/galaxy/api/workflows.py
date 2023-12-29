@@ -97,7 +97,6 @@ from galaxy.webapps.galaxy.api import (
     search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import SerializationViewQueryParam
-from galaxy.webapps.galaxy.api.jobs import HistoryIdQueryParam
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
@@ -793,49 +792,6 @@ class WorkflowsAPIController(
         else:
             return encoded_invocations[0]
 
-    @expose_api
-    def index_invocations(self, trans: GalaxyWebTransaction, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations
-        GET /api/invocations
-
-        Get the list of a user's workflow invocations. If workflow_id is supplied
-        (either via URL or query parameter) it should be an encoded StoredWorkflow id
-        and returned invocations will be restricted to that workflow. history_id (an encoded
-        History id) can be used to further restrict the query. If neither a workflow_id or
-        history_id is supplied, all the current user's workflow invocations will be indexed
-        (as determined by the invocation being executed on one of the user's histories).
-
-        :param  workflow_id:      an encoded stored workflow id to restrict query to
-        :type   workflow_id:      str
-
-        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                  by default.
-        :type   instance:         boolean
-
-        :param  history_id:       an encoded history id to restrict query to
-        :type   history_id:       str
-
-        :param  job_id:           an encoded job id to restrict query to
-        :type   job_id:           str
-
-        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
-        :type   user_id:          str
-
-        :param  view:             level of detail to return per invocation 'element' or 'collection'.
-        :type   view:             str
-
-        :param  step_details:     If 'view' is 'element', also include details on individual steps.
-        :type   step_details:     bool
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        invocation_payload = InvocationIndexPayload(**kwd)
-        serialization_params = InvocationSerializationParams(**kwd)
-        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
-        trans.response.headers["total_matches"] = total_matches
-        return [i.model_dump(mode="json") for i in invocations]
-
     @expose_api_anonymous
     def create_invocations_from_store(self, trans, payload, **kwd):
         """
@@ -999,9 +955,12 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
-InstanceQueryParam: Optional[bool] = Query(
-    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
-)
+InstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID.",
+    ),
+]
 
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
@@ -1195,9 +1154,9 @@ class FastAPIWorkflows:
     )
     def show_versions(
         self,
-        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        instance: Optional[bool] = InstanceQueryParam,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        instance: Annotated[Optional[bool], InstanceQueryParam] = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
 
@@ -1249,21 +1208,12 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
-
-HistoryIdQueryParam: Annotated[
+# TODO rename? - this is already defined in jobs.py
+HistoryIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
-        default=None,
+        title="History ID",
         description="Optional identifier of a History. Use it to restrict the search within a particular History.",
-    ),
-]
-
-
-JobIdQueryParam = Annotated[
-    DecodedDatabaseIdField,
-    Query(
-        title="Job ID",
-        description="The ID of the job",
     ),
 ]
 
@@ -1283,6 +1233,14 @@ UserIdQueryParam = Annotated[
     ),
 ]
 
+WorkflowIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="Workflow ID",
+        description="Return only invocations for this Workflow ID",
+    ),
+]
+
 
 @router.cbv
 class FastAPIInvocations:
@@ -1295,34 +1253,37 @@ class FastAPIInvocations:
     )
     def index_invocations(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdQueryParam],
-        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: Annotated[Optional[DecodedDatabaseIdField], WorkflowIdQueryParam] = None,
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
+        job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
         user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        workflow_id: Optional[DecodedDatabaseIdField] = None,
-        view: Annotated[Optional[str], SerializationViewQueryParam] = None,
         instance: Annotated[Optional[bool], InstanceQueryParam] = False,
+        view: Annotated[Optional[str], SerializationViewQueryParam] = None,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
+        trans: ProvidesUserContext = DependsOnTrans,
     ):
         """If workflow_id is supplied (either via URL or query parameter) it should be an
         encoded StoredWorkflow id and returned invocations will be restricted to that
         workflow. history_id (an encoded History id) can be used to further restrict the
         query. If neither a workflow_id or history_id is supplied, all the current user's
         workflow invocations will be indexed (as determined by the invocation being
-        executed on one of the user's histories)"""
+        executed on one of the user's histories)
+        :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        """
         invocation_payload = InvocationIndexPayload(
-            job_id=job_id,
-            history_id=history_id,
-            user_id=user_id,
-            workflow_id=workflow_id,
             instance=instance,
         )
+        invocation_payload.workflow_id = workflow_id
+        invocation_payload.history_id = history_id
+        invocation_payload.job_id = job_id
+        invocation_payload.user_id = user_id
         serialization_params = InvocationSerializationParams(
             view=view,
             step_details=step_details,
         )
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
-        trans.response.headers["total_matches"] = total_matches
+        # TODO - how to access this via 'new' trans
+        # trans.response.headers["total_matches"] = total_matches
         return invocations
 
     @router.get(
@@ -1332,44 +1293,27 @@ class FastAPIInvocations:
     )
     def index_workflow_invocations(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdQueryParam],
+        workflow_id: Annotated[DecodedDatabaseIdField, StoredWorkflowIDPathParam],
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
+        job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
         user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        workflow_id: Annotated[Optional[DecodedDatabaseIdField], StoredWorkflowIDPathParam] = None,
+        instance: Annotated[Optional[bool], InstanceQueryParam] = False,
         view: Annotated[Optional[str], SerializationViewQueryParam] = None,
-        instance: bool = False,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """An alias for GET '/api/invocations'"""
-        self.index_invocations(
-            job_id=job_id,
+        invocations = self.index_invocations(
             history_id=history_id,
+            job_id=job_id,
             user_id=user_id,
-            workflow_id=workflow_id,
-            view=view,
             instance=instance,
+            view=view,
             step_details=step_details,
+            workflow_id=workflow_id,
             trans=trans,
         )
-
-    #     :param  workflow_id:      an encoded stored workflow id to restrict query to
-    #     :type   workflow_id:      str
-
-    #     :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
-    #                               by default.
-    #     :type   instance:         boolean
-
-    #     :param  history_id:       an encoded history id to restrict query to
-    #     :type   history_id:       str
-
-    #     :param  job_id:           an encoded job id to restrict query to
-    #     :type   job_id:           str
-
-    #     :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
-    #     :type   user_id:          str
-
-    #     :raises: exceptions.MessageException, exceptions.ObjectNotFound
+        return invocations
 
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
