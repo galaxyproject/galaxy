@@ -2,6 +2,10 @@ import os
 
 import pytest
 
+from galaxy_test.conftest import (  # noqa: F401
+    embedded_driver,
+    real_driver,
+)
 from tool_shed.test.base import driver
 
 
