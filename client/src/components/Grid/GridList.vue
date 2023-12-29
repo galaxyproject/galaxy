@@ -151,6 +151,7 @@ function onSearch(query: string) {
 function onSort(sortKey: string) {
     if (sortBy.value !== sortKey) {
         sortBy.value = sortKey;
+        sortDesc.value = false;
     } else {
         sortDesc.value = !sortDesc.value;
     }
@@ -254,8 +255,8 @@ watch(operationMessage, () => {
                             @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
-                                <FontAwesomeIcon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
-                                <FontAwesomeIcon v-else icon="caret-down" data-description="grid sort desc" />
+                                <FontAwesomeIcon v-if="sortDesc" icon="caret-down" data-description="grid sort desc" />
+                                <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
                             </span>
                         </BButton>
                     </span>
