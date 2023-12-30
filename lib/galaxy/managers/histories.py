@@ -128,6 +128,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         show_deleted = False
         show_own = payload.show_own
         show_published = payload.show_published
+        show_purged = False
         show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
@@ -172,10 +173,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     elif key == "is":
                         if q == "deleted":
                             show_deleted = True
-                        if q == "published":
-                            stmt = stmt.where(self.model_class.published == true())
-                        if q == "importable":
+                        elif q == "importable":
                             stmt = stmt.where(self.model_class.importable == true())
+                        elif q == "published":
+                            stmt = stmt.where(self.model_class.published == true())
+                        elif q == "purged":
+                            show_purged = True
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -198,8 +201,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
         if show_published and not is_admin:
             show_deleted = False
+            show_purged = False
 
-        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false()))
+        if show_purged:
+            stmt = stmt.where(self.model_class.purged == true())
+        else:
+            stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false()))
 
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)

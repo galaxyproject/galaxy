@@ -240,6 +240,13 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: equals("deleted", "deleted", toBool),
         menuItem: true,
     },
+    purged: {
+        placeholder: "Filter on purged entries",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("purged", "purged", toBool),
+        menuItem: true,
+    },
 };
 
 /**
