@@ -90,8 +90,8 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
         pass
 
     @pytest.fixture(autouse=True)
-    def _get_driver(self, tool_shed_test_driver):
-        self._test_driver = tool_shed_test_driver
+    def _get_driver(self, embedded_driver):
+        self._test_driver = embedded_driver
 
 
 class ShedGalaxyInteractorApi(GalaxyInteractorApi):
