@@ -23,7 +23,6 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -48,6 +47,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
+    CreateInvocationFromStore,
     InvocationJobsResponse,
     InvocationMessageResponseModel,
     InvocationReport,
@@ -65,7 +65,6 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    StoreContentSource,
     WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
@@ -120,11 +119,6 @@ from galaxy.workflow.run_request import build_workflow_run_configs
 log = logging.getLogger(__name__)
 
 router = Router(tags=["workflows"])
-
-
-class CreateInvocationFromStore(StoreContentSource):
-    history_id: Optional[str]
-    model_config = ConfigDict(extra="allow")
 
 
 class WorkflowsAPIController(

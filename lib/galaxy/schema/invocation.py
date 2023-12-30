@@ -41,6 +41,7 @@ from galaxy.schema.schema import (
     JOB_MODEL_CLASS,
     JobState,
     Model,
+    StoreContentSource,
     UpdateTimeField,
     WithModelClass,
 )
@@ -590,4 +591,12 @@ class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
 
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
-    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
+    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)
+
+
+class CreateInvocationFromStore(StoreContentSource):
+    # TODO - add proper description
+    history_id: Optional[str] = Field(default=None, title="History ID", description="History ID.")
+
+    class Config:
+        extra = Extra.allow
