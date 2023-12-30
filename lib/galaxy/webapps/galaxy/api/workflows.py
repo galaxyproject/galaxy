@@ -800,22 +800,7 @@ class WorkflowsAPIController(
         create_payload = CreateInvocationFromStore(**payload)
         serialization_params = InvocationSerializationParams(**payload)
         # refactor into a service...
-        return [i.model_dump(mode="json") for i in self._create_from_store(trans, create_payload, serialization_params)]
-
-    def _create_from_store(
-        self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
-    ):
-        history = self.history_manager.get_owned(
-            self.decode_id(payload.history_id), trans.user, current_history=trans.history
-        )
-        object_tracker = self.create_objects_from_store(
-            trans,
-            payload,
-            history=history,
-        )
-        return self.invocations_service.serialize_workflow_invocations(
-            object_tracker.invocations_by_key.values(), serialization_params
-        )
+        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
 
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.

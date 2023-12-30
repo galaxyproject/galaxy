@@ -22,6 +22,7 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ObjectNotFound,
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -38,6 +39,8 @@ from galaxy.model.store import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
+    CreateInvocationFromStore,
+    InvocationMessageResponseModel,
     InvocationStep,
     WorkflowInvocationResponse,
 )
@@ -57,6 +60,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
+    ConsumesModelStores,
     ensure_celery_tasks_enabled,
     model_store_storage_target,
     ServiceBase,
@@ -110,7 +114,7 @@ class WriteInvocationStoreToPayload(WriteStoreToPayload, BcoGenerationParameters
     pass
 
 
-class InvocationsService(ServiceBase):
+class InvocationsService(ServiceBase, ConsumesModelStores):
     def __init__(
         self,
         security: IdEncodingHelper,
@@ -287,3 +291,19 @@ class InvocationsService(ServiceBase):
                 export_store.export_workflow_invocation(workflow_invocation)
                 export_target.seek(0)
             return export_target.read()
+
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: CreateInvocationFromStore,
+        serialization_params: InvocationSerializationParams,
+    ):
+        history = self._histories_manager.get_owned(
+            self.decode_id(payload.history_id), trans.user, current_history=trans.history
+        )
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            history=history,
+        )
+        return self.serialize_workflow_invocations(object_tracker.invocations_by_key.values(), serialization_params)
