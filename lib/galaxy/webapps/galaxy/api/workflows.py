@@ -35,7 +35,10 @@ from galaxy.files.uris import (
     stream_url_to_str,
     validate_uri_access,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -48,9 +51,11 @@ from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
+    CreateInvocationsFromStorePayload,
     InvocationJobsResponse,
     InvocationMessageResponseModel,
     InvocationReport,
+    InvocationSerializationParams,
     InvocationStep,
     InvocationStepJobsResponseCollectionJobsModel,
     InvocationStepJobsResponseJobModel,
@@ -76,7 +81,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
@@ -102,7 +106,6 @@ from galaxy.webapps.galaxy.services.base import (
 )
 from galaxy.webapps.galaxy.services.invocations import (
     InvocationIndexPayload,
-    InvocationSerializationParams,
     InvocationsService,
     PrepareStoreDownloadPayload,
     WriteInvocationStoreToPayload,
@@ -786,21 +789,21 @@ class WorkflowsAPIController(
         else:
             return encoded_invocations[0]
 
-    @expose_api_anonymous
-    def create_invocations_from_store(self, trans, payload, **kwd):
-        """
-        POST /api/invocations/from_store
+    # @expose_api_anonymous
+    # def create_invocations_from_store(self, trans, payload, **kwd):
+    #     """
+    #     POST /api/invocations/from_store
 
-        Create invocation(s) from a supplied model store.
+    #     Create invocation(s) from a supplied model store.
 
-        Input can be an archive describing a Galaxy model store containing an
-        workflow invocation - for instance one created with with write_store
-        or prepare_store_download endpoint.
-        """
-        create_payload = CreateInvocationFromStore(**payload)
-        serialization_params = InvocationSerializationParams(**payload)
-        # refactor into a service...
-        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
+    #     Input can be an archive describing a Galaxy model store containing an
+    #     workflow invocation - for instance one created with with write_store
+    #     or prepare_store_download endpoint.
+    #     """
+    #     create_payload = CreateInvocationFromStore(**payload)
+    #     serialization_params = InvocationSerializationParams(**payload)
+    #     # refactor into a service...
+    #     return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
 
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
@@ -1224,6 +1227,25 @@ WorkflowIdQueryParam = Annotated[
 @router.cbv
 class FastAPIInvocations:
     invocations_service: InvocationsService = depends(InvocationsService)
+
+    @router.post(
+        "/api/invocations/from_store",
+        name="create_invocations_from_store",
+        description="Create invocation(s) from a supplied model store.",
+    )
+    def create_invocations_from_store(
+        self,
+        payload: Annotated[CreateInvocationsFromStorePayload, Body(...)],
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """
+        Input can be an archive describing a Galaxy model store containing an
+        workflow invocation - for instance one created with with write_store
+        or prepare_store_download endpoint.
+        """
+        create_payload = CreateInvocationFromStore(**payload.dict())
+        serialization_params = InvocationSerializationParams(**payload.dict())
+        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
 
     @router.get(
         "/api/invocations",

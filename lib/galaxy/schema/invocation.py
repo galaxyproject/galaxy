@@ -632,3 +632,7 @@ class InvocationSerializationParams(Model):
         are not the mapped over step outputs but the individual job outputs.""",
         deprecated=True,
     )
+
+
+class CreateInvocationsFromStorePayload(CreateInvocationFromStore, InvocationSerializationParams):
+    pass
