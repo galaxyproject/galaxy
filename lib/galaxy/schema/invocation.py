@@ -600,3 +600,35 @@ class CreateInvocationFromStore(StoreContentSource):
 
     class Config:
         extra = Extra.allow
+
+
+class InvocationSerializationView(str, Enum):
+    element = "element"
+    collection = "collection"
+
+
+class InvocationSerializationParams(Model):
+    """Contains common parameters for customizing model serialization."""
+
+    view: Optional[InvocationSerializationView] = Field(
+        default=None,
+        title="View",
+        description=(
+            "The name of the view used to serialize this item. "
+            "This will return a predefined set of attributes of the item."
+        ),
+        example="element",
+    )
+    step_details: bool = Field(
+        default=False,
+        title="Include step details",
+        description="Include details for individual invocation steps and populate a steps attribute in the resulting dictionary",
+    )
+    legacy_job_state: bool = Field(
+        default=False,
+        description="""Populate the invocation step state with the job state instead of the invocation step state.
+        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+        Partially scheduled steps may provide incomplete information and the listed steps outputs
+        are not the mapped over step outputs but the individual job outputs.""",
+        deprecated=True,
+    )

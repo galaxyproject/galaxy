@@ -1,18 +1,13 @@
 import logging
-from enum import Enum
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Tuple,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 
 from galaxy.celery.tasks import (
     prepare_invocation_download,
@@ -41,6 +36,8 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
     InvocationMessageResponseModel,
+    InvocationSerializationParams,
+    InvocationSerializationView,
     InvocationStep,
     WorkflowInvocationResponse,
 )
@@ -67,39 +64,6 @@ from galaxy.webapps.galaxy.services.base import (
 )
 
 log = logging.getLogger(__name__)
-
-
-class InvocationSerializationView(str, Enum):
-    element = "element"
-    collection = "collection"
-
-
-class InvocationSerializationParams(BaseModel):
-    """Contains common parameters for customizing model serialization."""
-
-    view: Optional[InvocationSerializationView] = Field(
-        default=None,
-        title="View",
-        description=(
-            "The name of the view used to serialize this item. "
-            "This will return a predefined set of attributes of the item."
-        ),
-        examples=["element"],
-    )
-    step_details: bool = Field(
-        default=False,
-        title="Include step details",
-        description="Include details for individual invocation steps and populate a steps attribute in the resulting dictionary",
-    )
-    legacy_job_state: bool = Field(
-        default=False,
-        description="""Populate the invocation step state with the job state instead of the invocation step state.
-        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-        Partially scheduled steps may provide incomplete information and the listed steps outputs
-        are not the mapped over step outputs but the individual job outputs.""",
-        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
-        json_schema_extra={"deprecated": True},
-    )
 
 
 class InvocationIndexPayload(InvocationIndexQueryPayload):
