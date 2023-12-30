@@ -1734,7 +1734,7 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
     parsed_url = urlparse(base_url)
     if scheme != "http":
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {scheme}"
+    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {parsed_url.scheme}"
     if port != 80:
         url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:
