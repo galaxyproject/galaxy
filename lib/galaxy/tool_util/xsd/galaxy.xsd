@@ -5282,11 +5282,19 @@ on Human (hg18)``.
 
   <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="OutputData" />
+      <xs:element name="data" type="OutputCollectionDataElement" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
     </xs:choice>
   </xs:group>
+
+  <xs:complexType name="OutputCollectionDataElement">
+    <xs:sequence>
+      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="OutputCommon" />
+    <xs:attributeGroup ref="OutputDataAttributes" />
+  </xs:complexType>
 
   <xs:complexType name="OutputCollection">
     <xs:annotation>
@@ -5335,7 +5343,6 @@ This tag describes an output to the tool.
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
-      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attributeGroup ref="OutputCommon"/>
     <xs:attributeGroup ref="OutputCollectionAttributes"/>
