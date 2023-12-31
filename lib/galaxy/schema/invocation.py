@@ -625,7 +625,7 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
 
 class CreateInvocationFromStore(StoreContentSource):
     # TODO - add proper description
-    history_id: Optional[str] = Field(default=None, title="History ID", description="History ID.")
+    history_id: EncodedDatabaseIdField = Field(default=Required, title="History ID", description="")
 
     class Config:
         extra = Extra.allow
