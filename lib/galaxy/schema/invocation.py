@@ -514,7 +514,11 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
+<<<<<<< HEAD
 class WorkflowInvocationCollectionView(Model, WithModelClass):
+=======
+class WorkflowInvocationBaseResponse(Model):
+>>>>>>> Refactor pydantic model to enable reuse
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -532,10 +536,17 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
     )
     state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
+    messages: List[InvocationMessageResponseUnion] = Field(
+        default=Required,
+        title="Messages",
+        description="A list of messages about why the invocation did not succeed.",
+    )
 
 
-class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
-    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
+class WorkflowInvocationResponse(WorkflowInvocationBaseResponse):
+    steps: List[InvocationStep] = Field(
+        default=Required, title="Steps", description="Steps of the workflow invocation."
+    )
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
@@ -553,10 +564,28 @@ class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
     output_values: Dict[str, Any] = Field(
         default=..., title="Output values", description="Output values of the workflow invocation."
     )
-    messages: List[InvocationMessageResponseUnion] = Field(
-        default=...,
-        title="Messages",
-        description="A list of messages about why the invocation did not succeed.",
+
+
+class IndexWorkflowInvocationResponse(WorkflowInvocationBaseResponse):
+    steps: Optional[List[InvocationStep]] = Field(
+        default=None, title="Steps", description="Steps of the workflow invocation."
+    )
+    inputs: Optional[Dict[str, InvocationInput]] = Field(
+        default=None, title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
+    )
+    input_step_parameters: Optional[Dict[str, InvocationInputParameter]] = Field(
+        default=None, title="Input step parameters", description="Input step parameters of the workflow invocation."
+    )
+    outputs: Optional[Dict[str, InvocationOutput]] = Field(
+        default=None, title="Outputs", description="Output datasets of the workflow invocation."
+    )
+    output_collections: Optional[Dict[str, InvocationOutputCollection]] = Field(
+        default=None,
+        title="Output collections",
+        description="Output dataset collections of the workflow invocation.",
+    )
+    output_values: Optional[Dict[str, Any]] = Field(
+        default=None, title="Output values", description="Output values of the workflow invocation."
     )
 
 
