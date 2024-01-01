@@ -8,7 +8,6 @@ from typing import (
     Any,
     AsyncGenerator,
     cast,
-    MutableMapping,
     NamedTuple,
     Optional,
     Tuple,
@@ -21,6 +20,7 @@ from urllib.parse import (
 )
 
 from a2wsgi.wsgi import build_environ
+from a2wsgi.wsgi_typing import Environ
 from fastapi import (
     APIRouter,
     Form,
@@ -205,7 +205,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     def __init__(self, request: Request):
         self.__request = request
-        self.__environ: Optional[MutableMapping[str, Any]] = None
+        self.__environ: Optional[Environ] = None
 
     @property
     def base(self) -> str:
@@ -224,7 +224,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         return self.__request.base_url.netloc
 
     @property
-    def environ(self) -> MutableMapping[str, Any]:
+    def environ(self) -> Environ:
         """
         Fallback WSGI environ.
 
