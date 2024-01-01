@@ -911,6 +911,16 @@ export interface paths {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
+    "/api/invocations/steps/{step_id}": {
+        /** Show details of workflow invocation step. */
+        get: operations["step_api_invocations_steps__step_id__get"];
+    };
+    "/api/invocations/{invocation_id}": {
+        /** Get detailed description of a workflow invocation. */
+        get: operations["show_invocation_api_invocations__invocation_id__get"];
+        /** Cancel the specified workflow invocation. */
+        delete: operations["cancel_invocation_api_invocations__invocation_id__delete"];
+    };
     "/api/invocations/{invocation_id}/biocompute": {
         /**
          * Return a BioCompute Object for the workflow invocation.
@@ -957,9 +967,46 @@ export interface paths {
          */
         get: operations["download_invocation_bco_api_invocations__invocation_id__biocompute_download_get"];
     };
+    "/api/invocations/{invocation_id}/jobs_summary": {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @description Warning: We allow anyone to fetch job state information about any object they
+         * can guess an encoded ID for - it isn't considered protected data. This keeps
+         * polling IDs as part of state calculation for large histories and collections as
+         * efficient as possible.
+         */
+        get: operations["invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get"];
+    };
     "/api/invocations/{invocation_id}/prepare_store_download": {
         /** Prepare a workflow invocation export-style download. */
         post: operations["prepare_store_download_api_invocations__invocation_id__prepare_store_download_post"];
+    };
+    "/api/invocations/{invocation_id}/report": {
+        /** Get JSON summarizing invocation for reporting. */
+        get: operations["show_invocation_report_api_invocations__invocation_id__report_get"];
+    };
+    "/api/invocations/{invocation_id}/report.pdf": {
+        /** Get PDF summarizing invocation for reporting. */
+        get: operations["show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get"];
+    };
+    "/api/invocations/{invocation_id}/step_jobs_summary": {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @description Warning: We allow anyone to fetch job state information about any object they
+         * can guess an encoded ID for - it isn't considered protected data. This keeps
+         * polling IDs as part of state calculation for large histories and collections as
+         * efficient as possible.
+         */
+        get: operations["invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get"];
+    };
+    "/api/invocations/{invocation_id}/steps/{step_id}": {
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
+         */
+        get: operations["invocation_step_api_invocations__invocation_id__steps__step_id__get"];
+        /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
+        put: operations["update_invocation_step_api_invocations__invocation_id__steps__step_id__put"];
     };
     "/api/invocations/{invocation_id}/write_store": {
         /** Prepare a workflow invocation export-style download and write to supplied URI. */
@@ -1779,6 +1826,58 @@ export interface paths {
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
     };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
+        /**
+         * Get detailed description of a workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get"];
+        /**
+         * Cancel the specified workflow invocation.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete"];
+    };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary": {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+         */
+        get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get"];
+    };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}/report": {
+        /**
+         * Get JSON summarizing invocation for reporting.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get"];
+    };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf": {
+        /**
+         * Get PDF summarizing invocation for reporting.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get"];
+    };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary": {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+         */
+        get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get"];
+    };
+    "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}": {
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
+        get: operations["workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get"];
+        /**
+         * Update state of running workflow step invocation.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+         */
+        put: operations["update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put"];
+    };
     "/api/workflows/{workflow_id}/tags": {
         /** Show tags based on workflow_id */
         get: operations["index_api_workflows__workflow_id__tags_get"];
@@ -1796,6 +1895,66 @@ export interface paths {
     "/api/workflows/{workflow_id}/undelete": {
         /** Remove the deleted flag from a workflow. */
         post: operations["undelete_workflow_api_workflows__workflow_id__undelete_post"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}": {
+        /**
+         * Get detailed description of a workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get"];
+        /**
+         * Cancel the specified workflow invocation.
+         * @deprecated
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}/jobs_summary": {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+         */
+        get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}/report": {
+        /**
+         * Get JSON summarizing invocation for reporting.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}/report.pdf": {
+        /**
+         * Get PDF summarizing invocation for reporting.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+         */
+        get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}/step_jobs_summary": {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+         */
+        get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get"];
+    };
+    "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}": {
+        /**
+         * Show details of workflow invocation step.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
+        get: operations["workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__get"];
+        /**
+         * Update state of running workflow step invocation.
+         * @deprecated
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+         */
+        put: operations["update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put"];
     };
     "/api/workflows/{workflow_id}/versions": {
         /** List all versions of a workflow. */
@@ -3010,7 +3169,7 @@ export interface components {
             annotation?: string;
             /**
              * Content
-             * @description Raw text contents of the first page revision (type dependent on content_format).
+             * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
             content?: string;
@@ -4391,6 +4550,12 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /**
+         * ExtendedInvocationStepState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtendedInvocationStepState: "new" | "ready" | "scheduled" | "ok";
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -4758,6 +4923,202 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[];
+        };
+        /** GenericInvocationCancellationHistoryDeleted[EncodedDatabaseIdField] */
+        GenericInvocationCancellationHistoryDeleted_EncodedDatabaseIdField_: {
+            /**
+             * History ID
+             * @description History ID of history that was deleted.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "history_deleted";
+        };
+        /** GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField] */
+        GenericInvocationCancellationReviewFailed_EncodedDatabaseIdField_: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "cancelled_on_review";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of paused step that did not pass review.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationCancellationUserRequest[EncodedDatabaseIdField] */
+        GenericInvocationCancellationUserRequest_EncodedDatabaseIdField_: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "user_request";
+        };
+        /** GenericInvocationEvaluationWarningWorkflowOutputNotFound[EncodedDatabaseIdField] */
+        GenericInvocationEvaluationWarningWorkflowOutputNotFound_EncodedDatabaseIdField_: {
+            /**
+             * Output Name
+             * @description Output that was designated as workflow output but that has not been found
+             */
+            output_name: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "workflow_output_not_found";
+            /** Workflow step id of step that caused a warning. */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureCollectionFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureCollectionFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /**
+             * HistoryDatasetCollectionAssociation ID
+             * @description HistoryDatasetCollectionAssociation ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            hdca_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "collection_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureDatasetFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureDatasetFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id?: number;
+            /**
+             * HistoryDatasetAssociation ID
+             * @description HistoryDatasetAssociation ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            hda_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "dataset_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureExpressionEvaluationFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureExpressionEvaluationFailed_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description May contain details to help troubleshoot this problem.
+             */
+            details?: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "expression_evaluation_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureJobFailed[EncodedDatabaseIdField] */
+        GenericInvocationFailureJobFailed_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /**
+             * Job ID
+             * @description Job ID that relates to failure.
+             * @example 0123456789ABCDEF
+             */
+            job_id: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "job_failed";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureOutputNotFound[EncodedDatabaseIdField] */
+        GenericInvocationFailureOutputNotFound_EncodedDatabaseIdField_: {
+            /**
+             * Dependent Workflow Step Id
+             * @description Workflow step id of step that caused failure.
+             */
+            dependent_workflow_step_id: number;
+            /** Tool or module output name that was referenced but not produced */
+            output_name: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "output_not_found";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationFailureWhenNotBoolean[EncodedDatabaseIdField] */
+        GenericInvocationFailureWhenNotBoolean_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description Contains details to help troubleshoot this problem.
+             */
+            details: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "when_not_boolean";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id: number;
+        };
+        /** GenericInvocationUnexpectedFailure[EncodedDatabaseIdField] */
+        GenericInvocationUnexpectedFailure_EncodedDatabaseIdField_: {
+            /**
+             * Details
+             * @description May contains details to help troubleshoot this problem.
+             */
+            details?: string;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "unexpected_failure";
+            /**
+             * Workflow Step Id
+             * @description Workflow step id of step that failed.
+             */
+            workflow_step_id?: number;
         };
         /**
          * GroupCreatePayload
@@ -6451,6 +6812,405 @@ export interface components {
             /** Uninstalled */
             uninstalled: boolean;
         };
+        /** InvocationInput */
+        InvocationInput: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Label
+             * @description Label of the workflow step associated with the input dataset/dataset collection.
+             */
+            label?: string;
+            /**
+             * Source
+             * @description Source type of the input dataset/dataset collection.
+             */
+            src: "hda" | "hdca";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationInputParameter */
+        InvocationInputParameter: {
+            /**
+             * Label
+             * @description Label of the workflow step associated with the input parameter.
+             */
+            label: string;
+            /**
+             * Parameter value
+             * @description Value of the input parameter.
+             */
+            parameter_value: Record<string, never>;
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the input parameter.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationJobsResponse */
+        InvocationJobsResponse: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocation
+             * @enum {string}
+             */
+            model: "WorkflowInvocation";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationOutput */
+        InvocationOutput: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Source
+             * @description Source model of the output dataset.
+             * @enum {string}
+             */
+            src: "hda";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationOutputCollection */
+        InvocationOutputCollection: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Source
+             * @description Source model of the output dataset collection.
+             * @enum {string}
+             */
+            src: "hdca";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /**
+         * InvocationReport
+         * @description Report describing workflow invocation
+         */
+        InvocationReport: {
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_time?: string;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_version?: string;
+            /**
+             * Workflow ID
+             * @description The workflow this invocation has been triggered for.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Markdown
+             * @description Raw galaxy-flavored markdown contents of the report.
+             * @default
+             */
+            invocation_markdown?: string;
+            /**
+             * Markdown
+             * @description Raw galaxy-flavored markdown contents of the report.
+             * @default
+             */
+            markdown?: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Report
+             * @enum {string}
+             */
+            model_class: "Report";
+            /**
+             * Render format
+             * @description Format of the invocation report.
+             * @default markdown
+             * @enum {string}
+             */
+            render_format?: "markdown";
+            /**
+             * Title
+             * @description The name of the report.
+             */
+            title: string;
+            /**
+             * Username
+             * @description The name of the user who owns this report.
+             */
+            username: string;
+        };
+        /**
+         * InvocationState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
+        /**
+         * InvocationStep
+         * @description Information about workflow invocation step
+         */
+        InvocationStep: {
+            /**
+             * Action
+             * @description Whether to take action on the invocation step.
+             */
+            action?: boolean;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Job ID
+             * @description The encoded ID of the job associated with this workflow invocation step.
+             * @example 0123456789ABCDEF
+             */
+            job_id?: string;
+            /**
+             * Jobs
+             * @description Jobs associated with the workflow invocation step.
+             * @default []
+             */
+            jobs?: components["schemas"]["JobBaseModel"][];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocationStep
+             * @enum {string}
+             */
+            model_class: "WorkflowInvocationStep";
+            /**
+             * Order index
+             * @description The index of the workflow step in the workflow.
+             */
+            order_index: number;
+            /**
+             * Output collections
+             * @description The dataset collection outputs of the workflow invocation step.
+             * @default {}
+             */
+            output_collections?: {
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
+            };
+            /**
+             * Outputs
+             * @description The outputs of the workflow invocation step.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
+            };
+            /**
+             * State of the invocation step
+             * @description Describes where in the scheduling process the workflow invocation step is.
+             */
+            state?: components["schemas"]["ExtendedInvocationStepState"];
+            /**
+             * Subworkflow invocation ID
+             * @description The encoded ID of the subworkflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            subworkflow_invocation_id?: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with this workflow invocation step.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+            /**
+             * Step label
+             * @description The label of the workflow step
+             */
+            workflow_step_label?: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the workflow step.
+             */
+            workflow_step_uuid?: string;
+        };
+        /** InvocationStepCollectionOutput */
+        InvocationStepCollectionOutput: {
+            /**
+             * Dataset Collection ID
+             * @description Dataset Collection ID of the workflow step output.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * src
+             * @description The source model of the output.
+             * @default hdca
+             * @enum {string}
+             */
+            src?: "hdca";
+        };
+        /** InvocationStepJobsResponseCollectionJobsModel */
+        InvocationStepJobsResponseCollectionJobsModel: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default ImplicitCollectionJobs
+             * @enum {string}
+             */
+            model: "ImplicitCollectionJobs";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationStepJobsResponseJobModel */
+        InvocationStepJobsResponseJobModel: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model: "Job";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationStepJobsResponseStepModel */
+        InvocationStepJobsResponseStepModel: {
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocationStep
+             * @enum {string}
+             */
+            model: "WorkflowInvocationStep";
+            /**
+             * Populated state
+             * @description The absolute state of all the jobs related to the Invocation.
+             */
+            populated_state: components["schemas"]["JobState"];
+            /**
+             * States
+             * @description The states of all the jobs related to the Invocation.
+             */
+            states: {
+                [key: string]: number | undefined;
+            };
+        };
+        /** InvocationStepOutput */
+        InvocationStepOutput: {
+            /**
+             * Dataset ID
+             * @description Dataset ID of the workflow step output.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * src
+             * @description The source model of the output.
+             * @default hda
+             * @enum {string}
+             */
+            src?: "hda";
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the workflow step output dataset.
+             */
+            uuid?: string;
+        };
+        /** InvocationUpdatePayload */
+        InvocationUpdatePayload: {
+            /**
+             * Action
+             * @description Whether to take action on the invocation step.
+             */
+            action: boolean;
+        };
         /**
          * ItemTagsCreatePayload
          * @description Payload schema for creating an item tag.
@@ -6506,6 +7266,61 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
+        /** JobBaseModel */
+        JobBaseModel: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Exit Code
+             * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
+             */
+            exit_code?: number;
+            /**
+             * Galaxy Version
+             * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
+             */
+            galaxy_version?: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model_class: "Job";
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Tool ID
+             * @description Identifier of the tool that generated this job.
+             */
+            tool_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+        };
         /** JobDestinationParams */
         JobDestinationParams: {
             /**
@@ -8017,7 +8832,7 @@ export interface components {
         PageDetails: {
             /**
              * Content
-             * @description Raw text contents of the first page revision (type dependent on content_format).
+             * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
             content?: string;
@@ -8044,13 +8859,13 @@ export interface components {
              */
             email_hash: string;
             /**
-             * Generate Date
-             * @description The date this page was generated.
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
              */
             generate_time?: string;
             /**
              * Galaxy Version
-             * @description The version of Galaxy this page was generated with.
+             * @description The version of Galaxy this object was generated with.
              */
             generate_version?: string;
             /**
@@ -10112,6 +10927,111 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** WorkflowInvocationResponse */
+        WorkflowInvocationResponse: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Input step parameters
+             * @description Input step parameters of the workflow invocation.
+             */
+            input_step_parameters: {
+                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
+            };
+            /**
+             * Inputs
+             * @description Input datasets/dataset collections of the workflow invocation.
+             */
+            inputs: {
+                [key: string]: components["schemas"]["InvocationInput"] | undefined;
+            };
+            /**
+             * Messages
+             * @description A list of messages about why the invocation did not succeed.
+             */
+            messages: (
+                | components["schemas"]["GenericInvocationCancellationReviewFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationCancellationHistoryDeleted_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationCancellationUserRequest_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureDatasetFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureCollectionFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureJobFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureOutputNotFound_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureExpressionEvaluationFailed_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationFailureWhenNotBoolean_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationUnexpectedFailure_EncodedDatabaseIdField_"]
+                | components["schemas"]["GenericInvocationEvaluationWarningWorkflowOutputNotFound_EncodedDatabaseIdField_"]
+            )[];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocation
+             * @enum {string}
+             */
+            model_class: "WorkflowInvocation";
+            /**
+             * Output collections
+             * @description Output dataset collections of the workflow invocation.
+             */
+            output_collections: {
+                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
+            };
+            /**
+             * Output values
+             * @description Output values of the workflow invocation.
+             */
+            output_values: Record<string, never>;
+            /**
+             * Outputs
+             * @description Output datasets of the workflow invocation.
+             */
+            outputs: {
+                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
+            };
+            /**
+             * Invocation state
+             * @description State of workflow invocation.
+             */
+            state: components["schemas"]["InvocationState"];
+            /**
+             * Steps
+             * @description Steps of the workflow invocation.
+             */
+            steps: components["schemas"]["InvocationStep"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow invocation.
+             */
+            uuid?: string | string;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
+        };
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
@@ -15597,6 +16517,109 @@ export interface operations {
             };
         };
     };
+    step_api_invocations_steps__step_id__get: {
+        /** Show details of workflow invocation step. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                step_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_invocation_api_invocations__invocation_id__get: {
+        /** Get detailed description of a workflow invocation. */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_invocation_api_invocations__invocation_id__delete: {
+        /** Cancel the specified workflow invocation. */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_invocation_bco_api_invocations__invocation_id__biocompute_get: {
         /**
          * Return a BioCompute Object for the workflow invocation.
@@ -15691,6 +16714,39 @@ export interface operations {
             };
         };
     };
+    invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @description Warning: We allow anyone to fetch job state information about any object they
+         * can guess an encoded ID for - it isn't considered protected data. This keeps
+         * polling IDs as part of state calculation for large histories and collections as
+         * efficient as possible.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     prepare_store_download_api_invocations__invocation_id__prepare_store_download_post: {
         /** Prepare a workflow invocation export-style download. */
         parameters: {
@@ -15713,6 +16769,159 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_invocation_report_api_invocations__invocation_id__report_get: {
+        /** Get JSON summarizing invocation for reporting. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_invocation_report_pdf_api_invocations__invocation_id__report_pdf_get: {
+        /** Get PDF summarizing invocation for reporting. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @description Warning: We allow anyone to fetch job state information about any object they
+         * can guess an encoded ID for - it isn't considered protected data. This keeps
+         * polling IDs as part of state calculation for large histories and collections as
+         * efficient as possible.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invocation_step_api_invocations__invocation_id__steps__step_id__get: {
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                invocation_id: string | string;
+                step_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_invocation_step_api_invocations__invocation_id__steps__step_id__put: {
+        /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                invocation_id: string;
+                step_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvocationUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -20301,6 +21510,293 @@ export interface operations {
             };
         };
     };
+    show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
+        /**
+         * Get detailed description of a workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete: {
+        /**
+         * Cancel the specified workflow invocation.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get: {
+        /**
+         * Get JSON summarizing invocation for reporting.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get: {
+        /**
+         * Get PDF summarizing invocation for reporting.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get: {
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                workflow_id: string;
+                invocation_id: string | string;
+                step_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put: {
+        /**
+         * Update state of running workflow step invocation.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+                step_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvocationUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_api_workflows__workflow_id__tags_get: {
         /** Show tags based on workflow_id */
         parameters: {
@@ -20462,6 +21958,301 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get: {
+        /**
+         * Get detailed description of a workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete: {
+        /**
+         * Cancel the specified workflow invocation.
+         * @deprecated
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated across all current jobs of the workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get: {
+        /**
+         * Get JSON summarizing invocation for reporting.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get: {
+        /**
+         * Get PDF summarizing invocation for reporting.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get: {
+        /**
+         * Get job state summary info aggregated per step of the workflow invocation.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["InvocationStepJobsResponseStepModel"]
+                        | components["schemas"]["InvocationStepJobsResponseJobModel"]
+                        | components["schemas"]["InvocationStepJobsResponseCollectionJobsModel"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__get: {
+        /**
+         * Show details of workflow invocation step.
+         * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                workflow_id: string;
+                invocation_id: string | string;
+                step_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put: {
+        /**
+         * Update state of running workflow step invocation.
+         * @deprecated
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            /** @description The encoded database identifier of the Invocation. */
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                workflow_id: string;
+                invocation_id: string;
+                step_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvocationUpdatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
