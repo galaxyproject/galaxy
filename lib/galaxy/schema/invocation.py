@@ -581,7 +581,7 @@ class WorkflowInvocationBaseResponse(Model):
     )
 
 
-class WorkflowInvocationResponse(WorkflowInvocationBaseResponse):
+class WorkflowInvocationElementView(WorkflowInvocationBaseResponse):
     steps: List[InvocationStep] = Field(
         default=Required, title="Steps", description="Steps of the workflow invocation."
     )
@@ -604,7 +604,7 @@ class WorkflowInvocationResponse(WorkflowInvocationBaseResponse):
     )
 
 
-class IndexWorkflowInvocationResponse(WorkflowInvocationBaseResponse):
+class WorkflowInvocationCollectionView(WorkflowInvocationBaseResponse):
     steps: Optional[List[InvocationStep]] = Field(
         default=None, title="Steps", description="Steps of the workflow invocation."
     )
