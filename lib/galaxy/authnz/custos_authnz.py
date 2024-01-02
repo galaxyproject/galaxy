@@ -60,6 +60,7 @@ class CustosAuthnzConfiguration:
     redirect_uri: str
     ca_bundle: Optional[str]
     pkce_support: bool
+    accepted_audiences: List[str]
     extra_params: Optional[dict]
     authorization_endpoint: Optional[str]
     token_endpoint: Optional[str]
@@ -68,11 +69,14 @@ class CustosAuthnzConfiguration:
     iam_client_secret: Optional[str]
     userinfo_endpoint: Optional[str]
     credential_url: Optional[str]
+    issuer: Optional[str]
+    jwks_uri: Optional[str]
 
 
 class OIDCAuthnzBase(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         provider = provider.lower()
+        self.jwks_client: Optional[jwt.PyJWKClient]
         self.config = CustosAuthnzConfiguration(
             provider=provider,
             verify_ssl=oidc_config["VERIFY_SSL"],
@@ -84,6 +88,15 @@ class OIDCAuthnzBase(IdentityProvider):
             redirect_uri=oidc_backend_config["redirect_uri"],
             ca_bundle=oidc_backend_config.get("ca_bundle", None),
             pkce_support=oidc_backend_config.get("pkce_support", False),
+            accepted_audiences=list(
+                filter(
+                    None,
+                    map(
+                        str.strip,
+                        oidc_backend_config.get("accepted_audiences", oidc_backend_config["client_id"]).split(","),
+                    ),
+                )
+            ),
             extra_params={},
             authorization_endpoint=None,
             token_endpoint=None,
@@ -92,6 +105,8 @@ class OIDCAuthnzBase(IdentityProvider):
             iam_client_secret=None,
             userinfo_endpoint=None,
             credential_url=None,
+            issuer=None,
+            jwks_uri=None,
         )
 
     def _decode_token_no_signature(self, token):
@@ -221,7 +236,7 @@ class OIDCAuthnzBase(IdentityProvider):
                     if trans.app.config.fixed_delegated_auth:
                         user = existing_user
                     else:
-                        message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
+                        message = f"There already exists a user with email {email}. To associate this external login, you must first be logged in as that existing account."
                         log.info(message)
                         login_redirect_url = (
                             f"{login_redirect_url}login/start"
@@ -449,6 +464,12 @@ class OIDCAuthnzBase(IdentityProvider):
         self.config.token_endpoint = well_known_oidc_config["token_endpoint"]
         self.config.userinfo_endpoint = well_known_oidc_config["userinfo_endpoint"]
         self.config.end_session_endpoint = well_known_oidc_config.get("end_session_endpoint")
+        self.config.issuer = well_known_oidc_config.get("issuer")
+        self.config.jwks_uri = well_known_oidc_config.get("jwks_uri")
+        if self.config.jwks_uri:
+            self.jwks_client = jwt.PyJWKClient(self.config.jwks_uri, cache_jwk_set=True, lifespan=360)
+        else:
+            self.jwks_client = None
 
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
@@ -472,6 +493,52 @@ class OIDCAuthnzBase(IdentityProvider):
             return f"{username}{count}"
         else:
             return username
+
+    def decode_user_access_token(self, sa_session, access_token):
+        """Verifies and decodes an access token against this provider, returning the user and
+        a dict containing the decoded token data.
+
+        :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
+        :param sa_session:      SQLAlchemy database handle.
+
+        :type  access_token: string
+        :param access_token: An OIDC access token
+
+        :return: A tuple containing the user and decoded jwt data or [None, None]
+                 if the access token does not belong to this provider.
+        :rtype: Tuple[User, dict]
+        """
+        if not self.jwks_client:
+            return None
+        try:
+            signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
+            decoded_jwt = jwt.decode(
+                access_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                issuer=self.config.issuer,
+                audience=self.config.accepted_audiences,
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_nbf": True,
+                    "verify_iat": True,
+                    "verify_aud": bool(self.config.accepted_audiences),
+                    "verify_iss": True,
+                },
+            )
+        except jwt.exceptions.PyJWKClientError:
+            log.debug(f"Could not get signing keys for access token with provider: {self.config.provider}. Ignoring...")
+            return None, None
+        except jwt.exceptions.InvalidIssuerError:
+            # An Invalid issuer means that the access token is not relevant to this provider.
+            # All other exceptions are bubbled up
+            return None, None
+        # jwt verified, we can now fetch the user
+        user_id = decoded_jwt["sub"]
+        custos_authnz_token = self._get_custos_authnz_token(sa_session, user_id, self.config.provider)
+        user = custos_authnz_token.user if custos_authnz_token else None
+        return user, decoded_jwt
 
 
 class OIDCAuthnzBaseKeycloak(OIDCAuthnzBase):
