@@ -23,6 +23,7 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
+from pydantic import Required
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -1209,6 +1210,15 @@ WorkflowIdQueryParam = Annotated[
     ),
 ]
 
+CreateInvocationsFromStoreBody = Annotated[
+    CreateInvocationsFromStorePayload,
+    Body(
+        default=Required,
+        title="Create invocations from store",
+        description="The values and serialization parameters for creating invocations from a supplied model store.",
+    ),
+]
+
 
 @router.cbv
 class FastAPIInvocations:
@@ -1221,7 +1231,7 @@ class FastAPIInvocations:
     )
     def create_invocations_from_store(
         self,
-        payload: Annotated[CreateInvocationsFromStorePayload, Body(...)],
+        payload: Annotated[CreateInvocationsFromStorePayload, CreateInvocationsFromStoreBody],
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> List[IndexWorkflowInvocationResponse]:
         """
@@ -1271,7 +1281,6 @@ class FastAPIInvocations:
             step_details=step_details,
         )
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
-        # TODO - how to access this via 'new' trans
         response.headers["total_matches"] = str(total_matches)
         return [IndexWorkflowInvocationResponse(**invocation) for invocation in invocations]
 
