@@ -1,5 +1,8 @@
 import os
 
+import pytest
+from fs.errors import RemoteConnectionError
+
 from ._util import (
     assert_realizes_contains,
     configured_file_sources,
@@ -19,12 +22,15 @@ def test_file_source_ftp_specific():
     assert file_source_pair.path == test_url
     assert file_source_pair.file_source.id == "test1"
 
-    assert_realizes_contains(
-        file_sources,
-        test_url,
-        "This is ftp.gnu.org, the FTP server of the the GNU project.",
-        user_context=user_context,
-    )
+    try:
+        assert_realizes_contains(
+            file_sources,
+            test_url,
+            "This is ftp.gnu.org, the FTP server of the the GNU project.",
+            user_context=user_context,
+        )
+    except RemoteConnectionError:
+        pytest.skip("ftp.gnu.org not available")
 
 
 def test_file_source_ftp_generic():
