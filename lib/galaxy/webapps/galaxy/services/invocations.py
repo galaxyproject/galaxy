@@ -157,12 +157,12 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, invocation_id):
             ids.append(job_source_id)
             types.append(job_source_type)
-        return fetch_job_states(trans.sa_session, ids, types)
+        return [s for s in fetch_job_states(trans.sa_session, ids, types)]
 
     def show_invocation_jobs_summary(self, trans, invocation_id) -> Dict[str, Any]:
         ids = [invocation_id]
         types = ["WorkflowInvocation"]
-        return fetch_job_states(trans.sa_session, ids, types)[0]
+        return [s for s in fetch_job_states(trans.sa_session, ids, types)][0]
 
     def prepare_store_download(
         self, trans, invocation_id: DecodedDatabaseIdField, payload: PrepareStoreDownloadPayload
