@@ -948,9 +948,14 @@ InvocationIDPathParam = Annotated[
     Path(..., title="Invocation ID", description="The encoded database identifier of the Invocation."),
 ]
 
-WorkflowInvocationStepIDPathParam = Annotated[DecodedDatabaseIdField, Path(
-    ..., title="WorkflowInvocationStep ID", description="The encoded database identifier of the WorkflowInvocationStep."
-)]
+WorkflowInvocationStepIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(
+        ...,
+        title="WorkflowInvocationStep ID",
+        description="The encoded database identifier of the WorkflowInvocationStep.",
+    ),
+]
 
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
@@ -1329,7 +1334,9 @@ class FastAPIInvocations:
         legacy_job_state: LegacyJobStateQueryParam = False,
     ) -> WorkflowInvocationResponse:
         """An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
-        return self.show_invocation(trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state)
+        return self.show_invocation(
+            trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state
+        )
 
     @router.delete("/api/invocations/{invocation_id}", summary="Cancel the specified workflow invocation.")
     def cancel_invocation(
@@ -1363,7 +1370,9 @@ class FastAPIInvocations:
     ) -> WorkflowInvocationResponse:
         """An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
 
-        return self.cancel_invocation(trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state)
+        return self.cancel_invocation(
+            trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state
+        )
 
     @router.get(
         "/api/invocations/{invocation_id}/report",
@@ -1371,8 +1380,8 @@ class FastAPIInvocations:
     )
     def show_invocation_report(
         self,
-        trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> InvocationReport:
         return self.invocations_service.show_invocation_report(trans, invocation_id)
 
@@ -1388,11 +1397,11 @@ class FastAPIInvocations:
     def show_workflow_invocation_report(
         self,
         invocation_id: InvocationIDPathParam,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> InvocationReport:
         """An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored."""
-        return self.show_invocation_report(trans, invocation_id)
+        return self.show_invocation_report(trans=trans, invocation_id=invocation_id)
 
     @router.get(
         "/api/invocations/{invocation_id}/report.pdf",

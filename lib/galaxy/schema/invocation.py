@@ -14,9 +14,9 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    RootModel,
     UUID1,
     UUID4,
-    RootModel,
 )
 from typing_extensions import (
     Annotated,
@@ -309,7 +309,7 @@ class InvocationStep(Model):
     """Information about workflow invocation step"""
 
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
-    id: EncodedDatabaseIdField = schema.EntityIdField
+    id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
     job_id: Optional[EncodedDatabaseIdField] = Field(
         default=None,
@@ -477,13 +477,9 @@ class WorkflowInvocationResponse(Model):
     uuid: Optional[Union[UUID4, UUID1]] = Field(
         default=None, title="UUID", description="Universal unique identifier of the workflow invocation."
     )
-    state: InvocationState = Field(
-        default=..., title="Invocation state", description="State of workflow invocation."
-    )
+    state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
-    steps: List[InvocationStep] = Field(
-        default=..., title="Steps", description="Steps of the workflow invocation."
-    )
+    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
