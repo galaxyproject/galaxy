@@ -831,7 +831,7 @@ class WorkflowsAPIController(
         serialization_params = InvocationSerializationParams(**kwd)
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         trans.response.headers["total_matches"] = total_matches
-        return invocations
+        return [json.loads(i.model_dump_json()) for i in invocations]
 
     @expose_api_anonymous
     def create_invocations_from_store(self, trans, payload, **kwd):
@@ -1313,8 +1313,7 @@ class FastAPIInvocations:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
-        rval = self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
-        return WorkflowInvocationResponse(**rval)
+        return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",
@@ -1349,8 +1348,7 @@ class FastAPIInvocations:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
-        rval = self.invocations_service.cancel(trans, invocation_id, serialization_params)
-        return WorkflowInvocationResponse(**rval)
+        return self.invocations_service.cancel(trans, invocation_id, serialization_params)
 
     @router.delete(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}", summary="Cancel the specified workflow invocation."
@@ -1465,7 +1463,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> InvocationStep:
         """An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored."""
-        return self.step(trans, step_id)
+        return self.step(trans=trans, step_id=step_id)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
@@ -1484,7 +1482,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> InvocationStep:
         """An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored."""
-        return self.invocation_step(trans, step_id=step_id)
+        return self.invocation_step(trans=trans, invocation_id=invocation_id, step_id=step_id)
 
     @router.put(
         "/api/invocations/{invocation_id}/steps/{step_id}",
@@ -1497,7 +1495,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
-        return self.invocations_service.update_invocation_step(trans, step_id, payload.action)
+        return self.invocations_service.update_invocation_step(trans=trans, step_id=step_id, action=payload.action)
 
     @router.put(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
@@ -1517,7 +1515,7 @@ class FastAPIInvocations:
         payload: InvocationUpdatePayload = Body(...),
     ) -> InvocationStep:
         """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""
-        return self.update_invocation_step(trans, step_id=step_id, payload=payload)
+        return self.update_invocation_step(trans=trans, invocation_id=invocation_id, step_id=step_id, payload=payload)
 
     @router.get(
         "/api/invocations/{invocation_id}/step_jobs_summary",
@@ -1572,7 +1570,7 @@ class FastAPIInvocations:
         ]
     ]:
         """An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored."""
-        return self.invocation_step_jobs_summary(trans, invocation_id)
+        return self.invocation_step_jobs_summary(trans=trans, invocation_id=invocation_id)
 
     @router.get(
         "/api/invocations/{invocation_id}/jobs_summary",
@@ -1608,7 +1606,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> InvocationJobsResponse:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
-        return self.invocation_jobs_summary(trans, invocation_id)
+        return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
 
     # Should I even create models for those as they will be removed?
     # TODO: remove this endpoint after 23.1 release

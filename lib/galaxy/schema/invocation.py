@@ -93,7 +93,9 @@ class InvocationMessageBase(BaseModel):
 class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: Literal[CancelReason.cancelled_on_review]
     workflow_step_id: int = Field(
-        ..., description="Workflow step id of paused step that did not pass review.", alias="workflow_step_index"
+        ...,
+        description="Workflow step id of paused step that did not pass review.",
+        validation_alias="workflow_step_index",
     )
 
 
@@ -107,7 +109,9 @@ class GenericInvocationCancellationUserRequest(InvocationMessageBase, Generic[Da
 
 
 class InvocationFailureMessageBase(InvocationMessageBase, Generic[DatabaseIdT]):
-    workflow_step_id: int = Field(..., description="Workflow step id of step that failed.", alias="workflow_step_index")
+    workflow_step_id: int = Field(
+        ..., description="Workflow step id of step that failed.", validation_alias="workflow_step_index"
+    )
 
 
 class GenericInvocationFailureDatasetFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
@@ -126,7 +130,9 @@ class GenericInvocationFailureCollectionFailed(InvocationFailureMessageBase[Data
         description="HistoryDatasetCollectionAssociation ID that relates to failure.",
     )
     dependent_workflow_step_id: int = Field(
-        ..., description="Workflow step id of step that caused failure.", alias="dependent_workflow_step_index"
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
     )
 
 
@@ -134,7 +140,9 @@ class GenericInvocationFailureJobFailed(InvocationFailureMessageBase[DatabaseIdT
     reason: Literal[FailureReason.job_failed]
     job_id: DatabaseIdT = Field(..., title="Job ID", description="Job ID that relates to failure.")
     dependent_workflow_step_id: int = Field(
-        ..., description="Workflow step id of step that caused failure.", alias="dependent_workflow_step_index"
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
     )
 
 
@@ -142,7 +150,9 @@ class GenericInvocationFailureOutputNotFound(InvocationFailureMessageBase[Databa
     reason: Literal[FailureReason.output_not_found]
     output_name: str = Field(..., title="Tool or module output name that was referenced but not produced")
     dependent_workflow_step_id: int = Field(
-        ..., description="Workflow step id of step that caused failure.", alias="dependent_workflow_step_index"
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
     )
 
 
@@ -161,13 +171,15 @@ class GenericInvocationFailureWhenNotBoolean(InvocationFailureMessageBase[Databa
 class GenericInvocationUnexpectedFailure(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: Literal[FailureReason.unexpected_failure]
     details: Optional[str] = Field(None, description="May contains details to help troubleshoot this problem.")
-    workflow_step_id: Optional[int] = Field(None, description="Workflow step id of step that failed.")
+    workflow_step_id: Optional[int] = Field(
+        None, description="Workflow step id of step that failed.", validation_alias="workflow_step_index"
+    )
 
 
 class GenericInvocationWarning(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: WarningReason = Field(..., title="Failure Reason", description="Reason for warning")
     workflow_step_id: Optional[int] = Field(
-        None, title="Workflow step id of step that caused a warning.", alias="workflow_step_index"
+        None, title="Workflow step id of step that caused a warning.", validation_alias="workflow_step_index"
     )
 
 
@@ -176,7 +188,7 @@ class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
 ):
     reason: Literal[WarningReason.workflow_output_not_found]
     workflow_step_id: int = Field(
-        ..., title="Workflow step id of step that caused a warning.", alias="workflow_step_index"
+        ..., title="Workflow step id of step that caused a warning.", validation_alias="workflow_step_index"
     )
     output_name: str = Field(
         ..., description="Output that was designated as workflow output but that has not been found"
@@ -311,21 +323,34 @@ class InvocationStep(Model):
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
     id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Job ID",
-        description="The encoded ID of the job associated with this workflow invocation step.",
-    )
-    workflow_step_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Workflow step ID",
-        description="The encoded ID of the workflow step associated with this workflow invocation step.",
-    )
-    subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Subworkflow invocation ID",
-        description="The encoded ID of the subworkflow invocation.",
-    )
+    job_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Job ID",
+                description="The encoded ID of the job associated with this workflow invocation step.",
+            ),
+        ]
+    ]
+    workflow_step_id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            ...,
+            title="Workflow step ID",
+            description="The encoded ID of the workflow step associated with this workflow invocation step.",
+        ),
+    ]
+    subworkflow_invocation_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Subworkflow invocation ID",
+                description="The encoded ID of the subworkflow invocation.",
+            ),
+        ]
+    ]
     # TODO The state can differ from InvocationStepState is this intended?
     # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
     state: Optional[ExtendedInvocationStepState] = Field(
@@ -461,7 +486,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-class WorkflowInvocationResponse(Model):
+class WorkflowInvocationCollectionView(Model):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -479,6 +504,9 @@ class WorkflowInvocationResponse(Model):
     )
     state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
+
+
+class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
     steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
@@ -502,6 +530,12 @@ class WorkflowInvocationResponse(Model):
         title="Messages",
         description="A list of messages about why the invocation did not succeed.",
     )
+
+
+class WorkflowInvocationResponse(RootModel):
+    root: Annotated[
+        Union[WorkflowInvocationElementView, WorkflowInvocationCollectionView], Field(union_mode="left_to_right")
+    ]
 
 
 class InvocationJobsSummaryBaseModel(Model):

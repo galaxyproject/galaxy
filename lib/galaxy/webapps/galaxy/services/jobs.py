@@ -67,7 +67,6 @@ class JobsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: JobIndexPayload,
     ):
-        security = trans.security
         is_admin = trans.user_is_admin
         view = payload.view
         if view == JobIndexViewEnum.admin_job_list:
@@ -82,12 +81,11 @@ class JobsService(ServiceBase):
         out = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
             job_dict = job.to_dict(view, system_details=is_admin)
-            j = security.encode_all_ids(job_dict, True)
             if view == JobIndexViewEnum.admin_job_list:
-                j["decoded_job_id"] = job.id
+                job_dict["decoded_job_id"] = job.id
             if user_details:
-                j["user_email"] = job.get_user_email()
-            out.append(j)
+                job_dict["user_email"] = job.get_user_email()
+            out.append(job_dict)
 
         return out
 

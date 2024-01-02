@@ -216,7 +216,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_collection(trans.get_current_user_roles(), collection):
                 raise exceptions.ItemAccessibilityException("Collection not accessible by user.")
         serialized_dce = dictify_element_reference(dce, recursive=False, security=trans.security)
-        return trans.security.encode_all_ids(serialized_dce, recursive=True)
+        return serialized_dce
 
     def contents(
         self,

@@ -430,7 +430,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             raise exceptions.RequestParameterInvalidException(
                 f"The number of ids ({len(ids)}) and types ({len(types)}) must match."
             )
-        return [self.encode_all_ids(job_state) for job_state in fetch_job_states(trans.sa_session, ids, types)]
+        return fetch_job_states(trans.sa_session, ids, types)
 
     def show_jobs_summary(
         self,

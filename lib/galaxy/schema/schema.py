@@ -641,7 +641,7 @@ class HDASummary(HDACommon):
         description="The encoded ID of the dataset associated with this item.",
     )
     state: DatasetState = DatasetStateField
-    extension: str = Field(
+    extension: Optional[str] = Field(
         ...,
         title="Extension",
         description="The extension of the dataset.",

@@ -712,20 +712,22 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
-            "hdas": lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
+            "hdas": lambda item, key, encode_id=True, **context: [
+                self.app.security.encode_id(hda.id) if encode_id else hda.id for hda in item.datasets
+            ],
             "state_details": self.serialize_state_counts,
             "state_ids": self.serialize_state_ids,
             "contents": self.serialize_contents,
-            "non_ready_jobs": lambda item, key, **context: [
+            "non_ready_jobs": lambda item, key, encode_id=True, **context: [
                 self.app.security.encode_id(job.id) for job in self.manager.non_ready_jobs(item)
             ],
             "contents_states": self.serialize_contents_states,
             "contents_active": self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            "user_id": lambda item, key, **context: self.app.security.encode_id(item.user_id)
-            if item.user_id is not None
-            else None,
+            "user_id": lambda item, key, encode_id=True, **context: self.app.security.encode_id(item.user_id)
+            if item.user_id is not None and encode_id
+            else item.user_id,
         }
         self.serializers.update(serializers)
 
