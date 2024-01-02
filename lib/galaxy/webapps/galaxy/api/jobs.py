@@ -10,8 +10,6 @@ from datetime import (
     datetime,
 )
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -46,6 +44,7 @@ from galaxy.schema.jobs import (
     JobInputAssociation,
     JobInputSummary,
     JobOutputAssociation,
+    JobSummary,
     ReportJobErrorPayload,
     SearchJobsPayload,
     ShowFullJobResponse,
@@ -220,7 +219,7 @@ class FastAPIJobs:
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
         payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
@@ -287,6 +286,7 @@ class FastAPIJobs:
             job.resume()
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
+        # Maybe just return 202 ? What's the point of this ?
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
         output_associations = []
         for association in associations:

@@ -19,10 +19,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import JobAssociation
-from galaxy.schema.schema import (
-    EncodedDatasetSourceId,
-    JobIndexQueryPayload,
-)
+from galaxy.schema.schema import JobIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -134,7 +131,7 @@ class JobsService(ServiceBase):
         dataset_dict = None
         if dataset := job_dataset_association.dataset:
             if isinstance(dataset, model.HistoryDatasetAssociation):
-                dataset_dict = EncodedDatasetSourceId(src="hda", id=dataset.id)
+                dataset_dict = {"src": "hda", "id": dataset.id}
             else:
-                dataset_dict = EncodedDatasetSourceId(src="ldda", id=dataset.id)
+                dataset_dict = {"src": "ldda", "id": dataset.id}
         return JobAssociation(name=job_dataset_association.name, dataset=dataset_dict)
