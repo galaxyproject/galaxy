@@ -1866,7 +1866,8 @@ class Magres(GenericMolFile):
                 self.meta_error = True
                 return
 
-            dataset.metadata.number_of_molecules = len(ase_data)
+            # MAGRES file can only have one molecule
+            dataset.metadata.number_of_molecules = 1
             dataset.metadata.atom_data = atom_data
             dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
             dataset.metadata.chemical_formula = chemical_formula
@@ -1899,6 +1900,7 @@ class Magres(GenericMolFile):
             else:
                 info_list.append("Periodic:\nNo")
             info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
+            info = "\n--\n".join(info_list)
         else:
             info = """
 Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
