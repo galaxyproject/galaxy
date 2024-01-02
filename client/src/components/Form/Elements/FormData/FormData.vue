@@ -16,10 +16,10 @@ import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 library.add(faCopy, faExclamation, faFile, faFolder, faLink, faUnlink);
 
-interface SelectOption {
+type SelectOption = {
     label: string;
     value: DataOption | null;
-}
+};
 
 const props = withDefaults(
     defineProps<{
@@ -39,11 +39,11 @@ const props = withDefaults(
         loading: false,
         multiple: false,
         optional: false,
-        value: null,
+        value: undefined,
         extensions: () => [],
         type: "data",
-        flavor: null,
-        tag: null,
+        flavor: undefined,
+        tag: undefined,
     }
 );
 
@@ -106,7 +106,7 @@ const currentValue = computed({
                 return value;
             }
         }
-        return null;
+        return undefined;
     },
     set: (val) => {
         $emit("input", createValue(val));
@@ -219,7 +219,7 @@ function clearHighlighting(timeout = 1000) {
 /**
  * Create final input element value
  */
-function createValue(val: Array<DataOption> | DataOption | null) {
+function createValue(val?: Array<DataOption> | DataOption | null) {
     if (val) {
         const values = Array.isArray(val) ? val : [val];
         if (variant.value && values.length > 0 && values[0]) {
@@ -429,6 +429,7 @@ watch(
 </script>
 
 <template>
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div
         :class="currentHighlighting && `ui-dragover-${currentHighlighting}`"
         @dragenter.prevent="onDragEnter"
@@ -437,7 +438,7 @@ watch(
         @drop.prevent="onDrop">
         <div>
             <div class="d-flex">
-                <BButtonGroup v-if="variant.length > 1" buttons class="align-self-start mr-2">
+                <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start mr-2">
                     <BButton
                         v-for="(v, index) in variant"
                         :key="index"
@@ -464,7 +465,7 @@ watch(
                     :options="formattedOptions"
                     :placeholder="`Select a ${placeholder}`" />
             </div>
-            <div v-if="currentVariant.batch !== BATCH.DISABLED">
+            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
                 <BFormCheckbox
                     v-if="currentVariant.batch === BATCH.ENABLED"
                     v-model="currentLinked"
