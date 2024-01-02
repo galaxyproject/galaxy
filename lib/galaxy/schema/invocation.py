@@ -428,12 +428,12 @@ class InvocationReport(Model, WithModelClass):
         description="Format of the invocation report.",
     )
     markdown: Optional[str] = Field(
-        default="",
+        default=None,
         title="Markdown",
         description="Raw galaxy-flavored markdown contents of the report.",
     )
     invocation_markdown: Optional[str] = Field(
-        default="",
+        default=None,
         title="Markdown",
         description="Raw galaxy-flavored markdown contents of the report.",
     )
@@ -455,7 +455,49 @@ class InvocationReport(Model, WithModelClass):
     )
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
-    model_config = ConfigDict(extra="allow")
+
+    errors: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Errors",
+        description="Errors associated with the invocation.",
+    )
+
+    history_datasets: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="History datasets",
+        description="History datasets associated with the invocation.",
+    )
+    workflows: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Workflows",
+        description="Workflows associated with the invocation.",
+    )
+    history_dataset_collections: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="History dataset collections",
+        description="History dataset collections associated with the invocation.",
+    )
+    jobs: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Jobs",
+        description="Jobs associated with the invocation.",
+    )
+    histories: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Histories",
+        description="Histories associated with the invocation.",
+    )
+    invocations: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Invocations",
+        description="Other invocations associated with the invocation.",
+    )
+
+    # class Config:
+    #     pass
+    #     # Galaxy Report/Page response can contain many extra_rendering_data
+    #     # Allow any other extra fields
+    #     extra = Extra.allow
 
 
 class InvocationUpdatePayload(Model):
@@ -514,11 +556,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-<<<<<<< HEAD
-class WorkflowInvocationCollectionView(Model, WithModelClass):
-=======
 class WorkflowInvocationBaseResponse(Model):
->>>>>>> Refactor pydantic model to enable reuse
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
