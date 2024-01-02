@@ -791,22 +791,6 @@ class WorkflowsAPIController(
         else:
             return encoded_invocations[0]
 
-    # @expose_api_anonymous
-    # def create_invocations_from_store(self, trans, payload, **kwd):
-    #     """
-    #     POST /api/invocations/from_store
-
-    #     Create invocation(s) from a supplied model store.
-
-    #     Input can be an archive describing a Galaxy model store containing an
-    #     workflow invocation - for instance one created with with write_store
-    #     or prepare_store_download endpoint.
-    #     """
-    #     create_payload = CreateInvocationFromStore(**payload)
-    #     serialization_params = InvocationSerializationParams(**payload)
-    #     # refactor into a service...
-    #     return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
-
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
