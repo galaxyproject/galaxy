@@ -1241,6 +1241,7 @@ class FastAPIInvocations:
     )
     def index_invocations(
         self,
+        response: Response,
         workflow_id: Annotated[Optional[DecodedDatabaseIdField], WorkflowIdQueryParam] = None,
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
         job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
@@ -1271,7 +1272,7 @@ class FastAPIInvocations:
         )
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         # TODO - how to access this via 'new' trans
-        # trans.response.headers["total_matches"] = total_matches
+        response.headers["total_matches"] = str(total_matches)
         return [IndexWorkflowInvocationResponse(**invocation) for invocation in invocations]
 
     @router.get(
@@ -1281,6 +1282,7 @@ class FastAPIInvocations:
     )
     def index_workflow_invocations(
         self,
+        response: Response,
         workflow_id: Annotated[DecodedDatabaseIdField, StoredWorkflowIDPathParam],
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
         job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
@@ -1292,6 +1294,7 @@ class FastAPIInvocations:
     ) -> List[IndexWorkflowInvocationResponse]:
         """An alias for GET '/api/invocations'"""
         invocations = self.index_invocations(
+            response=response,
             history_id=history_id,
             job_id=job_id,
             user_id=user_id,
