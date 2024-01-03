@@ -73,7 +73,7 @@
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
                     <td>Job Messages</td>
                     <td>
-                        <ul style="padding-left: 15px; margin-bottom: 0px">
+                        <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
                             <li v-for="(message, index) in job.job_messages" :key="index">
                                 [{{ index }}]
                                 <ul>
@@ -84,6 +84,9 @@
                                 </ul>
                             </li>
                         </ul>
+                        <div v-else>
+                            {{ job.job_messages }}
+                        </div>
                     </td>
                 </tr>
                 <slot></slot>
