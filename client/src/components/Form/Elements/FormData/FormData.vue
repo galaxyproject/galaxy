@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import type { DataOption } from "./types";
@@ -14,7 +15,7 @@ import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
-library.add(faCopy, faExclamation, faFile, faFolder, faLink, faUnlink);
+library.add(faCopy, faFile, faFolder, faCaretDown, faCaretUp, faExclamation, faLink, faUnlink);
 
 type SelectOption = {
     label: string;
@@ -358,9 +359,7 @@ function onBrowse() {
     }
 }
 
-/**
- * Drag/Drop event handlers
- */
+// Drag/Drop event handlers
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
     if (eventData) {
@@ -426,69 +425,119 @@ watch(
         $emit("input", createValue(currentValue.value));
     }
 );
+
+const formatsVisible = ref(false);
+const formatsButtonId = useUid("form-data-formats-");
 </script>
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
     <div
+        class="form-data"
         :class="currentHighlighting && `ui-dragover-${currentHighlighting}`"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
-        <div>
-            <div class="d-flex">
-                <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start mr-2">
-                    <BButton
-                        v-for="(v, index) in variant"
-                        :key="index"
-                        v-b-tooltip.hover.bottom
-                        :pressed="currentField === index"
-                        :title="v.tooltip"
-                        @click="currentField = index">
-                        <FontAwesomeIcon :icon="['far', v.icon]" />
-                    </BButton>
-                    <BButton
-                        v-if="canBrowse"
-                        v-b-tooltip.hover.bottom
-                        title="Browse or Upload Datasets"
-                        @click="onBrowse">
-                        <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
-                        <span v-else class="font-weight-bold">...</span>
-                    </BButton>
-                </BButtonGroup>
-                <FormSelect
-                    v-if="currentVariant"
-                    v-model="currentValue"
-                    :multiple="currentVariant.multiple"
-                    :optional="optional"
-                    :options="formattedOptions"
-                    :placeholder="`Select a ${placeholder}`" />
-            </div>
-            <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
-                <BFormCheckbox
-                    v-if="currentVariant.batch === BATCH.ENABLED"
-                    v-model="currentLinked"
-                    class="no-highlight my-2"
-                    switch>
-                    <span v-if="currentLinked">
-                        <FontAwesomeIcon icon="fa-link" />
-                        <b v-localize class="mr-1">Linked:</b>
-                        <span v-localize>Datasets will be run in matched order with other datasets.</span>
-                    </span>
-                    <span v-else>
-                        <FontAwesomeIcon icon="fa-unlink" />
-                        <b v-localize class="mr-1">Unlinked:</b>
-                        <span v-localize>Dataset will be run against *all* other datasets.</span>
-                    </span>
-                </BFormCheckbox>
-                <div class="text-info my-2">
-                    <FontAwesomeIcon icon="fa-exclamation" />
-                    <span v-localize class="ml-1">
-                        This is a batch mode input field. Individual jobs will be triggered for each dataset.
-                    </span>
-                </div>
+        <div class="d-flex flex-column">
+            <BButtonGroup v-if="variant && variant.length > 1" buttons class="align-self-start">
+                <BButton
+                    v-for="(v, index) in variant"
+                    :key="index"
+                    v-b-tooltip.hover.bottom
+                    :pressed="currentField === index"
+                    :title="v.tooltip"
+                    @click="currentField = index">
+                    <FontAwesomeIcon :icon="['far', v.icon]" />
+                </BButton>
+                <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
+                    <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
+                    <span v-else class="font-weight-bold">...</span>
+                </BButton>
+            </BButtonGroup>
+            <div v-if="extensions && extensions.length > 0">
+                <BButton :id="formatsButtonId" class="ui-link" @click="formatsVisible = !formatsVisible">
+                    accepted formats
+                    <FontAwesomeIcon v-if="formatsVisible" icon="fa-caret-up" />
+                    <FontAwesomeIcon v-else icon="fa-caret-down" />
+                </BButton>
+                <BCollapse v-model="formatsVisible">
+                    <ul class="pl-3 m-0">
+                        <li v-for="extension in extensions" :key="extension">{{ extension }}</li>
+                    </ul>
+                </BCollapse>
+                <BTooltip :target="formatsButtonId" noninteractive placement="bottom" triggers="hover">
+                    <div class="form-data-extensions-tooltip">
+                        <span v-for="extension in extensions" :key="extension">{{ extension }}</span>
+                    </div>
+                </BTooltip>
             </div>
         </div>
+
+        <FormSelect
+            v-if="currentVariant"
+            v-model="currentValue"
+            class="align-self-start"
+            :multiple="currentVariant.multiple"
+            :optional="optional"
+            :options="formattedOptions"
+            :placeholder="`Select a ${placeholder}`" />
+        <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
+            <BFormCheckbox
+                v-if="currentVariant.batch === BATCH.ENABLED"
+                v-model="currentLinked"
+                class="checkbox no-highlight"
+                switch>
+                <span v-if="currentLinked">
+                    <FontAwesomeIcon icon="fa-link" />
+                    <b v-localize class="mr-1">Linked:</b>
+                    <span v-localize>Datasets will be run in matched order with other datasets.</span>
+                </span>
+                <span v-else>
+                    <FontAwesomeIcon icon="fa-unlink" />
+                    <b v-localize class="mr-1">Unlinked:</b>
+                    <span v-localize>Dataset will be run against *all* other datasets.</span>
+                </span>
+            </BFormCheckbox>
+            <div class="info text-info">
+                <FontAwesomeIcon icon="fa-exclamation" />
+                <span v-localize class="ml-1">
+                    This is a batch mode input field. Individual jobs will be triggered for each dataset.
+                </span>
+            </div>
+        </template>
     </div>
 </template>
+
+<style scoped lang="scss">
+.form-data {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem;
+
+    .checkbox {
+        grid-column: span 2;
+    }
+
+    .info {
+        grid-column: span 2;
+    }
+}
+</style>
+
+<style lang="scss">
+.form-data-extensions-tooltip {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 0.25rem;
+    font-size: 0.8rem;
+
+    span::after {
+        content: ", ";
+    }
+
+    span:last-child::after {
+        content: none;
+    }
+}
+</style>
