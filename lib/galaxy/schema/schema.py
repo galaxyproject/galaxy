@@ -1874,9 +1874,17 @@ class JobSummary(JobBaseModel):
     external_id: Optional[str] = Field(
         None,
         title="External ID",
-        description=(
-            "The job id used by the external job runner (Condor, Pulsar, etc.)" "Only administrator can see this value."
-        ),
+        description="The job id used by the external job runner (Condor, Pulsar, etc.). Only administrator can see this value.",
+    )
+    handler: Optional[str] = Field(
+        None,
+        title="Job Handler",
+        description="The job handler process assigned to handle this job. Only administrator can see this value.",
+    )
+    job_runner_name: Optional[str] = Field(
+        None,
+        title="Job Runner Name",
+        description="Name of the job runner plugin that handles this job. Only administrator can see this value.",
     )
     command_line: Optional[str] = Field(
         None,

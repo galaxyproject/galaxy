@@ -44,11 +44,12 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
         job = jobs[0]
-        self._assert_not_has_keys(job, "external_id")
+        assert job["external_id"] is None
 
         jobs = self.__jobs_index(admin=True)
         job = jobs[0]
-        self._assert_has_keys(job, "command_line", "external_id")
+        assert job["command_line"]
+        assert job["external_id"]
 
     @pytest.mark.require_new_history
     def test_admin_job_list(self, history_id):
