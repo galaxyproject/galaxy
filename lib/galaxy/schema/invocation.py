@@ -39,6 +39,7 @@ from galaxy.schema.schema import (
     JobState,
     Model,
     UpdateTimeField,
+    WithModelClass,
 )
 
 INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
@@ -317,7 +318,7 @@ class InvocationStepCollectionOutput(Model):
     )
 
 
-class InvocationStep(Model):
+class InvocationStep(Model, WithModelClass):
     """Information about workflow invocation step"""
 
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
@@ -391,7 +392,7 @@ class InvocationStep(Model):
     )
 
 
-class InvocationReport(Model):
+class InvocationReport(Model, WithModelClass):
     """Report describing workflow invocation"""
 
     render_format: REPORT_RENDER_FORMAT_MARKDOWN = Field(
@@ -486,7 +487,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-class WorkflowInvocationCollectionView(Model):
+class WorkflowInvocationCollectionView(Model, WithModelClass):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -550,17 +551,17 @@ class InvocationJobsSummaryBaseModel(Model):
     )
 
 
-class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
+class InvocationJobsResponse(InvocationJobsSummaryBaseModel, WithModelClass):
     model: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 
-class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
+class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel, WithModelClass):
     model: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
 
 
-class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
+class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel, WithModelClass):
     model: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
 
 
-class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
+class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel, WithModelClass):
     model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)

@@ -22,6 +22,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
     Json,
     model_validator,
     RootModel,
@@ -301,7 +302,18 @@ class BaseUserModel(Model):
     deleted: bool = UserDeletedField
 
 
-class UserModel(BaseUserModel):
+class WithModelClass:
+    model_class: str
+
+    @field_validator("model_class", mode="before", check_fields=False)
+    @classmethod
+    def set_default(cls, v):
+        if v is None:
+            return cls.model_class
+        return v
+
+
+class UserModel(BaseUserModel, WithModelClass):
     """User in a transaction context."""
 
     active: bool = Field(title="Active", description="User is active")
@@ -421,7 +433,7 @@ class CustomBuildsCollection(RootModel):
     )
 
 
-class GroupModel(Model):
+class GroupModel(Model, WithModelClass):
     """User group model"""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
@@ -681,10 +693,10 @@ class DatasetValidatedState(str, Enum):
     OK = "ok"
 
 
-class HDADetailed(HDASummary):
+class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
-    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
+    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField(HDA_MODEL_CLASS)]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
@@ -774,7 +786,8 @@ class HDADetailed(HDASummary):
         ...,
         title="Legacy Display Applications",
         description="Contains old-style display app urls.",
-        deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
+        # https://github.com/pydantic/pydantic/issues/2255
+        # deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
     )
     visualizations: List[Visualization] = Field(
         ...,
@@ -835,7 +848,7 @@ class HDAExtended(HDADetailed):
     )
 
 
-class DCSummary(Model):
+class DCSummary(Model, WithModelClass):
     """Dataset Collection summary information."""
 
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
@@ -848,7 +861,7 @@ class DCSummary(Model):
     element_count: ElementCountField
 
 
-class HDAObject(Model):
+class HDAObject(Model, WithModelClass):
     """History Dataset Association Object"""
 
     # TODO: Does it need to be serialized differently from HDASummary ?
@@ -863,7 +876,7 @@ class HDAObject(Model):
     model_config = ConfigDict(extra="allow")
 
 
-class DCObject(Model):
+class DCObject(Model, WithModelClass):
     """Dataset Collection Object"""
 
     id: DatasetCollectionId
@@ -875,7 +888,7 @@ class DCObject(Model):
     elements: List["DCESummary"] = ElementsField
 
 
-class DCESummary(Model):
+class DCESummary(Model, WithModelClass):
     """Dataset Collection Element summary information."""
 
     id: DatasetCollectionElementId
@@ -997,7 +1010,7 @@ class HDCACommon(HistoryItemCommon):
     ]
 
 
-class HDCASummary(HDCACommon):
+class HDCASummary(HDCACommon, WithModelClass):
     """History Dataset Collection Association summary information."""
 
     model_class: HDCA_MODEL_CLASS = ModelClassField(HDCA_MODEL_CLASS)
@@ -1182,7 +1195,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
     )
 
 
-class HistorySummary(HistoryBase):
+class HistorySummary(HistoryBase, WithModelClass):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
@@ -1813,7 +1826,7 @@ class JobIdResponse(Model):
     job_id: JobId
 
 
-class JobBaseModel(Model):
+class JobBaseModel(Model, WithModelClass):
     id: JobId
     history_id: Optional[EncodedDatabaseIdField] = Field(
         None,
@@ -1863,15 +1876,15 @@ class ItemStateSummary(Model):
 
 
 class JobStateSummary(ItemStateSummary):
-    model: Literal["Job"] = ModelClassField("Job")
+    model: Literal["Job"] = ModelClassField(Literal["Job"])
 
 
 class ImplicitCollectionJobsStateSummary(ItemStateSummary):
-    model: Literal["ImplicitCollectionJobs"] = ModelClassField("ImplicitCollectionJobs")
+    model: Literal["ImplicitCollectionJobs"] = ModelClassField(Literal["ImplicitCollectionJobs"])
 
 
 class WorkflowInvocationStateSummary(ItemStateSummary):
-    model: Literal["WorkflowInvocation"] = ModelClassField("WorkflowInvocation")
+    model: Literal["WorkflowInvocation"] = ModelClassField(Literal["WorkflowInvocation"])
 
 
 class JobSummary(JobBaseModel):
@@ -2060,7 +2073,7 @@ class JobFullDetails(JobDetails):
     )
 
 
-class StoredWorkflowSummary(Model):
+class StoredWorkflowSummary(Model, WithModelClass):
     id: DecodedDatabaseIdField
     model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
@@ -2542,10 +2555,10 @@ class BasicRoleModel(Model):
     type: str = Field(title="Type", description="Type or category of the role")
 
 
-class RoleModelResponse(BasicRoleModel):
+class RoleModelResponse(BasicRoleModel, WithModelClass):
     description: Optional[RoleDescriptionField]
     url: RelativeUrlField
-    model_class: Literal["Role"] = ModelClassField("Role")
+    model_class: Literal["Role"] = ModelClassField(Literal["Role"])
 
 
 class RoleDefinitionModel(Model):
@@ -2634,8 +2647,8 @@ class InstalledRepositoryToolShedStatus(Model):
     )
 
 
-class InstalledToolShedRepository(Model):
-    model_class: Literal["ToolShedRepository"] = ModelClassField("ToolShedRepository")
+class InstalledToolShedRepository(Model, WithModelClass):
+    model_class: Literal["ToolShedRepository"] = ModelClassField(Literal["ToolShedRepository"])
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2688,8 +2701,8 @@ class LibraryPermissionScope(str, Enum):
     available = "available"
 
 
-class LibraryLegacySummary(Model):
-    model_class: Literal["Library"] = ModelClassField("Library")
+class LibraryLegacySummary(Model, WithModelClass):
+    model_class: Literal["Library"] = ModelClassField(Literal["Library"])
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2935,8 +2948,8 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
     )
 
 
-class LibraryFolderDetails(Model):
-    model_class: Literal["LibraryFolder"] = ModelClassField("LibraryFolder")
+class LibraryFolderDetails(Model, WithModelClass):
+    model_class: Literal["LibraryFolder"] = ModelClassField(Literal["LibraryFolder"])
     id: EncodedLibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
@@ -3559,7 +3572,7 @@ class AsyncFile(Model):
     task: AsyncTaskResultSummary
 
 
-class PageSummary(PageSummaryBase):
+class PageSummary(PageSummaryBase, WithModelClass):
     id: EncodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",

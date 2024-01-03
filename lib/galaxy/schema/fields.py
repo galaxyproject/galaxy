@@ -110,14 +110,15 @@ def literal_to_value(arg):
     return val[0]
 
 
-def ModelClassField(default_value=...):
+def ModelClassField(default_value):
     """Represents a database model class name annotated as a constant
     pydantic Field.
     :param class_name: The name of the database class.
     :return: A constant pydantic Field with default annotations for model classes.
     """
     return Field(
-        literal_to_value(default_value),
+        ...,
         title="Model class",
         description="The name of the database model class.",
+        json_schema_extra={"const": literal_to_value(default_value), "type": "string"},
     )

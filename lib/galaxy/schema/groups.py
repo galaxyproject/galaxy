@@ -14,12 +14,15 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     ModelClassField,
 )
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    Model,
+    WithModelClass,
+)
 
 GROUP_MODEL_CLASS = Literal["Group"]
 
 
-class GroupResponse(Model):
+class GroupResponse(Model, WithModelClass):
     """Response schema for a group."""
 
     model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)

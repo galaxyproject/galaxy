@@ -18,6 +18,7 @@ from galaxy.schema.schema import (
     GroupModel,
     Model,
     UserModel,
+    WithModelClass,
 )
 
 QUOTA = Literal["Quota"]
@@ -69,7 +70,9 @@ QuotaOperationField = Field(
 )
 
 
-class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+class DefaultQuota(
+    Model, WithModelClass
+):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
     model_class: DEFAULT_QUOTA_ASSOCIATION = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
@@ -82,7 +85,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
     )
 
 
-class UserQuota(Model):
+class UserQuota(Model, WithModelClass):
     model_class: USER_QUOTA_ASSOCIATION = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
@@ -91,7 +94,7 @@ class UserQuota(Model):
     )
 
 
-class GroupQuota(Model):
+class GroupQuota(Model, WithModelClass):
     model_class: GROUP_QUOTA_ASSOCIATION = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
@@ -100,7 +103,7 @@ class GroupQuota(Model):
     )
 
 
-class QuotaBase(Model):
+class QuotaBase(Model, WithModelClass):
     """Base model containing common fields for Quotas."""
 
     model_class: QUOTA = ModelClassField(QUOTA)
