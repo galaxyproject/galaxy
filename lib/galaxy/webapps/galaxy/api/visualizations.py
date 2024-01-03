@@ -8,8 +8,6 @@ import json
 import logging
 from typing import Optional
 
-from typing_extensions import Annotated
-
 from fastapi import (
     Body,
     Path,
@@ -17,6 +15,7 @@ from fastapi import (
     Response,
     status,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
