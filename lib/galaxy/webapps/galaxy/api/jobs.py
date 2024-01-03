@@ -44,7 +44,6 @@ from galaxy.schema.jobs import (
     JobInputAssociation,
     JobInputSummary,
     JobOutputAssociation,
-    JobSummary,
     ReportJobErrorPayload,
     SearchJobsPayload,
     ShowFullJobResponse,
@@ -53,6 +52,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
     JobMetric,
+    JobSummary,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import expose_api_anonymous
