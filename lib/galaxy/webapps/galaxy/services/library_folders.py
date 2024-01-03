@@ -12,10 +12,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import (
-    LibraryFolderDatabaseIdField,
-    Security,
-)
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
     CreateLibraryFolderPayload,
