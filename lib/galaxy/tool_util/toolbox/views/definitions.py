@@ -128,13 +128,13 @@ class Section(BaseModel, HasItems):
 class SectionAlias(BaseModel):
     content_type: Literal["section_alias"] = "section_alias"
     section: str
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 class SectionAliases(BaseModel):
     content_type: Literal["section_aliases"] = "section_aliases"
     sections: List[str]
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 RootContent = Union[
