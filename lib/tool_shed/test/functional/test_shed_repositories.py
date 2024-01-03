@@ -68,7 +68,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         repository = populator.setup_bismark_repo()
         repository_metadata = populator.get_metadata(repository)
         assert repository_metadata
-        for _, value in repository_metadata.__root__.items():
+        for _, value in repository_metadata.root.items():
             assert value.invalid_tools
 
     def test_index_simple(self):
