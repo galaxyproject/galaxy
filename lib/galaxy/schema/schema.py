@@ -210,11 +210,14 @@ ElementCountField: Optional[int] = Field(
     ),
 )
 
-PopulatedField: bool = Field(
-    None,
-    title="Populated",
-    description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
-)
+PopulatedField = Annotated[
+    bool,
+    Field(
+        None,
+        title="Populated",
+        description="Whether the dataset collection elements (and any subcollections elements) were successfully populated.",
+    ),
+]
 
 ElementsField = Field(
     [],
@@ -222,17 +225,14 @@ ElementsField = Field(
     description="The summary information of each of the elements inside the dataset collection.",
 )
 
-HistoryIdField: DecodedDatabaseIdField = Field(
-    ...,
-    title="History ID",
-    description="The encoded ID of the history associated with this item.",
-)
-
-UuidField: UUID4 = Field(
-    ...,
-    title="UUID",
-    description="Universal unique identifier for this dataset.",
-)
+UuidField = Annotated[
+    UUID4,
+    Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier for this dataset.",
+    ),
+]
 
 GenomeBuildField: Optional[str] = Field(
     "?",
@@ -240,11 +240,14 @@ GenomeBuildField: Optional[str] = Field(
     description="TODO",
 )
 
-ContentsUrlField = Field(
-    None,
-    title="Contents URL",
-    description="The relative URL to access the contents of this History.",
-)
+ContentsUrlField = Annotated[
+    RelativeUrl,
+    Field(
+        ...,
+        title="Contents URL",
+        description="The relative URL to access the contents of this History.",
+    ),
+]
 
 UserId = Annotated[EncodedDatabaseIdField, Field(title="ID", description="Encoded ID of the user")]
 UserEmailField = Field(title="Email", description="Email of the user")
@@ -748,7 +751,7 @@ class HDADetailed(HDASummary):
         title="Rerunnable",
         description="Whether the job creating this dataset can be run again.",
     )
-    uuid: UUID4 = UuidField
+    uuid: UuidField
     permissions: DatasetPermissions = Field(
         ...,
         title="Permissions",
@@ -863,9 +866,9 @@ class DCObject(Model):
     id: DatasetCollectionId
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
-    populated: Optional[bool] = PopulatedField
+    populated: Optional[PopulatedField]
     element_count: Optional[int] = ElementCountField
-    contents_url: Optional[RelativeUrl] = ContentsUrlField
+    contents_url: Optional[ContentsUrlField]
     elements: List["DCESummary"] = ElementsField
 
 
@@ -902,7 +905,7 @@ DCObject.model_rebuild()
 class DCDetailed(DCSummary):
     """Dataset Collection detailed information."""
 
-    populated: bool = PopulatedField
+    populated: PopulatedField
     elements: List[DCESummary] = ElementsField
 
 
@@ -1022,14 +1025,14 @@ class HDCASummary(HDCACommon):
         title="Job State Summary",
         description="Overview of the job states working inside the dataset collection.",
     )
-    contents_url: RelativeUrl = ContentsUrlField
+    contents_url: ContentsUrlField
     collection_id: DatasetCollectionId
 
 
 class HDCADetailed(HDCASummary):
     """History Dataset Collection Association detailed information."""
 
-    populated: bool = PopulatedField
+    populated: PopulatedField
     elements: List[DCESummary] = ElementsField
     elements_datatypes: Set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
@@ -1245,7 +1248,7 @@ HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
 
-    contents_url: RelativeUrl = ContentsUrlField
+    contents_url: ContentsUrlField
     size: int = Field(
         ...,
         title="Size",
@@ -1590,7 +1593,7 @@ class StoreExportPayload(Model):
 
 class ShortTermStoreExportPayload(StoreExportPayload):
     short_term_storage_request_id: UUID
-    duration: OptionalNumberT
+    duration: OptionalNumberT = None
 
 
 class BcoGenerationParametersMixin(BaseModel):
@@ -1930,7 +1933,7 @@ class EncodedDataItemSourceId(Model):
 
 
 class DatasetJobInfo(DatasetSourceId):
-    uuid: UUID4 = UuidField
+    uuid: UuidField
 
 
 class JobDetails(JobSummary):
@@ -3637,4 +3640,4 @@ class DatasetSummary(Model):
     purgable: bool
     file_size: int
     total_size: int
-    uuid: UUID4 = UuidField
+    uuid: UuidField

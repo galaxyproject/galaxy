@@ -25,7 +25,8 @@ from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
 from pydantic import (
     BaseModel,
-    ConfigDict,
+    SerializerFunctionWrapHandler,
+    WrapSerializer,
 )
 from sqlalchemy import (
     desc,
@@ -41,6 +42,7 @@ from sqlalchemy.orm import (
     Query,
     subqueryload,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -1961,13 +1963,17 @@ class RefactorRequest(RefactorActions):
     style: str = "export"
 
 
+def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> str:
+    try:
+        return nxt(v)
+    except Exception:
+        return safe_dumps(v)
+
+
 class RefactorResponse(BaseModel):
     action_executions: List[RefactorActionExecution]
-    workflow: dict
+    workflow: Annotated[dict, WrapSerializer(safe_wraps, when_used="json")]
     dry_run: bool
-    # TODO[pydantic]: The following keys were removed: `json_dumps`.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    model_config = ConfigDict(json_dumps=safe_dumps)
 
 
 class WorkflowStateResolutionOptions(BaseModel):
