@@ -17,7 +17,7 @@ from fastapi import (
     Path,
     Query,
 )
-from fastapi.exceptions import ValidationException
+from pydantic import ValidationError
 from starlette import status
 from starlette.responses import (
     Response,
@@ -195,7 +195,7 @@ def parse_index_query_params(
             v=v,
             dataset_details=parse_dataset_details(dataset_details),
         )
-    except ValidationException as e:
+    except ValidationError as e:
         raise validation_error_to_message_exception(e)
 
 
@@ -316,7 +316,7 @@ def parse_legacy_index_query_params(
             shareable=shareable,
             dataset_details=dataset_details,
         )
-    except ValidationException as e:
+    except ValidationError as e:
         raise validation_error_to_message_exception(e)
 
 
