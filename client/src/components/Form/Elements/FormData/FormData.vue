@@ -9,6 +9,7 @@ import { computed, onMounted, type Ref, ref, watch } from "vue";
 import { getGalaxyInstance } from "@/app";
 import { useUid } from "@/composables/utils/uid";
 import { type EventData, useEventStore } from "@/stores/eventStore";
+import { orList } from "@/utils/strings";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
@@ -428,6 +429,17 @@ watch(
 
 const formatsVisible = ref(false);
 const formatsButtonId = useUid("form-data-formats-");
+
+const warningListAmount = 4;
+const noOptionsWarningMessage = computed(() => {
+    if (!props.extensions || props.extensions.length === 0) {
+        return "No datasets available";
+    } else if (props.extensions.length <= warningListAmount) {
+        return `No ${orList(props.extensions)} datasets available`;
+    } else {
+        return "No compatible datasets available";
+    }
+});
 </script>
 
 <template>
@@ -483,13 +495,9 @@ const formatsButtonId = useUid("form-data-formats-");
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
-                <BAlert v-if="!extensions || extensions.length < 1" variant="warning" show>
-                    No datasets available
+                <BAlert variant="warning" show>
+                    {{ noOptionsWarningMessage }}
                 </BAlert>
-                <BAlert v-else-if="extensions.length === 1" variant="warning" class="w-100" show>
-                    No {{ extensions[0] }} datasets available
-                </BAlert>
-                <BAlert v-else variant="warning" show> No compatible datasets available </BAlert>
             </template>
         </FormSelect>
 
