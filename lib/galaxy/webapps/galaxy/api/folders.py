@@ -57,8 +57,8 @@ class FastAPILibraryFolders:
     )
     def show(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
     ) -> LibraryFolderDetails:
         """Returns detailed information about the library folder with the given ID."""
         return self.service.show(trans, id)
@@ -83,8 +83,8 @@ class FastAPILibraryFolders:
     @router.patch("/api/folders/{id}")
     def update(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: UpdateLibraryFolderPayload = Body(...),
     ) -> LibraryFolderDetails:
         """Updates the information of an existing library folder."""
@@ -109,8 +109,8 @@ class FastAPILibraryFolders:
     )
     def get_permissions(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
             None,
             title="Scope",
@@ -143,8 +143,8 @@ class FastAPILibraryFolders:
     )
     def set_permissions(
         self,
+        id: FolderIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         action: Optional[LibraryFolderPermissionAction] = Query(
             default=None,
             title="Action",

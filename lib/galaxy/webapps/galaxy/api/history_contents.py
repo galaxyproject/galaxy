@@ -612,11 +612,11 @@ class FastAPIHistoryContents:
     )
     def download_dataset_collection_history_content(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Path(
             description="The encoded database identifier of the History.",
         ),
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
@@ -633,8 +633,8 @@ class FastAPIHistoryContents:
     )
     def download_dataset_collection(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ):
         """Download the content of a history dataset collection as a `zip` archive
         while maintaining approximate collection structure.
@@ -660,8 +660,8 @@ class FastAPIHistoryContents:
     )
     def prepare_collection_download(
         self,
+        id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ) -> AsyncFile:
         """The history dataset collection will be written as a `zip` archive to the
         returned short term storage object. Progress tracking this file's creation
