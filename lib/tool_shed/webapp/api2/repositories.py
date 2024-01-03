@@ -201,7 +201,7 @@ class FastAPIRepositories:
         self,
         encoded_repository_id: str = RepositoryIdPathParam,
         downloadable_only: bool = DownloadableQueryParam,
-    ) -> dict:
+    ) -> RepositoryMetadata:
         recursive = True
         as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
         return _hack_fastapi_4428(as_dict)
@@ -508,5 +508,5 @@ class FastAPIRepositories:
         return readmes(self.app, repository, changeset_revision)
 
 
-def _hack_fastapi_4428(as_dict) -> dict:
+def _hack_fastapi_4428(as_dict) -> RepositoryMetadata:
     return RepositoryMetadata(root=as_dict)
