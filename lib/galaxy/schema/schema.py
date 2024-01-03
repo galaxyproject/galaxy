@@ -201,14 +201,17 @@ PopulatedStateMessageField: Optional[str] = Field(
     description="Optional message with further information in case the population of the dataset collection failed.",
 )
 
-ElementCountField: Optional[int] = Field(
-    None,
-    title="Element Count",
-    description=(
-        "The number of elements contained in the dataset collection. "
-        "It may be None or undefined if the collection could not be populated."
+ElementCountField = Annotated[
+    Optional[int],
+    Field(
+        None,
+        title="Element Count",
+        description=(
+            "The number of elements contained in the dataset collection. "
+            "It may be None or undefined if the collection could not be populated."
+        ),
     ),
-)
+]
 
 PopulatedField = Annotated[
     bool,
@@ -842,7 +845,7 @@ class DCSummary(Model):
     collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
-    element_count: Optional[int] = ElementCountField
+    element_count: ElementCountField
 
 
 class HDAObject(Model):
@@ -866,9 +869,9 @@ class DCObject(Model):
     id: DatasetCollectionId
     model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
-    populated: Optional[PopulatedField]
-    element_count: Optional[int] = ElementCountField
-    contents_url: Optional[ContentsUrlField]
+    populated: PopulatedField
+    element_count: ElementCountField
+    contents_url: Optional[ContentsUrlField] = None
     elements: List["DCESummary"] = ElementsField
 
 
@@ -1009,7 +1012,7 @@ class HDCASummary(HDCACommon):
     collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
-    element_count: Optional[int] = ElementCountField
+    element_count: ElementCountField
     job_source_id: Optional[EncodedDatabaseIdField] = Field(
         None,
         title="Job Source ID",
