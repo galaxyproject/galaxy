@@ -13337,8 +13337,10 @@ export interface operations {
         /** Returns detailed information about the given collection. */
         parameters: {
             /** @description The type of collection instance. Either `history` (default) or `library`. */
+            /** @description The view of collection instance to return. */
             query?: {
                 instance_type?: "history" | "library";
+                view?: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13353,7 +13355,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HDCADetailed"];
+                    "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
