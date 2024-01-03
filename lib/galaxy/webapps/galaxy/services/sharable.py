@@ -5,6 +5,7 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    Type,
     Union,
 )
 
@@ -60,7 +61,7 @@ class ShareableService:
     and have a compatible SharableModelSerializer implementation.
     """
 
-    share_with_status_cls = ShareWithStatus
+    share_with_status_cls: Type[ShareWithStatus] = ShareWithStatus
 
     def __init__(
         self,
