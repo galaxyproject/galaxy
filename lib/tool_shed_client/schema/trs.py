@@ -93,7 +93,7 @@ class FileWrapper(BaseModel):
     checksum: Optional[List[Checksum]] = Field(
         None,
         description="A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes. ",
-        example=[{"checksum": "ea2a5db69bd20a42976838790bc29294df3af02b", "type": "sha1"}],
+        examples=[{"checksum": "ea2a5db69bd20a42976838790bc29294df3af02b", "type": "sha1"}],
     )
     image_type: Optional[Union[ImageType, DescriptorType]] = Field(
         None, description="Optionally return additional information on the type of file this is"
@@ -101,14 +101,16 @@ class FileWrapper(BaseModel):
     url: Optional[str] = Field(
         None,
         description="Optional url to the underlying content, should include version information, and can include a git hash.  Note that this URL should resolve to the raw unwrapped content that would otherwise be available in content. One of url or content is required.",
-        example={
-            "descriptorfile": {
-                "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl"
-            },
-            "containerfile": {
-                "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/c83478829802b4d36374870843821abe1b625a71/delly_docker/Dockerfile"
-            },
-        },
+        examples=[
+            {
+                "descriptorfile": {
+                    "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl"
+                },
+                "containerfile": {
+                    "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/c83478829802b4d36374870843821abe1b625a71/delly_docker/Dockerfile"
+                },
+            }
+        ],
     )
 
 
@@ -121,19 +123,19 @@ class ImageData(BaseModel):
     registry_host: Optional[str] = Field(
         None,
         description="A docker registry or a URL to a Singularity registry. Used along with image_name to locate a specific image.",
-        example=["registry.hub.docker.com"],
+        examples=["registry.hub.docker.com"],
     )
     image_name: Optional[str] = Field(
         None,
         description="Used in conjunction with a registry_url if provided to locate images.",
-        example=["quay.io/seqware/seqware_full/1.1", "ubuntu:latest"],
+        examples=["quay.io/seqware/seqware_full/1.1", "ubuntu:latest"],
     )
     size: Optional[int] = Field(None, description="Size of the container in bytes.")
     updated: Optional[str] = Field(None, description="Last time the container was updated.")
     checksum: Optional[List[Checksum]] = Field(
         None,
         description="A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes.  This exposes the hashcode for specific image versions to verify that the container version pulled is actually the version that was indexed by the registry.",
-        example=[{"checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182", "type": "sha256"}],
+        examples=[{"checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182", "type": "sha256"}],
     )
     image_type: Optional[ImageType] = None
 
@@ -186,7 +188,7 @@ class ToolVersion(BaseModel):
     included_apps: Optional[List[str]] = Field(
         None,
         description="An array of IDs for the applications that are stored inside this tool.",
-        example=["https://bio.tools/tool/mytum.de/SNAP2/1", "https://bio.tools/bioexcel_seqqc"],
+        examples=["https://bio.tools/tool/mytum.de/SNAP2/1", "https://bio.tools/bioexcel_seqqc"],
     )
 
 
@@ -196,7 +198,7 @@ class Tool(BaseModel):
         description="The URL for this tool in this registry.",
         examples=["http://agora.broadinstitute.org/tools/123456"],
     )
-    id: str = Field(..., description="A unique identifier of the tool, scoped to this registry.", example=123456)
+    id: str = Field(..., description="A unique identifier of the tool, scoped to this registry.", examples=[123456])
     aliases: Optional[List[str]] = Field(
         None,
         description="Support for this parameter is optional for tool registries that support aliases.\nA list of strings that can be used to identify this tool which could be  straight up URLs. \nThis can be used to expose alternative ids (such as GUIDs) for a tool\nfor registries. Can be used to match tools across registries.",
