@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faCaretUp, faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
+import { BAlert, BButton, BButtonGroup, BCollapse, BFormCheckbox, BTooltip } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
@@ -481,7 +481,18 @@ const formatsButtonId = useUid("form-data-formats-");
             :multiple="currentVariant.multiple"
             :optional="optional"
             :options="formattedOptions"
-            :placeholder="`Select a ${placeholder}`" />
+            :placeholder="`Select a ${placeholder}`">
+            <template v-slot:no-options>
+                <BAlert v-if="!extensions || extensions.length < 1" variant="warning" show>
+                    No datasets available
+                </BAlert>
+                <BAlert v-else-if="extensions.length === 1" variant="warning" class="w-100" show>
+                    No {{ extensions[0] }} datasets available
+                </BAlert>
+                <BAlert v-else variant="warning" show> No compatible datasets available </BAlert>
+            </template>
+        </FormSelect>
+
         <template v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox
                 v-if="currentVariant.batch === BATCH.ENABLED"
