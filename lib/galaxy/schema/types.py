@@ -19,7 +19,11 @@ LatestLiteral = Literal["latest"]
 
 
 def strip_tzinfo(v: datetime, info: ValidationInfo) -> datetime:
-    return v.replace(tzinfo=None) - v.utcoffset() if v.tzinfo else v
+    if v.tzinfo:
+        if offset := v.utcoffset():
+            return v.replace(tzinfo=None) - offset
+        return v.replace(tzinfo=None)
+    return v
 
 
 OffsetNaiveDatetime = Annotated[datetime, AfterValidator(strip_tzinfo)]
