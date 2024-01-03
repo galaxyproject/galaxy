@@ -18,7 +18,7 @@ ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
 class Security:
-    security = IdEncodingHelper
+    security: IdEncodingHelper
 
 
 def ensure_valid_id(v: str) -> str:
