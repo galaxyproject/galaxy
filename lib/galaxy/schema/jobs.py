@@ -149,7 +149,8 @@ class EncodedHdcaSourceId(SrcItem):
 class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     uuid: Optional[UUID4] = Field(
         default=None,
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
         title="UUID",
         description="Universal unique identifier for this dataset.",
     )

@@ -93,7 +93,8 @@ class InvocationSerializationParams(BaseModel):
         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
         Partially scheduled steps may provide incomplete information and the listed steps outputs
         are not the mapped over step outputs but the individual job outputs.""",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 

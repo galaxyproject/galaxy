@@ -127,7 +127,8 @@ class QuotaSummary(QuotaBase):
         ...,
         title="URL",
         description="The relative URL to get this particular Quota details from the rest API.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 

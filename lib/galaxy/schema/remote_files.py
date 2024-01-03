@@ -134,7 +134,8 @@ class ListJstreeResponse(RootModel):
         default=[],
         title="List of files",
         description="List of files in Jstree format.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 

@@ -121,7 +121,8 @@ RelativeUrlField = Annotated[
         ...,
         title="URL",
         description="The relative URL to access this item.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     ),
 ]
 
@@ -683,7 +684,6 @@ HdaLddaField = Field(
     DatasetSourceType.hda,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
-    deprecated=False,  # TODO Should this field be deprecated in favor of model_class?
 )
 
 
