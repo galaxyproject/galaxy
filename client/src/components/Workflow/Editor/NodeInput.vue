@@ -191,7 +191,8 @@ function onDrop(event: DragEvent) {
 </script>
 
 <template>
-    <div class="node-input" :class="rowClass">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <div class="node-input" :class="rowClass" @drop.prevent="onDrop">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             :id="id"
@@ -205,7 +206,6 @@ function onDrop(event: DragEvent) {
                 'is-dragging': Boolean(draggingTerminal),
             }"
             :input-name="input.name"
-            @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
             <b-tooltip v-if="reason" :target="id" :show="showTooltip">
