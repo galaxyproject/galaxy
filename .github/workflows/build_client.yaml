@@ -20,7 +20,8 @@ jobs:
         shell: bash
         run: echo "commit=$(git rev-parse HEAD 2>/dev/null)" >> $GITHUB_OUTPUT
         working-directory: 'galaxy root'
-      - uses: actions/cache@v3
+      - name: cache client build
+        uses: actions/cache@v3
         id: cache
         with:
           key: galaxy-static-${{ steps.client-commit.outputs.commit }}
