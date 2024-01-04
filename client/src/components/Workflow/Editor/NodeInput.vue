@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import {
     computed,
@@ -188,11 +188,31 @@ function onDrop(event: DragEvent) {
         terminal.value.connect(droppedTerminal);
     }
 }
+
+const draggedOver = ref(false);
+const draggedOverDebounced = useDebounce(draggedOver, 50);
+
+function nodeDragOver() {
+    draggedOver.value = true && Boolean(draggingTerminal.value);
+}
+
+function nodeDragOut() {
+    draggedOver.value = false;
+}
+
+watch(
+    () => draggingTerminal.value,
+    () => {
+        if (!draggingTerminal.value) {
+            draggedOver.value = false;
+        }
+    }
+);
 </script>
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-    <div class="node-input" :class="rowClass" @drop.prevent="onDrop">
+    <div class="node-input" :class="rowClass" @drop.prevent="onDrop" @dragover="nodeDragOver" @dragleave="nodeDragOut">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             :id="id"
@@ -204,6 +224,7 @@ function onDrop(event: DragEvent) {
                 'can-not-accept': !acceptsInput,
                 'mapped-over': isMultiple,
                 'is-dragging': Boolean(draggingTerminal),
+                'is-dragover': draggedOverDebounced,
             }"
             :input-name="input.name"
             @dragenter.prevent="dragEnter"
@@ -267,6 +288,10 @@ function onDrop(event: DragEvent) {
 
         &.mapped-over.is-dragging {
             --offset-extra: 5px;
+        }
+
+        &.is-dragover.can-accept::after {
+            outline: solid 3px $brand-primary;
         }
     }
 }
