@@ -1159,6 +1159,14 @@ mapping:
           set.  Also this email is shown as a contact to user in case of Galaxy
           misconfiguration and other events user may encounter.
 
+      error_email_reply_to_user:
+        type: bool
+        required: false
+        desc: |
+          When sending email reports for tool errors, include the user's email address
+          in the Reply-to SMTP header (used by some ticketing systems to identify the
+          appropriate response address).
+
       email_from:
         type: str
         required: false

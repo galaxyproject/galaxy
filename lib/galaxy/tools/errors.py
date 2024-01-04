@@ -253,6 +253,7 @@ class EmailErrorReporter(ErrorReporter):
         except Exception:
             pass
 
+        reply_to = user.email if self.app.config.error_email_reply_to_user else None
         return util.send_mail(
-            self.app.config.email_from, to, subject, self.report, self.app.config, html=self.html_report
+            self.app.config.email_from, to, subject, self.report, self.app.config, html=self.html_report, reply_to=reply_to
         )
