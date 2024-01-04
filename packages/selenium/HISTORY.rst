@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -88,6 +94,7 @@ Enhancements
 
 * 
 * 
+* 
 * Port selenium setup to non-deprecated selenium options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16215 <https://github.com/galaxyproject/galaxy/pull/16215>`_
 
 -------------------
@@ -99,6 +106,7 @@ Enhancements
 Enhancements
 ============
 
+* 
 * 
 * 
 * 

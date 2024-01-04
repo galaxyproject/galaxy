@@ -10,6 +10,17 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Separate collection and non-collection data element by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17236 <https://github.com/galaxyproject/galaxy/pull/17236>`_
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -44,6 +55,7 @@ Bug fixes
 =========
 
 * 
+* 
 * Fixes for two framework test tools by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15483 <https://github.com/galaxyproject/galaxy/pull/15483>`_
 * add missing f for f-string by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15584 <https://github.com/galaxyproject/galaxy/pull/15584>`_
 * Fix call to `docker_cached_container_description` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15598 <https://github.com/galaxyproject/galaxy/pull/15598>`_
@@ -65,6 +77,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * Decompress history data for testing assertions by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15085 <https://github.com/galaxyproject/galaxy/pull/15085>`_
 * OIDC tokens by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#15300 <https://github.com/galaxyproject/galaxy/pull/15300>`_
@@ -104,6 +117,7 @@ Bug fixes
 
 * 
 * 
+* 
 * Fixes for extra files handling and cached object stores  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16595 <https://github.com/galaxyproject/galaxy/pull/16595>`_
 * Fix create/install commands for conda 23.9.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16831 <https://github.com/galaxyproject/galaxy/pull/16831>`_
 
@@ -116,6 +130,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -143,6 +158,7 @@ Bug fixes
 * 
 * 
 * 
+* 
 * xsd: add missing `sep` attribute for `has_n_columns` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16262 <https://github.com/galaxyproject/galaxy/pull/16262>`_
 * Missing init prevents models.py being bundled into tool_util by `@nuwang <https://github.com/nuwang>`_ in `#16308 <https://github.com/galaxyproject/galaxy/pull/16308>`_
 
@@ -150,6 +166,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
@@ -163,6 +180,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -188,6 +206,7 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix assertion linting to not fail on byte suffixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15873 <https://github.com/galaxyproject/galaxy/pull/15873>`_
 * Fix ``get_test_from_anaconda()`` and ``base_image_for_targets()`` functions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16125 <https://github.com/galaxyproject/galaxy/pull/16125>`_
 * Fix test search for mulled container hashes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16170 <https://github.com/galaxyproject/galaxy/pull/16170>`_
@@ -196,6 +215,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * 
 * 
