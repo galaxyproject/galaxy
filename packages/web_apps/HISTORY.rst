@@ -10,6 +10,17 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Properly clear session on OIDC logout by `@guerler <https://github.com/guerler>`_ in `#17120 <https://github.com/galaxyproject/galaxy/pull/17120>`_
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -29,6 +40,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Provide error message instead of internal server error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16905 <https://github.com/galaxyproject/galaxy/pull/16905>`_
 * Fix input dates in notifications: consider timezone offset by `@davelopez <https://github.com/davelopez>`_ in `#17088 <https://github.com/galaxyproject/galaxy/pull/17088>`_
 
@@ -47,6 +59,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * Create ToolSuccess route and refactor component by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#15484 <https://github.com/galaxyproject/galaxy/pull/15484>`_
 * fix premature return in user API by `@martenson <https://github.com/martenson>`_ in `#15781 <https://github.com/galaxyproject/galaxy/pull/15781>`_
@@ -68,6 +81,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * Empower Users to Select Storage Destination by `@jmchilton <https://github.com/jmchilton>`_ in `#14073 <https://github.com/galaxyproject/galaxy/pull/14073>`_
 * Add Storage Dashboard visualizations for histories by `@davelopez <https://github.com/davelopez>`_ in `#14820 <https://github.com/galaxyproject/galaxy/pull/14820>`_
@@ -128,6 +142,7 @@ Bug fixes
 
 * 
 * 
+* 
 * Fix incorrect ASGI request host by `@davelopez <https://github.com/davelopez>`_ in `#16574 <https://github.com/galaxyproject/galaxy/pull/16574>`_
 * Allow the legacy DELETE dataset endpoint to accept any string for the history_id by `@assuntad23 <https://github.com/assuntad23>`_ in `#16593 <https://github.com/galaxyproject/galaxy/pull/16593>`_
 
@@ -143,6 +158,7 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix active step display in workflow editor side panel by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16364 <https://github.com/galaxyproject/galaxy/pull/16364>`_
 
 -------------------
@@ -154,6 +170,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -174,12 +191,14 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
 
 ============
 Enhancements
 ============
 
+* 
 * 
 * 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
@@ -199,6 +218,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 

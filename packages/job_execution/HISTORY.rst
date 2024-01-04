@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -37,6 +43,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Fix tags ownership by `@davelopez <https://github.com/davelopez>`_ in `#16339 <https://github.com/galaxyproject/galaxy/pull/16339>`_
 * Push to object store even if ``set_meta`` fails by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16667 <https://github.com/galaxyproject/galaxy/pull/16667>`_
@@ -66,6 +73,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_

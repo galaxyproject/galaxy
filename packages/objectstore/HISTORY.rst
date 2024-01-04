@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -61,6 +67,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_

@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.3 (2023-12-01)
 -------------------
 
@@ -49,6 +55,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * Various Tool Shed Cleanup by `@jmchilton <https://github.com/jmchilton>`_ in `#15247 <https://github.com/galaxyproject/galaxy/pull/15247>`_
 * Protection against problematic boolean parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#15493 <https://github.com/galaxyproject/galaxy/pull/15493>`_
@@ -101,6 +108,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Replace httpbin service with pytest-httpserver by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16042 <https://github.com/galaxyproject/galaxy/pull/16042>`_
