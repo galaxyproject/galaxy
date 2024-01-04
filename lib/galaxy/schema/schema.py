@@ -22,7 +22,6 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
-    field_validator,
     Json,
     model_validator,
     RootModel,
@@ -39,6 +38,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     EncodedLibraryFolderDatabaseIdField,
     LibraryFolderDatabaseIdField,
+    literal_to_value,
     ModelClassField,
 )
 from galaxy.schema.types import (
@@ -306,12 +306,14 @@ class BaseUserModel(Model):
 class WithModelClass:
     model_class: str
 
-    @field_validator("model_class", mode="before", check_fields=False)
+    @model_validator(mode="before")
     @classmethod
-    def set_default(cls, v):
-        if v is None:
-            return cls.model_class
-        return v
+    def set_default(cls, data):
+        if isinstance(data, dict):
+            if "model_class" not in data and issubclass(cls, BaseModel):
+                data = data.copy()
+                data["model_class"] = literal_to_value(cls.model_fields["model_class"].annotation)
+        return data
 
 
 class UserModel(BaseUserModel, WithModelClass):
