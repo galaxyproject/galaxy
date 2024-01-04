@@ -207,7 +207,7 @@ function onDrop(event: DragEvent) {
             @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <b-tooltip :target="id" :show="showTooltip">
+            <b-tooltip v-if="reason" :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
