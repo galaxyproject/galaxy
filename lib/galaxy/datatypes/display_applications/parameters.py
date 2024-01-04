@@ -1,14 +1,23 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
 from dataclasses import dataclass
-from typing import Optional
+from typing import (
+    Callable,
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 from urllib.parse import quote_plus
 
+from galaxy.datatypes.data import Data
+from galaxy.model import DatasetInstance
 from galaxy.model.base import transaction
 from galaxy.schema.schema import DatasetState
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
 
+if TYPE_CHECKING:
+    from galaxy.datatypes.registry import Registry
 DEFAULT_DATASET_NAME = "dataset"
 
 
@@ -60,9 +69,12 @@ class DisplayApplicationParameter:
 
 @dataclass
 class DatasetLikeObject:
-    file_name: str
+    get_file_name: Callable
     state: DatasetState
     extension: str
+    name: str
+    dbkey: Optional[str]
+    datatype: Data
 
 
 class DisplayApplicationDataParameter(DisplayApplicationParameter):
@@ -91,20 +103,21 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         self.force_conversion = string_as_bool(elem.get("force_conversion", "False"))
 
     @property
+    def datatypes_registry(self) -> "Registry":
+        return self.link.display_application.app.datatypes_registry
+
+    @property
     def formats(self):
         if self.extensions:
             return tuple(
                 map(
                     type,
-                    map(
-                        self.link.display_application.app.datatypes_registry.get_datatype_by_extension, self.extensions
-                    ),
+                    map(self.datatypes_registry.get_datatype_by_extension, self.extensions),
                 )
             )
         return None
 
-    def _get_dataset_like_object(self, other_values) -> Optional[DatasetLikeObject]:
-        # this returned object has file_name, state, and states attributes equivalent to a DatasetAssociation
+    def _get_dataset_like_object(self, other_values) -> Optional[Union[DatasetLikeObject, DatasetInstance]]:
         data = other_values.get(self.dataset, None)
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):
@@ -113,19 +126,38 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
             return None
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
+            if not rval:
+                # May have to look at converted datasets
+                for converted_dataset_association in data.implicitly_converted_datasets:
+                    converted_dataset = converted_dataset_association.dataset
+                    if converted_dataset.state != DatasetState.OK:
+                        return None
+                    rval = getattr(converted_dataset.metadata, self.metadata, None)
+                    if rval:
+                        data = converted_dataset
+                        break
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
-            return DatasetLikeObject(file_name=rval.get_file_name(), state=data.state, extension="data")
+            return DatasetLikeObject(
+                get_file_name=rval.get_file_name,
+                state=data.state,
+                extension="data",
+                dbkey=data.dbkey,
+                name=data.name,
+                datatype=data.datatype,
+            )
         elif (
             self.formats and self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats))
         ):
             for ext in self.extensions:
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
-                    return DatasetLikeObject(file_name=rval.get_file_name(), state=rval.state, extension=rval.extension)
-            direct_match, target_ext, _ = data.find_conversion_destination(self.formats)
+                    return rval
+            direct_match, target_ext, _ = self.datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
+                data.extension, self.extensions
+            )
             assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
-        return DatasetLikeObject(file_name=data.get_file_name(), state=data.state, extension=data.extension)
+        return data
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
         if data := self._get_dataset_like_object(other_values):
@@ -136,12 +168,15 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         data = self._get_dataset_like_object(other_values)
         if not data and self.formats:
             data = other_values.get(self.dataset, None)
-            trans.sa_session.refresh(data)
             # start conversion
             # FIXME: Much of this is copied (more than once...); should be some abstract method elsewhere called from here
             # find target ext
-            direct_match, target_ext, converted_dataset = data.find_conversion_destination(
-                self.formats, converter_safe=True
+            (
+                direct_match,
+                target_ext,
+                converted_dataset,
+            ) = self.datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
+                data.extension, self.extensions
             )
             if not direct_match:
                 if target_ext and not converted_dataset:
