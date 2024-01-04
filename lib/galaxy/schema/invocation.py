@@ -551,17 +551,17 @@ class InvocationJobsSummaryBaseModel(Model):
     )
 
 
-class InvocationJobsResponse(InvocationJobsSummaryBaseModel, WithModelClass):
-    model: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
+class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
+    model: INVOCATION_MODEL_CLASS
 
 
-class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel, WithModelClass):
-    model: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
+class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
+    model: INVOCATION_STEP_MODEL_CLASS
 
 
-class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel, WithModelClass):
-    model: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
+class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
+    model: JOB_MODEL_CLASS
 
 
-class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel, WithModelClass):
-    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)
+class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
+    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
