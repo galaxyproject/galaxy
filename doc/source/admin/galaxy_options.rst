@@ -1620,6 +1620,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``error_email_reply_to_user``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When sending email reports for tool errors, include the user's
+    email address in the Reply-to SMTP header (used by some ticketing
+    systems to identify the appropriate response address).
+:Default: ``None``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~
 ``email_from``
 ~~~~~~~~~~~~~~
