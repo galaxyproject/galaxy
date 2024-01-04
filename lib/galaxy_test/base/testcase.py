@@ -1,9 +1,10 @@
 import logging
-import os
 from typing import (
     Any,
     Optional,
 )
+
+import pytest
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.unittest import TestCase
@@ -15,6 +16,7 @@ from galaxy_test.base.env import (
 log = logging.getLogger(__name__)
 
 
+@pytest.mark.usefixtures("embedded_driver")
 class FunctionalTestCase(TestCase):
     """Base class for tests targetting actual Galaxy servers.
 
@@ -46,17 +48,12 @@ class FunctionalTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         """Configure and start Galaxy for a test."""
-        cls._test_driver = None
-
-        if cls.galaxy_driver_class is not None and not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
-            cls._test_driver = cls.galaxy_driver_class()
-            cls._test_driver.setup(config_object=cls)
+        pass
 
     @classmethod
     def tearDownClass(cls):
         """Shutdown Galaxy server and cleanup temp directory."""
-        if cls._test_driver:
-            cls._test_driver.tear_down()
+        pass
 
     def get_filename(self, filename: str) -> str:
         # No longer used by tool tests - drop if isn't used else where.
