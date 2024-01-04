@@ -3,11 +3,11 @@ History
 
 .. to_doc
 
------------
-23.1.4.dev0
------------
+-------------------
+23.1.4 (2024-01-04)
+-------------------
 
-
+No recorded changes since last release
 
 -------------------
 23.1.3 (2023-12-01)
@@ -43,6 +43,7 @@ Bug fixes
 =========
 
 * 
+* 
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Improve container resolver documentation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16280 <https://github.com/galaxyproject/galaxy/pull/16280>`_
 * Limit tool document cache to tool configs with explicit cache path by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16537 <https://github.com/galaxyproject/galaxy/pull/16537>`_
@@ -53,6 +54,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * External Login Flow: Redirect users if account already exists by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#15019 <https://github.com/galaxyproject/galaxy/pull/15019>`_
 * Add slack error reporting plugin by `@hexylena <https://github.com/hexylena>`_ in `#15025 <https://github.com/galaxyproject/galaxy/pull/15025>`_
@@ -99,6 +101,7 @@ Bug fixes
 
 * 
 * 
+* 
 * Minor bug fix for default mail templates by `@neoformit <https://github.com/neoformit>`_ in `#16362 <https://github.com/galaxyproject/galaxy/pull/16362>`_
 
 -------------------
@@ -132,12 +135,14 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Change default watchdog inotify_buffer log level to info by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15967 <https://github.com/galaxyproject/galaxy/pull/15967>`_
 
 ============
 Enhancements
 ============
 
+* 
 * 
 * 
 * Add ``ca_certs`` option for sentry client by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15943 <https://github.com/galaxyproject/galaxy/pull/15943>`_
