@@ -202,6 +202,7 @@ function onDrop(event: DragEvent) {
                 'can-accept': acceptsInput,
                 'can-not-accept': !acceptsInput,
                 'mapped-over': isMultiple,
+                'is-dragging': Boolean(draggingTerminal),
             }"
             :input-name="input.name"
             @drop.prevent="onDrop"
@@ -257,6 +258,15 @@ function onDrop(event: DragEvent) {
 
         &.can-not-accept {
             color: $brand-warning;
+        }
+
+        // expand size on drag
+        &.is-dragging {
+            --offset-extra: 10px;
+        }
+
+        &.mapped-over.is-dragging {
+            --offset-extra: 5px;
         }
     }
 }
