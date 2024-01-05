@@ -1439,7 +1439,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored."""
-        return self.show_invocation_report_pdf(trans, invocation_id)
+        return self.show_invocation_report_pdf(trans=trans, invocation_id=invocation_id)
 
     @router.get(
         "/api/invocations/steps/{step_id}",
