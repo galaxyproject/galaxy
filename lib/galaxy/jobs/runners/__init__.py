@@ -21,6 +21,7 @@ from sqlalchemy.orm import object_session
 import galaxy.jobs
 from galaxy import model
 from galaxy.exceptions import ConfigurationError
+from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
@@ -269,6 +270,7 @@ class BaseJobRunner:
         include_work_dir_outputs: bool = True,
         modify_command_for_container: bool = True,
         stream_stdout_stderr: bool = False,
+        compute_environment: ComputeEnvironment = None,
     ):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do"""
         job_id = job_wrapper.get_id_tag()
@@ -288,7 +290,7 @@ class BaseJobRunner:
 
         # Prepare the job
         try:
-            job_wrapper.prepare()
+            job_wrapper.prepare(compute_environment)
             job_wrapper.runner_command_line = self.build_command_line(
                 job_wrapper,
                 include_metadata=include_metadata,
