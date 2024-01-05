@@ -26,12 +26,12 @@ class LibraryFolderIdModel(BaseModel):
 
 def test_decoded_id_schema_override():
     schema = DecodedIdModel.model_json_schema()
-    assert schema["$defs"]["DecodedDatabaseIdField"]["type"] == "string", schema
+    assert schema["properties"]["id"]["type"] == "string", schema
 
 
 def test_encoded_id_schema_override():
     schema = EncodedIdModel.model_json_schema()
-    assert schema["$defs"]["EncodedDatabaseIdField"]["type"] == "string", schema
+    assert schema["properties"]["id"]["type"] == "string", schema
 
 
 def test_decoded_database_id_field():
