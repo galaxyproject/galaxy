@@ -847,7 +847,7 @@ class WorkflowsAPIController(
         create_payload = CreateInvocationFromStore(**payload)
         serialization_params = InvocationSerializationParams(**payload)
         # refactor into a service...
-        return self._create_from_store(trans, create_payload, serialization_params)
+        return [i.model_dump() for i in self._create_from_store(trans, create_payload, serialization_params)]
 
     def _create_from_store(
         self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
