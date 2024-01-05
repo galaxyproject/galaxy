@@ -995,7 +995,8 @@ class FastAPIHistoryContents:
         id: HistoryItemIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> AsyncTaskResultSummary:
-        materialize_request = MaterializeDatasetInstanceRequest(
+        # values are already validated, use model_construct
+        materialize_request = MaterializeDatasetInstanceRequest.model_construct(
             history_id=history_id,
             source=DatasetSourceType.hda,
             content=id,
@@ -1013,7 +1014,7 @@ class FastAPIHistoryContents:
         trans: ProvidesHistoryContext = DependsOnTrans,
         materialize_api_payload: MaterializeDatasetInstanceAPIRequest = Body(...),
     ) -> AsyncTaskResultSummary:
-        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest(
+        materialize_request: MaterializeDatasetInstanceRequest = MaterializeDatasetInstanceRequest.model_construct(
             history_id=history_id, **materialize_api_payload.model_dump()
         )
         rval = self.service.materialize(trans, materialize_request)

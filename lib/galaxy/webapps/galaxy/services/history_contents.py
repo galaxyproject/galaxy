@@ -563,7 +563,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         # DO THIS JUST TO MAKE SURE IT IS OWNED...
         self.history_manager.get_mutable(request.history_id, trans.user, current_history=trans.history)
         assert trans.app.config.enable_celery_tasks
-        task_request = MaterializeDatasetInstanceTaskRequest(
+        # values already validated and coerced, use model_construct
+        task_request = MaterializeDatasetInstanceTaskRequest.model_construct(
             history_id=request.history_id,
             source=request.source,
             content=request.content,
