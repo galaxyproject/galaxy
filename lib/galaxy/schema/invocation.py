@@ -86,8 +86,6 @@ DatabaseIdT = TypeVar("DatabaseIdT")
 
 class InvocationMessageBase(BaseModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
-    # TODO[pydantic]: The following keys were removed: `getter_dict`.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 
