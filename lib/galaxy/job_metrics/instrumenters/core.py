@@ -80,11 +80,11 @@ class CorePlugin(InstrumentPlugin):
 
     def __record_galaxy_slots_command(self, job_directory):
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
-        return f"""echo "$GALAXY_SLOTS" > '{galaxy_slots_file}' """
+        return f"""echo "$GALAXY_SLOTS" > "{galaxy_slots_file}" """
 
     def __record_galaxy_memory_mb_command(self, job_directory):
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
-        return f"""echo "$GALAXY_MEMORY_MB" > '{galaxy_memory_mb_file}' """
+        return f"""echo "$GALAXY_MEMORY_MB" > "{galaxy_memory_mb_file}" """
 
     def __record_seconds_since_epoch_to_file(self, job_directory, name):
         path = self._instrument_file_path(job_directory, f"epoch_{name}")
