@@ -401,7 +401,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         workflow_canvas.add_steps()
         return workflow_canvas.finish(for_embed=for_embed)
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> WorkflowInvocation:
+    def get_invocation(self, trans, decoded_invocation_id: int, eager=False) -> WorkflowInvocation:
         workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)

@@ -1199,7 +1199,7 @@ class ToolDataTableManager(Dictifiable):
             extra_files_path = dataset.extra_files_path
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
-                json.dump(bundle.model_dump(), fw)
+                fw.write(bundle.model_dump_json())
             bundle_datasets[bundle_path] = dataset
         return bundle_datasets
 

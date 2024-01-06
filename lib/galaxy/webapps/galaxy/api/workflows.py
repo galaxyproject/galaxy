@@ -781,7 +781,8 @@ class WorkflowsAPIController(
             as_dict = workflow_invocation.to_dict()
             as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
             as_dict["messages"] = [
-                InvocationMessageResponseModel.model_validate(message).model_dump() for message in invocation.messages
+                InvocationMessageResponseModel.model_validate(message).model_dump(mode="json")
+                for message in invocation.messages
             ]
             encoded_invocations.append(as_dict)
 
@@ -831,7 +832,7 @@ class WorkflowsAPIController(
         serialization_params = InvocationSerializationParams(**kwd)
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         trans.response.headers["total_matches"] = total_matches
-        return [json.loads(i.model_dump_json()) for i in invocations]
+        return [i.model_dump(mode="json") for i in invocations]
 
     @expose_api_anonymous
     def create_invocations_from_store(self, trans, payload, **kwd):
@@ -847,7 +848,7 @@ class WorkflowsAPIController(
         create_payload = CreateInvocationFromStore(**payload)
         serialization_params = InvocationSerializationParams(**payload)
         # refactor into a service...
-        return [i.model_dump() for i in self._create_from_store(trans, create_payload, serialization_params)]
+        return [i.model_dump(mode="json") for i in self._create_from_store(trans, create_payload, serialization_params)]
 
     def _create_from_store(
         self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
