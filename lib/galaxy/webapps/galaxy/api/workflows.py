@@ -69,6 +69,7 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    InvocationSortByEnum,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -1177,12 +1178,19 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
-# TODO rename? - this is already defined in jobs.py
+WorkflowIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="Workflow ID",
+        description="Return only invocations for this Workflow ID",
+    ),
+]
+
 HistoryIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
         title="History ID",
-        description="Optional identifier of a History. Use it to restrict the search within a particular History.",
+        description="Return only invocations for this History ID",
     ),
 ]
 
@@ -1190,7 +1198,7 @@ JobIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
         title="Job ID",
-        description="The encoded database identifier of the Job.",
+        description="Return only invocations for this Job ID",
     ),
 ]
 
@@ -1198,15 +1206,56 @@ UserIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
         title="User ID",
-        description="The encoded database identifier of the User.",
+        description="Return invocations for this User ID.",
     ),
 ]
 
-WorkflowIdQueryParam = Annotated[
-    Optional[DecodedDatabaseIdField],
+InvocationsSortByQueryParam = Annotated[
+    Optional[InvocationSortByEnum],
     Query(
-        title="Workflow ID",
-        description="Return only invocations for this Workflow ID",
+        title="Sort By",
+        description="Sort Workflow Invocations by this attribute",
+    ),
+]
+
+InvocationsSortDescQueryParam = Annotated[
+    bool,
+    Query(
+        title="Sort Descending",
+        description="Sort in descending order?",
+    ),
+]
+
+InvocationsIncludeTerminalQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Include Terminal",
+        description="Set to false to only include terminal Invocations.",
+    ),
+]
+
+InvocationsLimitQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Limit",
+        description="Limit the number of invocations to return.",
+    ),
+]
+
+InvocationsOffsetQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Offset",
+        description="Number of invocations to skip.",
+    ),
+]
+
+
+InvocationsInstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Instance",
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
     ),
 ]
 
@@ -1256,7 +1305,12 @@ class FastAPIInvocations:
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
         job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
         user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        instance: Annotated[Optional[bool], InstanceQueryParam] = False,
+        sort_by: Annotated[Optional[InvocationSortByEnum], InvocationsSortByQueryParam] = None,
+        sort_desc: Annotated[Optional[bool], InvocationsSortDescQueryParam] = False,
+        include_terminal: Annotated[Optional[bool], InvocationsIncludeTerminalQueryParam] = True,
+        limit: Annotated[Optional[int], InvocationsLimitQueryParam] = None,
+        offset: Annotated[Optional[int], InvocationsOffsetQueryParam] = None,
+        instance: Annotated[Optional[bool], InvocationsInstanceQueryParam] = False,
         view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -1270,6 +1324,11 @@ class FastAPIInvocations:
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         invocation_payload = InvocationIndexPayload(
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
             instance=instance,
         )
         invocation_payload.workflow_id = workflow_id
@@ -1296,7 +1355,12 @@ class FastAPIInvocations:
         history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
         job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
         user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        instance: Annotated[Optional[bool], InstanceQueryParam] = False,
+        sort_by: Annotated[Optional[InvocationSortByEnum], InvocationsSortByQueryParam] = None,
+        sort_desc: Annotated[Optional[bool], InvocationsSortDescQueryParam] = False,
+        include_terminal: Annotated[Optional[bool], InvocationsIncludeTerminalQueryParam] = True,
+        limit: Annotated[Optional[int], InvocationsLimitQueryParam] = None,
+        offset: Annotated[Optional[int], InvocationsOffsetQueryParam] = None,
+        instance: Annotated[Optional[bool], InvocationsInstanceQueryParam] = False,
         view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -1304,13 +1368,18 @@ class FastAPIInvocations:
         """An alias for GET '/api/invocations'"""
         invocations = self.index_invocations(
             response=response,
+            workflow_id=workflow_id,
             history_id=history_id,
             job_id=job_id,
             user_id=user_id,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
             instance=instance,
             view=view,
             step_details=step_details,
-            workflow_id=workflow_id,
             trans=trans,
         )
         return invocations
