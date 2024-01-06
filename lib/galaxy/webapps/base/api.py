@@ -9,7 +9,7 @@ from fastapi import (
     Request,
     status,
 )
-from fastapi.exceptions import RequestValidationError
+from fastapi.exceptions import ValidationException
 from fastapi.responses import JSONResponse
 from starlette.responses import (
     FileResponse,
@@ -181,8 +181,8 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
 
 
 def add_exception_handler(app: FastAPI) -> None:
-    @app.exception_handler(RequestValidationError)
-    async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
+    @app.exception_handler(ValidationException)
+    async def validate_exception_middleware(request: Request, exc: ValidationException) -> Response:
         message_exception = validation_error_to_message_exception(exc)
         return get_error_response_for_request(request, message_exception)
 
