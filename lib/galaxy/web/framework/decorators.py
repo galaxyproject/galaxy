@@ -3,8 +3,10 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
+from typing import Union
 
 import paste.httpexceptions
+from fastapi.exceptions import ValidationException
 from pydantic import (
     BaseModel,
     ValidationError,
@@ -383,7 +385,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: ValidationError) -> MessageException:
+def validation_error_to_message_exception(e: Union[ValidationError, ValidationException]) -> MessageException:
     invalid_found = False
     missing_found = False
     messages = []
