@@ -1,6 +1,10 @@
 name: Build client for selenium tests
 on:
   workflow_call:
+    outputs:
+      commit-id:
+        description: Commit ID
+        value: ${{ jobs.build-client.outputs.commit-id }}
 jobs:
   build-client:
     runs-on: ubuntu-latest
