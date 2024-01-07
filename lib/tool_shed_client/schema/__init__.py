@@ -178,9 +178,6 @@ class RepositoryDependency(RepositoryRevisionMetadata):
     pass
 
 
-RepositoryRevisionMetadata.update_forward_refs()
-
-
 class RepositoryMetadata(RootModel):
     root: Dict[str, RepositoryRevisionMetadata]
 

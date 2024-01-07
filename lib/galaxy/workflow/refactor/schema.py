@@ -257,7 +257,7 @@ union_action_classes = Union[
 
 ACTION_CLASSES_BY_TYPE = {}
 for action_class in union_action_classes.__args__:  # type: ignore[attr-defined]
-    action_type_def = action_class.schema()["properties"]["action_type"]
+    action_type_def = action_class.model_json_schema()["properties"]["action_type"]
     try:
         # pydantic 1.8
         action_type = action_type_def["enum"][0]

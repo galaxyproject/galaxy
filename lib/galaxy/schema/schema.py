@@ -284,7 +284,7 @@ FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 class Model(BaseModel):
     """Base model definition with common configuration used by all derived models."""
 
-    model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
+    model_config = ConfigDict(populate_by_name=True, use_enum_values=True, protected_namespaces=())
 
 
 class RequireOneSetOption(Model):
@@ -820,7 +820,9 @@ class HDADetailed(HDASummary, WithModelClass):
         Field(
             title="API Type",
             description="TODO",
-            deprecated=False,  # TODO: Should this field be deprecated as announced in release 16.04?
+            json_schema_extra={
+                "deprecated": True
+            },  # TODO: Should this field be deprecated as announced in release 16.04?
         ),
     ] = "file"
     created_from_basename: Optional[str] = Field(
@@ -1525,11 +1527,6 @@ class CollectionElementIdentifier(Model):
         title="Tags",
         description="The list of tags associated with the element.",
     )
-
-
-# Required for self-referencing models
-# See https://pydantic-docs.helpmanual.io/usage/postponed_annotations/#self-referencing-models
-CollectionElementIdentifier.update_forward_refs()
 
 
 class CreateNewCollectionPayload(Model):
