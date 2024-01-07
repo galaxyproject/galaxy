@@ -233,7 +233,7 @@ class FastAPIDatasets:
         # Using a generic Dict here as an attempt on supporting multiple aliases for the permissions params.
         payload: Dict[str, Any] = Body(
             default=...,
-            example=UpdateDatasetPermissionsPayload(),
+            examples=[UpdateDatasetPermissionsPayload()],
         ),
     ) -> DatasetAssociationRoles:
         """Set permissions of the given history dataset to the given role ids."""
