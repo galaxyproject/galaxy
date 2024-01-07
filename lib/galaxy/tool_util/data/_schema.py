@@ -6,12 +6,17 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     RootModel,
 )
 
 
-class ToolDataEntry(BaseModel):
+class Model(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class ToolDataEntry(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -55,7 +60,7 @@ class ToolDataDetails(ToolDataEntry):
     )
 
 
-class ToolDataField(BaseModel):
+class ToolDataField(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -94,7 +99,7 @@ class ToolDataField(BaseModel):
     )
 
 
-class ToolDataItem(BaseModel):
+class ToolDataItem(Model):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",

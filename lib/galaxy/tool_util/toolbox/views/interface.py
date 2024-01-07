@@ -2,7 +2,10 @@ from abc import abstractmethod
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+)
 
 from ..panel import (
     HasPanelItems,
@@ -29,6 +32,7 @@ class ToolPanelViewModel(BaseModel):
     description: Optional[str] = None
     view_type: ToolPanelViewModelType
     searchable: bool  # Allow for more dynamic views that don't plug into fixed search indicies in the future...
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ToolBoxRegistry:
