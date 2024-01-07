@@ -1197,11 +1197,23 @@ class UpdateHistoryContentsPayload(HistoryBase):
     )
 
 
+class HistoryMinimal(HistoryBase, WithModelClass):
+    """Minimal History Response with optional fields"""
+
+    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
+    id: Optional[HistoryID] = None
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description="The encoded ID of the user that owns this History.",
+    )
+
+
 class HistorySummary(HistoryBase, WithModelClass):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
-    id: EncodedDatabaseIdField
+    id: HistoryID
     name: str = Field(
         ...,
         title="Name",
@@ -1318,8 +1330,9 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
 
 
 AnyHistoryView = Union[
-    HistorySummary,
     HistoryDetailed,
+    HistorySummary,
+    HistoryMinimal,
 ]
 
 
