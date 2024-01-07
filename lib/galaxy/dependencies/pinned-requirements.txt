@@ -76,6 +76,7 @@ graphene-sqlalchemy==3.0.0rc1 ; python_version >= "3.8" and python_version < "3.
 graphene==3.3 ; python_version >= "3.8" and python_version < "3.12"
 graphql-core==3.2.3 ; python_version >= "3.8" and python_version < "3.12"
 graphql-relay==3.2.0 ; python_version >= "3.8" and python_version < "3.12"
+gravity @ git+https://github.com/mvdbeek/gravity@pydantic-v1-v2 ; python_version >= "3.8" and python_version < "3.12"
 greenlet==3.0.1 ; python_version >= "3.8" and (platform_machine == "aarch64" or platform_machine == "ppc64le" or platform_machine == "x86_64" or platform_machine == "amd64" or platform_machine == "AMD64" or platform_machine == "win32" or platform_machine == "WIN32") and python_version < "3.12"
 gunicorn==21.2.0 ; python_version >= "3.8" and python_version < "3.12"
 gxformat2==0.18.0 ; python_version >= "3.8" and python_version < "3.12"
