@@ -1356,7 +1356,6 @@ class ExportHistoryArchivePayload(Model):
         default=None,
         title="Force Rebuild",
         description="Whether to force a rebuild of the history archive.",
-        hidden=True,  # Avoids displaying this field in the documentation
     )
 
 
