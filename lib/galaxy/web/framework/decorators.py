@@ -3,10 +3,12 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
-from typing import Union
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 import paste.httpexceptions
-from fastapi.exceptions import ValidationException
 from pydantic import (
     BaseModel,
     ValidationError,
@@ -25,6 +27,9 @@ from galaxy.util import (
 )
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
+
+if TYPE_CHECKING:
+    from fastapi.exceptions import RequestValidationError
 
 log = logging.getLogger(__name__)
 
@@ -385,7 +390,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: Union[ValidationError, ValidationException]) -> MessageException:
+def validation_error_to_message_exception(e: Union[ValidationError, "RequestValidationError"]) -> MessageException:
     invalid_found = False
     missing_found = False
     messages = []
