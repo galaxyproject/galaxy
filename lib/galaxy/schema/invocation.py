@@ -305,15 +305,6 @@ class InvocationStepState(str, Enum):
     # FAILED = 'failed',  TODO: implement and expose
 
 
-class ExtendedInvocationStepState(str, Enum):
-    NEW = "new"  # Brand new workflow invocation step
-    READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
-    SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
-    # CANCELLED = 'cancelled',  TODO: implement and expose
-    # FAILED = 'failed',  TODO: implement and expose
-    OK = "ok"  # Workflow invocation step has completed successfully - TODO: is this a correct description?
-
-
 class InvocationStepOutput(Model):
     src: INVOCATION_STEP_OUTPUT_SRC = Field(
         literal_to_value(INVOCATION_STEP_OUTPUT_SRC),
@@ -351,37 +342,22 @@ class InvocationStep(Model, WithModelClass):
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
     id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[
-        Annotated[
-            EncodedDatabaseIdField,
-            Field(
-                default=None,
-                title="Job ID",
-                description="The encoded ID of the job associated with this workflow invocation step.",
-            ),
-        ]
-    ]
-    workflow_step_id: Annotated[
-        EncodedDatabaseIdField,
-        Field(
-            ...,
-            title="Workflow step ID",
-            description="The encoded ID of the workflow step associated with this workflow invocation step.",
-        ),
-    ]
-    subworkflow_invocation_id: Optional[
-        Annotated[
-            EncodedDatabaseIdField,
-            Field(
-                default=None,
-                title="Subworkflow invocation ID",
-                description="The encoded ID of the subworkflow invocation.",
-            ),
-        ]
-    ]
-    # TODO The state can differ from InvocationStepState is this intended?
-    # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
-    state: Optional[ExtendedInvocationStepState] = Field(
+    job_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="Job ID",
+        description="The encoded ID of the job associated with this workflow invocation step.",
+    )
+    workflow_step_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Workflow step ID",
+        description="The encoded ID of the workflow step associated with this workflow invocation step.",
+    )
+    subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None,
+        title="Subworkflow invocation ID",
+        description="The encoded ID of the subworkflow invocation.",
+    )
+    state: Optional[Union[InvocationStepState, JobState]] = Field(
         default=None,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
@@ -493,12 +469,6 @@ class InvocationReport(Model, WithModelClass):
         description="Other invocations associated with the invocation.",
     )
 
-    # class Config:
-    #     pass
-    #     # Galaxy Report/Page response can contain many extra_rendering_data
-    #     # Allow any other extra fields
-    #     extra = Extra.allow
-
 
 class InvocationUpdatePayload(Model):
     action: bool = InvocationStepActionField
@@ -605,26 +575,7 @@ class WorkflowInvocationElementView(WorkflowInvocationBaseResponse):
 
 
 class WorkflowInvocationCollectionView(WorkflowInvocationBaseResponse):
-    steps: Optional[List[InvocationStep]] = Field(
-        default=None, title="Steps", description="Steps of the workflow invocation."
-    )
-    inputs: Optional[Dict[str, InvocationInput]] = Field(
-        default=None, title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
-    )
-    input_step_parameters: Optional[Dict[str, InvocationInputParameter]] = Field(
-        default=None, title="Input step parameters", description="Input step parameters of the workflow invocation."
-    )
-    outputs: Optional[Dict[str, InvocationOutput]] = Field(
-        default=None, title="Outputs", description="Output datasets of the workflow invocation."
-    )
-    output_collections: Optional[Dict[str, InvocationOutputCollection]] = Field(
-        default=None,
-        title="Output collections",
-        description="Output dataset collections of the workflow invocation.",
-    )
-    output_values: Optional[Dict[str, Any]] = Field(
-        default=None, title="Output values", description="Output values of the workflow invocation."
-    )
+    pass
 
 
 class WorkflowInvocationResponse(RootModel):
