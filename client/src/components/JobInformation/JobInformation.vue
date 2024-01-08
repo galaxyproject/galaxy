@@ -95,8 +95,8 @@ function updateJob(fromProvider) {
                                 [{{ index }}]
                                 <ul>
                                     <li v-for="(value, name, index) in message" :key="index">
-                                        <strong>{{ name }}</strong>
-                                        : {{ value }}
+                                        <strong>{{ name }}:</strong>
+                                        {{ value }}
                                     </li>
                                 </ul>
                             </li>
