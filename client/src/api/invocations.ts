@@ -35,7 +35,7 @@ export async function fetchInvocationJobsSummary(params: {
 }
 
 export async function fetchInvocationStep(params: { id: string }): Promise<ApiResponse<WorkflowInvocationStep>> {
-    const { data } = await axios.get(`${getAppRoot()}api/invocations//any/steps/${params.id}`);
+    const { data } = await axios.get(`${getAppRoot()}api/invocations/steps/${params.id}`);
     return {
         data,
     } as ApiResponse<WorkflowInvocationStep>;

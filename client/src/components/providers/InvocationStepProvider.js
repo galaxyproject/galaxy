@@ -7,7 +7,7 @@ const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
 
 async function getInvocation({ id }) {
     try {
-        const { data } = await axios.get(`${getAppRoot()}api/invocations/any/steps/${id}`);
+        const { data } = await axios.get(`${getAppRoot()}api/invocations/steps/${id}`);
         return data;
     } catch (e) {
         rethrowSimple(e);
