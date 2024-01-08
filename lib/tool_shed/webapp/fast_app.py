@@ -13,7 +13,7 @@ from fastapi import (
     Depends,
     FastAPI,
 )
-from fastapi.openapi.utils import get_openapi
+from galaxy.webapps.openapi.utils import get_openapi
 from fastapi.responses import (
     HTMLResponse,
     RedirectResponse,
