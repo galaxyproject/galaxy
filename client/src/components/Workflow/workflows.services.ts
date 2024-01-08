@@ -70,11 +70,9 @@ export async function undeleteWorkflow(id: string): Promise<Workflow> {
 }
 
 export async function createWorkflow(workflowName: string, workflowAnnotation: string) {
-    const { data } = await axios.post(withPrefix("/api/workflows"), {
-        workflow: {
-            name: workflowName,
-            annotation: [workflowAnnotation],
-        },
+    const { data } = await axios.put(withPrefix("/workflow/create"), {
+        workflow_name: workflowName,
+        workflow_annotation: workflowAnnotation,
     });
     return data;
 }
