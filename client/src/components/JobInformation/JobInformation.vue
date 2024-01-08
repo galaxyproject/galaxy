@@ -1,6 +1,41 @@
+<script setup>
+import CopyToClipboard from "components/CopyToClipboard";
+import { JobDetailsProvider } from "components/providers/JobProvider";
+import UtcDate from "components/UtcDate";
+import { formatDuration, intervalToDuration } from "date-fns";
+import JOB_STATES_MODEL from "utils/job-states-model";
+import { computed, ref } from "vue";
+
+import DecodedId from "../DecodedId.vue";
+import CodeRow from "./CodeRow.vue";
+
+const job = ref(null);
+
+const props = defineProps({
+    job_id: {
+        type: String,
+        required: true,
+    },
+    includeTimes: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const runTime = computed(() =>
+    formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
+);
+
+const jobIsTerminal = computed(() => job.value && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(job.value.state));
+
+function updateJob(fromProvider) {
+    job.value = fromProvider;
+}
+</script>
+
 <template>
     <div>
-        <JobDetailsProvider auto-refresh :job-id="job_id" @update:result="updateJob" />
+        <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -22,19 +57,19 @@
                     <td>Galaxy Tool Version</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
-                <tr v-if="job && includeTimes">
+                <tr v-if="job && props.includeTimes">
                     <td>Created</td>
                     <td v-if="job.create_time" id="created">
                         <UtcDate :date="job.create_time" mode="pretty" />
                     </td>
                 </tr>
-                <tr v-if="job && includeTimes">
+                <tr v-if="job && props.includeTimes">
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
-                <tr v-if="job && includeTimes && jobIsTerminal">
+                <tr v-if="job && props.includeTimes && jobIsTerminal">
                     <td>Time To Finish</td>
                     <td id="runtime">
                         {{ runTime }}
@@ -86,58 +121,3 @@
         </table>
     </div>
 </template>
-
-<script>
-import CopyToClipboard from "components/CopyToClipboard";
-import { JobDetailsProvider } from "components/providers/JobProvider";
-import UtcDate from "components/UtcDate";
-import { formatDuration, intervalToDuration } from "date-fns";
-import { getAppRoot } from "onload/loadConfig";
-import JOB_STATES_MODEL from "utils/job-states-model";
-
-import DecodedId from "../DecodedId.vue";
-import CodeRow from "./CodeRow.vue";
-
-export default {
-    components: {
-        CodeRow,
-        DecodedId,
-        JobDetailsProvider,
-        UtcDate,
-        CopyToClipboard,
-    },
-    props: {
-        job_id: {
-            type: String,
-            required: true,
-        },
-        includeTimes: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            job: null,
-        };
-    },
-    computed: {
-        runTime: function () {
-            return formatDuration(
-                intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
-            );
-        },
-        jobIsTerminal() {
-            return this.job && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
-        },
-    },
-    methods: {
-        getAppRoot() {
-            return getAppRoot();
-        },
-        updateJob(job) {
-            this.job = job;
-        },
-    },
-};
-</script>
