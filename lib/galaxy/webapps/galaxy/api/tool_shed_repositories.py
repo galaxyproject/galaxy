@@ -14,6 +14,7 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -382,11 +383,14 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         return json.dumps(results, sort_keys=True, indent=4)
 
 
-InstalledToolShedRepositoryIDPathParam: DecodedDatabaseIdField = Path(
-    ...,
-    title="Installed Tool Shed Repository ID",
-    description="The encoded database identifier of the installed Tool Shed Repository.",
-)
+InstalledToolShedRepositoryIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(
+        ...,
+        title="Installed Tool Shed Repository ID",
+        description="The encoded database identifier of the installed Tool Shed Repository.",
+    ),
+]
 
 NameQueryParam: Optional[str] = Query(default=None, title="Name", description="Filter by repository name.")
 
@@ -444,6 +448,6 @@ class FastAPIToolShedRepositories:
     )
     def show(
         self,
-        id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
+        id: InstalledToolShedRepositoryIDPathParam,
     ) -> InstalledToolShedRepository:
         return self.service.show(id)
