@@ -38,14 +38,13 @@ interface Preferences {
 type ListViewMode = "grid" | "list";
 
 export const useUserStore = defineStore("userStore", () => {
-    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid");
-
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
     // explicitly pass current User, because userStore might not exist yet
     const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
     const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
+    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
