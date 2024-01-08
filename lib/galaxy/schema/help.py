@@ -5,7 +5,7 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
 )
 from typing_extensions import Annotated
@@ -20,8 +20,7 @@ from galaxy.schema.schema import Model
 
 # TODO: remove this class once we have a proper model for all temp models
 class HelpTempBaseModel(Model):
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class HelpForumPost(HelpTempBaseModel):

@@ -7,7 +7,7 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
     UUID4,
     validator,
@@ -114,15 +114,13 @@ class SearchJobsPayload(Model):
         title="State",
         description="Current state of the job.",
     )
+    model_config = ConfigDict(extra="allow")  # This is used for items named file_ and __file_
 
     @validator("inputs", pre=True)
     def decode_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
         return v
-
-    class Config:
-        extra = Extra.allow  # This is used for items named file_ and __file_
 
 
 class DeleteJobPayload(Model):
@@ -203,9 +201,7 @@ class JobDestinationParams(Model):
     handler: Optional[str] = Field(
         None, title="Handler", description="Name of the process that handled the job.", alias="Handler"
     )
-
-    class Config:
-        extra = Extra.allow  # JobDestinationParams can have extra fields
+    model_config = ConfigDict(extra="allow")  # JobDestinationParams can have extra fields
 
 
 class JobOutput(Model):
