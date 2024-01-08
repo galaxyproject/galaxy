@@ -8,10 +8,11 @@ from fastapi import (
     FastAPI,
     Request,
 )
-from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from galaxy.schema.invocation import CustomJsonSchema
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -20,6 +21,7 @@ from galaxy.webapps.base.api import (
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
+from galaxy.webapps.openapi.utils import get_openapi
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -168,6 +170,7 @@ def get_openapi_schema() -> Dict[str, Any]:
         description=app.description,
         routes=app.routes,
         license_info=app.license_info,
+        schema_generator=CustomJsonSchema(ref_template=REF_TEMPLATE),
     )
 
 

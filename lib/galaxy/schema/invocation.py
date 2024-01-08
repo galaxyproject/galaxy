@@ -106,7 +106,7 @@ class InvocationMessageBase(BaseModel):
         return result
 
 
-class MyGenerateJsonSchema(GenerateJsonSchema):
+class CustomJsonSchema(GenerateJsonSchema):
     def get_defs_ref(self, core_mode_ref):
         full_def = super().get_defs_ref(core_mode_ref)
         choices = self._prioritized_defsref_choices[full_def]
