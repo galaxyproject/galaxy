@@ -26,6 +26,7 @@ from starlette.responses import (
     Response,
     StreamingResponse,
 )
+from typing_extensions import Annotated
 
 from galaxy.schema import (
     FilterQueryParams,
@@ -73,7 +74,9 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["datasets"])
 
-DatasetIDPathParam: DecodedDatabaseIdField = Path(..., description="The encoded database identifier of the dataset.")
+DatasetIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., description="The encoded database identifier of the dataset.")
+]
 
 DatasetSourceQueryParam: DatasetSourceType = Query(
     default=DatasetSourceType.hda,
@@ -259,8 +262,8 @@ class FastAPIDatasets:
     )
     def extra_files(
         self,
+        dataset_id: DatasetIDPathParam,
         trans=DependsOnTrans,
-        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
     ) -> DatasetExtraFiles:
         return self.service.extra_files(trans, dataset_id)
 

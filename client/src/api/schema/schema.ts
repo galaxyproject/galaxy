@@ -11898,7 +11898,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the dataset. */
             path: {
-                dataset_id: number;
+                dataset_id: string;
             };
         };
         responses: {
