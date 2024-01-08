@@ -40,7 +40,7 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
         set(dismissedBroadcasts.value, broadcast.id, { expiration_time: broadcast.expiration_time });
     }
 
-    function hasExpired(expirationTimeStr?: string) {
+    function hasExpired(expirationTimeStr?: string | null) {
         if (!expirationTimeStr) {
             return false;
         }
