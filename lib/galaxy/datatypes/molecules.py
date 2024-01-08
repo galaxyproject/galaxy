@@ -198,7 +198,7 @@ class GenericMolFile(Text):
     ]
 
 
-class AtomicStructFile(Text):
+class AtomicStructFile(GenericMolFile):
     """
     Abstract class for structure files which use the ASE IO library for metadata.
     """
