@@ -423,7 +423,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
     malicious: bool
     repository_id: str
     url: str
-    valid_tools: List[ValidToolDict]
+    valid_tools: List[ValidTool]
     # no longer used, don't transmit.
     # has_repository_dependencies_only_if_compiling_contained_td: bool
     # includes_datatypes: bool
