@@ -211,13 +211,13 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 </script>
 
 <template>
-    <div class="workflow-actions flex-gapx-1">
+    <div class="workflow-actions">
         <div v-for="action in actions" :key="action.class">
             <AsyncButton
                 v-if="action.condition && action.component === 'async'"
                 v-b-tooltip.hover
                 :class="action.class"
-                class="inline-icon-button"
+                class="inline-icon-button mr-1"
                 :variant="action.variant"
                 :size="action.size"
                 :title="action.tooltip"
@@ -228,7 +228,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 v-else-if="action.condition && action.component === 'button'"
                 v-b-tooltip.hover
                 :class="action.class"
-                class="inline-icon-button"
+                class="inline-icon-button mr-1"
                 :variant="action.variant"
                 :size="action.size"
                 :title="action.tooltip"

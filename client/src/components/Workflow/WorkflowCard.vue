@@ -131,7 +131,7 @@ async function onTagClick(tag: string) {
                     </div>
 
                     <div class="workflow-count-actions">
-                        <WorkflowInvocationsCount class="ml-1" :workflow="workflow" />
+                        <WorkflowInvocationsCount class="mx-1" :workflow="workflow" />
 
                         <WorkflowActions
                             :workflow="workflow"
@@ -227,7 +227,7 @@ async function onTagClick(tag: string) {
 
 .workflow-card {
     container: workflow-card / inline-size;
-    margin: 0 0.25rem 0.5rem 0.25rem;
+    padding: 0 0.25rem 0.5rem 0.25rem;
 
     .workflow-rename {
         opacity: 0;
@@ -253,7 +253,6 @@ async function onTagClick(tag: string) {
 
         .workflow-count-actions {
             display: flex;
-            gap: 0.25rem;
             align-self: baseline;
             align-items: center;
             flex-direction: row;
