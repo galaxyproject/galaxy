@@ -4,6 +4,7 @@ import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { type AxiosError } from "axios";
 import { BFormInput } from "bootstrap-vue";
 import { ref } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { createWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -14,10 +15,12 @@ import Heading from "@/components/Common/Heading.vue";
 library.add(faCheck);
 
 interface Pros {
-    modalView: boolean;
+    showHeading: boolean;
 }
 
 defineProps<Pros>();
+
+const router = useRouter();
 
 const workflowAnnotation = ref("");
 const workflowName = ref("Unnamed workflow");
@@ -25,7 +28,11 @@ const workflowNameInput = ref<HTMLInputElement | null>(null);
 
 async function onCreate() {
     try {
-        await createWorkflow(workflowName.value, workflowAnnotation.value);
+        const data = await createWorkflow(workflowName.value, workflowAnnotation.value);
+
+        Toast.success(data.message);
+
+        router.push(`/workflows/edit?id=${data.id}`);
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
 
@@ -36,7 +43,7 @@ async function onCreate() {
 
 <template>
     <div>
-        <Heading v-if="!modalView" h1 separator size="xl">Create workflow</Heading>
+        <Heading v-if="!showHeading" h1 separator size="xl">Create workflow</Heading>
 
         <label for="workflow-name-input" class="font-weight-bold"> Workflow name </label>
         <BFormInput
