@@ -24,6 +24,37 @@ import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
 
 library.add(faGlobe, faStar, faTrash, faUpload);
 
+const helpHtml = `<div>
+<p>This input can be used to filter the workflows displayed.</p>
+
+<p>
+    Text entered here will be searched against workflow names and workflow
+    tags. Additionally, advanced filtering tags can be used to refine the
+    search more precisely. Filtering tags are of the form
+    <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
+    <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to
+    search just for RNAseq in the workflow name,
+    <code>name:rnsseq</code> can be used. Notice by default the search is
+    not case-sensitive. If the quoted version of tag is used, the search is
+    case sensitive and only full matches will be returned. So
+    <code>name:'RNAseq'</code> would show only workflows named exactly
+    <code>RNAseq</code>.
+</p>
+
+<p>The available filtering tags are:</p>
+<dl>
+    <dt><code>name</code></dt>
+    <dd>
+        Shows workflows with the given sequence of characters in their names.
+    </dd>
+    <dt><code>tag</code></dt>
+    <dd>
+        Shows workflows with the given workflow tag. You may also click
+        on a tag to filter on that tag directly.
+    </dd>
+</dl>
+</div>`;
+
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
 
@@ -233,11 +264,15 @@ onMounted(() => {
                 class="mb-2"
                 :filter-class="WorkflowFilters"
                 :filter-text.sync="filterText"
-                :loading="loading"
+                :loading="loading || overlay"
                 has-help
                 :placeholder="searchPlaceHolder"
                 :show-advanced.sync="showAdvanced"
-                @updateFilter="updateFilter" />
+                @updateFilter="updateFilter">
+                <template v-slot:menu-help-text>
+                    <div v-html="helpHtml"></div>
+                </template>
+            </FilterMenu>
 
             <ListHeader ref="listHeader" show-view-toggle>
                 <template v-slot:extra-filter>
