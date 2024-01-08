@@ -108,7 +108,7 @@ class JobsService(ServiceBase):
         job_id: Optional[int] = None,
         dataset_id: Optional[int] = None,
         hda_ldda: str = "hda",
-    ) -> Optional[Job]:
+    ) -> Job:
         if job_id is not None:
             return self.job_manager.get_accessible_job(trans, decoded_job_id=job_id)
         elif dataset_id is not None:
@@ -117,6 +117,8 @@ class JobsService(ServiceBase):
                 dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
+            if not dataset_instance.creating_job:
+                raise ValueError("No job found for dataset id")
             return dataset_instance.creating_job
         else:
             # Raise an exception if neither job_id nor dataset_id is provided

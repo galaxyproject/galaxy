@@ -309,7 +309,7 @@ class FastAPIJobs:
         dataset = self.service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
         # Get job
         job = self.service.get_job(trans, job_id)
-        if dataset.creating_job.id != job.id:
+        if not dataset.creating_job or dataset.creating_job.id != job.id:
             raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         email = payload.email
