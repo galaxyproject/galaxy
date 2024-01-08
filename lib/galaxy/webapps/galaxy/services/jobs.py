@@ -17,6 +17,7 @@ from galaxy.managers.jobs import (
     JobSearch,
     view_show_job,
 )
+from galaxy.model import Job
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import JobAssociation
 from galaxy.schema.schema import JobIndexQueryPayload
@@ -107,7 +108,7 @@ class JobsService(ServiceBase):
         job_id: Optional[int] = None,
         dataset_id: Optional[int] = None,
         hda_ldda: str = "hda",
-    ):
+    ) -> Optional[Job]:
         if job_id is not None:
             return self.job_manager.get_accessible_job(trans, decoded_job_id=job_id)
         elif dataset_id is not None:

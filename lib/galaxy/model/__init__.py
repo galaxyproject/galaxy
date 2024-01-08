@@ -4820,7 +4820,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return _source_dataset_chain(self, [])
 
     @property
-    def creating_job(self):
+    def creating_job(self) -> Optional[Job]:
         # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:

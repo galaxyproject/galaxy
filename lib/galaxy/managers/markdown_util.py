@@ -46,6 +46,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.managers.licenses import LicensesManager
+from galaxy.model import Job
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
@@ -655,7 +656,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                 markdown += f"| {title} | {value} |\n"
         return (markdown, True)
 
-    def handle_job_parameters(self, line, job):
+    def handle_job_parameters(self, line, job: Job):
         markdown = """
 | Input Parameter | Value |
 |-----------------|-------|
