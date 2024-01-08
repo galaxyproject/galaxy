@@ -63,6 +63,7 @@ const fields: FieldArray = [
         key: "tags",
         title: "Tags",
         type: "tags",
+        disabled: true,
         handler: async (data: HistoryEntry) => {
             try {
                 await updateTags(data.id as string, "History", data.tags as Array<string>);
