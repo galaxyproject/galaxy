@@ -32,7 +32,7 @@ interface Props {
 }
 
 type BaseAction = {
-    if?: boolean;
+    condition?: boolean;
     class?: string;
     title: string;
     tooltip?: string;
@@ -126,7 +126,7 @@ async function onDelete() {
 const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
-            if: !shared.value && !props.workflow.show_in_tool_panel,
+            condition: !shared.value && !props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-add",
             component: "async",
             title: "Add bookmarks",
@@ -137,7 +137,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
             action: () => onToggleBookmark(true),
         },
         {
-            if: !shared.value && props.workflow.show_in_tool_panel,
+            condition: !shared.value && props.workflow.show_in_tool_panel,
             class: "workflow-bookmark-button-remove",
             component: "async",
             title: "Remove bookmark",
@@ -148,7 +148,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
             action: () => onToggleBookmark(false),
         },
         {
-            if: true,
+            condition: true,
             class: "workflow-view-button",
             component: "button",
             title: "View workflow",
@@ -164,7 +164,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
 const menuActions: ComputedRef<BAction[]> = computed(() => {
     return [
         {
-            if: !shared.value && !props.workflow.deleted,
+            condition: !shared.value && !props.workflow.deleted,
             class: "workflow-delete-button",
             component: "button",
             title: "Delete workflow",
@@ -175,7 +175,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             onClick: () => onDelete(),
         },
         {
-            if: sourceType.value.includes("trs"),
+            condition: sourceType.value.includes("trs"),
             class: "source-trs-button",
             component: "button",
             title: `View on ${props.workflow.source_metadata?.trs_server}`,
@@ -186,7 +186,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             variant: "link",
         },
         {
-            if: sourceType.value == "url",
+            condition: sourceType.value == "url",
             class: "workflow-view-external-link-button",
             component: "button",
             title: "View external link",
@@ -197,7 +197,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             variant: "link",
         },
         {
-            if: !props.workflow.deleted,
+            condition: !props.workflow.deleted,
             class: "workflow-export-button",
             component: "button",
             title: "Export",
@@ -214,7 +214,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
     <div class="workflow-actions flex-gapx-1">
         <div v-for="action in actions" :key="action.class">
             <AsyncButton
-                v-if="action.if && action.component === 'async'"
+                v-if="action.condition && action.component === 'async'"
                 v-b-tooltip.hover
                 :class="action.class"
                 class="inline-icon-button"
@@ -225,7 +225,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 :action="action.action" />
 
             <BButton
-                v-if="action.if && action.component === 'button'"
+                v-else-if="action.condition && action.component === 'button'"
                 v-b-tooltip.hover
                 :class="action.class"
                 class="inline-icon-button"
@@ -252,7 +252,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             </template>
 
             <BDropdownItem
-                v-for="action in menuActions.filter((a) => a.if).reverse()"
+                v-for="action in menuActions.filter((a) => a.condition).reverse()"
                 :key="action.class"
                 :class="action.class"
                 :href="action.href ?? undefined"
