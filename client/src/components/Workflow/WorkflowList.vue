@@ -2,12 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGlobe, faStar, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem } from "bootstrap-vue";
+import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { filter } from "underscore";
 import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
-//@ts-ignore missing typedefs
-import VirtualList from "vue-virtual-scroll-list";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -69,16 +67,17 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter();
 const userStore = useUserStore();
 
-const limit = ref(70);
+const limit = ref(24);
 const offset = ref(0);
 const loading = ref(true);
+const overlay = ref(false);
 const filterText = ref("");
+const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const showBookmarked = ref(false);
 const listHeader = ref<any>(null);
 const advancedFiltering = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
-const totalWorkflows = ref<number | null>(null);
 const showHighlight = ref<"published" | "imported" | "">("");
 
 const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | undefined>>> = computed(() => {
@@ -118,6 +117,7 @@ const searchPlaceHolder = computed(() => {
 const published = computed(() => props.activeList === "published");
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
+const currentPage = computed(() => Math.floor(offset.value / limit.value) + 1);
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
@@ -156,10 +156,12 @@ function onToggleShowHighlight(h: "published" | "imported") {
     }
 }
 
-async function load(reset = false) {
-    totalWorkflows.value = 0;
-
+async function load(overlayLoading = false) {
+    if (overlayLoading) {
+        overlay.value = true;
+    } else {
     loading.value = true;
+    }
 
     let search = filterText.value;
 
@@ -190,34 +192,28 @@ async function load(reset = false) {
             filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
         }
 
-        if (reset) {
             workflowsLoaded.value = filteredWorkflows;
-        } else {
-            workflowsLoaded.value.push(...filteredWorkflows);
-        }
 
         if (showBookmarked.value) {
             totalWorkflows.value = filteredWorkflows.length;
         } else {
-            totalWorkflows.value = parseInt(headers.get("Total_matches") || "0", 10) || null;
+            totalWorkflows.value = parseInt(headers.get("Total_matches") || "0", 10) || 0;
         }
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
+        overlay.value = false;
         loading.value = false;
     }
 }
 
-async function onToBottom() {
-    if (workflowsLoaded.value.length < totalWorkflows.value!) {
-        offset.value += limit.value;
-        await load();
-    }
+async function onPageChange(page: number) {
+    offset.value = (page - 1) * limit.value;
+    await load(true);
 }
 
 watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
     offset.value = 0;
-    workflowsLoaded.value = [];
     await load(true);
 });
 
@@ -341,47 +337,47 @@ onMounted(() => {
             </ListHeader>
         </div>
 
-        <BAlert v-if="!loading && noItems" id="workflow-list-empty" variant="info" show>
+        <BAlert v-if="loading" variant="info" show>
+            <LoadingSpan message="Loading workflows..." />
+        </BAlert>
+
+        <BAlert v-if="!loading && !overlay && noItems" id="workflow-list-empty" variant="info" show>
             No workflows found. You may create or import new workflows using the buttons above.
         </BAlert>
 
-        <BAlert v-else-if="!loading && noResults" id="no-workflow-found" variant="info" show>
+        <BAlert v-else-if="!loading && !overlay && noResults" id="no-workflow-found" variant="info" show>
             No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
 
-        <div class="listing-layout position-relative">
-            <VirtualList
+        <BOverlay
+            v-else
                 id="workflow-cards"
-                role="list"
-                class="listing"
-                :data-key="'id'"
-                :wrap-class="'cards-list'"
-                :data-component="{}"
-                :item-class="view === 'grid' ? 'grid-view' : 'list-view'"
-                :data-sources="workflowsLoaded"
-                @tobottom="onToBottom">
-                <template v-slot:item="{ item }">
+            :show="overlay"
+            rounded="sm"
+            class="cards-list mt-2"
+            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
                     <WorkflowCard
-                        :key="item.id"
-                        :workflow="item"
+                v-for="w in workflowsLoaded"
+                :key="w.id"
+                :workflow="w"
                         :show-highlight="showHighlight"
                         :published-view="published"
                         :grid-view="view === 'grid'"
+                :class="view === 'grid' ? 'grid-view' : 'list-view'"
                         @refreshList="load"
                         @tagClick="onTagClick" />
-                </template>
 
-                <template v-slot:footer>
-                    <BAlert v-if="loading" variant="info" show class="mt-2">
-                        <LoadingSpan message="Loading workflows..." />
-                    </BAlert>
-
-                    <span v-if="totalWorkflows" class="workflow-total">
-                        --- {{ workflowsLoaded.length }} workflows loaded out of {{ totalWorkflows }} ---
-                    </span>
-                </template>
-            </VirtualList>
-        </div>
+            <BPagination
+                v-if="!loading && totalWorkflows > limit"
+                class="mt-2 w-100"
+                :value="currentPage"
+                :total-rows="totalWorkflows"
+                :per-page="limit"
+                align="center"
+                first-number
+                last-number
+                @change="onPageChange" />
+        </BOverlay>
     </div>
 </template>
 
@@ -390,19 +386,9 @@ onMounted(() => {
 @import "breakpoints.scss";
 
 .workflows-list {
+    overflow: auto;
     display: flex;
     flex-direction: column;
-
-    .listing-layout {
-        height: 100%;
-
-        .listing {
-            @include absfill();
-            scroll-behavior: smooth;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-    }
 
     .workflow-total {
         display: grid;
@@ -419,9 +405,10 @@ onMounted(() => {
     .cards-list {
         container: card-list / inline-size;
         scroll-behavior: smooth;
+        min-height: 150px;
 
-        display: flex;
-        flex-wrap: wrap;
+        overflow-y: auto;
+        overflow-x: hidden;
 
         .list-view {
             width: 100%;
@@ -429,20 +416,17 @@ onMounted(() => {
 
         .grid-view {
             width: calc(100% / 3);
-            display: inline-grid;
         }
 
         @container card-list (max-width: #{$breakpoint-xl}) {
             .grid-view {
                 width: calc(100% / 2);
-                display: inline-grid;
             }
         }
 
         @container card-list (max-width: #{$breakpoint-sm}) {
             .grid-view {
                 width: 100%;
-                display: inline-grid;
             }
         }
     }
