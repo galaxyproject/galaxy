@@ -9,8 +9,8 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    field_validator,
     UUID4,
-    validator,
 )
 from typing_extensions import Literal
 
@@ -116,7 +116,8 @@ class SearchJobsPayload(Model):
     )
     model_config = ConfigDict(extra="allow")  # This is used for items named file_ and __file_
 
-    @validator("inputs", pre=True)
+    @field_validator("inputs", mode="before")
+    @classmethod
     def decode_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
