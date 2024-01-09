@@ -250,7 +250,6 @@ class AtomicStructFile(GenericMolFile):
         else:
             # enhanced metadata
             try:
-                # ASE recommend always parsing as extended xyz
                 ase_data = ase_io.read(dataset.get_file_name(), index=":", format=self.ase_format)
             except Exception as e:
                 log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
@@ -290,8 +289,10 @@ class AtomicStructFile(GenericMolFile):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
-            dataset.blurb = f"{self.file_ext.upper()} file containing {dataset.metadata.number_of_molecules} {structure_string}"
+            number_of_molecules = dataset.metadata.number_of_molecules
+            file_ext_upper = self.file_ext.upper()
+            structure_string = "structure" if number_of_molecules == 1 else "structures"
+            dataset.blurb = f"{file_ext_upper} file containing {number_of_molecules} {structure_string}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -1036,7 +1037,8 @@ class XYZ(AtomicStructFile):
     """
 
     file_ext = "xyz"
-    ase_format = "xyz"
+    # ASE recommend always parsing as extended xyz
+    ase_format = "extxyz"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -1223,10 +1225,6 @@ class ExtendedXYZ(XYZ):
 
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
         return blocks
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset)
-        dataset.blurb = "Extended " + dataset.blurb
 
 
 class grd(Text):
