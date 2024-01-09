@@ -2,12 +2,13 @@ import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { useUserTags } from "composables/user";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue, wait } from "tests/jest/helpers";
 import { computed } from "vue";
+
+import { useUserTagsStore } from "@/stores/userTagsStore";
 
 import Tag from "../TagsMultiselect/Tag";
 import Workflows from "../Workflow/WorkflowList";
@@ -17,7 +18,7 @@ localVue.use(PiniaVuePlugin);
 
 const autocompleteTags = ["#named_user_tags", "abc", "my_tag"];
 jest.mock("composables/user");
-useUserTags.mockReturnValue({
+useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
     addLocalTag: jest.fn(),
 });

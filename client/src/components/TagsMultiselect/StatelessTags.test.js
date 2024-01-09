@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { useToast } from "composables/toast";
-import { useUserTags } from "composables/user";
 import { getLocalVue } from "tests/jest/helpers";
 import { computed } from "vue";
+
+import { useUserTagsStore } from "@/stores/userTagsStore";
 
 import StatelessTags from "./StatelessTags";
 
@@ -19,7 +20,7 @@ const mountWithProps = (props) => {
 
 jest.mock("composables/user");
 const addLocalTagMock = jest.fn((tag) => tag);
-useUserTags.mockReturnValue({
+useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
     addLocalTag: addLocalTagMock,
 });
