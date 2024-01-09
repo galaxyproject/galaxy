@@ -5,6 +5,7 @@ import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
 import { BBadge, BButton, BButtonGroup, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
+import { orderBy } from "lodash";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
@@ -72,10 +73,9 @@ const modal: Ref<BModal | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, totalHistoryCount } = storeToRefs(useHistoryStore());
+const { currentHistoryId, totalHistoryCount, pinnedHistories } = storeToRefs(useHistoryStore());
 const { currentUser } = storeToRefs(useUserStore());
 
-const pinnedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
 const hasNoResults = computed(() => filter.value && filtered.value.length == 0);
 const validFilter = computed(() => filter.value && filter.value.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
@@ -151,6 +151,12 @@ const filtered: Ref<HistorySummary[]> = computed(() => {
             return -1;
         }
     });
+});
+
+/** if pinned histories and selected histories are equal */
+const pinnedSelectedEqual = computed(() => {
+    // uses `orderBy` to ensure same ids are found in both `{ id: string }[]` arrays
+    return isEqual(orderBy(pinnedHistories.value, ["id"], ["asc"]), orderBy(selectedHistories.value, ["id"], ["asc"]));
 });
 
 function historyClicked(history: HistorySummary) {
@@ -249,10 +255,18 @@ async function loadMore(noScroll = false) {
                         :active="selectedHistories.some((h) => h.id === history.id)"
                         @click="() => historyClicked(history)">
                         <div class="d-flex justify-content-between align-items-center">
-                            <Heading h3 inline bold size="text">
-                                {{ history.name }}
-                                <i v-if="history.id === currentHistoryId">(Current)</i>
-                            </Heading>
+                            <div>
+                                <Heading h3 inline bold size="text">
+                                    {{ history.name }}
+                                    <i v-if="history.id === currentHistoryId">(Current)</i>
+                                </Heading>
+                                <i
+                                    v-if="props.multiple && pinnedHistories.some((h) => h.id === history.id)"
+                                    v-b-tooltip.noninteractive.hover
+                                    title="This history is currently pinned in the multi-history view">
+                                    (currently pinned)
+                                </i>
+                            </div>
 
                             <div class="d-flex align-items-center flex-gapx-1">
                                 <BBadge v-b-tooltip pill :title="localize('Amount of items in history')">
@@ -333,10 +347,11 @@ async function loadMore(noScroll = false) {
                         <FontAwesomeIcon icon="fa-arrow-down" />
                     </BButton>
                 </div>
+                <i v-if="multiple">{{ selectedHistories.length }} histories selected</i>
                 <BButton
                     v-if="multiple"
                     v-localize
-                    :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
+                    :disabled="pinnedSelectedEqual || showAdvanced"
                     variant="primary"
                     @click="selectHistories">
                     Change Selected

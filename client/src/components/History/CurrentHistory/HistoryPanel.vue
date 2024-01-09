@@ -66,6 +66,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    isMultiViewItem: {
+        type: Boolean,
+        default: false
+    },
 });
 
 const filterClass = HistoryFilters;
@@ -397,6 +401,7 @@ onMounted(async () => {
                     <HistoryDetails
                         :history="history"
                         :writeable="canEditHistory"
+                        :summarized="isMultiViewItem"
                         @update:history="historyStore.updateHistory($event)" />
 
                     <HistoryMessages :history="history" />

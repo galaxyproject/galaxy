@@ -3,7 +3,6 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
-import type { HistorySummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
@@ -18,7 +17,6 @@ const historyStore = useHistoryStore();
 
 const props = withDefaults(
     defineProps<{
-        histories: HistorySummary[];
         selectedHistories: { id: string }[];
         filter?: string;
     }>(),
@@ -57,6 +55,7 @@ async function onDrop(evt: any) {
         // this was not a valid object for this dropzone, ignore
     }
     if (data) {
+        const originalHistoryId = data.history_id;
         await historyStore.createNewHistory();
         const currentHistoryId = historyStore.currentHistoryId;
         const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
@@ -73,7 +72,10 @@ async function onDrop(evt: any) {
                 .catch((error) => {
                     Toast.error(error);
                 });
+            // pin the newly created history via the drop
             historyStore.pinHistory(currentHistoryId);
+            // also pin the original history where the item came from
+            historyStore.pinHistory(originalHistoryId);
         }
         processingDrop.value = false;
     }
