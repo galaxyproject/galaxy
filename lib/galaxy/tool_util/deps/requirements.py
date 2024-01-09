@@ -195,8 +195,8 @@ class ContainerDescription:
         if identifier:
             parts = identifier.rsplit(os.sep, 1)
             if ":" in parts[-1]:
-                id, tag = parts[-1].rsplit(":")
-                parts[-1] = f"{id.lower()}:{tag}"
+                name, tag = parts[-1].rsplit(":", 1)
+                parts[-1] = f"{name.lower()}:{tag}"
             else:
                 parts[-1] = parts[-1].lower()
 
