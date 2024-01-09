@@ -62,13 +62,13 @@ WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
 
     class DeclarativeMeta(_DeclarativeMeta, type):
         pass
 
 else:
-    from sqlalchemy.orm.decl_api import DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta
 
 mapper_registry = registry()
 
