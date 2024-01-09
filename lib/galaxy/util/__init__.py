@@ -1543,6 +1543,9 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     msg["From"] = frm
     msg["Subject"] = subject
 
+    if reply_to:
+        msg["Reply-To"] = reply_to
+
     if config.smtp_server is None:
         log.error("Mail is not configured for this Galaxy instance.")
         log.info(msg)
@@ -1553,9 +1556,6 @@ def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
         mp_html = MIMEText(html, "html", "utf-8")
         msg.attach(mp_text)
         msg.attach(mp_html)
-
-    if reply_to:
-        msg["Reply-To"] = reply_to
 
     smtp_ssl = asbool(getattr(config, "smtp_ssl", False))
     if smtp_ssl:

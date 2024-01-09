@@ -1105,11 +1105,6 @@ galaxy:
   # user may encounter.
   #error_email_to: null
 
-  # When sending email reports for tool errors, include the user's email
-  # address in the Reply-to SMTP header (used by some ticketing systems
-  # to identify the appropriate response address).
-  #error_email_reply_to_user: false
-
   # Email address to use in the 'From' field when sending emails for
   # account activations, workflow step notifications, password resets,
   # and tool error reports.  We recommend using a string in the
