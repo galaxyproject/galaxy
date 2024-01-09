@@ -12,8 +12,50 @@ _schema.yaml:
       #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1extra_files
     - >-
       #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1metadata_file
+    - >-
+      #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1tags
     - '#/paths/~1api~1histories~1{history_id}~1contents~1{id}~1validate'
     - '#/paths/~1api~1histories~1{history_id}~1contents~1{type}s~1{id}'
-_shed_schema.yaml:
-  no-empty-servers:
-    - '#/openapi'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1biocompute'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1jobs_summary'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1prepare_store_download'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1report'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1report.pdf'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1step_jobs_summary'
+    - '#/paths/~1api~1invocations~1{invocation_id}~1write_store'
+    - '#/paths/~1api~1quotas~1{id}~1purge'
+    - '#/paths/~1api~1users~1{user_id}~1api_key'
+    - '#/paths/~1api~1users~1{user_id}~1beacon'
+    - '#/paths/~1api~1users~1{user_id}~1custom_builds'
+    - '#/paths/~1api~1users~1{user_id}~1recalculate_disk_usage'
+    - '#/paths/~1api~1users~1{user_id}~1send_activation_email'
+    - '#/paths/~1api~1users~1{user_id}~1usage'
+  no-unused-components:
+    - '#/components/schemas/FetchDataPayload'
+  security-defined:
+    - '#/paths/~1api~1authenticate~1baseauth/get'
+    - '#/paths/~1api~1cloud~1storage/get'
+    - '#/paths/~1api~1datatypes/get'
+    - '#/paths/~1api~1datatypes~1converters/get'
+    - '#/paths/~1api~1datatypes~1edam_data/get'
+    - '#/paths/~1api~1datatypes~1edam_data~1detailed/get'
+    - '#/paths/~1api~1datatypes~1edam_formats/get'
+    - '#/paths/~1api~1datatypes~1edam_formats~1detailed/get'
+    - '#/paths/~1api~1datatypes~1mapping/get'
+    - '#/paths/~1api~1datatypes~1sniffers/get'
+    - '#/paths/~1api~1datatypes~1types_and_mapping/get'
+    - '#/paths/~1api~1display_applications/get'
+    - '#/paths/~1api~1genomes~1{id}~1indexes/get'
+    - '#/paths/~1api~1help~1forum~1search/get'
+    - '#/paths/~1api~1licenses/get'
+    - '#/paths/~1api~1licenses~1{id}/get'
+    - '#/paths/~1api~1short_term_storage~1{storage_request_id}/get'
+    - '#/paths/~1api~1short_term_storage~1{storage_request_id}~1ready/get'
+    - '#/paths/~1api~1tasks~1{task_id}~1state/get'
+    - '#/paths/~1api~1tool_data/get'
+    - '#/paths/~1api~1tool_shed_repositories/get'
+    - '#/paths/~1api~1tool_shed_repositories~1{id}/get'
+    - '#/paths/~1api~1tours/get'
+    - '#/paths/~1api~1tours~1{tour_id}/get'
+    - '#/paths/~1api~1version/get'
+    - '#/paths/~1ga4gh~1drs~1v1~1service-info/get'
