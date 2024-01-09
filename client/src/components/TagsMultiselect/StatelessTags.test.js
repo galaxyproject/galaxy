@@ -18,7 +18,7 @@ const mountWithProps = (props) => {
     });
 };
 
-jest.mock("composables/user");
+jest.mock("@/stores/userTagsStore");
 const addLocalTagMock = jest.fn((tag) => tag);
 useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),

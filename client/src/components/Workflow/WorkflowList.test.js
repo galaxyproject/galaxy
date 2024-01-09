@@ -17,7 +17,7 @@ const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
 const autocompleteTags = ["#named_user_tags", "abc", "my_tag"];
-jest.mock("composables/user");
+jest.mock("@/stores/userTagsStore");
 useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
     addLocalTag: jest.fn(),

@@ -17,7 +17,7 @@ const TEST_VERSIONS = [
 ];
 const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
-jest.mock("composables/user");
+jest.mock("@/stores/userTagsStore");
 useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
     addLocalTag: jest.fn(),
