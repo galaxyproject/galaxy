@@ -366,10 +366,10 @@ class FastAPIHistories:
                 "description": "A list of history exports",
                 "content": {
                     "application/json": {
-                        "schema": {"ref": "#/components/schemas/JobExportHistoryArchiveListResponse"},
+                        "schema": {"$ref": "#/components/schemas/JobExportHistoryArchiveListResponse"},
                     },
                     ExportTaskListResponse.__accept_type__: {
-                        "schema": {"ref": "#/components/schemas/ExportTaskListResponse"},
+                        "schema": {"$ref": "#/components/schemas/ExportTaskListResponse"},
                     },
                 },
             },

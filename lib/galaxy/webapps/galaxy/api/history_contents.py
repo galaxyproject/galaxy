@@ -425,12 +425,12 @@ class FastAPIHistoryContents:
                 "content": {
                     "application/json": {
                         "schema": {  # HistoryContentsResult.schema(),
-                            "ref": "#/components/schemas/HistoryContentsResult"
+                            "$ref": "#/components/schemas/HistoryContentsResult"
                         },
                     },
                     HistoryContentsWithStatsResult.__accept_type__: {
                         "schema": {  # HistoryContentsWithStatsResult.schema(),
-                            "ref": "#/components/schemas/HistoryContentsWithStatsResult"
+                            "$ref": "#/components/schemas/HistoryContentsWithStatsResult"
                         },
                     },
                 },
