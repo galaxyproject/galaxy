@@ -216,7 +216,7 @@ CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-shareable data
 
 if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
 
     class DeclarativeMeta(_DeclarativeMeta, type):
         pass
@@ -230,7 +230,7 @@ if TYPE_CHECKING:
         __table__: Table
 
 else:
-    from sqlalchemy.orm.decl_api import DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta
 
     _HasTable = object
 
