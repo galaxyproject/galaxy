@@ -1,0 +1,132 @@
+
+===========================================================
+October 2023 Galaxy Release (v 23.2)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* Fix and update visualization plugins
+  (thanks to `@mahendrapaipuri <https://github.com/mahendrapaipuri>`__).
+  `Pull Request 16119`_
+* Allow the legacy DELETE dataset endpoint to accept any string for the history_id
+  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
+  `Pull Request 16593`_
+* Merge release_23.1 into dev
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16691`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+* implement display function for all datatypes
+  (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
+  `Pull Request 15447`_
+* Add new datatype: STL
+  (thanks to `@TanguyGen <https://github.com/TanguyGen>`__).
+  `Pull Request 16478`_
+* add new tabular file formats cns,cnr and cnn to datatypes_conf.xml.sample file as they are neaded for cnvkit galaxy tools
+  (thanks to `@khaled196 <https://github.com/khaled196>`__).
+  `Pull Request 16503`_
+* Support new genome browser chain file format
+  (thanks to `@claudiofr <https://github.com/claudiofr>`__).
+  `Pull Request 16576`_
+* Bump samtools converters
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 16668`_
+* Update datatypes_conf.xml.sample with docx type
+  (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
+  `Pull Request 16713`_
+* MINERVA display application: enable cors, add for tabular
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 16737`_
+* prep for updated h5py and typos
+  (thanks to `@mr-c <https://github.com/mr-c>`__).
+  `Pull Request 16963`_
+* Minor clarification/typo fix in datatypes.data
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16993`_
+* Update tar_to_directory dependency
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17009`_
+* optimize object store cache operations
+  (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
+  `Pull Request 17025`_
+* Add support for larch datatypes
+  (thanks to `@patrick-austin <https://github.com/patrick-austin>`__).
+  `Pull Request 17080`_
+* Fix `.file_name` access in merge forward
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17097`_
+* Fix Display Application link generation
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17227`_
+* Display application fixes and tests
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17233`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Update cellxgene interactive tool to 1.1.1
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 15313`_
+* Update interactivetool_mgnify_notebook to v1.2.2
+  (thanks to `@SandyRogers <https://github.com/SandyRogers>`__).
+  `Pull Request 16517`_
+* Refactor Tool Panel views structures and combine ToolBox and ToolBoxWorkflow into one component
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 16739`_
+* Add missing requirements to perl tools
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16763`_
+* Updated path-based interactive tools with entry point path injection, support for ITs with relative links, shortened URLs, doc and config updates including
+  Podman job_conf
+  (thanks to `@sveinugu <https://github.com/sveinugu>`__).
+  `Pull Request 16795`_
+* chore: fix typos
+  (thanks to `@afuetterer <https://github.com/afuetterer>`__).
+  `Pull Request 16851`_
+* Fix missing grep input in sort1 tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16910`_
+* Fix maf_thread_for_species.py
+  (thanks to `@lldelisle <https://github.com/lldelisle>`__).
+  `Pull Request 16971`_
+* Fix duplicated tools in tool panel view section copying
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17036`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the :doc:`full release notes <23.2_announce>` for more details.
+
+.. include:: 23.2_prs.rst
+
+.. include:: _thanks.rst
