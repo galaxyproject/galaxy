@@ -12,10 +12,10 @@ _:  # global stuff
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
-    left_panel_drag: '#left-drag'
-    left_panel_collapse: '#left-collapse'
-    right_panel_drag: '#right-drag'
-    right_panel_collapse: '#right-collapse'
+    left_panel_drag: '.flex-panel.left .drag-handle'
+    left_panel_collapse: '.collapse-button.left'
+    right_panel_drag: '.flex-panel.right .drag-handle'
+    right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
 
   messages:
