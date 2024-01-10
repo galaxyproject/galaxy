@@ -34,3 +34,21 @@ _schema.yaml:
     - '#/components/schemas/FetchDataPayload'
   security-defined:
     - '#/paths/~1api~1authenticate~1baseauth/get'
+_shed_schema.yaml:
+  no-empty-servers:
+    - '#/openapi'
+  security-defined:
+    - '#/paths/~1api~1authenticate~1baseauth/get'
+    - '#/paths/~1api~1categories~1{encoded_category_id}/get'
+    - '#/paths/~1api~1ga4gh~1trs~1v2~1service-info/get'
+    - '#/paths/~1api~1ga4gh~1trs~1v2~1toolClasses/get'
+    - '#/paths/~1api~1ga4gh~1trs~1v2~1tools/get'
+    - '#/paths/~1api~1repositories~1get_ordered_installable_revisions/get'
+    - '#/paths/~1api~1repositories~1updates/get'
+    - '#/paths/~1api~1repositories~1{encoded_repository_id}/get'
+    - '#/paths/~1api~1repositories~1{encoded_repository_id}~1metadata/get'
+    - >-
+      #/paths/~1api~1repositories~1{encoded_repository_id}~1revisions~1{changeset_revision}~1readmes/get
+    - '#/paths/~1api~1version/get'
+    - >-
+      #/paths/~1api_internal~1repositories~1{encoded_repository_id}~1metadata/get
