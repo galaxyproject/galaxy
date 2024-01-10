@@ -25,6 +25,7 @@ class FastAPIShortTermStorage:
         "/api/short_term_storage/{storage_request_id}/ready",
         summary="Determine if specified storage request ID is ready for download.",
         response_description="Boolean indicating if the storage is ready.",
+        public=True,
     )
     def is_ready(self, storage_request_id: UUID) -> bool:
         storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)

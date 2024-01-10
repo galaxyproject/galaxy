@@ -447,6 +447,12 @@ class FrameworkRouter(APIRouter):
             else:
                 kwd["dependencies"] = [self.admin_user_dependency]
 
+        public = kwd.pop("public", False)
+        openapi_extra = kwd.pop("openapi_extra", {})
+        if public:
+            openapi_extra["security"] = []
+        if openapi_extra:
+            kwd["openapi_extra"] = openapi_extra
         return kwd
 
     @property
