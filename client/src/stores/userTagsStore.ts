@@ -11,7 +11,7 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
     const userTags = computed(() => {
         let tags: string[];
         if (currentUser.value && !currentUser.value.isAnonymous) {
-            tags = [...currentUser.value.tags_used, ...localTags.value];
+            tags = [...(currentUser.value.tags_used ?? []), ...localTags.value];
         } else {
             tags = localTags.value;
         }
