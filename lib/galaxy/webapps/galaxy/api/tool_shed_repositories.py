@@ -413,6 +413,7 @@ class FastAPIToolShedRepositories:
 
     @router.get(
         "/api/tool_shed_repositories",
+        public=True,
         summary="Lists installed tool shed repositories.",
         response_description="A list of installed tool shed repository objects.",
     )
@@ -444,6 +445,7 @@ class FastAPIToolShedRepositories:
 
     @router.get(
         "/api/tool_shed_repositories/{id}",
+        public=True,
         summary="Show installed tool shed repository.",
     )
     def show(

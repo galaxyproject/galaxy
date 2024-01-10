@@ -74,6 +74,7 @@ class FastAPIConfiguration:
 
     @router.get(
         "/api/version",
+        public=True,
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )

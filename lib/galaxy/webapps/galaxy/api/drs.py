@@ -42,7 +42,7 @@ class DrsApi:
     service: DatasetsService = depends(DatasetsService)
     config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
 
-    @router.get("/ga4gh/drs/v1/service-info")
+    @router.get("/ga4gh/drs/v1/service-info", public=True)
     def service_info(self, request: Request) -> Service:
         components = request.url.components
         hostname = components.hostname
@@ -75,8 +75,8 @@ class DrsApi:
             **extra_kwds,
         )
 
-    @router.get("/ga4gh/drs/v1/objects/{object_id}")
-    @router.post("/ga4gh/drs/v1/objects/{object_id}")  # spec specifies both get and post should work.
+    @router.get("/ga4gh/drs/v1/objects/{object_id}", public=True)
+    @router.post("/ga4gh/drs/v1/objects/{object_id}", public=True)  # spec specifies both get and post should work.
     def get_object(
         self,
         request: Request,
@@ -85,8 +85,8 @@ class DrsApi:
     ) -> DrsObject:
         return self.service.get_drs_object(trans, object_id, request_url=request.url)
 
-    @router.get("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
-    @router.post("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}")
+    @router.get("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}", public=True)
+    @router.post("/ga4gh/drs/v1/objects/{object_id}/access/{access_id}", public=True)
     def get_access_url(
         self,
         request: Request,
@@ -98,6 +98,7 @@ class DrsApi:
 
     @router.get(
         "/api/drs_download/{object_id}",
+        public=True,
         response_class=FileResponse,
     )
     def download(self, trans: ProvidesHistoryContext = DependsOnTrans, object_id: str = ObjectIDParam):

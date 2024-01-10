@@ -33,6 +33,7 @@ class FastAPIShortTermStorage:
 
     @router.get(
         "/api/short_term_storage/{storage_request_id}",
+        public=True,
         summary="Serve the staged download specified by request ID.",
         response_description="Raw contents of the file.",
         response_class=GalaxyFileResponse,
