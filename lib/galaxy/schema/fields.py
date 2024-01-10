@@ -1,4 +1,5 @@
 import re
+from typing import TYPE_CHECKING
 
 from pydantic import (
     BeforeValidator,
@@ -11,14 +12,15 @@ from typing_extensions import (
     get_args,
 )
 
-from galaxy.security.idencoding import IdEncodingHelper
+if TYPE_CHECKING:
+    from galaxy.security.idencoding import IdEncodingHelper
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16
 
 
 class Security:
-    security: IdEncodingHelper
+    security: "IdEncodingHelper"
 
 
 def ensure_valid_id(v: str) -> str:
