@@ -18,20 +18,6 @@ Highlights
   Feature description.
 
 
-New Visualizations
-===========================================================
-
-.. visualizations
-* Fix and update visualization plugins
-  (thanks to `@mahendrapaipuri <https://github.com/mahendrapaipuri>`__).
-  `Pull Request 16119`_
-* Allow the legacy DELETE dataset endpoint to accept any string for the history_id
-  (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
-  `Pull Request 16593`_
-* Merge release_23.1 into dev
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 16691`_
-
 New Datatypes
 ===========================================================
 
