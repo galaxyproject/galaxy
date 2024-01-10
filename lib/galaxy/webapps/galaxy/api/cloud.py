@@ -4,11 +4,7 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 
 import logging
 
-from fastapi import (
-    Body,
-    Response,
-    status,
-)
+from fastapi import Body
 
 from galaxy.managers.cloud import CloudManager
 from galaxy.managers.context import ProvidesHistoryContext
@@ -18,7 +14,6 @@ from galaxy.schema.cloud import (
     CloudDatasetsResponse,
     CloudObjects,
     DatasetSummaryList,
-    StatusCode,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -35,19 +30,6 @@ router = Router(tags=["cloud"])
 class FastAPICloudController:
     cloud_manager: CloudManager = depends(CloudManager)
     datasets_serializer: DatasetSerializer = depends(DatasetSerializer)
-
-    @router.get(
-        "/api/cloud/storage",
-        summary="Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented",
-        deprecated=True,
-    )
-    def index(
-        self,
-        response: Response,
-    ):
-        # TODO: This can be implemented leveraging PluggedMedia objects (part of the user-based object store project)
-        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
-        return StatusCode(detail="Not yet implemented.", status=501)
 
     @router.post(
         "/api/cloud/storage/get",
