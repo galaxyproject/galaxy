@@ -31,6 +31,17 @@ const jobIsTerminal = computed(() => job.value && !JOB_STATES_MODEL.NON_TERMINAL
 function updateJob(fromProvider) {
     job.value = fromProvider;
 }
+
+function filterMetadata(jobMessages) {
+    return jobMessages.map((item) => {
+        return Object.entries(item).reduce((acc, [key, value]) => {
+            if (value) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+    });
+}
 </script>
 
 <template>
@@ -91,15 +102,16 @@ function updateJob(fromProvider) {
                     <td>Job Messages</td>
                     <td>
                         <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
-                            <li v-for="(message, index) in job.job_messages" :key="index">
-                                [{{ index }}]
-                                <ul>
-                                    <li v-for="(value, name, index) in message" :key="index">
-                                        <strong>{{ name }}:</strong>
-                                        {{ value }}
-                                    </li>
-                                </ul>
-                            </li>
+                            <div v-for="(message, m) in filterMetadata(job.job_messages)" :key="m">
+                                <div v-if="job.job_messages.length > 1">
+                                    <u>Job Message {{ m + 1 }}:</u>
+                                </div>
+                                <li v-for="(value, name, i) in message" :key="i">
+                                    <strong>{{ name }}:</strong>
+                                    {{ value }}
+                                </li>
+                                <hr v-if="m + 1 < job.job_messages.length" />
+                            </div>
                         </ul>
                         <div v-else>
                             {{ job.job_messages }}
