@@ -35,12 +35,14 @@
                 <option value="history">Input relies a genome from the current history</option>
             </param>
             <when value="indexed">
-                <param format="wig,bedgraph" name="input1" type="data" label="Convert"/>
+                <param format="wig,bedgraph" name="input1" type="data" label="Convert">
+                  <validator type="unspecified_build" />
+                </param>
             </when>
             <when value="history">
                  <param format="wig,bedgraph" name="input1" type="data" label="Wig/Bedgraph to convert"/>
                  <param format="genome,txt,tabular" name="chromfile" type="data" label="Chromosome length file"
-                 help="A file with the length of each contig in the history reference is needed for a bigwig, from the Compute sequence length tool for example" />
+                 help="A file with the length of each contig in the history reference is needed for a bigwig, from the Compute sequence length tool, for example" />
             </when>
     </conditional>
     <conditional name="settings">
