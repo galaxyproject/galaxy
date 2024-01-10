@@ -1,7 +1,7 @@
-<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.1">
+<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.2" profile="22.05">
   <description>converter</description>
   <requirements>
-    <requirement type="package" version="357">ucsc-wigtobigwig</requirement>
+    <requirement type="package" version="447">ucsc-wigtobigwig</requirement>
   </requirements>
   <stdio>
       <!-- Anything other than zero is an error -->
@@ -11,7 +11,14 @@
   </stdio>
   <command>
       <![CDATA[
-      grep -v "^track" '$input1' | wigToBigWig stdin '$chromInfo' '$out_file1'
+      grep -v "^track" '$input1' > trackless &&
+      wigToBigWig trackless
+    #if $hist_or_builtin.genome_type_select == "indexed":
+        '$chromInfo'
+    #else
+        '$chromfile'
+    #end if
+    '$out_file1'
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
     #else:
@@ -21,9 +28,21 @@
     ]]>
   </command>
   <inputs>
-    <param format="wig,bedgraph" name="input1" type="data" label="Convert">
-      <validator type="unspecified_build" />
-    </param>
+    <conditional name="hist_or_builtin">
+            <param help="Does the Wig/bedgraph input use a history reference or built-in reference genome?" label="Reference genome"
+                name="genome_type_select" type="select">
+                <option selected="True" value="indexed">Input relies on a built-in genome</option>
+                <option value="history">Input relies a genome from the current history</option>
+            </param>
+            <when value="indexed">
+                <param format="wig,bedgraph" name="input1" type="data" label="Convert"/>
+            </when>
+            <when value="history">
+                 <param format="wig,bedgraph" name="input1" type="data" label="Wig/Bedgraph to convert"/>
+                 <param format="genome,txt,tabular" name="chromfile" type="data" label="Chromosome length file"
+                 help="A file with the length of each contig in the history reference is needed for a bigwig, from the Compute sequence length tool for example" />
+            </when>
+    </conditional>
     <conditional name="settings">
       <param name="settingsType" type="select" label="Converter settings to use" help="Default settings should usually be used.">
         <option value="preset">Default</option>
@@ -91,4 +110,7 @@ This tool converts bedgraph or wiggle data into bigWig type.
 .. _UCSC Bioinformatics website: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
 
 </help>
+<citations>
+        <citation type="doi">10.1093/bioinformatics/btq351</citation>
+        </citations>
 </tool>
