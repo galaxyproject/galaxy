@@ -3,7 +3,10 @@ import os
 import re
 import sys
 from json import loads
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 
 from bx.seq.twobit import TwoBitFile
 
@@ -12,7 +15,10 @@ from galaxy.exceptions import (
     ReferenceDataError,
 )
 from galaxy.managers.users import get_user_by_username
-from galaxy.model import HistoryDatasetAssociation
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    User,
+)
 from galaxy.structured_app import StructuredApp
 from galaxy.util.bunch import Bunch
 
@@ -256,7 +262,7 @@ class Genomes:
             rval = self.genomes[dbkey]
         return rval
 
-    def get_dbkeys(self, user, chrom_info=False):
+    def get_dbkeys(self, user: Optional[User], chrom_info=False):
         """Returns all known dbkeys. If chrom_info is True, only dbkeys with
         chromosome lengths are returned."""
         self.check_and_reload()
