@@ -189,7 +189,6 @@ class FastAPIRepositories:
         # fails 1020 if we try to use the model - I guess repository dependencies
         # are getting lost
         return as_dict
-        # return _hack_fastapi_4428(as_dict)
 
     @router.get(
         "/api_internal/repositories/{encoded_repository_id}/metadata",
@@ -204,7 +203,7 @@ class FastAPIRepositories:
     ) -> RepositoryMetadata:
         recursive = True
         as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
-        return _hack_fastapi_4428(as_dict)
+        return RepositoryMetadata(root=as_dict)
 
     @router.get(
         "/api/repositories/get_ordered_installable_revisions",
@@ -506,7 +505,3 @@ class FastAPIRepositories:
     ) -> dict:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
-
-
-def _hack_fastapi_4428(as_dict) -> RepositoryMetadata:
-    return RepositoryMetadata(root=as_dict)
