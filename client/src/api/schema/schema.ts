@@ -12898,7 +12898,7 @@ export interface operations {
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
-            /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
+            /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             query?: {
@@ -18883,7 +18883,7 @@ export interface operations {
         parameters?: {
             /** @description The source to load datasets from. Possible values: ftpdir, userdir, importdir */
             /** @description The requested format of returned data. Either `flat` to simply list all the files, `jstree` to get a tree representation of the files, or the default `uri` to list files and directories by their URI. */
-            /** @description Wether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
+            /** @description Whether to recursively lists all sub-directories. This will be `True` by default depending on the `target`. */
             /** @description (This only applies when `format` is `jstree`) The value can be either `folders` or `files` and it will disable the corresponding nodes of the tree. */
             /** @description Whether the query is made with the intention of writing to the source. If set to True, only entries that can be written to will be returned. */
             query?: {

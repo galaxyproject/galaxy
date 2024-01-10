@@ -53,7 +53,7 @@ RecursiveQueryParam: Optional[bool] = Query(
     default=None,
     title="Recursive",
     description=(
-        "Wether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
+        "Whether to recursively lists all sub-directories." " This will be `True` by default depending on the `target`."
     ),
 )
 
