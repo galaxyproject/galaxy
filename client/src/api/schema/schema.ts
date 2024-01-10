@@ -8,13 +8,6 @@ export interface paths {
         /** Returns returns an API key for authenticated user based on BaseAuth headers. */
         get: operations["get_api_key_api_authenticate_baseauth_get"];
     };
-    "/api/cloud/storage": {
-        /**
-         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
-         * @deprecated
-         */
-        get: operations["index_api_cloud_storage_get"];
-    };
     "/api/cloud/storage/get": {
         /**
          * Gets given objects from a given cloud-based bucket to a Galaxy history.
@@ -11163,20 +11156,6 @@ export interface operations {
             };
         };
     };
-    index_api_cloud_storage_get: {
-        /**
-         * Lists cloud-based buckets (e.g., S3 bucket, Azure blob) user has defined. Is not yet implemented
-         * @deprecated
-         */
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-        };
-    };
     get_api_cloud_storage_get_post: {
         /**
          * Gets given objects from a given cloud-based bucket to a Galaxy history.
@@ -13028,6 +13007,10 @@ export interface operations {
                 type?: string;
                 format?: string;
             };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
             /** @description Genome ID */
             path: {
                 id: string;
@@ -13625,6 +13608,10 @@ export interface operations {
             /** @description Search query to use for searching the Galaxy Help forum. */
             query: {
                 query: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
             };
         };
         responses: {
@@ -14377,10 +14364,8 @@ export interface operations {
             /** @description The contents of the history that match the query. */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["HistoryContentsResult"]
-                        | components["schemas"]["HistoryContentsWithStatsResult"];
-                    "application/vnd.galaxy.history.contents.stats+json": Record<string, never>;
+                    "application/json": components["schemas"]["HistoryContentsResult"];
+                    "application/vnd.galaxy.history.contents.stats+json": components["schemas"]["HistoryContentsWithStatsResult"];
                 };
             };
             /** @description Validation Error */
@@ -15808,10 +15793,8 @@ export interface operations {
             /** @description A list of history exports */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["JobExportHistoryArchiveListResponse"]
-                        | components["schemas"]["ExportTaskListResponse"];
-                    "application/vnd.galaxy.task.export+json": Record<string, never>;
+                    "application/json": components["schemas"]["JobExportHistoryArchiveListResponse"];
+                    "application/vnd.galaxy.task.export+json": components["schemas"]["ExportTaskListResponse"];
                 };
             };
             /** @description Validation Error */
