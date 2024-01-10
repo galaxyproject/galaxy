@@ -28,6 +28,11 @@ const runTime = computed(() =>
 
 const jobIsTerminal = computed(() => job.value && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(job.value.state));
 
+const metadataDetail = ref({
+    exit_code:
+        "Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. https://docs.galaxyproject.org/en/master/dev/schema.html#tool-stdio-exit-code",
+});
+
 function updateJob(fromProvider) {
     job.value = fromProvider;
 }
@@ -107,7 +112,14 @@ function filterMetadata(jobMessages) {
                                     <u>Job Message {{ m + 1 }}:</u>
                                 </div>
                                 <li v-for="(value, name, i) in message" :key="i">
-                                    <strong>{{ name }}:</strong>
+                                    <span
+                                        v-if="metadataDetail[name]"
+                                        v-b-tooltip.hover
+                                        class="tooltipJobInfo"
+                                        :title="metadataDetail[name]"
+                                        ><strong>{{ name }}:</strong></span
+                                    >
+                                    <strong v-else>{{ name }}:</strong>
                                     {{ value }}
                                 </li>
                                 <hr v-if="m + 1 < job.job_messages.length" />
@@ -133,3 +145,10 @@ function filterMetadata(jobMessages) {
         </table>
     </div>
 </template>
+
+<style scoped>
+.tooltipJobInfo {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+}
+</style>
