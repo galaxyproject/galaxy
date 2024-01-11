@@ -58,7 +58,6 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
-    HistoryIndexQueryPayload,
     Security,
 )
 from galaxy.model.index_filter_util import (
