@@ -8,14 +8,20 @@ Late 2023 Galaxy Release (v 23.2)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+Feature1
+--------
 
-**Feature2**
-  Feature description.
+Feature description.
 
-**Feature3**
-  Feature description.
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
 
 
 New Datatypes
