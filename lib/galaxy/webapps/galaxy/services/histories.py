@@ -228,7 +228,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            HistoryQueryResultList(__root__=[entry.to_dict(view="element") for entry in entries]),
+            HistoryQueryResultList(root=[entry.to_dict(view="element") for entry in entries]),
             total_matches,
         )
 
