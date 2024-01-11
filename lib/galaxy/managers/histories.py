@@ -56,15 +56,13 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.fields import (
-    Security,
-)
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
     tag_filter,
     text_column_filter,
 )
+from galaxy.schema.fields import Security
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     ExportObjectMetadata,
