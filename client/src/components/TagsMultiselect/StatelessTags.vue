@@ -2,8 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import type { Ref } from "vue";
-import { computed, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useToast } from "@/composables/toast";
@@ -20,7 +21,6 @@ interface StatelessTagsProps {
     useToggleLink?: boolean;
     maxVisibleTags?: number;
     placeholder?: string;
-    noPadding?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -68,8 +68,9 @@ const { editing, ariaExpanded, onOpen, onClose } = useMultiselect();
 
 const multiselectElement: Ref<Multiselect | null> = ref(null);
 
-function openMultiselect() {
-    //@ts-ignore bad library types
+async function openMultiselect() {
+    editing.value = true;
+    await nextTick();
     multiselectElement.value?.activate();
 }
 
@@ -110,67 +111,82 @@ function onTagClicked(tag: string) {
 </script>
 
 <template>
-    <div class="stateless-tags" :class="{ 'px-1': !props.noPadding }">
-        <Multiselect
-            v-if="!disabled"
-            ref="multiselectElement"
-            open-direction="bottom"
-            :placeholder="props.placeholder"
-            :value="tags"
-            :options="userTags"
-            :multiple="true"
-            :taggable="true"
-            :close-on-select="false"
-            :aria-expanded="ariaExpanded"
-            @tag="onAddTag"
-            @input="onInput"
-            @open="onOpen"
-            @close="onClose">
-            <template v-slot:tag="{ option, search }">
-                <Tag
-                    :option="option"
-                    :search="search"
-                    :editable="true"
-                    :clickable="props.clickable"
-                    @deleted="onDelete"
-                    @click="onTagClicked"></Tag>
-            </template>
-
-            <template v-slot:noOptions>
-                <span class="multiselect-option">Type to add new tag</span>
-            </template>
-
-            <template v-slot:caret>
-                <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
+    <div class="stateless-tags">
+        <div v-if="!disabled">
+            <div v-if="!editing" class="tags-edit">
+                <div class="interactive-tags">
+                    <Tag
+                        v-for="tag in tags"
+                        :key="tag"
+                        :option="tag"
+                        :editable="true"
+                        :clickable="props.clickable"
+                        @deleted="onDelete"
+                        @click="onTagClicked"></Tag>
+                </div>
+                <button class="toggle-button" tabindex="-1" @click="openMultiselect">
                     {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
-                </b-button>
-            </template>
+                </button>
+            </div>
+            <Multiselect
+                v-else
+                ref="multiselectElement"
+                open-direction="bottom"
+                :placeholder="props.placeholder"
+                :value="tags"
+                :options="userTags"
+                :multiple="true"
+                :taggable="true"
+                :close-on-select="false"
+                :aria-expanded="ariaExpanded"
+                @tag="onAddTag"
+                @input="onInput"
+                @open="onOpen"
+                @close="onClose">
+                <template v-slot:tag="{ option, search }">
+                    <Tag
+                        :option="option"
+                        :search="search"
+                        :editable="true"
+                        :clickable="props.clickable"
+                        @deleted="onDelete"
+                        @click="onTagClicked"></Tag>
+                </template>
 
-            <template v-slot:option="{ option }">
-                <span class="multiselect-option" :class="{ invalid: !isValid(option) }">
-                    <span>{{ option.label ?? option }}</span>
-                    <span v-if="tags.includes(option)" class="float-right">
-                        <span class="info">
-                            <FontAwesomeIcon class="check-icon" icon="fa-check" fixed-width />
+                <template v-slot:noOptions>
+                    <span class="multiselect-option">Type to add new tag</span>
+                </template>
+
+                <template v-slot:caret>
+                    <!-- render nothing -->
+                </template>
+
+                <template v-slot:option="{ option }">
+                    <span class="multiselect-option" :class="{ invalid: !isValid(option) }">
+                        <span>{{ option.label ?? option }}</span>
+                        <span v-if="tags.includes(option)" class="float-right">
+                            <span class="info">
+                                <FontAwesomeIcon class="check-icon" icon="fa-check" fixed-width />
+                            </span>
+
+                            <span class="info highlighted">
+                                <FontAwesomeIcon class="times-icon" icon="fa-times" fixed-width />
+                                <span class="sr-only">remove tag</span>
+                            </span>
                         </span>
-
-                        <span class="info highlighted">
-                            <FontAwesomeIcon class="times-icon" icon="fa-times" fixed-width />
-                            <span class="sr-only">remove tag</span>
+                        <span v-else class="float-right">
+                            <span class="info highlighted">
+                                <FontAwesomeIcon class="plus-icon" icon="fa-plus" fixed-width />
+                                <span class="sr-only">add tag</span>
+                            </span>
                         </span>
                     </span>
-                    <span v-else class="float-right">
-                        <span class="info highlighted">
-                            <FontAwesomeIcon class="plus-icon" icon="fa-plus" fixed-width />
-                            <span class="sr-only">add tag</span>
-                        </span>
-                    </span>
-                </span>
-            </template>
-        </Multiselect>
+                </template>
+            </Multiselect>
+        </div>
 
-        <div v-else :class="{ 'pl-1': !props.noPadding, 'pb-2': !props.noPadding }">
+        <div v-else>
             <div class="d-inline">
                 <Tag
                     v-for="tag in trimmedTags"
@@ -179,14 +195,14 @@ function onTagClicked(tag: string) {
                     :editable="false"
                     :clickable="props.clickable"
                     @click="onTagClicked"></Tag>
-                <b-button
+                <BButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
                     @click="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </b-button>
+                </BButton>
 
                 <b-tooltip
                     v-if="slicedTags.length > 0 && !toggledOpen"
@@ -226,6 +242,20 @@ function onTagClicked(tag: string) {
         }
     }
 
+    &:deep(.multiselect) .multiselect__input,
+    .toggle-button {
+        font-size: $font-size-base;
+        color: $text-color;
+        text-decoration: none;
+        padding: 0 0.25rem;
+        background: none;
+        cursor: text;
+        text-align: left;
+        margin: 0;
+        border: none;
+        width: 100%;
+    }
+
     &:deep(.multiselect) {
         min-height: unset;
         display: flex;
@@ -234,7 +264,7 @@ function onTagClicked(tag: string) {
         .multiselect__select {
             top: unset;
             bottom: 0;
-            padding: 0 0.25rem;
+            padding: 0;
             z-index: 1;
             height: $font-size-base * 2;
 
@@ -252,7 +282,7 @@ function onTagClicked(tag: string) {
         }
 
         .multiselect__tags {
-            padding: 0 0.25rem;
+            padding: 0;
             background: none;
             font-size: $font-size-base;
             border: none;
@@ -263,34 +293,11 @@ function onTagClicked(tag: string) {
             top: 100%;
             z-index: 800;
             width: calc(100% - 4px);
-            left: 2px;
-
             box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
         }
 
         &.multiselect--above .multiselect__content-wrapper {
             top: unset;
-        }
-
-        .multiselect__input,
-        .toggle-button {
-            font-size: $font-size-base;
-            color: $text-color;
-            text-decoration: none;
-            padding: 0;
-            background: none;
-            cursor: text;
-            text-align: left;
-            margin: 0;
-            border: none;
-        }
-
-        .multiselect__input {
-            padding-left: 0.25rem;
-        }
-
-        .toggle-button {
-            padding-left: 0.5rem;
         }
 
         // built in option class
