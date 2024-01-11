@@ -908,6 +908,26 @@ export interface paths {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
+    "/api/invocations": {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @description If workflow_id is supplied (either via URL or query parameter) it should be an
+         * encoded StoredWorkflow id and returned invocations will be restricted to that
+         * workflow. history_id (an encoded History id) can be used to further restrict the
+         * query. If neither a workflow_id or history_id is supplied, all the current user's
+         * workflow invocations will be indexed (as determined by the invocation being
+         * executed on one of the user's histories)
+         * :raises: exceptions.MessageException, exceptions.ObjectNotFound
+         */
+        get: operations["index_invocations_api_invocations_get"];
+    };
+    "/api/invocations/from_store": {
+        /**
+         * Create Invocations From Store
+         * @description Create invocation(s) from a supplied model store.
+         */
+        post: operations["create_invocations_from_store_api_invocations_from_store_post"];
+    };
     "/api/invocations/steps/{step_id}": {
         /** Show details of workflow invocation step. */
         get: operations["step_api_invocations_steps__step_id__get"];
@@ -1787,6 +1807,13 @@ export interface paths {
          * @description Makes this item accessible by a URL link and return the current sharing status.
          */
         put: operations["enable_link_access_api_workflows__workflow_id__enable_link_access_put"];
+    };
+    "/api/workflows/{workflow_id}/invocations": {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @description An alias for GET '/api/invocations'
+         */
+        get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
         /**
@@ -3021,6 +3048,41 @@ export interface components {
             store_content_uri?: string | null;
             /** Store Dict */
             store_dict?: Record<string, never> | null;
+        };
+        /** CreateInvocationsFromStorePayload */
+        CreateInvocationsFromStorePayload: {
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Legacy Job State
+             * @deprecated
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             * @default false
+             */
+            legacy_job_state?: boolean;
+            model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
+            /**
+             * Include step details
+             * @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary
+             * @default false
+             */
+            step_details?: boolean;
+            /** Store Content Uri */
+            store_content_uri?: string | null;
+            /** Store Dict */
+            store_dict?: Record<string, never> | null;
+            /**
+             * View
+             * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
+             */
+            view?: components["schemas"]["InvocationSerializationView"] | null;
+            [key: string]: unknown | undefined;
         };
         /** CreateLibrariesFromStore */
         CreateLibrariesFromStore: {
@@ -4559,11 +4621,6 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
-        /**
-         * ExtendedInvocationStepState
-         * @enum {string}
-         */
-        ExtendedInvocationStepState: "new" | "ready" | "scheduled" | "ok";
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -6963,6 +7020,11 @@ export interface components {
          */
         InvocationReport: {
             /**
+             * Errors
+             * @description Errors associated with the invocation.
+             */
+            errors?: Record<string, never> | null;
+            /**
              * Galaxy Version
              * @description The version of Galaxy this object was generated with.
              */
@@ -6973,6 +7035,21 @@ export interface components {
              */
             generate_version?: string | null;
             /**
+             * Histories
+             * @description Histories associated with the invocation.
+             */
+            histories?: Record<string, never> | null;
+            /**
+             * History dataset collections
+             * @description History dataset collections associated with the invocation.
+             */
+            history_dataset_collections?: Record<string, never> | null;
+            /**
+             * History datasets
+             * @description History datasets associated with the invocation.
+             */
+            history_datasets?: Record<string, never> | null;
+            /**
              * Workflow ID
              * @description The workflow this invocation has been triggered for.
              * @example 0123456789ABCDEF
@@ -6981,13 +7058,21 @@ export interface components {
             /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
-             * @default
              */
             invocation_markdown?: string | null;
             /**
+             * Invocations
+             * @description Other invocations associated with the invocation.
+             */
+            invocations?: Record<string, never> | null;
+            /**
+             * Jobs
+             * @description Jobs associated with the invocation.
+             */
+            jobs?: Record<string, never> | null;
+            /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
-             * @default
              */
             markdown?: string | null;
             /**
@@ -7013,8 +7098,22 @@ export interface components {
              * @description The name of the user who owns this report.
              */
             username: string;
-            [key: string]: unknown | undefined;
+            /**
+             * Workflows
+             * @description Workflows associated with the invocation.
+             */
+            workflows?: Record<string, never> | null;
         };
+        /**
+         * InvocationSerializationView
+         * @enum {string}
+         */
+        InvocationSerializationView: "element" | "collection";
+        /**
+         * InvocationSortByEnum
+         * @enum {string}
+         */
+        InvocationSortByEnum: "create_time" | "update_time" | "None";
         /**
          * InvocationState
          * @enum {string}
@@ -7035,8 +7134,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
-            /** Job Id */
-            job_id: string | null;
+            /**
+             * Job ID
+             * @description The encoded ID of the job associated with this workflow invocation step.
+             */
+            job_id?: string | null;
             /**
              * Jobs
              * @description Jobs associated with the workflow invocation step.
@@ -7074,9 +7176,12 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state?: components["schemas"]["ExtendedInvocationStepState"] | null;
-            /** Subworkflow Invocation Id */
-            subworkflow_invocation_id: string | null;
+            state?: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"] | null;
+            /**
+             * Subworkflow invocation ID
+             * @description The encoded ID of the subworkflow invocation.
+             */
+            subworkflow_invocation_id?: string | null;
             /**
              * Update Time
              * @description The last time and date this item was updated.
@@ -7214,6 +7319,11 @@ export interface components {
              */
             uuid?: string | null;
         };
+        /**
+         * InvocationStepState
+         * @enum {string}
+         */
+        InvocationStepState: "new" | "ready" | "scheduled";
         /** InvocationUnexpectedFailureResponse */
         InvocationUnexpectedFailureResponse: {
             /**
@@ -11292,7 +11402,6 @@ export interface operations {
          * configuration settings are returned.
          */
         parameters?: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -11714,7 +11823,6 @@ export interface operations {
         /** Search datasets or collections using a query system. */
         parameters?: {
             /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
             /** @description The value to filter by. */
@@ -11800,7 +11908,6 @@ export interface operations {
         parameters: {
             /** @description The type of information about the dataset to be requested. */
             /** @description The type of information about the dataset to be requested. Each of these values may require additional parameters in the request and may return different responses. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
@@ -11900,7 +12007,6 @@ export interface operations {
          * **Note**: `view` and `keys` are also available to control the serialization of the dataset.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -13706,7 +13812,6 @@ export interface operations {
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
             /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 all?: boolean | null;
@@ -13749,7 +13854,6 @@ export interface operations {
          * @description The new history can also be copied form a existing history or imported from an archive or URL.
          */
         parameters?: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -13792,7 +13896,6 @@ export interface operations {
          * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
          */
         parameters?: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
             /** @description The value to filter by. */
@@ -13864,7 +13967,6 @@ export interface operations {
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
             /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 all?: boolean | null;
@@ -13903,7 +14005,6 @@ export interface operations {
     undelete_api_histories_deleted__history_id__undelete_post: {
         /** Restores a deleted history with the given ID (that hasn't been purged). */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -13939,7 +14040,6 @@ export interface operations {
     create_from_store_api_histories_from_store_post: {
         /** Create histories from a model store. */
         parameters?: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -14004,7 +14104,6 @@ export interface operations {
     show_recent_api_histories_most_recently_used_get: {
         /** Returns the most recently used history of the user. */
         parameters?: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -14041,7 +14140,6 @@ export interface operations {
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
             /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 q?: string[] | null;
@@ -14154,7 +14252,6 @@ export interface operations {
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
             /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 q?: string[] | null;
@@ -14192,7 +14289,6 @@ export interface operations {
     history_api_histories__history_id__get: {
         /** Returns the history with the given ID. */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -14228,7 +14324,6 @@ export interface operations {
     update_api_histories__history_id__put: {
         /** Updates the values for the history with the given ID. */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -14269,7 +14364,6 @@ export interface operations {
     delete_api_histories__history_id__delete: {
         /** Marks the history with the given ID as deleted. */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 purge?: boolean;
@@ -14462,7 +14556,6 @@ export interface operations {
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
             /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
             /** @description The value to filter by. */
@@ -14519,7 +14612,6 @@ export interface operations {
          * will be made to the items.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -14562,7 +14654,6 @@ export interface operations {
          */
         parameters: {
             /** @description The type of the target history element. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 type?: components["schemas"]["HistoryContentType"] | null;
@@ -15153,7 +15244,6 @@ export interface operations {
         parameters: {
             /** @description The type of the target history element. */
             /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 type?: components["schemas"]["HistoryContentType"];
@@ -15200,7 +15290,6 @@ export interface operations {
          */
         parameters: {
             /** @description The type of the target history element. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 type?: components["schemas"]["HistoryContentType"];
@@ -15264,7 +15353,6 @@ export interface operations {
              * @deprecated
              * @description Whether to stop the creating job if all outputs of the job have been deleted.
              */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 type?: components["schemas"]["HistoryContentType"];
@@ -15376,7 +15464,6 @@ export interface operations {
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
             /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
             /** @description The value to filter by. */
@@ -15433,7 +15520,6 @@ export interface operations {
          * @description Create a new `HDA` or `HDCA` in the given History.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -15491,7 +15577,6 @@ export interface operations {
          */
         parameters: {
             /** @description This value can be used to broadly restrict the magnitude of the number of elements returned via the API for large collections. The number of actual elements returned may be "a bit" more than this number or "a lot" less - varying on the depth of nesting, balance of nesting at each level, and size of target collection. The consumer of this API should not expect a stable number or pre-calculable number of elements to be produced given this parameter - the only promise is that this API will not respond with an order of magnitude more elements estimated with this value. The UI uses this parameter to fetch a "balanced" concept of the "start" of large collections at every depth of the collection. */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 fuzzy_count?: number | null;
@@ -15537,7 +15622,6 @@ export interface operations {
          * @description Updates the values for the history content item with the given ``ID``.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -15601,7 +15685,6 @@ export interface operations {
              * @deprecated
              * @description Whether to stop the creating job if all outputs of the job have been deleted.
              */
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 purge?: boolean | null;
@@ -15772,7 +15855,6 @@ export interface operations {
          * or hand-crafted JSON dictionary.
          */
         parameters: {
-            /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
                 view?: string | null;
@@ -16455,6 +16537,83 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_invocations_api_invocations_get: {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @description If workflow_id is supplied (either via URL or query parameter) it should be an
+         * encoded StoredWorkflow id and returned invocations will be restricted to that
+         * workflow. history_id (an encoded History id) can be used to further restrict the
+         * query. If neither a workflow_id or history_id is supplied, all the current user's
+         * workflow invocations will be indexed (as determined by the invocation being
+         * executed on one of the user's histories)
+         * :raises: exceptions.MessageException, exceptions.ObjectNotFound
+         */
+        parameters?: {
+            query?: {
+                workflow_id?: string | null;
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean | null;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: components["schemas"]["InvocationSerializationView"] | null;
+                step_details?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationCollectionView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invocations_from_store_api_invocations_from_store_post: {
+        /**
+         * Create Invocations From Store
+         * @description Create invocation(s) from a supplied model store.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvocationsFromStorePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationCollectionView"][];
                 };
             };
             /** @description Validation Error */
@@ -21294,6 +21453,48 @@ export interface operations {
             };
         };
     };
+    index_invocations_api_workflows__workflow_id__invocations_get: {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @description An alias for GET '/api/invocations'
+         */
+        parameters: {
+            query?: {
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean | null;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: components["schemas"]["InvocationSerializationView"] | null;
+                step_details?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationCollectionView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
         /**
          * Get detailed description of a workflow invocation.
@@ -22213,7 +22414,6 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The encoded database identifier of the Stored Workflow. */
             path: {
                 workflow_id: string;
             };
