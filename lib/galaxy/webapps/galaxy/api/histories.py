@@ -97,10 +97,6 @@ AllHistoriesQueryParam = Query(
     ),
 )
 
-HistoryIDPathParam: DecodedDatabaseIdField = Path(
-    ..., title="History ID", description="The encoded database identifier of the History."
-)
-
 JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     title="Job Export History ID",
     description=(
