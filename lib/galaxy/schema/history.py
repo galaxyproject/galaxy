@@ -7,6 +7,7 @@ from typing import (
 from pydantic import (
     Extra,
     Field,
+    RootModel,
 )
 from typing_extensions import Literal
 
@@ -76,8 +77,8 @@ class HistoryQueryResult(Model):
         extra = Extra.allow  # Allow any other extra fields
 
 
-class HistoryQueryResultList(Model):
-    __root__: List[HistoryQueryResult] = Field(
+class HistoryQueryResultList(RootModel):
+    root: List[HistoryQueryResult] = Field(
         default=[],
         title="List with detailed information of Histories.",
     )
