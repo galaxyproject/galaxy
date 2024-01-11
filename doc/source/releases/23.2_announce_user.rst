@@ -24,17 +24,17 @@ Feature3
 Feature description.
 
 
-New Datatypes
+Datatypes
 ===========================================================
 
 .. datatypes
-* implement display function for all datatypes
+* Implement display function for all datatypes
   (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
   `Pull Request 15447`_
-* Add new datatype: STL
+* Add stl datatype
   (thanks to `@TanguyGen <https://github.com/TanguyGen>`__).
   `Pull Request 16478`_
-* add new tabular file formats cns,cnr and cnn to datatypes_conf.xml.sample file as they are neaded for cnvkit galaxy tools
+* Add new cns, cnr and cnn datatypes (cnvkit tools)
   (thanks to `@khaled196 <https://github.com/khaled196>`__).
   `Pull Request 16503`_
 * Support new genome browser chain file format
@@ -43,30 +43,24 @@ New Datatypes
 * Bump samtools converters
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 16668`_
-* Update datatypes_conf.xml.sample with docx type
+* Add docx datatype
   (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
   `Pull Request 16713`_
-* MINERVA display application: enable cors, add for tabular
+* MINERVA display application: enable cors, add for tabular datasets
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 16737`_
-* prep for updated h5py and typos
+* Prep for updated h5py
   (thanks to `@mr-c <https://github.com/mr-c>`__).
   `Pull Request 16963`_
-* Minor clarification/typo fix in datatypes.data
-  (thanks to `@dannon <https://github.com/dannon>`__).
-  `Pull Request 16993`_
 * Update tar_to_directory dependency
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17009`_
-* optimize object store cache operations
+* Optimize object store cache operations
   (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
   `Pull Request 17025`_
 * Add support for larch datatypes
   (thanks to `@patrick-austin <https://github.com/patrick-austin>`__).
   `Pull Request 17080`_
-* Fix `.file_name` access in merge forward
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 17097`_
 * Fix Display Application link generation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17227`_
@@ -94,9 +88,6 @@ Builtin Tool Updates
   Podman job_conf
   (thanks to `@sveinugu <https://github.com/sveinugu>`__).
   `Pull Request 16795`_
-* chore: fix typos
-  (thanks to `@afuetterer <https://github.com/afuetterer>`__).
-  `Pull Request 16851`_
 * Fix missing grep input in sort1 tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16910`_

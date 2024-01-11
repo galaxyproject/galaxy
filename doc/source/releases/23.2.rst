@@ -14,7 +14,7 @@ Enhancements
 
 .. feature
 
-* Make form repeat blocks reordarable
+* Make form repeat blocks reorderable
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14892`_
 * Tool Shed 2.0
@@ -29,7 +29,7 @@ Enhancements
 * Add Invenio RDM repository integration
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 16381`_
-* add new tabular file formats cns,cnr and cnn to datatypes_conf.xml.sample file as they are neaded for cnvkit galaxy tools
+* Add new cns, cnr and cnn datatypes (cnvkit tools)
   (thanks to `@khaled196 <https://github.com/khaled196>`__).
   `Pull Request 16503`_
 * Create reusable `FilterMenu` with advanced options
@@ -73,19 +73,19 @@ Enhancements
 
 .. enhancement_tag_datatypes
 
-* implement display function for all datatypes
+* Implement display function for all datatypes
   (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
   `Pull Request 15447`_
-* Add new datatype: STL
+* Add stl datatype
   (thanks to `@TanguyGen <https://github.com/TanguyGen>`__).
   `Pull Request 16478`_
 * Bump samtools converters
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 16668`_
-* Update datatypes_conf.xml.sample with docx type
+* Add docx datatype
   (thanks to `@yvanlebras <https://github.com/yvanlebras>`__).
   `Pull Request 16713`_
-* optimize object store cache operations
+* Optimize object store cache operations
   (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
   `Pull Request 17025`_
 .. enhancement_tag_tools
@@ -104,7 +104,7 @@ Enhancements
 * Implement default locations for data and collection parameters
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 14955`_
-* Delete non-terminal jobs and subworkflow invocations when cancelling invocation
+* Delete non-terminal jobs and subworkflow invocations when canceling invocation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16252`_
 * Make it obvious that `WorkflowInvocationStep` is clickable/expandable
@@ -135,7 +135,7 @@ Enhancements
   `Pull Request 16345`_
 .. enhancement_tag_jobs
 
-* Towards SQLAlchemy 2.0 (upgrades to SA Core usage)
+* Towards SQLAlchemy 2.0 (upgrades to SQLAlchemy Core usage)
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16264`_
 * Add HEAD route to job_files endpoint
@@ -172,7 +172,7 @@ Enhancements
 * Add Python string formatting best practices
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 16312`_
-* Migrate a part of the users API to Fast API
+* Migrate a part of the users API to FastAPI
   (thanks to `@heisner-tillman <https://github.com/heisner-tillman>`__).
   `Pull Request 16341`_
 * Update Python dependencies
@@ -184,7 +184,7 @@ Enhancements
 * Update Python dependencies
   (thanks to `@galaxybot <https://github.com/galaxybot>`__).
   `Pull Request 16389`_
-* Update carbon emissions methodology page to match current feature spe…
+* Update carbon emissions methodology page to match current feature specifications
   (thanks to `@Renni771 <https://github.com/Renni771>`__).
   `Pull Request 16392`_
 * Update Python dependencies
@@ -202,7 +202,7 @@ Enhancements
 * Add support for CILogon deployments in different regions than the US
   (thanks to `@uwwint <https://github.com/uwwint>`__).
   `Pull Request 16490`_
-* Published Workflow Sharing Page Overhaul
+* Published Workflow Sharing page overhaul
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 16510`_
 * Update Python dependencies
@@ -253,7 +253,7 @@ Enhancements
 * Change Sentry error reporting plug-in
   (thanks to `@kysrpex <https://github.com/kysrpex>`__).
   `Pull Request 16686`_
-*  Use fs.onedatarestfs for Onedata files source plugin implementation
+* Use fs.onedatarestfs for Onedata files source plugin implementation
   (thanks to `@lopiola <https://github.com/lopiola>`__).
   `Pull Request 16690`_
 * Skip node installation for ``check_indexes`` tests
@@ -274,13 +274,13 @@ Enhancements
 * Selective bold text
   (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
   `Pull Request 16748`_
-* WF Report Enhancement: Adding Time Format to Time the Workflow Report was Generated
+* Workflow report enhancement: add time format to generated text
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 16757`_
-* WF Report Enhancement: Converting ISO to UTC for Invocation Date/Time
+* Workflow report enhancement: convert ISO to UTC for invocation date/time
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 16758`_
-* WF Report Enhancement: Exposing Workflow Version as Workflow Checkpoint
+* Workflow report enhancement: expose workflow version as workflow checkpoint
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 16760`_
 * Replace ELIXIR AAI button with Life Science login
@@ -289,7 +289,7 @@ Enhancements
 * Update Python dependencies
   (thanks to `@galaxybot <https://github.com/galaxybot>`__).
   `Pull Request 16770`_
-* Add ClientSearchMiss Sentry Capture
+* Add ClientSearchMiss Sentry capture
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 16789`_
 * Update Python dependencies
@@ -304,7 +304,7 @@ Enhancements
 * Allow partial matches in workflow name tag search and search all tags for unquoted query
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 16860`_
-* Vueify Visualizations Grid
+* Vueify visualizations grid
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 16892`_
 * Update Python dependencies
@@ -316,7 +316,7 @@ Enhancements
 * Test link data with extended metadata
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16921`_
-* Publish tool shed frontend to npm
+* Publish Tool Shed frontend to npm
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16924`_
 * Update Python dependencies
@@ -343,13 +343,13 @@ Enhancements
 * Update Python dependencies
   (thanks to `@galaxybot <https://github.com/galaxybot>`__).
   `Pull Request 17011`_
-* Restyle Vue Multiselect and Adapt Option Order
+* Restyle Vue multiselect and adapt option order
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 17015`_
 * Show current tool panel view name on top of tool panel
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 17021`_
-* Change Broadcast Notifications Style
+* Change broadcast notifications style
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 17032`_
 * Open `HistoryStorageOverview` in center panel from `HistoryPanel`
@@ -361,7 +361,7 @@ Enhancements
 * Enhance xsd schema and allow simpler assertion lists
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17134`_
-* Disable Workflow Report and Generate PDF buttons unless workflow is successful
+* Disable workflow report and generate PDF buttons unless workflow is successful
   (thanks to `@assuntad23 <https://github.com/assuntad23>`__).
   `Pull Request 17149`_
 * Add rerun and show details buttons in expanded collection
@@ -369,10 +369,10 @@ Enhancements
   `Pull Request 17182`_
 .. small_enhancement
 
-* Toolshed client build separation
+* Tool Shed client build separation
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 15000`_
-* Migrate cloud API to Fast API
+* Migrate cloud API to FastAPI
   (thanks to `@heisner-tillman <https://github.com/heisner-tillman>`__).
   `Pull Request 16296`_
 * Drop (admin only) userskeys controller
@@ -390,7 +390,7 @@ Enhancements
 * Refactor FilesDialog + Remote Files API schema improvements
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 16420`_
-* Towards SQLAlchemy 2.0 (upgrades to SA ORM usage in /test)
+* Towards SQLAlchemy 2.0 (upgrades to SQLAlchemy ORM usage in /test)
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16431`_
 * SQLAlchemy 2.0 upgrades to ORM usage in /lib
@@ -450,22 +450,22 @@ Enhancements
 * Optimize iteration in DatasetInstance model + SA2.0 fix
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16776`_
-* Migrate a part of the jobs API to Fast API
+* Migrate a part of the jobs API to FastAPI
   (thanks to `@heisner-tillman <https://github.com/heisner-tillman>`__).
   `Pull Request 16778`_
 * Replace file_name property with get_file_name function
   (thanks to `@SergeyYakubov <https://github.com/SergeyYakubov>`__).
   `Pull Request 16783`_
-* SA2.0 fixes for TS2.0
+* SQLAlchemy 2.0 fixes for TS2.0
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16791`_
-* Another batch of SA2.0 edits in TS 2.0
+* Another batch of SQLAlchemy 2.0 edits in TS 2.0
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16799`_
 * Use vue modal instead of global backbone modal in user preferences
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 16830`_
-* Another batch of SA2.0 edits in TS2.0 (part 3)
+* Another batch of SQLAlchemy 2.0 edits in TS 2.0 (part 3)
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16833`_
 * Remove remaining legacy backbone form input elements
@@ -537,16 +537,16 @@ Fixes
   `Pull Request 16593`_
 .. bug_tag_datatypes
 
-* MINERVA display application: enable cors, add for tabular
+* MINERVA display application: enable cors, add for tabular datasets
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 16737`_
-* prep for updated h5py and typos
+* Prep for updated h5py
   (thanks to `@mr-c <https://github.com/mr-c>`__).
   `Pull Request 16963`_
 * Update tar_to_directory dependency
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17009`_
-* Fix Display Application link generation
+* Fix display application link generation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17227`_
 * Display application fixes and tests
@@ -557,7 +557,7 @@ Fixes
 * Add missing requirements to perl tools
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16763`_
-* chore: fix typos
+* Fix typos across code base
   (thanks to `@afuetterer <https://github.com/afuetterer>`__).
   `Pull Request 16851`_
 * Fix missing grep input in sort1 tool
@@ -624,12 +624,12 @@ Fixes
 * Upgrade axios to 1.6.2
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 17053`_
-* Ensure that plugin build hash actually has a git hash to compare with…
+* Ensure that plugin build hash actually has a git hash to compare with otherwise force rebuild
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 17104`_
 .. bug_tag_jobs
 
-* Ensure Job belongs to current SA session
+* Ensure Job belongs to current SQLAlchemy session
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16647`_
 * Fix and prevent persisting null file_size
@@ -669,10 +669,10 @@ Fixes
 * Disable verbose parso logging in db_shell.py
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16410`_
-* Fix SA2.0 syntax in scripts/helper.py, fix ancient bug
+* Fix SQLAlchemy 2.0 syntax in scripts/helper.py, fix ancient bug
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16425`_
-* pin fs.dropboxfs to >=1
+* Pin fs.dropboxfs to >=1
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 16451`_
 * Fix labeler for UI UX labels
@@ -726,13 +726,13 @@ Fixes
 * Fix public archived histories not importable
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 16766`_
-* provide specific example for API docs - tags
+* Provide specific example for API docs - tags
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 16769`_
 * Fix ItemOwnerShipException in tag removal
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16773`_
-* Initial bug fixes for tool shed 2
+* Initial bug fixes for Tool Shed 2.0
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16787`_
 * Fix short ids in tool panel views.
@@ -741,10 +741,10 @@ Fixes
 * Use AlignedSegment.to_string
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16803`_
-* move the email and username redacting from the role loop
+* Move the email and username redacting from the role loop
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 16805`_
-* move history and tool panel tooltips out of the way
+* Move history and tool panel tooltips out of the way
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 16808`_
 * Fix tool panel views for versionless tool ids
@@ -789,19 +789,19 @@ Fixes
 * Fix bug in SQLAlchemy statement
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16881`_
-* Fix bug in SA statement: desc() applied to column, not statement
+* Fix bug in SQLAlchemy statement: desc() applied to column, not statement
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16887`_
 * Update help in relabel_from_file.xml
   (thanks to `@lldelisle <https://github.com/lldelisle>`__).
   `Pull Request 16891`_
-* Fix link to mercurial tip in tool shed 2.0
+* Fix link to mercurial tip in Tool Shed 2.0
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16895`_
 * Fix type annotation of ``lib/tool_shed/test/functional/``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 16901`_
-* Fix navigation error in tool shed tests
+* Fix navigation error in Tool Shed tests
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16902`_
 * Fix subtle bug in listify function + simplify list munging
@@ -813,7 +813,7 @@ Fixes
 * Fix selenium selector for Workflow Run warnings
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 16908`_
-* Fix GQL infinite scrolling in tool shed
+* Fix GQL infinite scrolling in Tool Shed
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16914`_
 * Fix library import from path linking files
