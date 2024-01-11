@@ -17,7 +17,8 @@ Highlights
 **Feature3**
   Feature description.
 
-Also check out the `23.2 user release notes <23.2_announce_user.html>`__
+Also check out the `23.2 user release notes <23.2_announce_user.html>`__. Are you an admin? Check out `some admin relevant PRs
+<https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.2+is%3Aclosed+is%3Apr>`__.
 
 Get Galaxy
 ===========================================================
