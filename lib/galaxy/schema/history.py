@@ -5,7 +5,7 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
     RootModel,
 )
@@ -36,6 +36,8 @@ class HistoryIndexQueryPayload(Model):
 
 
 class HistoryQueryResult(Model):
+    model_config = ConfigDict(extra="allow")
+
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -72,9 +74,6 @@ class HistoryQueryResult(Model):
     )
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-
-    class Config:
-        extra = Extra.allow  # Allow any other extra fields
 
 
 class HistoryQueryResultList(RootModel):
