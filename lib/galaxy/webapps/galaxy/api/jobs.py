@@ -10,8 +10,6 @@ from datetime import (
     datetime,
 )
 from typing import (
-    Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -23,7 +21,6 @@ from fastapi import (
     Path,
     Query,
 )
-from pydantic import Required
 from typing_extensions import Annotated
 
 from galaxy import exceptions
@@ -55,6 +52,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
     JobMetric,
+    JobSummary,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import expose_api_anonymous
@@ -190,11 +188,11 @@ HdaLddaQueryParam: DatasetSourceType = Query(
 )
 
 
-JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
-DatasetIdPathParam: DecodedDatabaseIdField = Path(title="Dataset ID", description="The ID of the dataset")
+JobIdPathParam = Annotated[DecodedDatabaseIdField, Path(title="Job ID", description="The ID of the job")]
+DatasetIdPathParam = Annotated[DecodedDatabaseIdField, Path(title="Dataset ID", description="The ID of the dataset")]
 
-ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
-SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
+ReportErrorBody = Body(default=..., title="Report error", description="The values to report an Error")
+SearchJobBody = Body(default=..., title="Search job", description="The values to search an Job")
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
@@ -221,8 +219,8 @@ class FastAPIJobs:
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> List[Dict[str, Any]]:
-        payload = JobIndexPayload.construct(
+    ) -> List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
+        payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
             user_id=user_id,
@@ -248,7 +246,7 @@ class FastAPIJobs:
     )
     def common_problems(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobInputSummary:
         job = self.service.get_job(trans=trans, job_id=job_id)
@@ -278,7 +276,7 @@ class FastAPIJobs:
     )
     def resume(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobOutputAssociation]:
         job = self.service.get_job(trans, job_id=job_id)
@@ -288,6 +286,7 @@ class FastAPIJobs:
             job.resume()
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
+        # Maybe just return 202 ? What's the point of this ?
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
         output_associations = []
         for association in associations:
@@ -302,7 +301,7 @@ class FastAPIJobs:
     def error(
         self,
         payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobErrorSummary:
         # Get dataset on which this error was triggered
@@ -310,7 +309,7 @@ class FastAPIJobs:
         dataset = self.service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
         # Get job
         job = self.service.get_job(trans, job_id)
-        if dataset.creating_job.id != job.id:
+        if not dataset.creating_job or dataset.creating_job.id != job.id:
             raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         email = payload.email
@@ -334,7 +333,7 @@ class FastAPIJobs:
     )
     def inputs(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobInputAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
@@ -351,7 +350,7 @@ class FastAPIJobs:
     )
     def outputs(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobOutputAssociation]:
         job = self.service.get_job(trans=trans, job_id=job_id)
@@ -368,7 +367,7 @@ class FastAPIJobs:
     )
     def parameters_display_by_job(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
@@ -389,7 +388,7 @@ class FastAPIJobs:
     )
     def parameters_display_by_dataset(
         self,
-        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
@@ -408,7 +407,7 @@ class FastAPIJobs:
     )
     def metrics_by_job(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
@@ -424,7 +423,7 @@ class FastAPIJobs:
     )
     def metrics_by_dataset(
         self,
-        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        dataset_id: DatasetIdPathParam,
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
@@ -439,7 +438,7 @@ class FastAPIJobs:
     )
     def destination_params(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDestinationParams:
         job = self.service.get_job(trans, job_id=job_id)
@@ -498,7 +497,7 @@ class FastAPIJobs:
     )
     def show(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
@@ -514,7 +513,7 @@ class FastAPIJobs:
     )
     def delete(
         self,
-        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: JobIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
     ) -> bool:

@@ -13,7 +13,11 @@ from typing import (
     Union,
 )
 
-from pydantic import Field
+from pydantic import (
+    ConfigDict,
+    Field,
+    RootModel,
+)
 from starlette.datastructures import URL
 
 from galaxy import (
@@ -51,10 +55,7 @@ from galaxy.schema.drs import (
     Checksum,
     DrsObject,
 )
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -155,8 +156,8 @@ class DatasetInheritanceChainEntry(Model):
     )
 
 
-class DatasetInheritanceChain(Model):
-    __root__: List[DatasetInheritanceChainEntry] = Field(
+class DatasetInheritanceChain(RootModel):
+    root: List[DatasetInheritanceChainEntry] = Field(
         default=[],
         title="Dataset inheritance chain",
     )
@@ -177,10 +178,10 @@ class ExtraFileEntry(Model):
     )
 
 
-class DatasetExtraFiles(Model):
+class DatasetExtraFiles(RootModel):
     """A list of extra files associated with a dataset."""
 
-    __root__: List[ExtraFileEntry]
+    root: List[ExtraFileEntry]
 
 
 class DatasetTextContentDetails(Model):
@@ -195,17 +196,17 @@ class DatasetTextContentDetails(Model):
     )
 
 
-class ConvertedDatasetsMap(Model):
+class ConvertedDatasetsMap(RootModel):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
-    __root__: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
-
-    class Config:
-        schema_extra = {
+    root: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "csv": "dataset_id",
             }
         }
+    )
 
 
 class DataMode(str, Enum):
@@ -215,9 +216,9 @@ class DataMode(str, Enum):
 
 class DataResult(Model):
     data: List[Any]
-    dataset_type: Optional[str]
-    message: Optional[str]
-    extra_info: Optional[Any]  # Seems to be always None, deprecate?
+    dataset_type: Optional[str] = None
+    message: Optional[str] = None
+    extra_info: Optional[Any] = None  # Seems to be always None, deprecate?
 
 
 class BamDataResult(DataResult):
@@ -243,9 +244,7 @@ class ComputeDatasetHashPayload(Model):
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
     extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
-
-    class Config:
-        use_enum_values = True  # When using .dict()
+    model_config = ConfigDict(use_enum_values=True)
 
 
 class DatasetErrorMessage(Model):
@@ -329,7 +328,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.dict()
+                content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
             )
             for content in contents
         ]
@@ -413,7 +412,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         quota = ConcreteObjectStoreQuotaSourceDetails(
             source=quota_source.label,
             enabled=quota_source.use,
-        )
+        ).model_dump()  # TODO: could we bypass the dump?
 
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
@@ -446,7 +445,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         for dep in inherit_chain:
             result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
 
-        return DatasetInheritanceChain(__root__=result)
+        return DatasetInheritanceChain(root=result)
 
     def compute_hash(
         self,
@@ -467,10 +466,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
         if object_id.startswith("hda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("hda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("hda-") :], kind="drs")
             hda_ldda = DatasetSourceType.hda
         elif object_id.startswith("ldda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("ldda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("ldda-") :], kind="drs")
             hda_ldda = DatasetSourceType.ldda
         else:
             raise galaxy_exceptions.RequestParameterInvalidException(
@@ -536,7 +535,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
@@ -673,7 +672,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         serialization_params.default_view = "detailed"
         converted = self._get_or_create_converted(trans, hda, ext)
         return self.hda_serializer.serialize_to_view(
-            converted, user=trans.user, trans=trans, **serialization_params.dict()
+            converted, user=trans.user, trans=trans, **serialization_params.model_dump()
         )
 
     def converted(
@@ -722,7 +721,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if success_count:
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+        return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(
         self,

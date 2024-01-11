@@ -27,7 +27,7 @@ const quotaHasLimit = computed(() => {
 });
 const progressVariant = computed(() => {
     const percent = props.quotaUsage.quotaPercent;
-    if (percent === undefined) {
+    if (percent === undefined || percent === null) {
         return "secondary";
     }
     if (percent < 50) {

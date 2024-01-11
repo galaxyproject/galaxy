@@ -23,7 +23,10 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.web import url_for
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -48,33 +51,31 @@ class QuotasService(ServiceBase):
             route = "quota"
             quotas = get_quotas(trans.sa_session, deleted=False)
         for quota in quotas:
-            item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-            encoded_id = DecodedDatabaseIdField.encode(quota.id)
+            item = quota.to_dict()
+            encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.construct(__root__=rval)
+        return QuotaSummaryList.model_construct(root=rval)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
-        rval = quota.to_dict(
-            view="element", value_mapper={"id": DecodedDatabaseIdField.encode, "total_disk_usage": float}
-        )
-        return QuotaDetails.construct(**rval)
+        rval = quota.to_dict(view="element", value_mapper={"total_disk_usage": float})
+        return QuotaDetails.model_construct(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
-        item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("quota", id=DecodedDatabaseIdField.encode(quota.id))
+        item = quota.to_dict()
+        item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
-        return CreateQuotaResult.construct(**item)
+        return CreateQuotaResult.model_construct(**item)
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
 

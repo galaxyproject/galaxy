@@ -657,14 +657,14 @@ WHERE user_id = :id AND quota_source_label IS NOT NULL
 # move these to galaxy.schema.schema once galaxy-data depends on
 # galaxy-schema.
 class UserQuotaBasicUsage(BaseModel):
-    quota_source_label: Optional[str]
+    quota_source_label: Optional[str] = None
     total_disk_usage: float
 
 
 class UserQuotaUsage(UserQuotaBasicUsage):
-    quota_percent: Optional[float]
-    quota_bytes: Optional[int]
-    quota: Optional[str]
+    quota_percent: Optional[float] = None
+    quota_bytes: Optional[int] = None
+    quota: Optional[str] = None
 
 
 class User(Base, Dictifiable, RepresentById):
@@ -4820,7 +4820,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return _source_dataset_chain(self, [])
 
     @property
-    def creating_job(self):
+    def creating_job(self) -> Optional[Job]:
         # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
@@ -8142,12 +8142,12 @@ class WorkflowComment(Base, RepresentById):
         if self.child_comments:
             comment_dict["child_comments"] = [comment.order_index for comment in self.child_comments]
 
-        WorkflowCommentModel(__root__=comment_dict)
+        WorkflowCommentModel(root=comment_dict)
 
         return comment_dict
 
     def from_dict(dict):
-        WorkflowCommentModel(__root__=dict)
+        WorkflowCommentModel(root=dict)
 
         comment = WorkflowComment()
         comment.order_index = dict.get("id", 0)
@@ -9902,6 +9902,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
         "deleted",
         "username",
         "email_hash",
+        "create_time",
         "update_time",
     ]
 

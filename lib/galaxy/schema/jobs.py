@@ -7,11 +7,10 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
-    Required,
+    field_validator,
     UUID4,
-    validator,
 )
 from typing_extensions import Literal
 
@@ -22,7 +21,6 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,
-    EntityIdField,
     JobMetricCollection,
     JobState,
     JobSummary,
@@ -32,12 +30,12 @@ from galaxy.schema.schema import (
 
 class JobInputSummary(Model):
     has_empty_inputs: bool = Field(
-        default=Required,
+        default=...,
         title="Empty inputs",
         description="Job has empty inputs.",
     )
     has_duplicate_inputs: bool = Field(
-        default=Required,
+        default=...,
         title="Duplicate inputs",
         description="Job has duplicate inputs.",
     )
@@ -47,7 +45,7 @@ class JobInputSummary(Model):
 class JobErrorSummary(Model):
     # messages: List[Union[Tuple[str, str], List[str]]]
     messages: List[List[str]] = Field(
-        default=Required,
+        default=...,
         title="Error messages",
         description="The error messages for the specified job.",
     )
@@ -55,12 +53,12 @@ class JobErrorSummary(Model):
 
 class JobAssociation(Model):
     name: str = Field(
-        default=Required,
+        default=...,
         title="name",
         description="Name of the job parameter.",
     )
     dataset: EncodedDataItemSourceId = Field(
-        default=Required,
+        default=...,
         title="dataset",
         description="Reference to the associated item.",
     )
@@ -68,7 +66,7 @@ class JobAssociation(Model):
 
 class JobInputAssociation(JobAssociation):
     name: str = Field(
-        default=Required,
+        default=...,
         title="name",
         description="Name of the job input parameter.",
     )
@@ -76,7 +74,7 @@ class JobInputAssociation(JobAssociation):
 
 class JobOutputAssociation(JobAssociation):
     name: str = Field(
-        default=Required,
+        default=...,
         title="name",
         description="Name of the job output parameter.",
     )
@@ -84,7 +82,7 @@ class JobOutputAssociation(JobAssociation):
 
 class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="History Dataset Association ID",
         description="The History Dataset Association ID related to the error.",
     )
@@ -102,12 +100,12 @@ class ReportJobErrorPayload(Model):
 
 class SearchJobsPayload(Model):
     tool_id: str = Field(
-        default=Required,
+        default=...,
         title="Tool ID",
         description="The tool ID related to the job.",
     )
     inputs: Dict[str, Any] = Field(
-        default=Required,
+        default=...,
         title="Inputs",
         description="The inputs of the job.",
     )
@@ -116,15 +114,14 @@ class SearchJobsPayload(Model):
         title="State",
         description="Current state of the job.",
     )
+    model_config = ConfigDict(extra="allow")  # This is used for items named file_ and __file_
 
-    @validator("inputs", pre=True)
+    @field_validator("inputs", mode="before")
+    @classmethod
     def decode_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
         return v
-
-    class Config:
-        extra = Extra.allow  # This is used for items named file_ and __file_
 
 
 class DeleteJobPayload(Model):
@@ -140,9 +137,9 @@ class SrcItem(Model):
 
 
 class EncodedHdcaSourceId(SrcItem):
-    id: EncodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField
     src: Literal[DataItemSourceType.hdca] = Field(
-        default=Required,
+        default=...,
         title="Source",
         description="The source of this dataset, which in the case of the model can only be `hdca`.",
     )
@@ -151,7 +148,8 @@ class EncodedHdcaSourceId(SrcItem):
 class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     uuid: Optional[UUID4] = Field(
         default=None,
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
         title="UUID",
         description="Universal unique identifier for this dataset.",
     )
@@ -204,24 +202,22 @@ class JobDestinationParams(Model):
     handler: Optional[str] = Field(
         None, title="Handler", description="Name of the process that handled the job.", alias="Handler"
     )
-
-    class Config:
-        extra = Extra.allow  # JobDestinationParams can have extra fields
+    model_config = ConfigDict(extra="allow")  # JobDestinationParams can have extra fields
 
 
 class JobOutput(Model):
-    label: Any = Field(default=Required, title="Output label", description="The output label")  # check if this is true
-    value: EncodedDataItemSourceId = Field(default=Required, title="Dataset", description="The associated dataset.")
+    label: Any = Field(default=..., title="Output label", description="The output label")  # check if this is true
+    value: EncodedDataItemSourceId = Field(default=..., title="Dataset", description="The associated dataset.")
 
 
 class JobParameter(Model):
     text: str = Field(
-        default=Required,
+        default=...,
         title="Text",
         description="Text associated with the job parameter.",
     )
     depth: int = Field(
-        default=Required,
+        default=...,
         title="Depth",
         description="The depth of the job parameter.",
     )
@@ -231,13 +227,13 @@ class JobParameter(Model):
 
 class JobDisplayParametersSummary(Model):
     parameters: List[JobParameter] = Field(
-        default=Required, title="Parameters", description="The parameters of the job in a nested format."
+        default=..., title="Parameters", description="The parameters of the job in a nested format."
     )
     has_parameter_errors: bool = Field(
-        default=Required, title="Has parameter errors", description="The job has parameter errors"
+        default=..., title="Has parameter errors", description="The job has parameter errors"
     )
     outputs: Dict[str, List[JobOutput]] = Field(
-        default=Required,
+        default=...,
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.",
     )

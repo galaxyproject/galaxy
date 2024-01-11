@@ -447,6 +447,12 @@ class FrameworkRouter(APIRouter):
             else:
                 kwd["dependencies"] = [self.admin_user_dependency]
 
+        public = kwd.pop("public", False)
+        openapi_extra = kwd.pop("openapi_extra", {})
+        if public:
+            openapi_extra["security"] = []
+        if openapi_extra:
+            kwd["openapi_extra"] = openapi_extra
         return kwd
 
     @property
@@ -498,18 +504,18 @@ def as_form(cls: Type[BaseModel]):
     """
     new_params = [
         inspect.Parameter(
-            field.alias,
+            field_name,
             inspect.Parameter.POSITIONAL_ONLY,
-            default=(Form(field.default) if not field.required else Form(...)),
+            default=(Form(field.default) if not field.is_required() else Form(...)),
         )
-        for field in cls.__fields__.values()
+        for field_name, field in cls.model_fields.items()
     ]
 
     async def _as_form(**data):
         try:
             return cls(**data)
         except ValidationError as e:
-            raise RequestValidationError(e.raw_errors)
+            raise RequestValidationError(e.errors())
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)

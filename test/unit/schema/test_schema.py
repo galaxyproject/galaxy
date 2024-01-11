@@ -18,7 +18,7 @@ def test_task_schema():
         galaxy_url=TEST_GALAXY_URL,
         user=user,
     )
-    rehydrated_download = GenerateInvocationDownload(**download.dict())
+    rehydrated_download = GenerateInvocationDownload(**download.model_dump())
     assert rehydrated_download.invocation_id == TEST_INVOCATION_ID
     assert rehydrated_download.user.user_id == TEST_USER_ID
     assert rehydrated_download.galaxy_url == TEST_GALAXY_URL

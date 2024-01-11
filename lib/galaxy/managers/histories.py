@@ -50,7 +50,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -286,7 +286,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def get_sharing_extra_information(
         self, trans, item, users: Set[model.User], errors: Set[str], option: Optional[sharable.SharingOptions] = None
-    ) -> Optional[sharable.ShareWithExtra]:
+    ) -> ShareHistoryExtra:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
         history = cast(model.History, item)
@@ -322,7 +322,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     elif option == sharable.SharingOptions.make_public:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                 else:
-                    hda_id = trans.security.encode_id(hda.id)
+                    hda_id = hda.id
                     hda_info = HDABasicInfo(id=hda_id, name=hda.name)
                     if owner_can_manage_dataset:
                         can_change_dict[hda_id] = hda_info
@@ -575,8 +575,8 @@ class HistoryExportManager:
     def serialize(self, trans, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
         rval = jeha.to_dict()
         rval["type"] = "job"
-        encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
-        encoded_history_id = DecodedDatabaseIdField.encode(history_id)
+        encoded_jeha_id = Security.security.encode_id(jeha.id)
+        encoded_history_id = Security.security.encode_id(history_id)
         api_url = trans.url_builder("history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder(
             "history_archive_download", history_id=encoded_history_id, jeha_id="latest", qualified=True
@@ -712,20 +712,22 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
-            "hdas": lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
+            "hdas": lambda item, key, encode_id=True, **context: [
+                self.app.security.encode_id(hda.id) if encode_id else hda.id for hda in item.datasets
+            ],
             "state_details": self.serialize_state_counts,
             "state_ids": self.serialize_state_ids,
             "contents": self.serialize_contents,
-            "non_ready_jobs": lambda item, key, **context: [
+            "non_ready_jobs": lambda item, key, encode_id=True, **context: [
                 self.app.security.encode_id(job.id) for job in self.manager.non_ready_jobs(item)
             ],
             "contents_states": self.serialize_contents_states,
             "contents_active": self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            "user_id": lambda item, key, **context: self.app.security.encode_id(item.user_id)
-            if item.user_id is not None
-            else None,
+            "user_id": lambda item, key, encode_id=True, **context: self.app.security.encode_id(item.user_id)
+            if item.user_id is not None and encode_id
+            else item.user_id,
         }
         self.serializers.update(serializers)
 

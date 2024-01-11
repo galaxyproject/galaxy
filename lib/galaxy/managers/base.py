@@ -56,7 +56,6 @@ from galaxy import (
 from galaxy.model import tool_shed_install
 from galaxy.model.base import transaction
 from galaxy.schema import ValueFilterQueryParams
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemsCleanupResult,
@@ -147,13 +146,10 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None):
+def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None) -> int:
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
-    if isinstance(id, DecodedDatabaseIdField):
-        return int(id)
-    else:
-        return decode_with_security(app.security, id, kind=kind)
+    return decode_with_security(app.security, id, kind=kind)
 
 
 def decode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
@@ -734,13 +730,13 @@ class ModelSerializer(HasAModelManager[T]):
         date = getattr(item, key)
         return date.isoformat() if date is not None else None
 
-    def serialize_id(self, item: Any, key: str, **context):
+    def serialize_id(self, item: Any, key: str, encode_id=True, **context):
         """
         Serialize an id attribute of `item`.
         """
         id = getattr(item, key)
         # Note: it may not be best to encode the id at this layer
-        return self.app.security.encode_id(id) if id is not None else None
+        return self.app.security.encode_id(id) if id is not None and encode_id else id
 
     def serialize_type_id(self, item: Any, key: str, **context):
         """
@@ -1055,7 +1051,7 @@ class ModelFilterParser(HasAModelManager):
         Builds a list of tuples containing filtering information in the form of (attribute, operator, value).
         """
         DEFAULT_OP = "eq"
-        qdict = query_params.dict(exclude_defaults=True)
+        qdict = query_params.model_dump(exclude_defaults=True)
         if filter_attr_key not in qdict:
             return []
         # precondition: attrs/value pairs are in-order in the qstring

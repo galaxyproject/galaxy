@@ -6,32 +6,38 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
+    RootModel,
 )
 
 
-class ToolDataEntry(BaseModel):
+class Model(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+
+
+class ToolDataEntry(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
         description="The name of this tool data entry",
-        example="all_fasta",
+        examples=["all_fasta"],
     )
     model_class: str = Field(
         ...,  # Mark this field as required
         title="Model class",
         description="The name of class modelling this tool data",
-        example="TabularToolDataTable",
+        examples=["TabularToolDataTable"],
     )
 
 
-class ToolDataEntryList(BaseModel):
-    __root__: List[ToolDataEntry] = Field(
+class ToolDataEntryList(RootModel):
+    root: List[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
 
     def find_entry(self, name: str) -> Optional[ToolDataEntry]:
-        for entry in self.__root__:
+        for entry in self.root:
             if entry.name == name:
                 return entry
         return None
@@ -42,7 +48,7 @@ class ToolDataDetails(ToolDataEntry):
         ...,  # Mark this field as required
         title="Columns",
         description="A list of column names",
-        example=["value", "dbkey", "name", "path"],
+        examples=["value", "dbkey", "name", "path"],
     )
     # We must use an alias since the name 'fields'
     # shadows a Model attribute
@@ -54,7 +60,7 @@ class ToolDataDetails(ToolDataEntry):
     )
 
 
-class ToolDataField(BaseModel):
+class ToolDataField(Model):
     name: str = Field(
         ...,  # Mark this field as required
         title="Name",
@@ -64,7 +70,7 @@ class ToolDataField(BaseModel):
         ...,  # Mark this field as required
         title="Model class",
         description="The name of class modelling this tool data field",
-        example="TabularToolDataField",
+        examples=["TabularToolDataField"],
     )
     # We must use an alias since the name 'fields'
     # shadows a Model attribute
@@ -83,17 +89,17 @@ class ToolDataField(BaseModel):
         ...,  # Mark this field as required
         title="Files",
         description="A dictionary of file names and their size in bytes",
-        example={"file.txt": 136},
+        examples=[{"file.txt": 136}],
     )
     fingerprint: str = Field(
         ...,  # Mark this field as required
         title="Fingerprint",
         description="SHA1 Hash",
-        example="22b45237a85c2b3f474bf66888c534387ffe0ced",
+        examples=["22b45237a85c2b3f474bf66888c534387ffe0ced"],
     )
 
 
-class ToolDataItem(BaseModel):
+class ToolDataItem(Model):
     values: str = Field(
         ...,  # Mark this field as required
         title="Values",
@@ -101,5 +107,5 @@ class ToolDataItem(BaseModel):
             "A `\\t` (TAB) separated list of column __contents__."
             " You must specify a value for each of the columns of the data table."
         ),
-        example="value\tdbkey\tname\tpath",
+        examples=["value\tdbkey\tname\tpath"],
     )

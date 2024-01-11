@@ -384,7 +384,9 @@ def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, dow
         metadata_dict = metadata.to_dict(
             value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
         )
-        metadata_dict["repository"] = repository.to_dict(value_mapper={"id": app.security.encode_id})
+        metadata_dict["repository"] = repository.to_dict(
+            value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
+        )
         if metadata.has_repository_dependencies and recursive:
             metadata_dict["repository_dependencies"] = get_all_dependencies(
                 app, metadata, processed_dependency_links=[]

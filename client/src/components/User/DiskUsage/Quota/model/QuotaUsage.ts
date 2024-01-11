@@ -25,7 +25,7 @@ export class QuotaUsage {
     /**
      * The maximum allowed disk usage in bytes.
      */
-    get quotaInBytes(): number | undefined {
+    get quotaInBytes(): number | undefined | null {
         return this._data.quota_bytes;
     }
 
@@ -39,7 +39,7 @@ export class QuotaUsage {
     /**
      * The percentage of used quota.
      */
-    get quotaPercent(): number | undefined {
+    get quotaPercent(): number | undefined | null {
         return this._data.quota_percent;
     }
 
@@ -50,7 +50,7 @@ export class QuotaUsage {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        if (this.quotaInBytes !== undefined) {
+        if (this.quotaInBytes !== undefined && this.quotaInBytes !== null) {
             return bytesToString(this.quotaInBytes, true, undefined);
         }
         return "unknown";

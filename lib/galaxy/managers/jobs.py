@@ -236,7 +236,7 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id):
+    def get_accessible_job(self, trans, decoded_job_id) -> Job:
         job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
@@ -619,9 +619,9 @@ class JobSearch:
         return None
 
 
-def view_show_job(trans, job, full: bool) -> typing.Dict:
+def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
-    job_dict = trans.app.security.encode_all_ids(job.to_dict("element", system_details=is_admin), True)
+    job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
         job_dict["command_line"] = job.command_line
     if full:
@@ -873,7 +873,7 @@ def summarize_destination_params(trans, job):
     return destination_params
 
 
-def summarize_job_parameters(trans, job):
+def summarize_job_parameters(trans, job: Job):
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
@@ -943,14 +943,14 @@ def summarize_job_parameters(trans, job):
                 elif input.type == "data" or input.type == "data_collection":
                     value = []
                     for element in listify(param_values[input.name]):
-                        encoded_id = trans.security.encode_id(element.id)
+                        element_id = element.id
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                            value.append({"src": "hda", "id": element_id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
-                            value.append({"src": "dce", "id": encoded_id, "name": element.element_identifier})
+                            value.append({"src": "dce", "id": element_id, "name": element.element_identifier})
                         elif isinstance(element, model.HistoryDatasetCollectionAssociation):
-                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": element_id, "hid": element.hid, "name": element.name})
                         else:
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"
@@ -1011,7 +1011,7 @@ def summarize_job_parameters(trans, job):
     return {
         "parameters": parameters,
         "has_parameter_errors": has_parameter_errors,
-        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects, security=trans.security),
+        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects),
     }
 
 
@@ -1026,7 +1026,7 @@ def get_output_name(tool, output, params):
         pass
 
 
-def summarize_job_outputs(job: model.Job, tool, params, security):
+def summarize_job_outputs(job: model.Job, tool, params):
     outputs = defaultdict(list)
     output_labels = {}
     possible_outputs = (
@@ -1046,7 +1046,7 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
             outputs[output_name].append(
                 {
                     "label": label,
-                    "value": {"src": src, "id": security.encode_id(getattr(output_association, attribute))},
+                    "value": {"src": src, "id": getattr(output_association, attribute)},
                 }
             )
     return outputs

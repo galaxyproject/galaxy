@@ -8,6 +8,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    RootModel,
 )
 from typing_extensions import Literal
 
@@ -70,5 +71,5 @@ class FreehandComment(BaseComment):
     data: FreehandCommentData
 
 
-class WorkflowCommentModel(BaseModel):
-    __root__: Union[TextComment, MarkdownComment, FrameComment, FreehandComment]
+class WorkflowCommentModel(RootModel):
+    root: Union[TextComment, MarkdownComment, FrameComment, FreehandComment]

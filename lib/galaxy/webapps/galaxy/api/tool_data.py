@@ -32,7 +32,7 @@ ToolDataTableName = Path(
     ...,  # Mark this field as required
     title="Data table name",
     description="The name of the tool data table",
-    example="all_fasta",
+    examples=["all_fasta"],
 )
 
 ToolDataTableFieldName = Path(
@@ -54,7 +54,7 @@ class FastAPIToolData:
         "/api/tool_data",
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        require_admin=False,
+        public=True,
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
@@ -69,7 +69,7 @@ class FastAPIToolData:
         self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
-        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.dict())
+        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())
         summary = async_task_summary(result)
         return summary
 

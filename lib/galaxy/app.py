@@ -101,7 +101,7 @@ from galaxy.quota import (
     get_quota_agent,
     QuotaAgent,
 )
-from galaxy.schema.fields import BaseDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
     Vault,
@@ -410,7 +410,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _configure_security(self):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
-        BaseDatabaseIdField.security = self.security
+        Security.security = self.security
 
     def _configure_engines(self, db_url, install_db_url, combined_install_database):
         trace_logger = getattr(self, "trace_logger", None)

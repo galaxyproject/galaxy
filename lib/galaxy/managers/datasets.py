@@ -156,7 +156,7 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
         extra_files_path = request.extra_files_path
         dataset_hash = model.DatasetHash(
-            hash_function=hash_function.value,
+            hash_function=hash_function,
             hash_value=calculated_hash_value,
             extra_files_path=extra_files_path,
         )

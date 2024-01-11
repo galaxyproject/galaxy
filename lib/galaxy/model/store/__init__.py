@@ -2694,14 +2694,14 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             empirical_error=export_options.override_empirical_error or {},
             algorithmic_error=export_options.override_algorithmic_error or {},
         )
-        usability_domain = UsabilityDomain(__root__=usability_domain_str)
+        usability_domain = UsabilityDomain(root=usability_domain_str)
         description_domain = DescriptionDomain(
             keywords=keywords,
             xref=export_options.override_xref or [],
             platform=["Galaxy"],
             pipeline_steps=pipeline_steps,
         )
-        parametric_domain = ParametricDomain(__root__=parametric_domain_items)
+        parametric_domain = ParametricDomain(root=parametric_domain_items)
         io_domain = InputAndOutputDomain(
             input_subdomain=input_subdomain_items,
             output_subdomain=output_subdomain_items,

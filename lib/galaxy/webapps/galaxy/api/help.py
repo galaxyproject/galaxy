@@ -3,10 +3,12 @@ import logging
 from fastapi import Query
 from typing_extensions import Annotated
 
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.help import HelpForumSearchResponse
 from galaxy.webapps.galaxy.services.help import HelpService
 from . import (
     depends,
+    DependsOnTrans,
     Router,
 )
 
@@ -27,6 +29,7 @@ class HelpAPI:
     def search_forum(
         self,
         query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
+        trans: ProvidesUserContext = DependsOnTrans,  # Require session or API key, don't make public
     ) -> HelpForumSearchResponse:
         """Search the Galaxy Help forum using the Discourse API.
 

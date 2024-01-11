@@ -24,6 +24,7 @@ class FastAPITasks:
 
     @router.get(
         "/api/tasks/{task_id}/state",
+        public=True,
         summary="Determine state of task ID",
         response_description="String indicating task state.",
     )

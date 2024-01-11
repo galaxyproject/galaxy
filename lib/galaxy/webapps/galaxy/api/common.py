@@ -8,17 +8,84 @@ from typing import (
 )
 
 from fastapi import (
+    Path,
     Query,
     Request,
 )
+from typing_extensions import Annotated
 
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
     ValueFilterQueryParams,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UpdateDatasetPermissionsPayload
 from galaxy.util import listify
+
+HistoryIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="History ID", description="The encoded database identifier of the History."),
+]
+
+HistoryDatasetIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Dataset ID", description="The ID of the History Dataset.")
+]
+
+
+HistoryItemIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Item ID", description="The ID of the item (`HDA`/`HDCA`)")
+]
+
+HistoryHDCAIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Dataset Collection ID", description="The ID of the `HDCA`.")
+]
+
+
+DatasetCollectionElementIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Dataset Collection Element ID", description="The encoded ID of the dataset collection element."),
+]
+
+
+UserIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="User ID", description="The ID of the user."),
+]
+
+
+GroupIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Group ID", description="The ID of the group."),
+]
+
+
+RoleIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Role ID", description="The ID of the role."),
+]
+
+
+LibraryIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Library ID", description="The ID of the Library."),
+]
+
+NotificationIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Notification ID", description="The ID of the Notification."),
+]
+
+
+PageIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Page ID", description="The ID of the Page."),
+]
+
+QuotaIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Quota ID", description="The ID of the Quota."),
+]
 
 SerializationViewQueryParam: Optional[str] = Query(
     None,
@@ -36,14 +103,14 @@ FilterQueryQueryParam: Optional[List[str]] = Query(
     default=None,
     title="Filter Query",
     description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-    example="create_time-gt",
+    examples=["create_time-gt"],
 )
 
 FilterValueQueryParam: Optional[List[str]] = Query(
     default=None,
     title="Filter Value",
     description="The value to filter by.",
-    example="2015-01-29",
+    examples=["2015-01-29"],
 )
 
 OffsetQueryParam: Optional[int] = Query(

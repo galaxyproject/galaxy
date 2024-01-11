@@ -463,7 +463,7 @@ class RepositoriesController(BaseShedAPIController):
         :param repository_id: the encoded id of the repository on which metadata is to be reset.
         """
         repository_id = payload.get("repository_id", None)
-        return reset_metadata_on_repository(trans, repository_id).dict()
+        return reset_metadata_on_repository(trans, repository_id).model_dump()
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):

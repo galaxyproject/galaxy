@@ -375,7 +375,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return [v.to_model() for v in self._tool_panel_views.values()]
 
     def panel_view_dicts(self) -> Dict[str, Dict]:
-        return {m.id: m.dict() for m in self.panel_views()}
+        return {m.id: m.model_dump(mode="json") for m in self.panel_views()}
 
     def panel_has_tool(self, tool, panel_view_id):
         panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]

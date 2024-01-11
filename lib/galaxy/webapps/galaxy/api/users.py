@@ -21,7 +21,6 @@ from fastapi import (
     status,
 )
 from markupsafe import escape
-from pydantic import Required
 
 from galaxy import (
     exceptions,
@@ -42,7 +41,6 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnonUserModel,
     AsyncTaskResultSummary,
@@ -86,13 +84,14 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import UserIdPathParam
 from galaxy.webapps.galaxy.services.users import UsersService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["users"])
 
-ThemePathParam: str = Path(default=Required, title="Theme", description="The theme of the GUI")
+ThemePathParam: str = Path(default=..., title="Theme", description="The theme of the GUI")
 UserDeletedQueryParam: bool = Query(default=None, title="Deleted user", description="Indicates if the user is deleted")
 UsersDeletedQueryParam: bool = Query(
     default=False, title="Deleted users", description="Indicates if the collection will be about deleted users"
@@ -100,8 +99,6 @@ UsersDeletedQueryParam: bool = Query(
 FilterEmailQueryParam: str = Query(default=None, title="Email filter", description="An email address to filter on")
 FilterNameQueryParam: str = Query(default=None, title="Name filter", description="An username address to filter on")
 FilterAnyQueryParam: str = Query(default=None, title="Any filter", description="Filter on username OR email")
-UserIdPathParamQueryParam: DecodedDatabaseIdField = Path(..., title="User ID", description="The ID of the user to get.")
-APIKeyPathParamQueryParam: str = Path(..., title="API Key", description="The API key of the user.")
 FlexibleUserIdPathParam: FlexibleUserIdType = Path(
     ..., title="User ID", description="The ID of the user to get or 'current'."
 )
@@ -111,15 +108,15 @@ QuotaSourceLabelPathParam: str = Path(
     description="The label corresponding to the quota source to fetch usage information about.",
 )
 ObjectTypePathParam: FavoriteObjectType = Path(
-    default=Required, title="Object type", description="The object type the user wants to favorite"
+    default=..., title="Object type", description="The object type the user wants to favorite"
 )
 ObjectIDPathParam: str = Path(
-    default=Required,
+    default=...,
     title="Object ID",
     description="The ID of an object the user wants to remove from favorites",
 )
 CustomBuildKeyPathParam: str = Path(
-    default=Required,
+    default=...,
     title="Custom build key",
     description="The key of the custom build to be deleted.",
 )
@@ -136,15 +133,15 @@ RecalculateDiskUsageResponseDescriptions = {
 }
 
 UserDeletionBody = Body(default=None, title="Purge user", description="Purge the user.")
-UserUpdateBody = Body(default=Required, title="Update user", description="The user values to update.")
+UserUpdateBody = Body(default=..., title="Update user", description="The user values to update.")
 FavoriteObjectBody = Body(
-    default=Required, title="Set favorite", description="The id of an object the user wants to favorite."
+    default=..., title="Set favorite", description="The id of an object the user wants to favorite."
 )
 
 CustomBuildCreationBody = Body(
-    default=Required, title="Add custom build", description="The values to add a new custom build."
+    default=..., title="Add custom build", description="The values to add a new custom build."
 )
-UserCreationBody = Body(default=Required, title="Create User", description="The values to add create a user.")
+UserCreationBody = Body(default=..., title="Create User", description="The values to add create a user.")
 AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 
 
@@ -187,8 +184,8 @@ class FastAPIUsers:
     )
     def recalculate_disk_usage_by_user_id(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
@@ -215,8 +212,8 @@ class FastAPIUsers:
     )
     def undelete(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> DetailedUserModel:
         user = self.service.get_user(trans=trans, user_id=user_id)
         self.service.user_manager.undelete(user)
@@ -229,8 +226,8 @@ class FastAPIUsers:
     )
     def show_deleted(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> AnyUserModel:
         return self.service.show_user(trans=trans, user_id=user_id, deleted=True)
 
@@ -240,7 +237,9 @@ class FastAPIUsers:
         summary="Return the user's API key",
     )
     def get_or_create_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         return self.service.get_or_create_api_key(trans, user_id)
 
@@ -259,14 +258,18 @@ class FastAPIUsers:
         },
     )
     def get_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ):
         api_key = self.service.get_api_key(trans, user_id)
         return api_key if api_key else Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post("/api/users/{user_id}/api_key", name="create_api_key", summary="Create a new API key for the user")
     def create_api_key(
-        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         return self.service.create_api_key(trans, user_id).key
 
@@ -278,8 +281,8 @@ class FastAPIUsers:
     )
     def delete_api_key(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -327,8 +330,8 @@ class FastAPIUsers:
     )
     def get_beacon(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> UserBeaconSetting:
         """
         **Warning**: This endpoint is experimental and might change or disappear in future versions.
@@ -346,8 +349,8 @@ class FastAPIUsers:
     )
     def set_beacon(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: UserBeaconSetting = Body(...),
     ) -> UserBeaconSetting:
         """
@@ -368,8 +371,8 @@ class FastAPIUsers:
     )
     def remove_favorite(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         object_type: FavoriteObjectType = ObjectTypePathParam,
         object_id: str = ObjectIDPathParam,
     ) -> FavoriteObjectsSummary:
@@ -395,8 +398,8 @@ class FastAPIUsers:
     )
     def set_favorite(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         object_type: FavoriteObjectType = ObjectTypePathParam,
         payload: FavoriteObject = FavoriteObjectBody,
     ) -> FavoriteObjectsSummary:
@@ -428,8 +431,8 @@ class FastAPIUsers:
     )
     def set_theme(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         theme: str = ThemePathParam,
     ) -> str:
         user = self.service.get_user(trans, user_id)
@@ -445,9 +448,9 @@ class FastAPIUsers:
     )
     def add_custom_builds(
         self,
+        user_id: UserIdPathParam,
         key: str = CustomBuildKeyPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: CustomBuildCreationPayload = CustomBuildCreationBody,
     ) -> Any:
         user = self.service.get_user(trans, user_id)
@@ -529,8 +532,8 @@ class FastAPIUsers:
     )
     def get_custom_builds(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> CustomBuildsCollection:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
@@ -556,16 +559,16 @@ class FastAPIUsers:
         for key, attributes in valid_dbkeys.items():
             attributes["id"] = key
             dbkey_collection.append(attributes)
-        return CustomBuildsCollection.construct(__root__=dbkey_collection)
+        return CustomBuildsCollection.model_construct(root=dbkey_collection)
 
     @router.delete(
         "/api/users/{user_id}/custom_builds/{key}", name="delete_custom_build", summary="Delete a custom build"
     )
     def delete_custom_builds(
         self,
+        user_id: UserIdPathParam,
         key: str = CustomBuildKeyPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ) -> DeletedCustomBuild:
         user = self.service.get_user(trans, user_id)
         dbkeys = json.loads(user.preferences["dbkeys"]) if "dbkeys" in user.preferences else {}
@@ -614,7 +617,7 @@ class FastAPIUsers:
                 user = self.service.user_manager.create(email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
-        item = user.to_dict(view="element", value_mapper={"id": trans.security.encode_id, "total_disk_usage": float})
+        item = user.to_dict(view="element", value_mapper={"total_disk_usage": float})
         return item
 
     @router.get(
@@ -670,8 +673,8 @@ class FastAPIUsers:
     )
     def delete(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
         payload: Optional[UserDeletionPayload] = UserDeletionBody,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
@@ -700,8 +703,8 @@ class FastAPIUsers:
     )
     def send_activation_email(
         self,
+        user_id: UserIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         user = trans.sa_session.query(trans.model.User).get(user_id)
         if not user:

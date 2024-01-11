@@ -74,9 +74,7 @@ class PagesService(ServiceBase):
 
         pages, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            PageSummaryList.construct(
-                __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
-            ),
+            PageSummaryList(root=[p.to_dict() for p in pages]),
             total_matches,
         )
 
@@ -85,10 +83,10 @@ class PagesService(ServiceBase):
         Create a page and return Page summary
         """
         page = self.manager.create_page(trans, payload)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval = page.to_dict()
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.construct(**rval)
+        return PageSummary(**rval)
 
     def delete(self, trans, id: DecodedDatabaseIdField):
         """
@@ -111,11 +109,11 @@ class PagesService(ServiceBase):
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval = page.to_dict()
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageDetails.construct(**rval)
+        return PageDetails(**rval)
 
     def show_pdf(self, trans, id: DecodedDatabaseIdField):
         """

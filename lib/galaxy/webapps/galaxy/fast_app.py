@@ -8,9 +8,11 @@ from fastapi import (
     FastAPI,
     Request,
 )
+from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from galaxy.schema.invocation import CustomJsonSchema
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -168,6 +170,7 @@ def get_openapi_schema() -> Dict[str, Any]:
         description=app.description,
         routes=app.routes,
         license_info=app.license_info,
+        schema_generator=CustomJsonSchema(ref_template=REF_TEMPLATE),
     )
 
 

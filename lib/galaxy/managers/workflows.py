@@ -23,7 +23,11 @@ from gxformat2 import (
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    SerializerFunctionWrapHandler,
+    WrapSerializer,
+)
 from sqlalchemy import (
     desc,
     false,
@@ -38,6 +42,7 @@ from sqlalchemy.orm import (
     Query,
     subqueryload,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -396,7 +401,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         workflow_canvas.add_steps()
         return workflow_canvas.finish(for_embed=for_embed)
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> WorkflowInvocation:
+    def get_invocation(self, trans, decoded_invocation_id: int, eager=False) -> WorkflowInvocation:
         workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
@@ -805,7 +810,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
                 )
 
-        module_kwds = workflow_state_resolution_options.dict()
+        module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
@@ -1958,15 +1963,17 @@ class RefactorRequest(RefactorActions):
     style: str = "export"
 
 
+def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> str:
+    try:
+        return nxt(v)
+    except Exception:
+        return safe_dumps(v)
+
+
 class RefactorResponse(BaseModel):
     action_executions: List[RefactorActionExecution]
-    workflow: dict
+    workflow: Annotated[dict, WrapSerializer(safe_wraps, when_used="json")]
     dry_run: bool
-
-    class Config:
-        # Workflows have dictionaries with integer keys, which pydantic doesn't coerce to strings.
-        # Integer object keys aren't valid JSON, so the client fails.
-        json_dumps = safe_dumps
 
 
 class WorkflowStateResolutionOptions(BaseModel):

@@ -6,20 +6,21 @@ from typing import (
     Generic,
     List,
     Optional,
+    Tuple,
+    Type,
     TypeVar,
     Union,
 )
 
 from pydantic import (
     BaseModel,
-    Extra,
+    ConfigDict,
     Field,
-    Required,
+    RootModel,
     UUID1,
     UUID4,
 )
-from pydantic.generics import GenericModel
-from pydantic.utils import GetterDict
+from pydantic.json_schema import GenerateJsonSchema
 from typing_extensions import (
     Annotated,
     Literal,
@@ -41,6 +42,7 @@ from galaxy.schema.schema import (
     JobState,
     Model,
     UpdateTimeField,
+    WithModelClass,
 )
 
 INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
@@ -54,7 +56,7 @@ InvocationStepActionField = Field(
 )
 
 InvocationIdField: EncodedDatabaseIdField = Field(
-    default=Required,
+    default=...,
     title="ID",
     description="The encoded ID of the workflow invocation.",
 )
@@ -84,36 +86,44 @@ class CancelReason(str, Enum):
 
 DatabaseIdT = TypeVar("DatabaseIdT")
 
-
-class StepOrderIndexGetter(GetterDict):
-    def get(self, key: Any, default: Any = None) -> Any:
-        # Fetch the order_index when serializing for the API,
-        # which makes much more sense when pointing to steps.
-        if key == "workflow_step_id":
-            if self._obj.workflow_step:
-                return self._obj.workflow_step.order_index
-            else:
-                return default
-        elif key == "dependent_workflow_step_id":
-            if self._obj.dependent_workflow_step_id:
-                return self._obj.dependent_workflow_step.order_index
-            else:
-                return default
-
-        return super().get(key, default)
+ref_to_name = {}
 
 
-class InvocationMessageBase(GenericModel):
+class InvocationMessageBase(BaseModel):
     reason: Union[CancelReason, FailureReason, WarningReason]
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
-    class Config:
-        orm_mode = True
-        getter_dict = StepOrderIndexGetter
+    @classmethod
+    def model_parametrized_name(cls, params: Tuple[Type[Any], ...]) -> str:
+        suffix = "Response" if params[0] is EncodedDatabaseIdField else "Incoming"
+        class_name = cls.__name__.split("Generic", 1)[-1]
+        return f"{class_name}{suffix}"
+
+    @classmethod
+    def __get_pydantic_core_schema__(cls, *args, **kwargs):
+        result = super().__get_pydantic_core_schema__(*args, **kwargs)
+        ref_to_name[result["ref"]] = cls.__name__
+        return result
+
+
+class CustomJsonSchema(GenerateJsonSchema):
+    def get_defs_ref(self, core_mode_ref):
+        full_def = super().get_defs_ref(core_mode_ref)
+        choices = self._prioritized_defsref_choices[full_def]
+        ref, mode = core_mode_ref
+        if ref in ref_to_name:
+            for i, choice in enumerate(choices):
+                choices[i] = choice.replace(choices[0], ref_to_name[ref])  # type: ignore[call-overload]
+        return full_def
 
 
 class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: Literal[CancelReason.cancelled_on_review]
-    workflow_step_id: int = Field(..., description="Workflow step id of paused step that did not pass review.")
+    workflow_step_id: int = Field(
+        ...,
+        description="Workflow step id of paused step that did not pass review.",
+        validation_alias="workflow_step_index",
+    )
 
 
 class GenericInvocationCancellationHistoryDeleted(InvocationMessageBase, Generic[DatabaseIdT]):
@@ -126,7 +136,9 @@ class GenericInvocationCancellationUserRequest(InvocationMessageBase, Generic[Da
 
 
 class InvocationFailureMessageBase(InvocationMessageBase, Generic[DatabaseIdT]):
-    workflow_step_id: int = Field(..., description="Workflow step id of step that failed.")
+    workflow_step_id: int = Field(
+        ..., description="Workflow step id of step that failed.", validation_alias="workflow_step_index"
+    )
 
 
 class GenericInvocationFailureDatasetFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
@@ -144,19 +156,31 @@ class GenericInvocationFailureCollectionFailed(InvocationFailureMessageBase[Data
         title="HistoryDatasetCollectionAssociation ID",
         description="HistoryDatasetCollectionAssociation ID that relates to failure.",
     )
-    dependent_workflow_step_id: int = Field(..., description="Workflow step id of step that caused failure.")
+    dependent_workflow_step_id: int = Field(
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
+    )
 
 
 class GenericInvocationFailureJobFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
     reason: Literal[FailureReason.job_failed]
     job_id: DatabaseIdT = Field(..., title="Job ID", description="Job ID that relates to failure.")
-    dependent_workflow_step_id: int = Field(..., description="Workflow step id of step that caused failure.")
+    dependent_workflow_step_id: int = Field(
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
+    )
 
 
 class GenericInvocationFailureOutputNotFound(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
     reason: Literal[FailureReason.output_not_found]
     output_name: str = Field(..., title="Tool or module output name that was referenced but not produced")
-    dependent_workflow_step_id: int = Field(..., description="Workflow step id of step that caused failure.")
+    dependent_workflow_step_id: int = Field(
+        ...,
+        description="Workflow step id of step that caused failure.",
+        validation_alias="dependent_workflow_step_index",
+    )
 
 
 class GenericInvocationFailureExpressionEvaluationFailed(
@@ -174,19 +198,25 @@ class GenericInvocationFailureWhenNotBoolean(InvocationFailureMessageBase[Databa
 class GenericInvocationUnexpectedFailure(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: Literal[FailureReason.unexpected_failure]
     details: Optional[str] = Field(None, description="May contains details to help troubleshoot this problem.")
-    workflow_step_id: Optional[int] = Field(None, description="Workflow step id of step that failed.")
+    workflow_step_id: Optional[int] = Field(
+        None, description="Workflow step id of step that failed.", validation_alias="workflow_step_index"
+    )
 
 
 class GenericInvocationWarning(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: WarningReason = Field(..., title="Failure Reason", description="Reason for warning")
-    workflow_step_id: Optional[int] = Field(None, title="Workflow step id of step that caused a warning.")
+    workflow_step_id: Optional[int] = Field(
+        None, title="Workflow step id of step that caused a warning.", validation_alias="workflow_step_index"
+    )
 
 
 class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
     GenericInvocationWarning[DatabaseIdT], Generic[DatabaseIdT]
 ):
     reason: Literal[WarningReason.workflow_output_not_found]
-    workflow_step_id: int = Field(..., title="Workflow step id of step that caused a warning.")
+    workflow_step_id: int = Field(
+        ..., title="Workflow step id of step that caused a warning.", validation_alias="workflow_step_index"
+    )
     output_name: str = Field(
         ..., description="Output that was designated as workflow output but that has not been found"
     )
@@ -252,11 +282,9 @@ InvocationMessageResponseUnion = Annotated[
 ]
 
 
-class InvocationMessageResponseModel(BaseModel):
-    __root__: InvocationMessageResponseUnion
-
-    class Config:
-        orm_mode = True
+class InvocationMessageResponseModel(RootModel):
+    root: InvocationMessageResponseUnion
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InvocationState(str, Enum):
@@ -316,27 +344,40 @@ class InvocationStepCollectionOutput(Model):
     )
 
 
-class InvocationStep(Model):
+class InvocationStep(Model, WithModelClass):
     """Information about workflow invocation step"""
 
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
-    id: EncodedDatabaseIdField = schema.EntityIdField
+    id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Job ID",
-        description="The encoded ID of the job associated with this workflow invocation step.",
-    )
-    workflow_step_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Workflow step ID",
-        description="The encoded ID of the workflow step associated with this workflow invocation step.",
-    )
-    subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Subworkflow invocation ID",
-        description="The encoded ID of the subworkflow invocation.",
-    )
+    job_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Job ID",
+                description="The encoded ID of the job associated with this workflow invocation step.",
+            ),
+        ]
+    ]
+    workflow_step_id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            ...,
+            title="Workflow step ID",
+            description="The encoded ID of the workflow step associated with this workflow invocation step.",
+        ),
+    ]
+    subworkflow_invocation_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Subworkflow invocation ID",
+                description="The encoded ID of the subworkflow invocation.",
+            ),
+        ]
+    ]
     # TODO The state can differ from InvocationStepState is this intended?
     # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
     state: Optional[ExtendedInvocationStepState] = Field(
@@ -377,7 +418,7 @@ class InvocationStep(Model):
     )
 
 
-class InvocationReport(Model):
+class InvocationReport(Model, WithModelClass):
     """Report describing workflow invocation"""
 
     render_format: REPORT_RENDER_FORMAT_MARKDOWN = Field(
@@ -413,11 +454,7 @@ class InvocationReport(Model):
     )
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
-
-    class Config:
-        # Galaxy Report/Page response can contain many extra_rendering_data
-        # Allow any other extra fields
-        extra = Extra.allow
+    model_config = ConfigDict(extra="allow")
 
 
 class InvocationUpdatePayload(Model):
@@ -447,18 +484,18 @@ class InvocationInput(InvocationIOBase):
         description="Label of the workflow step associated with the input dataset/dataset collection.",
     )
     src: Union[Literal[DataItemSourceType.hda], Literal[DataItemSourceType.hdca]] = Field(
-        default=Required, title="Source", description="Source type of the input dataset/dataset collection."
+        default=..., title="Source", description="Source type of the input dataset/dataset collection."
     )
 
 
 class InvocationInputParameter(Model):
     # TODO - Change the type of parameter_value, when all valid types are known
-    parameter_value: Any = Field(default=Required, title="Parameter value", description="Value of the input parameter.")
+    parameter_value: Any = Field(default=..., title="Parameter value", description="Value of the input parameter.")
     label: str = Field(
-        default=Required, title="Label", description="Label of the workflow step associated with the input parameter."
+        default=..., title="Label", description="Label of the workflow step associated with the input parameter."
     )
     workflow_step_id: EncodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="Workflow step ID",
         description="The encoded ID of the workflow step associated with the input parameter.",
     )
@@ -466,17 +503,17 @@ class InvocationInputParameter(Model):
 
 class InvocationOutput(InvocationIOBase):
     src: Literal[DataItemSourceType.hda] = Field(
-        default=Required, title="Source", description="Source model of the output dataset."
+        default=..., title="Source", description="Source model of the output dataset."
     )
 
 
 class InvocationOutputCollection(InvocationIOBase):
     src: Literal[DataItemSourceType.hdca] = Field(
-        default=Required, title="Source", description="Source model of the output dataset collection."
+        default=..., title="Source", description="Source model of the output dataset collection."
     )
 
 
-class WorkflowInvocationResponse(Model):
+class WorkflowInvocationCollectionView(Model, WithModelClass):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -484,7 +521,7 @@ class WorkflowInvocationResponse(Model):
         title="Workflow ID", description="The encoded Workflow ID associated with the invocation."
     )
     history_id: EncodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="History ID",
         description="The encoded ID of the history associated with the invocation.",
     )
@@ -492,60 +529,65 @@ class WorkflowInvocationResponse(Model):
     uuid: Optional[Union[UUID4, UUID1]] = Field(
         default=None, title="UUID", description="Universal unique identifier of the workflow invocation."
     )
-    state: InvocationState = Field(
-        default=Required, title="Invocation state", description="State of workflow invocation."
-    )
+    state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
-    steps: List[InvocationStep] = Field(
-        default=Required, title="Steps", description="Steps of the workflow invocation."
-    )
+
+
+class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
+    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
     inputs: Dict[str, InvocationInput] = Field(
-        default=Required, title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
+        default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
     input_step_parameters: Dict[str, InvocationInputParameter] = Field(
-        default=Required, title="Input step parameters", description="Input step parameters of the workflow invocation."
+        default=..., title="Input step parameters", description="Input step parameters of the workflow invocation."
     )
     outputs: Dict[str, InvocationOutput] = Field(
-        default=Required, title="Outputs", description="Output datasets of the workflow invocation."
+        default=..., title="Outputs", description="Output datasets of the workflow invocation."
     )
     output_collections: Dict[str, InvocationOutputCollection] = Field(
-        default=Required,
+        default=...,
         title="Output collections",
         description="Output dataset collections of the workflow invocation.",
     )
     output_values: Dict[str, Any] = Field(
-        default=Required, title="Output values", description="Output values of the workflow invocation."
+        default=..., title="Output values", description="Output values of the workflow invocation."
     )
     messages: List[InvocationMessageResponseUnion] = Field(
-        default=Required,
+        default=...,
         title="Messages",
         description="A list of messages about why the invocation did not succeed.",
     )
 
 
+class WorkflowInvocationResponse(RootModel):
+    root: Annotated[
+        Union[WorkflowInvocationElementView, WorkflowInvocationCollectionView], Field(union_mode="left_to_right")
+    ]
+
+
 class InvocationJobsSummaryBaseModel(Model):
     id: EncodedDatabaseIdField = InvocationIdField
     states: Dict[JobState, int] = Field(
-        default=Required, title="States", description="The states of all the jobs related to the Invocation."
+        default=..., title="States", description="The states of all the jobs related to the Invocation."
     )
     populated_state: JobState = Field(
-        default=Required,
+        default=...,
         title="Populated state",
         description="The absolute state of all the jobs related to the Invocation.",
     )
 
 
 class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
-    model: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
+    model: INVOCATION_MODEL_CLASS
 
 
 class InvocationStepJobsResponseStepModel(InvocationJobsSummaryBaseModel):
-    model: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
+    model: INVOCATION_STEP_MODEL_CLASS
 
 
 class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
-    model: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
+    model: JOB_MODEL_CLASS
 
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
-    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)
+    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS

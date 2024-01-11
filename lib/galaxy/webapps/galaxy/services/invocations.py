@@ -38,8 +38,8 @@ from galaxy.model.store import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
-    InvocationMessageResponseModel,
     InvocationStep,
+    WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
     AsyncFile,
@@ -80,7 +80,7 @@ class InvocationSerializationParams(BaseModel):
             "The name of the view used to serialize this item. "
             "This will return a predefined set of attributes of the item."
         ),
-        example="element",
+        examples=["element"],
     )
     step_details: bool = Field(
         default=False,
@@ -93,7 +93,8 @@ class InvocationSerializationParams(BaseModel):
         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
         Partially scheduled steps may provide incomplete information and the listed steps outputs
         are not the mapped over step outputs but the individual job outputs.""",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 
@@ -124,7 +125,7 @@ class InvocationsService(ServiceBase):
 
     def index(
         self, trans, invocation_payload: InvocationIndexPayload, serialization_params: InvocationSerializationParams
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> Tuple[List[WorkflowInvocationResponse], int]:
         workflow_id = invocation_payload.workflow_id
         if invocation_payload.instance:
             instance = invocation_payload.instance
@@ -188,12 +189,12 @@ class InvocationsService(ServiceBase):
         for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, invocation_id):
             ids.append(job_source_id)
             types.append(job_source_type)
-        return [self.security.encode_all_ids(s) for s in fetch_job_states(trans.sa_session, ids, types)]
+        return fetch_job_states(trans.sa_session, ids, types)
 
     def show_invocation_jobs_summary(self, trans, invocation_id) -> Dict[str, Any]:
         ids = [invocation_id]
         types = ["WorkflowInvocation"]
-        return [self.security.encode_all_ids(s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
+        return fetch_job_states(trans.sa_session, ids, types)[0]
 
     def prepare_store_download(
         self, trans, invocation_id: DecodedDatabaseIdField, payload: PrepareStoreDownloadPayload
@@ -217,7 +218,7 @@ class InvocationsService(ServiceBase):
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             galaxy_url=trans.request.url_path,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = prepare_invocation_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
@@ -233,7 +234,7 @@ class InvocationsService(ServiceBase):
             galaxy_url=trans.request.url_path,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)
@@ -249,11 +250,8 @@ class InvocationsService(ServiceBase):
         step_details = params.step_details
         legacy_job_state = params.legacy_job_state
         as_dict = invocation.to_dict(view.value, step_details=step_details, legacy_job_state=legacy_job_state)
-        as_dict = self.security.encode_all_ids(as_dict, recursive=True)
-        as_dict["messages"] = [
-            InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
-        ]
-        return as_dict
+        as_dict["messages"] = invocation.messages
+        return WorkflowInvocationResponse(**as_dict)
 
     def serialize_workflow_invocations(
         self,
@@ -269,7 +267,7 @@ class InvocationsService(ServiceBase):
         self,
         invocation_step: WorkflowInvocationStep,
     ):
-        return self.security.encode_all_ids(invocation_step.to_dict("element"), recursive=True)
+        return invocation_step.to_dict("element")
 
     # TODO: remove this after 23.1 release
     def deprecated_generate_invocation_bco(
