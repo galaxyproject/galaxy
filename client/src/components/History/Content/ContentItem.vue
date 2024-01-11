@@ -84,6 +84,7 @@
             :elements-datatypes="item.elements_datatypes" />
         <StatelessTags
             v-if="!tagsDisabled || hasTags"
+            class="px-2"
             :value="tags"
             :disabled="tagsDisabled"
             :clickable="filterable"
