@@ -8,6 +8,7 @@ import { useUserTagsStore } from "@/stores/userTagsStore";
 import StatelessTags from "./StatelessTags";
 
 const autocompleteTags = ["#named_user_tag", "abc", "my_tag"];
+const toggleButton = ".toggle-button";
 
 const localVue = getLocalVue();
 
@@ -66,11 +67,12 @@ describe("StatelessTags", () => {
             disabled: false,
         });
 
-        const multiselect = wrapper.find(".multiselect");
-
-        multiselect.find("button").trigger("click");
+        wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
 
+        const multiselect = wrapper.find(".multiselect");
+
+        await wrapper.vm.$nextTick();
         const options = multiselect.findAll(".multiselect-option");
         const visibleOptions = options.filter((option) => option.isVisible());
 
@@ -86,10 +88,9 @@ describe("StatelessTags", () => {
             disabled: false,
         });
 
-        const multiselect = wrapper.find(".multiselect");
-
-        multiselect.find("button").trigger("click");
+        wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
+        const multiselect = wrapper.find(".multiselect");
         await multiselect.find("input").setValue("new_tag");
         await wrapper.vm.$nextTick();
         multiselect.find(".multiselect-option").trigger("click");
@@ -104,10 +105,9 @@ describe("StatelessTags", () => {
             disabled: false,
         });
 
-        const multiselect = wrapper.find(".multiselect");
-
-        multiselect.find("button").trigger("click");
+        wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
+        const multiselect = wrapper.find(".multiselect");
         await multiselect.find("input").setValue(":illegal_tag");
         await wrapper.vm.$nextTick();
 
