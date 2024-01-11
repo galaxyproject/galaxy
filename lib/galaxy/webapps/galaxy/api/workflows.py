@@ -63,7 +63,6 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
     WorkflowInvocationCollectionView,
-    WorkflowInvocationElementView,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
@@ -1284,6 +1283,7 @@ class FastAPIInvocations:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> List[WorkflowInvocationCollectionView]:
         """
+        TODO - expose anonymous
         Input can be an archive describing a Galaxy model store containing an
         workflow invocation - for instance one created with with write_store
         or prepare_store_download endpoint.

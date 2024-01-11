@@ -603,7 +603,7 @@ class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
 
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
-    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS = ModelClassField(IMPLICIT_COLLECTION_JOBS_MODEL_CLASS)
+    model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
 
 
 class CreateInvocationFromStore(StoreContentSource):
@@ -617,7 +617,7 @@ class InvocationSerializationView(str, Enum):
     collection = "collection"
 
 
-class InvocationSerializationParams(Model):
+class InvocationSerializationParams(BaseModel):
     """Contains common parameters for customizing model serialization."""
 
     view: Optional[InvocationSerializationView] = Field(
@@ -627,7 +627,7 @@ class InvocationSerializationParams(Model):
             "The name of the view used to serialize this item. "
             "This will return a predefined set of attributes of the item."
         ),
-        example="element",
+        examples=["element"],
     )
     step_details: bool = Field(
         default=False,
@@ -640,7 +640,8 @@ class InvocationSerializationParams(Model):
         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
         Partially scheduled steps may provide incomplete information and the listed steps outputs
         are not the mapped over step outputs but the individual job outputs.""",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 
