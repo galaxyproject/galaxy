@@ -57,7 +57,6 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
     Security,
 )
 from galaxy.model.index_filter_util import (
