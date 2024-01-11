@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from typing import (
-    Optional,
     Union,
 )
 
@@ -32,7 +31,7 @@ class TestOutputElement(TestOutput):
 
 class TestOutputCollection(TestOutputCollection_):
     elements: dict[str, TestOutputElement | TestOutput]
-    collection_type: Optional[str] | None = None
+    collection_type: str | None | None = None
 
 
 @dataclass
@@ -42,7 +41,7 @@ class TestOutputCollectionDeprecated(TestOutputCollection_):
         description="Deprecated field, please use elements to describe expectations about collection elements.",
         metadata={"deprecated": True},
     )
-    collection_type: Optional[str] | None = None
+    collection_type: str | None | None = None
 
 
 AnyOutput = Union[
@@ -53,7 +52,7 @@ AnyOutput = Union[
 class Test(BaseModel):
     model_config = extra_forbidden
 
-    doc: Optional[str] = Field(None, description="Describes the purpose of the test.")
+    doc: str | None = Field(None, description="Describes the purpose of the test.")
     job: Job = Field(
         ...,
         description="Defines job to execute. Can be a path to a file or an line dictionary describing the job inputs.",
