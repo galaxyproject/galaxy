@@ -1,6 +1,6 @@
-const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
-const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
-const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTION_CALL})*)?\\s*\\)\\s*`;
+const FUNCTION_ARGUMENT_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
+const FUNCTION_ARGUMENT_REGEX = `\\s*[\\w\\|]+\\s*=` + FUNCTION_ARGUMENT_VALUE_REGEX;
+const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_ARGUMENT_REGEX})(,${FUNCTION_ARGUMENT_REGEX})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
 export function splitMarkdown(markdown: string) {
@@ -57,7 +57,7 @@ export function getArgs(content: string) {
     const args: ArgsType = {};
     const function_name = galaxy_function[1];
     // we need [... ] to return empty string, if regex doesn't match
-    const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
+    const function_arguments = [...content.matchAll(new RegExp(FUNCTION_ARGUMENT_REGEX, "g"))];
     for (let i = 0; i < function_arguments.length; i++) {
         if (function_arguments[i] === undefined) {
             continue;
