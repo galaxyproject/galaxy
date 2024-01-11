@@ -261,9 +261,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         payload: CreateInvocationFromStore,
         serialization_params: InvocationSerializationParams,
     ):
-        history = self._histories_manager.get_owned(
-            self.decode_id(payload.history_id), trans.user, current_history=trans.history
-        )
+        history = self._histories_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
         object_tracker = self.create_objects_from_store(
             trans,
             payload,

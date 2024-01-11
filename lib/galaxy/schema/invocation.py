@@ -28,6 +28,7 @@ from typing_extensions import (
 
 from galaxy.schema import schema
 from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -608,7 +609,7 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
 
 class CreateInvocationFromStore(StoreContentSource):
     # TODO - add proper description
-    history_id: EncodedDatabaseIdField = Field(default=..., title="History ID", description="")
+    history_id: DecodedDatabaseIdField = Field(default=..., title="History ID", description="")
     model_config = ConfigDict(extra="allow")
 
 
@@ -646,4 +647,5 @@ class InvocationSerializationParams(BaseModel):
 
 
 class CreateInvocationsFromStorePayload(CreateInvocationFromStore, InvocationSerializationParams):
-    pass
+    # TODO - add proper description
+    history_id: str = Field(default=..., title="History ID", description="")

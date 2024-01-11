@@ -62,7 +62,6 @@ from galaxy.schema.invocation import (
     InvocationStepJobsResponseJobModel,
     InvocationStepJobsResponseStepModel,
     InvocationUpdatePayload,
-    WorkflowInvocationCollectionView,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
@@ -1281,7 +1280,7 @@ class FastAPIInvocations:
         self,
         payload: Annotated[CreateInvocationsFromStorePayload, CreateInvocationsFromStoreBody],
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> List[WorkflowInvocationCollectionView]:
+    ) -> List[WorkflowInvocationResponse]:
         """
         TODO - expose anonymous
         Input can be an archive describing a Galaxy model store containing an
@@ -1290,8 +1289,7 @@ class FastAPIInvocations:
         """
         create_payload = CreateInvocationFromStore(**payload.model_dump())
         serialization_params = InvocationSerializationParams(**payload.model_dump())
-        invocations = self.invocations_service.create_from_store(trans, create_payload, serialization_params)
-        return [WorkflowInvocationCollectionView(**invocation) for invocation in invocations]
+        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
 
     @router.get(
         "/api/invocations",
@@ -1314,7 +1312,7 @@ class FastAPIInvocations:
         view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[WorkflowInvocationCollectionView]:
+    ) -> List[WorkflowInvocationResponse]:
         """If workflow_id is supplied (either via URL or query parameter) it should be an
         encoded StoredWorkflow id and returned invocations will be restricted to that
         workflow. history_id (an encoded History id) can be used to further restrict the
@@ -1341,7 +1339,7 @@ class FastAPIInvocations:
         )
         invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         response.headers["total_matches"] = str(total_matches)
-        return [WorkflowInvocationCollectionView(**invocation) for invocation in invocations]
+        return invocations
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations",
@@ -1364,7 +1362,7 @@ class FastAPIInvocations:
         view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
         step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[WorkflowInvocationCollectionView]:
+    ) -> List[WorkflowInvocationResponse]:
         """An alias for GET '/api/invocations'"""
         invocations = self.index_invocations(
             response=response,
