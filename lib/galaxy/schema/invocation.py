@@ -526,7 +526,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-class WorkflowInvocationBaseResponse(Model):
+class WorkflowInvocationCollectionView(Model, WithModelClass):
     id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -544,17 +544,10 @@ class WorkflowInvocationBaseResponse(Model):
     )
     state: InvocationState = Field(default=..., title="Invocation state", description="State of workflow invocation.")
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
-    messages: List[InvocationMessageResponseUnion] = Field(
-        default=Required,
-        title="Messages",
-        description="A list of messages about why the invocation did not succeed.",
-    )
 
 
-class WorkflowInvocationElementView(WorkflowInvocationBaseResponse):
-    steps: List[InvocationStep] = Field(
-        default=Required, title="Steps", description="Steps of the workflow invocation."
-    )
+class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
+    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
@@ -572,10 +565,11 @@ class WorkflowInvocationElementView(WorkflowInvocationBaseResponse):
     output_values: Dict[str, Any] = Field(
         default=..., title="Output values", description="Output values of the workflow invocation."
     )
-
-
-class WorkflowInvocationCollectionView(WorkflowInvocationBaseResponse):
-    pass
+    messages: List[InvocationMessageResponseUnion] = Field(
+        default=...,
+        title="Messages",
+        description="A list of messages about why the invocation did not succeed.",
+    )
 
 
 class WorkflowInvocationResponse(RootModel):
@@ -614,10 +608,8 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
 
 class CreateInvocationFromStore(StoreContentSource):
     # TODO - add proper description
-    history_id: EncodedDatabaseIdField = Field(default=Required, title="History ID", description="")
-
-    class Config:
-        extra = Extra.allow
+    history_id: EncodedDatabaseIdField = Field(default=..., title="History ID", description="")
+    model_config = ConfigDict(extra="allow")
 
 
 class InvocationSerializationView(str, Enum):

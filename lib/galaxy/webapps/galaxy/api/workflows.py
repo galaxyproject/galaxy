@@ -23,7 +23,6 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from pydantic import Required
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -65,6 +64,7 @@ from galaxy.schema.invocation import (
     InvocationUpdatePayload,
     WorkflowInvocationCollectionView,
     WorkflowInvocationElementView,
+    WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
     AsyncFile,
@@ -1262,7 +1262,7 @@ InvocationsInstanceQueryParam = Annotated[
 CreateInvocationsFromStoreBody = Annotated[
     CreateInvocationsFromStorePayload,
     Body(
-        default=Required,
+        default=...,
         title="Create invocations from store",
         description="The values and serialization parameters for creating invocations from a supplied model store.",
     ),
@@ -1288,8 +1288,8 @@ class FastAPIInvocations:
         workflow invocation - for instance one created with with write_store
         or prepare_store_download endpoint.
         """
-        create_payload = CreateInvocationFromStore(**payload.dict())
-        serialization_params = InvocationSerializationParams(**payload.dict())
+        create_payload = CreateInvocationFromStore(**payload.model_dump())
+        serialization_params = InvocationSerializationParams(**payload.model_dump())
         invocations = self.invocations_service.create_from_store(trans, create_payload, serialization_params)
         return [WorkflowInvocationCollectionView(**invocation) for invocation in invocations]
 
@@ -1424,12 +1424,11 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ) -> WorkflowInvocationElementView:
+    ) -> WorkflowInvocationResponse:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
-        rval = self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
-        return WorkflowInvocationElementView(**rval)
+        return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",
@@ -1447,7 +1446,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ) -> WorkflowInvocationElementView:
+    ) -> WorkflowInvocationResponse:
         """An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
         return self.show_invocation(
             trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state
@@ -1460,12 +1459,11 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ) -> WorkflowInvocationElementView:
+    ) -> WorkflowInvocationResponse:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
-        rval = self.invocations_service.cancel(trans, invocation_id, serialization_params)
-        return WorkflowInvocationElementView(**rval)
+        return self.invocations_service.cancel(trans, invocation_id, serialization_params)
 
     @router.delete(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}", summary="Cancel the specified workflow invocation."
@@ -1482,7 +1480,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ) -> WorkflowInvocationElementView:
+    ) -> WorkflowInvocationResponse:
         """An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
 
         return self.cancel_invocation(

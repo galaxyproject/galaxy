@@ -35,7 +35,6 @@ from galaxy.model.store import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     CreateInvocationFromStore,
-    InvocationMessageResponseModel,
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
