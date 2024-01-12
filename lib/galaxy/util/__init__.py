@@ -327,7 +327,7 @@ def parse_xml(fname: StrPath, schemafname: Union[StrPath,None] = None, strip_whi
         log.exception("Error parsing file %s", fname)
         raise
     except etree.DocumentInvalid as e:
-        log.exception("Validation of file %s failed with error {e}"%fname)
+        log.exception(f"Validation of file %s failed with error {e}"%fname)
     return tree
 
 
