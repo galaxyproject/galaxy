@@ -41,6 +41,7 @@ from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
     JobParameter,
@@ -105,12 +106,18 @@ class JobManager:
         self.dataset_manager = DatasetManager(app)
 
     def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
+        """The caller is responsible for security checks on the resulting job if
+        history_id, invocation_id, or implicit_collection_jobs_id is set.
+        Otherwise this will only return the user's jobs or all jobs if the requesting
+        user is acting as an admin.
+        """
         is_admin = trans.user_is_admin
         user_details = payload.user_details
         decoded_user_id = payload.user_id
         history_id = payload.history_id
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
+        implicit_collection_jobs_id = payload.implicit_collection_jobs_id
         search = payload.search
         order_by = payload.order_by
 
@@ -200,7 +207,9 @@ class JobManager:
             if user_details:
                 stmt = stmt.outerjoin(Job.user)
         else:
-            stmt = stmt.where(Job.user_id == trans.user.id)
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+                stmt = stmt.where(Job.user_id == trans.user.id)
+            # caller better check security
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
@@ -214,7 +223,15 @@ class JobManager:
         order_by_columns = Job
         if workflow_id or invocation_id:
             stmt, order_by_columns = add_workflow_jobs()
-
+        elif implicit_collection_jobs_id:
+            stmt = (
+                stmt.join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+                .join(
+                    ImplicitCollectionJobs,
+                    ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+                )
+                .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == implicit_collection_jobs_id)
+            )
         if search:
             stmt = add_search_criteria(stmt)
 

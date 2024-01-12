@@ -5496,6 +5496,11 @@ export interface components {
              */
             id: string;
             /**
+             * Implicit Collection Jobs Id
+             * @description Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection
+             */
+            implicit_collection_jobs_id?: string | null;
+            /**
              * Job Source ID
              * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
              */
@@ -16846,6 +16851,7 @@ export interface operations {
             /** @description Limit listing of jobs to those that match the history_id. If none, jobs from any history may be returned. */
             /** @description Limit listing of jobs to those that match the specified workflow ID. If none, jobs from any workflow (or from no workflows) may be returned. */
             /** @description Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned. */
+            /** @description Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned. */
             /** @description Sort results by specified field. */
             /**
              * @description A mix of free text and GitHub-style tags used to filter the index operation.
@@ -16897,6 +16903,7 @@ export interface operations {
                 history_id?: string | null;
                 workflow_id?: string | null;
                 invocation_id?: string | null;
+                implicit_collection_jobs_id?: string | null;
                 order_by?: components["schemas"]["JobIndexSortByEnum"];
                 search?: string | null;
                 limit?: number;

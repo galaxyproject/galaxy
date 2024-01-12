@@ -11,6 +11,7 @@ from galaxy import (
     model,
 )
 from galaxy.managers import hdas
+from galaxy.managers.base import security_check
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     JobManager,
@@ -71,13 +72,20 @@ class JobsService(ServiceBase):
             payload.user_details = True
         user_details = payload.user_details
         decoded_user_id = payload.user_id
-
         if not is_admin:
             self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user and trans.user.id)
 
+        check_security_of_jobs = (
+            payload.invocation_id is not None
+            or payload.implicit_collection_jobs_id is not None
+            or payload.history_id is not None
+        )
         jobs = self.job_manager.index_query(trans, payload)
         out = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
+            # TODO: optimize if this crucial
+            if check_security_of_jobs and not security_check(trans, job.history, check_accessible=True):
+                raise exceptions.ItemAccessibilityException("Cannot access the request job objects.")
             job_dict = job.to_dict(view, system_details=is_admin)
             if view == JobIndexViewEnum.admin_job_list:
                 job_dict["decoded_job_id"] = job.id

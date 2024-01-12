@@ -195,6 +195,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
+                {
+                    test: /\.ya?ml$/,
+                    use: "yaml-loader",
+                },
             ],
         },
         resolveLoader: {
