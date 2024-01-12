@@ -294,10 +294,9 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath,
-              schemafname: Union[StrPath, None] = None,
-              strip_whitespace=True,
-              remove_comments=True) -> ElementTree:
+def parse_xml(
+    fname: StrPath, schemafname: Union[StrPath, None] = None, strip_whitespace=True, remove_comments=True
+) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
