@@ -294,7 +294,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath, schemafname: Union[StrPath,None] = None, strip_whitespace=True, remove_comments=True) -> ElementTree:
+def parse_xml(fname: StrPath, schemafname: Union[StrPath, None] = None, strip_whitespace=True, remove_comments=True) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -304,7 +304,7 @@ def parse_xml(fname: StrPath, schemafname: Union[StrPath,None] = None, strip_whi
     try:
         schema = None
         if schemafname:
-            with open(str(schemafname),"rb") as schema_file:
+            with open(str(schemafname), "rb") as schema_file:
                 schema_root = etree.XML(schema_file.read())
                 schema = etree.XMLSchema(schema_root)
 
@@ -327,7 +327,7 @@ def parse_xml(fname: StrPath, schemafname: Union[StrPath,None] = None, strip_whi
         log.exception("Error parsing file %s", fname)
         raise
     except etree.DocumentInvalid as e:
-        log.exception(f"Validation of file %s failed with error {e}"%fname)
+        log.exception(f"Validation of file %s failed with error {e}" % fname)
     return tree
 
 
