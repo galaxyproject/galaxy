@@ -294,7 +294,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> ElementTree:
+def parse_xml(fname: StrPath, schemaFname: StrPath | None = None, strip_whitespace=True, remove_comments=True) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -302,7 +302,15 @@ def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> El
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
     try:
+        schema = None
+        if schemaFname:
+            with open(str(schemaFname),"rb") as schema_file:
+                schema_root = etree.XML(schema_file.read())
+                schema = etree.XMLSchema(schema_root)
+
         tree = etree.parse(str(fname), parser=parser)
+        if schema:
+            schema.assertValid(tree)
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -318,6 +326,8 @@ def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> El
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
+    except etree.DocumentInvalid as e:
+        log.exception("Validation of file %s failed with error {e}"%fname)
     return tree
 
 

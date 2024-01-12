@@ -14,6 +14,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.util import (
     asbool,
     etree,
@@ -33,6 +34,8 @@ from .psa_authnz import (
     Storage,
     Strategy,
 )
+
+OIDC_BACKEND_SCHEMA = GALAXY_SCHEMAS_PATH / "oidc_backends_config.xsd"
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +108,7 @@ class AuthnzManager:
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file)
+            tree = parse_xml(config_file, OIDC_BACKEND_SCHEMA)
             root = tree.getroot()
             if root.tag != "OIDC":
                 raise etree.ParseError(
