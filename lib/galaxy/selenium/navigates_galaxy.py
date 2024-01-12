@@ -1163,6 +1163,7 @@ class NavigatesGalaxy(HasDriver):
         self.home()
         self.click_masthead_user()
         self.components.masthead.histories.wait_for_and_click()
+        self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()

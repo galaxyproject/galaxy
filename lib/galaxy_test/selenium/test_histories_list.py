@@ -204,14 +204,14 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def test_tags(self):
         self._login()
         self.navigate_to_histories_page()
-        self.sleep_for(self.wait_types.UX_RENDER)
 
         # Insert a tag
-        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, 3)
+        tag_column = 3
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, tag_column)
         self.add_tag(tags_cell, self.history2_tags[0])
 
         # Search by tag
-        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, 3)
+        tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, tag_column)
         tag = tags_cell.find_element(By.CSS_SELECTOR, ".tag")
         tag.click()
 
