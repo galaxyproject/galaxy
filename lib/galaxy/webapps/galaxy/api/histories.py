@@ -22,6 +22,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -112,25 +113,31 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["title", "description", "slug", "tag"],
 )
 
-ShowOwnQueryParam: bool = Query(default=True, title="Show histories owned by user.", description="")
+ShowOwnQueryParam = Annotated[bool, Query(default=True, title="Show histories owned by user.", description="")]
 
-ShowPublishedQueryParam: bool = Query(default=True, title="Include published histories.", description="")
+ShowPublishedQueryParam = Annotated[bool, Query(default=True, title="Include published histories.", description="")]
 
-ShowSharedQueryParam: bool = Query(
-    default=False, title="Include histories shared with authenticated user.", description=""
-)
+ShowSharedQueryParam = Annotated[
+    bool, Query(default=False, title="Include histories shared with authenticated user.", description="")
+]
 
-SortByQueryParam: HistorySortByEnum = Query(
-    default="update_time",
-    title="Sort attribute",
-    description="Sort index by this specified attribute",
-)
+SortByQueryParam = Annotated[
+    HistorySortByEnum,
+    Query(
+        default="update_time",
+        title="Sort attribute",
+        description="Sort index by this specified attribute",
+    ),
+]
 
-SortDescQueryParam: bool = Query(
-    default=True,
-    title="Sort Descending",
-    description="Sort in descending order?",
-)
+SortDescQueryParam = Annotated[
+    bool,
+    Query(
+        default=True,
+        title="Sort Descending",
+        description="Sort in descending order?",
+    ),
+]
 
 
 class DeleteHistoryPayload(BaseModel):
