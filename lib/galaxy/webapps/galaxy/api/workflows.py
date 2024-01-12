@@ -1123,7 +1123,7 @@ class FastAPIWorkflows:
         self,
         workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        instance: Annotated[Optional[bool], InstanceQueryParam] = False,
+        instance: InstanceQueryParam = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
 
