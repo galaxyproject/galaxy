@@ -4,10 +4,11 @@ import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BAlert, BButton, BPagination } from "bootstrap-vue";
+import type { Ref } from "vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import { BatchOperation, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridDatasets from "./GridElements/GridDatasets.vue";
@@ -48,6 +49,7 @@ const gridData = ref();
 const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
+const selected: Ref<{ [key: number]: boolean }> = ref({});
 
 // page references
 const currentPage = ref(1);
@@ -172,6 +174,15 @@ function onFilter(filter?: string) {
     }
 }
 
+function onBatch(operation: BatchOperation) {
+    alert(operation.title);
+}
+
+function onSelect(rowIndex: number) {
+    selected.value[rowIndex] = !selected.value[rowIndex];
+    selected.value = { ...selected.value };
+}
+
 /**
  * Initialize grid data
  */
@@ -242,6 +253,7 @@ watch(operationMessage, () => {
         </BAlert>
         <table v-else class="grid-table">
             <thead>
+                <th v-if="!!gridConfig.batch">Select</th>
                 <th
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
@@ -264,6 +276,14 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
+                <th v-if="!!gridConfig.batch" class="p-2 cursor-pointer" @click="onSelect(rowIndex)">
+                    <FontAwesomeIcon
+                        v-if="selected[rowIndex]"
+                        icon="far fa-check-square"
+                        class="fa-lg"
+                        data-description="grid selected" />
+                    <FontAwesomeIcon v-else icon="far fa-square" class="fa-lg" data-description="grid selected" />
+                </th>
                 <td
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
@@ -304,8 +324,24 @@ watch(operationMessage, () => {
             </tr>
         </table>
         <div class="flex-grow-1 h-100" />
-        <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
-            <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+        <div class="grid-footer">
+            <div v-if="isAvailable && gridConfig.batch" class="d-flex justify-content-between pt-3">
+                <BButton
+                    v-for="(batchOperation, batchIndex) in gridConfig.batch"
+                    :key="batchIndex"
+                    class="mx-3"
+                    size="sm"
+                    variant="primary"
+                    :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
+                    @click="onBatch(batchOperation)">
+                    <Icon :icon="batchOperation.icon" class="mr-1" />
+                    <span v-localize>{{ batchOperation.title }}</span>
+                </BButton>
+                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+            </div>
+            <div v-else-if="isAvailable" class="d-flex justify-content-center pt-3">
+                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+            </div>
         </div>
     </div>
 </template>

@@ -17,7 +17,7 @@ import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } 
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import type { ActionArray, BatchOperationArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -208,6 +208,17 @@ const fields: FieldArray = [
     },
 ];
 
+const batch: BatchOperationArray = [
+    {
+        title: "Delete",
+        icon: faTrash,
+        handler: (data: Array<HistoryEntry>) => {
+            // Delete all
+            console.log(data);
+        },
+    },
+];
+
 /**
  * Declare filter options
  */
@@ -258,6 +269,7 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
+    batch: batch,
     plural: "Histories",
     sortBy: "update_time",
     sortDesc: true,
