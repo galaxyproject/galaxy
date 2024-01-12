@@ -3069,8 +3069,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
 
     @property
     def username(self):
-        if self.user:
-            return self.user.username
+        if (user := self.user):
+            return user.username
         return None
 
     @property
