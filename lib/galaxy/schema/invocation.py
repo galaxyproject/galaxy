@@ -343,21 +343,34 @@ class InvocationStep(Model, WithModelClass):
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
     id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Job ID",
-        description="The encoded ID of the job associated with this workflow invocation step.",
-    )
-    workflow_step_id: EncodedDatabaseIdField = Field(
-        ...,
-        title="Workflow step ID",
-        description="The encoded ID of the workflow step associated with this workflow invocation step.",
-    )
-    subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None,
-        title="Subworkflow invocation ID",
-        description="The encoded ID of the subworkflow invocation.",
-    )
+    job_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Job ID",
+                description="The encoded ID of the job associated with this workflow invocation step.",
+            ),
+        ]
+    ]
+    workflow_step_id: Annotated[
+        EncodedDatabaseIdField,
+        Field(
+            ...,
+            title="Workflow step ID",
+            description="The encoded ID of the workflow step associated with this workflow invocation step.",
+        ),
+    ]
+    subworkflow_invocation_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Subworkflow invocation ID",
+                description="The encoded ID of the subworkflow invocation.",
+            ),
+        ]
+    ]
     state: Optional[Union[InvocationStepState, JobState]] = Field(
         default=None,
         title="State of the invocation step",

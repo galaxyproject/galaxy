@@ -153,7 +153,7 @@ def parse_serialization_params(
 
 
 def query_serialization_params(
-    view: Annotated[Optional[str], SerializationViewQueryParam] = None,
+    view: SerializationViewQueryParam = None,
     keys: Optional[str] = SerializationKeysQueryParam,
 ) -> SerializationParams:
     return parse_serialization_params(view=view, keys=keys)

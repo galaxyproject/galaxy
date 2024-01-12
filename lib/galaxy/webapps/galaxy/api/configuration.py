@@ -11,7 +11,6 @@ from typing import (
 )
 
 from fastapi import Path
-from typing_extensions import Annotated
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
@@ -61,7 +60,7 @@ class FastAPIConfiguration:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        view: Annotated[Optional[str], SerializationViewQueryParam] = None,
+        view: SerializationViewQueryParam = None,
         keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """

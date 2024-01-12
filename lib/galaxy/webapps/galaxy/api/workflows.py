@@ -56,7 +56,6 @@ from galaxy.schema.invocation import (
     InvocationMessageResponseModel,
     InvocationReport,
     InvocationSerializationParams,
-    InvocationSerializationView,
     InvocationStep,
     InvocationStepJobsResponseCollectionJobsModel,
     InvocationStepJobsResponseJobModel,
@@ -1122,8 +1121,8 @@ class FastAPIWorkflows:
     )
     def show_versions(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         instance: Annotated[Optional[bool], InstanceQueryParam] = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
@@ -1278,7 +1277,7 @@ class FastAPIInvocations:
     )
     def create_invocations_from_store(
         self,
-        payload: Annotated[CreateInvocationsFromStorePayload, CreateInvocationsFromStoreBody],
+        payload: CreateInvocationsFromStoreBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
         """
@@ -1299,18 +1298,18 @@ class FastAPIInvocations:
     def index_invocations(
         self,
         response: Response,
-        workflow_id: Annotated[Optional[DecodedDatabaseIdField], WorkflowIdQueryParam] = None,
-        history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
-        job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
-        user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        sort_by: Annotated[Optional[InvocationSortByEnum], InvocationsSortByQueryParam] = None,
-        sort_desc: Annotated[Optional[bool], InvocationsSortDescQueryParam] = False,
-        include_terminal: Annotated[Optional[bool], InvocationsIncludeTerminalQueryParam] = True,
-        limit: Annotated[Optional[int], InvocationsLimitQueryParam] = None,
-        offset: Annotated[Optional[int], InvocationsOffsetQueryParam] = None,
-        instance: Annotated[Optional[bool], InvocationsInstanceQueryParam] = False,
-        view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
-        step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
+        workflow_id: WorkflowIdQueryParam = None,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
         """If workflow_id is supplied (either via URL or query parameter) it should be an
@@ -1322,6 +1321,10 @@ class FastAPIInvocations:
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         invocation_payload = InvocationIndexPayload(
+            workflow_id=workflow_id,
+            history_id=history_id,
+            job_id=job_id,
+            user_id=user_id,
             sort_by=sort_by,
             sort_desc=sort_desc,
             include_terminal=include_terminal,
@@ -1329,10 +1332,6 @@ class FastAPIInvocations:
             offset=offset,
             instance=instance,
         )
-        invocation_payload.workflow_id = workflow_id
-        invocation_payload.history_id = history_id
-        invocation_payload.job_id = job_id
-        invocation_payload.user_id = user_id
         serialization_params = InvocationSerializationParams(
             view=view,
             step_details=step_details,
@@ -1349,18 +1348,18 @@ class FastAPIInvocations:
     def index_workflow_invocations(
         self,
         response: Response,
-        workflow_id: Annotated[DecodedDatabaseIdField, StoredWorkflowIDPathParam],
-        history_id: Annotated[Optional[DecodedDatabaseIdField], HistoryIdQueryParam] = None,
-        job_id: Annotated[Optional[DecodedDatabaseIdField], JobIdQueryParam] = None,
-        user_id: Annotated[Optional[DecodedDatabaseIdField], UserIdQueryParam] = None,
-        sort_by: Annotated[Optional[InvocationSortByEnum], InvocationsSortByQueryParam] = None,
-        sort_desc: Annotated[Optional[bool], InvocationsSortDescQueryParam] = False,
-        include_terminal: Annotated[Optional[bool], InvocationsIncludeTerminalQueryParam] = True,
-        limit: Annotated[Optional[int], InvocationsLimitQueryParam] = None,
-        offset: Annotated[Optional[int], InvocationsOffsetQueryParam] = None,
-        instance: Annotated[Optional[bool], InvocationsInstanceQueryParam] = False,
-        view: Annotated[Optional[InvocationSerializationView], SerializationViewQueryParam] = None,
-        step_details: Annotated[Optional[bool], StepDetailQueryParam] = False,
+        workflow_id: StoredWorkflowIDPathParam,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
         """An alias for GET '/api/invocations'"""
