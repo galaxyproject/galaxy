@@ -202,7 +202,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if show_purged:
             stmt = stmt.where(self.model_class.purged == true())
         else:
-            stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false()))
+            stmt = stmt.where(self.model_class.purged == false()).where(
+                self.model_class.deleted == (true() if show_deleted else false())
+            )
 
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)

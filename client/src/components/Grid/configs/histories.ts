@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistories, deleteHistory, historiesQuery, undeleteHistory } from "@/api/histories";
+import { deleteHistories, deleteHistory, historiesQuery, undeleteHistory, undeleteHistories } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -82,9 +82,31 @@ const batch: BatchOperationArray = [
         },
     },
     {
+        title: "Restore",
+        icon: faTrashRestore,
+        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => !x.deleted || x.purged),
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
+                try {
+                    const historyIds = data.map((x) => String(x.id));
+                    await undeleteHistories({ ids: historyIds });
+                    return {
+                        status: "success",
+                        message: `Restored ${data.length} histories.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to restore histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
+        },
+    },
+    {
         title: "Purge",
         icon: faTrash,
-        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
+        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.purged),
         handler: async (data: Array<HistoryEntry>) => {
             if (confirm(_l(`Are you sure that you want to permanently delete the selected histories?`))) {
                 try {

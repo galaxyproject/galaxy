@@ -147,6 +147,10 @@ class DeleteHistoriesPayload(BaseModel):
     ]
 
 
+class UndeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[HistoryIDPathParam], Field(title="IDs", description="List of history IDs to be undeleted.")]
+
+
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
@@ -398,7 +402,6 @@ class FastAPIHistories:
             purge = payload.purge
         results = []
         for history_id in payload.ids:
-            log.debug(history_id)
             result = self.service.delete(trans, history_id, serialization_params, purge)
             results.append(result)
         return results
@@ -414,6 +417,22 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.undelete(trans, history_id, serialization_params)
+
+    @router.post(
+        "/api/histories/batch/undelete",
+        summary="Marks several histories with the given IDs as undeleted.",
+    )
+    def batch_undelete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: Optional[UndeleteHistoriesPayload] = Body(default=None),
+    ) -> List[AnyHistoryView]:
+        results = []
+        for history_id in payload.ids:
+            result = self.service.undelete(trans, history_id, serialization_params)
+            results.append(result)
+        return results
 
     @router.put(
         "/api/histories/{history_id}",

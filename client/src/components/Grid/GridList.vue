@@ -102,6 +102,7 @@ function displayInitialMessage() {
  * Request grid data
  */
 async function getGridData() {
+    selected.value = new Set();
     if (props.gridConfig) {
         try {
             const offset = props.limit * (currentPage.value - 1);
@@ -132,7 +133,6 @@ async function onBatchOperation(operation: BatchOperation, rowDataArray: Array<R
         await getGridData();
         operationMessage.value = response.message;
         operationStatus.value = response.status || "success";
-        selected.value = new Set();
     }
 }
 
