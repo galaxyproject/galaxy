@@ -132,6 +132,7 @@ async function onBatchOperation(operation: BatchOperation, rowDataArray: Array<R
         await getGridData();
         operationMessage.value = response.message;
         operationStatus.value = response.status || "success";
+        selected.value = new Set();
     }
 }
 
@@ -347,17 +348,19 @@ watch(operationMessage, () => {
         <div class="flex-grow-1 h-100" />
         <div class="grid-footer">
             <div v-if="isAvailable && gridConfig.batch" class="d-flex justify-content-between pt-3">
-                <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
-                    <BButton
-                        v-if="!batchOperation.condition || batchOperation.condition(Array.from(selected))"
-                        class="mx-3"
-                        size="sm"
-                        variant="primary"
-                        :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
-                        @click="onBatchOperation(batchOperation, Array.from(selected))">
-                        <Icon :icon="batchOperation.icon" class="mr-1" />
-                        <span v-localize>{{ batchOperation.title }}</span>
-                    </BButton>
+                <div class="d-flex">
+                    <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
+                        <BButton
+                            v-if="!batchOperation.condition || batchOperation.condition(Array.from(selected))"
+                            class="mr-2"
+                            size="sm"
+                            variant="primary"
+                            :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
+                            @click="onBatchOperation(batchOperation, Array.from(selected))">
+                            <Icon :icon="batchOperation.icon" class="mr-1" />
+                            <span v-localize>{{ batchOperation.title }}</span>
+                        </BButton>
+                    </div>
                 </div>
                 <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
             </div>
@@ -378,10 +381,9 @@ watch(operationMessage, () => {
 .grid-header {
     @extend .grid-sticky;
     top: 0;
-    z-index: 2;
 }
 .grid-sticky {
-    z-index: 1;
+    z-index: 2;
     background: $white;
     opacity: 0.95;
     position: sticky;

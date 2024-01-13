@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistory, historiesQuery, undeleteHistory } from "@/api/histories";
+import { deleteHistories, deleteHistory, historiesQuery, undeleteHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -64,13 +64,35 @@ const batch: BatchOperationArray = [
         icon: faTrash,
         condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
         handler: async (data: Array<HistoryEntry>) => {
-            if (confirm(_l("Are you sure that you want to delete these histories?"))) {
+            if (confirm(_l(`Are you sure that you want to delete the selected histories?`))) {
                 try {
-                    console.log(data);
-                    //await deleteHistory({ history_id: String(data.id) });
+                    const historyIds = data.map((x) => String(x.id));
+                    await deleteHistories({ ids: historyIds });
                     return {
                         status: "success",
-                        message: `Histories have been deleted.`,
+                        message: `Deleted ${data.length} histories.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to delete histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
+        },
+    },
+    {
+        title: "Purge",
+        icon: faTrash,
+        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l(`Are you sure that you want to permanently delete the selected histories?`))) {
+                try {
+                    const historyIds = data.map((x) => String(x.id));
+                    await deleteHistories({ ids: historyIds, purge: true });
+                    return {
+                        status: "success",
+                        message: `Purged ${data.length} histories.`,
                     };
                 } catch (e) {
                     return {

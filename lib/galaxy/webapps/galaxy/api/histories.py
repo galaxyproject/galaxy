@@ -22,6 +22,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -137,6 +138,13 @@ class DeleteHistoryPayload(BaseModel):
     purge: bool = Field(
         default=False, title="Purge", description="Whether to definitely remove this history from disk."
     )
+
+
+class DeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[HistoryIDPathParam], Field(title="IDs", description="List of history IDs to be deleted.")]
+    purge: Annotated[
+        bool, Field(default=False, title="Purge", description="Whether to definitely remove this history from disk.")
+    ]
 
 
 @as_form
@@ -374,6 +382,26 @@ class FastAPIHistories:
         if payload:
             purge = payload.purge
         return self.service.delete(trans, history_id, serialization_params, purge)
+
+    @router.post(
+        "/api/histories/batch/delete",
+        summary="Marks several histories with the given IDs as deleted.",
+    )
+    def batch_delete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: bool = Query(default=False),
+        payload: Optional[DeleteHistoriesPayload] = Body(default=None),
+    ) -> List[AnyHistoryView]:
+        if payload:
+            purge = payload.purge
+        results = []
+        for history_id in payload.ids:
+            log.debug(history_id)
+            result = self.service.delete(trans, history_id, serialization_params, purge)
+            results.append(result)
+        return results
 
     @router.post(
         "/api/histories/deleted/{history_id}/undelete",
