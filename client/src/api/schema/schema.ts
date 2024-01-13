@@ -13877,9 +13877,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["DeleteHistoriesPayload"] | null;
+                "application/json": components["schemas"]["DeleteHistoriesPayload"];
             };
         };
         responses: {
@@ -13915,9 +13915,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
         };
-        requestBody?: {
+        requestBody: {
             content: {
-                "application/json": components["schemas"]["UndeleteHistoriesPayload"] | null;
+                "application/json": components["schemas"]["UndeleteHistoriesPayload"];
             };
         };
         responses: {

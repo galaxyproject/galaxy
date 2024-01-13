@@ -396,7 +396,7 @@ class FastAPIHistories:
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
         purge: bool = Query(default=False),
-        payload: Optional[DeleteHistoriesPayload] = Body(default=None),
+        payload: DeleteHistoriesPayload = Body(...),
     ) -> List[AnyHistoryView]:
         if payload:
             purge = payload.purge
@@ -426,7 +426,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        payload: Optional[UndeleteHistoriesPayload] = Body(default=None),
+        payload: UndeleteHistoriesPayload = Body(...),
     ) -> List[AnyHistoryView]:
         results = []
         for history_id in payload.ids:
