@@ -356,7 +356,10 @@ watch(operationMessage, () => {
                 <div class="d-flex">
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
                         <BButton
-                            v-if="!batchOperation.condition || batchOperation.condition(Array.from(selected))"
+                            v-if="
+                                selected.size > 0 &&
+                                (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
+                            "
                             class="mr-2"
                             size="sm"
                             variant="primary"

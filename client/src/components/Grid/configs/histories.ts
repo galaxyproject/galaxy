@@ -62,7 +62,7 @@ const batch: BatchOperationArray = [
     {
         title: "Delete",
         icon: faTrash,
-        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => x.deleted),
         handler: async (data: Array<HistoryEntry>) => {
             if (confirm(_l(`Are you sure that you want to delete the selected histories?`))) {
                 try {
@@ -84,7 +84,7 @@ const batch: BatchOperationArray = [
     {
         title: "Restore",
         icon: faTrashRestore,
-        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => !x.deleted || x.purged),
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => !x.deleted || x.purged),
         handler: async (data: Array<HistoryEntry>) => {
             if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
                 try {
@@ -106,7 +106,7 @@ const batch: BatchOperationArray = [
     {
         title: "Purge",
         icon: faTrash,
-        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.purged),
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => x.purged),
         handler: async (data: Array<HistoryEntry>) => {
             if (confirm(_l(`Are you sure that you want to permanently delete the selected histories?`))) {
                 try {
