@@ -1,7 +1,4 @@
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import false, select
 from sqlalchemy.orm import Session
 
 from galaxy import model

@@ -3,11 +3,7 @@
 This is for use by web framework code and scripts (e.g. scripts/galaxy_main.py).
 """
 import os
-from typing import (
-    List,
-    NamedTuple,
-    Optional,
-)
+from typing import List, NamedTuple, Optional
 
 from galaxy.util.properties import find_config_file
 from galaxy.web_stack import get_app_kwds

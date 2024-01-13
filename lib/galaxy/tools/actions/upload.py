@@ -8,6 +8,7 @@ from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
+
 from . import ToolAction
 
 log = logging.getLogger(__name__)

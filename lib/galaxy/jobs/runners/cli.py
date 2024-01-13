@@ -7,16 +7,10 @@ import time
 
 from galaxy import model
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-    JobState,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState, JobState
 from galaxy.util import asbool
-from .util.cli import (
-    CliInterface,
-    split_params,
-)
+
+from .util.cli import CliInterface, split_params
 
 log = logging.getLogger(__name__)
 

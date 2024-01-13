@@ -1,13 +1,6 @@
-from typing import (
-    Any,
-    Optional,
-)
+from typing import Any, Optional
 
-from galaxy.job_metrics import (
-    formatting,
-    JobMetrics,
-    RawMetric,
-)
+from galaxy.job_metrics import JobMetrics, RawMetric, formatting
 from galaxy.job_metrics.safety import Safety
 
 TEST_JOBS_METRICS = JobMetrics()

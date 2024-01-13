@@ -12,13 +12,7 @@ warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module=
 import requests
 
 try:
-    from cwltool import (
-        job,
-        main,
-        pathmapper,
-        process,
-        workflow,
-    )
+    from cwltool import job, main, pathmapper, process, workflow
 except ImportError:
     main = None  # type: ignore[assignment]
     workflow = None  # type: ignore[assignment]
@@ -27,11 +21,7 @@ except ImportError:
     pathmapper = None  # type: ignore[assignment]
 
 try:
-    from cwltool.context import (
-        getdefault,
-        LoadingContext,
-        RuntimeContext,
-    )
+    from cwltool.context import LoadingContext, RuntimeContext, getdefault
     from cwltool.job import relink_initialworkdir
     from cwltool.stdfsaccess import StdFsAccess
 except ImportError:
@@ -53,19 +43,13 @@ except ImportError:
     command_line_tool = None  # type: ignore[assignment]
 
 try:
-    from cwltool.load_tool import (
-        default_loader,
-        resolve_and_validate_document,
-    )
+    from cwltool.load_tool import default_loader, resolve_and_validate_document
 except ImportError:
     default_loader = None  # type: ignore[assignment]
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
-    from cwltool.utils import (
-        normalizeFilesDirs,
-        visit_class,
-    )
+    from cwltool.utils import normalizeFilesDirs, visit_class
 except ImportError:
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
@@ -77,10 +61,7 @@ except ImportError:
 
 try:
     import schema_salad
-    from schema_salad import (
-        ref_resolver,
-        sourceline,
-    )
+    from schema_salad import ref_resolver, sourceline
     from schema_salad.utils import yaml_no_ts
 except ImportError:
     schema_salad = None  # type: ignore[assignment]

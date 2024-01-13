@@ -3,12 +3,7 @@ API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 from fastapi import Path
 
@@ -16,15 +11,11 @@ from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UserModel
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.api.common import (
-    parse_serialization_params,
     SerializationKeysQueryParam,
     SerializationViewQueryParam,
+    parse_serialization_params,
 )
 
 log = logging.getLogger(__name__)

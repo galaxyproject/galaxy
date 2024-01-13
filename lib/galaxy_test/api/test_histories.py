@@ -3,23 +3,14 @@ from typing import ClassVar
 from unittest import SkipTest
 from uuid import uuid4
 
-from requests import put
-
-from galaxy.model.unittest_utils.store_fixtures import (
-    history_model_store_dict,
-    TEST_HISTORY_NAME,
-)
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
-from galaxy_test.base.decorators import (
-    requires_admin,
-    requires_new_user,
-)
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-    skip_without_tool,
-)
+from galaxy_test.base.decorators import requires_admin, requires_new_user
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_without_tool
+from requests import put
+
+from galaxy.model.unittest_utils.store_fixtures import TEST_HISTORY_NAME, history_model_store_dict
+
 from ._framework import ApiTestCase
 
 

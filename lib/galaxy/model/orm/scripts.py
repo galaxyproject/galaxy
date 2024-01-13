@@ -8,17 +8,10 @@ import sys
 
 import alembic.config
 
-from galaxy.model.migrations import (
-    GXY,
-    TSI,
-)
+from galaxy.model.migrations import GXY, TSI
 from galaxy.model.migrations.scripts import get_configuration
 from galaxy.util.path import get_ext
-from galaxy.util.properties import (
-    find_config_file,
-    get_data_dir,
-    load_app_properties,
-)
+from galaxy.util.properties import find_config_file, get_data_dir, load_app_properties
 from galaxy.util.script import populate_config_args
 
 log = logging.getLogger(__name__)

@@ -1,31 +1,18 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from requests import Session
-from typing_extensions import (
-    NotRequired,
-    TypedDict,
-)
+from typing_extensions import NotRequired, TypedDict
 
 from galaxy import exceptions
-from galaxy.util import (
-    asbool,
-    listify,
-)
+from galaxy.util import asbool, listify
+
 from .dependencies import ToolInfo
-from .resolvers import (
-    ContainerDependency,
-    NullDependency,
-)
+from .resolvers import ContainerDependency, NullDependency
 
 if TYPE_CHECKING:
     from galaxy.structured_app import StructuredApp
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
+
     from .container_resolvers import ContainerResolver
 
 

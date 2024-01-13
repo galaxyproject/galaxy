@@ -9,10 +9,8 @@ from galaxy.short_term_storage import (
     ShortTermStorageServeCompletedInformation,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
-from . import (
-    depends,
-    Router,
-)
+
+from . import Router, depends
 
 router = Router(tags=["short_term_storage"])
 

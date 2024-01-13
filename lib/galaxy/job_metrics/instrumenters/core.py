@@ -1,19 +1,11 @@
 """The module describes the ``core`` job metrics plugin."""
 import logging
 import time
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
-from . import InstrumentPlugin
-from ..formatting import (
-    FormattedMetric,
-    JobMetricFormatter,
-    seconds_to_str,
-)
+from ..formatting import FormattedMetric, JobMetricFormatter, seconds_to_str
 from ..safety import Safety
+from . import InstrumentPlugin
 
 log = logging.getLogger(__name__)
 

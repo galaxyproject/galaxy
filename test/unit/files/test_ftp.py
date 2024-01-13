@@ -3,11 +3,7 @@ import os
 import pytest
 from fs.errors import RemoteConnectionError
 
-from ._util import (
-    assert_realizes_contains,
-    configured_file_sources,
-    user_context_fixture,
-)
+from ._util import assert_realizes_contains, configured_file_sources, user_context_fixture
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "ftp_file_sources_conf.yml")

@@ -6,14 +6,8 @@ from datetime import datetime
 import requests
 
 from galaxy import model
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-)
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    unicodify,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, unicodify
 
 log = logging.getLogger(__name__)
 

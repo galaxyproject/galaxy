@@ -4,33 +4,17 @@ Manager and Serializers for Quotas.
 For more information about quotas: https://galaxyproject.org/admin/disk-quotas/
 """
 import logging
-from typing import (
-    cast,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Optional, Tuple, Union, cast
 
 from sqlalchemy import select
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
-from galaxy.model import (
-    Group,
-    Quota,
-    User,
-)
+from galaxy.model import Group, Quota, User
 from galaxy.model.base import transaction
 from galaxy.quota import DatabaseQuotaAgent
-from galaxy.quota._schema import (
-    CreateQuotaParams,
-    DefaultQuotaValues,
-    QuotaOperation,
-)
+from galaxy.quota._schema import CreateQuotaParams, DefaultQuotaValues, QuotaOperation
 from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)

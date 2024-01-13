@@ -3,25 +3,13 @@ import logging
 import os
 import socket
 import tempfile
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 from urllib.parse import urlparse
 
-from galaxy.exceptions import (
-    AdminRequiredException,
-    ConfigDoesNotAllowException,
-)
-from galaxy.files import (
-    ConfiguredFileSources,
-    NoMatchingFileSource,
-)
+from galaxy.exceptions import AdminRequiredException, ConfigDoesNotAllowException
+from galaxy.files import ConfiguredFileSources, NoMatchingFileSource
 from galaxy.files.sources import FilesSourceOptions
-from galaxy.util import (
-    stream_to_open_named_file,
-    unicodify,
-)
+from galaxy.util import stream_to_open_named_file, unicodify
 from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)

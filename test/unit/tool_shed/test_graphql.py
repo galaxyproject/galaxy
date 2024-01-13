@@ -1,28 +1,11 @@
-from typing import (
-    Callable,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Callable, List, Optional, Tuple
 
 from graphql.execution import ExecutionResult
-
-from tool_shed.context import (
-    ProvidesRepositoriesContext,
-    ProvidesUserContext,
-)
+from tool_shed.context import ProvidesRepositoriesContext, ProvidesUserContext
 from tool_shed.webapp.graphql.schema import schema
-from tool_shed.webapp.model import (
-    Category,
-    Repository,
-    RepositoryCategoryAssociation,
-)
-from ._util import (
-    create_category,
-    repository_fixture,
-    upload_directories_to_repository,
-    user_fixture,
-)
+from tool_shed.webapp.model import Category, Repository, RepositoryCategoryAssociation
+
+from ._util import create_category, repository_fixture, upload_directories_to_repository, user_fixture
 
 
 def relay_query(query_name: str, params: Optional[str], node_def: str) -> str:

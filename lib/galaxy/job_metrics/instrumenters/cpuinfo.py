@@ -4,11 +4,9 @@ import re
 from typing import Any
 
 from galaxy import util
+
+from ..formatting import FormattedMetric, JobMetricFormatter
 from . import InstrumentPlugin
-from ..formatting import (
-    FormattedMetric,
-    JobMetricFormatter,
-)
 
 log = logging.getLogger(__name__)
 

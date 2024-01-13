@@ -9,32 +9,22 @@ import tempfile
 import time
 from json import loads
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-)
-from urllib.parse import (
-    quote_plus,
-    urlencode,
-    urlparse,
-)
+from typing import Any, Dict, Iterator, List, Optional, Tuple
+from urllib.parse import quote_plus, urlencode, urlparse
 
 import pytest
 import requests
-from mercurial import (
-    commands,
-    hg,
-    ui,
-)
+from galaxy_test.base.api_asserts import assert_status_code_is_ok
+from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.populators import wait_on_assertion
+from mercurial import commands, hg, ui
 from playwright.sync_api import Page
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import false, select
+from tool_shed.test.base.populators import TEST_DATA_REPO_FILES
+from tool_shed.util import hg_util, hgweb_config, xml_util
+from tool_shed.util.repository_content_util import tar_open
+from tool_shed.webapp.model import Repository as DbRepository
+from tool_shed_client.schema import Category, Repository, RepositoryMetadata
 
 import galaxy.model.tool_shed_install as galaxy_model
 from galaxy.schema.schema import CheckForUpdatesResponse
@@ -44,43 +34,16 @@ from galaxy.tool_shed.galaxy_install.installed_repository_manager import Install
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
-from galaxy.tool_shed.unittest_utils import (
-    StandaloneInstallationTarget,
-    ToolShedTarget,
-)
+from galaxy.tool_shed.unittest_utils import StandaloneInstallationTarget, ToolShedTarget
 from galaxy.tool_shed.util.dependency_display import build_manage_repository_dict
 from galaxy.tool_shed.util.repository_util import check_for_updates
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    smart_str,
-)
-from galaxy_test.base.api_asserts import assert_status_code_is_ok
-from galaxy_test.base.api_util import get_admin_api_key
-from galaxy_test.base.populators import wait_on_assertion
-from tool_shed.test.base.populators import TEST_DATA_REPO_FILES
-from tool_shed.util import (
-    hg_util,
-    hgweb_config,
-    xml_util,
-)
-from tool_shed.util.repository_content_util import tar_open
-from tool_shed.webapp.model import Repository as DbRepository
-from tool_shed_client.schema import (
-    Category,
-    Repository,
-    RepositoryMetadata,
-)
-from . import (
-    common,
-    test_db_util,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, smart_str
+
+from . import common, test_db_util
 from .api import ShedApiTestCase
 from .browser import ShedBrowser
 from .playwrightbrowser import PlaywrightShedBrowser
-from .twillbrowser import (
-    page_content,
-    visit_url,
-)
+from .twillbrowser import page_content, visit_url
 
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600

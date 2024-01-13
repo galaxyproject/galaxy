@@ -1,15 +1,8 @@
-from typing import (
-    Iterator,
-    Optional,
-)
+from typing import Iterator, Optional
 from unittest import SkipTest
 
 import pytest
-
-from galaxy_test.base.api import (
-    UsesApiTestCaseMixin,
-    UsesCeleryTasks,
-)
+from galaxy_test.base.api import UsesApiTestCaseMixin, UsesCeleryTasks
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:

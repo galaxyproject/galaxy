@@ -46,20 +46,10 @@ In order to use this.
 
 import inspect
 from enum import IntEnum
-from typing import (
-    Callable,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Callable, List, Optional, Type, TypeVar, Union
 
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.util import (
-    etree,
-    submodules,
-)
+from galaxy.util import etree, submodules
 
 
 class LintLevel(IntEnum):

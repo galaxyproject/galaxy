@@ -11,32 +11,19 @@ import re
 import sys
 from contextlib import contextmanager
 from json import loads
-from typing import (
-    Any,
-    Dict,
-    IO,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import IO, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 import pysam
 from bx.bbi.bigbed_file import BigBedFile
 from bx.bbi.bigwig_file import BigWigFile
 from bx.interval_index_file import Indexes
 
-from galaxy.datatypes.interval import (
-    Bed,
-    Gff,
-    Gtf,
-)
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 from galaxy.datatypes.util.gff_util import (
-    convert_gff_coords_to_bed,
     GFFFeature,
     GFFInterval,
     GFFReaderWrapper,
+    convert_gff_coords_to_bed,
     parse_gff_attributes,
 )
 from galaxy.model import DatasetInstance

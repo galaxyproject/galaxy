@@ -3,10 +3,7 @@ import pytest
 from galaxy import model
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.unittest_utils.mapping_testing_utils import get_unique_value
-from galaxy.model.unittest_utils.model_testing_utils import (
-    dbcleanup_wrapper,
-    initialize_model,
-)
+from galaxy.model.unittest_utils.model_testing_utils import dbcleanup_wrapper, initialize_model
 
 
 @pytest.fixture(scope="module")

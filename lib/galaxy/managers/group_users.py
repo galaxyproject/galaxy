@@ -1,8 +1,5 @@
 import logging
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -10,10 +7,7 @@ from sqlalchemy.orm import Session
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.model import (
-    User,
-    UserGroupAssociation,
-)
+from galaxy.model import User, UserGroupAssociation
 from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 

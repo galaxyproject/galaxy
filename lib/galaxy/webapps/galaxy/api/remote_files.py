@@ -2,10 +2,7 @@
 API operations on remote files.
 """
 import logging
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from fastapi import Body
 from fastapi.param_functions import Query
@@ -23,11 +20,8 @@ from galaxy.schema.remote_files import (
     RemoteFilesFormat,
     RemoteFilesTarget,
 )
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

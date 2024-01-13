@@ -5,23 +5,21 @@ import pytest
 
 from galaxy.tool_util.deps import DependencyManager
 from galaxy.tool_util.deps.conda_util import (
-    best_search_result,
     CondaContext,
     CondaTarget,
+    best_search_result,
     install_conda,
     installed_conda_targets,
 )
-from galaxy.tool_util.deps.requirements import (
-    ToolRequirement,
-    ToolRequirements,
-)
+from galaxy.tool_util.deps.requirements import ToolRequirement, ToolRequirements
 from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.tool_util.deps.resolvers.conda import (
+    DEFAULT_ENSURE_CHANNELS,
     CondaDependency,
     CondaDependencyResolver,
-    DEFAULT_ENSURE_CHANNELS,
     MergedCondaDependency,
 )
+
 from .util import external_dependency_management
 
 

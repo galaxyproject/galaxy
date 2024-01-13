@@ -3,10 +3,7 @@ import os
 
 from galaxy import web
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.util.path import (
-    join,
-    safe_contains,
-)
+from galaxy.util.path import join, safe_contains
 from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)

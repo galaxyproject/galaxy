@@ -9,37 +9,11 @@ import types
 from functools import partial
 from itertools import starmap
 from operator import getitem
-from os import (
-    extsep,
-    makedirs,
-    PathLike,
-    stat,
-    walk,
-)
-from os.path import (
-    abspath,
-    basename,
-    dirname,
-    exists,
-    isabs,
-    islink,
-    join,
-    normpath,
-    pardir,
-    realpath,
-    relpath,
-    sep as separator,
-)
+from os import PathLike, extsep, makedirs, stat, walk
+from os.path import abspath, basename, dirname, exists, isabs, islink, join, normpath, pardir, realpath, relpath
+from os.path import sep as separator
 from pathlib import Path
-from typing import (
-    AnyStr,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, AnyStr, Iterator, List, Optional, Tuple, Union
 
 try:
     from grp import getgrgid

@@ -8,22 +8,12 @@ import os
 import re
 import time
 from queue import Empty
-from typing import (
-    Set,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Set
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-    JobState,
-)
-from galaxy.util import (
-    smart_str,
-    unicodify,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState, JobState
+from galaxy.util import smart_str, unicodify
 
 if TYPE_CHECKING:
     from galaxy.jobs import MinimalJobWrapper

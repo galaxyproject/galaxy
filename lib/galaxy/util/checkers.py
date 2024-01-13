@@ -4,15 +4,8 @@ import os
 import re
 import tarfile
 import zipfile
-from io import (
-    BytesIO,
-    StringIO,
-)
-from typing import (
-    Dict,
-    IO,
-    Tuple,
-)
+from io import BytesIO, StringIO
+from typing import IO, Dict, Tuple
 
 from typing_extensions import Protocol
 

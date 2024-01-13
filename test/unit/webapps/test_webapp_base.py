@@ -3,18 +3,12 @@ Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
 import re
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional, cast
 
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.structured_app import BasicSharedApp
-from galaxy.webapps.base.webapp import (
-    GalaxyWebTransaction,
-    WebApplication,
-)
+from galaxy.webapps.base.webapp import GalaxyWebTransaction, WebApplication
 
 log = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
 import logging
 
 from mercurial.hgweb.hgwebdir_mod import hgwebdir
+from tool_shed.util.repository_util import get_repository_by_name_and_owner
 
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import BaseUIController
-from tool_shed.util.repository_util import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)
 

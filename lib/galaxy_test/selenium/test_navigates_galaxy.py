@@ -1,9 +1,7 @@
 from galaxy.selenium.has_driver import exception_indicates_not_clickable
 from galaxy.selenium.navigates_galaxy import exception_seems_to_indicate_transition
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+
+from .framework import SeleniumTestCase, selenium_test
 
 
 class TestNavigatesGalaxySelenium(SeleniumTestCase):

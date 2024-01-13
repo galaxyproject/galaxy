@@ -1,22 +1,9 @@
 """This module contains utility functions shared across the api package."""
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-)
+from typing import Any, Dict, List, Optional, Set
 
-from fastapi import (
-    Query,
-    Request,
-)
+from fastapi import Query, Request
 
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-    ValueFilterQueryParams,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams, ValueFilterQueryParams
 from galaxy.schema.schema import UpdateDatasetPermissionsPayload
 from galaxy.util import listify
 

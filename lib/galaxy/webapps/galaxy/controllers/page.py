@@ -1,29 +1,13 @@
 from markupsafe import escape
-from sqlalchemy import (
-    false,
-    true,
-)
-from sqlalchemy.orm import (
-    joinedload,
-    undefer,
-)
+from sqlalchemy import false, true
+from sqlalchemy.orm import joinedload, undefer
 
-from galaxy import (
-    model,
-    util,
-    web,
-)
+from galaxy import model, util, web
 from galaxy.managers.hdas import HDAManager
-from galaxy.managers.histories import (
-    HistoryManager,
-    HistorySerializer,
-)
-from galaxy.managers.pages import (
-    get_page as get_page_,
-    get_shared_pages,
-    page_exists,
-    PageManager,
-)
+from galaxy.managers.histories import HistoryManager, HistorySerializer
+from galaxy.managers.pages import PageManager
+from galaxy.managers.pages import get_page as get_page_
+from galaxy.managers.pages import get_shared_pages, page_exists
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.users import get_user_by_username
 from galaxy.managers.workflows import WorkflowsManager
@@ -32,14 +16,8 @@ from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import (
-    error,
-    url_for,
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
+from galaxy.web import error, url_for
+from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,

@@ -1,8 +1,4 @@
-from galaxy.managers.citations import (
-    BibtexCitation,
-    CitationCollection,
-    parse_citation,
-)
+from galaxy.managers.citations import BibtexCitation, CitationCollection, parse_citation
 from galaxy.util import parse_xml_string
 
 EXAMPLE_BIBTEX_CITATION = """<citation type="bibtex">@article{goecks2010galaxy,

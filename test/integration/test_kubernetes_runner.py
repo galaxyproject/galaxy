@@ -9,24 +9,16 @@ import string
 import subprocess
 import tempfile
 import time
-from typing import (
-    List,
-    Optional,
-    overload,
-)
+from typing import List, Optional, overload
 
 import pytest
+from galaxy_test.base.populators import DEFAULT_TIMEOUT, DatasetPopulator, skip_without_tool, wait_on
+from galaxy_test.driver import integration_util
 from typing_extensions import Literal
 
 from galaxy.tool_util.verify.wait import timeout_type
 from galaxy.util import unicodify
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    DEFAULT_TIMEOUT,
-    skip_without_tool,
-    wait_on,
-)
-from galaxy_test.driver import integration_util
+
 from .test_containerized_jobs import MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 

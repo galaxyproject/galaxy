@@ -5,24 +5,13 @@ a dictionary of string data/ids (often from a query string).
 import json
 import logging
 import weakref
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-    Union,
-)
+from typing import Callable, Dict, Optional, Union
 
 import galaxy.exceptions
 import galaxy.util
-from galaxy.managers import (
-    hdas as hda_manager,
-    visualizations as visualization_manager,
-)
-from galaxy.model import (
-    HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation,
-    Visualization,
-)
+from galaxy.managers import hdas as hda_manager
+from galaxy.managers import visualizations as visualization_manager
+from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization
 from galaxy.util import bunch
 
 log = logging.getLogger(__name__)

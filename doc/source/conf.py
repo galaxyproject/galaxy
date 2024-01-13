@@ -95,10 +95,7 @@ copyright = str(datetime.datetime.now().year) + ", Galaxy Committers"
 # built documents.
 #
 # The short X.Y version.
-from galaxy.version import (
-    VERSION,
-    VERSION_MAJOR,
-)
+from galaxy.version import VERSION, VERSION_MAJOR
 
 version = VERSION_MAJOR
 # The full version, including alpha/beta/rc tags.

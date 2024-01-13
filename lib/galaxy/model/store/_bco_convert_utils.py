@@ -1,17 +1,8 @@
 import urllib.parse
-from typing import (
-    List,
-    Set,
-)
+from typing import List, Set
 
-from galaxy.model import (
-    Workflow,
-    WorkflowStep,
-)
-from galaxy.schema.bco import (
-    ExecutionDomainUri,
-    SoftwarePrerequisite,
-)
+from galaxy.model import Workflow, WorkflowStep
+from galaxy.schema.bco import ExecutionDomainUri, SoftwarePrerequisite
 
 
 class SoftwarePrerequisiteTracker:

@@ -1,17 +1,11 @@
 import abc
 import logging
 import os
-from typing import (
-    Set,
-    Union,
-)
+from typing import Set, Union
 
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    iter_headers,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, iter_headers
+
 from .tabular import Tabular
 
 log = logging.getLogger(__name__)

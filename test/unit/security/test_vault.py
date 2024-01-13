@@ -5,15 +5,8 @@ import tempfile
 import pytest
 from cryptography.fernet import InvalidToken
 
-from galaxy.model.unittest_utils.data_app import (
-    GalaxyDataTestApp,
-    GalaxyDataTestConfig,
-)
-from galaxy.security.vault import (
-    InvalidVaultKeyException,
-    Vault,
-    VaultFactory,
-)
+from galaxy.model.unittest_utils.data_app import GalaxyDataTestApp, GalaxyDataTestConfig
+from galaxy.security.vault import InvalidVaultKeyException, Vault, VaultFactory
 from galaxy.util.unittest import TestCase
 
 

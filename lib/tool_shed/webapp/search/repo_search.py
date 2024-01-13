@@ -3,19 +3,9 @@ import logging
 
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import (
-    KEYWORD,
-    NUMERIC,
-    Schema,
-    STORED,
-    TEXT,
-)
+from whoosh.fields import KEYWORD, NUMERIC, STORED, TEXT, Schema
 from whoosh.qparser import MultifieldParser
-from whoosh.query import (
-    And,
-    Every,
-    Term,
-)
+from whoosh.query import And, Every, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound

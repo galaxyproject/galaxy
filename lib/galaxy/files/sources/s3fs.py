@@ -1,20 +1,11 @@
 import functools
 import logging
 import os
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional, cast
 
 from typing_extensions import Unpack
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import FilesSourceOptions, FilesSourceProperties
 
 try:
     import s3fs

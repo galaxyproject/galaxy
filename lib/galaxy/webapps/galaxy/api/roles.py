@@ -8,17 +8,9 @@ from fastapi import Body
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.roles import RoleManager
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    RoleDefinitionModel,
-    RoleListResponse,
-    RoleModelResponse,
-)
+from galaxy.schema.schema import RoleDefinitionModel, RoleListResponse, RoleModelResponse
 from galaxy.webapps.base.controller import url_for
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

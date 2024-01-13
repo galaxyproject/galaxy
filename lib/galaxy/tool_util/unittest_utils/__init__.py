@@ -1,9 +1,4 @@
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-    Union,
-)
+from typing import Callable, Dict, Optional, Union
 from unittest.mock import Mock
 
 

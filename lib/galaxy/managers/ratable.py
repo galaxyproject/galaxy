@@ -9,6 +9,7 @@ from sqlalchemy.sql.expression import func
 
 from galaxy.model import ItemRatingAssociation
 from galaxy.model.base import transaction
+
 from . import base
 
 log = logging.getLogger(__name__)

@@ -10,15 +10,9 @@ from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    disable_parent_class_sniffing,
-    FilePrefix,
-)
-from . import (
-    data,
-    dataproviders,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, disable_parent_class_sniffing
+
+from . import data, dataproviders
 
 log = logging.getLogger(__name__)
 

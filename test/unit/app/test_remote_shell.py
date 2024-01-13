@@ -1,9 +1,6 @@
 import os
 import unittest
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 try:
     import mockssh
@@ -11,10 +8,7 @@ except ImportError:
     mockssh = None
 
 from galaxy.jobs.runners.util.cli import CliInterface
-from galaxy.security.ssh_util import (
-    generate_ssh_keys,
-    SSHKeys,
-)
+from galaxy.security.ssh_util import SSHKeys, generate_ssh_keys
 from galaxy.util.unittest import TestCase
 
 

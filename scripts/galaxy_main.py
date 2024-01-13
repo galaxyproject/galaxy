@@ -47,13 +47,7 @@ else:
     except Exception:
         log.exception("Failed to add Galaxy to sys.path")
         raise
-from galaxy.main_config import (
-    absolute_config_path,
-    config_is_ini,
-    DEFAULT_CONFIG_SECTION,
-    DEFAULT_INI_APP,
-    find_config,
-)
+from galaxy.main_config import DEFAULT_CONFIG_SECTION, DEFAULT_INI_APP, absolute_config_path, config_is_ini, find_config
 from galaxy.util import unicodify
 from galaxy.web_stack import get_app_kwds
 

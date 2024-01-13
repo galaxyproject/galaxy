@@ -1,11 +1,5 @@
-from sqlalchemy import (
-    literal,
-    union,
-)
-from sqlalchemy.sql import (
-    expression,
-    select,
-)
+from sqlalchemy import literal, union
+from sqlalchemy.sql import expression, select
 
 from galaxy import model
 from galaxy.managers.base import get_class

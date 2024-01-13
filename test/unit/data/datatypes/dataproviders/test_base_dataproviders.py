@@ -7,10 +7,7 @@ import tempfile
 from io import StringIO
 from typing import Type
 
-from galaxy.datatypes.dataproviders import (
-    base,
-    exceptions,
-)
+from galaxy.datatypes.dataproviders import base, exceptions
 from galaxy.util import clean_multiline_string
 from galaxy.util.unittest import TestCase
 

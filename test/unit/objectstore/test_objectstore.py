@@ -1,9 +1,6 @@
 import os
 import time
-from tempfile import (
-    mkdtemp,
-    mkstemp,
-)
+from tempfile import mkdtemp, mkstemp
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -11,23 +8,13 @@ import pytest
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
-from galaxy.objectstore.caching import (
-    CacheTarget,
-    check_cache,
-    InProcessCacheMonitor,
-)
+from galaxy.objectstore.caching import CacheTarget, InProcessCacheMonitor, check_cache
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
-from galaxy.objectstore.unittest_utils import (
-    Config as TestConfig,
-    DISK_TEST_CONFIG,
-    DISK_TEST_CONFIG_YAML,
-)
-from galaxy.util import (
-    directory_hash_id,
-    unlink,
-)
+from galaxy.objectstore.unittest_utils import DISK_TEST_CONFIG, DISK_TEST_CONFIG_YAML
+from galaxy.objectstore.unittest_utils import Config as TestConfig
+from galaxy.util import directory_hash_id, unlink
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but

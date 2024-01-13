@@ -1,18 +1,11 @@
 import json
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.parser.util import (
-    DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC,
-)
+from galaxy.tool_util.parser.util import DEFAULT_DELTA, DEFAULT_DELTA_FRAC
+
 from .interface import (
     AssertionDict,
     AssertionList,
@@ -24,11 +17,7 @@ from .interface import (
     ToolSourceTests,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
-from .output_objects import (
-    ToolOutput,
-    ToolOutputCollection,
-    ToolOutputCollectionStructure,
-)
+from .output_objects import ToolOutput, ToolOutputCollection, ToolOutputCollectionStructure
 from .stdio import error_on_exit_code
 from .util import is_dict
 

@@ -1,10 +1,5 @@
 from datetime import datetime
-from typing import (
-    List,
-    NoReturn,
-    Optional,
-    Set,
-)
+from typing import List, NoReturn, Optional, Set
 
 from galaxy.exceptions import (
     AdminRequiredException,

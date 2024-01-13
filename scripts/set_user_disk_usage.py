@@ -10,10 +10,7 @@ import galaxy.config
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "config/galaxy.ini"))
 

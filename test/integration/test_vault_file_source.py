@@ -1,11 +1,12 @@
 import os
 import tempfile
 
-from galaxy.managers.users import get_user_by_email
-from galaxy.security.vault import UserVaultWrapper
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+
+from galaxy.managers.users import get_user_by_email
+from galaxy.security.vault import UserVaultWrapper
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_vault.yml")

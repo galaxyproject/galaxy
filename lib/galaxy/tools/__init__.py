@@ -11,97 +11,45 @@ import tarfile
 import tempfile
 from collections.abc import MutableMapping
 from pathlib import Path
-from typing import (
-    cast,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional, Set, Tuple, Type, Union, cast
 from urllib.parse import unquote_plus
 
 import webob.exc
 from lxml import etree
 from mako.template import Template
 from packaging.version import Version
-from sqlalchemy import (
-    delete,
-    func,
-    select,
-)
+from sqlalchemy import delete, func, select
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.exceptions import (
-    ToolInputsNotOKException,
-    ToolInputsNotReadyException,
-)
+from galaxy import exceptions, model
+from galaxy.exceptions import ToolInputsNotOKException, ToolInputsNotReadyException
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model import (
-    Job,
-    StoredWorkflow,
-)
+from galaxy.model import Job, StoredWorkflow
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
-from galaxy.tool_util.deps import (
-    build_dependency_manager,
-    CachedDependencyManager,
-    NullDependencyManager,
-)
+from galaxy.tool_util.deps import CachedDependencyManager, NullDependencyManager, build_dependency_manager
 from galaxy.tool_util.fetcher import ToolLocationFetcher
-from galaxy.tool_util.loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params,
-)
+from galaxy.tool_util.loader import imported_macro_paths, raw_tool_xml_tree, template_macro_params
 from galaxy.tool_util.loader_directory import looks_like_a_tool
-from galaxy.tool_util.ontologies.ontology_data import (
-    biotools_reference,
-    expand_ontology_data,
-)
+from galaxy.tool_util.ontologies.ontology_data import biotools_reference, expand_ontology_data
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.tool_util.parser import (
-    get_tool_source,
-    get_tool_source_from_representation,
     RequiredFiles,
     ToolOutputCollectionPart,
+    get_tool_source,
+    get_tool_source_from_representation,
 )
-from galaxy.tool_util.parser.interface import (
-    InputSource,
-    PageSource,
-    ToolSource,
-)
-from galaxy.tool_util.parser.xml import (
-    XmlPageSource,
-    XmlToolSource,
-)
+from galaxy.tool_util.parser.interface import InputSource, PageSource, ToolSource
+from galaxy.tool_util.parser.xml import XmlPageSource, XmlToolSource
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.tool_util.toolbox import (
-    AbstractToolBox,
-    AbstractToolTagManager,
-    ToolSection,
-)
+from galaxy.tool_util.toolbox import AbstractToolBox, AbstractToolTagManager, ToolSection
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
-from galaxy.tool_util.version import (
-    LegacyVersion,
-    parse_version,
-)
+from galaxy.tool_util.version import LegacyVersion, parse_version
 from galaxy.tools import expressions
-from galaxy.tools.actions import (
-    DefaultToolAction,
-    ToolAction,
-)
+from galaxy.tools.actions import DefaultToolAction, ToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
@@ -129,57 +77,37 @@ from galaxy.tools.parameters.basic import (
     ToolParameter,
     workflow_building_modes,
 )
-from galaxy.tools.parameters.dataset_matcher import (
-    set_dataset_matcher_factory,
-    unset_dataset_matcher_factory,
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    ConditionalWhen,
-    Group,
-    Repeat,
-    Section,
-    UploadDataset,
-)
+from galaxy.tools.parameters.dataset_matcher import set_dataset_matcher_factory, unset_dataset_matcher_factory
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Group, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.test import parse_tests
 from galaxy.util import (
+    UNKNOWN,
+    XML,
+    Params,
     in_directory,
     listify,
-    Params,
     parse_xml_string,
     rst_to_html,
     string_as_bool,
     unicodify,
-    UNKNOWN,
-    XML,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import get_fileobj_raw
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
-from galaxy.util.json import (
-    safe_loads,
-    swap_inf_nan,
-)
+from galaxy.util.json import safe_loads, swap_inf_nan
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import (
-    fill_template,
-    refactoring_tool,
-)
-from galaxy.util.tool_shed.common_util import (
-    get_tool_shed_repository_url,
-    get_tool_shed_url_from_tool_shed_registry,
-)
+from galaxy.util.template import fill_template, refactoring_tool
+from galaxy.util.tool_shed.common_util import get_tool_shed_repository_url, get_tool_shed_url_from_tool_shed_registry
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import proxy_work_context_for_history
-from .execute import (
-    execute as execute_job,
-    MappingParameters,
-)
+
+from .execute import MappingParameters
+from .execute import execute as execute_job
 
 if TYPE_CHECKING:
     from galaxy.app import UniverseApplication

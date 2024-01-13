@@ -3,17 +3,9 @@ Accessible models can be read and copied but not modified or deleted.
 
 Owned models can be modified and deleted.
 """
-from typing import (
-    Any,
-    Optional,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Optional, Type
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query

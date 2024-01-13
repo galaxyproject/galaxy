@@ -4,11 +4,9 @@ NGS indexes
 import logging
 import os
 
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
 from galaxy.util import UNKNOWN
+
 from .metadata import MetadataElement
 from .text import Html
 

@@ -1,9 +1,4 @@
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Dict, List, Optional, Union
 
 from pydantic.tools import parse_obj_as
 

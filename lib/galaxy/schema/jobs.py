@@ -1,24 +1,10 @@
 import json
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
-from pydantic import (
-    Extra,
-    Field,
-    Required,
-    UUID4,
-    validator,
-)
+from pydantic import UUID4, Extra, Field, Required, validator
 from typing_extensions import Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField
 from galaxy.schema.schema import (
     DataItemSourceType,
     EncodedDataItemSourceId,

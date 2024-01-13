@@ -1,10 +1,6 @@
 from galaxy_test.base.workflow_fixtures import WORKFLOW_RENAME_ON_INPUT
-from .framework import (
-    retry_assertion_during_transitions,
-    selenium_test,
-    SeleniumTestCase,
-    TestsGalaxyPagers,
-)
+
+from .framework import SeleniumTestCase, TestsGalaxyPagers, retry_assertion_during_transitions, selenium_test
 
 
 class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):

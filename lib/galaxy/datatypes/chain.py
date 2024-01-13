@@ -6,15 +6,9 @@ import logging
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
-from galaxy.util import (
-    commaify,
-    compression_utils,
-    nice_size,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
+from galaxy.util import commaify, compression_utils, nice_size
+
 from . import data
 
 log = logging.getLogger(__name__)

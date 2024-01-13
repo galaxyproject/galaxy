@@ -2,6 +2,7 @@ from galaxy.managers import hdas
 from galaxy.managers.histories import HistoryManager
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
+
 from .base import BaseTestCase
 
 # =============================================================================

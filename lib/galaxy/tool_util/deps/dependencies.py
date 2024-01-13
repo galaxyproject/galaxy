@@ -1,17 +1,8 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from galaxy.tool_util.deps.requirements import (
-    ContainerDescription,
-    ToolRequirement,
-    ToolRequirements,
-)
+from galaxy.tool_util.deps.requirements import ContainerDescription, ToolRequirement, ToolRequirements
 from galaxy.util import bunch
+
 from .mulled.mulled_build import DEFAULT_CHANNELS
 
 

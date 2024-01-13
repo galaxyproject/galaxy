@@ -12,10 +12,7 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-from . import (
-    DependencyResolver,
-    NullDependency,
-)
+from . import DependencyResolver, NullDependency
 from .resolver_mixins import UsesHomebrewMixin
 
 # TODO: Implement prefer version linked...

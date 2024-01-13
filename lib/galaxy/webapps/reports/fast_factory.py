@@ -34,11 +34,9 @@ with the following command-line.
 
 """
 
-from galaxy.main_config import (
-    WebappConfigResolver,
-    WebappSetupProps,
-)
+from galaxy.main_config import WebappConfigResolver, WebappSetupProps
 from galaxy.webapps.reports.buildapp import app_factory
+
 from .fast_app import initialize_fast_app
 
 

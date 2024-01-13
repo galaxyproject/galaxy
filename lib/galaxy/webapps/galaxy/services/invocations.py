@@ -1,46 +1,19 @@
 import logging
 from enum import Enum
 from tempfile import NamedTemporaryFile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import BaseModel, Field
 
-from galaxy.celery.tasks import (
-    prepare_invocation_download,
-    write_invocation_to,
-)
-from galaxy.exceptions import (
-    AdminRequiredException,
-    ObjectNotFound,
-)
+from galaxy.celery.tasks import prepare_invocation_download, write_invocation_to
+from galaxy.exceptions import AdminRequiredException, ObjectNotFound
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers.jobs import (
-    fetch_job_states,
-    invocation_job_source_iter,
-)
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.managers.workflows import WorkflowsManager
-from galaxy.model import (
-    WorkflowInvocation,
-    WorkflowInvocationStep,
-)
-from galaxy.model.store import (
-    BcoExportOptions,
-    get_export_store_factory,
-)
+from galaxy.model import WorkflowInvocation, WorkflowInvocationStep
+from galaxy.model.store import BcoExportOptions, get_export_store_factory
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.invocation import (
-    InvocationMessageResponseModel,
-    InvocationStep,
-)
+from galaxy.schema.invocation import InvocationMessageResponseModel, InvocationStep
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -49,17 +22,14 @@ from galaxy.schema.schema import (
     StoreExportPayload,
     WriteStoreToPayload,
 )
-from galaxy.schema.tasks import (
-    GenerateInvocationDownload,
-    WriteInvocationTo,
-)
+from galaxy.schema.tasks import GenerateInvocationDownload, WriteInvocationTo
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
+    ServiceBase,
     async_task_summary,
     ensure_celery_tasks_enabled,
     model_store_storage_target,
-    ServiceBase,
 )
 
 log = logging.getLogger(__name__)

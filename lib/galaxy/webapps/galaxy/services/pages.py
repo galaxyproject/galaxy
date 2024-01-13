@@ -4,15 +4,9 @@ from typing import Tuple
 from galaxy import exceptions
 from galaxy.celery.tasks import prepare_pdf_download
 from galaxy.managers import base
-from galaxy.managers.markdown_util import (
-    internal_galaxy_markdown_to_pdf,
-    to_basic_markdown,
-)
+from galaxy.managers.markdown_util import internal_galaxy_markdown_to_pdf, to_basic_markdown
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.pages import (
-    PageManager,
-    PageSerializer,
-)
+from galaxy.managers.pages import PageManager, PageSerializer
 from galaxy.model.base import transaction
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -28,11 +22,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ensure_celery_tasks_enabled,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase, async_task_summary, ensure_celery_tasks_enabled
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)

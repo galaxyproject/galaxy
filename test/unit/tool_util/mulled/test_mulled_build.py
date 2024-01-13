@@ -3,15 +3,16 @@ import os.path
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_build import (
-    base_image_for_targets,
-    build_target,
-    CondaInDockerContext,
     DEFAULT_BASE_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
+    CondaInDockerContext,
     InvolucroContext,
+    base_image_for_targets,
+    build_target,
     mull_targets,
     target_str_to_targets,
 )
+
 from ..util import external_dependency_management
 
 

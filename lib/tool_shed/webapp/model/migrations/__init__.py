@@ -1,32 +1,20 @@
 import logging
 import os
-from typing import (
-    cast,
-    Iterable,
-    Optional,
-)
+from typing import Iterable, Optional, cast
 
 import alembic
 from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
+from tool_shed.webapp.model import Base
 
-from galaxy.model.database_utils import (
-    create_database,
-    database_exists,
-)
-from galaxy.model.migrations.base import (
-    BaseAlembicManager,
-    DatabaseStateCache,
-    get_url_string,
-    load_metadata,
-)
+from galaxy.model.database_utils import create_database, database_exists
+from galaxy.model.migrations.base import BaseAlembicManager, DatabaseStateCache, get_url_string, load_metadata
 from galaxy.model.migrations.exceptions import (
     IncorrectSAMigrateVersionError,
     NoVersionTableError,
     OutdatedDatabaseError,
     SAMigrateError,
 )
-from tool_shed.webapp.model import Base
 
 SQLALCHEMYMIGRATE_LAST_VERSION = 27
 TOOLSHED = "tool shed"

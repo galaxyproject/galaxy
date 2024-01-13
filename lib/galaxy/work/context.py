@@ -1,17 +1,10 @@
 import abc
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from typing_extensions import Literal
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.model import (
-    GalaxySession,
-    History,
-    Role,
-)
+from galaxy.model import GalaxySession, History, Role
 from galaxy.model.base import transaction
 
 

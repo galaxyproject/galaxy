@@ -3,18 +3,13 @@ related to running and queued jobs.
 """
 import logging
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import (
-    InteractiveToolEntryPoint,
-    Job,
-)
+from galaxy.model import InteractiveToolEntryPoint, Job
 from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
+
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

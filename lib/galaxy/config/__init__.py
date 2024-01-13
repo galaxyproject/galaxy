@@ -16,19 +16,7 @@ import sys
 import tempfile
 import threading
 from datetime import timedelta
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Set,
-    SupportsInt,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Set, SupportsInt, TypeVar, Union, cast
 from urllib.parse import urlparse
 
 import yaml
@@ -36,25 +24,15 @@ import yaml
 from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
-from galaxy.util import (
-    listify,
-    size_to_bytes,
-    string_as_bool,
-    unicodify,
-)
+from galaxy.util import listify, size_to_bytes, string_as_bool, unicodify
 from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
-from galaxy.util.properties import (
-    read_properties_from_file,
-    running_from_source,
-)
+from galaxy.util.properties import read_properties_from_file, running_from_source
 from galaxy.util.themes import flatten_theme
-from ..version import (
-    VERSION_MAJOR,
-    VERSION_MINOR,
-)
+
+from ..version import VERSION_MAJOR, VERSION_MINOR
 
 if TYPE_CHECKING:
     from galaxy.model import User

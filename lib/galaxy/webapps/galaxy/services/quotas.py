@@ -1,11 +1,7 @@
 import logging
 from typing import Optional
 
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
+from sqlalchemy import false, select, true
 from sqlalchemy.orm import Session
 
 from galaxy import util

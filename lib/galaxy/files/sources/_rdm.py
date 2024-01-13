@@ -1,22 +1,11 @@
 import logging
-from typing import (
-    cast,
-    List,
-    NamedTuple,
-    Optional,
-)
+from typing import List, NamedTuple, Optional, cast
 
 from typing_extensions import Unpack
 
 from galaxy.exceptions import AuthenticationRequired
 from galaxy.files import ProvidesUserFileSourcesUserContext
-from galaxy.files.sources import (
-    BaseFilesSource,
-    FilesSourceProperties,
-    PluginKind,
-    RemoteDirectory,
-    RemoteFile,
-)
+from galaxy.files.sources import BaseFilesSource, FilesSourceProperties, PluginKind, RemoteDirectory, RemoteFile
 
 log = logging.getLogger(__name__)
 

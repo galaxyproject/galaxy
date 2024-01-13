@@ -5,18 +5,12 @@ import logging
 from fastapi import Query
 from fastapi.responses import PlainTextResponse
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.webapps.galaxy.api import (
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router
 
 log = logging.getLogger(__name__)
 router = Router(tags=["remote files"])

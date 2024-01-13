@@ -1,7 +1,4 @@
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 from enum import Enum
 from typing import cast
 from uuid import UUID

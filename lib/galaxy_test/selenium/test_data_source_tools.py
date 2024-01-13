@@ -1,10 +1,6 @@
 from galaxy.util.unittest_utils import skip_if_site_down
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-    UsesHistoryItemAssertions,
-)
+
+from .framework import SeleniumTestCase, UsesHistoryItemAssertions, managed_history, selenium_test
 
 
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):

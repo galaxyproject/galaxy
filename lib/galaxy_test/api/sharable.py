@@ -1,8 +1,4 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 from unittest import SkipTest
 from uuid import uuid4
 

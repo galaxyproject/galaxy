@@ -5,22 +5,13 @@ import logging
 import os.path
 import re
 from json import loads
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Dict, List, Optional, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from galaxy.model import HistoryDatasetAssociation
-from galaxy.util import (
-    galaxy_directory,
-    sanitize_lists_to_string,
-    unicodify,
-)
+from galaxy.util import galaxy_directory, sanitize_lists_to_string, unicodify
 
 log = logging.getLogger(__name__)
 

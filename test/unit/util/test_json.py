@@ -2,10 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from galaxy.util.json import (
-    safe_dumps,
-    swap_inf_nan,
-)
+from galaxy.util.json import safe_dumps, swap_inf_nan
 
 
 @pytest.mark.parametrize(

@@ -1,12 +1,7 @@
-from tool_shed_client.schema.trs import (
-    Tool,
-    ToolClass,
-)
+from tool_shed_client.schema.trs import Tool, ToolClass
 from tool_shed_client.trs_util import encode_identifier
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
+
+from ..base.api import ShedApiTestCase, skip_if_api_v1
 
 
 class TestShedToolsApi(ShedApiTestCase):

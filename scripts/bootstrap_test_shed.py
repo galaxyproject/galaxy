@@ -10,29 +10,19 @@ import os
 import subprocess
 import sys
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 import requests
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 
-from galaxy.tool_shed.util.hg_util import clone_repository
 from tool_shed.test.base.api import ensure_user_with_email
-from tool_shed.test.base.api_util import (
-    create_user,
-    ShedApiInteractor,
-)
+from tool_shed.test.base.api_util import ShedApiInteractor, create_user
 from tool_shed.test.base.populators import ToolShedPopulator
-from tool_shed_client.schema import (
-    Category,
-    CreateRepositoryRequest,
-)
+from tool_shed_client.schema import Category, CreateRepositoryRequest
+
+from galaxy.tool_shed.util.hg_util import clone_repository
 
 DESCRIPTION = "Script to bootstrap a tool shed server for development"
 DEFAULT_USER = "jmchilton@gmail.com"

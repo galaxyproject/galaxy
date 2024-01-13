@@ -1,9 +1,5 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
 import galaxy.model
 from galaxy.util import asbool

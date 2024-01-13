@@ -5,10 +5,7 @@ Create Date: 2023-08-14 13:41:59.442243
 """
 import sqlalchemy as sa
 
-from galaxy.model.custom_types import (
-    JSONType,
-    MutableJSONType,
-)
+from galaxy.model.custom_types import JSONType, MutableJSONType
 from galaxy.model.migrations.util import (
     add_column,
     create_foreign_key,

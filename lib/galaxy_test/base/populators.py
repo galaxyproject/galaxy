@@ -46,35 +46,20 @@ import tempfile
 import time
 import unittest
 import urllib.parse
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 from functools import wraps
 from io import StringIO
 from operator import itemgetter
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, Generator, List, NamedTuple, Optional, Set, Tuple, Union
 from uuid import UUID
 
 import cwltest.compare
 import requests
 import yaml
 from bioblend.galaxyclient import GalaxyClient
-from gxformat2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
+from galaxy_test.base.decorators import has_requirement, using_requirement
+from galaxy_test.base.json_schema_utils import JsonSchemaValidator
+from gxformat2 import ImporterGalaxyInterface, convert_and_import_workflow
 from gxformat2._yaml import ordered_load
 from requests import Response
 from rocrate.rocrate import ROCrate
@@ -82,36 +67,22 @@ from typing_extensions import Literal
 
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
-    download_output,
     GalaxyOutput,
+    download_output,
     guess_artifact_type,
     invocation_to_output,
     output_to_cwl_json,
     tool_response_to_output,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.tool_util.verify.wait import (
-    timeout_type,
-    TimeoutAssertionError,
-    wait_on as tool_util_wait_on,
-)
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    galaxy_root_path,
-    UNKNOWN,
-)
+from galaxy.tool_util.verify.wait import TimeoutAssertionError, timeout_type
+from galaxy.tool_util.verify.wait import wait_on as tool_util_wait_on
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, UNKNOWN, galaxy_root_path
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
-from galaxy_test.base.decorators import (
-    has_requirement,
-    using_requirement,
-)
-from galaxy_test.base.json_schema_utils import JsonSchemaValidator
+
 from . import api_asserts
-from .api import (
-    ApiTestInteractor,
-    HasAnonymousGalaxyInteractor,
-)
+from .api import ApiTestInteractor, HasAnonymousGalaxyInteractor
 from .api_util import random_name
 
 FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"

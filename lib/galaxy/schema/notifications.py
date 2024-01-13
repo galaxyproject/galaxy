@@ -1,30 +1,13 @@
 from datetime import datetime
 from enum import Enum
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Dict, List, Optional, Union
 
-from pydantic import (
-    Field,
-    Required,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from pydantic import Field, Required
+from typing_extensions import Annotated, Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField
 from galaxy.schema.schema import Model
-from galaxy.schema.types import (
-    AbsoluteOrRelativeUrl,
-    OffsetNaiveDatetime,
-)
+from galaxy.schema.types import AbsoluteOrRelativeUrl, OffsetNaiveDatetime
 
 
 class NotificationVariant(str, Enum):

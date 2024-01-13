@@ -1,9 +1,6 @@
 import logging
 
-from sqlalchemy import (
-    select,
-    true,
-)
+from sqlalchemy import select, true
 from sqlalchemy.orm import joinedload
 
 from galaxy.model.base import SharedModelMapping

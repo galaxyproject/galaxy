@@ -9,11 +9,7 @@ import requests
 
 from galaxy import web
 from galaxy.model.base import transaction
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    Params,
-    unicodify,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, Params, unicodify
 from galaxy.util.hash_util import hmac_new
 from galaxy.webapps.base.controller import BaseUIController
 

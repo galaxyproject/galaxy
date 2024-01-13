@@ -1,8 +1,5 @@
 import ipaddress
-from typing import (
-    List,
-    Union,
-)
+from typing import List, Union
 
 from galaxy.util import unicodify
 

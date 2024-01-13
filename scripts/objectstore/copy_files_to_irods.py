@@ -7,11 +7,7 @@ import uuid
 from datetime import datetime
 
 import irods.keywords as kw
-from irods.exception import (
-    CollectionDoesNotExist,
-    DataObjectDoesNotExist,
-    NetworkException,
-)
+from irods.exception import CollectionDoesNotExist, DataObjectDoesNotExist, NetworkException
 from irods.session import iRODSSession
 from psycopg2 import connect
 

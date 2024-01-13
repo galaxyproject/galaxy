@@ -2,28 +2,15 @@ import abc
 import logging
 import os
 import re
-from typing import (
-    Callable,
-    Dict,
-    List,
-)
+from typing import Callable, Dict, List
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import (
-    get_file_peek,
-    Text,
-)
+from galaxy.datatypes.data import Text, get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.util import generic_util
-from galaxy.util import (
-    nice_size,
-    unicodify,
-)
+from galaxy.util import nice_size, unicodify
 
 log = logging.getLogger(__name__)
 

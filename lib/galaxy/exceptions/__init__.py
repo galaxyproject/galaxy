@@ -16,10 +16,7 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from .error_codes import (
-    error_codes_by_name,
-    ErrorCode,
-)
+from .error_codes import ErrorCode, error_codes_by_name
 
 
 class MessageException(Exception):

@@ -1,7 +1,6 @@
 import os
 
 import pytest
-
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 from galaxy_test.selenium.framework import SeleniumTestCase
 

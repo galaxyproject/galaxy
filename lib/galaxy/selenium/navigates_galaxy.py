@@ -9,20 +9,8 @@ import random
 import string
 import time
 from abc import abstractmethod
-from functools import (
-    partial,
-    wraps,
-)
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from functools import partial, wraps
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
 import requests
 import yaml
@@ -30,19 +18,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 
-from galaxy.navigation.components import (
-    Component,
-    HasText,
-)
+from galaxy.navigation.components import Component, HasText
 from galaxy.navigation.data import load_root_component
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+
 from . import sizzle
 from .has_driver import (
+    HasDriver,
+    SeleniumTimeoutException,
     exception_indicates_click_intercepted,
     exception_indicates_not_clickable,
     exception_indicates_stale_element,
-    HasDriver,
-    SeleniumTimeoutException,
 )
 from .smart_components import SmartComponent
 

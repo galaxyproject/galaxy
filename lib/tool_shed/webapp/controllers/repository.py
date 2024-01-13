@@ -5,64 +5,33 @@ import string
 import tempfile
 from datetime import date
 
-from mercurial import (
-    cmdutil,
-    commands,
-    mdiff,
-    patch,
-)
-from sqlalchemy import (
-    false,
-    null,
-    select,
-)
-
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
-from galaxy import (
-    util,
-    web,
-)
+from mercurial import cmdutil, commands, mdiff, patch
+from sqlalchemy import false, null, select
+from tool_shed.dependencies.repository import relation_builder
+from tool_shed.managers.repositories import readmes
+from tool_shed.metadata import repository_metadata_manager
+from tool_shed.tools import tool_validator, tool_version_manager
+from tool_shed.util import basic_util, common_util, hg_util, metadata_util, readme_util, repository_util, search_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.util import tool_util
+from tool_shed.util.web_util import escape
+from tool_shed.utility_containers import ToolShedUtilityContainerManager
+from tool_shed.webapp.framework.decorators import require_login
+from tool_shed.webapp.model import Category, Repository, RepositoryCategoryAssociation, RepositoryMetadata
+from tool_shed.webapp.util import ratings_util
+
+from galaxy import util, web
 from galaxy.managers.users import get_user_by_username
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
 from galaxy.util.tool_shed import encoding_util
-from galaxy.web.form_builder import (
-    CheckboxField,
-    SelectField,
-)
+from galaxy.web.form_builder import CheckboxField, SelectField
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.managers.repositories import readmes
-from tool_shed.metadata import repository_metadata_manager
-from tool_shed.tools import (
-    tool_validator,
-    tool_version_manager,
-)
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    metadata_util,
-    readme_util,
-    repository_util,
-    search_util,
-    shed_util_common as suc,
-    tool_util,
-)
-from tool_shed.util.web_util import escape
-from tool_shed.utility_containers import ToolShedUtilityContainerManager
-from tool_shed.webapp.framework.decorators import require_login
-from tool_shed.webapp.model import (
-    Category,
-    Repository,
-    RepositoryCategoryAssociation,
-    RepositoryMetadata,
-)
-from tool_shed.webapp.util import ratings_util
 
 log = logging.getLogger(__name__)
 

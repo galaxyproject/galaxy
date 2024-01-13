@@ -1,8 +1,4 @@
-from typing import (
-    Container,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Container, Optional
 
 from . import ContainerResolver
 

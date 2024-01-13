@@ -6,15 +6,24 @@ incompatible changes coming.
 import logging
 import os
 import re
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 import galaxy.tool_util.deps.installable
-from galaxy.tool_util.deps.requirements import (
-    ToolRequirement,
-    ToolRequirements,
+from galaxy.tool_util.deps.requirements import ToolRequirement, ToolRequirements
+
+from ..conda_util import (
+    USE_PATH_EXEC_DEFAULT,
+    CondaContext,
+    CondaTarget,
+    build_isolated_environment,
+    cleanup_failed_install,
+    cleanup_failed_install_of_environment,
+    hash_conda_packages,
+    install_conda,
+    install_conda_target,
+    install_conda_targets,
+    installed_conda_targets,
+    is_conda_target_installed,
 )
 from . import (
     Dependency,
@@ -25,20 +34,6 @@ from . import (
     MultipleDependencyResolver,
     NullDependency,
     SpecificationPatternDependencyResolver,
-)
-from ..conda_util import (
-    build_isolated_environment,
-    cleanup_failed_install,
-    cleanup_failed_install_of_environment,
-    CondaContext,
-    CondaTarget,
-    hash_conda_packages,
-    install_conda,
-    install_conda_target,
-    install_conda_targets,
-    installed_conda_targets,
-    is_conda_target_installed,
-    USE_PATH_EXEC_DEFAULT,
 )
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"

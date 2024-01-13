@@ -10,15 +10,9 @@ from typing import Any
 from fastapi import Body
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.metrics import (
-    CreateMetricsPayload,
-    MetricsManager,
-)
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.managers.metrics import CreateMetricsPayload, MetricsManager
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

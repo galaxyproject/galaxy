@@ -1,17 +1,11 @@
 import json
 import os
-from typing import (
-    Any,
-    cast,
-)
+from typing import Any, cast
 
-from requests import (
-    get,
-    put,
-)
+from galaxy_test.driver import integration_util
+from requests import get, put
 
 from galaxy.managers.users import get_user_by_email
-from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 

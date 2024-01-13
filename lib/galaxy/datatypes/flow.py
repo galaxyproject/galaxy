@@ -6,10 +6,8 @@ import logging
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
+
 from . import data
 
 log = logging.getLogger(__name__)

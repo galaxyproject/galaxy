@@ -1,8 +1,7 @@
 """Integration tests for GalaxyInteractor."""
 
-from packaging.version import Version
-
 from galaxy_test.driver import integration_util
+from packaging.version import Version
 
 
 class TestGalaxyInteractor(integration_util.IntegrationTestCase):

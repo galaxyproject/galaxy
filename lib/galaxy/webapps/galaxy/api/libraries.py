@@ -2,17 +2,9 @@
 API operations on a data library.
 """
 import logging
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-)
+from fastapi import Body, Path, Query
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -31,11 +23,7 @@ from galaxy.schema.schema import (
     LibrarySummaryList,
     UpdateLibraryPayload,
 )
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.services.libraries import LibrariesService
 
 log = logging.getLogger(__name__)

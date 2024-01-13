@@ -1,13 +1,8 @@
 from fastapi import Body
 
-from galaxy.managers.jobs import (
-    JobLock,
-    JobManager,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.managers.jobs import JobLock, JobManager
+
+from . import Router, depends
 
 router = Router(tags=["job_lock"])
 

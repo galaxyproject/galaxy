@@ -2,28 +2,12 @@ import abc
 import os
 import time
 from enum import Enum
-from typing import (
-    Any,
-    ClassVar,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Optional, Set
 
-from typing_extensions import (
-    Literal,
-    NotRequired,
-    TypedDict,
-)
+from typing_extensions import Literal, NotRequired, TypedDict
 
-from galaxy.exceptions import (
-    ConfigurationError,
-    ItemAccessibilityException,
-)
-from galaxy.util.bool_expressions import (
-    BooleanExpressionEvaluator,
-    TokenContainedEvaluator,
-)
+from galaxy.exceptions import ConfigurationError, ItemAccessibilityException
+from galaxy.util.bool_expressions import BooleanExpressionEvaluator, TokenContainedEvaluator
 from galaxy.util.template import fill_template
 
 DEFAULT_SCHEME = "gxfiles"

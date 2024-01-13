@@ -12,13 +12,7 @@ import weakref
 from collections import OrderedDict
 from collections.abc import Mapping
 from os.path import abspath
-from typing import (
-    Any,
-    Iterator,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 
 from sqlalchemy import select
 from sqlalchemy.orm import object_session
@@ -28,13 +22,7 @@ import galaxy.model
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
-from galaxy.util import (
-    form_builder,
-    listify,
-    string_as_bool,
-    stringify_dictionary_keys,
-    unicodify,
-)
+from galaxy.util import form_builder, listify, string_as_bool, stringify_dictionary_keys, unicodify
 from galaxy.util.json import safe_dumps
 
 if TYPE_CHECKING:

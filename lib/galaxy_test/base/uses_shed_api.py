@@ -1,18 +1,12 @@
 import abc
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Callable, Dict, List, Optional
 from unittest import SkipTest
 
+from galaxy_test.base.api_asserts import assert_status_code_is
 from requests import Response
 
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy.util import unicodify
-from galaxy_test.base.api_asserts import assert_status_code_is
 
 DEFAULT_TOOL_SHED_URL = "https://toolshed.g2.bx.psu.edu"
 

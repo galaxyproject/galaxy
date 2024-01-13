@@ -1,19 +1,16 @@
 import os
 import subprocess
 import tempfile
-from typing import (
-    List,
-    Tuple,
-)
+from typing import List, Tuple
 
 import pytest
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy import create_engine
 
-from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
+from galaxy.model.unittest_utils.model_testing_utils import (
     url_factory,
-)
+)  # noqa: F401 - url_factory is a fixture we have to import explicitly
 from galaxy.util import galaxy_directory
 
 

@@ -6,19 +6,11 @@ import os
 import shutil
 import sys
 import time
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime, timedelta
 from time import strftime
 
 import sqlalchemy as sa
-from sqlalchemy import (
-    and_,
-    false,
-    null,
-    true,
-)
+from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import joinedload
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib")))
@@ -30,10 +22,7 @@ from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)

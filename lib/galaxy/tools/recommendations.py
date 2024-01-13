@@ -50,10 +50,7 @@ class ToolRecommendations:
                 LayerNormalization,
                 MultiHeadAttention,
             )
-            from tensorflow.keras.models import (
-                Model,
-                Sequential,
-            )
+            from tensorflow.keras.models import Model, Sequential
         except Exception as e:
             log.exception(e)
             return None

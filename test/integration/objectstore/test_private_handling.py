@@ -3,6 +3,7 @@
 import string
 
 from galaxy_test.base import api_asserts
+
 from ._base import BaseObjectStoreIntegrationTestCase
 
 PRIVATE_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(

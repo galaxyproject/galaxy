@@ -1,9 +1,5 @@
 import logging
-from typing import (
-    Dict,
-    NamedTuple,
-    Optional,
-)
+from typing import Dict, NamedTuple, Optional
 
 from typing_extensions import Literal
 

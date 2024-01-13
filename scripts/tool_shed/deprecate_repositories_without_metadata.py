@@ -7,30 +7,21 @@ import string
 import sys
 import textwrap
 import time
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime, timedelta
 from optparse import OptionParser
 from time import strftime
 
 import sqlalchemy as sa
-from sqlalchemy import (
-    and_,
-    distinct,
-    false,
-    not_,
-)
+from sqlalchemy import and_, distinct, false, not_
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "lib"))
 
 import tool_shed.webapp.config as tool_shed_config
 import tool_shed.webapp.model.mapping
+
 from galaxy.model.base import transaction
-from galaxy.util import (
-    build_url,
-    send_mail as galaxy_send_mail,
-)
+from galaxy.util import build_url
+from galaxy.util import send_mail as galaxy_send_mail
 
 log = logging.getLogger()
 log.setLevel(10)

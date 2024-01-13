@@ -1,38 +1,19 @@
 """Constructors for concrete tool and input source objects."""
 
 import logging
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Callable, Dict, List, Optional
 
 from yaml import safe_load
 
 from galaxy.tool_util.loader import load_tool_with_refereces
-from galaxy.util import (
-    ElementTree,
-    parse_xml_string_to_etree,
-)
+from galaxy.util import ElementTree, parse_xml_string_to_etree
 from galaxy.util.yaml_util import ordered_load
-from .cwl import (
-    CwlToolSource,
-    tool_proxy,
-)
-from .interface import (
-    InputSource,
-    ToolSource,
-)
-from .xml import (
-    XmlInputSource,
-    XmlToolSource,
-)
-from .yaml import (
-    YamlInputSource,
-    YamlToolSource,
-)
+
 from ..fetcher import ToolLocationFetcher
+from .cwl import CwlToolSource, tool_proxy
+from .interface import InputSource, ToolSource
+from .xml import XmlInputSource, XmlToolSource
+from .yaml import YamlInputSource, YamlToolSource
 
 log = logging.getLogger(__name__)
 

@@ -1,12 +1,6 @@
-from abc import (
-    ABC,
-    abstractmethod,
-)
+from abc import ABC, abstractmethod
 
-from ._schema import (
-    TourDetails,
-    TourList,
-)
+from ._schema import TourDetails, TourList
 
 
 class ToursRegistry(ABC):

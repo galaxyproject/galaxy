@@ -1,10 +1,6 @@
 from selenium.webdriver.common.by import By
 
-from .framework import (
-    retry_assertion_during_transitions,
-    selenium_test,
-    SharedStateSeleniumTestCase,
-)
+from .framework import SharedStateSeleniumTestCase, retry_assertion_during_transitions, selenium_test
 
 
 class TestPublishedHistories(SharedStateSeleniumTestCase):

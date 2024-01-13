@@ -2,26 +2,14 @@ import errno
 import logging
 import os
 import time
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
-from galaxy.tool_shed.galaxy_install.client import (
-    DataManagerInterface,
-    InstallationTarget,
-)
-from galaxy.util import (
-    Element,
-    etree,
-    parse_xml_string,
-    xml_to_string,
-)
+from galaxy.tool_shed.galaxy_install.client import DataManagerInterface, InstallationTarget
+from galaxy.util import Element, etree, parse_xml_string, xml_to_string
 from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
+
 from . import tool_panel_manager
 
 log = logging.getLogger(__name__)

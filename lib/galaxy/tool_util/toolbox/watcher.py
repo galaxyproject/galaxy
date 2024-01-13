@@ -15,11 +15,7 @@ except ImportError:
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.util.watcher import (
-    BaseWatcher,
-    get_observer_class,
-    NullWatcher,
-)
+from galaxy.util.watcher import BaseWatcher, NullWatcher, get_observer_class
 
 log = logging.getLogger(__name__)
 

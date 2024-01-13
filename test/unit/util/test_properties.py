@@ -4,11 +4,7 @@ import pytest
 
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import properties
-from galaxy.util.properties import (
-    get_from_env,
-    nice_config_parser,
-    read_properties_from_file,
-)
+from galaxy.util.properties import get_from_env, nice_config_parser, read_properties_from_file
 
 KEY1, KEY2, KEY3, KEY4, KEY5, KEY6 = "k1", "k2", "k3", "k4", "k5", "k6"
 VAL1, VAL2, VAL3, VAL4, VAL5, VAL6 = 1, 2, 3, 4, 5, 6

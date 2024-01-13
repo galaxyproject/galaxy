@@ -2,21 +2,18 @@
 
 import os
 import string
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
-from sqlalchemy import select
-
-from galaxy.model import Dataset
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_OUTPUT,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_NESTED_TWICE_OUTPUT,
 )
+from sqlalchemy import select
+
+from galaxy.model import Dataset
+
 from ._base import BaseObjectStoreIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

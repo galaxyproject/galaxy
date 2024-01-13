@@ -1,9 +1,6 @@
 import logging
 from threading import local
-from typing import (
-    Optional,
-    Type,
-)
+from typing import Optional, Type
 
 from galaxy import model
 from galaxy.config import GalaxyAppConfiguration

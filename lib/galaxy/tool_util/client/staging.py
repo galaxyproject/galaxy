@@ -7,15 +7,7 @@ import abc
 import json
 import logging
 import os
-from typing import (
-    Any,
-    BinaryIO,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, BinaryIO, Dict, List, Optional, Tuple
 
 import yaml
 from typing_extensions import Literal
@@ -24,10 +16,10 @@ from galaxy.tool_util.cwl.util import (
     DirectoryUploadTarget,
     FileLiteralTarget,
     FileUploadTarget,
-    galactic_job_json,
     ObjectUploadTarget,
-    path_or_uri_to_uri,
     UploadTarget,
+    galactic_job_json,
+    path_or_uri_to_uri,
 )
 
 if TYPE_CHECKING:

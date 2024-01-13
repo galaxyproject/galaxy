@@ -5,13 +5,7 @@ Revises: c39f1de47a04
 Create Date: 2022-06-09 12:24:44.329038
 
 """
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    Numeric,
-    String,
-)
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, String
 
 from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (

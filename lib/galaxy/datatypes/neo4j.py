@@ -6,10 +6,7 @@ import logging
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
 
 gal_Log = logging.getLogger(__name__)
 verbose = True

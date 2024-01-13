@@ -7,9 +7,8 @@ from io import BytesIO
 
 import pytest
 import requests
-from whoosh import index
-
 from tool_shed.util.shed_index import build_index
+from whoosh import index
 
 URL = "https://github.com/mvdbeek/toolshed-test-data/blob/master/toolshed_community_files.tgz?raw=true"
 

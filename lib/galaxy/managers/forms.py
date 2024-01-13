@@ -1,17 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
-from galaxy.exceptions import (
-    InconsistentDatabase,
-    InternalServerError,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import InconsistentDatabase, InternalServerError, RequestParameterInvalidException
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import (
-    FormDefinition,
-    FormDefinitionCurrent,
-)
+from galaxy.model import FormDefinition, FormDefinitionCurrent
 from galaxy.model.base import transaction
 from galaxy.util import unicodify
 

@@ -1,15 +1,8 @@
 import os
 
-from galaxy_test.base.decorators import (
-    requires_admin,
-    requires_new_library,
-)
-from .framework import (
-    retry_during_transitions,
-    selenium_test,
-    SeleniumTestCase,
-    UsesLibraryAssertions,
-)
+from galaxy_test.base.decorators import requires_admin, requires_new_library
+
+from .framework import SeleniumTestCase, UsesLibraryAssertions, retry_during_transitions, selenium_test
 
 
 class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):

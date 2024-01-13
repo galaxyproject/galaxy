@@ -6,29 +6,13 @@ import os
 import tarfile
 import tempfile
 import zipfile
-from typing import (
-    Any,
-    cast,
-    Generator,
-    IO,
-    Iterable,
-    List,
-    Optional,
-    overload,
-    Tuple,
-    Union,
-)
+from typing import IO, Any, Generator, Iterable, List, Optional, Tuple, Union, cast, overload
 
 from typing_extensions import Literal
 
-from galaxy.util.path import (
-    safe_relpath,
-    StrPath,
-)
-from .checkers import (
-    is_bz2,
-    is_gzip,
-)
+from galaxy.util.path import StrPath, safe_relpath
+
+from .checkers import is_bz2, is_gzip
 
 log = logging.getLogger(__name__)
 

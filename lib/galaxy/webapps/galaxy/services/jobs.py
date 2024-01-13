@@ -1,28 +1,13 @@
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.managers import hdas
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.jobs import (
-    JobManager,
-    JobSearch,
-    view_show_job,
-)
+from galaxy.managers.jobs import JobManager, JobSearch, view_show_job
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import JobAssociation
-from galaxy.schema.schema import (
-    EncodedDatasetSourceId,
-    JobIndexQueryPayload,
-)
+from galaxy.schema.schema import EncodedDatasetSourceId, JobIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 

@@ -3,10 +3,7 @@ This module manages loading/etc of Galaxy interactive tours.
 """
 import logging
 import os
-from typing import (
-    List,
-    Union,
-)
+from typing import List, Union
 
 import yaml
 from pydantic import parse_obj_as
@@ -14,6 +11,7 @@ from pydantic import parse_obj_as
 from galaxy.exceptions import ObjectNotFound
 from galaxy.navigation.data import load_root_component
 from galaxy.util import config_directories_from_setting
+
 from ._interface import ToursRegistry
 from ._schema import TourList
 

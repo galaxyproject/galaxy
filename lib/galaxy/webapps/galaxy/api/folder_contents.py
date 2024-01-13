@@ -4,11 +4,7 @@ API operations on the contents of a library folder.
 import logging
 from typing import Optional
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-)
+from fastapi import Body, Path, Query
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
@@ -18,11 +14,7 @@ from galaxy.schema.schema import (
     LibraryFolderContentsIndexResult,
     LibraryFolderContentsIndexSortByEnum,
 )
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
 
 log = logging.getLogger(__name__)

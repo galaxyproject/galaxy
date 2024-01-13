@@ -8,6 +8,7 @@ since these tests can mutate the server config state.
 import operator
 
 from galaxy.util import UNKNOWN
+
 from ._framework import ApiTestCase
 
 

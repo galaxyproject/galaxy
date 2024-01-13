@@ -5,18 +5,9 @@ import shlex
 import subprocess
 import sys as _sys
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from galaxy.util import (
-    unicodify,
-    which,
-)
+from galaxy.util import unicodify, which
 
 log = logging.getLogger(__name__)
 

@@ -4,6 +4,7 @@ import requests
 import yaml
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+
 from . import ToolLocationResolver
 
 

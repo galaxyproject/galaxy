@@ -10,16 +10,11 @@ Phylip datatype sniffer
 from typing import TYPE_CHECKING
 
 from galaxy import util
-from galaxy.datatypes.data import (
-    get_file_peek,
-    Text,
-)
+from galaxy.datatypes.data import Text, get_file_peek
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.util import nice_size
+
 from .metadata import MetadataElement
 
 if TYPE_CHECKING:

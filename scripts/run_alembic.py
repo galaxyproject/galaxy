@@ -10,11 +10,7 @@ import sys
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from galaxy.model.migrations.scripts import (
-    add_db_urls_to_command_arguments,
-    get_configuration,
-    invoke_alembic,
-)
+from galaxy.model.migrations.scripts import add_db_urls_to_command_arguments, get_configuration, invoke_alembic
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

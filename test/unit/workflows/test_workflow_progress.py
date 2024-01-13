@@ -3,15 +3,9 @@ from typing import cast
 from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
-from galaxy.workflow.run import (
-    ModuleInjector,
-    WorkflowProgress,
-)
-from .workflow_support import (
-    MockApp,
-    MockTrans,
-    yaml_to_model,
-)
+from galaxy.workflow.run import ModuleInjector, WorkflowProgress
+
+from .workflow_support import MockApp, MockTrans, yaml_to_model
 
 TEST_WORKFLOW_YAML = """
 steps:

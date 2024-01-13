@@ -3,18 +3,15 @@ Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
-from galaxy.model.base import SharedModelMapping
-from galaxy.model.orm.engine_factory import build_engine
 from tool_shed.webapp.model import mapper_registry
 from tool_shed.webapp.security import CommunityRBACAgent
+
+from galaxy.model.base import SharedModelMapping
+from galaxy.model.orm.engine_factory import build_engine
 
 log = logging.getLogger(__name__)
 

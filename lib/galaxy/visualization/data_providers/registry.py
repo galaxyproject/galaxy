@@ -1,36 +1,14 @@
-from typing import (
-    Dict,
-    Optional,
-    Type,
-    Union,
-)
+from typing import Dict, Optional, Type, Union
 
 from typing_extensions import Literal
 
-from galaxy.datatypes.data import (
-    Data,
-    Newick,
-    Nexus,
-)
-from galaxy.datatypes.interval import (
-    Bed,
-    ChromatinInteractions,
-    ENCODEPeak,
-    Gff,
-    Gtf,
-    Interval,
-)
-from galaxy.datatypes.tabular import (
-    Tabular,
-    Vcf,
-)
+from galaxy.datatypes.data import Data, Newick, Nexus
+from galaxy.datatypes.interval import Bed, ChromatinInteractions, ENCODEPeak, Gff, Gtf, Interval
+from galaxy.datatypes.tabular import Tabular, Vcf
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
-from galaxy.visualization.data_providers.basic import (
-    BaseDataProvider,
-    ColumnDataProvider,
-)
+from galaxy.visualization.data_providers.basic import BaseDataProvider, ColumnDataProvider
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 # a dict keyed on datatype with a 'default' string key.

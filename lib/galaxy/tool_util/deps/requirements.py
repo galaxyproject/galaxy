@@ -1,27 +1,10 @@
 import copy
 import os
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union, cast
 
-from typing_extensions import (
-    get_args,
-    Literal,
-)
+from typing_extensions import Literal, get_args
 
-from galaxy.util import (
-    asbool,
-    xml_text,
-)
+from galaxy.util import asbool, xml_text
 from galaxy.util.oset import OrderedSet
 
 DEFAULT_REQUIREMENT_TYPE = "package"

@@ -7,10 +7,7 @@ import requests
 import yaml
 
 from galaxy.exceptions import MessageException
-from galaxy.util import (
-    asbool,
-    DEFAULT_SOCKET_TIMEOUT,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, asbool
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)

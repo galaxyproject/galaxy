@@ -5,32 +5,15 @@ API operations on a jobs.
 """
 
 import logging
-from datetime import (
-    date,
-    datetime,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import (
-    Body,
-    Depends,
-    Path,
-    Query,
-)
+from fastapi import Body, Depends, Path, Query
 from pydantic import Required
 from typing_extensions import Annotated
 
 from galaxy import exceptions
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.jobs import (
     JobManager,
     summarize_destination_params,
@@ -51,28 +34,20 @@ from galaxy.schema.jobs import (
     SearchJobsPayload,
     ShowFullJobResponse,
 )
-from galaxy.schema.schema import (
-    DatasetSourceType,
-    JobIndexSortByEnum,
-    JobMetric,
-)
+from galaxy.schema.schema import DatasetSourceType, JobIndexSortByEnum, JobMetric
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
-    depends,
     DependsOnTrans,
     IndexQueryTag,
     Router,
+    depends,
     search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
-from galaxy.webapps.galaxy.services.jobs import (
-    JobIndexPayload,
-    JobIndexViewEnum,
-    JobsService,
-)
+from galaxy.webapps.galaxy.services.jobs import JobIndexPayload, JobIndexViewEnum, JobsService
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)

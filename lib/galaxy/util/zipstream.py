@@ -1,12 +1,6 @@
 import os
 import zlib
-from typing import (
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Set,
-)
+from typing import Dict, Iterator, List, Optional, Set
 from urllib.parse import quote
 
 import zipstream

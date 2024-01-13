@@ -1,7 +1,4 @@
-from galaxy_test.selenium.framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+from galaxy_test.selenium.framework import SeleniumTestCase, selenium_test
 
 
 class TestManageInformation(SeleniumTestCase):

@@ -1,15 +1,11 @@
 import logging
 
 import tool_shed.util.shed_util_common as suc
-from galaxy import (
-    util,
-    web,
-)
-from tool_shed.managers.users import (
-    api_create_user,
-    index,
-)
+from tool_shed.managers.users import api_create_user, index
 from tool_shed_client.schema import CreateUserRequest
+
+from galaxy import util, web
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

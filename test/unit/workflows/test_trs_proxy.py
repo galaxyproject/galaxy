@@ -4,11 +4,7 @@ from os import environ
 import pytest
 import yaml
 
-from galaxy.workflow.trs_proxy import (
-    GA4GH_GALAXY_DESCRIPTOR,
-    parse_search_kwds,
-    TrsProxy,
-)
+from galaxy.workflow.trs_proxy import GA4GH_GALAXY_DESCRIPTOR, TrsProxy, parse_search_kwds
 
 # search test is very brittle (depends on production values) and is very slow.
 # still good to know search is working though - even if manually

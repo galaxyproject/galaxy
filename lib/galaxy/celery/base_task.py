@@ -2,13 +2,7 @@ import datetime
 from abc import abstractmethod
 
 from celery import Task
-from sqlalchemy import (
-    bindparam,
-    insert,
-    select,
-    text,
-    update,
-)
+from sqlalchemy import bindparam, insert, select, text, update
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session

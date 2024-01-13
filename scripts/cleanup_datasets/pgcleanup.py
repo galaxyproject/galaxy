@@ -29,11 +29,7 @@ import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import calculate_user_disk_usage_statements
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-    set_log_handler,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args, set_log_handler
 
 DEFAULT_LOG_DIR = os.path.join(galaxy_root, "scripts", "cleanup_datasets")
 

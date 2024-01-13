@@ -1,20 +1,10 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple
 
 from galaxy import web
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.workflows import (
-    WorkflowContentsManager,
-    WorkflowSerializer,
-    WorkflowsManager,
-)
+from galaxy.managers.workflows import WorkflowContentsManager, WorkflowSerializer, WorkflowsManager
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase

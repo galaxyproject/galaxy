@@ -2,9 +2,10 @@
 import re
 
 from galaxy import util
-from . import InstrumentPlugin
+
 from .. import formatting
 from ..safety import Safety
+from . import InstrumentPlugin
 
 MEMINFO_LINE = re.compile(r"(\w+)\s*\:\s*(\d+) kB")
 

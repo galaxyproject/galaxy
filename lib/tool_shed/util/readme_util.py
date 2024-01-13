@@ -3,22 +3,15 @@ import logging
 import os
 
 from mako.template import Template
+from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
 from galaxy import web
 from galaxy.tool_shed.util import basic_util
-from galaxy.tool_shed.util.hg_util import (
-    get_changectx_for_changeset,
-    get_file_context_from_ctx,
-)
+from galaxy.tool_shed.util.hg_util import get_changectx_for_changeset, get_file_context_from_ctx
 from galaxy.tool_shed.util.repository_util import get_repo_info_tuple_contents
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
-from galaxy.util import (
-    rst_to_html,
-    unicodify,
-    url_get,
-)
+from galaxy.util import rst_to_html, unicodify, url_get
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
-from tool_shed.util.metadata_util import get_latest_downloadable_changeset_revision
 
 log = logging.getLogger(__name__)
 

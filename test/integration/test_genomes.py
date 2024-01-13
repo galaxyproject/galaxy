@@ -2,11 +2,9 @@ import os
 import tempfile
 from unittest.mock import patch
 
-from galaxy.exceptions import (
-    ObjectNotFound,
-    ReferenceDataError,
-)
 from galaxy_test.driver import integration_util
+
+from galaxy.exceptions import ObjectNotFound, ReferenceDataError
 
 BUILDS_DATA = (
     "?\tunspecified (?)",

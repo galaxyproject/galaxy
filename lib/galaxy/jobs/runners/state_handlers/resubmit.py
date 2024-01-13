@@ -4,6 +4,7 @@ from datetime import datetime
 from galaxy import model
 from galaxy.jobs.runners import JobState
 from galaxy.model.base import transaction
+
 from ._safe_eval import safe_eval
 
 __all__ = ("failure",)

@@ -3,14 +3,13 @@
 import json
 import os
 import unittest
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
-from galaxy.util.commands import which
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
+
+from galaxy.util.commands import which
+
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

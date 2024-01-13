@@ -1,9 +1,6 @@
 """Module containing Galaxy workflow report generator plugins.
 """
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 
 from galaxy.managers import workflows
 from galaxy.managers.markdown_util import (

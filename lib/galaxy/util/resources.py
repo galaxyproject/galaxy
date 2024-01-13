@@ -3,25 +3,15 @@
 import sys
 
 if sys.version_info >= (3, 12):
-    from importlib.resources import (
-        Anchor,
-        as_file,
-        files,
-    )
+    from importlib.resources import Anchor, as_file, files
     from importlib.resources.abc import Traversable
 elif sys.version_info >= (3, 9):
     from importlib.abc import Traversable
-    from importlib.resources import (
-        as_file,
-        files,
-        Package as Anchor,
-    )
+    from importlib.resources import Package as Anchor
+    from importlib.resources import as_file, files
 else:
-    from importlib_resources import (
-        as_file,
-        files,
-        Package as Anchor,
-    )
+    from importlib_resources import Package as Anchor
+    from importlib_resources import as_file, files
     from importlib_resources.abc import Traversable
 
 

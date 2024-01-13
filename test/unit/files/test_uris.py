@@ -1,13 +1,7 @@
 import ipaddress
 
-from galaxy.exceptions import (
-    AdminRequiredException,
-    ConfigDoesNotAllowException,
-)
-from galaxy.files.uris import (
-    validate_non_local,
-    validate_uri_access,
-)
+from galaxy.exceptions import AdminRequiredException, ConfigDoesNotAllowException
+from galaxy.files.uris import validate_non_local, validate_uri_access
 
 
 def test_validate_local_ip_access():

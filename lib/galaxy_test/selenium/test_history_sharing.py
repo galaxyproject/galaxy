@@ -1,7 +1,4 @@
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+from .framework import SeleniumTestCase, selenium_test
 
 # Remove hack when submit_login works more consistently.
 VALID_LOGIN_RETRIES = 3

@@ -3,24 +3,13 @@ API operations on Group objects.
 """
 import logging
 
-from fastapi import (
-    Body,
-    Path,
-)
+from fastapi import Body, Path
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.groups import GroupsManager
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.groups import (
-    GroupCreatePayload,
-    GroupListResponse,
-    GroupResponse,
-)
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.schema.groups import GroupCreatePayload, GroupListResponse, GroupResponse
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

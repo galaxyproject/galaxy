@@ -4,20 +4,11 @@ Interval datatypes
 import logging
 import sys
 import tempfile
-from typing import (
-    cast,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import List, Optional, Tuple, Union, cast
 from urllib.parse import quote_plus
 
 import pysam
-from bx.intervals.io import (
-    GenomicIntervalReader,
-    ParseError,
-)
+from bx.intervals.io import GenomicIntervalReader, ParseError
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -29,28 +20,14 @@ from galaxy.datatypes.dataproviders.dataset import (
     WiggleDataProvider,
 )
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasId,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    get_headers,
-    iter_headers,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasId, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, get_headers, iter_headers
 from galaxy.datatypes.tabular import Tabular
-from galaxy.datatypes.util.gff_util import (
-    parse_gff3_attributes,
-    parse_gff_attributes,
-)
+from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import FileObjType
-from . import (
-    data,
-    dataproviders,
-)
+
+from . import data, dataproviders
 
 log = logging.getLogger(__name__)
 

@@ -6,33 +6,18 @@ testing configuration.
 """
 import os
 import re
-from typing import (
-    ClassVar,
-    Iterator,
-    Optional,
-    Type,
-    TYPE_CHECKING,
-    TypeVar,
-)
-from unittest import (
-    skip,
-    SkipTest,
-)
+from typing import TYPE_CHECKING, ClassVar, Iterator, Optional, Type, TypeVar
+from unittest import SkipTest, skip
 
 import pytest
+from galaxy_test.base.api import UsesApiTestCaseMixin, UsesCeleryTasks
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
-from galaxy.util.unittest_utils import (
-    _identity,
-    skip_unless_executable,
-)
-from galaxy_test.base.api import (
-    UsesApiTestCaseMixin,
-    UsesCeleryTasks,
-)
+from galaxy.util.unittest_utils import _identity, skip_unless_executable
+
 from .driver_util import GalaxyTestDriver
 
 if TYPE_CHECKING:

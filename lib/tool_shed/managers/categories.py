@@ -1,25 +1,15 @@
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-)
-
-from sqlalchemy import select
+from typing import Any, Callable, Dict, List
 
 import tool_shed.util.shed_util_common as suc
-from galaxy import (
-    exceptions,
-    web,
-)
-from galaxy.model.base import transaction
+from sqlalchemy import select
 from tool_shed.context import ProvidesUserContext
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import Category
-from tool_shed_client.schema import (
-    Category as CategoryResponse,
-    CreateCategoryRequest,
-)
+from tool_shed_client.schema import Category as CategoryResponse
+from tool_shed_client.schema import CreateCategoryRequest
+
+from galaxy import exceptions, web
+from galaxy.model.base import transaction
 
 
 class CategoryManager:

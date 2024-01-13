@@ -6,60 +6,29 @@ import json
 import os
 import traceback
 import unittest
-from functools import (
-    partial,
-    wraps,
-)
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from functools import partial, wraps
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 import requests
 import yaml
-from gxformat2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
+from galaxy_test.base import populators
+from galaxy_test.base.api import UsesApiTestCaseMixin, UsesCeleryTasks
+from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.decorators import requires_new_history, using_requirement
+from galaxy_test.base.env import DEFAULT_WEB_HOST, get_ip_address
+from galaxy_test.base.populators import YamlContentT, load_data_dict
+from galaxy_test.base.testcase import FunctionalTestCase
+from gxformat2 import ImporterGalaxyInterface, convert_and_import_workflow
 from requests.models import Response
 
 from galaxy.selenium import driver_factory
 from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
 from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
-from galaxy.selenium.navigates_galaxy import (
-    NavigatesGalaxy,
-    retry_during_transitions,
-)
+from galaxy.selenium.navigates_galaxy import NavigatesGalaxy, retry_during_transitions
 from galaxy.tool_util.verify.interactor import prepare_request_params
-from galaxy.util import (
-    asbool,
-    classproperty,
-    DEFAULT_SOCKET_TIMEOUT,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, asbool, classproperty
 from galaxy.util.unittest_utils import skip_if_github_down
-from galaxy_test.base import populators
-from galaxy_test.base.api import (
-    UsesApiTestCaseMixin,
-    UsesCeleryTasks,
-)
-from galaxy_test.base.api_util import get_admin_api_key
-from galaxy_test.base.decorators import (
-    requires_new_history,
-    using_requirement,
-)
-from galaxy_test.base.env import (
-    DEFAULT_WEB_HOST,
-    get_ip_address,
-)
-from galaxy_test.base.populators import (
-    load_data_dict,
-    YamlContentT,
-)
-from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver

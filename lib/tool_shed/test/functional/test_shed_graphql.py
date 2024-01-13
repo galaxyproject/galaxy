@@ -1,8 +1,6 @@
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
+
+from ..base.api import ShedApiTestCase, skip_if_api_v1
 
 
 class TestShedGraphqlApi(ShedApiTestCase):

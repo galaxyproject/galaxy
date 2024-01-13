@@ -1,10 +1,6 @@
 import subprocess
 
-from galaxy.job_metrics.instrumenters.core import (
-    CorePlugin,
-    GALAXY_MEMORY_MB_KEY,
-    GALAXY_SLOTS_KEY,
-)
+from galaxy.job_metrics.instrumenters.core import GALAXY_MEMORY_MB_KEY, GALAXY_SLOTS_KEY, CorePlugin
 from galaxy.util import listify
 
 

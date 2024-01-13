@@ -4,11 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from ..panel import (
-    HasPanelItems,
-    panel_item_types,
-    ToolPanelElements,
-)
+from ..panel import HasPanelItems, ToolPanelElements, panel_item_types
 
 
 class ToolPanelViewModelType(str, Enum):

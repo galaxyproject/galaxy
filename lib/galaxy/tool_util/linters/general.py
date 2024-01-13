@@ -1,10 +1,7 @@
 """This module contains linting functions for general aspects of the tool."""
 import re
 
-from galaxy.tool_util.version import (
-    LegacyVersion,
-    parse_version,
-)
+from galaxy.tool_util.version import LegacyVersion, parse_version
 
 ERROR_VERSION_MSG = "Tool version is missing or empty."
 WARN_VERSION_MSG = "Tool version [%s] is not compliant with PEP 440."

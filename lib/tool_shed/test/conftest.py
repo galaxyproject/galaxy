@@ -1,7 +1,6 @@
 import os
 
 import pytest
-
 from tool_shed.test.base import driver
 
 

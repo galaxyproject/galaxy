@@ -3,45 +3,32 @@ import os
 import random
 import string
 import weakref
-from datetime import (
-    datetime,
-    timedelta,
-)
-from typing import (
-    Any,
-    Mapping,
-    TYPE_CHECKING,
-)
+from datetime import datetime, timedelta
+from typing import TYPE_CHECKING, Any, Mapping
 
-from mercurial import (
-    hg,
-    ui,
-)
+import tool_shed.repository_types.util as rt_util
+from mercurial import hg, ui
 from sqlalchemy import (
+    TEXT,
     Boolean,
     Column,
     DateTime,
-    desc,
     ForeignKey,
     Integer,
-    not_,
     String,
     Table,
-    TEXT,
-    true,
     UniqueConstraint,
+    desc,
+    not_,
+    true,
 )
-from sqlalchemy.orm import (
-    registry,
-    relationship,
-)
+from sqlalchemy.orm import registry, relationship
+from tool_shed.dependencies.repository import relation_builder
+from tool_shed.util import hg_util, metadata_util
+from tool_shed.util.hgweb_config import hgweb_config_manager
 
-import tool_shed.repository_types.util as rt_util
 from galaxy import util
-from galaxy.model.custom_types import (
-    MutableJSONType,
-    TrimmedString,
-)
+from galaxy.model.custom_types import MutableJSONType, TrimmedString
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.security.validate_user_input import validate_password_str
@@ -49,12 +36,6 @@ from galaxy.util import unique_id
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-)
-from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
 

@@ -1,24 +1,9 @@
 import os
-from typing import (
-    Callable,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Callable, Dict, Iterator, List, Optional, Tuple, Union
 
-from pydantic import (
-    BaseModel,
-    Extra,
-    root_validator,
-)
+from pydantic import BaseModel, Extra, root_validator
 
-from galaxy.util import (
-    asbool,
-    Element,
-)
+from galaxy.util import Element, asbool
 
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 VALUE_TRANSLATION_FUNCTIONS: Dict[str, Callable] = dict(abspath=os.path.abspath)

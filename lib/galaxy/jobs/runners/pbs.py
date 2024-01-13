@@ -16,15 +16,9 @@ except ImportError as exc:
         "following error:\nImportError %s" % str(exc)
     )
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.jobs import JobDestination
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)

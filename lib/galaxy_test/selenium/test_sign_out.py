@@ -1,9 +1,6 @@
 from selenium.webdriver.common.by import By
 
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+from .framework import SeleniumTestCase, selenium_test
 
 
 class TestSignOut(SeleniumTestCase):

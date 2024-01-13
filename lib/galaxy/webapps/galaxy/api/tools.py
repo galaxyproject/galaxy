@@ -1,36 +1,18 @@
 import logging
 import os
 from json import loads
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional, cast
 
-from fastapi import (
-    Body,
-    Depends,
-    Request,
-    UploadFile,
-)
+from fastapi import Body, Depends, Request, UploadFile
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
-from galaxy import (
-    exceptions,
-    util,
-    web,
-)
+from galaxy import exceptions, util, web
 from galaxy.datatypes.data import get_params_and_input_name
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.schema.fetch_data import (
-    FetchDataFormPayload,
-    FetchDataPayload,
-)
+from galaxy.schema.fetch_data import FetchDataFormPayload, FetchDataPayload
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -42,14 +24,8 @@ from galaxy.web import (
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.tools import ToolsService
-from . import (
-    APIContentTypeRoute,
-    as_form,
-    BaseGalaxyAPIController,
-    depends,
-    DependsOnTrans,
-    Router,
-)
+
+from . import APIContentTypeRoute, BaseGalaxyAPIController, DependsOnTrans, Router, as_form, depends
 
 log = logging.getLogger(__name__)
 

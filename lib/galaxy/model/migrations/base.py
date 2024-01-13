@@ -6,18 +6,8 @@ import logging
 import os
 import sys
 import urllib.parse
-from argparse import (
-    ArgumentParser,
-    Namespace,
-)
-from typing import (
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Union,
-)
+from argparse import ArgumentParser, Namespace
+from typing import Dict, Iterable, List, Optional, Union, cast
 
 import alembic
 from alembic import command
@@ -25,16 +15,8 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from alembic.script.base import Script
-from sqlalchemy import (
-    MetaData,
-    Table,
-    text,
-)
-from sqlalchemy.engine import (
-    Connection,
-    CursorResult,
-    Engine,
-)
+from sqlalchemy import MetaData, Table, text
+from sqlalchemy.engine import Connection, CursorResult, Engine
 
 ALEMBIC_TABLE = "alembic_version"
 SQLALCHEMYMIGRATE_TABLE = "migrate_version"

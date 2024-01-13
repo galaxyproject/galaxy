@@ -2,11 +2,7 @@
 import os
 import tempfile
 
-from galaxy.files import (
-    ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
-    DictFileSourcesUserContext,
-)
+from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig, DictFileSourcesUserContext
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"

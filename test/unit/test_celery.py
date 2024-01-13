@@ -1,9 +1,4 @@
-from galaxy.celery import (
-    celery_app,
-    DEFAULT_TASK_QUEUE,
-    GalaxyCelery,
-    TASKS_MODULES,
-)
+from galaxy.celery import DEFAULT_TASK_QUEUE, TASKS_MODULES, GalaxyCelery, celery_app
 from galaxy.config import GalaxyAppConfiguration
 
 

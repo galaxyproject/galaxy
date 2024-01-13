@@ -10,14 +10,7 @@ import re
 import string
 import subprocess
 from itertools import islice
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-)
+from typing import Any, Callable, Dict, Iterable, List, Optional
 
 import bx.align.maf
 from markupsafe import escape
@@ -26,27 +19,13 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
-from galaxy.datatypes.metadata import (
-    DictParameter,
-    MetadataElement,
-)
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    get_headers,
-    iter_headers,
-)
-from galaxy.util import (
-    compression_utils,
-    nice_size,
-)
+from galaxy.datatypes.metadata import DictParameter, MetadataElement
+from galaxy.datatypes.protocols import DatasetHasHidProtocol, DatasetProtocol, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, get_headers, iter_headers
+from galaxy.util import compression_utils, nice_size
 from galaxy.util.checkers import is_gzip
 from galaxy.util.image_util import check_image_type
+
 from . import data
 
 log = logging.getLogger(__name__)

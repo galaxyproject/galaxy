@@ -1,15 +1,10 @@
 import uuid
 
 from galaxy import model
-from galaxy.objectstore import (
-    QuotaSourceInfo,
-    QuotaSourceMap,
-)
+from galaxy.objectstore import QuotaSourceInfo, QuotaSourceMap
 from galaxy.quota import DatabaseQuotaAgent
-from .test_galaxy_mapping import (
-    BaseModelTestCase,
-    MockObjectStore,
-)
+
+from .test_galaxy_mapping import BaseModelTestCase, MockObjectStore
 
 
 class TestPurgeUsage(BaseModelTestCase):

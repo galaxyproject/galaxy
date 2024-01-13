@@ -1,10 +1,7 @@
 import logging
 import os
 import subprocess
-from typing import (
-    Optional,
-    Tuple,
-)
+from typing import Optional, Tuple
 
 from galaxy.tool_shed.util import basic_util
 from galaxy.util import unicodify

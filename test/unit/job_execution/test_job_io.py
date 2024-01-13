@@ -2,11 +2,7 @@ import tempfile
 
 import pytest
 
-from galaxy.files import (
-    ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
-    DictFileSourcesUserContext,
-)
+from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig, DictFileSourcesUserContext
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
 from galaxy.model.base import transaction

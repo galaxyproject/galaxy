@@ -1,21 +1,12 @@
-from typing import (
-    Any,
-    List,
-)
+from typing import Any, List
 
-from fastapi import (
-    Path,
-    Query,
-)
+from fastapi import Path, Query
 from fastapi.responses import Response
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+
+from . import DependsOnTrans, Router, depends
 
 router = Router(tags=["genomes"])
 

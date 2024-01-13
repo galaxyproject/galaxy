@@ -5,12 +5,7 @@
 import os
 import shlex
 import sys
-from typing import (
-    List,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
     from .container_volumes import DockerVolume

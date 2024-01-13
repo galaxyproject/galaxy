@@ -3,12 +3,7 @@ import tempfile
 import pytest
 
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
-from galaxy.datatypes.sniff import (
-    convert_newlines,
-    convert_newlines_sep2tabs,
-    convert_sep2tabs,
-    get_test_fname,
-)
+from galaxy.datatypes.sniff import convert_newlines, convert_newlines_sep2tabs, convert_sep2tabs, get_test_fname
 
 
 def assert_converts_to_1234_convert_sep2tabs(content, expected="1\t2\n3\t4\n"):

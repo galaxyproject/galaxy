@@ -1,41 +1,18 @@
 import threading
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Union
 
-from galaxy.model.migrations import (
-    DatabaseStateVerifier,
-    TSI,
-)
+from galaxy.model.migrations import TSI, DatabaseStateVerifier
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.tool_shed_install import mapping as install_mapping
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
-from galaxy.tool_shed.galaxy_install.client import (
-    DataManagerInterface,
-    DataManagersInterface,
-    InstallationTarget,
-)
+from galaxy.tool_shed.galaxy_install.client import DataManagerInterface, DataManagersInterface, InstallationTarget
 from galaxy.tool_shed.util.repository_util import get_installed_repository
-from galaxy.tool_util.data import (
-    OutputDataset,
-    ToolDataTableManager,
-)
+from galaxy.tool_util.data import OutputDataset, ToolDataTableManager
 from galaxy.tool_util.loader_directory import looks_like_a_tool
-from galaxy.tool_util.toolbox.base import (
-    AbstractToolBox,
-    NullToolTagManager,
-)
-from galaxy.tool_util.toolbox.watcher import (
-    get_tool_conf_watcher,
-    get_tool_watcher,
-)
+from galaxy.tool_util.toolbox.base import AbstractToolBox, NullToolTagManager
+from galaxy.tool_util.toolbox.watcher import get_tool_conf_watcher, get_tool_watcher
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 

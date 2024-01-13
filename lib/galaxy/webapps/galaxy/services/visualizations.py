@@ -3,14 +3,8 @@ from typing import Tuple
 
 from galaxy import exceptions
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.visualizations import (
-    VisualizationManager,
-    VisualizationSerializer,
-)
-from galaxy.schema.visualization import (
-    VisualizationIndexQueryPayload,
-    VisualizationSummaryList,
-)
+from galaxy.managers.visualizations import VisualizationManager, VisualizationSerializer
+from galaxy.schema.visualization import VisualizationIndexQueryPayload, VisualizationSummaryList
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService

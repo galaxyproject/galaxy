@@ -1,15 +1,6 @@
 """The module defines the abstract interface for resolving container images for tool execution."""
-from abc import (
-    ABCMeta,
-    abstractmethod,
-    abstractproperty,
-)
-from typing import (
-    Any,
-    Container,
-    Optional,
-    TYPE_CHECKING,
-)
+from abc import ABCMeta, abstractmethod, abstractproperty
+from typing import TYPE_CHECKING, Any, Container, Optional
 
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -17,10 +8,7 @@ from galaxy.util.dictifiable import Dictifiable
 if TYPE_CHECKING:
     from beaker.cache import Cache
 
-    from ..dependencies import (
-        AppInfo,
-        ToolInfo,
-    )
+    from ..dependencies import AppInfo, ToolInfo
     from ..requirements import ContainerDescription
 
 

@@ -1,13 +1,8 @@
 import pysam
 
-from galaxy.datatypes.tabular import (
-    Vcf,
-    VcfGz,
-)
-from .util import (
-    get_dataset,
-    get_input_files,
-)
+from galaxy.datatypes.tabular import Vcf, VcfGz
+
+from .util import get_dataset, get_input_files
 
 
 def test_vcf_sniff():

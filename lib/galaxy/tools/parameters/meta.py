@@ -2,24 +2,13 @@ import copy
 import itertools
 import logging
 from collections import namedtuple
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.model import HistoryDatasetCollectionAssociation
-from galaxy.model.dataset_collections import (
-    matching,
-    subcollections,
-)
+from galaxy.model.dataset_collections import matching, subcollections
 from galaxy.util import permutations
+
 from . import visit_input_values
 
 log = logging.getLogger(__name__)

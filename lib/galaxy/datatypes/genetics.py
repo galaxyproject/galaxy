@@ -15,38 +15,19 @@ import logging
 import os
 import re
 import sys
-from typing import (
-    Dict,
-    IO,
-    List,
-    Optional,
-    Union,
-)
+from typing import IO, Dict, List, Optional, Union
 from urllib.parse import quote_plus
 
 from markupsafe import escape
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import (
-    DatatypeValidation,
-    Text,
-)
+from galaxy.datatypes.data import DatatypeValidation, Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
-from galaxy.util import (
-    nice_size,
-    unicodify,
-)
+from galaxy.util import nice_size, unicodify
 from galaxy.util.compression_utils import FileObjType
 
 gal_Log = logging.getLogger(__name__)

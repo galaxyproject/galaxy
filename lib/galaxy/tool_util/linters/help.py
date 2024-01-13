@@ -2,10 +2,7 @@
 
 from typing import Union
 
-from galaxy.util import (
-    rst_to_html,
-    unicodify,
-)
+from galaxy.util import rst_to_html, unicodify
 
 
 def lint_help(tool_xml, lint_ctx):

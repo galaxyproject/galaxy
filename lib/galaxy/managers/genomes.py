@@ -1,18 +1,12 @@
-from typing import (
-    Any,
-    List,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, List
 
 from sqlalchemy import func
 
 from galaxy import model as m
-from galaxy.exceptions import (
-    ReferenceDataError,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import ReferenceDataError, RequestParameterInvalidException
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.structured_app import StructuredApp
+
 from .base import raise_filter_err
 
 if TYPE_CHECKING:

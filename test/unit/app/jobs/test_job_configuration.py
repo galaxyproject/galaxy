@@ -9,10 +9,7 @@ from pykwalify.core import Core
 from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
-from galaxy.util import (
-    galaxy_directory,
-    galaxy_samples_directory,
-)
+from galaxy.util import galaxy_directory, galaxy_samples_directory
 from galaxy.util.unittest import TestCase
 from galaxy.web_stack import ApplicationStack
 from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS

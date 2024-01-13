@@ -2,11 +2,7 @@ import os
 
 from galaxy.datatypes import sniff
 from galaxy.files import ConfiguredFileSourcesConfig
-from galaxy.files.unittest_utils import (
-    setup_root,
-    TestConfiguredFileSources,
-    write_file_fixtures,
-)
+from galaxy.files.unittest_utils import TestConfiguredFileSources, setup_root, write_file_fixtures
 
 
 def test_posix():

@@ -1,23 +1,21 @@
 import logging
 import sys
 import time
-from typing import (
-    Any,
-    Optional,
-)
+from typing import Any, Optional
 
-from sqlalchemy.orm.scoping import scoped_session
-
-import galaxy.datatypes.registry
-import galaxy.tools.data
 import tool_shed.repository_registry
 import tool_shed.repository_types.registry
 import tool_shed.webapp.model
+from sqlalchemy.orm.scoping import scoped_session
+from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from tool_shed.structured_app import ToolShedApp
+from tool_shed.util.hgweb_config import hgweb_config_manager
+from tool_shed.webapp.model.migrations import verify_database
+
+import galaxy.datatypes.registry
+import galaxy.tools.data
 from galaxy import auth
-from galaxy.app import (
-    HaltableContainer,
-    SentryClientMixin,
-)
+from galaxy.app import HaltableContainer, SentryClientMixin
 from galaxy.config import configure_logging
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
@@ -25,17 +23,11 @@ from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
-from galaxy.quota import (
-    NoQuotaAgent,
-    QuotaAgent,
-)
+from galaxy.quota import NoQuotaAgent, QuotaAgent
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
-from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
-from tool_shed.structured_app import ToolShedApp
-from tool_shed.util.hgweb_config import hgweb_config_manager
-from tool_shed.webapp.model.migrations import verify_database
+
 from . import config
 
 log = logging.getLogger(__name__)

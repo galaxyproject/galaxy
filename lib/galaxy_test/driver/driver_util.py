@@ -14,43 +14,26 @@ import tempfile
 import threading
 import time
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 from urllib.parse import urlparse
+
+from galaxy_test.base.api_util import get_admin_api_key, get_user_api_key
+from galaxy_test.base.env import DEFAULT_WEB_HOST, target_url_parts
+from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
+from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
-from galaxy.model.database_utils import (
-    create_database,
-    database_exists,
-)
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
-from galaxy.tool_util.verify.interactor import (
-    GalaxyInteractorApi,
-    verify_tool,
-)
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.tools import ToolBox
-from galaxy.util import (
-    asbool,
-    download_to_file,
-    galaxy_directory,
-)
+from galaxy.util import asbool, download_to_file, galaxy_directory
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.galaxy import buildapp
 from galaxy.webapps.galaxy.fast_app import initialize_fast_app as init_galaxy_fast_app
-from galaxy_test.base.api_util import (
-    get_admin_api_key,
-    get_user_api_key,
-)
-from galaxy_test.base.env import (
-    DEFAULT_WEB_HOST,
-    target_url_parts,
-)
-from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
-from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
+
 from .test_logging import logging_config_file
 
 galaxy_root = galaxy_directory()

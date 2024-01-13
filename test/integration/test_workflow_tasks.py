@@ -5,23 +5,16 @@ into the API test suite.
 """
 import json
 import os
-from typing import (
-    Any,
-    cast,
-    Dict,
-)
+from typing import Any, Dict, cast
 
-from galaxy.util.compression_utils import CompressedFile
 from galaxy_test.api.test_workflows import RunsWorkflowFixtures
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api import UsesCeleryTasks
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    RunJobsSummary,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, RunJobsSummary, WorkflowPopulator
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
+
+from galaxy.util.compression_utils import CompressedFile
 
 
 class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures):

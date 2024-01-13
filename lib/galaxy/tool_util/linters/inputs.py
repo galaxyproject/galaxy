@@ -4,11 +4,9 @@ import re
 from typing import TYPE_CHECKING
 
 from galaxy.util import string_as_bool
-from ._util import (
-    is_datasource,
-    is_valid_cheetah_placeholder,
-)
+
 from ..parser.util import _parse_name
+from ._util import is_datasource, is_valid_cheetah_placeholder
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext

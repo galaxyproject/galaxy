@@ -1,6 +1,7 @@
 #EMBOSS format corrector
 
 import operator
+
 #from galaxy import datatypes
 
 #Properly set file formats after job run

@@ -1,12 +1,6 @@
 """Utility methods for making assertions about Galaxy API responses, etc...
 """
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, Optional, Union, cast
 
 from requests import Response
 

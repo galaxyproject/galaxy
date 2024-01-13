@@ -1,8 +1,8 @@
 import time
 
+from galaxy_test.base.decorators import requires_admin
 from requests import put
 
-from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"

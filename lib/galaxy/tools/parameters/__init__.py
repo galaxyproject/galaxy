@@ -3,32 +3,24 @@ Classes encapsulating Galaxy tool parameters.
 """
 
 from json import dumps
-from typing import (
-    Dict,
-    Union,
-)
+from typing import Dict, Union
 
 from boltons.iterutils import remap
 
 from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
+
 from .basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    is_runtime_value,
     ParameterValueError,
-    runtime_to_json,
     SelectToolParameter,
     ToolParameter,
+    is_runtime_value,
+    runtime_to_json,
 )
-from .grouping import (
-    Conditional,
-    Group,
-    Repeat,
-    Section,
-    UploadDataset,
-)
+from .grouping import Conditional, Group, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
 

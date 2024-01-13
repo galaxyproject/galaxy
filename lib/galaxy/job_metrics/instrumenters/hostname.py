@@ -1,8 +1,8 @@
 """The module describes the ``hostname`` job metrics plugin."""
 import logging
 
-from . import InstrumentPlugin
 from .. import formatting
+from . import InstrumentPlugin
 
 log = logging.getLogger(__name__)
 

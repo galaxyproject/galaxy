@@ -14,11 +14,8 @@ from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
+
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

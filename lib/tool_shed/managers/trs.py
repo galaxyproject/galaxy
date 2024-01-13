@@ -1,36 +1,18 @@
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from starlette.datastructures import URL
+from tool_shed.context import ProvidesRepositoriesContext
+from tool_shed.structured_app import ToolShedApp
+from tool_shed.util.metadata_util import get_current_repository_metadata_for_changeset_revision
+from tool_shed.webapp.model import Repository, RepositoryMetadata
+from tool_shed_client.schema.trs import DescriptorType, Tool, ToolClass, ToolVersion
+from tool_shed_client.schema.trs_service_info import Organization, Service, ServiceType
+from tool_shed_client.trs_util import decode_identifier
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.version import VERSION
-from tool_shed.context import ProvidesRepositoriesContext
-from tool_shed.structured_app import ToolShedApp
-from tool_shed.util.metadata_util import get_current_repository_metadata_for_changeset_revision
-from tool_shed.webapp.model import (
-    Repository,
-    RepositoryMetadata,
-)
-from tool_shed_client.schema.trs import (
-    DescriptorType,
-    Tool,
-    ToolClass,
-    ToolVersion,
-)
-from tool_shed_client.schema.trs_service_info import (
-    Organization,
-    Service,
-    ServiceType,
-)
-from tool_shed_client.trs_util import decode_identifier
+
 from .repositories import guid_to_repository
 
 TRS_SERVICE_NAME = "Tool Shed TRS API"

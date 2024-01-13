@@ -2,24 +2,17 @@
 import copy
 import logging
 import os
-from typing import (
-    cast,
-    Container,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Container, Optional, cast
 
 from galaxy.util.commands import shell
-from . import ContainerResolver
-from .mulled import CliContainerResolver
+
 from ..container_classes import SingularityContainer
 from ..requirements import ContainerDescription
+from . import ContainerResolver
+from .mulled import CliContainerResolver
 
 if TYPE_CHECKING:
-    from ..dependencies import (
-        AppInfo,
-        ToolInfo,
-    )
+    from ..dependencies import AppInfo, ToolInfo
 
 log = logging.getLogger(__name__)
 

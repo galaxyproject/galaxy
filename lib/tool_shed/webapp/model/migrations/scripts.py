@@ -1,15 +1,8 @@
 import os
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from galaxy.model.migrations.base import pop_arg_from_args
-from galaxy.util.properties import (
-    find_config_file,
-    get_data_dir,
-    load_app_properties,
-)
+from galaxy.util.properties import find_config_file, get_data_dir, load_app_properties
 
 DEFAULT_CONFIG_NAMES = ["tool_shed", "tool_shed_wsgi"]
 CONFIG_FILE_ARG = "--toolshed-config"

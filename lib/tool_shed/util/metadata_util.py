@@ -1,20 +1,14 @@
 import logging
 from operator import itemgetter
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import select
+from tool_shed.util.hg_util import changeset2rev
 
 from galaxy.model.base import transaction
-from galaxy.tool_shed.util.hg_util import (
-    INITIAL_CHANGELOG_HASH,
-    reversed_lower_upper_bounded_changelog,
-)
+from galaxy.tool_shed.util.hg_util import INITIAL_CHANGELOG_HASH, reversed_lower_upper_bounded_changelog
 from galaxy.tool_shed.util.repository_util import get_repository_by_name_and_owner
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
-from tool_shed.util.hg_util import changeset2rev
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp

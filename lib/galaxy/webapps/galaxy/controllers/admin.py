@@ -1,38 +1,20 @@
 import logging
 from typing import Set
 
-from sqlalchemy import (
-    false,
-    func,
-    true,
-)
+from sqlalchemy import false, func, true
 from typing_extensions import TypedDict
 
-from galaxy import (
-    model,
-    util,
-    web,
-)
+from galaxy import model, util, web
 from galaxy.exceptions import ActionInputError
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import transaction
-from galaxy.model.index_filter_util import (
-    raw_text_column_filter,
-    text_column_filter,
-)
+from galaxy.model.index_filter_util import raw_text_column_filter, text_column_filter
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 from galaxy.web import url_for
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
+from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.webapps.base import controller
 
 log = logging.getLogger(__name__)

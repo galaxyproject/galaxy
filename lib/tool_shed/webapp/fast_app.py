@@ -1,40 +1,19 @@
 import logging
 import os
 from pathlib import Path
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional, cast
 
 from a2wsgi import WSGIMiddleware
-from fastapi import (
-    Depends,
-    FastAPI,
-)
-from fastapi.responses import (
-    HTMLResponse,
-    RedirectResponse,
-)
+from fastapi import Depends, FastAPI
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from starlette_graphene3 import (
-    GraphQLApp,
-    make_graphiql_handler,
-)
-
-from galaxy.webapps.base.api import (
-    add_exception_handler,
-    add_request_id_middleware,
-    include_all_package_routers,
-)
-from galaxy.webapps.openapi.utils import get_openapi
+from starlette_graphene3 import GraphQLApp, make_graphiql_handler
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.webapp.api2 import (
-    ensure_valid_session,
-    get_trans,
-)
+from tool_shed.webapp.api2 import ensure_valid_session, get_trans
 from tool_shed.webapp.graphql.schema import schema
+
+from galaxy.webapps.base.api import add_exception_handler, add_request_id_middleware, include_all_package_routers
+from galaxy.webapps.openapi.utils import get_openapi
 
 log = logging.getLogger(__name__)
 

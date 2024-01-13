@@ -13,29 +13,14 @@ import struct
 import tempfile
 import zipfile
 from functools import partial
-from typing import (
-    Callable,
-    Dict,
-    IO,
-    NamedTuple,
-    Optional,
-    Union,
-)
+from typing import IO, Callable, Dict, NamedTuple, Optional, Union
 
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
-from galaxy.util import (
-    compression_utils,
-    file_reader,
-    is_binary,
-)
-from galaxy.util.checkers import (
-    check_html,
-    COMPRESSION_CHECK_FUNCTIONS,
-    is_tar,
-)
+from galaxy.util import compression_utils, file_reader, is_binary
+from galaxy.util.checkers import COMPRESSION_CHECK_FUNCTIONS, check_html, is_tar
 from galaxy.util.path import StrPath
 
 import pylibmagic  # noqa: F401  # isort:skip

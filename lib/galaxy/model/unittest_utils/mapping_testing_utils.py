@@ -1,7 +1,4 @@
-from abc import (
-    ABC,
-    abstractmethod,
-)
+from abc import ABC, abstractmethod
 from uuid import uuid4
 
 import pytest

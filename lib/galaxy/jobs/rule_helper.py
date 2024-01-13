@@ -5,10 +5,7 @@ from datetime import datetime
 
 from sqlalchemy import func
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.tool_util.deps.dependencies import ToolInfo
 
 log = logging.getLogger(__name__)

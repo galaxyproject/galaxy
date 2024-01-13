@@ -1,10 +1,8 @@
 import os
 
 from galaxy_test.selenium.framework import retry_assertion_during_transitions
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 
 class TestUserLibraryImport(SeleniumIntegrationTestCase):

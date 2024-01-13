@@ -1,8 +1,9 @@
 from collections import namedtuple
 
-from galaxy import exceptions
 from tool_shed.context import SessionRequestContext
 from tool_shed.webapp.search.tool_search import ToolSearch
+
+from galaxy import exceptions
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:

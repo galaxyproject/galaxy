@@ -1,13 +1,10 @@
 from abc import abstractmethod
 from enum import Enum
-from typing import (
-    Dict,
-    Optional,
-    Tuple,
-)
+from typing import Dict, Optional, Tuple
 
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
+
 from .parser import ensure_tool_conf_item
 
 

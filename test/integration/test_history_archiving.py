@@ -1,11 +1,12 @@
 from typing import Optional
 from uuid import uuid4
 
-from galaxy.schema.schema import ModelStoreFormat
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
+
+from galaxy.schema.schema import ModelStoreFormat
 
 
 class TestHistoryArchivingWithExportRecord(IntegrationTestCase, UsesCeleryTasks, PosixFileSourceSetup):

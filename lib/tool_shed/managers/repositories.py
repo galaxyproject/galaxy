@@ -5,39 +5,12 @@ import json
 import logging
 from collections import namedtuple
 from time import strftime
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from pydantic import BaseModel
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import false, select
 from sqlalchemy.orm import scoped_session
-
-from galaxy import web
-from galaxy.exceptions import (
-    ConfigDoesNotAllowException,
-    InsufficientPermissionsException,
-    InternalServerError,
-    MalformedContents,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
-from galaxy.tool_shed.util import dependency_display
-from galaxy.util import listify
-from galaxy.util.tool_shed.encoding_util import tool_shed_encode
-from tool_shed.context import (
-    ProvidesRepositoriesContext,
-    ProvidesUserContext,
-)
+from tool_shed.context import ProvidesRepositoriesContext, ProvidesUserContext
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
@@ -51,33 +24,35 @@ from tool_shed.util.metadata_util import (
 )
 from tool_shed.util.readme_util import build_readme_files_dict
 from tool_shed.util.repository_content_util import upload_tar
+from tool_shed.util.repository_util import create_repository as low_level_create_repository
 from tool_shed.util.repository_util import (
-    create_repository as low_level_create_repository,
     get_repo_info_dict,
     get_repositories_by_category,
     get_repository_by_name_and_owner,
     get_repository_in_tool_shed,
     validate_repository_name,
 )
-from tool_shed.util.shed_util_common import (
-    count_repositories_in_category,
-    get_category,
-)
+from tool_shed.util.shed_util_common import count_repositories_in_category, get_category
 from tool_shed.util.tool_util import generate_message_for_invalid_tools
-from tool_shed.webapp.model import (
-    Repository,
-    RepositoryMetadata,
-)
+from tool_shed.webapp.model import Repository, RepositoryMetadata
 from tool_shed.webapp.search.repo_search import RepoSearch
-from tool_shed_client.schema import (
-    CreateRepositoryRequest,
-    DetailedRepository,
-    ExtraRepoInfo,
-    LegacyInstallInfoTuple,
-    Repository as SchemaRepository,
-    RepositoryMetadataInstallInfoDict,
-    ResetMetadataOnRepositoryResponse,
+from tool_shed_client.schema import CreateRepositoryRequest, DetailedRepository, ExtraRepoInfo, LegacyInstallInfoTuple
+from tool_shed_client.schema import Repository as SchemaRepository
+from tool_shed_client.schema import RepositoryMetadataInstallInfoDict, ResetMetadataOnRepositoryResponse
+
+from galaxy import web
+from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
+    InsufficientPermissionsException,
+    InternalServerError,
+    MalformedContents,
+    ObjectNotFound,
+    RequestParameterInvalidException,
 )
+from galaxy.tool_shed.util import dependency_display
+from galaxy.util import listify
+from galaxy.util.tool_shed.encoding_util import tool_shed_encode
+
 from .categories import get_value_mapper as category_value_mapper
 
 log = logging.getLogger(__name__)

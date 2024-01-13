@@ -1,26 +1,13 @@
 import os
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    Tuple,
-)
+from typing import Any, Dict, Tuple
 
 import pytest
 
-from galaxy.exceptions import (
-    ItemAccessibilityException,
-    RequestParameterInvalidException,
-)
-from galaxy.files import (
-    ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
-)
-from galaxy.files.unittest_utils import (
-    setup_root,
-    TestConfiguredFileSources,
-    write_file_fixtures,
-)
+from galaxy.exceptions import ItemAccessibilityException, RequestParameterInvalidException
+from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig
+from galaxy.files.unittest_utils import TestConfiguredFileSources, setup_root, write_file_fixtures
+
 from ._util import (
     assert_realizes_as,
     assert_realizes_throws_exception,

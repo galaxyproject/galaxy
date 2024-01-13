@@ -20,6 +20,7 @@ import logging
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.galaxy.api import depends
 from galaxy.webapps.galaxy.services.authenticate import AuthenticationService
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

@@ -1,14 +1,12 @@
 """The module describes the ``slack`` error plugin plugin."""
 import logging
 import uuid
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 import requests
 
 from galaxy.util import string_as_bool
+
 from .base_git import BaseGitPlugin
 
 log = logging.getLogger(__name__)

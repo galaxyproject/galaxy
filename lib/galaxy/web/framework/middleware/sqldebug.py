@@ -3,10 +3,7 @@ Per-request SQL debugging middleware.
 """
 import logging
 
-from galaxy.model.orm.engine_factory import (
-    log_request_query_counts,
-    reset_request_query_counts,
-)
+from galaxy.model.orm.engine_factory import log_request_query_counts, reset_request_query_counts
 
 log = logging.getLogger(__name__)
 

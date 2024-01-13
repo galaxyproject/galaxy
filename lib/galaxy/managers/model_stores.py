@@ -1,7 +1,4 @@
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -39,10 +36,7 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
-from galaxy.short_term_storage import (
-    ShortTermStorageMonitor,
-    storage_context,
-)
+from galaxy.short_term_storage import ShortTermStorageMonitor, storage_context
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.version import VERSION
 

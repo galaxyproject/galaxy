@@ -2,23 +2,16 @@ import logging
 import socket
 
 from markupsafe import escape
+from tool_shed.webapp.framework.decorators import require_login
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util, web
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import get_user_by_email
 from galaxy.model.base import transaction
-from galaxy.security.validate_user_input import (
-    validate_email,
-    validate_password,
-    validate_publicname,
-)
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
-from tool_shed.webapp.framework.decorators import require_login
 
 log = logging.getLogger(__name__)
 

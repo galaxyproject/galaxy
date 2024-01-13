@@ -3,14 +3,6 @@ import os
 import urllib.parse
 
 import pytest
-from tusclient import client
-
-from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.util import UNKNOWN
-from galaxy.util.unittest_utils import (
-    skip_if_github_down,
-    skip_if_site_down,
-)
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
@@ -18,11 +10,13 @@ from galaxy_test.base.constants import (
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_without_datatype,
-    stage_inputs,
-)
+from galaxy_test.base.populators import DatasetPopulator, skip_without_datatype, stage_inputs
+from tusclient import client
+
+from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util import UNKNOWN
+from galaxy.util.unittest_utils import skip_if_github_down, skip_if_site_down
+
 from ._framework import ApiTestCase
 
 

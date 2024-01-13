@@ -5,6 +5,7 @@ capabilities and configuration settings.
 import logging
 
 from galaxy.web import expose_api_anonymous_and_sessionless
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

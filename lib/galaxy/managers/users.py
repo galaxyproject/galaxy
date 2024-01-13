@@ -8,41 +8,18 @@ import re
 import string
 import time
 from datetime import datetime
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 from markupsafe import escape
-from sqlalchemy import (
-    and_,
-    exc,
-    func,
-    select,
-    true,
-)
+from sqlalchemy import and_, exc, func, select, true
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 
-from galaxy import (
-    exceptions,
-    model,
-    schema,
-    util,
-)
+from galaxy import exceptions, model, schema, util
 from galaxy.config import templates
-from galaxy.managers import (
-    base,
-    deletable,
-)
+from galaxy.managers import base, deletable
 from galaxy.managers.base import combine_lists
-from galaxy.model import (
-    User,
-    UserAddress,
-    UserQuotaUsage,
-)
+from galaxy.model import User, UserAddress, UserQuotaUsage
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
@@ -51,10 +28,7 @@ from galaxy.security.validate_user_input import (
     validate_preferred_object_store_id,
     validate_publicname,
 )
-from galaxy.structured_app import (
-    BasicSharedApp,
-    MinimalManagerApp,
-)
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
 from galaxy.util.hash_util import new_secure_hash_v2
 
 log = logging.getLogger(__name__)

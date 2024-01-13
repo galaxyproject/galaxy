@@ -15,10 +15,7 @@ import json
 import os
 import sys
 
-from common import (
-    display,
-    submit,
-)
+from common import display, submit
 
 
 def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field=None):

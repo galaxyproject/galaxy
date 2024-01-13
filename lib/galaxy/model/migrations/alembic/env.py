@@ -1,10 +1,6 @@
 import logging
 import re
-from typing import (
-    Callable,
-    cast,
-    Dict,
-)
+from typing import Callable, Dict, cast
 
 from alembic import context
 from alembic.script import ScriptDirectory
@@ -12,11 +8,7 @@ from alembic.script.base import Script
 from sqlalchemy import create_engine
 
 from galaxy.model import Base
-from galaxy.model.migrations import (
-    GXY,
-    ModelId,
-    TSI,
-)
+from galaxy.model.migrations import GXY, TSI, ModelId
 
 config = context.config
 target_metadata = Base.metadata

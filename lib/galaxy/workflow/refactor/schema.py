@@ -1,16 +1,7 @@
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import BaseModel, Field
 from typing_extensions import Literal
 
 LABEL_DESCRIPTION = "The unique label of the step being referenced."

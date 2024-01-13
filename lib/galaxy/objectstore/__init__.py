@@ -12,46 +12,18 @@ import random
 import shutil
 import threading
 import time
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, NamedTuple, Optional, Tuple, Type
 
 import yaml
 from pydantic import BaseModel
 
-from galaxy.exceptions import (
-    MalformedContents,
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    asbool,
-    directory_hash_id,
-    force_symlink,
-    in_directory,
-    parse_xml,
-    umask_fix_perms,
-)
+from galaxy.exceptions import MalformedContents, ObjectInvalid, ObjectNotFound
+from galaxy.util import asbool, directory_hash_id, force_symlink, in_directory, parse_xml, umask_fix_perms
 from galaxy.util.bunch import Bunch
-from galaxy.util.path import (
-    safe_makedirs,
-    safe_relpath,
-    safe_walk,
-)
+from galaxy.util.path import safe_makedirs, safe_relpath, safe_walk
 from galaxy.util.sleeper import Sleeper
-from .badges import (
-    BadgeDict,
-    read_badges,
-    serialize_badges,
-    StoredBadgeDict,
-)
+
+from .badges import BadgeDict, StoredBadgeDict, read_badges, serialize_badges
 from .caching import CacheTarget
 
 if TYPE_CHECKING:

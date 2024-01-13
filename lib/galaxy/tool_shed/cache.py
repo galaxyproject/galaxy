@@ -1,10 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import (
-    Dict,
-    List,
-    Tuple,
-)
+from typing import Dict, List, Tuple
 
 from sqlalchemy.orm import defer
 

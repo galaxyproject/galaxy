@@ -5,36 +5,15 @@ import json
 import logging
 import re
 from collections import defaultdict
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Type, Union, cast
 
 from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.exceptions import (
-    ToolInputsNotReadyException,
-    ToolMissingException,
-)
+from galaxy import exceptions, model
+from galaxy.exceptions import ToolInputsNotReadyException, ToolMissingException
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.model import (
-    PostJobAction,
-    Workflow,
-    WorkflowStep,
-    WorkflowStepConnection,
-)
+from galaxy.model import PostJobAction, Workflow, WorkflowStep, WorkflowStepConnection
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
@@ -47,22 +26,10 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
-from galaxy.tools import (
-    DatabaseOperationTool,
-    DefaultToolState,
-    get_safe_version,
-)
+from galaxy.tools import DatabaseOperationTool, DefaultToolState, get_safe_version
 from galaxy.tools.actions import filter_output
-from galaxy.tools.execute import (
-    execute,
-    MappingParameters,
-    PartialJobExecution,
-)
-from galaxy.tools.parameters import (
-    check_param,
-    params_to_incoming,
-    visit_input_values,
-)
+from galaxy.tools.execute import MappingParameters, PartialJobExecution, execute
+from galaxy.tools.parameters import check_param, params_to_incoming, visit_input_values
 from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
@@ -73,24 +40,18 @@ from galaxy.tools.parameters.basic import (
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
+    SelectToolParameter,
+    TextToolParameter,
     is_runtime_value,
     parameter_types,
     raw_to_galaxy,
     runtime_to_json,
-    SelectToolParameter,
-    TextToolParameter,
     workflow_building_modes,
 )
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    ConditionalWhen,
-)
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.util import (
-    listify,
-    unicodify,
-)
+from galaxy.util import listify, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet

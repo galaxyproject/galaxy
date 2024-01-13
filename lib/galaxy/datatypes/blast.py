@@ -33,27 +33,13 @@ Covers the ``blastxml`` format and the BLAST databases.
 import logging
 import os
 from time import sleep
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Callable, Dict, List, Optional
 
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.protocols import DatasetHasHidProtocol, DatasetProtocol
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.util import smart_str
-from .data import (
-    Data,
-    get_file_peek,
-    Text,
-)
+
+from .data import Data, Text, get_file_peek
 from .xml import GenericXml
 
 log = logging.getLogger(__name__)

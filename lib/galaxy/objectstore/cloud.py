@@ -11,29 +11,15 @@ import subprocess
 from datetime import datetime
 from typing import Optional
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    safe_relpath,
-    umask_fix_perms,
-    unlink,
-)
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms, unlink
+
 from . import ConcreteObjectStore
-from .caching import (
-    CacheTarget,
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-)
+from .caching import CacheTarget, InProcessCacheMonitor, enable_cache_monitor
 from .s3 import parse_config_xml
 
 try:
-    from cloudbridge.factory import (
-        CloudProviderFactory,
-        ProviderList,
-    )
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
     from cloudbridge.interfaces.exceptions import InvalidNameException
 except ImportError:
     CloudProviderFactory = None

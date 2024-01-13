@@ -5,10 +5,10 @@ from typing import NamedTuple
 
 from .cwltool_deps import (
     CommentedMap,
+    LoadingContext,
     default_loader,
     ensure_cwltool_available,
     load_tool,
-    LoadingContext,
     resolve_and_validate_document,
 )
 

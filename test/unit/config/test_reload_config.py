@@ -1,10 +1,7 @@
 import pytest
 
 from galaxy import config
-from galaxy.config import (
-    BaseAppConfiguration,
-    reload_config_options,
-)
+from galaxy.config import BaseAppConfiguration, reload_config_options
 from galaxy.config.schema import AppSchema
 
 R1, R2, N1, N2 = "reloadable1", "reloadable2", "nonrelodable1", "nonreloadable2"  # config options

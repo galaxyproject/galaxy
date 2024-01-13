@@ -6,18 +6,9 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from pydantic import (
-    AnyUrl,
-    BaseModel,
-    EmailStr,
-    Extra,
-    Field,
-)
+from pydantic import AnyUrl, BaseModel, EmailStr, Extra, Field
 
 
 class Uri(BaseModel):

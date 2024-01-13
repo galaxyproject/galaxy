@@ -10,10 +10,7 @@ import threading
 import time
 import traceback
 import typing
-from queue import (
-    Empty,
-    Queue,
-)
+from queue import Empty, Queue
 
 from sqlalchemy import select
 from sqlalchemy.orm import object_session
@@ -21,45 +18,32 @@ from sqlalchemy.orm import object_session
 import galaxy.jobs
 from galaxy import model
 from galaxy.exceptions import ConfigurationError
-from galaxy.job_execution.output_collect import (
-    default_exit_code_file,
-    read_exit_code_from,
-)
+from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
-from galaxy.jobs.runners.util.job_script import (
-    DescribesScriptIntegrityChecks,
-    job_script,
-    write_script,
-)
+from galaxy.jobs.runners.util.job_script import DescribesScriptIntegrityChecks, job_script, write_script
 from galaxy.model.base import transaction
-from galaxy.tool_util.deps.dependencies import (
-    JobInfo,
-    ToolInfo,
-)
+from galaxy.tool_util.deps.dependencies import JobInfo, ToolInfo
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
-    asbool,
     DATABASE_MAX_STRING_SIZE,
+    UNKNOWN,
     ExecutionTimer,
-    in_directory,
     ParamsWithSpecs,
+    asbool,
+    in_directory,
     shrink_stream_by_size,
     unicodify,
-    UNKNOWN,
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
+
 from .state_handler_factory import build_state_handlers
 
 if typing.TYPE_CHECKING:
     from galaxy.app import GalaxyManagerApplication
-    from galaxy.jobs import (
-        JobDestination,
-        JobWrapper,
-        MinimalJobWrapper,
-    )
+    from galaxy.jobs import JobDestination, JobWrapper, MinimalJobWrapper
 
 log = get_logger(__name__)
 

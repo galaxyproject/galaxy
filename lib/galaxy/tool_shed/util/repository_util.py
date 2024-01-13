@@ -2,23 +2,11 @@ import logging
 import os
 import re
 import shutil
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 from urllib.error import HTTPError
 
 from markupsafe import escape
-from sqlalchemy import (
-    and_,
-    false,
-    or_,
-)
+from sqlalchemy import and_, false, or_
 from sqlalchemy.orm import joinedload
 
 from galaxy import util
@@ -26,10 +14,7 @@ from galaxy.model.base import transaction
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
-from galaxy.util.tool_shed import (
-    common_util,
-    encoding_util,
-)
+from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 log = logging.getLogger(__name__)

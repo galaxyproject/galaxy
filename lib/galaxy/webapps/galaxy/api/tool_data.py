@@ -1,30 +1,14 @@
-from fastapi import (
-    Body,
-    Path,
-)
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from fastapi import Body, Path
+from pydantic import BaseModel, Field
 
 from galaxy.celery.tasks import import_data_bundle
 from galaxy.managers.tool_data import ToolDataManager
-from galaxy.schema.schema import (
-    AsyncTaskResultSummary,
-    ImportToolDataBundleSource,
-)
-from galaxy.tool_util.data._schema import (
-    ToolDataDetails,
-    ToolDataEntryList,
-    ToolDataField,
-    ToolDataItem,
-)
+from galaxy.schema.schema import AsyncTaskResultSummary, ImportToolDataBundleSource
+from galaxy.tool_util.data._schema import ToolDataDetails, ToolDataEntryList, ToolDataField, ToolDataItem
 from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.services.base import async_task_summary
-from . import (
-    depends,
-    Router,
-)
+
+from . import Router, depends
 
 router = Router(tags=["tool data tables"])
 

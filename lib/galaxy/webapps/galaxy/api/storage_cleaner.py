@@ -2,15 +2,9 @@
 API operations on User storage management.
 """
 import logging
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from fastapi import (
-    Body,
-    Query,
-)
+from fastapi import Body, Query
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.storage_cleaner import (
@@ -20,15 +14,8 @@ from galaxy.schema.storage_cleaner import (
     StoredItem,
     StoredItemOrderBy,
 )
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
-from galaxy.webapps.galaxy.api.common import (
-    LimitQueryParam,
-    OffsetQueryParam,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
+from galaxy.webapps.galaxy.api.common import LimitQueryParam, OffsetQueryParam
 from galaxy.webapps.galaxy.services.storage_cleaner import StorageCleanerService
 
 log = logging.getLogger(__name__)

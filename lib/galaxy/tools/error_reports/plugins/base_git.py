@@ -3,19 +3,14 @@
 
 
 import logging
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 from typing import Dict
 
 import requests
 
 from galaxy.tools.errors import EmailErrorReporter
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    unicodify,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, unicodify
+
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)

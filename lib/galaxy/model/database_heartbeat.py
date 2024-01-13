@@ -4,11 +4,7 @@ import os
 import socket
 import threading
 
-from sqlalchemy import (
-    and_,
-    delete,
-    select,
-)
+from sqlalchemy import and_, delete, select
 
 from galaxy.model import WorkerProcess
 from galaxy.model.orm.now import now

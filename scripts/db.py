@@ -8,10 +8,7 @@ from argparse import ArgumentParser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from galaxy.model.migrations.dbscript import (
-    CONFIG_FILE_ARG,
-    ParserBuilder,
-)
+from galaxy.model.migrations.dbscript import CONFIG_FILE_ARG, ParserBuilder
 
 
 def main() -> None:

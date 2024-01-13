@@ -1,9 +1,6 @@
 import logging
 import sys
-from inspect import (
-    getfullargspec,
-    getmembers,
-)
+from inspect import getfullargspec, getmembers
 from tempfile import NamedTemporaryFile
 
 from galaxy.util import unicodify

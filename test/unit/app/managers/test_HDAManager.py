@@ -3,14 +3,12 @@ from unittest import mock
 import sqlalchemy
 from sqlalchemy import select
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
+
 from .base import BaseTestCase
 
 # =============================================================================

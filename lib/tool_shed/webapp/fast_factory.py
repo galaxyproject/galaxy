@@ -34,12 +34,11 @@ with the following command-line.
 
 """
 
-from galaxy.main_config import (
-    WebappConfigResolver,
-    WebappSetupProps,
-)
 from tool_shed.webapp.buildapp import app_pair
 from tool_shed.webapp.config import TOOLSHED_APP_NAME
+
+from galaxy.main_config import WebappConfigResolver, WebappSetupProps
+
 from .fast_app import initialize_fast_app
 
 

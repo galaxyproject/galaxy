@@ -3,24 +3,14 @@ import html
 import io
 import uuid as _uuid
 import zipfile
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from typing import Dict, List, Optional
 
 import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 
 

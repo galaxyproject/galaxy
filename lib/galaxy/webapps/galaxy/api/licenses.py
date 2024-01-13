@@ -2,14 +2,9 @@ from typing import List
 
 from fastapi import Path
 
-from galaxy.managers.licenses import (
-    LicenseMetadataModel,
-    LicensesManager,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.managers.licenses import LicenseMetadataModel, LicensesManager
+
+from . import Router, depends
 
 router = Router(tags=["licenses"])
 

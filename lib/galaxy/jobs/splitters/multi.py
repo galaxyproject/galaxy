@@ -2,10 +2,7 @@ import logging
 import os
 import shutil
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 
 log = logging.getLogger(__name__)
 

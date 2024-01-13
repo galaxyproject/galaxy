@@ -21,86 +21,64 @@ from datetime import timedelta
 from enum import Enum
 from secrets import token_hex
 from string import Template
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    overload,
-    Set,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
-from uuid import (
-    UUID,
-    uuid4,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NamedTuple, Optional, Set, Tuple, Type, Union, overload
+from uuid import UUID, uuid4
 
 import sqlalchemy
 from boltons.iterutils import remap
 from pydantic import BaseModel
-from social_core.storage import (
-    AssociationMixin,
-    CodeMixin,
-    NonceMixin,
-    PartialMixin,
-    UserMixin,
-)
+from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
+    TEXT,
+    VARCHAR,
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    Numeric,
+    PrimaryKeyConstraint,
+    String,
+    Table,
+    Text,
+    Unicode,
+    UniqueConstraint,
     alias,
     and_,
     asc,
-    BigInteger,
     bindparam,
-    Boolean,
     case,
-    Column,
     column,
-    DateTime,
     delete,
     desc,
     event,
     false,
-    ForeignKey,
     func,
-    Index,
     inspect,
-    Integer,
     join,
-    MetaData,
     not_,
-    Numeric,
     or_,
-    PrimaryKeyConstraint,
     select,
-    String,
-    Table,
-    TEXT,
-    Text,
     text,
     true,
     tuple_,
     type_coerce,
-    Unicode,
-    UniqueConstraint,
     update,
-    VARCHAR,
 )
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
+    Query,
     aliased,
     column_property,
     deferred,
     joinedload,
     object_session,
-    Query,
     reconstructor,
     registry,
     relationship,
@@ -108,21 +86,14 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_mapped_collection
 from sqlalchemy.sql import exists
-from typing_extensions import (
-    Literal,
-    Protocol,
-    TypedDict,
-)
+from typing_extensions import Literal, Protocol, TypedDict
 
 import galaxy.exceptions
 import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session, transaction
 from galaxy.model.custom_types import (
     DoubleEncodedJsonType,
     JSONType,
@@ -132,24 +103,12 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.database_object_names import NAMING_CONVENTION
-from galaxy.model.item_attrs import (
-    get_item_annotation_str,
-    UsesAnnotations,
-)
+from galaxy.model.item_attrs import UsesAnnotations, get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStore
-from galaxy.schema.invocation import (
-    InvocationCancellationUserRequest,
-    InvocationState,
-    InvocationStepState,
-)
-from galaxy.schema.schema import (
-    DatasetCollectionPopulatedState,
-    DatasetState,
-    DatasetValidatedState,
-    JobState,
-)
+from galaxy.schema.invocation import InvocationCancellationUserRequest, InvocationState, InvocationStepState
+from galaxy.schema.schema import DatasetCollectionPopulatedState, DatasetState, DatasetValidatedState, JobState
 from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
@@ -163,10 +122,7 @@ from galaxy.util import (
     unicodify,
     unique_id,
 )
-from galaxy.util.dictifiable import (
-    dict_for,
-    Dictifiable,
-)
+from galaxy.util.dictifiable import Dictifiable, dict_for
 from galaxy.util.form_builder import (
     AddressField,
     CheckboxField,
@@ -178,10 +134,7 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import (
-    md5_hash_str,
-    new_insecure_hash,
-)
+from galaxy.util.hash_util import md5_hash_str, new_insecure_hash
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 

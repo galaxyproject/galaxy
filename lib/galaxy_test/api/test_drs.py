@@ -1,27 +1,15 @@
 import tempfile
-from typing import (
-    Callable,
-    List,
-)
+from typing import Callable, List
 from unittest import SkipTest
-from urllib.parse import (
-    urljoin,
-    urlparse,
-)
+from urllib.parse import urljoin, urlparse
 
 import requests
-
-from galaxy.files import (
-    ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
-    DictFileSourcesUserContext,
-)
-from galaxy.util.config_parsers import parse_allowlist_ips
-from galaxy.util.drs import (
-    fetch_drs_to_file,
-    RetryOptions,
-)
 from galaxy_test.base.populators import DatasetPopulator
+
+from galaxy.files import ConfiguredFileSources, ConfiguredFileSourcesConfig, DictFileSourcesUserContext
+from galaxy.util.config_parsers import parse_allowlist_ips
+from galaxy.util.drs import RetryOptions, fetch_drs_to_file
+
 from ._framework import ApiTestCase
 
 CONTENT = "My Cool DRS Data\n"

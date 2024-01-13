@@ -4,25 +4,13 @@ Determine what optional dependencies are needed.
 
 import os
 import sys
-from os.path import (
-    dirname,
-    exists,
-    join,
-)
+from os.path import dirname, exists, join
 
 import yaml
 from dparse import parse
 
-from galaxy.util import (
-    asbool,
-    etree,
-    parse_xml,
-    which,
-)
-from galaxy.util.properties import (
-    find_config_file,
-    load_app_properties,
-)
+from galaxy.util import asbool, etree, parse_xml, which
+from galaxy.util.properties import find_config_file, load_app_properties
 
 
 class ConditionalDependencies:

@@ -10,10 +10,7 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-from galaxy.util.resources import (
-    resource_path,
-    Traversable,
-)
+from galaxy.util.resources import Traversable, resource_path
 
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 

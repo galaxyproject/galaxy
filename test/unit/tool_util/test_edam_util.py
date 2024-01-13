@@ -1,8 +1,5 @@
 import tempfile
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from edam_ontology.streams import tabular_stream
 

@@ -1,21 +1,15 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from a2wsgi import WSGIMiddleware
-from fastapi import (
-    FastAPI,
-    Request,
-)
+from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
+    GalaxyFileResponse,
     add_exception_handler,
     add_request_id_middleware,
-    GalaxyFileResponse,
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin

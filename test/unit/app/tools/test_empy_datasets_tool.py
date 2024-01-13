@@ -3,11 +3,7 @@ import tempfile
 from contextlib import contextmanager
 from typing import Union
 
-from galaxy.model import (
-    Dataset,
-    DatasetCollectionElement,
-    HistoryDatasetAssociation,
-)
+from galaxy.model import Dataset, DatasetCollectionElement, HistoryDatasetAssociation
 from galaxy.tools import FilterEmptyDatasetsTool
 
 

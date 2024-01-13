@@ -1,9 +1,5 @@
 """Dependency injection framework for Galaxy-type apps."""
-from typing import (
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import Optional, Type, TypeVar
 
 from lagom import Container as LagomContainer
 from lagom.exceptions import UnresolvableType

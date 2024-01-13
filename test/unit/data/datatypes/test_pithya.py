@@ -1,10 +1,7 @@
 import pytest
 
-from galaxy.datatypes.text import (
-    PithyaModel,
-    PithyaProperty,
-    PithyaResult,
-)
+from galaxy.datatypes.text import PithyaModel, PithyaProperty, PithyaResult
+
 from .util import get_input_files
 
 

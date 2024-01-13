@@ -5,41 +5,18 @@ Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
 import logging
-from typing import (
-    Dict,
-    List,
-    Tuple,
-)
+from typing import Dict, List, Tuple
 
-from sqlalchemy import (
-    false,
-    or_,
-    true,
-)
+from sqlalchemy import false, or_, true
 from sqlalchemy.orm import aliased
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.managers import (
-    base,
-    sharable,
-)
+from galaxy import exceptions, model
+from galaxy.managers import base, sharable
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model.index_filter_util import (
-    append_user_filter,
-    raw_text_column_filter,
-    tag_filter,
-    text_column_filter,
-)
+from galaxy.model.index_filter_util import append_user_filter, raw_text_column_filter, tag_filter, text_column_filter
 from galaxy.schema.visualization import VisualizationIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 
 log = logging.getLogger(__name__)
 

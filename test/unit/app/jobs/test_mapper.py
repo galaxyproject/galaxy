@@ -1,19 +1,10 @@
 import uuid
 
-from galaxy.jobs import (
-    HasResourceParameters,
-    JobDestination,
-)
-from galaxy.jobs.mapper import (
-    ERROR_MESSAGE_NO_RULE_FUNCTION,
-    ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,
-    JobRunnerMapper,
-)
+from galaxy.jobs import HasResourceParameters, JobDestination
+from galaxy.jobs.mapper import ERROR_MESSAGE_NO_RULE_FUNCTION, ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND, JobRunnerMapper
 from galaxy.util import bunch
-from . import (
-    test_rules,
-    test_rules_override,
-)
+
+from . import test_rules, test_rules_override
 
 WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()

@@ -4,29 +4,14 @@ import math
 import os
 import re
 import uuid
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-)
+from typing import Any, Dict, Iterable, List, Optional, cast
 
 from packaging.version import Version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.parser.util import (
-    DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC,
-)
-from galaxy.util import (
-    Element,
-    ElementTree,
-    string_as_bool,
-    xml_text,
-    xml_to_string,
-)
+from galaxy.tool_util.parser.util import DEFAULT_DELTA, DEFAULT_DELTA_FRAC
+from galaxy.util import Element, ElementTree, string_as_bool, xml_text, xml_to_string
+
 from .interface import (
     AssertionList,
     InputSource,
@@ -48,13 +33,7 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .stdio import (
-    aggressive_error_checks,
-    error_on_exit_code,
-    StdioErrorLevel,
-    ToolStdioExitCode,
-    ToolStdioRegex,
-)
+from .stdio import StdioErrorLevel, ToolStdioExitCode, ToolStdioRegex, aggressive_error_checks, error_on_exit_code
 
 log = logging.getLogger(__name__)
 

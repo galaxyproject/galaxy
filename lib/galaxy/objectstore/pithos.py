@@ -7,25 +7,15 @@ import os
 import shutil
 
 try:
-    from kamaki.clients import (
-        astakos,
-        Client as KamakiClient,
-        ClientError,
-        pithos,
-        utils,
-    )
+    from kamaki.clients import Client as KamakiClient
+    from kamaki.clients import ClientError, astakos, pithos, utils
 except ImportError:
     KamakiClient = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    umask_fix_perms,
-)
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, umask_fix_perms
 from galaxy.util.path import safe_relpath
+
 from . import ConcreteObjectStore
 
 NO_KAMAKI_ERROR_MESSAGE = (

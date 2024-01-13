@@ -4,17 +4,9 @@ https://github.com/dmontagu/fastapi-utils
 """
 from __future__ import annotations
 
-from typing import (
-    Any,
-    ClassVar,
-    Optional,
-)
+from typing import Any, ClassVar, Optional
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    FastAPI,
-)
+from fastapi import APIRouter, Depends, FastAPI
 from starlette.testclient import TestClient
 
 from galaxy.webapps.galaxy.api.cbv import cbv

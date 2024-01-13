@@ -4,16 +4,9 @@ Mock infrastructure for testing ModelManagers.
 import os
 import shutil
 import tempfile
-from typing import (
-    Any,
-    cast,
-    Optional,
-)
+from typing import Any, Optional, cast
 
-from galaxy import (
-    di,
-    quota,
-)
+from galaxy import di, quota
 from galaxy.app import UniverseApplication
 from galaxy.auth import AuthManager
 from galaxy.celery import set_thread_app
@@ -29,17 +22,10 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import tags
-from galaxy.model.base import (
-    ModelMapping,
-    SharedModelMapping,
-    transaction,
-)
+from galaxy.model.base import ModelMapping, SharedModelMapping, transaction
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.model.unittest_utils import (
-    GalaxyDataTestApp,
-    GalaxyDataTestConfig,
-)
+from galaxy.model.unittest_utils import GalaxyDataTestApp, GalaxyDataTestConfig
 from galaxy.security import idencoding
 from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
@@ -47,11 +33,7 @@ from galaxy.short_term_storage import (
     ShortTermStorageManager,
     ShortTermStorageMonitor,
 )
-from galaxy.structured_app import (
-    BasicSharedApp,
-    MinimalManagerApp,
-    StructuredApp,
-)
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache

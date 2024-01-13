@@ -4,57 +4,28 @@ API operations on the contents of a history dataset.
 import logging
 import os
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import Field
 from starlette.datastructures import URL
 
-from galaxy import (
-    exceptions as galaxy_exceptions,
-    model,
-    util,
-    web,
-)
+from galaxy import exceptions as galaxy_exceptions
+from galaxy import model, util, web
 from galaxy.celery.tasks import compute_dataset_hash
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetAssociationManager
-from galaxy.managers.hdas import (
-    HDAManager,
-    HDASerializer,
-)
+from galaxy.managers.hdas import HDAManager, HDASerializer
 from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers.history_contents import (
-    HistoryContentsFilters,
-    HistoryContentsManager,
-)
+from galaxy.managers.history_contents import HistoryContentsFilters, HistoryContentsManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model.base import transaction
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-)
-from galaxy.schema.drs import (
-    AccessMethod,
-    AccessMethodType,
-    AccessURL,
-    Checksum,
-    DrsObject,
-)
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams
+from galaxy.schema.drs import AccessMethod, AccessMethodType, AccessURL, Checksum, DrsObject
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -78,10 +49,7 @@ from galaxy.visualization.data_providers.genome import (
 )
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.webapps.base.controller import UsesVisualizationMixin
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase, async_task_summary
 
 log = logging.getLogger(__name__)
 

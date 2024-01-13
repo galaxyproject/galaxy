@@ -1,9 +1,6 @@
 from galaxy.selenium.axe_results import FORMS_VIOLATIONS
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-)
+
+from .framework import SeleniumTestCase, managed_history, selenium_test
 
 TEST_ANNOTATION = "my cool annotation"
 TEST_INFO = "my cool info"

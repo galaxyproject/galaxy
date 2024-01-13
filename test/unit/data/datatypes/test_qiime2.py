@@ -1,13 +1,6 @@
-from galaxy.datatypes.qiime2 import (
-    _strip_properties,
-    QIIME2Artifact,
-    QIIME2Metadata,
-    QIIME2Visualization,
-)
-from .util import (
-    get_input_files,
-    MockDataset,
-)
+from galaxy.datatypes.qiime2 import QIIME2Artifact, QIIME2Metadata, QIIME2Visualization, _strip_properties
+
+from .util import MockDataset, get_input_files
 
 # Tests for QIIME2Artifact:
 

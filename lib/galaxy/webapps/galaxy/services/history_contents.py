@@ -1,81 +1,36 @@
 import logging
 import os
 import re
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
 
 from celery import chain
-from pydantic import (
-    Extra,
-    Field,
-)
-from typing_extensions import (
-    Literal,
-    Protocol,
-)
+from pydantic import Extra, Field
+from typing_extensions import Literal, Protocol
 
 from galaxy import exceptions
+from galaxy.celery.tasks import change_datatype
+from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
-    change_datatype,
-    materialize as materialize_task,
     prepare_dataset_collection_download,
     prepare_history_content_download,
     touch,
     write_history_content_to,
 )
-from galaxy.managers import (
-    folders,
-    hdas,
-    hdcas,
-    histories,
-)
+from galaxy.managers import folders, hdas, hdcas, histories
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.collections_util import (
-    api_payload_to_create_params,
-    dictify_dataset_collection_instance,
-)
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.genomes import GenomesManager
-from galaxy.managers.history_contents import (
-    HistoryContentsFilters,
-    HistoryContentsManager,
-)
-from galaxy.managers.jobs import (
-    fetch_job_states,
-    summarize_jobs_to_dict,
-)
+from galaxy.managers.history_contents import HistoryContentsFilters, HistoryContentsManager
+from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.managers.library_datasets import LibraryDatasetsManager
-from galaxy.model import (
-    History,
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    LibraryDataset,
-    User,
-)
+from galaxy.model import History, HistoryDatasetAssociation, HistoryDatasetCollectionAssociation, LibraryDataset, User
 from galaxy.model.base import transaction
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.objectstore import BaseObjectStore
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-    ValueFilterQueryParams,
-)
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    LibraryFolderDatabaseIdField,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams, ValueFilterQueryParams
+from galaxy.schema.fields import DecodedDatabaseIdField, LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     AnyBulkOperationParams,
     AnyHistoryContentItem,
@@ -120,12 +75,12 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
-    ensure_celery_tasks_enabled,
-    model_store_storage_target,
     ServesExportStores,
     ServiceBase,
+    async_task_summary,
+    ensure_celery_tasks_enabled,
+    model_store_storage_target,
 )
 
 log = logging.getLogger(__name__)

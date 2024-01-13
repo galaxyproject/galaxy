@@ -1,9 +1,7 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from galaxy.tools.parameters.meta import process_key
+
 from .util import BaseParameterTestCase
 
 

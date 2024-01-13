@@ -1,16 +1,8 @@
-from typing import (
-    Any,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, List, Optional, Tuple
 
 from galaxy_test.base.decorators import requires_new_library
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-    LibraryPopulator,
-)
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, LibraryPopulator
+
 from ._framework import ApiTestCase
 
 

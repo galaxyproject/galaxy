@@ -1,15 +1,10 @@
 import logging
 
-from galaxy.tool_util.verify.interactor import (
-    GalaxyInteractorApi,
-    verify_tool,
-)
-from galaxy.tools import DataManagerTool
-from galaxy_test.base.env import (
-    setup_keep_outdir,
-    target_url_parts,
-)
+from galaxy_test.base.env import setup_keep_outdir, target_url_parts
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
+
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
+from galaxy.tools import DataManagerTool
 
 log = logging.getLogger(__name__)
 

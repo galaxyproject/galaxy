@@ -1,9 +1,10 @@
 import logging
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.util import unicodify
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.util import basic_util
+
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 

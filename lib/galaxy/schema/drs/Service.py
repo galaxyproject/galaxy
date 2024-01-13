@@ -7,11 +7,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import (
-    AnyUrl,
-    BaseModel,
-    Field,
-)
+from pydantic import AnyUrl, BaseModel, Field
 
 
 class Organization(BaseModel):

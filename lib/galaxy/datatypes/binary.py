@@ -14,42 +14,19 @@ import tarfile
 import tempfile
 import zipfile
 from json import dumps
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import h5py
 import numpy as np
 import pysam
-from bx.seq.twobit import (
-    TWOBIT_MAGIC_NUMBER,
-    TWOBIT_MAGIC_NUMBER_SWAP,
-)
-from h5grove.content import (
-    DatasetContent,
-    get_content_from_file,
-    ResolvedEntityContent,
-)
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP
+from h5grove.content import DatasetContent, ResolvedEntityContent, get_content_from_file
 from h5grove.encoders import encode
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import (
-    Data,
-    DatatypeValidation,
-    get_file_peek,
-)
-from galaxy.datatypes.dataproviders.column import (
-    ColumnarDataProvider,
-    DictDataProvider,
-)
+from galaxy.datatypes.data import Data, DatatypeValidation, get_file_peek
+from galaxy.datatypes.dataproviders.column import ColumnarDataProvider, DictDataProvider
 from galaxy.datatypes.dataproviders.dataset import (
     DatasetDataProvider,
     SamtoolsDataProvider,
@@ -57,17 +34,8 @@ from galaxy.datatypes.dataproviders.dataset import (
     SQliteDataProvider,
     SQliteDataTableProvider,
 )
-from galaxy.datatypes.dataproviders.line import (
-    FilteredLineDataProvider,
-    RegexLineDataProvider,
-)
-from galaxy.datatypes.metadata import (
-    DictParameter,
-    FileParameter,
-    ListParameter,
-    MetadataElement,
-    MetadataParameter,
-)
+from galaxy.datatypes.dataproviders.line import FilteredLineDataProvider, RegexLineDataProvider
+from galaxy.datatypes.metadata import DictParameter, FileParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -75,25 +43,12 @@ from galaxy.datatypes.protocols import (
     HasFileName,
     HasMetadata,
 )
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.text import Html
-from galaxy.util import (
-    compression_utils,
-    nice_size,
-    sqlite,
-    UNKNOWN,
-)
-from galaxy.util.checkers import (
-    is_bz2,
-    is_gzip,
-)
-from . import (
-    data,
-    dataproviders,
-)
+from galaxy.util import UNKNOWN, compression_utils, nice_size, sqlite
+from galaxy.util.checkers import is_bz2, is_gzip
+
+from . import data, dataproviders
 
 # Optional dependency to enable better metadata support in FITS datatype
 try:

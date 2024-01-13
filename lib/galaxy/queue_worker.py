@@ -12,11 +12,7 @@ import threading
 import time
 from inspect import ismodule
 
-from kombu import (
-    Consumer,
-    Queue,
-    uuid,
-)
+from kombu import Consumer, Queue, uuid
 from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import producers
 

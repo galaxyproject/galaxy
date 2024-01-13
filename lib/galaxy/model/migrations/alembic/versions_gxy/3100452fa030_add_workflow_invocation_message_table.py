@@ -5,18 +5,10 @@ Revises: 518c8438a91b
 Create Date: 2023-01-13 16:13:09.578391
 
 """
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    String,
-)
+from sqlalchemy import Column, ForeignKey, Integer, String
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrations.util import (
-    create_table,
-    drop_table,
-)
+from galaxy.model.migrations.util import create_table, drop_table
 
 # revision identifiers, used by Alembic.
 revision = "3100452fa030"

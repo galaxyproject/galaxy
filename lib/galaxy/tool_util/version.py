@@ -24,18 +24,9 @@
 # was removed: https://github.com/pypa/packaging/blob/21.3/packaging/version.py
 
 import re
-from typing import (
-    Iterator,
-    List,
-    Tuple,
-    Union,
-)
+from typing import Iterator, List, Tuple, Union
 
-from packaging.version import (
-    _BaseVersion,
-    InvalidVersion,
-    Version,
-)
+from packaging.version import InvalidVersion, Version, _BaseVersion
 
 __all__ = ["parse_version", "LegacyVersion"]
 

@@ -1,11 +1,7 @@
 import logging
 
 import galaxy.tools
-from galaxy.tool_shed.util.tool_util import (
-    copy_sample_file,
-    copy_sample_files,
-    generate_message_for_invalid_tools,
-)
+from galaxy.tool_shed.util.tool_util import copy_sample_file, copy_sample_files, generate_message_for_invalid_tools
 from galaxy.util.expressions import ExpressionContext
 
 log = logging.getLogger(__name__)

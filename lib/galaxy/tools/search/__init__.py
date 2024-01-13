@@ -28,39 +28,16 @@ import logging
 import os
 import re
 import shutil
-from typing import (
-    Dict,
-    List,
-    Union,
-)
+from typing import Dict, List, Union
 
-from whoosh import (
-    analysis,
-    index,
-)
-from whoosh.fields import (
-    ID,
-    KEYWORD,
-    NGRAMWORDS,
-    Schema,
-    TEXT,
-)
-from whoosh.qparser import (
-    MultifieldParser,
-    OrGroup,
-)
-from whoosh.scoring import (
-    BM25F,
-    Frequency,
-    MultiWeighting,
-)
+from whoosh import analysis, index
+from whoosh.fields import ID, KEYWORD, NGRAMWORDS, TEXT, Schema
+from whoosh.qparser import MultifieldParser, OrGroup
+from whoosh.scoring import BM25F, Frequency, MultiWeighting
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import (
-    ExecutionTimer,
-    unicodify,
-)
+from galaxy.util import ExecutionTimer, unicodify
 
 log = logging.getLogger(__name__)
 

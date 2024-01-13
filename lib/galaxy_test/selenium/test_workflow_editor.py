@@ -3,12 +3,6 @@ from typing import Optional
 
 import pytest
 import yaml
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.remote.webelement import WebElement
-from seletools.actions import drag_and_drop
-
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION,
@@ -21,12 +15,18 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_RULES_1,
     WORKFLOW_WITH_RULES_2,
 )
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
+from seletools.actions import drag_and_drop
+
 from .framework import (
+    RunsWorkflows,
+    SeleniumTestCase,
     retry_assertion_during_transitions,
     retry_during_transitions,
-    RunsWorkflows,
     selenium_test,
-    SeleniumTestCase,
 )
 
 

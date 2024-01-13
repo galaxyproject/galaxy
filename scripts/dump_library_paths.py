@@ -15,10 +15,7 @@ import logging
 import os
 import sys
 
-from sqlalchemy import (
-    false,
-    not_,
-)
+from sqlalchemy import false, not_
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 

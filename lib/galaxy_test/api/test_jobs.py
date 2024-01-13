@@ -9,17 +9,17 @@ from unittest import SkipTest
 import pytest
 import requests
 from dateutil.parser import isoparse
-
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    WorkflowPopulator,
     skip_without_tool,
     wait_on,
     wait_on_state,
-    WorkflowPopulator,
 )
+
 from ._framework import ApiTestCase
 
 

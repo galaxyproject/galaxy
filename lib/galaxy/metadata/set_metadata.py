@@ -32,42 +32,24 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
 from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
+    SessionlessJobContext,
     collect_dynamic_outputs,
     collect_extra_files,
     collect_primary_datasets,
     collect_shrinked_content_from_path,
     default_exit_code_file,
     read_exit_code_from,
-    SessionlessJobContext,
 )
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
-from galaxy.model import (
-    Dataset,
-    DatasetInstance,
-    HistoryDatasetAssociation,
-    Job,
-    store,
-)
+from galaxy.model import Dataset, DatasetInstance, HistoryDatasetAssociation, Job, store
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
-from galaxy.objectstore import (
-    build_object_store_from_config,
-    ObjectStore,
-)
-from galaxy.tool_util.output_checker import (
-    check_output,
-    DETECTED_JOB_STATE,
-)
-from galaxy.tool_util.parser.stdio import (
-    ToolStdioExitCode,
-    ToolStdioRegex,
-)
+from galaxy.objectstore import ObjectStore, build_object_store_from_config
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE, check_output
+from galaxy.tool_util.parser.stdio import ToolStdioExitCode, ToolStdioRegex
 from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
-from galaxy.util import (
-    safe_contains,
-    stringify_dictionary_keys,
-)
+from galaxy.util import safe_contains, stringify_dictionary_keys
 from galaxy.util.expressions import ExpressionContext
 
 logging.basicConfig()

@@ -1,19 +1,10 @@
 import logging
 
-from galaxy.tool_shed.tools.data_table_manager import (
-    RequiredAppT,
-    ShedToolDataTableManager,
-)
-from galaxy.tool_shed.util import (
-    basic_util,
-    hg_util,
-)
+from galaxy.tool_shed.tools.data_table_manager import RequiredAppT, ShedToolDataTableManager
+from galaxy.tool_shed.util import basic_util, hg_util
 from galaxy.tool_util.fetcher import ToolLocationFetcher
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tools import (
-    create_tool_from_source,
-    parameters,
-)
+from galaxy.tools import create_tool_from_source, parameters
 from galaxy.tools.parameters import dynamic_options
 
 log = logging.getLogger(__name__)

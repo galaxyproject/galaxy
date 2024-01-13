@@ -1,10 +1,8 @@
 import pysam
 
 from galaxy.datatypes.binary import CRAM
-from .util import (
-    get_dataset,
-    get_input_files,
-)
+
+from .util import get_dataset, get_input_files
 
 
 def test_cram():

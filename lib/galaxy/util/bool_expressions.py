@@ -4,23 +4,18 @@ Based on the example: https://github.com/pyparsing/pyparsing/blob/master/example
 """
 
 import logging
-from typing import (
-    Callable,
-    Iterable,
-    Optional,
-    Set,
-)
+from typing import Callable, Iterable, Optional, Set
 
 from pyparsing import (
-    alphanums,
     CaselessKeyword,
-    infixNotation,
     Keyword,
-    opAssoc,
     ParseException,
     ParserElement,
     QuotedString,
     Word,
+    alphanums,
+    infixNotation,
+    opAssoc,
 )
 
 log = logging.getLogger(__name__)

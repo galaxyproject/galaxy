@@ -1,7 +1,4 @@
-from galaxy.web_stack.message import (
-    JobHandlerMessage,
-    WorkflowSchedulingMessage,
-)
+from galaxy.web_stack.message import JobHandlerMessage, WorkflowSchedulingMessage
 
 
 def test_validate_job_handler_message():

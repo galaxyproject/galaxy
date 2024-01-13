@@ -11,18 +11,11 @@ import os.path
 import re
 import shutil
 import tempfile
-from typing import (
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, List, Optional
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import (
-    isajson,
-    isatab_meta,
-)
+from isatools import isajson, isatab_meta
 from markupsafe import escape
 
 from galaxy import util

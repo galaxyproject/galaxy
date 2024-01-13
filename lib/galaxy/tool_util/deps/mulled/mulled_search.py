@@ -9,23 +9,13 @@ import tempfile
 import requests
 
 from galaxy.tool_util.deps.conda_util import CondaContext
-from galaxy.util import (
-    check_github_api_response_rate_limit,
-    which,
-)
+from galaxy.util import check_github_api_response_rate_limit, which
+
 from .mulled_list import get_singularity_containers
-from .util import (
-    build_target,
-    MULLED_SOCKET_TIMEOUT,
-    v2_image_name,
-)
+from .util import MULLED_SOCKET_TIMEOUT, build_target, v2_image_name
 
 try:
-    from whoosh.fields import (
-        Schema,
-        STORED,
-        TEXT,
-    )
+    from whoosh.fields import STORED, TEXT, Schema
     from whoosh.index import create_in
     from whoosh.qparser import QueryParser
 except ImportError:

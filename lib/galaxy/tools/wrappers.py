@@ -4,20 +4,7 @@ import os
 import shlex
 import tempfile
 from functools import total_ordering
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Iterable,
-    Iterator,
-    KeysView,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, Iterator, KeysView, List, Optional, Sequence, Tuple, Union, cast
 
 from galaxy.model import (
     DatasetCollection,
@@ -35,20 +22,14 @@ from galaxy.tools.parameters.wrapped_json import (
     data_collection_input_to_staging_path_and_source_path,
     data_input_to_staging_path_and_source_path,
 )
-from galaxy.util import (
-    filesystem_safe_string,
-    string_as_bool,
-)
+from galaxy.util import filesystem_safe_string, string_as_bool
 
 if TYPE_CHECKING:
     from galaxy.datatypes.registry import Registry
     from galaxy.job_execution.compute_environment import ComputeEnvironment
     from galaxy.model.metadata import MetadataCollection
     from galaxy.tools import Tool
-    from galaxy.tools.parameters.basic import (
-        SelectToolParameter,
-        ToolParameter,
-    )
+    from galaxy.tools.parameters.basic import SelectToolParameter, ToolParameter
 
 log = logging.getLogger(__name__)
 

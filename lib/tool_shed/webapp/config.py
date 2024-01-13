@@ -8,20 +8,16 @@ import os
 from datetime import timedelta
 
 from galaxy.config import (
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
     BaseAppConfiguration,
     CommonConfigurationMixin,
     expand_pretty_datetime_format,
     get_database_engine_options,
-    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
-from galaxy.version import (
-    VERSION,
-    VERSION_MAJOR,
-    VERSION_MINOR,
-)
+from galaxy.version import VERSION, VERSION_MAJOR, VERSION_MINOR
 
 log = logging.getLogger(__name__)
 

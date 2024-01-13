@@ -3,33 +3,15 @@ import logging
 import os
 import shutil
 from pathlib import Path
-from tempfile import (
-    NamedTemporaryFile,
-    SpooledTemporaryFile,
-)
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from tempfile import NamedTemporaryFile, SpooledTemporaryFile
+from typing import List, Optional, Tuple, Union
 
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
+from sqlalchemy import false, select, true
 from sqlalchemy.orm import Session
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
-)
-from galaxy.celery.tasks import (
-    import_model_store,
-    prepare_history_download,
-    write_history_to,
-)
+from galaxy import exceptions as glx_exceptions
+from galaxy import model
+from galaxy.celery.tasks import import_model_store, prepare_history_download, write_history_to
 from galaxy.files.uris import validate_uri_access
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
@@ -45,10 +27,7 @@ from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
 from galaxy.model.store import payload_to_source_uri
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -69,21 +48,17 @@ from galaxy.schema.schema import (
     StoreExportPayload,
     WriteStoreToPayload,
 )
-from galaxy.schema.tasks import (
-    GenerateHistoryDownload,
-    ImportModelStoreTaskRequest,
-    WriteHistoryTo,
-)
+from galaxy.schema.tasks import GenerateHistoryDownload, ImportModelStoreTaskRequest, WriteHistoryTo
 from galaxy.schema.types import LatestLiteral
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
-    model_store_storage_target,
     ServesExportStores,
     ServiceBase,
+    async_task_summary,
+    model_store_storage_target,
 )
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 

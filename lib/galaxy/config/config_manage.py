@@ -2,21 +2,10 @@ import os
 import shutil
 import sys
 import tempfile
-from argparse import (
-    ArgumentParser,
-    Namespace,
-)
+from argparse import ArgumentParser, Namespace
 from io import StringIO
 from textwrap import TextWrapper
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-)
+from typing import Any, Callable, Dict, List, NamedTuple, Optional, Tuple
 
 import yaml
 from boltons.iterutils import remap
@@ -35,21 +24,11 @@ if __name__ == "__main__":
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
 
-from galaxy.config import (
-    GALAXY_CONFIG_SCHEMA_PATH,
-    REPORTS_CONFIG_SCHEMA_PATH,
-    TOOL_SHED_CONFIG_SCHEMA_PATH,
-)
+from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH, REPORTS_CONFIG_SCHEMA_PATH, TOOL_SHED_CONFIG_SCHEMA_PATH
 from galaxy.config.schema import AppSchema
 from galaxy.util import safe_makedirs
-from galaxy.util.properties import (
-    nice_config_parser,
-    NicerConfigParser,
-)
-from galaxy.util.yaml_util import (
-    ordered_dump,
-    ordered_load,
-)
+from galaxy.util.properties import NicerConfigParser, nice_config_parser
+from galaxy.util.yaml_util import ordered_dump, ordered_load
 
 DESCRIPTION = "Convert configuration files."
 

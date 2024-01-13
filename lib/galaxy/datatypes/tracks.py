@@ -3,11 +3,9 @@ Datatype classes for tracks/track views within galaxy.
 """
 import logging
 
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
 from galaxy.datatypes.text import Html
+
 from . import binary
 
 log = logging.getLogger(__name__)

@@ -10,17 +10,9 @@ import logging
 from io import StringIO
 from os import getenv
 from os.path import exists
-from subprocess import (
-    PIPE,
-    Popen,
-)
+from subprocess import PIPE, Popen
 
-from . import (
-    Dependency,
-    DependencyResolver,
-    MappableDependencyResolver,
-    NullDependency,
-)
+from . import Dependency, DependencyResolver, MappableDependencyResolver, NullDependency
 
 log = logging.getLogger(__name__)
 

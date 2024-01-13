@@ -2,23 +2,13 @@ import json
 import typing
 from logging import getLogger
 from os import getcwd
-from os.path import (
-    abspath,
-    join,
-)
+from os.path import abspath, join
 from typing import Optional
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
-from galaxy.jobs.runners.util.job_script import (
-    INTEGRITY_INJECTION,
-    ScriptIntegrityChecks,
-    write_script,
-)
-from galaxy.tool_util.deps.container_classes import (
-    Container,
-    TRAP_KILL_CONTAINER,
-)
+from galaxy.jobs.runners.util.job_script import INTEGRITY_INJECTION, ScriptIntegrityChecks, write_script
+from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER, Container
 
 if typing.TYPE_CHECKING:
     from galaxy.jobs import MinimalJobWrapper

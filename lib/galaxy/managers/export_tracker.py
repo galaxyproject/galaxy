@@ -1,13 +1,7 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import (
-    and_,
-    select,
-)
+from sqlalchemy import and_, select
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.scoping import scoped_session
 

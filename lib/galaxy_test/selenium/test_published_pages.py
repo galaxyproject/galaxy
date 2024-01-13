@@ -1,7 +1,4 @@
-from .framework import (
-    selenium_test,
-    SharedStateSeleniumTestCase,
-)
+from .framework import SharedStateSeleniumTestCase, selenium_test
 
 
 class TestPublishedPagesGrid(SharedStateSeleniumTestCase):

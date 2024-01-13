@@ -1,16 +1,12 @@
 import functools
 import json
 import os
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Callable, Dict, List, Optional
 
 import requests
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+
 from .interface import BiotoolsEntry
 
 

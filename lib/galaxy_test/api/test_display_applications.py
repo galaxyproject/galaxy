@@ -1,8 +1,10 @@
 import random
 from typing import List
 
-from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
+
+from galaxy.util import UNKNOWN
+
 from ._framework import ApiTestCase
 
 

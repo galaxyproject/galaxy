@@ -1,8 +1,5 @@
 import json
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime, timedelta
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock

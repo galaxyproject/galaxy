@@ -5,23 +5,14 @@ client currently).
 """
 
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Type,
-)
+from typing import Any, Dict, List, Type
 
 import refgenconf
 
 from galaxy import util
-from galaxy.tool_util.data import (
-    TabularToolDataField,
-    TabularToolDataTable,
-    tool_data_table_types_list as tool_util_tool_data_table_types_list,
-    ToolDataTable,
-    ToolDataTableManager as BaseToolDataTableManager,
-)
+from galaxy.tool_util.data import TabularToolDataField, TabularToolDataTable, ToolDataTable
+from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
+from galaxy.tool_util.data import tool_data_table_types_list as tool_util_tool_data_table_types_list
 from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)

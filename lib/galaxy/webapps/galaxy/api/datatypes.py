@@ -2,13 +2,7 @@
 API operations allowing clients to determine datatype supported by Galaxy.
 """
 import logging
-from typing import (
-    cast,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Dict, List, Optional, Union, cast
 
 from fastapi import Query
 
@@ -26,10 +20,8 @@ from galaxy.managers.datatypes import (
     view_mapping,
     view_sniffers,
 )
-from . import (
-    depends,
-    Router,
-)
+
+from . import Router, depends
 
 log = logging.getLogger(__name__)
 

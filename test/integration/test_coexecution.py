@@ -17,26 +17,15 @@ import random
 import string
 import tempfile
 import time
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 import yaml
-
-from galaxy.jobs.runners.util.pykube_util import (
-    Job,
-    pykube_client_from_dict,
-)
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_without_tool,
-)
+from galaxy_test.base.populators import DatasetPopulator, skip_without_tool
 from galaxy_test.driver import integration_util
-from .test_containerized_jobs import (
-    EXTENDED_TIMEOUT,
-    MulledJobTestCases,
-)
+
+from galaxy.jobs.runners.util.pykube_util import Job, pykube_client_from_dict
+
+from .test_containerized_jobs import EXTENDED_TIMEOUT, MulledJobTestCases
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 from .test_kubernetes_runner import KubernetesDatasetPopulator
 from .test_local_job_cancellation import CancelsJob

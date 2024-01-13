@@ -1,28 +1,15 @@
 import logging
 import os
-from typing import (
-    cast,
-    Iterable,
-    NamedTuple,
-    NewType,
-    NoReturn,
-    Optional,
-)
+from typing import Iterable, NamedTuple, NewType, NoReturn, Optional, cast
 
 import alembic
 from alembic import command
-from sqlalchemy import (
-    create_engine,
-    MetaData,
-)
+from sqlalchemy import MetaData, create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base as gxy_base
-from galaxy.model.database_utils import (
-    create_database,
-    database_exists,
-)
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.mapping import create_additional_database_objects
 from galaxy.model.migrations.base import (
     ALEMBIC_TABLE,

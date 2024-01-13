@@ -1,7 +1,4 @@
-from uuid import (
-    UUID,
-    uuid4,
-)
+from uuid import UUID, uuid4
 
 from galaxy import model
 

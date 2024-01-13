@@ -3,10 +3,7 @@ FormDefinition and field factories
 """
 # TODO: A FormDefinitionField is closely linked to a form_builder result.
 # Can this functionality be further abstracted and merged with form_builder?
-from galaxy.model import (
-    FormDefinition,
-    FormDefinitionCurrent,
-)
+from galaxy.model import FormDefinition, FormDefinitionCurrent
 from galaxy.util import string_as_bool
 
 FORM_TYPES = {f_type.lower(): f_descript for f_type, f_descript in FormDefinition.types.__members__.items()}

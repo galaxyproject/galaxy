@@ -8,18 +8,13 @@ import logging
 import re
 from typing import Optional
 
-from sqlalchemy import (
-    func,
-    sql,
-)
+from sqlalchemy import func, sql
 
 from galaxy import model
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.tags import GalaxyTagHandler
-from .base import (
-    ModelValidator,
-    raise_filter_err,
-)
+
+from .base import ModelValidator, raise_filter_err
 
 log = logging.getLogger(__name__)
 

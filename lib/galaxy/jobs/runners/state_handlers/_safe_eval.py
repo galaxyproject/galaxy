@@ -1,8 +1,4 @@
-from ast import (
-    Module,
-    parse,
-    walk,
-)
+from ast import Module, parse, walk
 
 AST_NODE_TYPE_ALLOWLIST = [
     "Expr",

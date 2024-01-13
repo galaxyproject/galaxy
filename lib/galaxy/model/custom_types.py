@@ -12,17 +12,9 @@ import numpy
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.inspection import inspect
-from sqlalchemy.types import (
-    CHAR,
-    LargeBinary,
-    String,
-    TypeDecorator,
-)
+from sqlalchemy.types import CHAR, LargeBinary, String, TypeDecorator
 
-from galaxy.util import (
-    smart_str,
-    unicodify,
-)
+from galaxy.util import smart_str, unicodify
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)

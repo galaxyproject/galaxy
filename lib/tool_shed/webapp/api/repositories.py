@@ -3,32 +3,10 @@ import logging
 import os
 from io import StringIO
 from time import strftime
-from typing import (
-    Callable,
-    Dict,
-)
+from typing import Callable, Dict
 
-from webob.compat import cgi_FieldStorage
-
-from galaxy import (
-    util,
-    web,
-)
-from galaxy.exceptions import (
-    ActionInputError,
-    InsufficientPermissionsException,
-    MessageException,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-    RequestParameterMissingException,
-)
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
-)
-from galaxy.webapps.base.controller import HTTPBadRequest
 from tool_shed.managers.repositories import (
+    UpdatesRequest,
     can_update_repo,
     check_updates,
     create_repository,
@@ -41,21 +19,27 @@ from tool_shed.managers.repositories import (
     reset_metadata_on_repository,
     search,
     to_element_dict,
-    UpdatesRequest,
     upload_tar_and_set_metadata,
 )
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
-from tool_shed.util import (
-    metadata_util,
-    repository_util,
-    tool_util,
-)
+from tool_shed.util import metadata_util, repository_util, tool_util
 from tool_shed.webapp import model
-from tool_shed_client.schema import (
-    CreateRepositoryRequest,
-    LegacyInstallInfoTuple,
+from tool_shed_client.schema import CreateRepositoryRequest, LegacyInstallInfoTuple
+from webob.compat import cgi_FieldStorage
+
+from galaxy import util, web
+from galaxy.exceptions import (
+    ActionInputError,
+    InsufficientPermissionsException,
+    MessageException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+    RequestParameterMissingException,
 )
+from galaxy.web import expose_api, expose_api_anonymous_and_sessionless, expose_api_raw_anonymous_and_sessionless
+from galaxy.webapps.base.controller import HTTPBadRequest
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

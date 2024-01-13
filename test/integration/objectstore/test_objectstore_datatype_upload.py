@@ -6,14 +6,9 @@ import time
 from typing import Optional
 
 import pytest
-
 from galaxy_test.driver import integration_util
-from ..test_datatype_upload import (
-    TEST_CASES,
-    TestData,
-    upload_datatype_helper,
-    UploadTestDatatypeDataTestCase,
-)
+
+from ..test_datatype_upload import TEST_CASES, TestData, UploadTestDatatypeDataTestCase, upload_datatype_helper
 
 REFRESH_TIME = 3
 CONNECTION_POOL_MONITOR_INTERVAL = 6

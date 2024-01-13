@@ -1,18 +1,10 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from selenium.webdriver.support.select import Select
 
-from galaxy.navigation.components import (
-    Component,
-    Target,
-)
-from .axe_results import (
-    AxeResults,
-    Impact,
-)
+from galaxy.navigation.components import Component, Target
+
+from .axe_results import AxeResults, Impact
 
 
 class SmartComponent:

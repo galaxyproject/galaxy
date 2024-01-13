@@ -1,12 +1,6 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
-from .framework import (
-    selenium_test,
-    SharedStateSeleniumTestCase,
-)
+from .framework import SharedStateSeleniumTestCase, selenium_test
 
 
 class TestPublishedWorkflowsGrid(SharedStateSeleniumTestCase):

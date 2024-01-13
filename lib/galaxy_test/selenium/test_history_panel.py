@@ -1,9 +1,6 @@
 from galaxy.selenium.navigates_galaxy import edit_details
-from .framework import (
-    retry_assertion_during_transitions,
-    selenium_test,
-    SeleniumTestCase,
-)
+
+from .framework import SeleniumTestCase, retry_assertion_during_transitions, selenium_test
 
 NEW_HISTORY_NAME = "New History Name"
 HISTORY_PANEL_AXE_IMPACT_LEVEL = "moderate"

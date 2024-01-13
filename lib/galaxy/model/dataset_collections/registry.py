@@ -1,8 +1,6 @@
 from galaxy import model
-from .types import (
-    list,
-    paired,
-)
+
+from .types import list, paired
 
 PLUGIN_CLASSES = [list.ListDatasetCollectionType, paired.PairedDatasetCollectionType]
 

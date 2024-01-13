@@ -1,11 +1,7 @@
 import os
-from typing import (
-    List,
-    NamedTuple,
-)
+from typing import List, NamedTuple
 
 import pytest
-
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.driver.driver_util import GalaxyTestDriver
 

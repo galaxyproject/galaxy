@@ -3,28 +3,14 @@ from unittest import mock
 
 import pytest
 import sqlalchemy
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
+from sqlalchemy import false, select, true
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
-from galaxy.managers import (
-    base,
-    hdas,
-)
-from galaxy.managers.histories import (
-    HistoryDeserializer,
-    HistoryFilters,
-    HistoryManager,
-    HistorySerializer,
-)
+from galaxy.managers import base, hdas
+from galaxy.managers.histories import HistoryDeserializer, HistoryFilters, HistoryManager, HistorySerializer
 from galaxy.model.base import transaction
+
 from .base import BaseTestCase
 
 default_password = "123456"

@@ -2,30 +2,17 @@ import logging
 import time
 from typing import Optional
 
-from sqlalchemy import (
-    false,
-    func,
-    select,
-)
+from sqlalchemy import false, func, select
+from tool_shed.util.web_util import escape
 
-from galaxy import (
-    util,
-    web,
-)
-from galaxy.model import (
-    Library,
-    LibraryDatasetDatasetAssociation,
-)
+from galaxy import util, web
+from galaxy.model import Library, LibraryDatasetDatasetAssociation
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import validate_password
 from galaxy.util import inflector
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web.form_builder import CheckboxField
-from galaxy.web.legacy_framework.grids import (
-    Grid,
-    GridOperation,
-)
-from tool_shed.util.web_util import escape
+from galaxy.web.legacy_framework.grids import Grid, GridOperation
 
 log = logging.getLogger(__name__)
 compliance_log = logging.getLogger("COMPLIANCE")

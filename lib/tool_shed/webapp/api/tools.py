@@ -1,17 +1,12 @@
 import json
 import logging
 
-from galaxy import (
-    exceptions,
-    util,
-)
-from galaxy.web import (
-    expose_api,
-    expose_api_raw_anonymous_and_sessionless,
-    require_admin,
-)
 from tool_shed.managers.tools import search
 from tool_shed.util.shed_index import build_index
+
+from galaxy import exceptions, util
+from galaxy.web import expose_api, expose_api_raw_anonymous_and_sessionless, require_admin
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

@@ -18,48 +18,23 @@ import time
 from dataclasses import dataclass
 from glob import glob
 from tempfile import NamedTemporaryFile
-from typing import (
-    Any,
-    BinaryIO,
-    Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, BinaryIO, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import requests
-from typing_extensions import (
-    Protocol,
-    TypedDict,
-)
+from typing_extensions import Protocol, TypedDict
 
 from galaxy import util
 from galaxy.exceptions import MessageException
-from galaxy.util import (
-    Element,
-    RW_R__R__,
-)
+from galaxy.util import RW_R__R__, Element
 from galaxy.util.compression_utils import decompress_path_to_directory
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.filelock import FileLock
 from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.template import fill_template
-from ._schema import (
-    ToolDataEntry,
-    ToolDataEntryList,
-)
-from .bundles.models import (
-    DataTableBundle,
-    DataTableBundleProcessorDescription,
-    RepoInfo,
-)
+
+from ._schema import ToolDataEntry, ToolDataEntryList
+from .bundles.models import DataTableBundle, DataTableBundleProcessorDescription, RepoInfo
 
 if TYPE_CHECKING:
     from galaxy.tools.data_manager.manager import DataManager

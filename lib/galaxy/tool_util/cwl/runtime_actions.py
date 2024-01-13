@@ -3,15 +3,10 @@ import os
 import shutil
 
 from galaxy.util import safe_makedirs
+
 from .cwltool_deps import ref_resolver
-from .parser import (
-    JOB_JSON_FILE,
-    load_job_proxy,
-)
-from .util import (
-    SECONDARY_FILES_INDEX_PATH,
-    STORE_SECONDARY_FILES_WITH_BASENAME,
-)
+from .parser import JOB_JSON_FILE, load_job_proxy
+from .util import SECONDARY_FILES_INDEX_PATH, STORE_SECONDARY_FILES_WITH_BASENAME
 
 
 def file_dict_to_description(file_dict):
@@ -84,10 +79,7 @@ def handle_outputs(job_directory=None):
     with open(cwl_metadata_params_path) as f:
         cwl_metadata_params = json.load(f)
     job_id_tag = cwl_metadata_params["job_id_tag"]
-    from galaxy.job_execution.output_collect import (
-        default_exit_code_file,
-        read_exit_code_from,
-    )
+    from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 
     exit_code_file = default_exit_code_file(".", job_id_tag)
     tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)

@@ -4,10 +4,7 @@ import collections
 import os
 import tempfile
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_without_tool,
-)
+from galaxy_test.base.populators import DatasetPopulator, skip_without_tool
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

@@ -1,19 +1,8 @@
 from enum import Enum
-from typing import (
-    Any,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, List, Optional, Union
 
-from pydantic import (
-    Field,
-    Required,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from pydantic import Field, Required
+from typing_extensions import Annotated, Literal
 
 from galaxy.schema.schema import Model
 

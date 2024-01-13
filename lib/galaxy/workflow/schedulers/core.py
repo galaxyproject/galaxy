@@ -5,10 +5,8 @@ import logging
 from typing import TYPE_CHECKING
 
 from galaxy.work import context
-from galaxy.workflow import (
-    run,
-    run_request,
-)
+from galaxy.workflow import run, run_request
+
 from . import ActiveWorkflowSchedulingPlugin
 
 if TYPE_CHECKING:

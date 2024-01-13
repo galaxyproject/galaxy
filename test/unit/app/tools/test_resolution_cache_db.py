@@ -13,10 +13,10 @@ from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (ur
 )
 from galaxy.tool_util.deps.container_resolvers import ResolutionCache
 from galaxy.tool_util.deps.mulled.util import (
-    _namespace_has_repo_name,
-    mulled_tags_for,
     NAMESPACE_HAS_REPO_NAME_KEY,
     TAG_CACHE_KEY,
+    _namespace_has_repo_name,
+    mulled_tags_for,
 )
 
 cache_namespace = "mulled_resolution"

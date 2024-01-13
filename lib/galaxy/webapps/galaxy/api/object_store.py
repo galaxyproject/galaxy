@@ -4,25 +4,13 @@ API operations on Galaxy's object store.
 import logging
 from typing import List
 
-from fastapi import (
-    Path,
-    Query,
-)
+from fastapi import Path, Query
 
-from galaxy.exceptions import (
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import ObjectNotFound, RequestParameterInvalidException
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.objectstore import (
-    BaseObjectStore,
-    ConcreteObjectStoreModel,
-)
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.objectstore import BaseObjectStore, ConcreteObjectStoreModel
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

@@ -1,46 +1,24 @@
 import json
 import logging
 import typing
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date, datetime
 
 import sqlalchemy
 from boltons.iterutils import remap
-from pydantic import (
-    BaseModel,
-    Field,
-)
-from sqlalchemy import (
-    and_,
-    false,
-    func,
-    null,
-    or_,
-    true,
-)
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, false, func, null, or_, true
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
-from galaxy.exceptions import (
-    ItemAccessibilityException,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
-from galaxy.job_metrics import (
-    RawMetric,
-    Safety,
-)
+from galaxy.exceptions import ItemAccessibilityException, ObjectNotFound, RequestParameterInvalidException
+from galaxy.job_metrics import RawMetric, Safety
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    YIELD_PER_ROWS,
     ImplicitCollectionJobsJobAssociation,
     Job,
     JobParameter,
@@ -48,30 +26,15 @@ from galaxy.model import (
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
-    YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
-from galaxy.model.index_filter_util import (
-    raw_text_column_filter,
-    text_column_filter,
-)
+from galaxy.model.index_filter_util import raw_text_column_filter, text_column_filter
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.schema import (
-    JobIndexQueryPayload,
-    JobIndexSortByEnum,
-)
+from galaxy.schema.schema import JobIndexQueryPayload, JobIndexSortByEnum
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    defaultdict,
-    ExecutionTimer,
-    listify,
-)
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.util import ExecutionTimer, defaultdict, listify
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 
 log = logging.getLogger(__name__)
 

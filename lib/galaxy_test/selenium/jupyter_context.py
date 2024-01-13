@@ -6,9 +6,11 @@ in fixture data rapidly in the target Galaxy.
 """
 from typing import Optional
 
+from galaxy_test.base.api_util import get_admin_api_key
+
 from galaxy.selenium.context import init as base_init
 from galaxy.selenium.jupyter_context import JupyterContextImpl
-from galaxy_test.base.api_util import get_admin_api_key
+
 from .framework import GalaxyTestSeleniumContext
 
 

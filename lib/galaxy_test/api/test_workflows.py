@@ -5,36 +5,20 @@ import shutil
 import time
 from json import dumps
 from tempfile import mkdtemp
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, Optional, Tuple, Union, cast
 from uuid import uuid4
 
 import pytest
 import yaml
-from requests import (
-    delete,
-    get,
-    post,
-    put,
-)
-
-from galaxy.exceptions import error_codes
-from galaxy.util import UNKNOWN
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     RunJobsSummary,
+    WorkflowPopulator,
     skip_without_tool,
     wait_on,
     workflow_str,
-    WorkflowPopulator,
 )
 from galaxy_test.base.workflow_fixtures import (
     NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE,
@@ -65,6 +49,11 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_RULES_1,
     WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT,
 )
+from requests import delete, get, post, put
+
+from galaxy.exceptions import error_codes
+from galaxy.util import UNKNOWN
+
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
 

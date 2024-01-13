@@ -8,16 +8,7 @@ import os
 import pkgutil
 from pathlib import Path
 from string import Template
-from typing import (
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 import yaml
 
@@ -26,19 +17,8 @@ from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
-from . import (
-    binary,
-    coverage,
-    data,
-    images,
-    interval,
-    qualityscore,
-    sequence,
-    tabular,
-    text,
-    tracks,
-    xml,
-)
+
+from . import binary, coverage, data, images, interval, qualityscore, sequence, tabular, text, tracks, xml
 from .display_applications.application import DisplayApplication
 
 if TYPE_CHECKING:

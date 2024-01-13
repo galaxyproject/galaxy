@@ -1,25 +1,16 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
 import tool_shed.util.shed_util_common as suc
 import tool_shed_client.schema
-from galaxy import (
-    util,
-    web,
-)
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous_and_sessionless,
-    require_admin,
-)
-from galaxy.webapps.galaxy.api import depends
 from tool_shed.managers.categories import CategoryManager
 from tool_shed.managers.repositories import repositories_by_category
 from tool_shed.webapp.model import Category
+
+from galaxy import util, web
+from galaxy.web import expose_api, expose_api_anonymous_and_sessionless, require_admin
+from galaxy.webapps.galaxy.api import depends
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

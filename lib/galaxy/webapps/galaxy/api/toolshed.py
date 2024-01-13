@@ -4,10 +4,8 @@ from urllib.parse import quote
 
 from galaxy.exceptions import MessageException
 from galaxy.util import url_get
-from galaxy.web import (
-    expose_api,
-    require_admin,
-)
+from galaxy.web import expose_api, require_admin
+
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

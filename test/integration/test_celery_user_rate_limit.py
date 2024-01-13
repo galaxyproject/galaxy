@@ -1,22 +1,16 @@
 import datetime
 import tempfile
 from functools import lru_cache
-from typing import (
-    Dict,
-    List,
-)
+from typing import Dict, List
 
 from celery.result import AsyncResult
+from galaxy_test.driver.driver_util import init_database
+from galaxy_test.driver.integration_util import IntegrationTestCase, skip_unless_postgres
 from sqlalchemy import text
 
 from galaxy.celery import galaxy_task
 from galaxy.model.database_utils import sqlalchemy_engine
 from galaxy.util import ExecutionTimer
-from galaxy_test.driver.driver_util import init_database
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    skip_unless_postgres,
-)
 
 
 @galaxy_task

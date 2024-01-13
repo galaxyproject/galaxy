@@ -2,53 +2,20 @@ import json
 import logging
 import os
 import uuid
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
 import sqlalchemy
-from gxformat2 import (
-    from_galaxy_native,
-    ImporterGalaxyInterface,
-    ImportOptions,
-    python_to_workflow,
-)
+from gxformat2 import ImporterGalaxyInterface, ImportOptions, from_galaxy_native, python_to_workflow
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
 from pydantic import BaseModel
-from sqlalchemy import (
-    desc,
-    false,
-    func,
-    or_,
-    select,
-    true,
-)
-from sqlalchemy.orm import (
-    aliased,
-    joinedload,
-    Query,
-    subqueryload,
-)
+from sqlalchemy import desc, false, func, or_, select, true
+from sqlalchemy.orm import Query, aliased, joinedload, subqueryload
 
-from galaxy import (
-    exceptions,
-    model,
-    util,
-)
+from galaxy import exceptions, model, util
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.managers import (
-    deletable,
-    sharable,
-)
+from galaxy.managers import deletable, sharable
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
@@ -65,24 +32,13 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
-from galaxy.model.index_filter_util import (
-    append_user_filter,
-    raw_text_column_filter,
-    tag_filter,
-    text_column_filter,
-)
+from galaxy.model.base import ensure_object_added_to_session, transaction
+from galaxy.model.index_filter_util import append_user_filter, raw_text_column_filter, tag_filter, text_column_filter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.tools.parameters import (
-    params_to_incoming,
-    visit_input_values,
-)
+from galaxy.tools.parameters import params_to_incoming, visit_input_values
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
@@ -90,38 +46,17 @@ from galaxy.tools.parameters.basic import (
     workflow_building_modes,
 )
 from galaxy.util.hash_util import md5_hash_str
-from galaxy.util.json import (
-    safe_dumps,
-    safe_loads,
-)
+from galaxy.util.json import safe_dumps, safe_loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 from galaxy.work.context import WorkRequestContext
-from galaxy.workflow.modules import (
-    module_factory,
-    ToolModule,
-    WorkflowModule,
-    WorkflowModuleInjector,
-)
+from galaxy.workflow.modules import ToolModule, WorkflowModule, WorkflowModuleInjector, module_factory
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
-from galaxy.workflow.refactor.schema import (
-    RefactorActionExecution,
-    RefactorActions,
-)
-from galaxy.workflow.render import (
-    STANDALONE_SVG_TEMPLATE,
-    WorkflowCanvas,
-)
+from galaxy.workflow.refactor.schema import RefactorActionExecution, RefactorActions
+from galaxy.workflow.render import STANDALONE_SVG_TEMPLATE, WorkflowCanvas
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
-from galaxy.workflow.steps import (
-    attach_ordered_steps,
-    has_cycles,
-)
+from galaxy.workflow.steps import attach_ordered_steps, has_cycles
 
 log = logging.getLogger(__name__)
 

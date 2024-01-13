@@ -7,10 +7,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    Model,
-    TagCollection,
-)
+from galaxy.schema.schema import Model, TagCollection
 
 
 class TaggableItemClass(Enum):

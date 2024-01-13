@@ -1,7 +1,4 @@
-from galaxy.tool_util.verify.wait import (
-    TimeoutAssertionError,
-    wait_on,
-)
+from galaxy.tool_util.verify.wait import TimeoutAssertionError, wait_on
 
 
 class Sleeper:

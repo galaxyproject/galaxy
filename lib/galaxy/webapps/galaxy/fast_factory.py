@@ -41,12 +41,9 @@ with the following command-line.
 
 """
 
-from galaxy.main_config import (
-    DEFAULT_CONFIG_SECTION,
-    WebappConfigResolver,
-    WebappSetupProps,
-)
+from galaxy.main_config import DEFAULT_CONFIG_SECTION, WebappConfigResolver, WebappSetupProps
 from galaxy.webapps.galaxy.buildapp import app_pair
+
 from .fast_app import initialize_fast_app
 
 

@@ -1,28 +1,18 @@
 import os
 from functools import wraps
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
 import pytest
-
-from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
-from galaxy_test.base.api_util import (
-    get_admin_api_key as get_galaxy_admin_api_key,
-    get_user_api_key as get_galaxy_user_key,
-    TEST_USER,
-)
+from galaxy_test.base.api_util import TEST_USER
+from galaxy_test.base.api_util import get_admin_api_key as get_galaxy_admin_api_key
+from galaxy_test.base.api_util import get_user_api_key as get_galaxy_user_key
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
+
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
+
 from . import driver
-from .api_util import (
-    ensure_user_with_email,
-    get_admin_api_key,
-    get_user_api_key,
-    ShedApiInteractor,
-)
+from .api_util import ShedApiInteractor, ensure_user_with_email, get_admin_api_key, get_user_api_key
 from .populators import ToolShedPopulator
 
 

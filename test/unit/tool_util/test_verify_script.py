@@ -1,27 +1,19 @@
 import json
 import os
 from tempfile import NamedTemporaryFile
-from typing import (
-    cast,
-    NoReturn,
-)
+from typing import NoReturn, cast
 from unittest import mock
 
 from galaxy.tool_util.unittest_utils.interactor import (
     EXISTING_HISTORY,
     EXISTING_HISTORY_NAME,
     EXISTING_SUITE_NAME,
-    MockGalaxyInteractor,
     NEW_HISTORY_ID,
+    MockGalaxyInteractor,
 )
 from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
-from galaxy.tool_util.verify.script import (
-    arg_parser,
-    build_case_references,
-    Results,
-    test_tools as run,
-    TestReference,
-)
+from galaxy.tool_util.verify.script import Results, TestReference, arg_parser, build_case_references
+from galaxy.tool_util.verify.script import test_tools as run
 
 VT_PATH = "galaxy.tool_util.verify.script.verify_tool"
 

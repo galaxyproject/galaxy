@@ -1,23 +1,17 @@
 import tarfile
 
 from celery import shared_task
+from galaxy_test.base.populators import DatasetPopulator, wait_on
+from galaxy_test.driver.integration_util import IntegrationTestCase
 from sqlalchemy import select
 
 from galaxy.celery import galaxy_task
-from galaxy.celery.tasks import (
-    prepare_pdf_download,
-    purge_hda,
-)
+from galaxy.celery.tasks import prepare_pdf_download, purge_hda
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.short_term_storage import ShortTermStorageAllocator
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    wait_on,
-)
-from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 @shared_task

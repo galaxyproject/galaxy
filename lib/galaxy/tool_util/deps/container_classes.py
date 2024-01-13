@@ -1,43 +1,20 @@
 import os
 import string
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 from logging import getLogger
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type
 from uuid import uuid4
 
 from typing_extensions import Protocol
 
-from galaxy.util import (
-    asbool,
-    in_directory,
-)
-from . import (
-    docker_util,
-    singularity_util,
-)
+from galaxy.util import asbool, in_directory
+
+from . import docker_util, singularity_util
 from .container_volumes import DockerVolume
-from .requirements import (
-    DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
-    DEFAULT_CONTAINER_SHELL,
-)
+from .requirements import DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES, DEFAULT_CONTAINER_SHELL
 
 if TYPE_CHECKING:
-    from .dependencies import (
-        AppInfo,
-        JobInfo,
-        ToolInfo,
-    )
+    from .dependencies import AppInfo, JobInfo, ToolInfo
     from .requirements import ContainerDescription
 
 log = getLogger(__name__)

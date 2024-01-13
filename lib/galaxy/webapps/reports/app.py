@@ -8,6 +8,7 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
 from galaxy.web_stack import application_stack_instance
+
 from . import config
 
 log = logging.getLogger(__name__)

@@ -1,11 +1,7 @@
 from a2wsgi import WSGIMiddleware
 from fastapi import FastAPI
 
-from galaxy.webapps.base.api import (
-    add_exception_handler,
-    add_request_id_middleware,
-    include_all_package_routers,
-)
+from galaxy.webapps.base.api import add_exception_handler, add_request_id_middleware, include_all_package_routers
 
 
 def initialize_fast_app(gx_webapp):

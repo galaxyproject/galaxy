@@ -1,16 +1,8 @@
 import os
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-)
+from typing import Any, Callable, Dict, Generator
 
 import pytest
-from playwright.sync_api import (
-    Browser,
-    BrowserContext,
-)
+from playwright.sync_api import Browser, BrowserContext
 
 from ..base.browser import ShedBrowser
 from ..base.playwrightbrowser import PlaywrightShedBrowser

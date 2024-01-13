@@ -5,16 +5,11 @@ import multiprocessing
 import os
 import sys
 import threading
-from typing import (
-    Callable,
-    FrozenSet,
-    List,
-    Optional,
-    Type,
-)
+from typing import Callable, FrozenSet, List, Optional, Type
 
 from galaxy.model import database_utils
 from galaxy.util.facts import get_facts
+
 from .handlers import HANDLER_ASSIGNMENT_METHODS
 
 log = logging.getLogger(__name__)

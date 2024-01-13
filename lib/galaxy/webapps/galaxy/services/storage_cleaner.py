@@ -1,19 +1,12 @@
 import logging
-from typing import (
-    Dict,
-    Optional,
-    Set,
-)
+from typing import Dict, Optional, Set
 
 from galaxy.managers.base import StorageCleanerManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAStorageCleanerManager
 from galaxy.managers.histories import HistoryStorageCleanerManager
 from galaxy.managers.users import UserManager
-from galaxy.schema.storage_cleaner import (
-    StoredItemOrderBy,
-    StoredItemType,
-)
+from galaxy.schema.storage_cleaner import StoredItemOrderBy, StoredItemType
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)

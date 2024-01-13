@@ -1,17 +1,8 @@
 import os
 from copy import deepcopy
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Dict, List, Optional, Tuple
 
-from galaxy.util import (
-    Element,
-    ElementTree,
-    parse_xml,
-)
+from galaxy.util import Element, ElementTree, parse_xml
 from galaxy.util.path import StrPath
 
 REQUIRED_PARAMETER = object()

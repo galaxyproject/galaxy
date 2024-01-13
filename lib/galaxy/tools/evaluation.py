@@ -6,44 +6,20 @@ import shlex
 import string
 import tempfile
 from datetime import datetime
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
-from galaxy.model.deferred import (
-    materialize_collection_input,
-    materializer_factory,
-)
+from galaxy.model.deferred import materialize_collection_input, materializer_factory
 from galaxy.model.none_like import NoneDataset
 from galaxy.security.object_wrapper import wrap_with_safe_string
-from galaxy.structured_app import (
-    BasicSharedApp,
-    MinimalToolApp,
-)
+from galaxy.structured_app import BasicSharedApp, MinimalToolApp
 from galaxy.tool_util.data import TabularToolDataTable
-from galaxy.tools.parameters import (
-    visit_input_values,
-    wrapped_json,
-)
-from galaxy.tools.parameters.basic import (
-    DataCollectionToolParameter,
-    DataToolParameter,
-    SelectToolParameter,
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    Repeat,
-    Section,
-)
+from galaxy.tools.parameters import visit_input_values, wrapped_json
+from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, SelectToolParameter
+from galaxy.tools.parameters.grouping import Conditional, Repeat, Section
 from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
@@ -54,17 +30,8 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
 )
-from galaxy.util import (
-    find_instance_nested,
-    listify,
-    RW_R__R__,
-    safe_makedirs,
-    unicodify,
-)
-from galaxy.util.template import (
-    fill_template,
-    InputNotFoundSyntaxError,
-)
+from galaxy.util import RW_R__R__, find_instance_nested, listify, safe_makedirs, unicodify
+from galaxy.util.template import InputNotFoundSyntaxError, fill_template
 from galaxy.util.tree_dict import TreeDict
 from galaxy.work.context import WorkRequestContext
 

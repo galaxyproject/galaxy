@@ -4,14 +4,8 @@ Top-level Galaxy job manager, moves jobs to handler(s)
 import logging
 from functools import partial
 
-from galaxy.exceptions import (
-    HandlerAssignmentError,
-    ToolExecutionError,
-)
-from galaxy.jobs import (
-    handler,
-    NoopQueue,
-)
+from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
+from galaxy.jobs import NoopQueue, handler
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web_stack.message import JobHandlerMessage
 

@@ -1,9 +1,5 @@
 import logging
-from typing import (
-    Callable,
-    cast,
-    Dict,
-)
+from typing import Callable, Dict, cast
 
 from alembic import context
 from sqlalchemy import create_engine

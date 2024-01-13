@@ -1,24 +1,19 @@
 import graphene
 from graphene import relay
-from graphene_sqlalchemy import (
-    SQLAlchemyConnectionField,
-    SQLAlchemyObjectType,
-)
+from graphene_sqlalchemy import SQLAlchemyConnectionField, SQLAlchemyObjectType
 from graphene_sqlalchemy.converter import convert_sqlalchemy_type
 from graphene_sqlalchemy.utils import column_type_eq
 from graphql import GraphQLResolveInfo
 from sqlalchemy.orm import scoped_session
+from tool_shed.webapp.model import Category as SaCategory
+from tool_shed.webapp.model import Repository as SaRepository
+from tool_shed.webapp.model import RepositoryCategoryAssociation
+from tool_shed.webapp.model import RepositoryMetadata as SaRepositoryMetadata
+from tool_shed.webapp.model import User as SaUser
 from typing_extensions import TypedDict
 
 from galaxy.model.custom_types import TrimmedString
 from galaxy.security.idencoding import IdEncodingHelper
-from tool_shed.webapp.model import (
-    Category as SaCategory,
-    Repository as SaRepository,
-    RepositoryCategoryAssociation,
-    RepositoryMetadata as SaRepositoryMetadata,
-    User as SaUser,
-)
 
 USER_FIELDS = (
     "id",

@@ -4,15 +4,10 @@ API for updating Galaxy Pages
 import logging
 
 from galaxy.managers.base import get_object
-from galaxy.managers.pages import (
-    get_page_revision,
-    PageManager,
-)
+from galaxy.managers.pages import PageManager, get_page_revision
 from galaxy.web import expose_api
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-)
+
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 

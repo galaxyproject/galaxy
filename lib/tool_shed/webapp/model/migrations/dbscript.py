@@ -4,16 +4,10 @@ import sys
 from argparse import Namespace
 from typing import Optional
 
-from galaxy.model.migrations.base import (
-    BaseCommand,
-    BaseDbScript,
-    BaseParserBuilder,
-)
 from tool_shed.webapp.model.migrations import verify_database
-from tool_shed.webapp.model.migrations.scripts import (
-    get_dburl,
-    get_dburl_from_file,
-)
+from tool_shed.webapp.model.migrations.scripts import get_dburl, get_dburl_from_file
+
+from galaxy.model.migrations.base import BaseCommand, BaseDbScript, BaseParserBuilder
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

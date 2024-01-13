@@ -4,11 +4,7 @@ import logging
 import math
 import random
 import string
-from collections.abc import (
-    Iterable,
-    Mapping,
-    Sequence,
-)
+from collections.abc import Iterable, Mapping, Sequence
 from decimal import Decimal
 
 from . import unicodify

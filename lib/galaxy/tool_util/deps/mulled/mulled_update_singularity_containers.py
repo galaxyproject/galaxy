@@ -7,19 +7,11 @@ import subprocess
 import tempfile
 from glob import glob
 from subprocess import check_output
-from typing import (
-    Any,
-    Dict,
-    List,
-    Union,
-)
+from typing import Any, Dict, List, Union
 
 from galaxy.util import unicodify
-from .get_tests import (
-    hashed_test_search,
-    import_test_to_command_list,
-    main_test_search,
-)
+
+from .get_tests import hashed_test_search, import_test_to_command_list, main_test_search
 
 
 def get_list_from_file(filename):

@@ -1,8 +1,4 @@
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-)
+from .framework import SeleniumTestCase, managed_history, selenium_test
 
 # Upload 11 datasets in order to exercise pagination in future
 UPLOAD_DATA = {

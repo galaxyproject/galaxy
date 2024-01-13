@@ -1,24 +1,12 @@
 """Utility functions used to adapt galaxy.util.search to Galaxy model index queries."""
-from typing import (
-    List,
-    Union,
-)
+from typing import List, Union
 
-from sqlalchemy import (
-    and_,
-    or_,
-)
-from sqlalchemy.orm import (
-    aliased,
-    InstrumentedAttribute,
-)
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import InstrumentedAttribute, aliased
 from sqlalchemy.sql.expression import BinaryExpression
 
 from galaxy import model
-from galaxy.util.search import (
-    FilteredTerm,
-    RawTextTerm,
-)
+from galaxy.util.search import FilteredTerm, RawTextTerm
 
 
 def text_column_filter(column, term: FilteredTerm):

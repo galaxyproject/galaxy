@@ -1,11 +1,4 @@
-from typing import (
-    cast,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-)
+from typing import Dict, List, NamedTuple, Optional, Tuple, cast
 
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
 from galaxy.tool_util.parser import ToolSource

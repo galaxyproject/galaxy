@@ -3,50 +3,21 @@
 import logging
 import os
 import subprocess
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
-from typing import (
-    Callable,
-    Container as TypingContainer,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from abc import ABCMeta, abstractmethod
+from typing import TYPE_CHECKING, Callable
+from typing import Container as TypingContainer
+from typing import Dict, List, NamedTuple, Optional, Type, Union
 
 from requests import Session
 from typing_extensions import Literal
 
-from galaxy.util import (
-    safe_makedirs,
-    string_as_bool,
-    unicodify,
-    which,
-)
+from galaxy.util import safe_makedirs, string_as_bool, unicodify, which
 from galaxy.util.commands import shell
-from . import (
-    ContainerResolver,
-    ResolutionCache,
-)
+
 from ..conda_util import CondaTarget
-from ..container_classes import (
-    Container,
-    CONTAINER_CLASSES,
-    DockerContainer,
-    SingularityContainer,
-)
+from ..container_classes import CONTAINER_CLASSES, Container, DockerContainer, SingularityContainer
 from ..docker_util import build_docker_images_command
-from ..mulled.mulled_build import (
-    DEFAULT_CHANNELS,
-    ensure_installed,
-    InvolucroContext,
-    mull_targets,
-)
+from ..mulled.mulled_build import DEFAULT_CHANNELS, InvolucroContext, ensure_installed, mull_targets
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
     default_mulled_conda_channels_from_env,
@@ -56,16 +27,11 @@ from ..mulled.util import (
     v2_image_name,
     version_sorted,
 )
-from ..requirements import (
-    ContainerDescription,
-    DEFAULT_CONTAINER_SHELL,
-)
+from ..requirements import DEFAULT_CONTAINER_SHELL, ContainerDescription
+from . import ContainerResolver, ResolutionCache
 
 if TYPE_CHECKING:
-    from ..dependencies import (
-        AppInfo,
-        ToolInfo,
-    )
+    from ..dependencies import AppInfo, ToolInfo
 
 log = logging.getLogger(__name__)
 

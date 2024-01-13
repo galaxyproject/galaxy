@@ -3,14 +3,8 @@ import os
 import sys
 from configparser import ConfigParser
 
-from sqlalchemy import (
-    create_engine,
-    MetaData,
-)
-from sqlalchemy.orm import (
-    scoped_session,
-    sessionmaker,
-)
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 

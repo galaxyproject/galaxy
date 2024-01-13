@@ -1,9 +1,4 @@
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-    UsesHistoryItemAssertions,
-)
+from .framework import SeleniumTestCase, UsesHistoryItemAssertions, managed_history, selenium_test
 
 FIRST_HID = 1
 

@@ -1,12 +1,6 @@
-from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_WITH_BAD_COLUMN_PARAMETER,
-    WORKFLOW_WITH_OLD_TOOL_VERSION,
-)
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-)
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_BAD_COLUMN_PARAMETER, WORKFLOW_WITH_OLD_TOOL_VERSION
+
+from .framework import SeleniumTestCase, managed_history, selenium_test
 
 
 class TestPages(SeleniumTestCase):

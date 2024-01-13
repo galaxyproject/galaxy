@@ -1,8 +1,5 @@
 """Integration tests for the Pulsar embedded runner."""
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    LibraryPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, LibraryPopulator
 from galaxy_test.driver import integration_util
 
 TEST_TOOL_IDS = [

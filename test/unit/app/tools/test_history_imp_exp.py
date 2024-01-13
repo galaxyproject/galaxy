@@ -13,11 +13,7 @@ from galaxy.exceptions import MalformedContents
 from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore.unittest_utils import Config as TestConfig
-from galaxy.tools.imp_exp import (
-    JobExportHistoryArchiveWrapper,
-    JobImportHistoryArchiveWrapper,
-    unpack_tar_gz_archive,
-)
+from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
 from galaxy.tools.imp_exp.export_history import create_archive
 from galaxy.util import galaxy_directory
 

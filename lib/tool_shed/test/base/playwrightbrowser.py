@@ -1,16 +1,9 @@
 import time
 from typing import List
 
-from playwright.sync_api import (
-    expect,
-    Locator,
-    Page,
-)
+from playwright.sync_api import Locator, Page, expect
 
-from .browser import (
-    FormValueType,
-    ShedBrowser,
-)
+from .browser import FormValueType, ShedBrowser
 
 
 class Locators:

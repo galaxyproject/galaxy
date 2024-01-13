@@ -16,10 +16,7 @@ import shutil
 import sys
 import time
 
-from common import (
-    display,
-    submit,
-)
+from common import display, submit
 
 
 def main(api_key, api_url, in_folder, out_folder, data_library, workflow):

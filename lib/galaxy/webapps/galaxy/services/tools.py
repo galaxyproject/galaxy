@@ -2,37 +2,18 @@ import logging
 import shutil
 import tempfile
 from json import dumps
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
 from starlette.datastructures import UploadFile
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
 from galaxy.managers.histories import HistoryManager
-from galaxy.model import (
-    LibraryDatasetDatasetAssociation,
-    PostJobAction,
-)
+from galaxy.model import LibraryDatasetDatasetAssociation, PostJobAction
 from galaxy.model.base import transaction
-from galaxy.schema.fetch_data import (
-    FetchDataFormPayload,
-    FetchDataPayload,
-    FilesPayload,
-)
+from galaxy.schema.fetch_data import FetchDataFormPayload, FetchDataPayload, FilesPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch

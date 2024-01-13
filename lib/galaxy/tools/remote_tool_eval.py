@@ -3,33 +3,20 @@ import os
 import shutil
 import tempfile
 import traceback
-from typing import (
-    Callable,
-    NamedTuple,
-)
+from typing import Callable, NamedTuple
 
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.setup import JobIO
 from galaxy.managers.dbkeys import GenomeBuilds
-from galaxy.metadata.set_metadata import (
-    get_metadata_params,
-    get_object_store,
-    validate_and_load_datatypes_config,
-)
+from galaxy.metadata.set_metadata import get_metadata_params, get_object_store, validate_and_load_datatypes_config
 from galaxy.model import store
 from galaxy.model.store import SessionlessContext
 from galaxy.objectstore import BaseObjectStore
 from galaxy.structured_app import MinimalToolApp
-from galaxy.tools import (
-    create_tool_from_representation,
-    evaluation,
-)
-from galaxy.tools.data import (
-    from_dict,
-    ToolDataTableManager,
-)
+from galaxy.tools import create_tool_from_representation, evaluation
+from galaxy.tools.data import ToolDataTableManager, from_dict
 from galaxy.util.bunch import Bunch
 
 

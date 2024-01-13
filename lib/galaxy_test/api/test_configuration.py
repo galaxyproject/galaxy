@@ -1,9 +1,7 @@
-from galaxy_test.base.api_asserts import (
-    assert_has_keys,
-    assert_not_has_keys,
-)
+from galaxy_test.base.api_asserts import assert_has_keys, assert_not_has_keys
 from galaxy_test.base.api_util import TEST_USER
 from galaxy_test.base.decorators import requires_admin
+
 from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [

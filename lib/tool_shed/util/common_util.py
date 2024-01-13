@@ -1,7 +1,4 @@
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Optional
 
 from routes import url_for
 
@@ -26,10 +23,7 @@ from galaxy.util.tool_shed.common_util import (
 
 if TYPE_CHECKING:
     from tool_shed.context import ProvidesRepositoriesContext
-    from tool_shed.webapp.model import (
-        Repository,
-        User,
-    )
+    from tool_shed.webapp.model import Repository, User
 
 
 def generate_clone_url_for(trans: "ProvidesRepositoriesContext", repository: "Repository") -> str:

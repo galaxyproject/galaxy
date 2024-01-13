@@ -4,31 +4,28 @@ from typing import Union
 import alembic
 import pytest
 from alembic.config import Config
-from sqlalchemy import (
-    MetaData,
-    text,
-)
+from sqlalchemy import MetaData, text
 
 import galaxy.model.migrations.scripts
 from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
-    AlembicManager,
-    DatabaseStateVerifier,
-    get_last_sqlalchemymigrate_version,
     GXY,
-    scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
     TSI,
+    AlembicManager,
+    DatabaseStateVerifier,
+    get_last_sqlalchemymigrate_version,
+    scripts,
     verify_databases,
 )
 from galaxy.model.migrations.base import (
+    SQLALCHEMYMIGRATE_TABLE,
     DatabaseStateCache,
     listify,
     load_metadata,
     metadata_contains_only_kombu_tables,
-    SQLALCHEMYMIGRATE_TABLE,
 )
 from galaxy.model.migrations.exceptions import (
     IncorrectSAMigrateVersionError,
@@ -43,10 +40,7 @@ from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (ur
     drop_existing_database,
     url_factory,
 )
-from galaxy.util.resources import (
-    as_file,
-    resource_path,
-)
+from galaxy.util.resources import as_file, resource_path
 
 # Revision numbers from test versions directories
 GXY_REVISION_0 = "62695fac6cc0"  # oldest/base

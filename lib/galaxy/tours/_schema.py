@@ -1,14 +1,7 @@
 from enum import Enum
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import BaseModel, Field
 
 
 class Requirement(str, Enum):

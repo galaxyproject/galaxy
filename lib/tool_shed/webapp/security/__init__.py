@@ -2,18 +2,12 @@
 import logging
 from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
+from sqlalchemy import false, select
+from tool_shed.webapp.model import Group, Role
 
 from galaxy.model.base import transaction
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
-from tool_shed.webapp.model import (
-    Group,
-    Role,
-)
 
 IUC_NAME = "Intergalactic Utilities Commission"
 

@@ -3,15 +3,8 @@ import os
 import tempfile
 from dataclasses import dataclass
 from io import StringIO
-from json import (
-    dump,
-    dumps,
-)
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from json import dump, dumps
+from typing import Dict, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -19,17 +12,9 @@ from webob.compat import cgi_FieldStorage
 
 from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.files.uris import (
-    stream_to_file,
-    validate_non_local,
-)
+from galaxy.files.uris import stream_to_file, validate_non_local
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import (
-    FormDefinition,
-    LibraryDataset,
-    LibraryFolder,
-    Role,
-)
+from galaxy.model import FormDefinition, LibraryDataset, LibraryFolder, Role
 from galaxy.model.base import transaction
 from galaxy.util import is_url
 from galaxy.util.path import external_chown

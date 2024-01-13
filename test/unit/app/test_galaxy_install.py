@@ -4,10 +4,7 @@ It should be able to quickly test installing things from the real tool shed
 and from bootstrapped tool sheds.
 """
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget

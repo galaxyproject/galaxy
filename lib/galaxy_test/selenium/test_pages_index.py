@@ -1,8 +1,4 @@
-from .framework import (
-    retry_assertion_during_transitions,
-    selenium_test,
-    SeleniumTestCase,
-)
+from .framework import SeleniumTestCase, retry_assertion_during_transitions, selenium_test
 
 
 class TestPagesIndex(SeleniumTestCase):

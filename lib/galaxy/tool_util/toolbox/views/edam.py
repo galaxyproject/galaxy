@@ -1,27 +1,12 @@
 import logging
 from enum import Enum
-from typing import (
-    Dict,
-    List,
-    Tuple,
-)
+from typing import Dict, List, Tuple
 
-from galaxy.tool_util.edam_util import (
-    ROOT_OPERATION,
-    ROOT_TOPIC,
-)
+from galaxy.tool_util.edam_util import ROOT_OPERATION, ROOT_TOPIC
 from galaxy.util import ExecutionTimer
-from .interface import (
-    ToolBoxRegistry,
-    ToolPanelView,
-    ToolPanelViewModel,
-    ToolPanelViewModelType,
-    walk_loaded_tools,
-)
-from ..panel import (
-    ToolPanelElements,
-    ToolSectionLabel,
-)
+
+from ..panel import ToolPanelElements, ToolSectionLabel
+from .interface import ToolBoxRegistry, ToolPanelView, ToolPanelViewModel, ToolPanelViewModelType, walk_loaded_tools
 
 log = logging.getLogger(__name__)
 

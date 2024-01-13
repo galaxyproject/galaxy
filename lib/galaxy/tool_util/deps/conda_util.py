@@ -8,30 +8,13 @@ import re
 import shutil
 import sys
 import tempfile
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
 
 from packaging.version import Version
 
 from galaxy.tool_util.version import parse_version
-from galaxy.util import (
-    commands,
-    download_to_file,
-    listify,
-    shlex_join,
-    smart_str,
-    which,
-)
+from galaxy.util import commands, download_to_file, listify, shlex_join, smart_str, which
+
 from . import installable
 
 if TYPE_CHECKING:

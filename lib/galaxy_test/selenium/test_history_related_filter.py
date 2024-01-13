@@ -1,7 +1,4 @@
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+from .framework import SeleniumTestCase, selenium_test
 
 PASTED_CONTENT = "this is pasted"
 CURRENT_HID = 1

@@ -4,20 +4,11 @@ spaln Composite Dataset
 
 import logging
 import os.path
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Callable, Dict, List, Optional
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
+from galaxy.datatypes.protocols import DatasetHasHidProtocol, DatasetProtocol, HasExtraFilesAndMetadata
 from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)

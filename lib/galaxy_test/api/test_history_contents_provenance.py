@@ -1,7 +1,5 @@
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_without_tool,
-)
+from galaxy_test.base.populators import DatasetPopulator, skip_without_tool
+
 from ._framework import ApiTestCase
 
 MINIMAL_PROV_KEYS = ("id", "uuid")

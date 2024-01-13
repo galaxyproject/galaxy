@@ -1,12 +1,6 @@
 from collections import UserDict
-from collections.abc import (
-    ItemsView,
-    MutableMapping,
-)
-from typing import (
-    Any,
-    Optional,
-)
+from collections.abc import ItemsView, MutableMapping
+from typing import Any, Optional
 
 from boltons.iterutils import remap
 

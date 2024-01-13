@@ -8,10 +8,7 @@ Create Date: 2022-03-14 12:56:57.067748
 from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType
-from galaxy.model.migrations.util import (
-    add_column,
-    drop_column,
-)
+from galaxy.model.migrations.util import add_column, drop_column
 
 # revision identifiers, used by Alembic.
 revision = "b182f655505f"

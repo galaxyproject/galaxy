@@ -1,25 +1,15 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
 import errno
 import os.path
-from abc import (
-    ABCMeta,
-    abstractmethod,
-    abstractproperty,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from abc import ABCMeta, abstractmethod, abstractproperty
+from typing import Any, Dict, List
 
 import yaml
 
 from galaxy.util import listify
 from galaxy.util.dictifiable import Dictifiable
-from ..requirements import (
-    ToolRequirement,
-    ToolRequirements,
-)
+
+from ..requirements import ToolRequirement, ToolRequirements
 
 
 class DependencyResolver(Dictifiable, metaclass=ABCMeta):

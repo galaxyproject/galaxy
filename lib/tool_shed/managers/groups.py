@@ -3,15 +3,8 @@ Manager and Serializer for TS groups.
 """
 import logging
 
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
-from sqlalchemy.orm.exc import (
-    MultipleResultsFound,
-    NoResultFound,
-)
+from sqlalchemy import false, select, true
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from galaxy.exceptions import (
     Conflict,

@@ -1,8 +1,6 @@
 from galaxy.tool_util.ontologies.ontology_data import expand_ontology_data
-from .test_parsing import (
-    get_test_tool_source,
-    TOOL_YAML_1,
-)
+
+from .test_parsing import TOOL_YAML_1, get_test_tool_source
 
 TOOL_YAML_2 = """
 name: "Bowtie Mapper"

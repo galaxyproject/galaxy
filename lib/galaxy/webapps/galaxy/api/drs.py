@@ -3,29 +3,18 @@ import logging
 from io import IOBase
 from typing import cast
 
-from fastapi import (
-    Path,
-    Request,
-)
+from fastapi import Path, Request
 from starlette.responses import FileResponse
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.schema.drs import (
-    DrsObject,
-    Service,
-    ServiceOrganization,
-    ServiceType,
-)
+from galaxy.schema.drs import DrsObject, Service, ServiceOrganization, ServiceType
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.version import VERSION
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 router = Router(tags=["drs"])

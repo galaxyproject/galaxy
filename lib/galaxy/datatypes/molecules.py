@@ -1,33 +1,18 @@
 import logging
 import os
 import re
-from typing import (
-    Callable,
-    Dict,
-    List,
-)
+from typing import Callable, Dict, List
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import (
-    get_file_peek,
-    Text,
-)
+from galaxy.datatypes.data import Text, get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    get_headers,
-    iter_headers,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, get_headers, iter_headers
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.generic_util import count_special_lines
 from galaxy.datatypes.xml import GenericXml
-from galaxy.util import (
-    commands,
-    unicodify,
-)
+from galaxy.util import commands, unicodify
 
 # optional import to enhance metadata
 try:

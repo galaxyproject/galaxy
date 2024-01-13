@@ -8,19 +8,10 @@ import logging
 import os
 import re
 
-from galaxy.datatypes import (
-    data,
-    sequence,
-)
+from galaxy.datatypes import data, sequence
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)

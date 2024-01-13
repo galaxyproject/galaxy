@@ -3,28 +3,15 @@ import csv
 import logging
 import re
 
-from sqlalchemy import (
-    false,
-    true,
-)
+from sqlalchemy import false, true
 
 from galaxy import model
 from galaxy.managers.forms import get_form
 from galaxy.model.base import transaction
-from galaxy.model.index_filter_util import (
-    raw_text_column_filter,
-    text_column_filter,
-)
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.model.index_filter_util import raw_text_column_filter, text_column_filter
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 from galaxy.web.framework.helpers import grids
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    web,
-)
+from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 

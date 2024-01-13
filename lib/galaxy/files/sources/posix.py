@@ -1,26 +1,14 @@
 import functools
 import os
 import shutil
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 from typing_extensions import Unpack
 
 from galaxy import exceptions
-from galaxy.util.path import (
-    safe_contains,
-    safe_path,
-    safe_walk,
-)
-from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from galaxy.util.path import safe_contains, safe_path, safe_walk
+
+from . import BaseFilesSource, FilesSourceOptions, FilesSourceProperties
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False

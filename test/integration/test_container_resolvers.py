@@ -2,29 +2,17 @@ import json
 import os
 import re
 from tempfile import mkdtemp
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
 
-from typing_extensions import (
-    Literal,
-    Protocol,
-)
+from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.driver.integration_util import IntegrationTestCase
+from typing_extensions import Literal, Protocol
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
 from galaxy.util.commands import shell
 from galaxy.util.path import safe_walk
-from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver.integration_util import IntegrationTestCase
-from .test_containerized_jobs import (
-    disable_dependency_resolution,
-    skip_if_container_type_unavailable,
-)
+
+from .test_containerized_jobs import disable_dependency_resolution, skip_if_container_type_unavailable
 
 if TYPE_CHECKING:
     from requests import Response

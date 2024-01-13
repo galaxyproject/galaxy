@@ -1,13 +1,11 @@
 import logging
 import os
-from typing import (
-    Dict,
-    List,
-)
+from typing import Dict, List
 
 import yaml
 
 from galaxy.util import config_directories_from_setting
+
 from .definitions import StaticToolBoxView
 
 log = logging.getLogger(__name__)

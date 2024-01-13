@@ -9,10 +9,7 @@ import logging
 
 import jwt
 
-from galaxy import (
-    exceptions,
-    web,
-)
+from galaxy import exceptions, web
 from galaxy.util import url_get
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import JSAppLauncher

@@ -8,23 +8,15 @@ import subprocess
 import tempfile
 import threading
 from time import sleep
-from typing import (
-    Tuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Tuple
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import asbool
 from galaxy.util.commands import new_clean_env
-from . import (
-    BaseJobRunner,
-    JobState,
-)
-from .util.process_groups import (
-    check_pg,
-    kill_pg,
-)
+
+from . import BaseJobRunner, JobState
+from .util.process_groups import check_pg, kill_pg
 
 if TYPE_CHECKING:
     from galaxy.jobs import MinimalJobWrapper

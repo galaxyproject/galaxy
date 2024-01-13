@@ -8,17 +8,11 @@ from sqlalchemy.orm.scoping import scoped_session
 import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
-from galaxy.model import (
-    History,
-    HistoryDatasetAssociation,
-    User,
-)
+from galaxy.model import History, HistoryDatasetAssociation, User
 from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.objectstore.unittest_utils import (
-    Config as TestConfig,
-    DISK_TEST_CONFIG,
-)
+from galaxy.objectstore.unittest_utils import DISK_TEST_CONFIG
+from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.util import ExecutionTimer
 
 datatypes_registry = galaxy.datatypes.registry.Registry()

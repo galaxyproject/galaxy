@@ -1,27 +1,13 @@
 import logging
 import uuid
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from typing_extensions import Protocol
 
 from galaxy import model
 from galaxy.exceptions import MessageException
-from galaxy.model import (
-    WorkflowInvocation,
-    WorkflowInvocationStep,
-)
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model import WorkflowInvocation, WorkflowInvocationStep
+from galaxy.model.base import ensure_object_added_to_session, transaction
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -38,18 +24,13 @@ from galaxy.tools.parameters.basic import raw_to_galaxy
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
 from galaxy.workflow.run_request import (
+    WorkflowRunConfig,
     workflow_request_to_run_config,
     workflow_run_config_to_request,
-    WorkflowRunConfig,
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        Workflow,
-        WorkflowOutput,
-        WorkflowStep,
-        WorkflowStepConnection,
-    )
+    from galaxy.model import Workflow, WorkflowOutput, WorkflowStep, WorkflowStepConnection
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
     from galaxy.work.context import WorkRequestContext
 

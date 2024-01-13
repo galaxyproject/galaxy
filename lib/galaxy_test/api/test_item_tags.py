@@ -1,13 +1,7 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator, WorkflowPopulator
+
 from ._framework import ApiTestCase
 
 

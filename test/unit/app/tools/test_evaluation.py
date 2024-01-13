@@ -17,16 +17,8 @@ from galaxy.tools.evaluation import ToolEvaluator
 
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
-from galaxy.tools.parameters.basic import (
-    DataToolParameter,
-    IntegerToolParameter,
-    SelectToolParameter,
-)
-from galaxy.tools.parameters.grouping import (
-    Conditional,
-    ConditionalWhen,
-    Repeat,
-)
+from galaxy.tools.parameters.basic import DataToolParameter, IntegerToolParameter, SelectToolParameter
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat
 from galaxy.util import XML
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase

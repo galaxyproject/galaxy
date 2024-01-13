@@ -8,10 +8,7 @@ import shutil
 import string
 import tempfile
 from collections import defaultdict
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional, cast
 
 import galaxy.datatypes.registry
 import galaxy.model

@@ -1,9 +1,7 @@
 import logging
 
-from .test_toolbox import (
-    build_tests as _build_tests,
-    ToolTestCase,
-)
+from .test_toolbox import ToolTestCase
+from .test_toolbox import build_tests as _build_tests
 
 log = logging.getLogger(__name__)
 data_managers = None

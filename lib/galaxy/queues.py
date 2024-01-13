@@ -6,11 +6,7 @@ All message queues used by Galaxy
 import socket
 from typing import Optional
 
-from kombu import (
-    Connection,
-    Exchange,
-    Queue,
-)
+from kombu import Connection, Exchange, Queue
 
 ALL_CONTROL = "control.*"
 galaxy_exchange = Exchange("galaxy_core_exchange", type="topic")

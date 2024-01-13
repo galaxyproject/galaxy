@@ -2,33 +2,11 @@
 import json
 import os
 import threading
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union, cast
 
-from galaxy.files import (
-    ConfiguredFileSources,
-    DictFileSourcesUserContext,
-    ProvidesUserFileSourcesUserContext,
-)
-from galaxy.job_execution.datasets import (
-    DatasetPath,
-    DatasetPathRewriter,
-    get_path_rewriter,
-)
-from galaxy.model import (
-    DatasetInstance,
-    Job,
-    JobExportHistoryArchive,
-    MetadataFile,
-)
+from galaxy.files import ConfiguredFileSources, DictFileSourcesUserContext, ProvidesUserFileSourcesUserContext
+from galaxy.job_execution.datasets import DatasetPath, DatasetPathRewriter, get_path_rewriter
+from galaxy.model import DatasetInstance, Job, JobExportHistoryArchive, MetadataFile
 from galaxy.util import safe_makedirs
 from galaxy.util.dictifiable import Dictifiable
 

@@ -19,25 +19,12 @@ try:
 except ImportError:
     boto = None  # type: ignore[assignment]
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    string_as_bool,
-    umask_fix_perms,
-    unlink,
-    which,
-)
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, string_as_bool, umask_fix_perms, unlink, which
 from galaxy.util.path import safe_relpath
+
 from . import ConcreteObjectStore
-from .caching import (
-    CacheTarget,
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-    parse_caching_config_dict_from_xml,
-)
+from .caching import CacheTarget, InProcessCacheMonitor, enable_cache_monitor, parse_caching_config_dict_from_xml
 from .s3_multipart_upload import multipart_upload
 
 NO_BOTO_ERROR_MESSAGE = (

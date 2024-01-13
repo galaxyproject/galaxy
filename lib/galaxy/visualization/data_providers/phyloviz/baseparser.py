@@ -1,8 +1,5 @@
 import json
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 
 class Node:

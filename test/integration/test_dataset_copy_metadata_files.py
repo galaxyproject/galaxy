@@ -1,8 +1,5 @@
 from galaxy_test.api.test_workflows import RunsWorkflowFixtures
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, WorkflowPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 

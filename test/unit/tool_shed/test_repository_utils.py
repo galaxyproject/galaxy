@@ -1,14 +1,8 @@
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.util.repository_content_util import upload_tar
-from tool_shed.webapp.model import (
-    Repository,
-    User,
-)
-from ._util import (
-    repository_fixture,
-    TEST_DATA_FILES,
-    TestToolShedApp,
-)
+from tool_shed.webapp.model import Repository, User
+
+from ._util import TEST_DATA_FILES, TestToolShedApp, repository_fixture
 
 
 def test_create_repository(shed_app: TestToolShedApp, new_user: User):

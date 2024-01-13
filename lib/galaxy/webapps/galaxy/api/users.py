@@ -5,41 +5,17 @@ import copy
 import json
 import logging
 import re
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Path, Query, Response, status
 from markupsafe import escape
 from pydantic import Required
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.exceptions import ObjectInvalid
 from galaxy.managers import users
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
-from galaxy.model import (
-    FormDefinition,
-    HistoryDatasetAssociation,
-    Role,
-    UserAddress,
-    UserQuotaUsage,
-)
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.model import FormDefinition, HistoryDatasetAssociation, Role, UserAddress, UserQuotaUsage
 from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -62,30 +38,14 @@ from galaxy.schema.schema import (
     UserDeletionPayload,
     UserModel,
 )
-from galaxy.security.validate_user_input import (
-    validate_email,
-    validate_password,
-    validate_publicname,
-)
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.toolbox.filters import FilterFactory
-from galaxy.util import (
-    docstring_trim,
-    listify,
-)
+from galaxy.util import docstring_trim, listify
 from galaxy.web import expose_api
 from galaxy.web.form_builder import AddressField
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    UsesFormDefinitionsMixin,
-    UsesTagsMixin,
-)
-from galaxy.webapps.galaxy.api import (
-    BaseGalaxyAPIController,
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.base.controller import BaseUIController, UsesFormDefinitionsMixin, UsesTagsMixin
+from galaxy.webapps.galaxy.api import BaseGalaxyAPIController, DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.services.users import UsersService
 
 log = logging.getLogger(__name__)

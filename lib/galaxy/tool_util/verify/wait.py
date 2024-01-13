@@ -1,11 +1,7 @@
 """Abstraction for waiting on API conditions to become true."""
 
 import time
-from typing import (
-    Callable,
-    Optional,
-    Union,
-)
+from typing import Callable, Optional, Union
 
 DEFAULT_POLLING_BACKOFF = 0
 DEFAULT_POLLING_DELTA = 0.25

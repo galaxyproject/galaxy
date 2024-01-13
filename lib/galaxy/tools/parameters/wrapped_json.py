@@ -1,11 +1,6 @@
 import json
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Sequence,
-)
+from typing import Any, Dict, List, Sequence
 
 from packaging.version import Version
 

@@ -1,40 +1,14 @@
 import logging
 import math
-from json import (
-    dumps,
-    loads,
-)
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from json import dumps, loads
+from typing import Dict, List, Optional
 
 from markupsafe import escape
-from sqlalchemy.sql.expression import (
-    and_,
-    false,
-    func,
-    null,
-    or_,
-    true,
-)
+from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
-from galaxy.model.item_attrs import (
-    get_foreign_key,
-    UsesAnnotations,
-    UsesItemRatings,
-)
-from galaxy.util import (
-    restore_text,
-    sanitize_text,
-    string_as_bool,
-    unicodify,
-)
-from galaxy.web.framework import (
-    decorators,
-    url_for,
-)
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings, get_foreign_key
+from galaxy.util import restore_text, sanitize_text, string_as_bool, unicodify
+from galaxy.web.framework import decorators, url_for
 
 log = logging.getLogger(__name__)
 

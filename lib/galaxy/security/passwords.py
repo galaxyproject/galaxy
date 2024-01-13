@@ -2,11 +2,7 @@ import hashlib
 from base64 import b64encode
 from os import urandom
 
-from galaxy.util import (
-    safe_str_cmp,
-    smart_str,
-    unicodify,
-)
+from galaxy.util import safe_str_cmp, smart_str, unicodify
 
 SALT_LENGTH = 12
 KEY_LENGTH = 24

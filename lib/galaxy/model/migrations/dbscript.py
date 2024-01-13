@@ -5,15 +5,8 @@ from argparse import Namespace
 from typing import Optional
 
 from galaxy.model.migrations import verify_databases_via_script
-from galaxy.model.migrations.base import (
-    BaseCommand,
-    BaseDbScript,
-    BaseParserBuilder,
-)
-from galaxy.model.migrations.scripts import (
-    get_configuration,
-    get_configuration_from_file,
-)
+from galaxy.model.migrations.base import BaseCommand, BaseDbScript, BaseParserBuilder
+from galaxy.model.migrations.scripts import get_configuration, get_configuration_from_file
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)

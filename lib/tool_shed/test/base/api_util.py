@@ -1,23 +1,13 @@
 import os
 import re
 from functools import wraps
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Optional,
-)
+from typing import Any, Callable, Dict, Optional
 from urllib.parse import urljoin
 
 import requests
-from typing_extensions import Literal
-
-from galaxy_test.base.api_asserts import (
-    assert_has_keys,
-    assert_status_code_is,
-    assert_status_code_is_ok,
-)
+from galaxy_test.base.api_asserts import assert_has_keys, assert_status_code_is, assert_status_code_is_ok
 from galaxy_test.base.api_util import baseauth_headers
+from typing_extensions import Literal
 
 DEFAULT_TOOL_SHED_BOOTSTRAP_ADMIN_API_KEY = "TEST1234"
 DEFAULT_TOOL_SHED_USER_API_KEY = None

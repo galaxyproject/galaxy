@@ -1,12 +1,5 @@
 import re
-from typing import (
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 KeyedQueryT = Tuple[str, str]
 ParseFilterResultT = Tuple[Optional[List["FilteredTerm"]], Optional[str]]

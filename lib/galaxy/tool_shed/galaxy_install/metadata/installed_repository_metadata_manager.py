@@ -1,10 +1,6 @@
 import logging
 import os
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
 from sqlalchemy import false
 
@@ -14,16 +10,10 @@ from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.metadata.metadata_generator import GalaxyMetadataGenerator
-from galaxy.tool_shed.util.repository_util import (
-    get_installed_tool_shed_repository,
-    get_repository_owner,
-)
+from galaxy.tool_shed.util.repository_util import get_installed_tool_shed_repository, get_repository_owner
 from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
 from galaxy.util import inflector
-from galaxy.util.tool_shed import (
-    common_util,
-    xml_util,
-)
+from galaxy.util.tool_shed import common_util, xml_util
 from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)

@@ -1,8 +1,5 @@
 import logging
-from threading import (
-    Event,
-    Thread,
-)
+from threading import Event, Thread
 
 from galaxy.util import ExecutionTimer
 

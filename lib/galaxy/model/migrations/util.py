@@ -1,21 +1,10 @@
 import logging
-from abc import (
-    ABC,
-    abstractmethod,
-)
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import (
-    Any,
-    List,
-    Optional,
-    Sequence,
-)
+from typing import Any, List, Optional, Sequence
 
 import sqlalchemy as sa
-from alembic import (
-    context,
-    op,
-)
+from alembic import context, op
 from sqlalchemy.exc import OperationalError
 
 log = logging.getLogger(__name__)

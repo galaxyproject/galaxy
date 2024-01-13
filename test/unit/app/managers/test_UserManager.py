@@ -6,21 +6,13 @@ Executable directly using: python -m test.unit.managers.test_UserManager
 from datetime import datetime
 from unittest.mock import patch
 
-from sqlalchemy import (
-    desc,
-    select,
-)
+from sqlalchemy import desc, select
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.managers import (
-    base as base_manager,
-    histories,
-    users,
-)
+from galaxy import exceptions, model
+from galaxy.managers import base as base_manager
+from galaxy.managers import histories, users
 from galaxy.security.passwords import check_password
+
 from .base import BaseTestCase
 
 # =============================================================================

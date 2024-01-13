@@ -7,10 +7,7 @@ from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.base import transaction
 from galaxy.objectstore import ObjectStorePopulator
-from galaxy.util import (
-    galaxy_directory,
-    safe_makedirs,
-)
+from galaxy.util import galaxy_directory, safe_makedirs
 from galaxy.util.unittest import TestCase
 
 

@@ -1,9 +1,6 @@
 from selenium.webdriver.common.by import By
 
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 
 class TestAdminDependencyContainers(SeleniumIntegrationTestCase):

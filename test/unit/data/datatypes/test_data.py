@@ -5,14 +5,8 @@ Unit tests for base DataTypes.
 import os
 
 from galaxy.datatypes.anvio import AnvioStructureDB
-from galaxy.datatypes.data import (
-    Data,
-    get_file_peek,
-)
-from galaxy.datatypes.interval import (
-    Bed,
-    BedStrict,
-)
+from galaxy.datatypes.data import Data, get_file_peek
+from galaxy.datatypes.interval import Bed, BedStrict
 from galaxy.util import galaxy_directory
 
 

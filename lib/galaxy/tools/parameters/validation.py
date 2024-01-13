@@ -8,10 +8,7 @@ import os.path
 
 import regex
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 
 log = logging.getLogger(__name__)
 

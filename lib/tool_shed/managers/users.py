@@ -1,21 +1,15 @@
 from typing import List
 
 from sqlalchemy import select
-
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.base import transaction
-from galaxy.security.validate_user_input import (
-    validate_email,
-    validate_password,
-    validate_publicname,
-)
 from tool_shed.context import ProvidesUserContext
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import User
-from tool_shed_client.schema import (
-    CreateUserRequest,
-    UserV2 as ApiUser,
-)
+from tool_shed_client.schema import CreateUserRequest
+from tool_shed_client.schema import UserV2 as ApiUser
+
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model.base import transaction
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 
 
 def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:

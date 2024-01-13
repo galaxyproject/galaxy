@@ -4,10 +4,7 @@ import shutil
 
 import markupsafe
 
-from galaxy.util import (
-    nice_size,
-    unicodify,
-)
+from galaxy.util import nice_size, unicodify
 
 log = logging.getLogger(__name__)
 

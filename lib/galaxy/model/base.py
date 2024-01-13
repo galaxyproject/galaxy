@@ -7,24 +7,11 @@ import logging
 import os
 import threading
 from contextvars import ContextVar
-from inspect import (
-    getmembers,
-    isclass,
-)
-from typing import (
-    Dict,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from inspect import getmembers, isclass
+from typing import TYPE_CHECKING, Dict, Type, Union
 
 from sqlalchemy import event
-from sqlalchemy.orm import (
-    object_session,
-    scoped_session,
-    Session,
-    sessionmaker,
-)
+from sqlalchemy.orm import Session, object_session, scoped_session, sessionmaker
 
 from galaxy.util.bunch import Bunch
 

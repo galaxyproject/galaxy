@@ -1,10 +1,6 @@
 import logging
 
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-    repository_util,
-)
+from tool_shed.util import hg_util, metadata_util, repository_util
 
 log = logging.getLogger(__name__)
 

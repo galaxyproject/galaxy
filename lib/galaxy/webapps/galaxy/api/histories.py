@@ -4,33 +4,14 @@ API operations on a history.
 .. seealso:: :class:`galaxy.model.History`
 """
 import logging
-from typing import (
-    Any,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, List, Optional, Union
 
-from fastapi import (
-    Body,
-    Depends,
-    Header,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Depends, Header, Path, Query, Response, status
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-)
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.schema import FilterQueryParams, SerializationParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -55,17 +36,11 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.webapps.base.api import GalaxyFileResponse
-from galaxy.webapps.galaxy.api import (
-    as_form,
-    depends,
-    DependsOnTrans,
-    Router,
-    try_get_request_body_as_json,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, as_form, depends, try_get_request_body_as_json
 from galaxy.webapps.galaxy.api.common import (
-    get_filter_query_params,
     LimitQueryParam,
     OffsetQueryParam,
+    get_filter_query_params,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService

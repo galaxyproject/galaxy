@@ -1,17 +1,10 @@
 import re
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
 from lxml.etree import XMLSyntaxError
 
 from galaxy.tool_util.verify import asserts
-from galaxy.util import (
-    asbool,
-    parse_xml_string,
-    unicodify,
-)
+from galaxy.util import asbool, parse_xml_string, unicodify
 
 
 def assert_is_valid_xml(output: str) -> None:

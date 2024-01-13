@@ -7,10 +7,7 @@ from typing import Dict
 
 from galaxy import model
 from galaxy.exceptions import InternalServerError
-from galaxy.managers import (
-    base,
-    sharable,
-)
+from galaxy.managers import base, sharable
 
 log = logging.getLogger(__name__)
 

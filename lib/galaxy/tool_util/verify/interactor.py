@@ -12,40 +12,19 @@ import urllib.parse
 import zipfile
 from json import dumps
 from logging import getLogger
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Generator,
-    List,
-    NamedTuple,
-    Optional,
-    Union,
-)
+from typing import Any, Callable, Dict, Generator, List, NamedTuple, Optional, Union, cast
 
 import requests
 from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
-from typing_extensions import (
-    Literal,
-    NotRequired,
-    Protocol,
-    TypedDict,
-)
+from typing_extensions import Literal, NotRequired, Protocol, TypedDict
 
 from galaxy import util
-from galaxy.tool_util.parser.interface import (
-    AssertionList,
-    TestCollectionDef,
-    TestCollectionOutputDef,
-)
+from galaxy.tool_util.parser.interface import AssertionList, TestCollectionDef, TestCollectionOutputDef
 from galaxy.util.bunch import Bunch
-from galaxy.util.hash_util import (
-    memory_bound_hexdigest,
-    parse_checksum_hash,
-)
+from galaxy.util.hash_util import memory_bound_hexdigest, parse_checksum_hash
+
 from . import verify
 from .asserts import verify_assertions
 from .wait import wait_on

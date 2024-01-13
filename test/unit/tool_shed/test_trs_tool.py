@@ -2,6 +2,7 @@ from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers.trs import get_tool
 from tool_shed.webapp.model import Repository
 from tool_shed_client.schema.trs import Tool
+
 from ._util import upload_directories_to_repository
 
 

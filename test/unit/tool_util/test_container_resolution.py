@@ -9,10 +9,7 @@ from galaxy.tool_util.deps.container_resolvers.mulled import (
     MulledDockerContainerResolver,
 )
 from galaxy.tool_util.deps.containers import ContainerRegistry
-from galaxy.tool_util.deps.dependencies import (
-    AppInfo,
-    ToolInfo,
-)
+from galaxy.tool_util.deps.dependencies import AppInfo, ToolInfo
 from galaxy.tool_util.deps.requirements import ToolRequirement
 
 SINGULARITY_IMAGES = (

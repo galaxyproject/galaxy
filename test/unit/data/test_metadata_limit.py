@@ -2,11 +2,7 @@ import pytest
 
 import galaxy.datatypes.registry as registry
 import galaxy.model.mapping as mapping
-from galaxy.model import (
-    custom_types,
-    HistoryDatasetAssociation,
-    set_datatypes_registry,
-)
+from galaxy.model import HistoryDatasetAssociation, custom_types, set_datatypes_registry
 from galaxy.model.base import transaction
 
 METADATA_LIMIT = 500

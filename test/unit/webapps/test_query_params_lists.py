@@ -1,10 +1,7 @@
 from typing import List
 
 from fastapi.applications import FastAPI
-from fastapi.param_functions import (
-    Depends,
-    Query,
-)
+from fastapi.param_functions import Depends, Query
 from fastapi.testclient import TestClient
 
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list

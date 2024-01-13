@@ -13,25 +13,14 @@ collect the output of these from a job directory.
 import collections
 import logging
 import os
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-)
+from abc import ABCMeta, abstractmethod
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from galaxy import util
 from galaxy.util import plugin_config
+
 from . import formatting
-from .safety import (
-    DEFAULT_SAFETY,
-    Safety,
-)
+from .safety import DEFAULT_SAFETY, Safety
 
 log = logging.getLogger(__name__)
 

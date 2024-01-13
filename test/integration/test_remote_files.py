@@ -6,16 +6,11 @@ from typing import ClassVar
 from unittest import SkipTest
 from urllib.parse import urlparse
 
-from galaxy.exceptions import error_codes
-from galaxy_test.base.api_asserts import (
-    assert_error_code_is,
-    assert_error_message_contains,
-)
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-)
+from galaxy_test.base.api_asserts import assert_error_code_is, assert_error_message_contains
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator
 from galaxy_test.driver import integration_util
+
+from galaxy.exceptions import error_codes
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "file_sources_conf_remote_files.yml")

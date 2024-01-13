@@ -6,10 +6,7 @@ from typing import Optional
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    HasExtraFilesAndMetadata,
-    HasMetadata,
-)
+from galaxy.datatypes.protocols import HasExtraFilesAndMetadata, HasMetadata
 
 
 class HDF5SummarizedExperiment(Data):

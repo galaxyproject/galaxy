@@ -6,12 +6,7 @@ Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in o
 projects (e.g. gxformat2).
 """
 import re
-from typing import (
-    cast,
-    Dict,
-    List,
-    Union,
-)
+from typing import Dict, List, Union, cast
 
 BLOCK_FENCE_START = re.compile(r"```.*")
 BLOCK_FENCE_END = re.compile(r"```[\s]*")

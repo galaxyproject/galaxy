@@ -3,16 +3,10 @@ import logging
 from copy import deepcopy
 from urllib.parse import quote_plus
 
-from galaxy.util import (
-    parse_xml,
-    string_as_bool,
-)
+from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.template import fill_template
-from .parameters import (
-    DEFAULT_DATASET_NAME,
-    DisplayApplicationDataParameter,
-    DisplayApplicationParameter,
-)
+
+from .parameters import DEFAULT_DATASET_NAME, DisplayApplicationDataParameter, DisplayApplicationParameter
 from .util import encode_dataset_user
 
 log = logging.getLogger(__name__)

@@ -5,10 +5,7 @@ from galaxy.tool_shed.util.container_util import (
     generate_repository_dependencies_key_for_repository,
     get_components_from_key,
 )
-from galaxy.tool_shed.util.repository_util import (
-    extract_components_from_tuple,
-    get_tool_shed_repository_by_id,
-)
+from galaxy.tool_shed.util.repository_util import extract_components_from_tuple, get_tool_shed_repository_by_id
 from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 

@@ -1,11 +1,7 @@
 import logging
 import os
 import shutil
-from typing import (
-    List,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, List, Union
 
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util import hg_util

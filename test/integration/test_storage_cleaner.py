@@ -1,15 +1,8 @@
-from typing import (
-    List,
-    NamedTuple,
-    Optional,
-)
+from typing import List, NamedTuple, Optional
 from uuid import uuid4
 
 from galaxy_test.base.decorators import requires_new_history
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    skip_without_tool,
-)
+from galaxy_test.base.populators import DatasetPopulator, skip_without_tool
 from galaxy_test.driver import integration_util
 
 

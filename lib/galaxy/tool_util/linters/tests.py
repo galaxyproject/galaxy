@@ -1,13 +1,11 @@
 """This module contains a linting functions for tool tests."""
 import typing
-from inspect import (
-    Parameter,
-    signature,
-)
+from inspect import Parameter, signature
 
 from galaxy.util import asbool
-from ._util import is_datasource
+
 from ..verify import asserts
+from ._util import is_datasource
 
 
 def check_compare_attribs(element, lint_ctx, test_idx):

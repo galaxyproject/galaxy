@@ -5,14 +5,8 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import (
-    datetime,
-    timedelta,
-)
-from typing import (
-    List,
-    Optional,
-)
+from datetime import datetime, timedelta
+from typing import List, Optional
 from urllib.parse import quote
 
 import jwt
@@ -20,16 +14,11 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import (
-    exceptions,
-    util,
-)
-from galaxy.model import (
-    CustosAuthnzToken,
-    User,
-)
+from galaxy import exceptions, util
+from galaxy.model import CustosAuthnzToken, User
 from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
+
 from . import IdentityProvider
 
 try:

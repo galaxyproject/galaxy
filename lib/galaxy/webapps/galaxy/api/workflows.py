@@ -6,36 +6,17 @@ import json
 import logging
 import os
 from io import BytesIO
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Path, Query, Response, status
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from pydantic import Extra
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
-from galaxy import (
-    exceptions,
-    model,
-    util,
-)
-from galaxy.files.uris import (
-    stream_url_to_str,
-    validate_uri_access,
-)
+from galaxy import exceptions, model, util
+from galaxy.files.uris import stream_url_to_str, validate_uri_access
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import (
     MissingToolsException,
@@ -82,24 +63,17 @@ from galaxy.web import (
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
-from galaxy.webapps.base.controller import (
-    SharableMixin,
-    url_for,
-    UsesStoredWorkflowMixin,
-)
+from galaxy.webapps.base.controller import SharableMixin, UsesStoredWorkflowMixin, url_for
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
-    depends,
     DependsOnTrans,
     IndexQueryTag,
     Router,
+    depends,
     search_query_param,
 )
-from galaxy.webapps.galaxy.services.base import (
-    ConsumesModelStores,
-    ServesExportStores,
-)
+from galaxy.webapps.galaxy.services.base import ConsumesModelStores, ServesExportStores
 from galaxy.webapps.galaxy.services.invocations import (
     InvocationIndexPayload,
     InvocationSerializationParams,
@@ -107,10 +81,7 @@ from galaxy.webapps.galaxy.services.invocations import (
     PrepareStoreDownloadPayload,
     WriteInvocationStoreToPayload,
 )
-from galaxy.webapps.galaxy.services.workflows import (
-    WorkflowIndexPayload,
-    WorkflowsService,
-)
+from galaxy.webapps.galaxy.services.workflows import WorkflowIndexPayload, WorkflowsService
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke

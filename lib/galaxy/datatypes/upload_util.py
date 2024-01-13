@@ -1,13 +1,7 @@
 import os
-from typing import (
-    NamedTuple,
-    Optional,
-)
+from typing import NamedTuple, Optional
 
-from galaxy.datatypes import (
-    data,
-    sniff,
-)
+from galaxy.datatypes import data, sniff
 from galaxy.util.checkers import is_single_file_zip
 
 

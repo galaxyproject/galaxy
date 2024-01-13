@@ -3,24 +3,13 @@ API operations related to tagging items.
 """
 import logging
 
-from fastapi import (
-    Body,
-    Path,
-)
+from fastapi import Body, Path
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.item_tags import ItemTagsManager
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.item_tags import (
-    ItemTagsCreatePayload,
-    ItemTagsListResponse,
-    ItemTagsResponse,
-)
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.schema.item_tags import ItemTagsCreatePayload, ItemTagsListResponse, ItemTagsResponse
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

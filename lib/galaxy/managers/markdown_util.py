@@ -18,13 +18,7 @@ import os
 import re
 import shutil
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Match,
-    Optional,
-)
+from typing import Any, Dict, List, Match, Optional
 
 import markdown
 
@@ -34,33 +28,20 @@ except Exception:
     weasyprint = None
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import (
-    MalformedContents,
-    ObjectNotFound,
-    ServerNotConfiguredForRequest,
-)
+from galaxy.exceptions import MalformedContents, ObjectNotFound, ServerNotConfiguredForRequest
 from galaxy.managers.hdcas import HDCASerializer
-from galaxy.managers.jobs import (
-    JobManager,
-    summarize_job_metrics,
-    summarize_job_parameters,
-)
+from galaxy.managers.jobs import JobManager, summarize_job_metrics, summarize_job_parameters
 from galaxy.managers.licenses import LicensesManager
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.tasks import GeneratePdfDownload
-from galaxy.short_term_storage import (
-    ShortTermStorageMonitor,
-    storage_context,
-)
+from galaxy.short_term_storage import ShortTermStorageMonitor, storage_context
 from galaxy.util.markdown import literal_via_fence
 from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
-from .markdown_parse import (
-    GALAXY_MARKDOWN_FUNCTION_CALL_LINE,
-    validate_galaxy_markdown,
-)
+
+from .markdown_parse import GALAXY_MARKDOWN_FUNCTION_CALL_LINE, validate_galaxy_markdown
 
 log = logging.getLogger(__name__)
 

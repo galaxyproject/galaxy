@@ -1,26 +1,12 @@
 import os
-from functools import (
-    lru_cache,
-    wraps,
-)
+from functools import lru_cache, wraps
 from multiprocessing import get_context
 from threading import local
-from typing import (
-    Any,
-    Callable,
-    Dict,
-)
+from typing import Any, Callable, Dict
 
 import pebble
-from celery import (
-    Celery,
-    shared_task,
-    Task,
-)
-from celery.signals import (
-    worker_init,
-    worker_shutting_down,
-)
+from celery import Celery, Task, shared_task
+from celery.signals import worker_init, worker_shutting_down
 from kombu import serialization
 
 from galaxy.celery.base_task import GalaxyTaskBeforeStart
@@ -29,10 +15,8 @@ from galaxy.main_config import find_config
 from galaxy.util import ExecutionTimer
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.properties import load_app_properties
-from ._serialization import (
-    schema_dumps,
-    schema_loads,
-)
+
+from ._serialization import schema_dumps, schema_loads
 
 log = get_logger(__name__)
 

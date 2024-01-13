@@ -1,9 +1,6 @@
 import time
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, WorkflowPopulator
 from galaxy_test.driver import integration_util
 
 

@@ -1,8 +1,4 @@
-from galaxy.model.dataset_collections import (
-    matching,
-    registry,
-    type_description,
-)
+from galaxy.model.dataset_collections import matching, registry, type_description
 
 TYPE_REGISTRY = registry.DatasetCollectionTypesRegistry()
 TYPE_DESCRIPTION_FACTORY = type_description.CollectionTypeDescriptionFactory(TYPE_REGISTRY)

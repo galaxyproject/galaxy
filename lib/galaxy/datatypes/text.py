@@ -9,39 +9,15 @@ import re
 import shlex
 import subprocess
 import tempfile
-from typing import (
-    IO,
-    Optional,
-    Tuple,
-)
+from typing import IO, Optional, Tuple
 
 import yaml
 
-from galaxy.datatypes.data import (
-    get_file_peek,
-    Headers,
-    Text,
-)
-from galaxy.datatypes.metadata import (
-    MetadataElement,
-    MetadataParameter,
-)
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasCreatingJob,
-    HasExtraFilesAndMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    iter_headers,
-)
-from galaxy.util import (
-    nice_size,
-    string_as_bool,
-    unicodify,
-)
+from galaxy.datatypes.data import Headers, Text, get_file_peek
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.datatypes.protocols import DatasetHasHidProtocol, DatasetProtocol, HasCreatingJob, HasExtraFilesAndMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, iter_headers
+from galaxy.util import nice_size, string_as_bool, unicodify
 
 log = logging.getLogger(__name__)
 

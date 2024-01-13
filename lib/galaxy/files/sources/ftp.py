@@ -5,16 +5,9 @@ try:
 except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
-from typing import (
-    cast,
-    Optional,
-    Tuple,
-)
+from typing import Optional, Tuple, cast
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import FilesSourceOptions, FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 

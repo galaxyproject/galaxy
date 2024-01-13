@@ -1,13 +1,5 @@
 import json
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 from unittest import mock
 
 import pytest
@@ -16,10 +8,8 @@ from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.util import bunch
 from galaxy.workflow import modules
-from .workflow_support import (
-    MockTrans,
-    yaml_to_model,
-)
+
+from .workflow_support import MockTrans, yaml_to_model
 
 
 def test_input_has_no_errors():

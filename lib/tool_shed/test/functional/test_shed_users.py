@@ -1,21 +1,11 @@
 from urllib.parse import urljoin
 
-from requests import post
-
 from galaxy_test.base import api_asserts
-from tool_shed_client.schema import (
-    CreateUserRequest,
-    User,
-)
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-)
-from ..base.api_util import (
-    email_to_username,
-    ensure_user_with_email,
-    get_admin_api_key,
-)
+from requests import post
+from tool_shed_client.schema import CreateUserRequest, User
+
+from ..base.api import ShedApiTestCase, skip_if_api_v1
+from ..base.api_util import email_to_username, ensure_user_with_email, get_admin_api_key
 
 
 class TestShedUsersApi(ShedApiTestCase):

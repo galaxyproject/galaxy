@@ -2,15 +2,10 @@ import os
 
 from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import skip_without_tool
-from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_WITH_CUSTOM_REPORT_1,
-    WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
-)
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_CUSTOM_REPORT_1, WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA
 from galaxy_test.selenium.framework import retry_assertion_during_transitions
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "test_admin_jobs_job_conf.yml")

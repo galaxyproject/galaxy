@@ -1,8 +1,5 @@
 """Utilities related to formatting job metrics for human consumption."""
-from typing import (
-    Any,
-    NamedTuple,
-)
+from typing import Any, NamedTuple
 
 
 class FormattedMetric(NamedTuple):

@@ -11,21 +11,13 @@ import numpy as np
 import tifffile
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import (
-    FileParameter,
-    MetadataElement,
-)
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.metadata import FileParameter, MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.text import Html as HtmlFromText
 from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
+
 from . import data
 from .xml import GenericXml
 

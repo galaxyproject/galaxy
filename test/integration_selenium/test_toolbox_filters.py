@@ -1,10 +1,7 @@
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 TEST_FILTER_MODULES = "galaxy.selenium.toolbox"
 TEST_SECTION_FILTERS = "filters:restrict_test"

@@ -6,14 +6,8 @@ import json
 import logging
 import os
 from urllib.error import HTTPError
-from urllib.parse import (
-    urlencode,
-    urlparse,
-)
-from urllib.request import (
-    Request,
-    urlopen,
-)
+from urllib.parse import urlencode, urlparse
+from urllib.request import Request, urlopen
 
 from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install import installed_repository_manager
@@ -21,18 +15,8 @@ from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
 from galaxy.tool_shed.util.container_util import get_components_from_key
 from galaxy.tool_shed.util.shed_util_common import get_ctx_rev
-from galaxy.util import (
-    asbool,
-    build_url,
-    DEFAULT_SOCKET_TIMEOUT,
-    smart_str,
-    unicodify,
-    url_get,
-)
-from galaxy.util.tool_shed import (
-    common_util,
-    encoding_util,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, asbool, build_url, smart_str, unicodify, url_get
+from galaxy.util.tool_shed import common_util, encoding_util
 
 log = logging.getLogger(__name__)
 

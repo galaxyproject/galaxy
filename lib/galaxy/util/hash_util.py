@@ -8,15 +8,7 @@ import hmac
 import logging
 import os
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from . import smart_str
 

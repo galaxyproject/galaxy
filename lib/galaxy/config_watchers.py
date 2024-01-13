@@ -3,10 +3,7 @@ from os.path import dirname
 
 from galaxy.queue_worker import job_rule_modules
 from galaxy.structured_app import StructuredApp
-from galaxy.tool_util.toolbox.watcher import (
-    get_tool_conf_watcher,
-    get_tool_watcher,
-)
+from galaxy.tool_util.toolbox.watcher import get_tool_conf_watcher, get_tool_watcher
 from galaxy.util.watcher import get_watcher
 
 log = logging.getLogger(__name__)

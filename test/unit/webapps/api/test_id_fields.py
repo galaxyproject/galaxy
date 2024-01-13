@@ -1,14 +1,7 @@
 import pytest
-from pydantic import (
-    BaseModel,
-    ValidationError,
-)
+from pydantic import BaseModel, ValidationError
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-    LibraryFolderDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField, LibraryFolderDatabaseIdField
 
 
 class DecodedIdModel(BaseModel):

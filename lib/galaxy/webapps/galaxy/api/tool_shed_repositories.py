@@ -1,31 +1,15 @@
 import json
 import logging
 from time import strftime
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from fastapi import (
-    Path,
-    Query,
-)
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPForbidden,
-)
+from fastapi import Path, Query
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    CheckForUpdatesResponse,
-    InstalledToolShedRepositories,
-    InstalledToolShedRepository,
-)
+from galaxy.schema.schema import CheckForUpdatesResponse, InstalledToolShedRepositories, InstalledToolShedRepository
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
@@ -38,15 +22,8 @@ from galaxy.tool_shed.util.repository_util import (
 )
 from galaxy.tool_shed.util.shed_util_common import have_shed_tool_conf_for_install
 from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
-from galaxy.web import (
-    expose_api,
-    require_admin,
-)
-from galaxy.webapps.galaxy.api import (
-    BaseGalaxyAPIController,
-    depends,
-    Router,
-)
+from galaxy.web import expose_api, require_admin
+from galaxy.webapps.galaxy.api import BaseGalaxyAPIController, Router, depends
 from galaxy.webapps.galaxy.services.tool_shed_repositories import (
     InstalledToolShedRepositoryIndexRequest,
     ToolShedRepositoriesService,

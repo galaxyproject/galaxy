@@ -1,14 +1,6 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
-from typing_extensions import (
-    Literal,
-    Protocol,
-)
+from typing_extensions import Literal, Protocol
 
 Impact = Literal["minor", "moderate", "serious", "critical"]
 

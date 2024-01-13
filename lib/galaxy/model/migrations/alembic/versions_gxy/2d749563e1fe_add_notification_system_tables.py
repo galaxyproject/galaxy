@@ -8,11 +8,7 @@ Create Date: 2023-03-02 15:16:36.737075
 import sqlalchemy as sa
 
 from galaxy.model.custom_types import JSONType
-from galaxy.model.migrations.util import (
-    create_table,
-    drop_table,
-    transaction,
-)
+from galaxy.model.migrations.util import create_table, drop_table, transaction
 
 # revision identifiers, used by Alembic.
 revision = "2d749563e1fe"

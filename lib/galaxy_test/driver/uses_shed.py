@@ -5,14 +5,12 @@ import string
 import tempfile
 from typing import ClassVar
 
-from galaxy.app import UniverseApplication
-from galaxy.model.base import transaction
 from galaxy_test.base.populators import DEFAULT_TIMEOUT
 from galaxy_test.base.uses_shed_api import UsesShedApi
-from galaxy_test.driver.driver_util import (
-    FRAMEWORK_UPLOAD_TOOL_CONF,
-    GalaxyTestDriver,
-)
+from galaxy_test.driver.driver_util import FRAMEWORK_UPLOAD_TOOL_CONF, GalaxyTestDriver
+
+from galaxy.app import UniverseApplication
+from galaxy.model.base import transaction
 
 # Needs a longer timeout because of the conda_auto_install.
 CONDA_AUTO_INSTALL_JOB_TIMEOUT = DEFAULT_TIMEOUT * 3

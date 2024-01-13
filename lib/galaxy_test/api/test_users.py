@@ -1,9 +1,6 @@
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
-from galaxy_test.base.decorators import (
-    requires_admin,
-    requires_new_user,
-)
+from galaxy_test.base.decorators import requires_admin, requires_new_user
 from galaxy_test.base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"

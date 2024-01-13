@@ -1,27 +1,21 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from fastapi import Body
-
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.categories import CategoryManager
 from tool_shed.managers.repositories import repositories_by_category
-from tool_shed_client.schema import (
-    Category as CategoryResponse,
-    CreateCategoryRequest,
-    RepositoriesByCategory,
-)
+from tool_shed_client.schema import Category as CategoryResponse
+from tool_shed_client.schema import CreateCategoryRequest, RepositoriesByCategory
+
 from . import (
     CategoryIdPathParam,
     CategoryRepositoriesInstallableQueryParam,
     CategoryRepositoriesPageQueryParam,
     CategoryRepositoriesSortKeyQueryParam,
     CategoryRepositoriesSortOrderQueryParam,
-    depends,
     DependsOnTrans,
     Router,
+    depends,
 )
 
 router = Router(tags=["categories"])

@@ -14,10 +14,7 @@ from sqlalchemy.orm import object_session
 
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.model.base import transaction
-from galaxy.util import (
-    ExecutionTimer,
-    listify,
-)
+from galaxy.util import ExecutionTimer, listify
 
 log = logging.getLogger(__name__)
 

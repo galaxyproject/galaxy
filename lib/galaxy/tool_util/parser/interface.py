@@ -1,33 +1,19 @@
 import fnmatch
 import os
 import re
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 from os.path import join
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import packaging.version
 from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
+
 from .util import _parse_name
 
 if TYPE_CHECKING:
-    from galaxy.tool_util.deps.requirements import (
-        ContainerDescription,
-        ResourceRequirement,
-        ToolRequirements,
-    )
+    from galaxy.tool_util.deps.requirements import ContainerDescription, ResourceRequirement, ToolRequirements
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 

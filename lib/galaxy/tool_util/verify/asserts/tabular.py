@@ -1,8 +1,5 @@
 import re
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
 from ._util import _assert_number
 

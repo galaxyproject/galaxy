@@ -1,19 +1,11 @@
 import time
 from os import PathLike
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import List, Optional, Tuple, Union
 
 import requests
 
 from galaxy import exceptions
-from galaxy.files import (
-    ConfiguredFileSources,
-    FileSourceDictifiable,
-)
+from galaxy.files import ConfiguredFileSources, FileSourceDictifiable
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file

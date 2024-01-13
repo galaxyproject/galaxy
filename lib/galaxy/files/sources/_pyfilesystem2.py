@@ -2,24 +2,13 @@ import abc
 import functools
 import logging
 import os
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Type
 
 import fs
 from fs.base import FS
 from typing_extensions import Unpack
 
-from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import BaseFilesSource, FilesSourceOptions, FilesSourceProperties
 
 log = logging.getLogger(__name__)
 

@@ -1,20 +1,9 @@
 import tarfile
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
 import requests
-from typing_extensions import Protocol
-
-from galaxy.util.resources import (
-    files,
-    resource_path,
-    Traversable,
-)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
@@ -22,7 +11,6 @@ from tool_shed_client.schema import (
     Category,
     CreateCategoryRequest,
     CreateRepositoryRequest,
-    from_legacy_install_info,
     GetInstallInfoRequest,
     GetOrderedInstallableRevisionsRequest,
     InstallInfo,
@@ -41,11 +29,13 @@ from tool_shed_client.schema import (
     ToolSearchRequest,
     ToolSearchResults,
     Version,
+    from_legacy_install_info,
 )
-from .api_util import (
-    ensure_user_with_email,
-    ShedApiInteractor,
-)
+from typing_extensions import Protocol
+
+from galaxy.util.resources import Traversable, files, resource_path
+
+from .api_util import ShedApiInteractor, ensure_user_with_email
 
 HasRepositoryId = Union[str, Repository]
 

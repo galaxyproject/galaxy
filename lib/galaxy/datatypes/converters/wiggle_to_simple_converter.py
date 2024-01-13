@@ -10,10 +10,7 @@ import sys
 
 import bx.wiggle
 
-from galaxy.util.ucsc import (
-    UCSCLimitException,
-    UCSCOutWrapper,
-)
+from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
 
 
 def main():

@@ -1,17 +1,12 @@
 """Static Galaxy file sources - ftp and libraries."""
 
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional, cast
 
 from typing_extensions import Unpack
 
 from galaxy.files.sources import PluginKind
-from .posix import (
-    PosixFilesSource,
-    PosixFilesSourceProperties,
-)
+
+from .posix import PosixFilesSource, PosixFilesSourceProperties
 
 
 class UserFtpFilesSource(PosixFilesSource):

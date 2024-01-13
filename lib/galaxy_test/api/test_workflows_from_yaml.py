@@ -9,6 +9,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_OUTPUT_ACTIONS,
     WORKFLOW_WITH_OUTPUTS,
 )
+
 from .test_workflows import BaseWorkflowsApiTestCase
 
 WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

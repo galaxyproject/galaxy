@@ -2,31 +2,18 @@ import json
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Optional,
-)
+from typing import Any, Callable, Optional
 
-from sqlalchemy import (
-    exists,
-    select,
-)
+from sqlalchemy import exists, select
 
 from galaxy import model
-from galaxy.celery import (
-    celery_app,
-    galaxy_task,
-)
+from galaxy.celery import celery_app, galaxy_task
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.datasets import (
-    DatasetAssociationManager,
-    DatasetManager,
-)
+from galaxy.managers.datasets import DatasetAssociationManager, DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
@@ -34,10 +21,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
-from galaxy.model import (
-    Job,
-    User,
-)
+from galaxy.model import Job, User
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore

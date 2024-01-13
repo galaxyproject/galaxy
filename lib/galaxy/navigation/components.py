@@ -2,14 +2,7 @@ import abc
 import re
 import string
 from enum import Enum
-from typing import (
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Dict, List, NamedTuple, Optional, Tuple, Union
 
 from galaxy.util.bunch import Bunch
 

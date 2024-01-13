@@ -2,12 +2,7 @@
 This module contains tests for the utility functions in the test_mapping module.
 """
 import pytest
-from sqlalchemy import (
-    Column,
-    Index,
-    Integer,
-    UniqueConstraint,
-)
+from sqlalchemy import Column, Index, Integer, UniqueConstraint
 from sqlalchemy.orm import registry
 
 from galaxy.model import _HasTable
@@ -16,11 +11,7 @@ from galaxy.model.unittest_utils.mapping_testing_utils import (
     has_index,
     has_unique_constraint,
 )
-from galaxy.model.unittest_utils.model_testing_utils import (
-    get_stored_instance_by_id,
-    initialize_model,
-    persist,
-)
+from galaxy.model.unittest_utils.model_testing_utils import get_stored_instance_by_id, initialize_model, persist
 
 
 def test_has_index(session):

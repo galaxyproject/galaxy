@@ -10,10 +10,10 @@ from typing import ClassVar
 from urllib import parse
 
 import requests
-
-from galaxy.model.base import transaction
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
+
+from galaxy.model.base import transaction
 
 KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"

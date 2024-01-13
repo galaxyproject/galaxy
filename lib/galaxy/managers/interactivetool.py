@@ -1,21 +1,12 @@
 import json
 import logging
 import sqlite3
-from urllib.parse import (
-    urlsplit,
-    urlunsplit,
-)
+from urllib.parse import urlsplit, urlunsplit
 
-from sqlalchemy import (
-    or_,
-    select,
-)
+from sqlalchemy import or_, select
 
 from galaxy import exceptions
-from galaxy.model import (
-    InteractiveToolEntryPoint,
-    Job,
-)
+from galaxy.model import InteractiveToolEntryPoint, Job
 from galaxy.model.base import transaction
 from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.util.filelock import FileLock

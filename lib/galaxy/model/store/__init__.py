@@ -9,35 +9,14 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
-from json import (
-    dump,
-    dumps,
-    load,
-)
+from json import dump, dumps, load
 from tempfile import mkdtemp
 from types import TracebackType
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Iterator, List, Optional, Set, Tuple, Type, Union, cast
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
-from rocrate.model.computationalworkflow import (
-    ComputationalWorkflow,
-    WorkflowDescription,
-)
+from rocrate.model.computationalworkflow import ComputationalWorkflow, WorkflowDescription
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -46,33 +25,15 @@ from sqlalchemy.sql import expression
 from typing_extensions import Protocol
 
 from galaxy.datatypes.registry import Registry
-from galaxy.exceptions import (
-    MalformedContents,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
-from galaxy.files import (
-    ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
-)
+from galaxy.exceptions import MalformedContents, ObjectNotFound, RequestParameterInvalidException
+from galaxy.files import ConfiguredFileSources, ProvidesUserFileSourcesUserContext
 from galaxy.files.uris import stream_url_to_file
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session, transaction
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
-from galaxy.model.orm.util import (
-    add_object_to_object_session,
-    add_object_to_session,
-    get_object_session,
-)
+from galaxy.model.orm.util import add_object_to_object_session, add_object_to_session, get_object_session
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.objectstore import (
-    BaseObjectStore,
-    ObjectStore,
-    persist_extra_files,
-)
+from galaxy.objectstore import BaseObjectStore, ObjectStore, persist_extra_files
 from galaxy.schema.bco import (
     BioComputeObjectCore,
     DescriptionDomain,
@@ -90,33 +51,19 @@ from galaxy.schema.bco import (
     XrefItem,
 )
 from galaxy.schema.bco.io_domain import Uri
-from galaxy.schema.bco.util import (
-    extension_domains,
-    galaxy_execution_domain,
-    get_contributors,
-    write_to_file,
-)
+from galaxy.schema.bco.util import extension_domains, galaxy_execution_domain, get_contributors, write_to_file
 from galaxy.schema.schema import ModelStoreFormat
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import (
-    FILENAME_VALID_CHARS,
-    in_directory,
-    safe_makedirs,
-)
+from galaxy.util import FILENAME_VALID_CHARS, in_directory, safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.path import StrPath
-from ._bco_convert_utils import (
-    bco_workflow_version,
-    SoftwarePrerequisiteTracker,
-)
-from .ro_crate_utils import WorkflowRunCrateProfileBuilder
-from ..custom_types import json_encoder
-from ..item_attrs import (
-    add_item_annotation,
-    get_item_annotation_str,
-)
+
 from ... import model
+from ..custom_types import json_encoder
+from ..item_attrs import add_item_annotation, get_item_annotation_str
+from ._bco_convert_utils import SoftwarePrerequisiteTracker, bco_workflow_version
+from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager

@@ -4,10 +4,7 @@ from json import loads
 import paste.httpexceptions
 
 from galaxy import web
-from galaxy.util import (
-    nice_size,
-    unicodify,
-)
+from galaxy.util import nice_size, unicodify
 from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)

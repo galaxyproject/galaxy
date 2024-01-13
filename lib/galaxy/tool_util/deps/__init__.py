@@ -6,31 +6,15 @@ import json
 import logging
 import os.path
 import shutil
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from galaxy.util import (
-    hash_util,
-    plugin_config,
-    string_as_bool,
-)
+from galaxy.util import hash_util, plugin_config, string_as_bool
 from galaxy.util.oset import OrderedSet
+
 from .container_resolvers import ContainerResolver
 from .dependencies import ToolInfo
-from .requirements import (
-    ContainerDescription,
-    ToolRequirement,
-    ToolRequirements,
-)
-from .resolvers import (
-    ContainerDependency,
-    NullDependency,
-)
+from .requirements import ContainerDescription, ToolRequirement, ToolRequirements
+from .resolvers import ContainerDependency, NullDependency
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
 
 if TYPE_CHECKING:

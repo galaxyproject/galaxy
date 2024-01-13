@@ -7,10 +7,7 @@ Create Date: 2023-05-17 15:08:28.467938
 """
 import sqlalchemy as sa
 
-from galaxy.model.migrations.util import (
-    create_table,
-    drop_table,
-)
+from galaxy.model.migrations.util import create_table, drop_table
 
 # revision identifiers, used by Alembic.
 revision = "987ce9839ecb"

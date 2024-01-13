@@ -1,21 +1,16 @@
 import os
 import tempfile
 
+from galaxy_test.base import api_asserts
+from tool_shed.test.base.api_util import create_user
+from tool_shed.test.base.populators import HasRepositoryId, repo_tars
+from tool_shed_client.schema import RepositoryRevisionMetadata
+
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
-from galaxy_test.base import api_asserts
-from tool_shed.test.base.api_util import create_user
-from tool_shed.test.base.populators import (
-    HasRepositoryId,
-    repo_tars,
-)
-from tool_shed_client.schema import RepositoryRevisionMetadata
-from ..base.api import (
-    ShedApiTestCase,
-    skip_if_api_v1,
-    skip_if_api_v2,
-)
+
+from ..base.api import ShedApiTestCase, skip_if_api_v1, skip_if_api_v2
 
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 

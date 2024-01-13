@@ -2,50 +2,21 @@ import logging
 
 from dateutil.parser import isoparse
 from markupsafe import escape
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
+from sqlalchemy import false, select, true
 from sqlalchemy.orm import undefer
 
-from galaxy import (
-    exceptions,
-    model,
-    web,
-)
+from galaxy import exceptions, model, web
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model import Role
 from galaxy.model.base import transaction
-from galaxy.model.item_attrs import (
-    UsesAnnotations,
-    UsesItemRatings,
-)
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    listify,
-    sanitize_text,
-    string_as_bool,
-    unicodify,
-)
-from galaxy.web import (
-    expose_api_anonymous,
-    url_for,
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    iff,
-    time_ago,
-)
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    ERROR,
-    INFO,
-    SharableMixin,
-    SUCCESS,
-    WARNING,
-)
+from galaxy.util import listify, sanitize_text, string_as_bool, unicodify
+from galaxy.web import expose_api_anonymous, url_for
+from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import ERROR, INFO, SUCCESS, WARNING, BaseUIController, SharableMixin
+
 from ..api import depends
 
 log = logging.getLogger(__name__)

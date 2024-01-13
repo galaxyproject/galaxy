@@ -10,10 +10,7 @@ from typing import Optional
 
 import dns.resolver
 from dns.exception import DNSException
-from sqlalchemy import (
-    func,
-    select,
-)
+from sqlalchemy import func, select
 from typing_extensions import LiteralString
 
 from galaxy.objectstore import ObjectStore

@@ -1,54 +1,25 @@
 import logging
-from typing import (
-    List,
-    Optional,
-)
-
-from fastapi import (
-    Body,
-    Response,
-    status,
-)
-from pydantic import BaseModel
-from sqlalchemy import (
-    false,
-    true,
-    update,
-)
+from typing import List, Optional
 
 import tool_shed.util.shed_util_common as suc
-from galaxy.exceptions import (
-    InsufficientPermissionsException,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
+from fastapi import Body, Response, status
+from pydantic import BaseModel
+from sqlalchemy import false, true, update
+from tool_shed.context import SessionRequestContext
+from tool_shed.managers.users import api_create_user, get_api_user, index
+from tool_shed.structured_app import ToolShedApp
+from tool_shed.webapp.model import GalaxySession
+from tool_shed.webapp.model import User as SaUser
+from tool_shed_client.schema import CreateUserRequest
+from tool_shed_client.schema import UserV2 as User
+
+from galaxy.exceptions import InsufficientPermissionsException, ObjectNotFound, RequestParameterInvalidException
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import UserManager
 from galaxy.model.base import transaction
 from galaxy.webapps.base.webapp import create_new_session
-from tool_shed.context import SessionRequestContext
-from tool_shed.managers.users import (
-    api_create_user,
-    get_api_user,
-    index,
-)
-from tool_shed.structured_app import ToolShedApp
-from tool_shed.webapp.model import (
-    GalaxySession,
-    User as SaUser,
-)
-from tool_shed_client.schema import (
-    CreateUserRequest,
-    UserV2 as User,
-)
-from . import (
-    depends,
-    DependsOnTrans,
-    ensure_valid_session,
-    Router,
-    set_auth_cookie,
-    UserIdPathParam,
-)
+
+from . import DependsOnTrans, Router, UserIdPathParam, depends, ensure_valid_session, set_auth_cookie
 
 router = Router(tags=["users"])
 

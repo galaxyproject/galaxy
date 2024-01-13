@@ -1,27 +1,12 @@
 import json
 from enum import Enum
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
-from pydantic import (
-    Extra,
-    Field,
-    Json,
-    validator,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from pydantic import Extra, Field, Json, validator
+from typing_extensions import Annotated, Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    HistoryIdField,
-    Model,
-)
+from galaxy.schema.schema import HistoryIdField, Model
 
 
 class FetchBaseModel(Model):

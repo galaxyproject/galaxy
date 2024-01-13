@@ -2,10 +2,10 @@ from gunicorn import SERVER_SOFTWARE
 
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.web_stack import (
-    application_stack_class,
-    application_stack_instance,
     GunicornApplicationStack,
     WeblessApplicationStack,
+    application_stack_class,
+    application_stack_instance,
 )
 
 

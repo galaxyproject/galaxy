@@ -1,37 +1,15 @@
 import datetime
 import json
 import urllib.request
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 import requests
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
+from typing_extensions import Literal, TypedDict
 
-from galaxy.files.sources import (
-    Entry,
-    EntryData,
-    FilesSourceOptions,
-    RemoteDirectory,
-    RemoteFile,
-)
-from galaxy.files.sources._rdm import (
-    OptionalUserContext,
-    RDMFilesSource,
-    RDMRepositoryInteractor,
-)
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    get_charset_from_http_headers,
-    stream_to_open_named_file,
-)
+from galaxy.files.sources import Entry, EntryData, FilesSourceOptions, RemoteDirectory, RemoteFile
+from galaxy.files.sources._rdm import OptionalUserContext, RDMFilesSource, RDMRepositoryInteractor
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, get_charset_from_http_headers, stream_to_open_named_file
 
 AccessStatus = Literal["public", "restricted"]
 

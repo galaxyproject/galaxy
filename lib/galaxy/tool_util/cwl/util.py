@@ -11,26 +11,12 @@ import tarfile
 import tempfile
 import urllib.parse
 from collections import namedtuple
-from typing import (
-    Any,
-    BinaryIO,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple
 
 import yaml
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
+from typing_extensions import Literal, TypedDict
 
-from galaxy.util import (
-    str_removeprefix,
-    unicodify,
-)
+from galaxy.util import str_removeprefix, unicodify
 
 STORE_SECONDARY_FILES_WITH_BASENAME = True
 SECONDARY_FILES_EXTRA_PREFIX = "__secondary_files__"

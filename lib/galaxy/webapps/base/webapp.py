@@ -8,22 +8,14 @@ import re
 import socket
 import time
 from http.cookies import CookieError
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
 from apispec import APISpec
 from paste.urlmap import URLMap
-from sqlalchemy import (
-    and_,
-    select,
-    true,
-)
+from sqlalchemy import and_, select, true
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
@@ -37,26 +29,12 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
-from galaxy.structured_app import (
-    BasicSharedApp,
-    MinimalApp,
-)
-from galaxy.util import (
-    asbool,
-    safe_makedirs,
-    unicodify,
-)
+from galaxy.model.base import ensure_object_added_to_session, transaction
+from galaxy.structured_app import BasicSharedApp, MinimalApp
+from galaxy.util import asbool, safe_makedirs, unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
-from galaxy.web.framework import (
-    base,
-    helpers,
-    url_for,
-)
+from galaxy.web.framework import base, helpers, url_for
 from galaxy.web.framework.middleware.static import CacheableStaticURLParser as Static
 
 try:

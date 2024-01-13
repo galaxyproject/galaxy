@@ -8,10 +8,7 @@ Create Date: 2023-04-19 18:41:13.500332
 import sqlalchemy as sa
 from alembic import op
 
-from galaxy.model.migrations.util import (
-    alter_column,
-    transaction,
-)
+from galaxy.model.migrations.util import alter_column, transaction
 
 # revision identifiers, used by Alembic.
 revision = "b855b714e8b8"

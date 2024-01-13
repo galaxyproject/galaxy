@@ -2,11 +2,7 @@ import os
 
 import pytest
 
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-    UsesHistoryItemAssertions,
-)
+from .framework import SeleniumTestCase, UsesHistoryItemAssertions, selenium_test
 
 
 class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):

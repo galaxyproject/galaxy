@@ -1,9 +1,5 @@
 import json
-from typing import (
-    Any,
-    Callable,
-    cast,
-)
+from typing import Any, Callable, cast
 
 PropertyVisitor = Callable[[str, Any], Any]
 

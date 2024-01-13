@@ -1,20 +1,17 @@
 import os
 
 import pytest
+from galaxy_test.base.api import UsesCeleryTasks
+from galaxy_test.base.populators import DatasetPopulator, LibraryPopulator
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 from galaxy.model.unittest_utils.store_fixtures import (
+    TEST_LIBRARY_NAME,
     deferred_hda_model_store_dict,
     deferred_hda_model_store_dict_bam,
     one_ld_library_deferred_model_store_dict,
-    TEST_LIBRARY_NAME,
 )
 from galaxy.util import galaxy_directory
-from galaxy_test.base.api import UsesCeleryTasks
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    LibraryPopulator,
-)
-from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesCeleryTasks):

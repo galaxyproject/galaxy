@@ -6,57 +6,23 @@ import string
 import time
 from collections import namedtuple
 from errno import ENOENT
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from markupsafe import escape
 
-from galaxy.exceptions import (
-    ConfigurationError,
-    MessageException,
-    ObjectNotFound,
-    RequestParameterInvalidException,
-)
-from galaxy.util import (
-    etree,
-    ExecutionTimer,
-    listify,
-    parse_xml,
-    string_as_bool,
-    unicodify,
-)
+from galaxy.exceptions import ConfigurationError, MessageException, ObjectNotFound, RequestParameterInvalidException
+from galaxy.util import ExecutionTimer, etree, listify, parse_xml, string_as_bool, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
+
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
-from .panel import (
-    panel_item_types,
-    ToolPanelElements,
-    ToolSection,
-    ToolSectionLabel,
-)
-from .parser import (
-    ensure_tool_conf_item,
-    get_toolbox_parser,
-)
-from .views.edam import (
-    EdamPanelMode,
-    EdamToolPanelView,
-)
-from .views.interface import (
-    ToolBoxRegistry,
-    ToolPanelView,
-    ToolPanelViewModel,
-    ToolPanelViewModelType,
-)
+from .panel import ToolPanelElements, ToolSection, ToolSectionLabel, panel_item_types
+from .parser import ensure_tool_conf_item, get_toolbox_parser
+from .views.edam import EdamPanelMode, EdamToolPanelView
+from .views.interface import ToolBoxRegistry, ToolPanelView, ToolPanelViewModel, ToolPanelViewModelType
 from .views.static import StaticToolPanelView
 
 log = logging.getLogger(__name__)

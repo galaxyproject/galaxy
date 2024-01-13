@@ -1,8 +1,5 @@
 import sys
-from typing import (
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional
 
 try:
     import statsd

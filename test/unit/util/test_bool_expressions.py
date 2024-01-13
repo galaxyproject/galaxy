@@ -1,11 +1,7 @@
 import pytest
 from pyparsing.exceptions import ParseException
 
-from galaxy.util.bool_expressions import (
-    BooleanExpressionEvaluator,
-    DEFAULT_TOKEN_FORMAT,
-    TokenContainedEvaluator,
-)
+from galaxy.util.bool_expressions import DEFAULT_TOKEN_FORMAT, BooleanExpressionEvaluator, TokenContainedEvaluator
 
 # Defines the allowed characters that form a valid token.
 # Tokens that don't match this format will raise a ParseException

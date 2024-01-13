@@ -8,10 +8,10 @@ Here we test the creation of this reference in various contexts:
 """
 
 import pytest
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 
 class TestConfig:

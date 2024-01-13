@@ -4,6 +4,7 @@ dataset collection after jobs are finished.
 from typing import List
 
 from galaxy.util import asbool
+
 from .util import is_dict
 
 DEFAULT_EXTRA_FILENAME_PATTERN = (

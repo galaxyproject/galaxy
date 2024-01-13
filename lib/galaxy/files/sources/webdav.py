@@ -3,15 +3,9 @@ try:
 except ImportError:
     WebDAVFS = None
 
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import FilesSourceOptions, FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 

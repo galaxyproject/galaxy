@@ -1,22 +1,17 @@
 import logging
 
 import tool_shed.grids.admin_grids as admin_grids
-from galaxy import (
-    util,
-    web,
-)
+from tool_shed.metadata import repository_metadata_manager
+from tool_shed.util import metadata_util, repository_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.util.admin_util import Admin
+from tool_shed.util.web_util import escape
+
+from galaxy import util, web
 from galaxy.model.base import transaction
 from galaxy.util import inflector
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
-from tool_shed.metadata import repository_metadata_manager
-from tool_shed.util import (
-    metadata_util,
-    repository_util,
-    shed_util_common as suc,
-)
-from tool_shed.util.admin_util import Admin
-from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 

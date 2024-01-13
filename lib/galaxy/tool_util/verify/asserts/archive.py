@@ -3,12 +3,10 @@ import re
 import tarfile
 import tempfile
 import zipfile
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
 from galaxy.util import asbool
+
 from ._util import _assert_presence_number
 
 

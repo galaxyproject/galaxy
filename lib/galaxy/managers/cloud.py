@@ -5,10 +5,7 @@ Manager and serializer for cloud-based storages.
 import json
 import logging
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MessageException,
@@ -20,10 +17,7 @@ from galaxy.managers import sharable
 from galaxy.util import Params
 
 try:
-    from cloudbridge.factory import (
-        CloudProviderFactory,
-        ProviderList,
-    )
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None

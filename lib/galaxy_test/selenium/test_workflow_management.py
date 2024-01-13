@@ -2,11 +2,11 @@ from selenium.webdriver.common.by import By
 
 from .framework import (
     EXAMPLE_WORKFLOW_URL_1,
-    retry_assertion_during_transitions,
-    selenium_test,
     SeleniumTestCase,
     TestsGalaxyPagers,
     UsesWorkflowAssertions,
+    retry_assertion_during_transitions,
+    selenium_test,
 )
 
 

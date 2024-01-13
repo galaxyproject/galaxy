@@ -1,8 +1,4 @@
-from sqlalchemy import (
-    MetaData,
-    select,
-    Table,
-)
+from sqlalchemy import MetaData, Table, select
 
 from galaxy.model.unittest_utils.model_testing_utils import disposing_engine
 

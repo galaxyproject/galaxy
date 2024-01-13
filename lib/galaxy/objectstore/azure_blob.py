@@ -16,23 +16,12 @@ try:
 except ImportError:
     BlockBlobService = None
 
-from galaxy.exceptions import (
-    ObjectInvalid,
-    ObjectNotFound,
-)
-from galaxy.util import (
-    directory_hash_id,
-    umask_fix_perms,
-    unlink,
-)
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import directory_hash_id, umask_fix_perms, unlink
 from galaxy.util.path import safe_relpath
+
 from . import ConcreteObjectStore
-from .caching import (
-    CacheTarget,
-    enable_cache_monitor,
-    InProcessCacheMonitor,
-    parse_caching_config_dict_from_xml,
-)
+from .caching import CacheTarget, InProcessCacheMonitor, enable_cache_monitor, parse_caching_config_dict_from_xml
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
     "ObjectStore configured, but no azure.storage.blob dependency available."

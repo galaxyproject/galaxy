@@ -1,4 +1,5 @@
 from galaxy.job_metrics.instrumenters.env import EnvPlugin
+
 from .test_core import _run_plugin
 
 TEST_ENV = {

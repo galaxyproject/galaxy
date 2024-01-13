@@ -3,38 +3,24 @@ import random
 import string
 import tarfile
 from pathlib import Path
-from tempfile import (
-    mkdtemp,
-    NamedTemporaryFile,
-)
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from tempfile import NamedTemporaryFile, mkdtemp
+from typing import Any, Dict, Optional
 
 import tool_shed.repository_registry
-from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import safe_makedirs
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers.repositories import upload_tar_and_set_metadata
 from tool_shed.managers.users import create_user
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.registry import Registry as RepositoryTypesRegistry
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.test.base.populators import (
-    repo_tars,
-    TEST_DATA_REPO_FILES,
-)
+from tool_shed.test.base.populators import TEST_DATA_REPO_FILES, repo_tars
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.util.repository_util import create_repository
-from tool_shed.webapp.model import (
-    Category,
-    mapping,
-    Repository,
-    User,
-)
+from tool_shed.webapp.model import Category, Repository, User, mapping
 from tool_shed_client.schema import CreateCategoryRequest
+
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util import safe_makedirs
 
 TEST_DATA_FILES = TEST_DATA_REPO_FILES
 TEST_HOST = "localhost"

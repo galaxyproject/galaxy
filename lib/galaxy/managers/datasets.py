@@ -4,38 +4,16 @@ Manager and Serializer for Datasets.
 import glob
 import logging
 import os
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import Any, Dict, List, Optional, Type, TypeVar
 
 from sqlalchemy import select
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.datatypes import sniff
-from galaxy.managers import (
-    base,
-    deletable,
-    rbac_secured,
-    secured,
-    users,
-)
-from galaxy.model import (
-    Dataset,
-    DatasetHash,
-)
+from galaxy.managers import base, deletable, rbac_secured, secured, users
+from galaxy.model import Dataset, DatasetHash
 from galaxy.model.base import transaction
-from galaxy.schema.tasks import (
-    ComputeDatasetHashTaskRequest,
-    PurgeDatasetsTaskRequest,
-)
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest, PurgeDatasetsTaskRequest
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.hash_util import memory_bound_hexdigest
 

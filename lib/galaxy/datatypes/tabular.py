@@ -12,68 +12,30 @@ import shutil
 import subprocess
 import tempfile
 from json import dumps
-from typing import (
-    cast,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Dict, List, Optional, Union, cast
 
 import pysam
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes import (
-    binary,
-    data,
-    metadata,
-)
+from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.binary import _BamOrSam
-from galaxy.datatypes.data import (
-    DatatypeValidation,
-    Text,
-)
-from galaxy.datatypes.dataproviders.column import (
-    ColumnarDataProvider,
-    DictDataProvider,
-)
+from galaxy.datatypes.data import DatatypeValidation, Text
+from galaxy.datatypes.dataproviders.column import ColumnarDataProvider, DictDataProvider
 from galaxy.datatypes.dataproviders.dataset import (
     DatasetColumnarDataProvider,
     DatasetDataProvider,
     DatasetDictDataProvider,
     GenomicRegionDataProvider,
 )
-from galaxy.datatypes.dataproviders.line import (
-    FilteredLineDataProvider,
-    RegexLineDataProvider,
-)
-from galaxy.datatypes.metadata import (
-    MetadataElement,
-    MetadataParameter,
-)
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasFileName,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    get_headers,
-    iter_headers,
-    validate_tabular,
-)
+from galaxy.datatypes.dataproviders.line import FilteredLineDataProvider, RegexLineDataProvider
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
+from galaxy.datatypes.protocols import DatasetHasHidProtocol, DatasetProtocol, HasFileName, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, get_headers, iter_headers, validate_tabular
 from galaxy.util import compression_utils
-from galaxy.util.compression_utils import (
-    FileObjType,
-    FileObjTypeStr,
-)
-from galaxy.util.markdown import (
-    indicate_data_truncated,
-    pre_formatted_contents,
-)
+from galaxy.util.compression_utils import FileObjType, FileObjTypeStr
+from galaxy.util.markdown import indicate_data_truncated, pre_formatted_contents
+
 from . import dataproviders
 
 log = logging.getLogger(__name__)

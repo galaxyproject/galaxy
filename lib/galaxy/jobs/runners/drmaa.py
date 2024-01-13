@@ -12,15 +12,8 @@ import time
 from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.handler import DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-)
-from galaxy.util import (
-    asbool,
-    commands,
-    unicodify,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState
+from galaxy.util import asbool, commands, unicodify
 
 drmaa = None
 

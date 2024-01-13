@@ -1,11 +1,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from galaxy.tools.actions import (
-    DefaultToolAction,
-    OutputCollections,
-    ToolExecutionCache,
-)
+from galaxy.tools.actions import DefaultToolAction, OutputCollections, ToolExecutionCache
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext

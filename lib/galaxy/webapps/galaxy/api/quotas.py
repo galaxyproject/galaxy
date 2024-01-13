@@ -16,11 +16,7 @@ from galaxy.quota._schema import (
     UpdateQuotaParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.services.quotas import QuotasService
 
 log = logging.getLogger(__name__)

@@ -9,53 +9,38 @@ import os
 import re
 import subprocess
 from time import sleep
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
 import pulsar.core
 import yaml
 from packaging.version import Version
 from pulsar.client import (
-    build_client_manager,
     CLIENT_INPUT_PATH_TYPES,
+    EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
     ClientInput,
     ClientInputs,
     ClientJobDescription,
     ClientOutputs,
-    EXTENDED_METADATA_DYNAMIC_COLLECTION_PATTERN,
-    finish_job as pulsar_finish_job,
     PathMapper,
     PulsarClientTransportError,
     PulsarOutputs,
-    submit_job as pulsar_submit_job,
-    url_to_destination_params,
+    build_client_manager,
 )
+from pulsar.client import finish_job as pulsar_finish_job
+from pulsar.client import submit_job as pulsar_submit_job
+from pulsar.client import url_to_destination_params
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.job_execution.compute_environment import (
-    ComputeEnvironment,
-    dataset_path_to_extra_path,
-)
+from galaxy.job_execution.compute_environment import ComputeEnvironment, dataset_path_to_extra_path
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
-from galaxy.jobs.runners import (
-    AsynchronousJobRunner,
-    AsynchronousJobState,
-    JobState,
-)
+from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState, JobState
 from galaxy.tool_util.deps import dependencies
-from galaxy.util import (
-    galaxy_directory,
-    specs,
-    string_as_bool_or_none,
-)
+from galaxy.util import galaxy_directory, specs, string_as_bool_or_none
 
 log = logging.getLogger(__name__)
 

@@ -6,11 +6,7 @@ from fastapi.applications import FastAPI
 from fastapi.testclient import TestClient
 
 from galaxy.util.bunch import Bunch
-from galaxy.web.framework.base import (
-    Request,
-    Response,
-    send_file,
-)
+from galaxy.web.framework.base import Request, Response, send_file
 
 CONTENT = "content"
 

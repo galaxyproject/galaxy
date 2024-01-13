@@ -5,30 +5,15 @@ this should be reusable by tool shed and pulsar as well.
 import os
 import os.path
 import sys
-from configparser import (
-    BasicInterpolation,
-    ConfigParser,
-    InterpolationError,
-)
+from configparser import BasicInterpolation, ConfigParser, InterpolationError
 from functools import partial
-from itertools import (
-    product,
-    starmap,
-)
-from typing import (
-    cast,
-    Iterable,
-    Optional,
-)
+from itertools import product, starmap
+from typing import Iterable, Optional, cast
 
 import yaml
 
 from galaxy.exceptions import InvalidFileFormatError
-from galaxy.util.path import (
-    extensions,
-    has_ext,
-    joinext,
-)
+from galaxy.util.path import extensions, has_ext, joinext
 
 
 def get_from_env(key: str, prefixes: Iterable[str], default: Optional[str] = None):

@@ -1,7 +1,4 @@
-from galaxy.util.search import (
-    parse_filters,
-    parse_filters_structured,
-)
+from galaxy.util.search import parse_filters, parse_filters_structured
 
 
 def test_parse_filters():

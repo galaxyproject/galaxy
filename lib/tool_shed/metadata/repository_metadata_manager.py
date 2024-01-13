@@ -1,45 +1,23 @@
 import logging
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
-from sqlalchemy import (
-    false,
-    select,
-)
-
-from galaxy import util
-from galaxy.model.base import transaction
-from galaxy.tool_shed.metadata.metadata_generator import (
-    BaseMetadataGenerator,
-    HandleResultT,
-    InvalidFileT,
-)
-from galaxy.util import inflector
-from galaxy.web.form_builder import SelectField
+from sqlalchemy import false, select
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    metadata_util,
-    repository_util,
-    shed_util_common as suc,
-    tool_util,
-)
+from tool_shed.util import basic_util, common_util, hg_util, metadata_util, repository_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.util import tool_util
 from tool_shed.util.metadata_util import repository_metadata_by_changeset_revision
-from tool_shed.webapp.model import (
-    Repository,
-    RepositoryMetadata,
-    User,
-)
+from tool_shed.webapp.model import Repository, RepositoryMetadata, User
+
+from galaxy import util
+from galaxy.model.base import transaction
+from galaxy.tool_shed.metadata.metadata_generator import BaseMetadataGenerator, HandleResultT, InvalidFileT
+from galaxy.util import inflector
+from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger(__name__)
 

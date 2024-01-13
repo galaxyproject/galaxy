@@ -1,9 +1,7 @@
 from galaxy import model
 from galaxy.model.base import transaction
-from galaxy.workflow.run_request import (
-    _normalize_inputs,
-    _normalize_step_parameters,
-)
+from galaxy.workflow.run_request import _normalize_inputs, _normalize_step_parameters
+
 from .workflow_support import MockTrans
 
 STEP_ID_OFFSET = 4  # Offset a little so ids and order index are different.

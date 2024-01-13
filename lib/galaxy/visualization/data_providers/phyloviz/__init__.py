@@ -1,8 +1,5 @@
 """ Data providers code for PhyloViz """
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser

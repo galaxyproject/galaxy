@@ -20,14 +20,8 @@ import galaxy.app
 import galaxy.config
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util import (
-    hash_util,
-    unicodify,
-)
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util import hash_util, unicodify
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), "grt.yml.sample"))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), "grt.yml"))

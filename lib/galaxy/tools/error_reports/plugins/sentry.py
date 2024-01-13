@@ -8,6 +8,7 @@ except ImportError:
     sentry_sdk = None
 
 from galaxy.util import string_as_bool
+
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)

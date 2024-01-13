@@ -1,10 +1,7 @@
 import binascii
 import json
 
-from galaxy.util import (
-    smart_str,
-    unicodify,
-)
+from galaxy.util import smart_str, unicodify
 from galaxy.util.hash_util import hmac_new
 
 encoding_sep = "__esep__"

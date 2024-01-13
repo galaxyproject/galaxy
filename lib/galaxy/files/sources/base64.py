@@ -4,12 +4,7 @@ from typing import Optional
 
 from typing_extensions import Unpack
 
-from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
-    PluginKind,
-)
+from . import BaseFilesSource, FilesSourceOptions, FilesSourceProperties, PluginKind
 
 log = logging.getLogger(__name__)
 

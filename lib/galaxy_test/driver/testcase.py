@@ -1,4 +1,5 @@
 from galaxy_test.base.testcase import FunctionalTestCase
+
 from .driver_util import TestDriver
 
 

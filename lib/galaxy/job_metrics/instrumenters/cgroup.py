@@ -3,18 +3,12 @@ import decimal
 import logging
 import numbers
 from collections import namedtuple
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
-from galaxy.util import (
-    asbool,
-    nice_size,
-)
-from . import InstrumentPlugin
+from galaxy.util import asbool, nice_size
+
 from .. import formatting
+from . import InstrumentPlugin
 
 log = logging.getLogger(__name__)
 

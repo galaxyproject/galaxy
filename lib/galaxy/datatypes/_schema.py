@@ -1,14 +1,6 @@
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from typing import Dict, List, Optional
 
-from pydantic import (
-    BaseModel,
-    Field,
-    HttpUrl,
-)
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class CompositeFileInfo(BaseModel):

@@ -2,6 +2,7 @@ import logging
 import re
 from typing import Optional
 
+from ..panel import ToolPanelElements, ToolSection, ToolSectionLabel, panel_item_types
 from .definitions import (
     ExcludeTool,
     ExcludeToolRegex,
@@ -14,18 +15,7 @@ from .definitions import (
     Tool,
     Workflow,
 )
-from .interface import (
-    ToolBoxRegistry,
-    ToolPanelView,
-    ToolPanelViewModel,
-    ToolPanelViewModelType,
-)
-from ..panel import (
-    panel_item_types,
-    ToolPanelElements,
-    ToolSection,
-    ToolSectionLabel,
-)
+from .interface import ToolBoxRegistry, ToolPanelView, ToolPanelViewModel, ToolPanelViewModelType
 
 log = logging.getLogger(__name__)
 

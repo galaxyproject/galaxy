@@ -4,20 +4,13 @@ Mixins for Annotatable model managers and serializers.
 
 import abc
 import logging
-from typing import (
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional
 
 from sqlalchemy.orm import scoped_session
 
 from galaxy.model.base import transaction
-from .base import (
-    Deserializer,
-    FunctionFilterParsersType,
-    ModelValidator,
-    Serializer,
-)
+
+from .base import Deserializer, FunctionFilterParsersType, ModelValidator, Serializer
 
 log = logging.getLogger(__name__)
 

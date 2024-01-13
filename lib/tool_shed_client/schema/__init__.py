@@ -1,21 +1,7 @@
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
+from pydantic import BaseModel, Field
+from typing_extensions import Literal, TypedDict
 
 
 class Repository(BaseModel):

@@ -5,17 +5,11 @@ and provides autocomplete support.
 import logging
 
 from sqlalchemy.sql import select
-from sqlalchemy.sql.expression import (
-    and_,
-    func,
-)
+from sqlalchemy.sql.expression import and_, func
 
 from galaxy import web
 from galaxy.model.base import transaction
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    UsesTagsMixin,
-)
+from galaxy.webapps.base.controller import BaseUIController, UsesTagsMixin
 
 log = logging.getLogger(__name__)
 

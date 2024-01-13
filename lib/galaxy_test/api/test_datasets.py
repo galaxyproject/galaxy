@@ -2,28 +2,24 @@ import textwrap
 import urllib
 import zipfile
 from io import BytesIO
-from typing import (
-    Dict,
-    List,
-)
+from typing import Dict, List
 
-from galaxy.model.unittest_utils.store_fixtures import (
-    deferred_hda_model_store_dict,
-    one_hda_model_store_dict,
-    TEST_SOURCE_URI,
-)
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_has_keys
-from galaxy_test.base.decorators import (
-    requires_admin,
-    requires_new_history,
-)
+from galaxy_test.base.decorators import requires_admin, requires_new_history
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_datatype,
     skip_without_tool,
 )
+
+from galaxy.model.unittest_utils.store_fixtures import (
+    TEST_SOURCE_URI,
+    deferred_hda_model_store_dict,
+    one_hda_model_store_dict,
+)
+from galaxy.util.unittest_utils import skip_if_github_down
+
 from ._framework import ApiTestCase
 
 COMPOSITE_DATA_FETCH_REQUEST_1 = {

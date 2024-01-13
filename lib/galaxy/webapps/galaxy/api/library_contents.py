@@ -4,36 +4,14 @@ API operations on the contents of a data library.
 import logging
 from typing import Optional
 
-from galaxy import (
-    exceptions,
-    managers,
-    util,
-)
-from galaxy.actions.library import (
-    LibraryActions,
-    validate_path_upload,
-)
-from galaxy.managers.collections_util import (
-    api_payload_to_create_params,
-    dictify_dataset_collection_instance,
-)
-from galaxy.model import (
-    ExtendedMetadata,
-    ExtendedMetadataIndex,
-    Library,
-    LibraryDataset,
-    LibraryFolder,
-    tags,
-)
+from galaxy import exceptions, managers, util
+from galaxy.actions.library import LibraryActions, validate_path_upload
+from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, Library, LibraryDataset, LibraryFolder, tags
 from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
-from galaxy.webapps.base.controller import (
-    HTTPBadRequest,
-    url_for,
-    UsesFormDefinitionsMixin,
-    UsesLibraryMixinItems,
-)
+from galaxy.webapps.base.controller import HTTPBadRequest, UsesFormDefinitionsMixin, UsesLibraryMixinItems, url_for
 from galaxy.webapps.galaxy.api import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

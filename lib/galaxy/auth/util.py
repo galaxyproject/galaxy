@@ -5,12 +5,7 @@ from collections import namedtuple
 import galaxy.auth.providers
 from galaxy.exceptions import Conflict
 from galaxy.security.validate_user_input import validate_publicname
-from galaxy.util import (
-    parse_xml,
-    parse_xml_string,
-    plugin_config,
-    string_as_bool,
-)
+from galaxy.util import parse_xml, parse_xml_string, plugin_config, string_as_bool
 
 log = logging.getLogger(__name__)
 

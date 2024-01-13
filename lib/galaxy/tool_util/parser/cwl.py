@@ -5,22 +5,13 @@ from typing import Optional
 
 import packaging.version
 
-from galaxy.tool_util.cwl.parser import (
-    tool_proxy,
-    ToolProxy,
-)
+from galaxy.tool_util.cwl.parser import ToolProxy, tool_proxy
 from galaxy.tool_util.deps import requirements
-from .interface import (
-    PageSource,
-    PagesSource,
-    ToolSource,
-)
+
+from .interface import PageSource, PagesSource, ToolSource
 from .output_actions import ToolOutputActionGroup
 from .output_objects import ToolOutput
-from .stdio import (
-    StdioErrorLevel,
-    ToolStdioExitCode,
-)
+from .stdio import StdioErrorLevel, ToolStdioExitCode
 from .yaml import YamlInputSource
 
 log = logging.getLogger(__name__)

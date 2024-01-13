@@ -6,11 +6,12 @@ import os
 import string
 import tempfile
 
-# This is for the tool shed application.
-from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 from galaxy_test.driver import driver_util
 from tool_shed.test.base.api_util import get_admin_api_key
 from tool_shed.webapp import buildapp as toolshedbuildapp
+
+# This is for the tool shed application.
+from galaxy.webapps.galaxy.buildapp import app_factory as galaxy_app_factory
 
 log = driver_util.build_logger()
 

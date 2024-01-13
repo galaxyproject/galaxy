@@ -7,16 +7,7 @@ import os
 import re
 import sys
 import threading
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, NamedTuple, Optional, Union
 
 import requests
 from conda_package_streaming.package_streaming import stream_conda_info
@@ -25,10 +16,7 @@ from packaging.version import Version
 from requests import Session
 
 from galaxy.tool_util.deps.conda_util import CondaTarget
-from galaxy.tool_util.version import (
-    LegacyVersion,
-    parse_version,
-)
+from galaxy.tool_util.version import LegacyVersion, parse_version
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache

@@ -1,16 +1,10 @@
 import logging
 
 import tool_shed.util.repository_util
-from galaxy.util import (
-    asbool,
-    listify,
-)
-from tool_shed.util import (
-    common_util,
-    container_util,
-    metadata_util,
-    shed_util_common as suc,
-)
+from tool_shed.util import common_util, container_util, metadata_util
+from tool_shed.util import shed_util_common as suc
+
+from galaxy.util import asbool, listify
 
 log = logging.getLogger(__name__)
 

@@ -1,26 +1,11 @@
 import abc
 import os
 from contextlib import contextmanager
-from typing import (
-    cast,
-    Dict,
-    Type,
-)
+from typing import Dict, Type, cast
 
-from galaxy.app_unittest_utils.tools_support import (
-    MockContext,
-    UsesApp,
-)
-from galaxy.jobs import (
-    JobWrapper,
-    TaskWrapper,
-)
-from galaxy.model import (
-    Base,
-    Job,
-    Task,
-    User,
-)
+from galaxy.app_unittest_utils.tools_support import MockContext, UsesApp
+from galaxy.jobs import JobWrapper, TaskWrapper
+from galaxy.model import Base, Job, Task, User
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch

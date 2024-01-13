@@ -5,15 +5,9 @@ try:
 except ImportError:
     GCSFS = None
 
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional, cast
 
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from . import FilesSourceOptions, FilesSourceProperties
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 

@@ -5,6 +5,7 @@ import tempfile
 
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
 from galaxy.util import safe_makedirs
+
 from .test_toolbox_view_parsing import EXAMPLE_1
 
 

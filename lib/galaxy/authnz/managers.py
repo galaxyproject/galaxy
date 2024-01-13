@@ -10,29 +10,11 @@ import requests
 from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import CloudAuthzBaseException
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.util import (
-    asbool,
-    etree,
-    listify,
-    parse_xml,
-    string_as_bool,
-    unicodify,
-)
-from .custos_authnz import (
-    CustosAuthFactory,
-    KEYCLOAK_BACKENDS,
-)
-from .psa_authnz import (
-    BACKENDS_NAME,
-    on_the_fly_config,
-    PSAAuthnz,
-    Storage,
-    Strategy,
-)
+from galaxy import exceptions, model
+from galaxy.util import asbool, etree, listify, parse_xml, string_as_bool, unicodify
+
+from .custos_authnz import KEYCLOAK_BACKENDS, CustosAuthFactory
+from .psa_authnz import BACKENDS_NAME, PSAAuthnz, Storage, Strategy, on_the_fly_config
 
 log = logging.getLogger(__name__)
 

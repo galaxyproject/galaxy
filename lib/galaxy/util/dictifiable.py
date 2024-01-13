@@ -1,11 +1,6 @@
 import datetime
 import uuid
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Optional,
-)
+from typing import Any, Callable, Dict, Optional
 
 
 def dict_for(obj, **kwds):

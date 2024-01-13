@@ -1,10 +1,6 @@
 import errno
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.base import transaction
@@ -12,11 +8,7 @@ from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
-from galaxy.util import (
-    etree,
-    parse_xml_string,
-    xml_to_string,
-)
+from galaxy.util import etree, parse_xml_string, xml_to_string
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clone_url
 from galaxy.util.tool_shed.xml_util import parse_xml

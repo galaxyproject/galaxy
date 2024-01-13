@@ -1,8 +1,5 @@
 import abc
-from typing import (
-    List,
-    Union,
-)
+from typing import List, Union
 
 FormValueType = Union[str, bool]
 

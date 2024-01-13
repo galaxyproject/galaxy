@@ -5,27 +5,15 @@ import shutil
 import string
 import tempfile
 from inspect import isclass
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    IO,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import IO, TYPE_CHECKING, Any, Callable, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 from markupsafe import escape
 from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes.metadata import (
-    MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
-)
+    MetadataElement,
+)  # import directly to maintain ease of use in Datatype class definitions
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -38,32 +26,25 @@ from galaxy.datatypes.protocols import (
     HasMetadata,
     HasName,
 )
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.exceptions import ObjectNotFound
 from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    UNKNOWN,
     compression_utils,
     file_reader,
-    FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
     unicodify,
-    UNKNOWN,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import FileObjType
-from galaxy.util.markdown import (
-    indicate_data_truncated,
-    literal_via_fence,
-)
+from galaxy.util.markdown import indicate_data_truncated, literal_via_fence
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
-from . import (
-    dataproviders as p_dataproviders,
-    metadata,
-)
+
+from . import dataproviders as p_dataproviders
+from . import metadata
 
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
@@ -164,10 +145,7 @@ def _is_binary_file(data):
 
 
 def _get_max_peek_size(data):
-    from galaxy.datatypes import (
-        binary,
-        text,
-    )
+    from galaxy.datatypes import binary, text
 
     max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
     if isinstance(data.datatype, text.Html):

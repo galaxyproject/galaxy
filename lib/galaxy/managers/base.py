@@ -29,30 +29,14 @@ import datetime
 import logging
 import re
 from functools import partial
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-    Type,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Dict, Generic, List, NamedTuple, Optional, Set, Tuple, Type, TypeVar, Union
 
 import sqlalchemy
 from sqlalchemy.orm import Query
 from sqlalchemy.orm.scoping import scoped_session
 from typing_extensions import Protocol
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.model import tool_shed_install
 from galaxy.model.base import transaction
 from galaxy.schema import ValueFilterQueryParams
@@ -64,10 +48,7 @@ from galaxy.schema.storage_cleaner import (
     StoredItemOrderBy,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.structured_app import (
-    BasicSharedApp,
-    MinimalManagerApp,
-)
+from galaxy.structured_app import BasicSharedApp, MinimalManagerApp
 
 log = logging.getLogger(__name__)
 

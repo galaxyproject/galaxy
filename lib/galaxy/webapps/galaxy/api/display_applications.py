@@ -2,23 +2,13 @@
 API operations on annotations.
 """
 import logging
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
+from typing import Dict, List, Optional
 
 from fastapi import Body
 
-from galaxy.managers.display_applications import (
-    DisplayApplication,
-    DisplayApplicationsManager,
-    ReloadFeedback,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.managers.display_applications import DisplayApplication, DisplayApplicationsManager, ReloadFeedback
+
+from . import Router, depends
 
 log = logging.getLogger(__name__)
 

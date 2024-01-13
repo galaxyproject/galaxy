@@ -5,8 +5,8 @@ from galaxy.tool_shed.repository_type import (
     REPOSITORY_SUITE_DEFINITION,
     TOOL_DEPENDENCY_DEFINITION,
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
-    types,
     UNRESTRICTED,
+    types,
 )
 from galaxy.web.form_builder import SelectField
 

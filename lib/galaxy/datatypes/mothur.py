@@ -3,23 +3,12 @@ Mothur Metagenomics Datatypes
 """
 import logging
 import re
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-    get_headers,
-    iter_headers,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix, get_headers, iter_headers
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import unicodify
 

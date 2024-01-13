@@ -1,16 +1,7 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
@@ -30,10 +21,7 @@ from galaxy.schema.schema import (
     UpdateLibraryPayload,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import (
-    ConsumesModelStores,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ConsumesModelStores, ServiceBase
 
 log = logging.getLogger(__name__)
 

@@ -1,17 +1,7 @@
 from logging import getLogger
-from typing import (
-    List,
-    Optional,
-    Set,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, List, Optional, Set, Union
 
-from pydantic import (
-    Extra,
-    Field,
-    ValidationError,
-)
+from pydantic import Extra, Field, ValidationError
 from typing_extensions import Literal
 
 from galaxy import exceptions
@@ -26,10 +16,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import DatasetCollectionElement
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    ModelClassField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, ModelClassField
 from galaxy.schema.schema import (
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
@@ -44,10 +31,7 @@ from galaxy.webapps.base.controller import UsesLibraryMixinItems
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        HistoryDatasetCollectionAssociation,
-        LibraryDatasetCollectionAssociation,
-    )
+    from galaxy.model import HistoryDatasetCollectionAssociation, LibraryDatasetCollectionAssociation
 
 log = getLogger(__name__)
 

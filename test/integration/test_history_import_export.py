@@ -2,21 +2,19 @@ import os
 import tarfile
 from uuid import uuid4
 
+from galaxy_test.api.test_histories import ImportExportTests
+from galaxy_test.base.api import UsesCeleryTasks
+from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator
+from galaxy_test.driver.integration_setup import PosixFileSourceSetup
+from galaxy_test.driver.integration_util import IntegrationTestCase
+
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     history_model_store_dict,
     one_hda_model_store_dict,
 )
 from galaxy.util import unlink
-from galaxy_test.api.test_histories import ImportExportTests
-from galaxy_test.base.api import UsesCeleryTasks
-from galaxy_test.base.api_asserts import assert_has_keys
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-)
-from galaxy_test.driver.integration_setup import PosixFileSourceSetup
-from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, IntegrationTestCase):

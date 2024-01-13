@@ -7,14 +7,7 @@ import collections
 import logging
 import typing
 from abc import abstractmethod
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-)
+from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 from boltons.iterutils import remap
 
@@ -22,16 +15,9 @@ from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
-from galaxy.model.dataset_collections.structure import (
-    get_structure,
-    tool_output_to_structure,
-)
+from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tool_util.parser import ToolOutputCollectionPart
-from galaxy.tools.actions import (
-    filter_output,
-    on_text_for_names,
-    ToolExecutionCache,
-)
+from galaxy.tools.actions import ToolExecutionCache, filter_output, on_text_for_names
 from galaxy.tools.parameters.basic import is_runtime_value
 
 if typing.TYPE_CHECKING:
@@ -189,12 +175,7 @@ def execute(
         # Put the job in the queue if tracking in memory
         if tool_id == "__DATA_FETCH__" and tool.app.config.is_fetch_with_celery_enabled():
             job_id = job2.id
-            from galaxy.celery.tasks import (
-                fetch_data,
-                finish_job,
-                set_job_metadata,
-                setup_fetch_data,
-            )
+            from galaxy.celery.tasks import fetch_data, finish_job, set_job_metadata, setup_fetch_data
 
             raw_tool_source = tool.tool_source.to_string()
             #  task_user_id parameter is used to do task user rate limiting. It is only passed

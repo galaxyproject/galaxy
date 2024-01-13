@@ -2,16 +2,9 @@ import os
 import shutil
 from os import getcwd
 from tempfile import mkdtemp
-from typing import (
-    List,
-    Tuple,
-)
+from typing import List, Tuple
 
-from galaxy.jobs.command_factory import (
-    build_command,
-    PREPARE_DIRS,
-    SETUP_GALAXY_FOR_METADATA,
-)
+from galaxy.jobs.command_factory import PREPARE_DIRS, SETUP_GALAXY_FOR_METADATA, build_command
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase

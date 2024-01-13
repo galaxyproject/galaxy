@@ -1,18 +1,8 @@
 import urllib.parse
-from typing import (
-    Any,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, List, Optional, Tuple
 
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.decorators import (
-    requires_admin,
-    requires_celery,
-    requires_new_library,
-    requires_new_user,
-)
+from galaxy_test.base.decorators import requires_admin, requires_celery, requires_new_library, requires_new_user
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,

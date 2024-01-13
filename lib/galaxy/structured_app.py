@@ -1,10 +1,6 @@
 """Typed description of Galaxy's app object."""
 import abc
-from typing import (
-    Any,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Optional
 
 from kombu import Connection
 from typing_extensions import Protocol
@@ -15,15 +11,9 @@ from galaxy.di import Container
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
 from galaxy.managers.dbkeys import GenomeBuilds
-from galaxy.model.base import (
-    ModelMapping,
-    SharedModelMapping,
-)
+from galaxy.model.base import ModelMapping, SharedModelMapping
 from galaxy.model.mapping import GalaxyModelMapping
-from galaxy.model.security import (
-    GalaxyRBACAgent,
-    HostAgent,
-)
+from galaxy.model.security import GalaxyRBACAgent, HostAgent
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import BaseObjectStore
 from galaxy.quota import QuotaAgent

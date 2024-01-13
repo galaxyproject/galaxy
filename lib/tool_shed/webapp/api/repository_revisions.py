@@ -1,22 +1,14 @@
 import logging
-from typing import (
-    Callable,
-    Dict,
-)
+from typing import Callable, Dict
 
 from sqlalchemy import select
+from tool_shed.util import metadata_util, repository_util
+from tool_shed.webapp.model import RepositoryMetadata
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util, web
 from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import HTTPBadRequest
-from tool_shed.util import (
-    metadata_util,
-    repository_util,
-)
-from tool_shed.webapp.model import RepositoryMetadata
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

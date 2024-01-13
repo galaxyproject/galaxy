@@ -2,6 +2,7 @@ import os
 import shutil
 
 from galaxy.util.compression_utils import decompress_bytes_to_directory
+
 from .objectstore._base import BaseSwiftObjectStoreIntegrationTestCase
 from .test_tool_data_delete import DataManagerIntegrationTestCase
 

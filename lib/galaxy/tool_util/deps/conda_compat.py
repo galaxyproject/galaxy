@@ -15,10 +15,7 @@ except ImportError:
     MetaData = None
 
 try:
-    from anaconda_verify.recipe import (
-        parse,
-        render_jinja2,
-    )
+    from anaconda_verify.recipe import parse, render_jinja2
 except ImportError:
     render_jinja2 = None
     parse = None

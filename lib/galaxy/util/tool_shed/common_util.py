@@ -1,10 +1,7 @@
 import json
 import logging
 import os
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Optional
 from urllib.parse import urljoin
 
 from routes import url_for

@@ -7,6 +7,7 @@ from typing import Any
 
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

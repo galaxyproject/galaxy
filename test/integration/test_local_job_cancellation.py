@@ -3,11 +3,11 @@
 import time
 
 import psutil
+from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.driver import integration_util
 from sqlalchemy import select
 
 from galaxy.model.base import transaction
-from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver import integration_util
 
 
 class CancelsJob:

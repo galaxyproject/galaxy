@@ -1,21 +1,12 @@
 from datetime import datetime
 from enum import Enum
-from typing import (
-    List,
-    Union,
-)
+from typing import List, Union
 
 from pydantic import Field
 from typing_extensions import Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
-from galaxy.schema.schema import (
-    Model,
-    UpdateTimeField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField
+from galaxy.schema.schema import Model, UpdateTimeField
 
 
 class CleanableItemsSummary(Model):

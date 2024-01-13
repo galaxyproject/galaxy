@@ -3,11 +3,7 @@ workflow steps.
 """
 import math
 
-from galaxy.util.topsort import (
-    CycleError,
-    topsort,
-    topsort_levels,
-)
+from galaxy.util.topsort import CycleError, topsort, topsort_levels
 
 
 def attach_ordered_steps(workflow):

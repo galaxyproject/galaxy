@@ -5,13 +5,7 @@ import io
 import logging
 from typing import Optional
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Path, Query, Response, status
 from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
@@ -29,13 +23,7 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingStatus,
 )
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    IndexQueryTag,
-    Router,
-    search_query_param,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, IndexQueryTag, Router, depends, search_query_param
 from galaxy.webapps.galaxy.services.pages import PagesService
 
 log = logging.getLogger(__name__)

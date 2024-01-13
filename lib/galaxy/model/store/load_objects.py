@@ -3,10 +3,7 @@ import base64
 import logging
 import os
 import sys
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 import requests
 import yaml

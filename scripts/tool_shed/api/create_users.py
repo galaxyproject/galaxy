@@ -21,10 +21,7 @@ are available in the test public Tool Shed and create each of them in a local de
 
 import argparse
 
-from common import (
-    get,
-    submit,
-)
+from common import get, submit
 
 
 def main(options):

@@ -1,53 +1,29 @@
 import logging
 import os
-from urllib.parse import (
-    quote_plus,
-    unquote_plus,
-)
+from urllib.parse import quote_plus, unquote_plus
 
 import paste.httpexceptions
 from markupsafe import escape
 
-from galaxy import (
-    datatypes,
-    util,
-    web,
-)
+from galaxy import datatypes, util, web
 from galaxy.datatypes.data import DatatypeConverterNotFoundException
-from galaxy.datatypes.display_applications.util import (
-    decode_dataset_user,
-    encode_dataset_user,
-)
+from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.managers.hdas import (
-    HDADeserializer,
-    HDAManager,
-)
+from galaxy.managers.hdas import HDADeserializer, HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import Dataset
 from galaxy.model.base import transaction
-from galaxy.model.item_attrs import (
-    UsesAnnotations,
-    UsesItemRatings,
-)
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    inflector,
-    sanitize_text,
-)
+from galaxy.util import inflector, sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
 from galaxy.web.framework.helpers import iff
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    ERROR,
-    SUCCESS,
-    url_for,
-    UsesExtendedMetadataMixin,
-)
+from galaxy.webapps.base.controller import ERROR, SUCCESS, BaseUIController, UsesExtendedMetadataMixin, url_for
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
+
 from ..api import depends
 
 log = logging.getLogger(__name__)

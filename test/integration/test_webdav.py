@@ -6,7 +6,6 @@
 import os
 
 import pytest
-
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util

@@ -1,11 +1,7 @@
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 import jsonschema
 import requests
-
 from galaxy_test.base import api_asserts
 
 schema_store: Dict[str, Any] = {}

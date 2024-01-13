@@ -6,11 +6,7 @@ import time
 from multiprocessing.util import register_after_fork
 from typing import Dict
 
-from sqlalchemy import (
-    create_engine,
-    event,
-    exc,
-)
+from sqlalchemy import create_engine, event, exc
 from sqlalchemy.engine import Engine
 
 log = logging.getLogger(__name__)

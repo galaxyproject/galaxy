@@ -1,8 +1,6 @@
 from galaxy_test.base.decorators import requires_new_user
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+
+from .framework import SeleniumTestCase, selenium_test
 
 
 class TestAnonymousHistories(SeleniumTestCase):

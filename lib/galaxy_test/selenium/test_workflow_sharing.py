@@ -1,9 +1,6 @@
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-    UsesWorkflowAssertions,
-)
+
+from .framework import SeleniumTestCase, UsesWorkflowAssertions, selenium_test
 
 
 class TestWorkflowSharingRedirect(SeleniumTestCase):

@@ -3,17 +3,11 @@
 These files define tool lists, sections, labels, etc... the elements of the
 Galaxy tool panel.
 """
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
+from abc import ABCMeta, abstractmethod
 
 import yaml
 
-from galaxy.util import (
-    parse_xml,
-    string_as_bool,
-)
+from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.path import StrPath
 
 DEFAULT_MONITOR = False

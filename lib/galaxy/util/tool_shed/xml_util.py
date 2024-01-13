@@ -1,17 +1,11 @@
 import logging
 import os
 import tempfile
-from typing import (
-    Optional,
-    Tuple,
-)
+from typing import Optional, Tuple
 
-from galaxy.util import (
-    etree,
-    parse_xml as galaxy_parse_xml,
-    unicodify,
-    xml_to_string,
-)
+from galaxy.util import etree
+from galaxy.util import parse_xml as galaxy_parse_xml
+from galaxy.util import unicodify, xml_to_string
 from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)

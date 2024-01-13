@@ -1,8 +1,4 @@
-from sqlalchemy import (
-    false,
-    select,
-    update,
-)
+from sqlalchemy import false, select, update
 from typing_extensions import Protocol
 
 from galaxy.model.base import transaction

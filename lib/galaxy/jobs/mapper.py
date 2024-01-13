@@ -7,6 +7,7 @@ import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.util.submodules import import_submodules
+
 from .rule_helper import RuleHelper
 
 log = logging.getLogger(__name__)

@@ -1,8 +1,5 @@
 from galaxy.config.schema import AppSchema
-from galaxy.util.yaml_util import (
-    ordered_load,
-    OrderedLoader,
-)
+from galaxy.util.yaml_util import OrderedLoader, ordered_load
 
 MOCK_YAML = """
     type: map

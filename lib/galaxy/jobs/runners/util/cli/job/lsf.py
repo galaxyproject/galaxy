@@ -3,11 +3,8 @@
 from logging import getLogger
 from os import path
 
-from . import (
-    BaseJobExec,
-    job_states,
-)
 from ... import runner_states
+from . import BaseJobExec, job_states
 
 log = getLogger(__name__)
 

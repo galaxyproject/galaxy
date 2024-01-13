@@ -1,7 +1,4 @@
-from galaxy.exceptions import (
-    NoContentException,
-    ObjectNotFound,
-)
+from galaxy.exceptions import NoContentException, ObjectNotFound
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model.base import transaction

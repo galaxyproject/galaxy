@@ -5,21 +5,10 @@ Revises: e0e3bb173ee6
 Create Date: 2022-10-12 18:02:34.659770
 
 """
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Integer,
-)
+from sqlalchemy import Column, DateTime, Integer
 
-from galaxy.model.custom_types import (
-    JSONType,
-    TrimmedString,
-    UUIDType,
-)
-from galaxy.model.migrations.util import (
-    create_table,
-    drop_table,
-)
+from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
+from galaxy.model.migrations.util import create_table, drop_table
 
 # revision identifiers, used by Alembic.
 revision = "59e024ceaca1"

@@ -3,11 +3,7 @@
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-from galaxy.tool_util.biotools import (
-    BiotoolsMetadataSource,
-    BiotoolsMetadataSourceConfig,
-    get_biotools_metadata_source,
-)
+from galaxy.tool_util.biotools import BiotoolsMetadataSource, BiotoolsMetadataSourceConfig, get_biotools_metadata_source
 
 
 def get_galaxy_biotools_metadata_source(config) -> BiotoolsMetadataSource:

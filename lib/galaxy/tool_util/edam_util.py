@@ -1,9 +1,5 @@
 import os
-from typing import (
-    Dict,
-    Optional,
-    TextIO,
-)
+from typing import Dict, Optional, TextIO
 
 try:
     from edam_ontology.streams import tabular_stream

@@ -6,11 +6,7 @@ Used by both the API and bootstrapped data.
 """
 import logging
 import sys
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext

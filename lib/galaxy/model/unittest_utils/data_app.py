@@ -10,19 +10,10 @@ import shutil
 import tempfile
 from typing import Optional
 
-from galaxy import (
-    model,
-    objectstore,
-)
+from galaxy import model, objectstore
 from galaxy.datatypes import registry
-from galaxy.files import (
-    ConfiguredFileSources,
-    NullConfiguredFileSources,
-)
-from galaxy.model.mapping import (
-    GalaxyModelMapping,
-    init,
-)
+from galaxy.files import ConfiguredFileSources, NullConfiguredFileSources
+from galaxy.model.mapping import GalaxyModelMapping, init
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.security.idencoding import IdEncodingHelper

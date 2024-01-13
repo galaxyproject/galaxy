@@ -1,20 +1,8 @@
-from datetime import (
-    datetime,
-    timedelta,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, WorkflowPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 

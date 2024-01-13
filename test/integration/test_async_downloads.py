@@ -2,11 +2,7 @@ import zipfile
 from io import BytesIO
 
 import pytest
-
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 

@@ -6,36 +6,18 @@ import shutil
 import sys
 import tempfile
 from io import StringIO
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple
 
 import bdbag.bdbag_api
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
-from galaxy.datatypes.upload_util import (
-    handle_upload,
-    UploadProblemException,
-)
-from galaxy.files.uris import (
-    stream_to_file,
-    stream_url_to_file,
-)
-from galaxy.util import (
-    in_directory,
-    safe_makedirs,
-)
+from galaxy.datatypes.upload_util import UploadProblemException, handle_upload
+from galaxy.files.uris import stream_to_file, stream_url_to_file
+from galaxy.util import in_directory, safe_makedirs
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
-from galaxy.util.hash_util import (
-    HASH_NAMES,
-    memory_bound_hexdigest,
-)
+from galaxy.util.hash_util import HASH_NAMES, memory_bound_hexdigest
 
 DESCRIPTION = """Data Import Script"""
 

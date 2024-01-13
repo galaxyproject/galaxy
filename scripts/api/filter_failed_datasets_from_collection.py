@@ -9,10 +9,8 @@ python filter_failed_datasets_from_collection.py <GalaxyUrl> <ApiKey> MySpecialH
 
 import sys
 
-from bioblend.galaxy import (
-    dataset_collections as collections,
-    GalaxyInstance,
-)
+from bioblend.galaxy import GalaxyInstance
+from bioblend.galaxy import dataset_collections as collections
 
 if len(sys.argv) < 5:
     print(

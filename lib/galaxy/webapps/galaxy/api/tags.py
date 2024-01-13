@@ -3,22 +3,12 @@ API Controller providing Galaxy Tags
 """
 import logging
 
-from fastapi import (
-    Body,
-    Response,
-    status,
-)
+from fastapi import Body, Response, status
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.tags import (
-    ItemTagsPayload,
-    TagsManager,
-)
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.managers.tags import ItemTagsPayload, TagsManager
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

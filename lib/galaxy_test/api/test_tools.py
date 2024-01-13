@@ -4,26 +4,11 @@ import json
 import os
 import zipfile
 from io import BytesIO
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
 import pytest
-from requests import (
-    get,
-    put,
-)
-
-from galaxy.tool_util.verify.interactor import ValidToolTestDict
-from galaxy.util import galaxy_root_path
-from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
-from galaxy_test.base.api_asserts import (
-    assert_has_keys,
-    assert_status_code_is,
-)
+from galaxy_test.base.api_asserts import assert_has_keys, assert_status_code_is
 from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
@@ -33,6 +18,12 @@ from galaxy_test.base.populators import (
     skip_without_tool,
     stage_rules_example,
 )
+from requests import get, put
+
+from galaxy.tool_util.verify.interactor import ValidToolTestDict
+from galaxy.util import galaxy_root_path
+from galaxy.util.unittest_utils import skip_if_github_down
+
 from ._framework import ApiTestCase
 
 MINIMAL_TOOL = {

@@ -1,16 +1,10 @@
 import json
 
-from pysam import (  # type: ignore[attr-defined]
-    AlignmentFile,
-    view,
-)
+from pysam import AlignmentFile, view  # type: ignore[attr-defined]
 
 from galaxy.datatypes.binary import Bam
-from .util import (
-    get_dataset,
-    get_input_files,
-    get_tmp_path,
-)
+
+from .util import get_dataset, get_input_files, get_tmp_path
 
 
 def test_merge_bam():

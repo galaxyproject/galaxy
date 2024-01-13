@@ -1,36 +1,16 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    overload,
-    Union,
-)
+from typing import Any, Dict, List, Union, overload
 from zipfile import ZipFile
 
-from sqlalchemy.orm import (
-    joinedload,
-    Query,
-)
+from sqlalchemy.orm import Query, joinedload
 from typing_extensions import Literal
 
 from galaxy import model
 from galaxy.datatypes.registry import Registry
-from galaxy.exceptions import (
-    ItemAccessibilityException,
-    MessageException,
-    RequestParameterInvalidException,
-)
+from galaxy.exceptions import ItemAccessibilityException, MessageException, RequestParameterInvalidException
 from galaxy.managers.collections_util import validate_input_element_identifiers
-from galaxy.managers.context import (
-    ProvidesAppContext,
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
-from galaxy.managers.hdas import (
-    HDAManager,
-    HistoryDatasetAssociationNoHistoryException,
-)
+from galaxy.managers.context import ProvidesAppContext, ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.hdas import HDAManager, HistoryDatasetAssociationNoHistoryException
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
@@ -43,10 +23,7 @@ from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.schema.schema import DatasetCollectionInstanceType
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.short_term_storage import (
-    ShortTermStorageMonitor,
-    storage_context,
-)
+from galaxy.short_term_storage import ShortTermStorageMonitor, storage_context
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)

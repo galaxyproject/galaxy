@@ -2,12 +2,7 @@ import os
 
 import pytest
 
-from ._util import (
-    assert_realizes_as,
-    configured_file_sources,
-    find,
-    user_context_fixture,
-)
+from ._util import assert_realizes_as, configured_file_sources, find, user_context_fixture
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "basespace_file_sources_conf.yml")

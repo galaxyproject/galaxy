@@ -1,20 +1,11 @@
 import hashlib
 import logging
 from operator import itemgetter
-from typing import (
-    Optional,
-    Set,
-)
+from typing import Optional, Set
 
 from galaxy import exceptions
-from galaxy.files import (
-    ConfiguredFileSources,
-    ProvidesUserFileSourcesUserContext,
-)
-from galaxy.files.sources import (
-    FilesSourceOptions,
-    PluginKind,
-)
+from galaxy.files import ConfiguredFileSources, ProvidesUserFileSourcesUserContext
+from galaxy.files.sources import FilesSourceOptions, PluginKind
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
     AnyRemoteFilesListResponse,
@@ -25,10 +16,7 @@ from galaxy.schema.remote_files import (
     RemoteFilesTarget,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util import (
-    jstree,
-    smart_str,
-)
+from galaxy.util import jstree, smart_str
 
 log = logging.getLogger(__name__)
 

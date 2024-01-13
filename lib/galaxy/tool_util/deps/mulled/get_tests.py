@@ -8,12 +8,7 @@ A shallow search (default for singularity and conda generation scripts) just che
 import json
 import logging
 from glob import glob
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 import requests
 import yaml
@@ -25,16 +20,10 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
-from galaxy.util import (
-    check_github_api_response_rate_limit,
-    unicodify,
-)
+from galaxy.util import check_github_api_response_rate_limit, unicodify
 from galaxy.util.commands import argv_to_str
-from .util import (
-    get_files_from_conda_package,
-    MULLED_SOCKET_TIMEOUT,
-    split_container_name,
-)
+
+from .util import MULLED_SOCKET_TIMEOUT, get_files_from_conda_package, split_container_name
 
 INSTALL_JINJA_EXCEPTION = (
     "This mulled functionality required jinja2 but it is unavailable, install condatesting extras."

@@ -1,30 +1,15 @@
 import os
 import uuid
 from contextlib import contextmanager
-from typing import (
-    Callable,
-    Iterator,
-    Optional,
-)
+from typing import Callable, Iterator, Optional
 
 import pytest
-from sqlalchemy import (
-    create_engine,
-    delete,
-    select,
-)
-from sqlalchemy.engine import (
-    Engine,
-    make_url,
-)
+from sqlalchemy import create_engine, delete, select
+from sqlalchemy.engine import Engine, make_url
 from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.sql.expression import text
 
-from galaxy.model.database_utils import (
-    create_database,
-    DbUrl,
-    is_postgres,
-)
+from galaxy.model.database_utils import DbUrl, create_database, is_postgres
 
 # GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(

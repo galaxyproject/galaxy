@@ -1,25 +1,11 @@
 from datetime import datetime
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from pydantic import (
-    Extra,
-    Field,
-)
+from pydantic import Extra, Field
 from typing_extensions import Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
-from galaxy.schema.schema import (
-    CreateTimeField,
-    Model,
-    TagCollection,
-    UpdateTimeField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField
+from galaxy.schema.schema import CreateTimeField, Model, TagCollection, UpdateTimeField
 
 VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
 

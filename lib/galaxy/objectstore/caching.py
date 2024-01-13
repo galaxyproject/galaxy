@@ -4,18 +4,11 @@ import logging
 import os
 import threading
 import time
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
+from typing import List, Optional, Tuple
 
 from typing_extensions import NamedTuple
 
-from galaxy.util import (
-    nice_size,
-    string_as_bool,
-)
+from galaxy.util import nice_size, string_as_bool
 from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)

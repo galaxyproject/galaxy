@@ -1,20 +1,14 @@
 import os
 from contextlib import contextmanager
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
-from urllib.parse import (
-    urlencode,
-    urljoin,
-)
+from typing import Any, Dict, Optional
+from urllib.parse import urlencode, urljoin
 
 import pytest
 import requests
 from typing_extensions import Protocol
 
 from galaxy.util.properties import get_from_env
+
 from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
@@ -22,13 +16,7 @@ from .api_asserts import (
     assert_status_code_is,
     assert_status_code_is_ok,
 )
-from .api_util import (
-    ADMIN_TEST_USER,
-    get_admin_api_key,
-    get_user_api_key,
-    OTHER_USER,
-    TEST_USER,
-)
+from .api_util import ADMIN_TEST_USER, OTHER_USER, TEST_USER, get_admin_api_key, get_user_api_key
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]

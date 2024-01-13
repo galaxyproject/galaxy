@@ -1,19 +1,12 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 from typing_extensions import TypedDict
 
 from galaxy.util import Element
 from galaxy.util.dictifiable import Dictifiable
+
 from .output_actions import ToolOutputActionGroup
-from .output_collection_def import (
-    dataset_collector_descriptions_from_output_dict,
-    DatasetCollectionDescription,
-)
+from .output_collection_def import DatasetCollectionDescription, dataset_collector_descriptions_from_output_dict
 
 
 class ChangeFormatModel(TypedDict):

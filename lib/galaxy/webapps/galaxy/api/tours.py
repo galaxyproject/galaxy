@@ -3,15 +3,9 @@ API Controller providing Galaxy Tours
 """
 import logging
 
-from galaxy.tours import (
-    TourDetails,
-    TourList,
-    ToursRegistry,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.tours import TourDetails, TourList, ToursRegistry
+
+from . import Router, depends
 
 log = logging.getLogger(__name__)
 

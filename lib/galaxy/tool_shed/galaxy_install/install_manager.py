@@ -1,47 +1,26 @@
 import json
 import logging
 import os
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import or_
+from tool_shed_client.schema import ExtraRepoInfo, RepositoryMetadataInstallInfoDict
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from galaxy.tool_shed.galaxy_install.tools import (
-    data_manager,
-    tool_panel_manager,
-)
+from galaxy.tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
 from galaxy.tool_shed.tools.data_table_manager import ShedToolDataTableManager
-from galaxy.tool_shed.util import (
-    hg_util,
-    repository_util,
-    shed_util_common as suc,
-    tool_util,
-)
+from galaxy.tool_shed.util import hg_util, repository_util
+from galaxy.tool_shed.util import shed_util_common as suc
+from galaxy.tool_shed.util import tool_util
 from galaxy.tool_util.deps import views
-from galaxy.util.tool_shed import (
-    common_util,
-    encoding_util,
-)
+from galaxy.util.tool_shed import common_util, encoding_util
 from galaxy.util.tool_shed.tool_shed_registry import Registry
-from tool_shed_client.schema import (
-    ExtraRepoInfo,
-    RepositoryMetadataInstallInfoDict,
-)
 
 log = logging.getLogger(__name__)
 

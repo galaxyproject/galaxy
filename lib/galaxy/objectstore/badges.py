@@ -1,16 +1,6 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Set, Union
 
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
+from typing_extensions import Literal, TypedDict
 
 BadgeSourceT = Literal["admin", "galaxy"]
 # Badges that can be explicitly set by admins.

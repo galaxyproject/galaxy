@@ -1,14 +1,8 @@
-from playwright.sync_api import (
-    expect,
-    Page,
-)
-
 from galaxy_test.base.api_util import random_name
+from playwright.sync_api import Page, expect
+
 from ..base.api import skip_if_api_v1
-from ..base.playwrightbrowser import (
-    Locators,
-    PlaywrightShedBrowser,
-)
+from ..base.playwrightbrowser import Locators, PlaywrightShedBrowser
 from ..base.twilltestcase import ShedTwillTestCase
 
 

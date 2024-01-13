@@ -13,10 +13,7 @@ import sys
 from bx.interval_index_file import Indexes
 from bx.intervals.io import GenomicInterval
 
-from galaxy.datatypes.util.gff_util import (
-    convert_gff_coords_to_bed,
-    GFFReaderWrapper,
-)
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, convert_gff_coords_to_bed
 
 
 def main():

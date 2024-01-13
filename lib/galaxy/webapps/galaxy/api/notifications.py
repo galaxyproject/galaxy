@@ -5,13 +5,7 @@ API operations on Notification objects.
 import logging
 from typing import Optional
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Path, Query, Response, status
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -34,11 +28,8 @@ from galaxy.schema.notifications import (
 )
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.webapps.galaxy.services.notifications import NotificationService
-from . import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+
+from . import DependsOnTrans, Router, depends
 
 log = logging.getLogger(__name__)
 

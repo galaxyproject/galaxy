@@ -1,8 +1,6 @@
 from galaxy_test.base.decorators import requires_new_library
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    LibraryPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, LibraryPopulator
+
 from ._framework import ApiTestCase
 
 

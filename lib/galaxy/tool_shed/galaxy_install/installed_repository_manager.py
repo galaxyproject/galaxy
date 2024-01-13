@@ -5,35 +5,20 @@ import copy
 import logging
 import os
 import shutil
-from typing import (
-    Any,
-    Dict,
-    List,
-    no_type_check,
-    Optional,
-    Tuple,
-)
+from typing import Any, Dict, List, Optional, Tuple, no_type_check
 
 from galaxy import util
 from galaxy.model.base import transaction
-from galaxy.model.tool_shed_install import (
-    ToolDependency,
-    ToolShedRepository,
-)
+from galaxy.model.tool_shed_install import ToolDependency, ToolShedRepository
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from galaxy.tool_shed.galaxy_install.tools import (
-    data_manager,
-    tool_panel_manager,
-)
-from galaxy.tool_shed.util import (
-    repository_util,
-    shed_util_common as suc,
-    tool_dependency_util,
-)
+from galaxy.tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
+from galaxy.tool_shed.util import repository_util
+from galaxy.tool_shed.util import shed_util_common as suc
+from galaxy.tool_shed.util import tool_dependency_util
 from galaxy.tool_shed.util.container_util import generate_repository_dependencies_key_for_repository
 from galaxy.util.tool_shed import common_util
 from galaxy.util.tool_shed.xml_util import parse_xml

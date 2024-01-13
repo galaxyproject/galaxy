@@ -15,31 +15,14 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Union,
-)
-from uuid import (
-    UUID,
-    uuid4,
-)
+from typing import Any, Dict, Optional, Union
+from uuid import UUID, uuid4
 
-from galaxy.exceptions import (
-    InternalServerError,
-    MessageException,
-    NoContentException,
-    ObjectNotFound,
-)
+from galaxy.exceptions import InternalServerError, MessageException, NoContentException, ObjectNotFound
 from galaxy.exceptions.error_codes import error_codes_by_int_code
 from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.schema.schema import OptionalNumberT
-from galaxy.util import (
-    directory_hash_id,
-    is_uuid,
-    safe_makedirs,
-)
+from galaxy.util import directory_hash_id, is_uuid, safe_makedirs
 
 now = datetime.utcnow
 DEFAULT_STORAGE_DURATION = 24 * 60 * 60  # store for a day by default

@@ -1,9 +1,7 @@
 from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import flakey
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-)
+
+from .framework import SeleniumTestCase, selenium_test
 
 
 class TestAdminApp(SeleniumTestCase):

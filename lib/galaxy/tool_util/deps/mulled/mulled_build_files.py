@@ -19,9 +19,9 @@ import sys
 
 from ._cli import arg_parser
 from .mulled_build import (
+    BuildExistsException,
     add_build_arguments,
     args_to_mull_targets_kwds,
-    BuildExistsException,
     mull_targets,
     target_str_to_targets,
 )

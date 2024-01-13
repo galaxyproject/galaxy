@@ -19,15 +19,9 @@ from fastapi import Request
 
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.services.authenticate import (
-    APIKeyResponse,
-    AuthenticationService,
-)
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-    Router,
-)
+from galaxy.webapps.galaxy.services.authenticate import APIKeyResponse, AuthenticationService
+
+from . import BaseGalaxyAPIController, Router, depends
 
 router = Router(tags=["authenticate"])
 

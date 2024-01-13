@@ -3,32 +3,16 @@ import logging
 import os
 import socket
 import string
-from typing import (
-    List,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, List
 
-from sqlalchemy import (
-    false,
-    func,
-    select,
-    true,
-)
+from sqlalchemy import false, func, select, true
 from sqlalchemy.orm import scoped_session
+from tool_shed.util import basic_util, common_util, hg_util, repository_util
 
 from galaxy import util
 from galaxy.tool_shed.util.shed_util_common import get_user
-from galaxy.util import (
-    checkers,
-    unicodify,
-)
+from galaxy.util import checkers, unicodify
 from galaxy.web import url_for
-from tool_shed.util import (
-    basic_util,
-    common_util,
-    hg_util,
-    repository_util,
-)
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp

@@ -2,26 +2,12 @@
 API operations on annotations.
 """
 import logging
-from typing import (
-    Generic,
-    Optional,
-    TypeVar,
-)
+from typing import Generic, Optional, TypeVar
 
-from galaxy import (
-    managers,
-    model,
-    web,
-)
-from galaxy.webapps.base.controller import (
-    UsesExtendedMetadataMixin,
-    UsesLibraryMixinItems,
-    UsesStoredWorkflowMixin,
-)
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-)
+from galaxy import managers, model, web
+from galaxy.webapps.base.controller import UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin
+
+from . import BaseGalaxyAPIController, depends
 
 log = logging.getLogger(__name__)
 

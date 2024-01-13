@@ -1,28 +1,12 @@
 import logging
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import false
 
 from galaxy.managers import base
 from galaxy.managers.notification import NotificationManager
-from galaxy.managers.sharable import (
-    SharableModelManager,
-    SharableModelSerializer,
-)
-from galaxy.model import (
-    History,
-    Page,
-    StoredWorkflow,
-    User,
-    Visualization,
-)
+from galaxy.managers.sharable import SharableModelManager, SharableModelSerializer
+from galaxy.model import History, Page, StoredWorkflow, User, Visualization
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     NewSharedItemNotificationContent,

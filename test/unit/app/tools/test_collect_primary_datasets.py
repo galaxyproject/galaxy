@@ -2,10 +2,7 @@ import json
 import os
 from typing import cast
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.app_unittest_utils import tools_support
 from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore

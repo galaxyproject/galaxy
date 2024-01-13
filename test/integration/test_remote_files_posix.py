@@ -9,9 +9,9 @@ from galaxy_test.driver import integration_util
 from galaxy_test.driver.integration_setup import (
     GROUP_A,
     GROUP_B,
-    PosixFileSourceSetup,
     REQUIRED_GROUP_EXPRESSION,
     REQUIRED_ROLE_EXPRESSION,
+    PosixFileSourceSetup,
 )
 
 

@@ -7,47 +7,14 @@ history.
 import gettext
 import logging
 import os
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-)
+from typing import Any, Dict, List, Optional, Set
 
-from sqlalchemy import (
-    and_,
-    asc,
-    desc,
-    exists,
-    false,
-    func,
-    nulls_first,
-    nulls_last,
-    select,
-    true,
-)
+from sqlalchemy import and_, asc, desc, exists, false, func, nulls_first, nulls_last, select, true
 from sqlalchemy.orm.session import object_session
 
-from galaxy import (
-    datatypes,
-    exceptions,
-    model,
-)
-from galaxy.managers import (
-    annotatable,
-    base,
-    datasets,
-    lddas,
-    secured,
-    taggable,
-    users,
-)
-from galaxy.model import (
-    Job,
-    JobStateHistory,
-    JobToOutputDatasetAssociation,
-)
+from galaxy import datatypes, exceptions, model
+from galaxy.managers import annotatable, base, datasets, lddas, secured, taggable, users
+from galaxy.model import Job, JobStateHistory, JobToOutputDatasetAssociation
 from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
 from galaxy.schema.schema import DatasetSourceType
@@ -58,15 +25,8 @@ from galaxy.schema.storage_cleaner import (
     StoredItem,
     StoredItemOrderBy,
 )
-from galaxy.schema.tasks import (
-    MaterializeDatasetInstanceTaskRequest,
-    PurgeDatasetsTaskRequest,
-    RequestUser,
-)
-from galaxy.structured_app import (
-    MinimalManagerApp,
-    StructuredApp,
-)
+from galaxy.schema.tasks import MaterializeDatasetInstanceTaskRequest, PurgeDatasetsTaskRequest, RequestUser
+from galaxy.structured_app import MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 

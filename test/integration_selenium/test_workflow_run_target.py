@@ -1,15 +1,9 @@
 from typing import TYPE_CHECKING
 
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
-from galaxy_test.selenium.framework import (
-    managed_history,
-    RunsWorkflows,
-    UsesHistoryItemAssertions,
-)
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+from galaxy_test.selenium.framework import RunsWorkflows, UsesHistoryItemAssertions, managed_history
+
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator

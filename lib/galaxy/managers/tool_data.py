@@ -1,32 +1,14 @@
 from pathlib import Path
-from typing import (
-    cast,
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional, cast
 
 from galaxy import exceptions
 from galaxy.files import ConfiguredFileSources
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model import DatasetInstance
-from galaxy.structured_app import (
-    MinimalManagerApp,
-    StructuredApp,
-)
-from galaxy.tool_util.data import (
-    BundleProcessingOptions,
-    ToolDataTableManager,
-)
-from galaxy.tool_util.data._schema import (
-    ToolDataDetails,
-    ToolDataEntryList,
-    ToolDataField,
-)
-from galaxy.tools.data import (
-    TabularToolDataField,
-    TabularToolDataTable,
-    ToolDataTable,
-)
+from galaxy.structured_app import MinimalManagerApp, StructuredApp
+from galaxy.tool_util.data import BundleProcessingOptions, ToolDataTableManager
+from galaxy.tool_util.data._schema import ToolDataDetails, ToolDataEntryList, ToolDataField
+from galaxy.tools.data import TabularToolDataField, TabularToolDataTable, ToolDataTable
 
 
 class ToolDataManager:

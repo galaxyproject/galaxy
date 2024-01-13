@@ -1,10 +1,8 @@
 from logging import getLogger
 
 from galaxy.util import parse_xml_string
-from . import (
-    BaseJobExec,
-    job_states,
-)
+
+from . import BaseJobExec, job_states
 
 log = getLogger(__name__)
 

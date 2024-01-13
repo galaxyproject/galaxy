@@ -1,23 +1,13 @@
 import sqlite3
 from contextlib import contextmanager
-from typing import (
-    NewType,
-    Optional,
-)
+from typing import NewType, Optional
 
-from sqlalchemy import (
-    create_engine,
-    select,
-    update,
-)
+from sqlalchemy import create_engine, select, update
 from sqlalchemy.engine import Engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.compiler import IdentifierPreparer
-from sqlalchemy.sql.expression import (
-    ClauseElement,
-    text,
-)
+from sqlalchemy.sql.expression import ClauseElement, text
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import Job

@@ -5,16 +5,9 @@ Revises: b182f655505f
 Create Date: 2022-03-14 12:17:55.313830
 
 """
-from sqlalchemy import (
-    Boolean,
-    Column,
-)
+from sqlalchemy import Boolean, Column
 
-from galaxy.model.migrations.util import (
-    add_column,
-    drop_column,
-    transaction,
-)
+from galaxy.model.migrations.util import add_column, drop_column, transaction
 
 # revision identifiers, used by Alembic.
 revision = "6a67bf27e6a6"

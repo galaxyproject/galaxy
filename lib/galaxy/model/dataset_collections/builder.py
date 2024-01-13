@@ -1,6 +1,7 @@
 from galaxy import model
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.oset import OrderedSet
+
 from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 

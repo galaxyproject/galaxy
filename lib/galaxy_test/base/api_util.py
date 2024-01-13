@@ -2,10 +2,7 @@ import base64
 import os
 import random
 import string
-from typing import (
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional
 
 DEFAULT_GALAXY_MASTER_API_KEY = "TEST123"
 DEFAULT_GALAXY_USER_API_KEY = None

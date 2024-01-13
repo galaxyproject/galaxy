@@ -1,10 +1,7 @@
 import os
 import tempfile
 
-from galaxy.model.database_utils import (
-    create_database,
-    database_exists,
-)
+from galaxy.model.database_utils import create_database, database_exists
 from galaxy.model.unittest_utils.model_testing_utils import (
     drop_database,
     replace_database_in_url,

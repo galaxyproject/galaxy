@@ -1,6 +1,7 @@
 import yaml
 
 from galaxy.util.resources import resource_string
+
 from .components import Component
 
 

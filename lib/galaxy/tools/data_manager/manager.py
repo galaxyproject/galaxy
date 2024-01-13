@@ -1,26 +1,15 @@
 import errno
 import logging
 import os
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Dict, List, Optional, Union
 
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.client import DataManagersInterface
-from galaxy.tool_util.data import (
-    BundleProcessingOptions,
-    OutputDataset,
-)
-from galaxy.tool_util.data.bundles.models import (
-    convert_data_tables_xml,
-    RepoInfo,
-)
+from galaxy.tool_util.data import BundleProcessingOptions, OutputDataset
+from galaxy.tool_util.data.bundles.models import RepoInfo, convert_data_tables_xml
 from galaxy.util import Element
 
 log = logging.getLogger(__name__)

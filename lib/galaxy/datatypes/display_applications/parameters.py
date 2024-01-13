@@ -1,12 +1,7 @@
 # Contains parameters that are used in Display Applications
 import mimetypes
 from dataclasses import dataclass
-from typing import (
-    Callable,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Callable, Optional, Union
 from urllib.parse import quote_plus
 
 from galaxy.datatypes.data import Data

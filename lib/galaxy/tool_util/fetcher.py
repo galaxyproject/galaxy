@@ -1,8 +1,4 @@
-from typing import (
-    Dict,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Dict, Type
 
 from galaxy.util import plugin_config
 

@@ -5,10 +5,8 @@ from typing_extensions import Annotated
 
 from galaxy.schema.help import HelpForumSearchResponse
 from galaxy.webapps.galaxy.services.help import HelpService
-from . import (
-    depends,
-    Router,
-)
+
+from . import Router, depends
 
 log = logging.getLogger(__name__)
 

@@ -4,14 +4,9 @@ API Controller providing experimental access to Celery Task State.
 import logging
 from uuid import UUID
 
-from galaxy.managers.tasks import (
-    AsyncTasksManager,
-    TaskState,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.managers.tasks import AsyncTasksManager, TaskState
+
+from . import Router, depends
 
 log = logging.getLogger(__name__)
 

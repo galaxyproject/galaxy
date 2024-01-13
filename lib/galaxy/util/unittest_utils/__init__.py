@@ -1,8 +1,5 @@
 from functools import wraps
-from typing import (
-    Any,
-    Callable,
-)
+from typing import Any, Callable
 from unittest import SkipTest
 
 import pytest

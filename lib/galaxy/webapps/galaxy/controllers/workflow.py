@@ -3,42 +3,21 @@ from html.parser import HTMLParser
 
 from markupsafe import escape
 from sqlalchemy import desc
-from sqlalchemy.orm import (
-    joinedload,
-    lazyload,
-    undefer,
-)
+from sqlalchemy.orm import joinedload, lazyload, undefer
 from sqlalchemy.sql import expression
 
-from galaxy import (
-    model,
-    util,
-    web,
-)
+from galaxy import model, util, web
 from galaxy.managers.sharable import SlugBuilder
-from galaxy.managers.workflows import (
-    MissingToolsException,
-    WorkflowUpdateOptions,
-)
+from galaxy.managers.workflows import MissingToolsException, WorkflowUpdateOptions
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    SharableMixin,
-    UsesStoredWorkflowMixin,
-)
-from galaxy.workflow.extract import (
-    extract_workflow,
-    summarize,
-)
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.webapps.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
+from galaxy.workflow.extract import extract_workflow, summarize
 from galaxy.workflow.modules import load_module_sections
 
 log = logging.getLogger(__name__)

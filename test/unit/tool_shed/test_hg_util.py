@@ -1,5 +1,4 @@
 import pytest
-
 from tool_shed.util import hg_util
 
 

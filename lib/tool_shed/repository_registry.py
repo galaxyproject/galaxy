@@ -1,23 +1,10 @@
 import logging
 
-from sqlalchemy import (
-    and_,
-    false,
-    or_,
-    select,
-)
-
 import tool_shed.repository_types.util as rt_util
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-)
+from sqlalchemy import and_, false, or_, select
+from tool_shed.util import hg_util, metadata_util
 from tool_shed.webapp import model
-from tool_shed.webapp.model import (
-    Category,
-    Repository,
-    RepositoryMetadata,
-)
+from tool_shed.webapp.model import Category, Repository, RepositoryMetadata
 
 log = logging.getLogger(__name__)
 

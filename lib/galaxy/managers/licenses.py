@@ -2,11 +2,7 @@ import json
 import logging
 from typing import List
 
-from pydantic import (
-    BaseModel,
-    Field,
-    HttpUrl,
-)
+from pydantic import BaseModel, Field, HttpUrl
 
 from galaxy import exceptions
 from galaxy.util.resources import resource_string

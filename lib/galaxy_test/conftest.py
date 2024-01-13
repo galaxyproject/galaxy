@@ -5,11 +5,11 @@ from urllib.parse import urlencode
 
 import pytest
 import requests
+from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.web import statsd_client as statsd
-from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 
 @pytest.fixture(scope="session", autouse=True)

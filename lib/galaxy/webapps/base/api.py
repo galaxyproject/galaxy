@@ -3,18 +3,10 @@ import stat
 import typing
 
 import anyio
-from fastapi import (
-    FastAPI,
-    HTTPException,
-    Request,
-    status,
-)
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from starlette.responses import (
-    FileResponse,
-    Response,
-)
+from starlette.responses import FileResponse, Response
 from starlette_context.middleware import RawContextMiddleware
 from starlette_context.plugins import RequestIdPlugin
 
@@ -25,11 +17,7 @@ from galaxy.web.framework.decorators import validation_error_to_message_exceptio
 
 if typing.TYPE_CHECKING:
     from starlette.background import BackgroundTask
-    from starlette.types import (
-        Receive,
-        Scope,
-        Send,
-    )
+    from starlette.types import Receive, Scope, Send
 
 
 # Copied from https://github.com/tiangolo/fastapi/issues/1240#issuecomment-1055396884

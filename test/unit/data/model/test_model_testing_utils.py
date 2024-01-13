@@ -5,12 +5,7 @@ This module contains tests for the utility functions in the test_mapping module.
 from contextlib import contextmanager
 
 import pytest
-from sqlalchemy import (
-    Column,
-    Index,
-    Integer,
-    UniqueConstraint,
-)
+from sqlalchemy import Column, Index, Integer, UniqueConstraint
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import registry
 

@@ -4,29 +4,16 @@ import tempfile
 import pytest
 
 from galaxy.tool_util.lint import (
-    lint_tool_source_with,
-    lint_xml_with,
     LintContext,
     XMLLintMessageLine,
     XMLLintMessageXPath,
+    lint_tool_source_with,
+    lint_xml_with,
 )
-from galaxy.tool_util.linters import (
-    citations,
-    command,
-    general,
-    help,
-    inputs,
-    outputs,
-    stdio,
-    tests,
-    xml_order,
-)
+from galaxy.tool_util.linters import citations, command, general, help, inputs, outputs, stdio, tests, xml_order
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
-from galaxy.util import (
-    ElementTree,
-    parse_xml,
-)
+from galaxy.util import ElementTree, parse_xml
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter

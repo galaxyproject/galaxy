@@ -1,8 +1,5 @@
 from galaxy.datatypes.data import Text
-from galaxy.datatypes.metadata import (
-    ListParameter,
-    MetadataElement,
-)
+from galaxy.datatypes.metadata import ListParameter, MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_headers
 

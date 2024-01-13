@@ -2,19 +2,13 @@ import abc
 from typing import Optional
 
 from sqlalchemy.orm import scoped_session
+from tool_shed.structured_app import ToolShedApp
+from tool_shed.webapp.model import GalaxySession, User
+from tool_shed.webapp.model.mapping import ToolShedModelMapping
 from typing_extensions import Protocol
 
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.work.context import (
-    GalaxyAbstractRequest,
-    GalaxyAbstractResponse,
-)
-from tool_shed.structured_app import ToolShedApp
-from tool_shed.webapp.model import (
-    GalaxySession,
-    User,
-)
-from tool_shed.webapp.model.mapping import ToolShedModelMapping
+from galaxy.work.context import GalaxyAbstractRequest, GalaxyAbstractResponse
 
 
 class ProvidesAppContext(Protocol):

@@ -2,35 +2,13 @@
 API operations on the contents of a history dataset.
 """
 import logging
-from io import (
-    BytesIO,
-    IOBase,
-    StringIO,
-)
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-)
+from io import BytesIO, IOBase, StringIO
+from typing import Any, Dict, List, Optional, cast
 
-from fastapi import (
-    Body,
-    Depends,
-    Path,
-    Query,
-    Request,
-)
-from starlette.responses import (
-    Response,
-    StreamingResponse,
-)
+from fastapi import Body, Depends, Path, Query, Request
+from starlette.responses import Response, StreamingResponse
 
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
@@ -42,11 +20,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.base.api import GalaxyFileResponse
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_query_parameters_from_request_excluding,

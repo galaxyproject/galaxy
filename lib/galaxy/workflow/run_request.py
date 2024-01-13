@@ -1,13 +1,7 @@
 import json
 import logging
 import uuid
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from galaxy import exceptions
 from galaxy.model import (
@@ -21,18 +15,12 @@ from galaxy.model import (
     WorkflowRequestInputParameter,
     WorkflowRequestStepState,
 )
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
+from galaxy.model.base import ensure_object_added_to_session, transaction
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        Workflow,
-        WorkflowStep,
-    )
+    from galaxy.model import Workflow, WorkflowStep
     from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 INPUT_STEP_TYPES = ["data_input", "data_collection_input", "parameter_input"]

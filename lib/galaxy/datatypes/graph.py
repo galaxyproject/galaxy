@@ -9,12 +9,8 @@ from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import simplegraph
-from . import (
-    data,
-    dataproviders,
-    tabular,
-    xml,
-)
+
+from . import data, dataproviders, tabular, xml
 
 log = logging.getLogger(__name__)
 

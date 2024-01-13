@@ -4,14 +4,9 @@ Manager and Serializer for Roles.
 import logging
 from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
-from sqlalchemy.orm import (
-    exc as sqlalchemy_exceptions,
-    Session,
-)
+from sqlalchemy import false, select
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 import galaxy.exceptions
 from galaxy import model

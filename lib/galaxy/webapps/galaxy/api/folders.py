@@ -2,16 +2,9 @@
 API operations on library folders.
 """
 import logging
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-)
+from fastapi import Body, Path, Query
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
@@ -25,11 +18,7 @@ from galaxy.schema.schema import (
     LibraryPermissionScope,
     UpdateLibraryFolderPayload,
 )
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.services.library_folders import LibraryFoldersService
 
 log = logging.getLogger(__name__)

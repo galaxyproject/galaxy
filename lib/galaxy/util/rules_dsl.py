@@ -1,10 +1,7 @@
 import abc
 import itertools
 import re
-from typing import (
-    List,
-    Type,
-)
+from typing import List, Type
 
 import yaml
 

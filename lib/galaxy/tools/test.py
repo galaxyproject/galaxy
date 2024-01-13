@@ -1,25 +1,12 @@
 import logging
 import os
 import os.path
-from typing import (
-    Iterable,
-    List,
-    Tuple,
-    Union,
-)
+from typing import Iterable, List, Tuple, Union
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tool_util.verify.interactor import (
-    InvalidToolTestDict,
-    ToolTestDescription,
-    ValidToolTestDict,
-)
-from galaxy.util import (
-    string_as_bool,
-    string_as_bool_or_none,
-    unicodify,
-)
+from galaxy.tool_util.verify.interactor import InvalidToolTestDict, ToolTestDescription, ValidToolTestDict
+from galaxy.util import string_as_bool, string_as_bool_or_none, unicodify
 
 log = logging.getLogger(__name__)
 

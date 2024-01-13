@@ -1,29 +1,13 @@
 import os
 import shutil
 import tempfile
-from typing import (
-    cast,
-    IO,
-    List,
-    Optional,
-    Union,
-)
+from typing import IO, List, Optional, Union, cast
 
-from fastapi import (
-    Body,
-    Depends,
-    Request,
-    Response,
-    status,
-    UploadFile,
-)
+from fastapi import Body, Depends, Request, Response, UploadFile, status
 from starlette.datastructures import UploadFile as StarletteUploadFile
-
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.model.base import transaction
-from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
+    UpdatesRequest,
     can_manage_repo,
     can_update_repo,
     check_updates,
@@ -38,7 +22,6 @@ from tool_shed.managers.repositories import (
     search,
     to_detailed_model,
     to_model,
-    UpdatesRequest,
     upload_tar_and_set_metadata,
 )
 from tool_shed.structured_app import ToolShedApp
@@ -46,7 +29,6 @@ from tool_shed.util.repository_util import get_repository_in_tool_shed
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
     DetailedRepository,
-    from_legacy_install_info,
     InstallInfo,
     Repository,
     RepositoryMetadata,
@@ -58,12 +40,16 @@ from tool_shed_client.schema import (
     ResetMetadataOnRepositoryRequest,
     ResetMetadataOnRepositoryResponse,
     ValidRepostiroyUpdateMessage,
+    from_legacy_install_info,
 )
+
+from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.model.base import transaction
+from galaxy.webapps.galaxy.api import as_form
+
 from . import (
     ChangesetRevisionPathParam,
     CommitMessageQueryParam,
-    depend_on_either_json_or_form_data,
-    depends,
     DependsOnTrans,
     DownloadableQueryParam,
     OptionalHexlifyParam,
@@ -83,6 +69,8 @@ from . import (
     RequiredRepositoryChangesetRevisionParam,
     Router,
     UsernameIdPathParam,
+    depend_on_either_json_or_form_data,
+    depends,
 )
 
 router = Router(tags=["repositories"])

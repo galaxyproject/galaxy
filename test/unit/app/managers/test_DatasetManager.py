@@ -5,17 +5,12 @@ from unittest import mock
 import sqlalchemy
 from sqlalchemy import select
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers.base import SkipAttribute
-from galaxy.managers.datasets import (
-    DatasetManager,
-    DatasetSerializer,
-)
+from galaxy.managers.datasets import DatasetManager, DatasetSerializer
 from galaxy.managers.roles import RoleManager
+
 from .base import BaseTestCase
 
 # =============================================================================

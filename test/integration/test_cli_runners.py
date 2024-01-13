@@ -5,16 +5,14 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import (
-    ClassVar,
-    NamedTuple,
-)
+from typing import ClassVar, NamedTuple
 
 import pytest
-
-from galaxy.security.ssh_util import generate_ssh_keys
 from galaxy_test.base.populators import skip_without_tool
 from galaxy_test.driver import integration_util
+
+from galaxy.security.ssh_util import generate_ssh_keys
+
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 PBS_STARTUP_DELAY = 5

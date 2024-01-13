@@ -1,31 +1,13 @@
 from datetime import datetime
-from typing import (
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import List, NamedTuple, Optional, Set, Tuple
 
 from pydantic import ValidationError
-from sqlalchemy import (
-    and_,
-    delete,
-    false,
-    func,
-    or_,
-    select,
-    union,
-    update,
-)
+from sqlalchemy import and_, delete, false, func, or_, select, union, update
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import (
-    ConfigDoesNotAllowException,
-    ObjectNotFound,
-)
+from galaxy.exceptions import ConfigDoesNotAllowException, ObjectNotFound
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,

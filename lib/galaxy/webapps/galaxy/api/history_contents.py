@@ -2,35 +2,16 @@
 API operations on the contents of a history.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Union
 
-from fastapi import (
-    Body,
-    Depends,
-    Header,
-    Path,
-    Query,
-)
+from fastapi import Body, Depends, Header, Path, Query
 from pydantic.error_wrappers import ValidationError
 from starlette import status
-from starlette.responses import (
-    Response,
-    StreamingResponse,
-)
+from starlette.responses import Response, StreamingResponse
 
 from galaxy import util
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.schema import (
-    FilterQueryParams,
-    SerializationParams,
-    ValueFilterQueryParams,
-)
+from galaxy.schema import FilterQueryParams, SerializationParams, ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHistoryContentItem,
@@ -56,11 +37,7 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.web.framework.decorators import validation_error_to_message_exception
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans, Router, depends
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
     get_update_permission_payload,

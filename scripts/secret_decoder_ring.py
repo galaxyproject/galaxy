@@ -11,10 +11,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 logging.basicConfig()
 log = logging.getLogger(__name__)

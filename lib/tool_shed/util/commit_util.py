@@ -6,27 +6,18 @@ import os
 import shutil
 import tempfile
 from collections import namedtuple
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
-
-from sqlalchemy import select
-from sqlalchemy.sql.expression import null
+from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import tool_shed.repository_types.util as rt_util
+from sqlalchemy import select
+from sqlalchemy.sql.expression import null
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
+from tool_shed.util import basic_util, hg_util
+from tool_shed.util import shed_util_common as suc
+from tool_shed.webapp.model import Repository
+
 from galaxy.util import checkers
 from galaxy.util.path import safe_relpath
-from tool_shed.tools.data_table_manager import ShedToolDataTableManager
-from tool_shed.util import (
-    basic_util,
-    hg_util,
-    shed_util_common as suc,
-)
-from tool_shed.webapp.model import Repository
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp

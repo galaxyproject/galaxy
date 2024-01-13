@@ -5,29 +5,15 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import (
-    get_file_peek,
-    nice_size,
-)
+from galaxy.datatypes.data import get_file_peek, nice_size
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasMetadata,
-)
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasMetadata
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 
 if TYPE_CHECKING:

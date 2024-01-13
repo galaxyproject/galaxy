@@ -1,8 +1,4 @@
-from .framework import (
-    selenium_test,
-    SeleniumTestCase,
-    UsesLibraryAssertions,
-)
+from .framework import SeleniumTestCase, UsesLibraryAssertions, selenium_test
 
 
 class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):

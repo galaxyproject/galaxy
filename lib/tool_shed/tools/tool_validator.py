@@ -3,16 +3,12 @@ import logging
 import os
 import tempfile
 
+from tool_shed.util import basic_util, hg_util, repository_util, tool_util
+
 from galaxy.tool_shed.tools.tool_validator import ToolValidator as GalaxyToolValidator
 from galaxy.tools import Tool
 from galaxy.util import unicodify
 from galaxy.util.tool_shed.xml_util import parse_xml
-from tool_shed.util import (
-    basic_util,
-    hg_util,
-    repository_util,
-    tool_util,
-)
 
 log = logging.getLogger(__name__)
 

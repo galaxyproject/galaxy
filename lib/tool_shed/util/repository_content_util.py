@@ -2,24 +2,18 @@ import os
 import shutil
 import tarfile
 import tempfile
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Optional
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.tool_shed.util.hg_util import clone_repository
-from galaxy.util import checkers
 from tool_shed.dependencies.attribute_handlers import (
     RepositoryDependencyAttributeHandler,
     ToolDependencyAttributeHandler,
 )
 from tool_shed.util import xml_util
-from tool_shed.util.commit_util import (
-    ChangeResponseT,
-    check_archive,
-    handle_directory_changes,
-)
+from tool_shed.util.commit_util import ChangeResponseT, check_archive, handle_directory_changes
+
+from galaxy.tool_shed.util.hg_util import clone_repository
+from galaxy.util import checkers
 
 if TYPE_CHECKING:
     from tool_shed.context import ProvidesRepositoriesContext

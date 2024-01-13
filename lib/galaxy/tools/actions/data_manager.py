@@ -1,6 +1,7 @@
 import logging
 
 from galaxy.model.base import transaction
+
 from . import DefaultToolAction
 
 log = logging.getLogger(__name__)

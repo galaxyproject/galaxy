@@ -1,38 +1,16 @@
 import logging
-from typing import (
-    Callable,
-    Dict,
-)
+from typing import Callable, Dict
 
 from sqlalchemy import select
-
-from galaxy import (
-    util,
-    web,
-)
-from galaxy.exceptions import (
-    AdminRequiredException,
-    ObjectNotFound,
-    RequestParameterMissingException,
-)
-from galaxy.util import (
-    pretty_print_time_interval,
-    UNKNOWN,
-)
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous_and_sessionless,
-    require_admin,
-)
 from tool_shed.managers import groups
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.webapp.model import (
-    Category,
-    Repository,
-    RepositoryCategoryAssociation,
-    RepositoryMetadata,
-    User,
-)
+from tool_shed.webapp.model import Category, Repository, RepositoryCategoryAssociation, RepositoryMetadata, User
+
+from galaxy import util, web
+from galaxy.exceptions import AdminRequiredException, ObjectNotFound, RequestParameterMissingException
+from galaxy.util import UNKNOWN, pretty_print_time_interval
+from galaxy.web import expose_api, expose_api_anonymous_and_sessionless, require_admin
+
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)

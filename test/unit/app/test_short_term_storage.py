@@ -3,10 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from galaxy.exceptions import (
-    MessageException,
-    ObjectNotFound,
-)
+from galaxy.exceptions import MessageException, ObjectNotFound
 from galaxy.short_term_storage import (
     ShortTermStorageConfiguration,
     ShortTermStorageManager,

@@ -1,11 +1,5 @@
 from base64 import b64decode
-from typing import (
-    Any,
-    Dict,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, Optional, Tuple, Union
 from urllib.parse import unquote
 
 from pydantic import BaseModel
@@ -15,10 +9,7 @@ from galaxy import exceptions
 from galaxy.auth import AuthManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import UserManager
-from galaxy.util import (
-    smart_str,
-    unicodify,
-)
+from galaxy.util import smart_str, unicodify
 from galaxy.web.framework.base import Request as GxRequest
 
 Request = Union[GxRequest, StartletteRequest]

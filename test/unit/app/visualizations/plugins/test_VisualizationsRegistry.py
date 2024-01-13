@@ -4,12 +4,10 @@ Test lib/galaxy/visualization/plugins/registry.
 import os
 
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.util import (
-    clean_multiline_string,
-    galaxy_directory,
-)
+from galaxy.util import clean_multiline_string, galaxy_directory
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+
 from . import VisualizationsBase_TestCase
 
 glx_dir = galaxy_directory()

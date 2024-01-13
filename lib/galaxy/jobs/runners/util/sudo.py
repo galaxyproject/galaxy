@@ -1,8 +1,5 @@
 import logging
-from subprocess import (
-    PIPE,
-    Popen,
-)
+from subprocess import PIPE, Popen
 
 SUDO_PATH = "/usr/bin/sudo"
 SUDO_PRESERVE_ENVIRONMENT_ARG = "-E"

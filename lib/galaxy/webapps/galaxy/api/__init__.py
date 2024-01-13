@@ -4,49 +4,20 @@ This module *does not* contain API routes. It exclusively contains dependencies 
 import inspect
 from enum import Enum
 from string import Template
-from typing import (
-    Any,
-    AsyncGenerator,
-    cast,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Type,
-    TypeVar,
-)
-from urllib.parse import (
-    urlencode,
-    urljoin,
-)
+from typing import Any, AsyncGenerator, NamedTuple, Optional, Tuple, Type, TypeVar, cast
+from urllib.parse import urlencode, urljoin
 
 from a2wsgi.wsgi import build_environ
 from a2wsgi.wsgi_typing import Environ
-from fastapi import (
-    APIRouter,
-    Form,
-    Header,
-    Query,
-    Request,
-    Response,
-    Security,
-)
+from fastapi import APIRouter, Form, Header, Query, Request, Response, Security
 from fastapi.exceptions import RequestValidationError
 from fastapi.params import Depends
 from fastapi.routing import APIRoute
-from fastapi.security import (
-    APIKeyCookie,
-    APIKeyHeader,
-    APIKeyQuery,
-    HTTPAuthorizationCredentials,
-    HTTPBearer,
-)
+from fastapi.security import APIKeyCookie, APIKeyHeader, APIKeyQuery, HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.datastructures import Headers
-from starlette.routing import (
-    Match,
-    NoMatchFound,
-)
+from starlette.routing import Match, NoMatchFound
 from starlette.types import Scope
 from typing_extensions import Literal
 
@@ -55,15 +26,9 @@ try:
 except ImportError:
     request_context = None  # type: ignore[assignment]
 
-from galaxy import (
-    app as galaxy_app,
-    model,
-    web,
-)
-from galaxy.exceptions import (
-    AdminRequiredException,
-    UserCannotRunAsException,
-)
+from galaxy import app as galaxy_app
+from galaxy import model, web
+from galaxy.exceptions import AdminRequiredException, UserCannotRunAsException
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
@@ -73,11 +38,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.galaxy.api.cbv import cbv
-from galaxy.work.context import (
-    GalaxyAbstractRequest,
-    GalaxyAbstractResponse,
-    SessionRequestContext,
-)
+from galaxy.work.context import GalaxyAbstractRequest, GalaxyAbstractResponse, SessionRequestContext
 
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)

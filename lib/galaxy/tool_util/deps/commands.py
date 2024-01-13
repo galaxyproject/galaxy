@@ -1,8 +1,8 @@
 import warnings
 
-from galaxy.util.commands import (  # noqa: F401
+from galaxy.util.commands import (
+    CommandLineException,  # noqa: F401
     argv_to_str,
-    CommandLineException,
     download_command,
     execute,
     redirect_aware_commmunicate,

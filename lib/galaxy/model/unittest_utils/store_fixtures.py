@@ -1,8 +1,5 @@
 """Fixtures for populating model stores."""
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 from uuid import uuid4
 
 from galaxy.model.orm.now import now

@@ -1,16 +1,7 @@
 import pytest
+from tool_shed.webapp.model import Repository, User
 
-from tool_shed.webapp.model import (
-    Repository,
-    User,
-)
-from ._util import (
-    provides_repositories_fixture,
-    random_name,
-    repository_fixture,
-    TestToolShedApp,
-    user_fixture,
-)
+from ._util import TestToolShedApp, provides_repositories_fixture, random_name, repository_fixture, user_fixture
 
 
 @pytest.fixture

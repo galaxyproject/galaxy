@@ -7,37 +7,16 @@ import inspect
 import itertools
 import warnings
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Type,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple, Type, Union, cast
 
 from fastapi import routing
 from fastapi.datastructures import DefaultPlaceholder
 from fastapi.dependencies.models import Dependant
-from fastapi.dependencies.utils import (
-    get_flat_dependant,
-    get_flat_params,
-)
+from fastapi.dependencies.utils import get_flat_dependant, get_flat_params
 from fastapi.encoders import jsonable_encoder
-from fastapi.openapi.constants import (
-    METHODS_WITH_BODY,
-    REF_PREFIX,
-)
+from fastapi.openapi.constants import METHODS_WITH_BODY, REF_PREFIX
 from fastapi.openapi.models import OpenAPI
-from fastapi.params import (
-    Body,
-    Param,
-)
+from fastapi.params import Body, Param
 from fastapi.responses import Response
 from fastapi.utils import (
     deep_dict_update,
@@ -46,15 +25,8 @@ from fastapi.utils import (
     is_body_allowed_for_status_code,
 )
 from pydantic import BaseModel
-from pydantic.fields import (
-    ModelField,
-    Undefined,
-)
-from pydantic.schema import (
-    field_schema,
-    get_flat_models_from_fields,
-    get_model_name_map,
-)
+from pydantic.fields import ModelField, Undefined
+from pydantic.schema import field_schema, get_flat_models_from_fields, get_model_name_map
 from pydantic.utils import lenient_issubclass
 from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute

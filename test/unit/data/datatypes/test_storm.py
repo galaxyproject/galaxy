@@ -1,14 +1,8 @@
 import pytest
 
-from galaxy.datatypes.text import (
-    StormCheck,
-    StormSample,
-)
-from .util import (
-    get_input_files,
-    MockDataset,
-    MockDatasetDataset,
-)
+from galaxy.datatypes.text import StormCheck, StormSample
+
+from .util import MockDataset, MockDatasetDataset, get_input_files
 
 
 @pytest.mark.parametrize(

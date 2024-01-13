@@ -6,10 +6,7 @@ import sqlite3
 import tempfile
 import zlib
 from threading import Lock
-from typing import (
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional
 
 from sqlitedict import SqliteDict
 

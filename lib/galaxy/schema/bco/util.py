@@ -4,12 +4,7 @@ We don't have a lot of functional code in this schema module so this may belong
 somewhere else in another galaxy-data package.
 """
 import hashlib
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 from galaxy.schema.bco import (
     BioComputeObject,
@@ -22,10 +17,8 @@ from galaxy.schema.bco import (
     GalaxyExtensionDomain,
     SoftwarePrerequisite,
 )
-from galaxy.schema.bco.execution_domain import (
-    ScriptItem,
-    Uri as ExecutionUri,
-)
+from galaxy.schema.bco.execution_domain import ScriptItem
+from galaxy.schema.bco.execution_domain import Uri as ExecutionUri
 from galaxy.util.path import StrOrBytesPath
 
 

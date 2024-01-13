@@ -3,23 +3,11 @@
 These are responsible for collecting and formatting a coherent set of metrics.
 """
 import os.path
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from abc import ABCMeta, abstractmethod
+from typing import Any, Dict, List, Optional, Union
 
 from .. import formatting
-from ..safety import (
-    DEFAULT_SAFETY,
-    Safety,
-)
+from ..safety import DEFAULT_SAFETY, Safety
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 InstrumentableT = Optional[Union[str, List[str]]]

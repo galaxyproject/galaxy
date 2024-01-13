@@ -1,15 +1,13 @@
 import logging
 import threading
 
+from tool_shed.util.readme_util import build_readme_files_dict
+
 from galaxy import util
 from galaxy.tool_shed.util import utility_container_manager
-from galaxy.tool_shed.util.container_util import (
-    generate_repository_dependencies_key_for_repository,
-    STRSEP,
-)
+from galaxy.tool_shed.util.container_util import STRSEP, generate_repository_dependencies_key_for_repository
 from galaxy.util import UNKNOWN
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
-from tool_shed.util.readme_util import build_readme_files_dict
 
 log = logging.getLogger(__name__)
 

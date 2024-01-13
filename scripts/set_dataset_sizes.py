@@ -10,10 +10,7 @@ import galaxy.config
 from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 parser = argparse.ArgumentParser()
 populate_config_args(parser)

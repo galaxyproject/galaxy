@@ -8,16 +8,7 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, NamedTuple, Optional, Union
 
 from sqlalchemy.orm.scoping import ScopedSession
 
@@ -26,14 +17,8 @@ from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections import builder
 from galaxy.model.tags import GalaxySessionlessTagHandler
-from galaxy.objectstore import (
-    ObjectStore,
-    persist_extra_files,
-)
-from galaxy.util import (
-    chunk_iterable,
-    ExecutionTimer,
-)
+from galaxy.objectstore import ObjectStore, persist_extra_files
+from galaxy.util import ExecutionTimer, chunk_iterable
 from galaxy.util.hash_util import HASH_NAME_MAP
 
 if TYPE_CHECKING:

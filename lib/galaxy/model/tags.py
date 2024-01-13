@@ -1,12 +1,6 @@
 import logging
 import re
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
@@ -17,17 +11,10 @@ import galaxy.model
 from galaxy.exceptions import ItemOwnershipException
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.util import (
-    strip_control_characters,
-    unicodify,
-)
+from galaxy.util import strip_control_characters, unicodify
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        GalaxySession,
-        Tag,
-        User,
-    )
+    from galaxy.model import GalaxySession, Tag, User
 
 log = logging.getLogger(__name__)
 

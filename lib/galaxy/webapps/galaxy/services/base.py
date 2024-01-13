@@ -1,40 +1,19 @@
 import mimetypes
 from tempfile import NamedTemporaryFile
-from typing import (
-    Any,
-    cast,
-    List,
-    NamedTuple,
-    Optional,
-)
+from typing import Any, List, NamedTuple, Optional, cast
 
 from celery.result import AsyncResult
 
-from galaxy.exceptions import (
-    AuthenticationRequired,
-    ConfigDoesNotAllowException,
-)
-from galaxy.managers.base import (
-    decode_with_security,
-    encode_with_security,
-    get_class,
-    get_object,
-    SortableManager,
-)
+from galaxy.exceptions import AuthenticationRequired, ConfigDoesNotAllowException
+from galaxy.managers.base import SortableManager, decode_with_security, encode_with_security, get_class, get_object
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.model_stores import create_objects_from_store
 from galaxy.model import User
-from galaxy.model.store import (
-    get_export_store_factory,
-    ModelExportStore,
-)
+from galaxy.model.store import ModelExportStore, get_export_store_factory
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageTarget,
-)
+from galaxy.short_term_storage import ShortTermStorageAllocator, ShortTermStorageTarget
 from galaxy.util import ready_name_for_url
 
 

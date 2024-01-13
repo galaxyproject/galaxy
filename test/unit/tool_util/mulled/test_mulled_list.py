@@ -6,6 +6,7 @@ from galaxy.tool_util.deps.mulled.mulled_list import (
     get_missing_envs,
     get_singularity_containers,
 )
+
 from ..util import external_dependency_management
 
 # def test_get_quay_containers():

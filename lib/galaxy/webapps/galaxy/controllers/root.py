@@ -12,6 +12,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.structured_app import StructuredApp
 from galaxy.webapps.base import controller
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+
 from ..api import depends
 
 log = logging.getLogger(__name__)

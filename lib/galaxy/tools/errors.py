@@ -5,10 +5,7 @@ import string
 
 import markupsafe
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
 

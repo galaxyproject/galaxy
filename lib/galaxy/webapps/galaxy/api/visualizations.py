@@ -8,29 +8,14 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import (
-    Body,
-    Path,
-    Query,
-    Response,
-    status,
-)
+from fastapi import Body, Path, Query, Response, status
 
-from galaxy import (
-    exceptions,
-    util,
-    web,
-)
+from galaxy import exceptions, util, web
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    SetSlugPayload,
-    ShareWithPayload,
-    ShareWithStatus,
-    SharingStatus,
-)
+from galaxy.schema.schema import SetSlugPayload, ShareWithPayload, ShareWithStatus, SharingStatus
 from galaxy.schema.visualization import (
     VisualizationIndexQueryPayload,
     VisualizationSortByEnum,
@@ -42,16 +27,13 @@ from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
-    depends,
     DependsOnTrans,
     IndexQueryTag,
     Router,
+    depends,
     search_query_param,
 )
-from galaxy.webapps.galaxy.api.common import (
-    LimitQueryParam,
-    OffsetQueryParam,
-)
+from galaxy.webapps.galaxy.api.common import LimitQueryParam, OffsetQueryParam
 from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
 log = logging.getLogger(__name__)

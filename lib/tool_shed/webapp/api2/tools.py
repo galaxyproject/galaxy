@@ -1,34 +1,23 @@
 import logging
 from typing import List
 
-from fastapi import (
-    Path,
-    Request,
-)
-
+from fastapi import Path, Request
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.tools import search
-from tool_shed.managers.trs import (
-    get_tool,
-    service_info,
-    tool_classes,
-)
+from tool_shed.managers.trs import get_tool, service_info, tool_classes
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util.shed_index import build_index
 from tool_shed_client.schema import BuildSearchIndexResponse
-from tool_shed_client.schema.trs import (
-    Tool,
-    ToolClass,
-    ToolVersion,
-)
+from tool_shed_client.schema.trs import Tool, ToolClass, ToolVersion
 from tool_shed_client.schema.trs_service_info import Service
+
 from . import (
-    depends,
     DependsOnTrans,
     RepositorySearchPageQueryParam,
     RepositorySearchPageSizeQueryParam,
     Router,
     ToolsIndexQueryParam,
+    depends,
 )
 
 log = logging.getLogger(__name__)

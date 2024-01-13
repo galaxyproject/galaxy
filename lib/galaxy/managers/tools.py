@@ -1,27 +1,15 @@
 import logging
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Optional, Union
 from uuid import UUID
 
-from sqlalchemy import (
-    select,
-    sql,
-)
+from sqlalchemy import select, sql
 
-from galaxy import (
-    exceptions,
-    model,
-)
+from galaxy import exceptions, model
 from galaxy.exceptions import DuplicatedIdentifierException
 from galaxy.model import DynamicTool
 from galaxy.tool_util.cwl import tool_proxy
-from .base import (
-    ModelManager,
-    raise_filter_err,
-)
+
+from .base import ModelManager, raise_filter_err
 from .executables import artifact_class
 
 log = logging.getLogger(__name__)

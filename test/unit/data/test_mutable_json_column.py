@@ -2,6 +2,7 @@ import copy
 
 from galaxy import model
 from galaxy.model.base import transaction
+
 from .test_galaxy_mapping import BaseModelTestCase
 
 

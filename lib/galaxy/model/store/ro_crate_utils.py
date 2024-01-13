@@ -1,15 +1,8 @@
 import logging
 import os
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
-from rocrate.model.computationalworkflow import (
-    ComputationalWorkflow,
-    WorkflowDescription,
-)
+from rocrate.model.computationalworkflow import ComputationalWorkflow, WorkflowDescription
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.file import File
 from rocrate.model.softwareapplication import SoftwareApplication

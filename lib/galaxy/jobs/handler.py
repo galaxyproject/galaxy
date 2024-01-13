@@ -5,36 +5,15 @@ import datetime
 import os
 import time
 from collections import defaultdict
-from queue import (
-    Empty,
-    Queue,
-)
-from typing import (
-    Dict,
-    List,
-    Tuple,
-    Type,
-    Union,
-)
+from queue import Empty, Queue
+from typing import Dict, List, Tuple, Type, Union
 
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql.expression import (
-    and_,
-    func,
-    not_,
-    null,
-    or_,
-    select,
-    true,
-)
+from sqlalchemy.sql.expression import and_, func, not_, null, or_, select, true
 
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
-from galaxy.jobs import (
-    JobDestination,
-    JobWrapper,
-    TaskWrapper,
-)
+from galaxy.jobs import JobDestination, JobWrapper, TaskWrapper
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.managers.jobs import get_jobs_to_check_at_startup
 from galaxy.model.base import transaction

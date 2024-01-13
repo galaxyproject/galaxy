@@ -7,6 +7,7 @@ from galaxy.tool_util.deps.mulled.mulled_update_singularity_containers import (
     singularity_container_test,
 )
 from galaxy.util.unittest_utils import skip_unless_executable
+
 from ..util import external_dependency_management
 
 

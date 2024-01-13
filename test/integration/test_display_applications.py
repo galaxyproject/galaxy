@@ -1,7 +1,9 @@
 from urllib.parse import parse_qsl
 
-from galaxy.tool_util.verify.wait import wait_on
 from galaxy_test.base.populators import DatasetPopulator
+
+from galaxy.tool_util.verify.wait import wait_on
+
 from .test_containerized_jobs import ContainerizedIntegrationTestCase
 
 

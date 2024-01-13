@@ -1,28 +1,15 @@
 import copy
 import logging
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
-from galaxy.util import (
-    asbool,
-    etree,
-)
 from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
     TOOL_DEPENDENCY_DEFINITION_FILENAME,
 )
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-    repository_util,
-    xml_util,
-)
+from tool_shed.util import hg_util, metadata_util, repository_util, xml_util
+
+from galaxy.util import asbool, etree
 
 if TYPE_CHECKING:
     from tool_shed.context import ProvidesRepositoriesContext

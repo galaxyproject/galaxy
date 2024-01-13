@@ -2,13 +2,9 @@ import os
 import shutil
 
 import pytest
-
 from galaxy_test.base.populators import skip_without_tool
-from ._base import (
-    BaseSwiftObjectStoreIntegrationTestCase,
-    files_count,
-    get_files,
-)
+
+from ._base import BaseSwiftObjectStoreIntegrationTestCase, files_count, get_files
 
 
 class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):

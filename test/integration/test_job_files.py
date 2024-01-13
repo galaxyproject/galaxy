@@ -19,16 +19,13 @@ import os
 import tempfile
 
 import requests
-from sqlalchemy import select
-
-from galaxy import model
-from galaxy.model.base import (
-    ensure_object_added_to_session,
-    transaction,
-)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from sqlalchemy import select
+
+from galaxy import model
+from galaxy.model.base import ensure_object_added_to_session, transaction
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")

@@ -9,15 +9,7 @@ import os
 import os.path
 import re
 import urllib.parse
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from webob.compat import cgi_FieldStorage
 
@@ -25,7 +17,6 @@ from galaxy import util
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
-    cached_id,
     Dataset,
     DatasetCollection,
     DatasetCollectionElement,
@@ -35,26 +26,18 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
+    cached_id,
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
-from galaxy.util import (
-    sanitize_param,
-    string_as_bool,
-    string_as_bool_or_none,
-    unicodify,
-    XML,
-)
+from galaxy.util import XML, sanitize_param, string_as_bool, string_as_bool_or_none, unicodify
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
-from . import (
-    dynamic_options,
-    history_query,
-    validation,
-)
+
+from . import dynamic_options, history_query, validation
 from .dataset_matcher import get_dataset_matcher_factory
 from .sanitize import ToolParameterSanitizer
 

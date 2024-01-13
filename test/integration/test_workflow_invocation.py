@@ -1,9 +1,6 @@
 """Integration tests for workflow syncing."""
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    WorkflowPopulator,
-)
+from galaxy_test.base.populators import DatasetPopulator, WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver import integration_util
 

@@ -5,10 +5,7 @@ from typing import Optional
 
 import psutil
 
-from galaxy import (
-    job_metrics,
-    model,
-)
+from galaxy import job_metrics, model
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch

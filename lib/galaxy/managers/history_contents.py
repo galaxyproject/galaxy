@@ -4,54 +4,20 @@ not easily made.
 """
 import json
 import logging
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
-from sqlalchemy import (
-    asc,
-    cast,
-    desc,
-    false,
-    func,
-    Integer,
-    literal,
-    nullsfirst,
-    nullslast,
-    select,
-    sql,
-    true,
-)
-from sqlalchemy.orm import (
-    joinedload,
-    undefer,
-)
+from sqlalchemy import Integer, asc, cast, desc, false, func, literal, nullsfirst, nullslast, select, sql, true
+from sqlalchemy.orm import joinedload, undefer
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
-)
-from galaxy.managers import (
-    annotatable,
-    base,
-    deletable,
-    genomes,
-    hdas,
-    hdcas,
-    taggable,
-    tools,
-)
+from galaxy import exceptions as glx_exceptions
+from galaxy import model
+from galaxy.managers import annotatable, base, deletable, genomes, hdas, hdcas, taggable, tools
 from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import listify
-from .base import (
-    parse_bool,
-    raise_filter_err,
-    Serializer,
-)
+
+from .base import Serializer, parse_bool, raise_filter_err
 
 log = logging.getLogger(__name__)
 

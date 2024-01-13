@@ -13,9 +13,9 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
     update_config_for_staging,
     write_to_file,
 )
-from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
+from galaxy.model.unittest_utils.model_testing_utils import (
     url_factory,
-)
+)  # noqa: F401 - url_factory is a fixture we have to import explicitly
 from galaxy.util import in_packages
 from galaxy.util.resources import resource_path
 

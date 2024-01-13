@@ -1,14 +1,7 @@
-from os.path import (
-    abspath,
-    exists,
-    join,
-)
+from os.path import abspath, exists, join
 
 from . import NullDependency
-from .galaxy_packages import (
-    BaseGalaxyPackageDependencyResolver,
-    ToolShedDependency,
-)
+from .galaxy_packages import BaseGalaxyPackageDependencyResolver, ToolShedDependency
 from .resolver_mixins import UsesInstalledRepositoriesMixin
 
 

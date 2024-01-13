@@ -33,10 +33,7 @@ from .mulled_build import (
     get_affected_packages,
     mull_targets,
 )
-from .util import (
-    quay_versions,
-    version_sorted,
-)
+from .util import quay_versions, version_sorted
 
 
 def _fetch_repo_data(args):

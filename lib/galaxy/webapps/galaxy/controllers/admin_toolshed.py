@@ -3,10 +3,7 @@ import logging
 import os
 from functools import wraps
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util, web
 from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
@@ -17,6 +14,7 @@ from galaxy.tool_shed.util.repository_util import (
 )
 from galaxy.util import unicodify
 from galaxy.util.tool_shed import common_util
+
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)

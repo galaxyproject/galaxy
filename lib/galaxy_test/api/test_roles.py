@@ -1,17 +1,11 @@
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
-from galaxy.exceptions import error_codes
-from galaxy_test.base.api_asserts import (
-    assert_error_code_is,
-    assert_has_keys,
-    assert_status_code_is,
-)
+from galaxy_test.base.api_asserts import assert_error_code_is, assert_has_keys, assert_status_code_is
 from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import DatasetPopulator
+
+from galaxy.exceptions import error_codes
+
 from ._framework import ApiTestCase
 
 

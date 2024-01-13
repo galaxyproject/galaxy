@@ -1,13 +1,6 @@
-from typing import (
-    Any,
-    List,
-    Optional,
-)
+from typing import Any, List, Optional
 
-from pydantic import (
-    Extra,
-    Field,
-)
+from pydantic import Extra, Field
 from typing_extensions import Annotated
 
 from galaxy.schema.schema import Model

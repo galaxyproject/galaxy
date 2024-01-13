@@ -5,20 +5,12 @@ attribute.
 """
 import abc
 import threading
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Type,
-    Union,
-)
+from typing import Dict, List, Optional, Type, Union
 
 import requests
 from axe_selenium_python import Axe
-from selenium.common.exceptions import (
-    NoSuchElementException,
-    TimeoutException as SeleniumTimeoutException,
-)
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -28,11 +20,8 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from galaxy.navigation.components import Target
-from .axe_results import (
-    AxeResults,
-    NullAxeResults,
-    RealAxeResults,
-)
+
+from .axe_results import AxeResults, NullAxeResults, RealAxeResults
 
 UNSPECIFIED_TIMEOUT = object()
 

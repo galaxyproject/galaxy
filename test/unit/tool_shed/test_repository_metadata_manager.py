@@ -1,6 +1,7 @@
 from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.webapp.model import Repository
+
 from ._util import upload_directories_to_repository
 
 

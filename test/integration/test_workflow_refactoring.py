@@ -1,11 +1,15 @@
 import contextlib
 import json
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import Any, Dict, List
 
+from galaxy_test.base.populators import WorkflowPopulator
+from galaxy_test.base.uses_shed_api import UsesShedApi
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_NESTED_RUNTIME_PARAMETER,
+    WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
+)
+from galaxy_test.driver import integration_util
 from sqlalchemy import select
 
 from galaxy.managers.context import ProvidesAppContext
@@ -23,14 +27,6 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
-from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.base.uses_shed_api import UsesShedApi
-from galaxy_test.base.workflow_fixtures import (
-    WORKFLOW_NESTED_RUNTIME_PARAMETER,
-    WORKFLOW_NESTED_SIMPLE,
-    WORKFLOW_NESTED_WITH_MULTIPLE_VERSIONS_TOOL,
-)
-from galaxy_test.driver import integration_util
 
 REFACTORING_SIMPLE_TEST = """
 class: GalaxyWorkflow

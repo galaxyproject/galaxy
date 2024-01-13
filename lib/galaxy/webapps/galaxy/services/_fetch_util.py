@@ -1,16 +1,10 @@
 import logging
 import os
 
-from galaxy.actions.library import (
-    validate_path_upload,
-    validate_server_directory_upload,
-)
+from galaxy.actions.library import validate_path_upload, validate_server_directory_upload
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.files.uris import validate_non_local
-from galaxy.model.store.discover import (
-    get_required_item,
-    replace_request_syntax_sugar,
-)
+from galaxy.model.store.discover import get_required_item, replace_request_syntax_sugar
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.tools.actions.upload_common import validate_datatype_extension
 from galaxy.util import relpath

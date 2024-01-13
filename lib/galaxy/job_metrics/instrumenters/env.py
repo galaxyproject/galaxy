@@ -1,14 +1,11 @@
 """The module describes the ``env`` job metrics plugin."""
 import logging
 import re
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from . import InstrumentPlugin
 from ..formatting import JobMetricFormatter
 from ..safety import Safety
+from . import InstrumentPlugin
 
 log = logging.getLogger(__name__)
 

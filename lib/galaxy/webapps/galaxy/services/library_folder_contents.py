@@ -2,11 +2,7 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-from galaxy import (
-    exceptions,
-    model,
-    util,
-)
+from galaxy import exceptions, model, util
 from galaxy.managers import base as managers_base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.folders import FolderManager

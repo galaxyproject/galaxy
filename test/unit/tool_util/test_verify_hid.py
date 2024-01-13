@@ -1,8 +1,4 @@
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-)
+from typing import Callable, Dict, Optional
 
 from galaxy.tool_util.unittest_utils import t_data_downloader_for
 from galaxy.tool_util.verify.interactor import verify_hid

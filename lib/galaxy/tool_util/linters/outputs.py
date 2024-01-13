@@ -3,12 +3,10 @@ from typing import TYPE_CHECKING
 
 from packaging.version import Version
 
-from galaxy.util import (
-    etree,
-    string_as_bool,
-)
-from ._util import is_valid_cheetah_placeholder
+from galaxy.util import etree, string_as_bool
+
 from ..parser.output_collection_def import NAMED_PATTERNS
+from ._util import is_valid_cheetah_placeholder
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext

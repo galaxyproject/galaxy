@@ -5,58 +5,26 @@ Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
 import logging
-from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Set, Union, cast
 
-from sqlalchemy import (
-    asc,
-    desc,
-    exists,
-    false,
-    func,
-    select,
-    true,
-)
+from sqlalchemy import asc, desc, exists, false, func, select, true
 from typing_extensions import Literal
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
-)
-from galaxy.managers import (
-    deletable,
-    hdas,
-    history_contents,
-    sharable,
-)
+from galaxy import exceptions as glx_exceptions
+from galaxy import model
+from galaxy.managers import deletable, hdas, history_contents, sharable
 from galaxy.managers.base import (
-    combine_lists,
     ModelDeserializingError,
     Serializer,
     SortableManager,
     StorageCleanerManager,
+    combine_lists,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
-from galaxy.model import (
-    History,
-    HistoryUserShareAssociation,
-    Job,
-)
+from galaxy.model import History, HistoryUserShareAssociation, Job
 from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    ExportObjectMetadata,
-    ExportObjectType,
-    HDABasicInfo,
-    ShareHistoryExtra,
-)
+from galaxy.schema.schema import ExportObjectMetadata, ExportObjectType, HDABasicInfo, ShareHistoryExtra
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemCleanupError,

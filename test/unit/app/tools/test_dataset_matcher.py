@@ -1,14 +1,9 @@
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
-from galaxy.tools.parameters import (
-    basic,
-    dataset_matcher,
-)
-from galaxy.util import (
-    bunch,
-    XML,
-)
+from galaxy.tools.parameters import basic, dataset_matcher
+from galaxy.util import XML, bunch
 from galaxy.util.unittest import TestCase
+
 from .test_data_parameters import MockHistoryDatasetAssociation
 
 

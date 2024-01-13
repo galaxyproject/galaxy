@@ -3,28 +3,15 @@ Proteomics Datatypes
 """
 import logging
 import re
-from typing import (
-    IO,
-    List,
-    Optional,
-)
+from typing import IO, List, Optional
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
-from galaxy.datatypes.protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
+from galaxy.datatypes.protocols import DatasetProtocol, HasExtraFilesAndMetadata
 from galaxy.datatypes.sequence import Sequence
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    FilePrefix,
-)
-from galaxy.datatypes.tabular import (
-    Tabular,
-    TabularData,
-)
+from galaxy.datatypes.sniff import FilePrefix, build_sniff_from_prefix
+from galaxy.datatypes.tabular import Tabular, TabularData
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 

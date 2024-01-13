@@ -18,42 +18,28 @@ import string
 import subprocess
 import sys
 from sys import platform as _platform
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-)
+from typing import Any, Dict, Iterable, List
 
 import yaml
 
 from galaxy.tool_util.deps import installable
-from galaxy.tool_util.deps.conda_util import (
-    best_search_result,
-    CondaContext,
-    CondaTarget,
-)
+from galaxy.tool_util.deps.conda_util import CondaContext, CondaTarget, best_search_result
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
-from galaxy.util import (
-    commands,
-    download_to_file,
-    safe_makedirs,
-    shlex_join,
-    unicodify,
-)
+from galaxy.util import commands, download_to_file, safe_makedirs, shlex_join, unicodify
+
+from ..conda_compat import MetaData
 from ._cli import arg_parser
 from .util import (
+    PrintProgress,
     build_target,
     conda_build_target_str,
     create_repository,
     default_mulled_conda_channels_from_env,
     get_files_from_conda_package,
-    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
 )
-from ..conda_compat import MetaData
 
 log = logging.getLogger(__name__)
 

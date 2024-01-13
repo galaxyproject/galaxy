@@ -1,14 +1,5 @@
 import threading
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    TYPE_CHECKING,
-    TypeVar,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, Generic, List, Optional, TypeVar, Union
 
 from typing_extensions import Protocol
 
@@ -16,10 +7,7 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.tool_shed_install import HasToolBox
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
-from galaxy.tool_util.data import (
-    OutputDataset,
-    ToolDataTableManager,
-)
+from galaxy.tool_util.data import OutputDataset, ToolDataTableManager
 from galaxy.tool_util.toolbox.base import AbstractToolBox
 
 if TYPE_CHECKING:

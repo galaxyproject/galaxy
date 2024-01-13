@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 
-import argparse, os, shutil, subprocess, sys, tempfile, fileinput
+import argparse
 import fileinput
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
 from glob import glob
+
 
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )

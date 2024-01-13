@@ -4,14 +4,8 @@ from uuid import uuid4
 
 import yaml
 
-from galaxy.tool_util.cwl import (
-    tool_proxy,
-    workflow_proxy,
-)
-from galaxy.tool_util.cwl.parser import (
-    _to_cwl_tool_object,
-    tool_proxy_from_persistent_representation,
-)
+from galaxy.tool_util.cwl import tool_proxy, workflow_proxy
+from galaxy.tool_util.cwl.parser import _to_cwl_tool_object, tool_proxy_from_persistent_representation
 from galaxy.tool_util.parser.cwl import CwlToolSource
 from galaxy.tool_util.parser.factory import get_tool_source as _get_tool_source
 from galaxy.util import galaxy_directory

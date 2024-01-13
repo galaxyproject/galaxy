@@ -1,9 +1,7 @@
 import tempfile
 
-from galaxy.datatypes.tabular import (
-    MAX_DATA_LINES,
-    Tabular,
-)
+from galaxy.datatypes.tabular import MAX_DATA_LINES, Tabular
+
 from .util import MockDataset
 
 

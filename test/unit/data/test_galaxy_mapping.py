@@ -6,10 +6,7 @@ from tempfile import NamedTemporaryFile
 from typing import List
 
 import pytest
-from sqlalchemy import (
-    inspect,
-    select,
-)
+from sqlalchemy import inspect, select
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -18,10 +15,7 @@ from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.model.orm.util import (
-    add_object_to_object_session,
-    get_object_session,
-)
+from galaxy.model.orm.util import add_object_to_object_session, get_object_session
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.objectstore import QuotaSourceMap
 from galaxy.util.unittest import TestCase

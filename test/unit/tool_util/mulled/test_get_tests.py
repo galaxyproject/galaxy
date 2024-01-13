@@ -14,6 +14,7 @@ from galaxy.tool_util.deps.mulled.get_tests import (
     prepend_anaconda_url,
 )
 from galaxy.util import smart_str
+
 from ..util import external_dependency_management
 
 TEST_RECIPE = r"""

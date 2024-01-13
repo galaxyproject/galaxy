@@ -1,19 +1,9 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field, Required
 from typing_extensions import Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-    ModelClassField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, EncodedDatabaseIdField, ModelClassField
 from galaxy.schema.schema import Model
 
 GROUP_MODEL_CLASS = Literal["Group"]

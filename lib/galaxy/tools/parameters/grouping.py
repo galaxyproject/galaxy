@@ -5,28 +5,12 @@ import io
 import logging
 import os
 import unicodedata
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Mapping, Optional
 
 from galaxy.datatypes import data
-from galaxy.exceptions import (
-    AdminRequiredException,
-    ConfigDoesNotAllowException,
-)
+from galaxy.exceptions import AdminRequiredException, ConfigDoesNotAllowException
 from galaxy.files.uris import stream_to_file
-from galaxy.util import (
-    asbool,
-    inflector,
-    relpath,
-    sanitize_for_filename,
-)
+from galaxy.util import asbool, inflector, relpath, sanitize_for_filename
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext

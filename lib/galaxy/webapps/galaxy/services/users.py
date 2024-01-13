@@ -1,47 +1,20 @@
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
-from sqlalchemy import (
-    false,
-    or_,
-    select,
-    true,
-)
+from sqlalchemy import false, or_, select, true
 
 import galaxy.managers.base as managers_base
-from galaxy import (
-    exceptions as glx_exceptions,
-    util,
-)
+from galaxy import exceptions as glx_exceptions
+from galaxy import util
 from galaxy.managers import api_keys
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
-from galaxy.managers.users import (
-    UserDeserializer,
-    UserManager,
-    UserSerializer,
-)
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.users import UserDeserializer, UserManager, UserSerializer
 from galaxy.model import User
 from galaxy.queue_worker import send_local_control_task
 from galaxy.quota import QuotaAgent
 from galaxy.schema import APIKeyModel
-from galaxy.schema.schema import (
-    AnonUserModel,
-    DetailedUserModel,
-    FlexibleUserIdType,
-    LimitedUserModel,
-    UserModel,
-)
+from galaxy.schema.schema import AnonUserModel, DetailedUserModel, FlexibleUserIdType, LimitedUserModel, UserModel
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase, async_task_summary
 
 
 class UsersService(ServiceBase):

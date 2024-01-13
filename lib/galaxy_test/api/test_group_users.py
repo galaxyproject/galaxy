@@ -1,13 +1,7 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from galaxy_test.api._framework import ApiTestCase
-from galaxy_test.base.decorators import (
-    requires_admin,
-    using_requirement,
-)
+from galaxy_test.base.decorators import requires_admin, using_requirement
 from galaxy_test.base.populators import DatasetPopulator
 
 

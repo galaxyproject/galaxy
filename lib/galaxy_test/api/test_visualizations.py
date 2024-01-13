@@ -1,10 +1,10 @@
 import json
 import uuid
 
-from requests import put
-
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
+from requests import put
+
 from ._framework import ApiTestCase
 
 INDEX_KEYS = ["id", "title", "type", "dbkey"]

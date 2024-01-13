@@ -1,17 +1,8 @@
 import logging
 from datetime import datetime
-from typing import (
-    Any,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Generator, List, Optional, Tuple
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import BaseModel, Field
 
 from galaxy.structured_app import MinimalManagerApp
 

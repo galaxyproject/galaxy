@@ -1,9 +1,6 @@
 import pydantic
 
-from galaxy.tool_util.toolbox.views.definitions import (
-    StaticToolBoxView,
-    StaticToolBoxViewTypeEnum,
-)
+from galaxy.tool_util.toolbox.views.definitions import StaticToolBoxView, StaticToolBoxViewTypeEnum
 
 EXAMPLE_1 = {
     "id": "rna",

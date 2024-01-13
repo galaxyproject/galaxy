@@ -1,10 +1,10 @@
 from urllib.parse import urljoin
 
-from requests import get
-
 from galaxy_test.base.api_util import baseauth_headers
 from galaxy_test.base.decorators import requires_new_user
 from galaxy_test.base.populators import skip_without_tool
+from requests import get
+
 from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"

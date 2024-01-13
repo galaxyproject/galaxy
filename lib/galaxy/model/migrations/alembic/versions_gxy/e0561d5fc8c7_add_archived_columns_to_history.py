@@ -7,10 +7,7 @@ Create Date: 2023-05-03 11:57:58.710098
 """
 import sqlalchemy as sa
 
-from galaxy.model.database_object_names import (
-    build_foreign_key_name,
-    build_index_name,
-)
+from galaxy.model.database_object_names import build_foreign_key_name, build_index_name
 from galaxy.model.migrations.util import (
     add_column,
     create_foreign_key,

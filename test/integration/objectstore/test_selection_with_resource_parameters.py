@@ -6,14 +6,9 @@ import string
 from sqlalchemy import select
 
 from galaxy.model import Dataset
-from galaxy.model.unittest_utils.store_fixtures import (
-    deferred_hda_model_store_dict,
-    one_hda_model_store_dict,
-)
-from ._base import (
-    BaseObjectStoreIntegrationTestCase,
-    files_count,
-)
+from galaxy.model.unittest_utils.store_fixtures import deferred_hda_model_store_dict, one_hda_model_store_dict
+
+from ._base import BaseObjectStoreIntegrationTestCase, files_count
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")

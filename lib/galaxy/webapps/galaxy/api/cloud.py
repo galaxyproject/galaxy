@@ -4,27 +4,15 @@ API operations on Cloud-based storages, such as Amazon Simple Storage Service (S
 
 import logging
 
-from fastapi import (
-    Body,
-    Response,
-    status,
-)
+from fastapi import Body, Response, status
 from pydantic import Required
 
 from galaxy.managers.cloud import CloudManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetSerializer
-from galaxy.schema.cloud import (
-    CloudDatasets,
-    CloudDatasetsResponse,
-    CloudObjects,
-    DatasetSummaryList,
-    StatusCode,
-)
-from galaxy.webapps.galaxy.api import (
-    depends,
-    Router,
-)
+from galaxy.schema.cloud import CloudDatasets, CloudDatasetsResponse, CloudObjects, DatasetSummaryList, StatusCode
+from galaxy.webapps.galaxy.api import Router, depends
+
 from . import DependsOnTrans
 
 log = logging.getLogger(__name__)

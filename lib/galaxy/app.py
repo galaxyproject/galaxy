@@ -6,14 +6,7 @@ import signal
 import sys
 import threading
 import time
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -22,12 +15,7 @@ import galaxy.model
 import galaxy.model.security
 import galaxy.queues
 import galaxy.security
-from galaxy import (
-    auth,
-    config,
-    jobs,
-    tools,
-)
+from galaxy import auth, config, jobs, tools
 from galaxy.celery.base_task import (
     GalaxyTaskBeforeStart,
     GalaxyTaskBeforeStartUserRateLimitPostgres,
@@ -52,61 +40,27 @@ from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.tasks import (
-    AsyncTasksManager,
-    CeleryAsyncTasksManager,
-)
+from galaxy.managers.tasks import AsyncTasksManager, CeleryAsyncTasksManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
-from galaxy.managers.workflows import (
-    WorkflowContentsManager,
-    WorkflowsManager,
-)
-from galaxy.model import (
-    custom_types,
-    mapping,
-)
-from galaxy.model.base import (
-    ModelMapping,
-    SharedModelMapping,
-)
+from galaxy.managers.workflows import WorkflowContentsManager, WorkflowsManager
+from galaxy.model import custom_types, mapping
+from galaxy.model.base import ModelMapping, SharedModelMapping
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
-from galaxy.model.database_utils import (
-    database_exists,
-    is_one_database,
-    is_postgres,
-)
+from galaxy.model.database_utils import database_exists, is_one_database, is_postgres
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.migrations import verify_databases
 from galaxy.model.orm.engine_factory import build_engine
-from galaxy.model.scoped_session import (
-    galaxy_scoped_session,
-    install_model_scoped_session,
-)
+from galaxy.model.scoped_session import galaxy_scoped_session, install_model_scoped_session
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.model.tool_shed_install import (
-    HasToolBox,
-    mapping as install_mapping,
-)
-from galaxy.objectstore import (
-    BaseObjectStore,
-    build_object_store_from_config,
-)
-from galaxy.queue_worker import (
-    GalaxyQueueWorker,
-    reload_toolbox,
-    send_local_control_task,
-)
-from galaxy.quota import (
-    get_quota_agent,
-    QuotaAgent,
-)
+from galaxy.model.tool_shed_install import HasToolBox
+from galaxy.model.tool_shed_install import mapping as install_mapping
+from galaxy.objectstore import BaseObjectStore, build_object_store_from_config
+from galaxy.queue_worker import GalaxyQueueWorker, reload_toolbox, send_local_control_task
+from galaxy.quota import QuotaAgent, get_quota_agent
 from galaxy.schema.fields import BaseDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.security.vault import (
-    Vault,
-    VaultFactory,
-)
+from galaxy.security.vault import Vault, VaultFactory
 from galaxy.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageConfiguration,
@@ -129,40 +83,23 @@ from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import (
-    build_tours_registry,
-    ToursRegistry,
-)
-from galaxy.util import (
-    ExecutionTimer,
-    heartbeat,
-    listify,
-    StructuredExecutionTimer,
-)
+from galaxy.tours import ToursRegistry, build_tours_registry
+from galaxy.util import ExecutionTimer, StructuredExecutionTimer, heartbeat, listify
 from galaxy.util.task import IntervalTask
 from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.web import (
-    legacy_url_for,
-    url_for,
-)
+from galaxy.web import legacy_url_for, url_for
 from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
-from galaxy.web_stack import (
-    application_stack_instance,
-    ApplicationStack,
-)
+from galaxy.web_stack import ApplicationStack, application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow import scheduling_manager
 from galaxy.workflow.trs_proxy import TrsProxy
+
 from .di import Container
-from .structured_app import (
-    BasicSharedApp,
-    MinimalManagerApp,
-    StructuredApp,
-)
+from .structured_app import BasicSharedApp, MinimalManagerApp, StructuredApp
 
 log = logging.getLogger(__name__)
 app = None

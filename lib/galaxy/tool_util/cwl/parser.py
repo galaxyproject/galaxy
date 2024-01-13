@@ -8,30 +8,19 @@ import copy
 import json
 import logging
 import os
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
-from typing import (
-    Dict,
-    List,
-    overload,
-    Union,
-)
+from abc import ABCMeta, abstractmethod
+from typing import Dict, List, Union, overload
 from uuid import uuid4
 
-from typing_extensions import (
-    Literal,
-    TypedDict,
-)
+from typing_extensions import Literal, TypedDict
 
 from galaxy.exceptions import MessageException
-from galaxy.util import (
-    listify,
-    safe_makedirs,
-)
+from galaxy.util import listify, safe_makedirs
 from galaxy.util.bunch import Bunch
+
 from .cwltool_deps import (
+    RuntimeContext,
+    StdFsAccess,
     beta_relaxed_fmt_check,
     ensure_cwltool_available,
     getdefault,
@@ -40,24 +29,19 @@ from .cwltool_deps import (
     process,
     ref_resolver,
     relink_initialworkdir,
-    RuntimeContext,
     sourceline,
-    StdFsAccess,
     visit_class,
     yaml_no_ts,
 )
 from .representation import (
-    field_to_field_type,
     FIELD_TYPE_REPRESENTATION,
     INPUT_TYPE,
-    type_descriptions_for_field_types,
     USE_FIELD_TYPES,
     USE_STEP_PARAMETERS,
+    field_to_field_type,
+    type_descriptions_for_field_types,
 )
-from .schema import (
-    non_strict_non_validating_schema_loader,
-    schema_loader,
-)
+from .schema import non_strict_non_validating_schema_loader, schema_loader
 from .util import SECONDARY_FILES_EXTRA_PREFIX
 
 log = logging.getLogger(__name__)

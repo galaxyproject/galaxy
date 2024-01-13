@@ -1,8 +1,6 @@
 import json
 
 import yaml
-from selenium.webdriver.common.by import By
-
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
@@ -18,13 +16,9 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
 )
-from .framework import (
-    managed_history,
-    RunsWorkflows,
-    selenium_test,
-    SeleniumTestCase,
-    UsesHistoryItemAssertions,
-)
+from selenium.webdriver.common.by import By
+
+from .framework import RunsWorkflows, SeleniumTestCase, UsesHistoryItemAssertions, managed_history, selenium_test
 
 
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):

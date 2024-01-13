@@ -2,45 +2,22 @@ import logging
 from json import loads
 
 from markupsafe import escape
-from paste.httpexceptions import (
-    HTTPBadRequest,
-    HTTPNotFound,
-)
-from sqlalchemy import (
-    false,
-    or_,
-    text,
-    true,
-)
+from paste.httpexceptions import HTTPBadRequest, HTTPNotFound
+from sqlalchemy import false, or_, text, true
 
-from galaxy import (
-    model,
-    web,
-)
+from galaxy import model, web
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.model.base import transaction
-from galaxy.model.item_attrs import (
-    UsesAnnotations,
-    UsesItemRatings,
-)
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
-from galaxy.visualization.genomes import (
-    decode_dbkey,
-    GenomeRegion,
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-    SharableMixin,
-    UsesVisualizationMixin,
-)
+from galaxy.visualization.genomes import GenomeRegion, decode_dbkey
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.webapps.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
+
 from ..api import depends
 
 log = logging.getLogger(__name__)

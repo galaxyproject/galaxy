@@ -5,17 +5,11 @@ import json
 import logging
 import os
 from enum import Enum
-from typing import (
-    Any,
-    NamedTuple,
-    Optional,
-)
+from typing import Any, NamedTuple, Optional
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.util import (
-    safe_makedirs,
-    string_as_bool,
-)
+from galaxy.util import safe_makedirs, string_as_bool
+
 from .util import set_basename_and_derived_properties
 
 log = logging.getLogger(__name__)

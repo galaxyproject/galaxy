@@ -1,12 +1,6 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field, Required
 
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model

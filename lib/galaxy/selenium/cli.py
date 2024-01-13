@@ -7,11 +7,7 @@ HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwi
 
 from urllib.parse import urljoin
 
-from .driver_factory import (
-    get_local_driver,
-    get_remote_driver,
-    virtual_display_if_enabled,
-)
+from .driver_factory import get_local_driver, get_remote_driver, virtual_display_if_enabled
 from .navigates_galaxy import NavigatesGalaxy
 
 

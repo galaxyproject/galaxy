@@ -4,19 +4,13 @@ import subprocess
 import time
 from dataclasses import dataclass
 from string import Template
-from typing import (
-    Any,
-    Dict,
-    Optional,
-)
+from typing import Any, Dict, Optional
 
 from typing_extensions import Protocol
 
-from galaxy.util import (
-    RWXR_XR_X,
-    unicodify,
-)
+from galaxy.util import RWXR_XR_X, unicodify
 from galaxy.util.resources import resource_string
+
 from ..fork_safe_write import fork_safe_write
 
 log = logging.getLogger(__name__)

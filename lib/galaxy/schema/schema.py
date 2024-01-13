@@ -1,37 +1,13 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
 import re
-from datetime import (
-    date,
-    datetime,
-)
+from datetime import date, datetime
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from uuid import UUID
 
-from pydantic import (
-    AnyHttpUrl,
-    AnyUrl,
-    BaseModel,
-    ConstrainedStr,
-    Extra,
-    Field,
-    Json,
-    Required,
-    UUID4,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from pydantic import UUID4, AnyHttpUrl, AnyUrl, BaseModel, ConstrainedStr, Extra, Field, Json, Required
+from typing_extensions import Annotated, Literal
 
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -41,10 +17,7 @@ from galaxy.schema.fields import (
     LibraryFolderDatabaseIdField,
     ModelClassField,
 )
-from galaxy.schema.types import (
-    OffsetNaiveDatetime,
-    RelativeUrl,
-)
+from galaxy.schema.types import OffsetNaiveDatetime, RelativeUrl
 
 USER_MODEL_CLASS = Literal["User"]
 GROUP_MODEL_CLASS = Literal["Group"]

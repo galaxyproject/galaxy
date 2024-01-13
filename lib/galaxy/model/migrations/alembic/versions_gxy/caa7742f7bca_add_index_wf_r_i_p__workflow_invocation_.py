@@ -6,10 +6,7 @@ Create Date: 2023-03-07 15:10:44.943542
 
 """
 from galaxy.model.database_object_names import build_index_name
-from galaxy.model.migrations.util import (
-    create_index,
-    drop_index,
-)
+from galaxy.model.migrations.util import create_index, drop_index
 
 # revision identifiers, used by Alembic.
 revision = "caa7742f7bca"

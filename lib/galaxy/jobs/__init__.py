@@ -14,77 +14,39 @@ import sys
 import time
 import traceback
 from json import loads
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List
 
 import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 from sqlalchemy import select
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model, util
 from galaxy.datatypes import sniff
-from galaxy.exceptions import (
-    MessageException,
-    ObjectInvalid,
-    ObjectNotFound,
-)
+from galaxy.exceptions import MessageException, ObjectInvalid, ObjectNotFound
 from galaxy.files import ProvidesUserFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
-from galaxy.job_execution.output_collect import (
-    collect_extra_files,
-    collect_shrinked_content_from_path,
-)
+from galaxy.job_execution.output_collect import collect_extra_files, collect_shrinked_content_from_path
 from galaxy.job_execution.setup import (
-    create_working_directory_for_job,
-    ensure_configs_directory,
-    JobIO,
     TOOL_PROVIDED_JOB_METADATA_FILE,
     TOOL_PROVIDED_JOB_METADATA_KEYS,
+    JobIO,
+    create_working_directory_for_job,
+    ensure_configs_directory,
 )
-from galaxy.jobs.mapper import (
-    JobMappingException,
-    JobRunnerMapper,
-)
-from galaxy.jobs.runners import (
-    BaseJobRunner,
-    JobState,
-)
+from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
+from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model import (
-    Job,
-    store,
-    Task,
-)
+from galaxy.model import Job, Task, store
 from galaxy.model.base import transaction
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_util.deps import requirements
-from galaxy.tool_util.output_checker import (
-    check_output,
-    DETECTED_JOB_STATE,
-)
-from galaxy.tools.evaluation import (
-    PartialToolEvaluator,
-    ToolEvaluator,
-)
-from galaxy.util import (
-    etree,
-    parse_xml_string,
-    RWXRWXRWX,
-    safe_makedirs,
-    unicodify,
-)
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE, check_output
+from galaxy.tools.evaluation import PartialToolEvaluator, ToolEvaluator
+from galaxy.util import RWXRWXRWX, etree, parse_xml_string, safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.path import external_chown

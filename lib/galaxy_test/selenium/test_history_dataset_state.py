@@ -1,14 +1,10 @@
 from galaxy.model.unittest_utils.store_fixtures import (
+    TEST_SOURCE_URI,
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
-    TEST_SOURCE_URI,
 )
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-    UsesHistoryItemAssertions,
-)
+
+from .framework import SeleniumTestCase, UsesHistoryItemAssertions, managed_history, selenium_test
 
 BUTTON_TOOLTIPS = {
     "display": "View data",

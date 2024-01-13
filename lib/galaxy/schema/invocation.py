@@ -1,43 +1,21 @@
 from datetime import datetime
 from enum import Enum
-from typing import (
-    Any,
-    Dict,
-    Generic,
-    List,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
 
-from pydantic import (
-    BaseModel,
-    Extra,
-    Field,
-    Required,
-    UUID1,
-    UUID4,
-)
+from pydantic import UUID1, UUID4, BaseModel, Extra, Field, Required
 from pydantic.generics import GenericModel
 from pydantic.utils import GetterDict
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from typing_extensions import Annotated, Literal
 
 from galaxy.schema import schema
-from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
-    literal_to_value,
-    ModelClassField,
-)
+from galaxy.schema.fields import EncodedDatabaseIdField, ModelClassField, literal_to_value
 from galaxy.schema.schema import (
-    CreateTimeField,
-    DataItemSourceType,
     IMPLICIT_COLLECTION_JOBS_MODEL_CLASS,
     INVOCATION_MODEL_CLASS,
     INVOCATION_STEP_MODEL_CLASS,
     JOB_MODEL_CLASS,
+    CreateTimeField,
+    DataItemSourceType,
     JobState,
     Model,
     UpdateTimeField,

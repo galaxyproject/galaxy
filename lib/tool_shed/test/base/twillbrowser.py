@@ -1,17 +1,12 @@
 import tempfile
-from typing import (
-    Dict,
-    List,
-)
+from typing import Dict, List
 
 import twill.commands as tc
 from twill.browser import FormElement
 
 from galaxy.util import smart_str
-from .browser import (
-    FormValueType,
-    ShedBrowser,
-)
+
+from .browser import FormValueType, ShedBrowser
 
 tc.options["equiv_refresh_interval"] = 0
 # Resetting all repository metadata can take a really long time

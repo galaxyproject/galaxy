@@ -1,9 +1,7 @@
 from tool_shed.structured_app import ToolShedApp
 from tool_shed_client.schema import Version
-from . import (
-    depends,
-    Router,
-)
+
+from . import Router, depends
 
 router = Router(tags=["configuration"])
 

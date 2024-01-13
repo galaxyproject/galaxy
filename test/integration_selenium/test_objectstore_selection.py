@@ -3,10 +3,8 @@ from typing import TYPE_CHECKING
 
 from galaxy_test.driver.integration_util import ConfiguresObjectStores
 from galaxy_test.selenium.framework import managed_history
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator

@@ -1,15 +1,10 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import BaseModel, Field
 
 from galaxy.util.hash_util import HashFunctionNameEnum
+
 from . import PdfDocumentType
 from .schema import (
     BcoGenerationParametersMixin,

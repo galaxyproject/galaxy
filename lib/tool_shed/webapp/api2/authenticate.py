@@ -1,13 +1,8 @@
 from fastapi import Request
 
-from galaxy.webapps.galaxy.services.authenticate import (
-    APIKeyResponse,
-    AuthenticationService,
-)
-from . import (
-    depends,
-    Router,
-)
+from galaxy.webapps.galaxy.services.authenticate import APIKeyResponse, AuthenticationService
+
+from . import Router, depends
 
 router = Router(tags=["authenticate"])
 

@@ -3,22 +3,10 @@ import json
 import os
 from dataclasses import dataclass
 
-from galaxy.tool_util.data import (
-    BUNDLE_INDEX_FILE_NAME,
-    BundleProcessingOptions,
-)
-from galaxy.tool_util.data.bundles.models import (
-    convert_data_tables_xml,
-    DataTableBundleProcessorDescription,
-)
-from galaxy.util import (
-    galaxy_directory,
-    parse_xml,
-)
-from galaxy.util.resources import (
-    as_file,
-    resource_path,
-)
+from galaxy.tool_util.data import BUNDLE_INDEX_FILE_NAME, BundleProcessingOptions
+from galaxy.tool_util.data.bundles.models import DataTableBundleProcessorDescription, convert_data_tables_xml
+from galaxy.util import galaxy_directory, parse_xml
+from galaxy.util.resources import as_file, resource_path
 
 TOOLS_DIRECTORY = os.path.abspath(os.path.join(galaxy_directory(), "test/functional/tools/"))
 

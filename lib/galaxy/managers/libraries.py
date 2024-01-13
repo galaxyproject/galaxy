@@ -2,40 +2,17 @@
 Manager and Serializer for libraries.
 """
 import logging
-from typing import (
-    Dict,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Dict, Optional, Set, Tuple
 
-from sqlalchemy import (
-    asc,
-    false,
-    func,
-    not_,
-    or_,
-    select,
-    true,
-)
+from sqlalchemy import asc, false, func, not_, or_, select, true
 from sqlalchemy.orm import Query
-from sqlalchemy.orm.exc import (
-    MultipleResultsFound,
-    NoResultFound,
-)
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from galaxy import exceptions
 from galaxy.managers.folders import FolderManager
-from galaxy.model import (
-    Library,
-    LibraryPermissions,
-    Role,
-)
+from galaxy.model import Library, LibraryPermissions, Role
 from galaxy.model.base import transaction
-from galaxy.util import (
-    pretty_print_time_interval,
-    unicodify,
-)
+from galaxy.util import pretty_print_time_interval, unicodify
 
 log = logging.getLogger(__name__)
 

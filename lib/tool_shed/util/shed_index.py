@@ -1,29 +1,18 @@
 import logging
 import os
 
-from mercurial import (
-    hg,
-    ui,
-)
-from sqlalchemy import (
-    false,
-    select,
-)
-from whoosh.writing import AsyncWriter
-
 import tool_shed.webapp.model.mapping as ts_mapping
-from galaxy.tool_util.loader_directory import load_tool_elements_from_path
-from galaxy.tools.search import get_or_create_index
-from galaxy.util import (
-    directory_hash_id,
-    ExecutionTimer,
-    pretty_print_time_interval,
-    unicodify,
-)
+from mercurial import hg, ui
+from sqlalchemy import false, select
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.webapp import model
 from tool_shed.webapp.search.repo_search import schema as repo_schema
 from tool_shed.webapp.search.tool_search import schema as tool_schema
+from whoosh.writing import AsyncWriter
+
+from galaxy.tool_util.loader_directory import load_tool_elements_from_path
+from galaxy.tools.search import get_or_create_index
+from galaxy.util import ExecutionTimer, directory_hash_id, pretty_print_time_interval, unicodify
 
 log = logging.getLogger(__name__)
 

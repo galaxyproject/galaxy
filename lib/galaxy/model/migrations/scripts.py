@@ -1,10 +1,6 @@
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
+from typing import List, Optional, Tuple
 
 import alembic.config
 from alembic.config import Config
@@ -14,28 +10,15 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 
 from galaxy.model.database_utils import database_exists
-from galaxy.model.migrations import (
-    AlembicManager,
-    DatabaseConfig,
-    GXY,
-    SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
-    TSI,
-)
-from galaxy.model.migrations.base import (
-    DatabaseStateCache,
-    pop_arg_from_args,
-)
+from galaxy.model.migrations import GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY, TSI, AlembicManager, DatabaseConfig
+from galaxy.model.migrations.base import DatabaseStateCache, pop_arg_from_args
 from galaxy.model.migrations.exceptions import (
     DatabaseDoesNotExistError,
     DatabaseNotInitializedError,
     IncorrectSAMigrateVersionError,
     NoVersionTableError,
 )
-from galaxy.util.properties import (
-    find_config_file,
-    get_data_dir,
-    load_app_properties,
-)
+from galaxy.util.properties import find_config_file, get_data_dir, load_app_properties
 
 DEFAULT_CONFIG_NAMES = ["galaxy", "universe_wsgi"]
 CONFIG_FILE_ARG = "--galaxy-config"

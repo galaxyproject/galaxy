@@ -2,10 +2,7 @@
 The Galaxy web application framework
 """
 
-from .framework import (
-    legacy_url_for,
-    url_for,
-)
+from .framework import legacy_url_for, url_for
 from .framework.base import httpexceptions
 from .framework.decorators import (
     do_not_cache,

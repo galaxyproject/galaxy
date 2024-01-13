@@ -2,26 +2,16 @@ import hashlib
 import json
 import os
 import uuid
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime, timedelta
 from unittest import SkipTest
-from urllib.parse import (
-    parse_qs,
-    quote,
-    urlparse,
-)
+from urllib.parse import parse_qs, quote, urlparse
 
 import jwt
 import requests
 
 from galaxy.app_unittest_utils.galaxy_mock import MockTrans
 from galaxy.authnz import custos_authnz
-from galaxy.model import (
-    CustosAuthnzToken,
-    User,
-)
+from galaxy.model import CustosAuthnzToken, User
 from galaxy.util import unicodify
 from galaxy.util.unittest import TestCase
 

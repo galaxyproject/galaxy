@@ -1,9 +1,6 @@
 from uuid import uuid4
 
-from galaxy.schema.tasks import (
-    GenerateInvocationDownload,
-    RequestUser,
-)
+from galaxy.schema.tasks import GenerateInvocationDownload, RequestUser
 
 TEST_GALAXY_URL = "http://usegalaxy.org"
 TEST_USER_ID = 1

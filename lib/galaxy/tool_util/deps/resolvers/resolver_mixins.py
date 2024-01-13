@@ -1,14 +1,7 @@
 import os
 
-from . import (
-    Dependency,
-    NullDependency,
-)
-from ..brew_exts import (
-    build_env_statements,
-    DEFAULT_HOMEBREW_ROOT,
-    recipe_cellar_path,
-)
+from ..brew_exts import DEFAULT_HOMEBREW_ROOT, build_env_statements, recipe_cellar_path
+from . import Dependency, NullDependency
 
 
 class UsesHomebrewMixin:

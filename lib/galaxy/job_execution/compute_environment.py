@@ -1,12 +1,6 @@
 import os
-from abc import (
-    ABCMeta,
-    abstractmethod,
-)
-from typing import (
-    Any,
-    Dict,
-)
+from abc import ABCMeta, abstractmethod
+from typing import Any, Dict
 
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job

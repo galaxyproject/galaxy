@@ -3,35 +3,16 @@ from typing import List
 from pydantic import BaseModel
 from typing_extensions import Literal
 
-from .description_domain import (
-    DescriptionDomain,
-    PipelineStep,
-    Uri as DescriptionDomainUri,
-    XrefItem,
-)
+from .description_domain import DescriptionDomain, PipelineStep
+from .description_domain import Uri as DescriptionDomainUri
+from .description_domain import XrefItem
 from .error_domain import ErrorDomain
-from .execution_domain import (
-    ExecutionDomain,
-    ExternalDataEndpoint,
-    ScriptItem,
-    SoftwarePrerequisite,
-    Uri as ExecutionDomainUri,
-)
-from .io_domain import (
-    InputAndOutputDomain,
-    InputSubdomainItem,
-    OutputSubdomainItem,
-    Uri as InputAndOutputDomainUri,
-)
-from .parametric_domain import (
-    ParametricDomain,
-    ParametricDomainItem,
-)
-from .provenance_domain import (
-    ContributionEnum,
-    Contributor,
-    ProvenanceDomain,
-)
+from .execution_domain import ExecutionDomain, ExternalDataEndpoint, ScriptItem, SoftwarePrerequisite
+from .execution_domain import Uri as ExecutionDomainUri
+from .io_domain import InputAndOutputDomain, InputSubdomainItem, OutputSubdomainItem
+from .io_domain import Uri as InputAndOutputDomainUri
+from .parametric_domain import ParametricDomain, ParametricDomainItem
+from .provenance_domain import ContributionEnum, Contributor, ProvenanceDomain
 from .usability_domain import UsabilityDomain
 
 SPEC_VERSION = "https://w3id.org/ieee/ieee-2791-schema/2791object.json"

@@ -10,10 +10,7 @@ Produce a mulled hash with:
 
 from ._cli import arg_parser
 from .mulled_build import target_str_to_targets
-from .util import (
-    v1_image_name,
-    v2_image_name,
-)
+from .util import v1_image_name, v2_image_name
 
 
 def main(argv=None):

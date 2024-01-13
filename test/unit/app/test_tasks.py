@@ -1,8 +1,5 @@
 from contextlib import contextmanager
-from typing import (
-    Iterator,
-    List,
-)
+from typing import Iterator, List
 
 from galaxy.celery import set_thread_app
 from galaxy.celery.tasks import clean_object_store_caches

@@ -1,16 +1,11 @@
 import logging
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import (
-    ConnectedValue,
-    contains_workflow_parameter,
-    runtime_to_json,
-)
+from galaxy.tools.parameters.basic import ConnectedValue, contains_workflow_parameter, runtime_to_json
+
+from ..modules import NO_REPLACEMENT, InputParameterModule
 from .schema import (
     AddInputAction,
     AddStepAction,
@@ -27,7 +22,6 @@ from .schema import (
     RefactorActionExecutionMessageTypeEnum,
     RefactorActions,
     RemoveUnlabeledWorkflowOutputs,
-    step_reference_union,
     StepReferenceByLabel,
     UpdateAnnotationAction,
     UpdateCreatorAction,
@@ -40,10 +34,7 @@ from .schema import (
     UpgradeAllStepsAction,
     UpgradeSubworkflowAction,
     UpgradeToolAction,
-)
-from ..modules import (
-    InputParameterModule,
-    NO_REPLACEMENT,
+    step_reference_union,
 )
 
 log = logging.getLogger(__name__)

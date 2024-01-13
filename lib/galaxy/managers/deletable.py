@@ -8,19 +8,11 @@ models have some backing/supporting resources that can be removed as well
 the supporting resources as well. These models also have the boolean
 attribute 'purged'.
 """
-from typing import (
-    Any,
-    Dict,
-    Set,
-)
+from typing import Any, Dict, Set
 
 from galaxy.model import Base
-from .base import (
-    Deserializer,
-    ModelValidator,
-    OrmFilterParsersType,
-    parse_bool,
-)
+
+from .base import Deserializer, ModelValidator, OrmFilterParsersType, parse_bool
 
 
 class DeletableManagerMixin:

@@ -1,4 +1,5 @@
 from galaxy.workflow import render
+
 from .workflow_support import yaml_to_model
 
 TEST_WORKFLOW_YAML = """

@@ -2,14 +2,12 @@ import os
 import tempfile
 
 from galaxy import model
-from galaxy.job_execution.output_collect import (
-    dataset_collector,
-    JobContext,
-)
+from galaxy.job_execution.output_collect import JobContext, dataset_collector
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.provided_metadata import NullToolProvidedMetadata
+
 from ..tools.test_history_imp_exp import _mock_app
 
 

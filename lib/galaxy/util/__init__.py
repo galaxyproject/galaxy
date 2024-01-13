@@ -25,37 +25,16 @@ import threading
 import time
 import unicodedata
 import xml.dom.minidom
-from datetime import (
-    datetime,
-    timezone,
-)
+from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
-from typing import (
-    Any,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    overload,
-    Tuple,
-    TypeVar,
-    Union,
-)
-from urllib.parse import (
-    urlencode,
-    urlparse,
-    urlsplit,
-    urlunsplit,
-)
+from typing import Any, Iterable, Iterator, List, Optional, Tuple, TypeVar, Union, overload
+from urllib.parse import urlencode, urlparse, urlsplit, urlunsplit
 
 import requests
-from boltons.iterutils import (
-    default_enter,
-    remap,
-)
+from boltons.iterutils import default_enter, remap
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
 from typing_extensions import Literal
@@ -88,12 +67,7 @@ except ImportError:
 
 from .custom_logging import get_logger
 from .inflection import Inflector
-from .path import (  # noqa: F401
-    safe_contains,
-    safe_makedirs,
-    safe_relpath,
-    StrPath,
-)
+from .path import StrPath, safe_contains, safe_makedirs, safe_relpath  # noqa: F401
 from .rst_to_html import rst_to_html  # noqa: F401
 
 try:

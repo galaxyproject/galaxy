@@ -2,12 +2,13 @@ import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_search import (
     CondaSearch,
-    get_package_hash,
     GitHubSearch,
     QuaySearch,
+    get_package_hash,
     singularity_search,
 )
 from galaxy.util.unittest_utils import skip_unless_executable
+
 from ..util import external_dependency_management
 
 

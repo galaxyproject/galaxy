@@ -1,31 +1,19 @@
 """Integration tests for realtime tools."""
 import os
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Any, Dict, List, Optional
 
 import pytest
 import requests
-
 from galaxy_test.base import api_asserts
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    wait_on,
-)
+from galaxy_test.base.populators import DatasetPopulator, wait_on
 from galaxy_test.driver import integration_util
-from .test_coexecution import (
-    CONTAINERIZED_TEMPLATE,
-    job_config,
-    set_infrastucture_url,
-)
+
+from .test_coexecution import CONTAINERIZED_TEMPLATE, job_config, set_infrastucture_url
 from .test_containerized_jobs import (
+    DOCKERIZED_JOB_CONFIG_FILE,
     ContainerizedIntegrationTestCase,
     disable_dependency_resolution,
-    DOCKERIZED_JOB_CONFIG_FILE,
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

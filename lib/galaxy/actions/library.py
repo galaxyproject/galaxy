@@ -16,18 +16,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.model import (
-    LibraryDataset,
-    LibraryFolder,
-)
+from galaxy.model import LibraryDataset, LibraryFolder
 from galaxy.model.base import transaction
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
-from galaxy.util.path import (
-    safe_contains,
-    safe_relpath,
-    unsafe_walk,
-)
+from galaxy.util.path import safe_contains, safe_relpath, unsafe_walk
 
 log = logging.getLogger(__name__)
 

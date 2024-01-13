@@ -1,8 +1,5 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
 from galaxy import util
 from galaxy.exceptions import (
@@ -12,10 +9,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    LibraryFolderDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
     CreateLibraryFolderPayload,

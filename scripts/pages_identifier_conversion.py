@@ -9,20 +9,14 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy
 import galaxy.app
 import galaxy.config
-from galaxy.managers.pages import (
-    PageContentProcessor,
-    placeholderRenderForSave,
-)
+from galaxy.managers.pages import PageContentProcessor, placeholderRenderForSave
 from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 
 def main(argv):

@@ -1,8 +1,5 @@
 from galaxy_test.api.test_tools import TestsTools
-from galaxy_test.base.populators import (
-    DatasetCollectionPopulator,
-    DatasetPopulator,
-)
+from galaxy_test.base.populators import DatasetCollectionPopulator, DatasetPopulator
 from galaxy_test.driver import integration_util
 
 

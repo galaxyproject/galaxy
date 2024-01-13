@@ -1,10 +1,11 @@
 from galaxy.tool_util.biotools.source import (
     ApiBiotoolsMetadataSource,
     BiotoolsMetadataSourceConfig,
-    get_biotools_metadata_source,
     GitContentBiotoolsMetadataSource,
+    get_biotools_metadata_source,
 )
 from galaxy.util.unittest_utils import skip_if_site_down
+
 from ._util import content_dir
 
 

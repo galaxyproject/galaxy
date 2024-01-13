@@ -1,22 +1,12 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from pydantic import BaseModel
-from sqlalchemy import (
-    cast,
-    Integer,
-    select,
-)
+from sqlalchemy import Integer, cast, select
 
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    CheckForUpdatesResponse,
-    InstalledToolShedRepository,
-)
+from galaxy.schema.schema import CheckForUpdatesResponse, InstalledToolShedRepository
 from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.web import url_for

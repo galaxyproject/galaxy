@@ -8,26 +8,11 @@ community contribution and maintenance however.
 """
 import logging
 from io import StringIO
-from os import (
-    environ,
-    pathsep,
-)
-from os.path import (
-    exists,
-    isdir,
-    join,
-)
-from subprocess import (
-    PIPE,
-    Popen,
-)
+from os import environ, pathsep
+from os.path import exists, isdir, join
+from subprocess import PIPE, Popen
 
-from . import (
-    Dependency,
-    DependencyResolver,
-    MappableDependencyResolver,
-    NullDependency,
-)
+from . import Dependency, DependencyResolver, MappableDependencyResolver, NullDependency
 
 log = logging.getLogger(__name__)
 

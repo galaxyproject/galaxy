@@ -9,41 +9,16 @@ import logging
 import re
 from html.entities import name2codepoint
 from html.parser import HTMLParser
-from typing import (
-    Callable,
-    Tuple,
-)
+from typing import Callable, Tuple
 
 import sqlalchemy
-from sqlalchemy import (
-    desc,
-    false,
-    func,
-    or_,
-    select,
-    true,
-)
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy import desc, false, func, or_, select, true
+from sqlalchemy.orm import Session, aliased
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.managers import (
-    base,
-    sharable,
-)
-from galaxy.managers.context import (
-    ProvidesHistoryContext,
-    ProvidesUserContext,
-)
-from galaxy.managers.markdown_util import (
-    ready_galaxy_markdown_for_export,
-    ready_galaxy_markdown_for_import,
-)
+from galaxy import exceptions, model
+from galaxy.managers import base, sharable
+from galaxy.managers.context import ProvidesHistoryContext, ProvidesUserContext
+from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export, ready_galaxy_markdown_for_import
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
@@ -56,26 +31,13 @@ from galaxy.model import (
     Visualization,
 )
 from galaxy.model.base import transaction
-from galaxy.model.index_filter_util import (
-    append_user_filter,
-    raw_text_column_filter,
-    tag_filter,
-    text_column_filter,
-)
+from galaxy.model.index_filter_util import append_user_filter, raw_text_column_filter, tag_filter, text_column_filter
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import (
-    CreatePagePayload,
-    PageContentFormat,
-    PageIndexQueryPayload,
-)
+from galaxy.schema.schema import CreatePagePayload, PageContentFormat, PageIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.search import (
-    FilteredTerm,
-    parse_filters_structured,
-    RawTextTerm,
-)
+from galaxy.util.search import FilteredTerm, RawTextTerm, parse_filters_structured
 
 log = logging.getLogger(__name__)
 

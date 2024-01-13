@@ -2,10 +2,7 @@
 API operations allowing clients to retrieve and modify the HTML sanitization allow list.
 """
 import logging
-from typing import (
-    Any,
-    Dict,
-)
+from typing import Any, Dict
 
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController

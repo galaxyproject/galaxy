@@ -1,28 +1,11 @@
-from datetime import (
-    datetime,
-    timedelta,
-)
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-)
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set
 
 import pytest
 
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers.notification import (
-    DefaultStrategy,
-    NotificationManager,
-    NotificationRecipientResolver,
-)
-from galaxy.model import (
-    Group,
-    Role,
-    User,
-)
+from galaxy.managers.notification import DefaultStrategy, NotificationManager, NotificationRecipientResolver
+from galaxy.model import Group, Role, User
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
@@ -38,6 +21,7 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+
 from .base import BaseTestCase
 
 

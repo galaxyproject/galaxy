@@ -11,42 +11,17 @@ A sharable Galaxy object:
 """
 import logging
 import re
-from typing import (
-    Any,
-    List,
-    Optional,
-    Set,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any, List, Optional, Set, Type
 
-from sqlalchemy import (
-    exists,
-    false,
-    select,
-    true,
-)
+from sqlalchemy import exists, false, select, true
 
 from galaxy import exceptions
-from galaxy.managers import (
-    annotatable,
-    base,
-    ratable,
-    secured,
-    taggable,
-    users,
-)
+from galaxy.managers import annotatable, base, ratable, secured, taggable, users
 from galaxy.managers.base import combine_lists
-from galaxy.model import (
-    User,
-    UserShareAssociation,
-)
+from galaxy.model import User, UserShareAssociation
 from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.schema.schema import (
-    ShareWithExtra,
-    SharingOptions,
-)
+from galaxy.schema.schema import ShareWithExtra, SharingOptions
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str

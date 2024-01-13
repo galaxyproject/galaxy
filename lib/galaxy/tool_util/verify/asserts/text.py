@@ -1,13 +1,7 @@
 import re
-from typing import (
-    Optional,
-    Union,
-)
+from typing import Optional, Union
 
-from ._util import (
-    _assert_number,
-    _assert_presence_number,
-)
+from ._util import _assert_number, _assert_presence_number
 
 
 def assert_has_text(

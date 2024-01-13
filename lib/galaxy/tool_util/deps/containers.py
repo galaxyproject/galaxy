@@ -1,34 +1,18 @@
 import collections
 import logging
 import os
-from typing import (
-    Any,
-    Container as TypingContainer,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TYPE_CHECKING,
-)
+from typing import TYPE_CHECKING, Any
+from typing import Container as TypingContainer
+from typing import Dict, List, Optional, Type
 
 from requests import Session
 from typing_extensions import Literal
 
-from galaxy.util import (
-    asbool,
-    plugin_config,
-)
-from .container_classes import (
-    Container,
-    CONTAINER_CLASSES,
-    DOCKER_CONTAINER_TYPE,
-    SINGULARITY_CONTAINER_TYPE,
-)
+from galaxy.util import asbool, plugin_config
+
+from .container_classes import CONTAINER_CLASSES, DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE, Container
 from .container_resolvers import ResolutionCache
-from .container_resolvers.explicit import (
-    ExplicitContainerResolver,
-    ExplicitSingularityContainerResolver,
-)
+from .container_resolvers.explicit import ExplicitContainerResolver, ExplicitSingularityContainerResolver
 from .container_resolvers.mulled import (
     BuildMulledDockerContainerResolver,
     BuildMulledSingularityContainerResolver,
@@ -43,12 +27,9 @@ if TYPE_CHECKING:
     from beaker.cache import Cache
 
     from galaxy.util.plugin_config import PluginConfigSource
+
     from .container_resolvers import ContainerResolver
-    from .dependencies import (
-        AppInfo,
-        JobInfo,
-        ToolInfo,
-    )
+    from .dependencies import AppInfo, JobInfo, ToolInfo
 
 log = logging.getLogger(__name__)
 

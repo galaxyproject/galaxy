@@ -1,10 +1,7 @@
 import pytest
 from packaging.version import Version
 
-from galaxy.tool_util.version import (
-    LegacyVersion,
-    parse_version,
-)
+from galaxy.tool_util.version import LegacyVersion, parse_version
 
 # This list must be in the correct sorting order
 VERSIONS = [

@@ -1,17 +1,6 @@
 from pathlib import Path
 from types import ModuleType
-from typing import (
-    Any,
-    cast,
-    Dict,
-    Generator,
-    Iterable,
-    List,
-    NamedTuple,
-    Optional,
-    Type,
-    Union,
-)
+from typing import Any, Dict, Generator, Iterable, List, NamedTuple, Optional, Type, Union, cast
 
 import yaml
 

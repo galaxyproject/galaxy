@@ -1,20 +1,10 @@
-from typing import (
-    List,
-    Optional,
-    Union,
-)
+from typing import List, Optional, Union
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field, Required
 from typing_extensions import Literal
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    DatasetSummary,
-    Model,
-)
+from galaxy.schema.schema import DatasetSummary, Model
 
 
 class InputArguments(Model):

@@ -1,21 +1,11 @@
 from enum import Enum
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 from pydantic import Field
 from typing_extensions import Literal
 
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    ModelClassField,
-)
-from galaxy.schema.schema import (
-    GroupModel,
-    Model,
-    UserModel,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField, ModelClassField
+from galaxy.schema.schema import GroupModel, Model, UserModel
 
 QUOTA = Literal["Quota"]
 USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]

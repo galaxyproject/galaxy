@@ -1,20 +1,12 @@
 import logging
 import re
-from typing import (
-    cast,
-    Dict,
-    Optional,
-)
+from typing import Dict, Optional, cast
 
 from typing_extensions import Unpack
 
 from galaxy.util.drs import fetch_drs_to_file
-from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
-    PluginKind,
-)
+
+from . import BaseFilesSource, FilesSourceOptions, FilesSourceProperties, PluginKind
 
 log = logging.getLogger(__name__)
 

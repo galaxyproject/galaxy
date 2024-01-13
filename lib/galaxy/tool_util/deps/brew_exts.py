@@ -29,10 +29,7 @@ import re
 import string
 import subprocess
 import sys
-from typing import (
-    List,
-    Tuple,
-)
+from typing import List, Tuple
 
 WHITESPACE_PATTERN = re.compile(r"[\s]+")
 

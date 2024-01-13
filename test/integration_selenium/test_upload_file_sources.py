@@ -1,10 +1,8 @@
 from typing import TYPE_CHECKING
 
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
-from .framework import (
-    selenium_test,
-    SeleniumIntegrationTestCase,
-)
+
+from .framework import SeleniumIntegrationTestCase, selenium_test
 
 if TYPE_CHECKING:
     from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator

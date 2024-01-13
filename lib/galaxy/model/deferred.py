@@ -2,21 +2,13 @@ import abc
 import logging
 import os
 import shutil
-from typing import (
-    cast,
-    NamedTuple,
-    Optional,
-    Union,
-)
+from typing import NamedTuple, Optional, Union, cast
 
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.exc import DetachedInstanceError
 from sqlalchemy.orm.scoping import scoped_session
 
-from galaxy.datatypes.sniff import (
-    convert_function,
-    stream_url_to_file,
-)
+from galaxy.datatypes.sniff import convert_function, stream_url_to_file
 from galaxy.exceptions import ObjectAttributeInvalidException
 from galaxy.files import ConfiguredFileSources
 from galaxy.model import (
@@ -30,10 +22,7 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
 )
 from galaxy.model.base import transaction
-from galaxy.objectstore import (
-    ObjectStore,
-    ObjectStorePopulator,
-)
+from galaxy.objectstore import ObjectStore, ObjectStorePopulator
 
 log = logging.getLogger(__name__)
 

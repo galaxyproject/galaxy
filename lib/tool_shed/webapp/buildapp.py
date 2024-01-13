@@ -20,10 +20,7 @@ from galaxy.web import url_for
 from galaxy.web.framework.middleware.error import ErrorMiddleware
 from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
 from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
-from galaxy.webapps.base.webapp import (
-    build_url_map,
-    GalaxyWebTransaction,
-)
+from galaxy.webapps.base.webapp import GalaxyWebTransaction, build_url_map
 from galaxy.webapps.util import wrap_if_allowed
 
 SHED_API_VERSION = os.environ.get("TOOL_SHED_API_VERSION", "v1")
@@ -50,6 +47,7 @@ def add_ui_controllers(webapp, app):
     them to the webapp.
     """
     import tool_shed.webapp.controllers
+
     from galaxy.webapps.base.controller import BaseUIController
 
     controller_dir = tool_shed.webapp.controllers.__path__[0]

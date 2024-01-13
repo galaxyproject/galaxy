@@ -1,10 +1,5 @@
 from math import inf
-from typing import (
-    Callable,
-    Optional,
-    TypeVar,
-    Union,
-)
+from typing import Callable, Optional, TypeVar, Union
 
 from galaxy.util import asbool
 from galaxy.util.bytesize import parse_bytesize

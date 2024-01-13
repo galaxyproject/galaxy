@@ -2,11 +2,7 @@ import pytest
 from sqlalchemy import union
 
 from galaxy.managers.job_connections import JobConnectionsManager
-from galaxy.model import (
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    Job,
-)
+from galaxy.model import HistoryDatasetAssociation, HistoryDatasetCollectionAssociation, Job
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import GalaxyDataTestApp

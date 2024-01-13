@@ -8,27 +8,12 @@ import logging
 import os
 import sys
 import tempfile
-from concurrent.futures import (
-    thread,
-    ThreadPoolExecutor,
-)
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-)
+from concurrent.futures import ThreadPoolExecutor, thread
+from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 import yaml
 
-from galaxy.tool_util.verify.interactor import (
-    DictClientTestConfig,
-    GalaxyInteractorApi,
-    ToolTestDictsT,
-    verify_tool,
-)
+from galaxy.tool_util.verify.interactor import DictClientTestConfig, GalaxyInteractorApi, ToolTestDictsT, verify_tool
 
 DESCRIPTION = """Script to quickly run a tool test against a running Galaxy instance."""
 DEFAULT_SUITE_NAME = "Galaxy Tool Tests"

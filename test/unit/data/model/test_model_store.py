@@ -3,16 +3,8 @@ import json
 import os
 import pathlib
 import shutil
-from tempfile import (
-    mkdtemp,
-    NamedTemporaryFile,
-)
-from typing import (
-    Any,
-    Dict,
-    NamedTuple,
-    Optional,
-)
+from tempfile import NamedTemporaryFile, mkdtemp
+from typing import Any, Dict, NamedTuple, Optional
 
 import pytest
 from rocrate.rocrate import ROCrate
@@ -26,19 +18,17 @@ from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
-    deferred_hda_model_store_dict,
-    one_hda_model_store_dict,
-    one_ld_library_model_store_dict,
     TEST_HASH_FUNCTION,
     TEST_HASH_VALUE,
     TEST_SOURCE_URI,
+    deferred_hda_model_store_dict,
+    one_hda_model_store_dict,
+    one_ld_library_model_store_dict,
 )
 from galaxy.objectstore.unittest_utils import Config as TestConfig
 from galaxy.util.compression_utils import CompressedFile
-from ..test_galaxy_mapping import (
-    _invocation_for_workflow,
-    _workflow_from_steps,
-)
+
+from ..test_galaxy_mapping import _invocation_for_workflow, _workflow_from_steps
 
 TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
 TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"

@@ -1,5 +1,6 @@
-from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import assert_error_code_is
+
+from galaxy.exceptions import error_codes
 
 
 def test_assert_error_code_is():

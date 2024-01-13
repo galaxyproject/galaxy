@@ -16,6 +16,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.util import string_as_bool
+
 from . import validation
 
 log = logging.getLogger(__name__)
@@ -800,10 +801,7 @@ def _get_ref_data(other_values, ref_name):
     - a KeyError is raised if no such element exists
     - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
     """
-    from galaxy.tools.wrappers import (
-        DatasetFilenameWrapper,
-        DatasetListWrapper,
-    )
+    from galaxy.tools.wrappers import DatasetFilenameWrapper, DatasetListWrapper
 
     ref = other_values[ref_name]
     if not isinstance(

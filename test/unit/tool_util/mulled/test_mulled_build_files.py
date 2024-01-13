@@ -4,10 +4,7 @@ import pytest
 import yaml
 
 from galaxy.tool_util.deps.mulled.mulled_build import target_str_to_targets
-from galaxy.tool_util.deps.mulled.mulled_build_files import (
-    FALLBACK_LINE_TUPLE,
-    generate_targets,
-)
+from galaxy.tool_util.deps.mulled.mulled_build_files import FALLBACK_LINE_TUPLE, generate_targets
 
 TESTCASES = yaml.safe_load(
     r"""

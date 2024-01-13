@@ -1,20 +1,10 @@
 import logging
 import os
 from collections import defaultdict
-from typing import (
-    Any,
-    Dict,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import Any, Dict, List, NamedTuple, Optional, Set
 
 from galaxy import exceptions
-from galaxy.files.sources import (
-    BaseFilesSource,
-    PluginKind,
-)
+from galaxy.files.sources import BaseFilesSource, PluginKind
 from galaxy.util import plugin_config
 from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.dictifiable import Dictifiable

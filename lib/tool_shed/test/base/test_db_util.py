@@ -1,18 +1,12 @@
 import logging
 from typing import List
 
-from sqlalchemy import (
-    false,
-    select,
-)
+import tool_shed.webapp.model as model
+from sqlalchemy import false, select
 
 import galaxy.model
 import galaxy.model.tool_shed_install
-import tool_shed.webapp.model as model
-from galaxy.managers.users import (
-    get_user_by_email,
-    get_user_by_username,
-)
+from galaxy.managers.users import get_user_by_email, get_user_by_username
 
 log = logging.getLogger("test.tool_shed.test_db_util")
 

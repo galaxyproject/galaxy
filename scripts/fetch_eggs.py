@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 from os import pardir
-from os.path import (
-    abspath,
-    dirname,
-    join,
-)
+from os.path import abspath, dirname, join
 from sys import exit
 
 msg = """

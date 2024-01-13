@@ -2,16 +2,10 @@ import abc
 import logging
 import os
 import re
-from typing import (
-    List,
-    Optional,
-)
+from typing import List, Optional
 
 import yaml
-from cryptography.fernet import (
-    Fernet,
-    MultiFernet,
-)
+from cryptography.fernet import Fernet, MultiFernet
 from sqlalchemy import select
 
 try:

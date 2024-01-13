@@ -8,10 +8,7 @@ from galaxy import model
 from galaxy.app_unittest_utils.toolbox_support import BaseToolBoxTestCase
 from galaxy.model.base import transaction
 from galaxy.tool_util.unittest_utils import mock_trans
-from galaxy.tool_util.unittest_utils.sample_data import (
-    SIMPLE_MACRO,
-    SIMPLE_TOOL_WITH_MACRO,
-)
+from galaxy.tool_util.unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 log = logging.getLogger(__name__)
 

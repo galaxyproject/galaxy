@@ -1,5 +1,6 @@
-from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.structured_app import ToolShedApp
+
+from galaxy.webapps.base.controller import BaseAPIController
 
 
 class BaseShedAPIController(BaseAPIController):

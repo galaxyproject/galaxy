@@ -11,6 +11,7 @@ from packaging.version import Version
 from past.translation import myfixes
 
 from galaxy.util.tree_dict import TreeDict
+
 from . import unicodify
 
 # Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.

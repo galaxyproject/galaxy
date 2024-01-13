@@ -17,10 +17,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.config
 from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
-from galaxy.util.script import (
-    app_properties_from_args,
-    populate_config_args,
-)
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 DESCRIPTION = """
 Populates blank uuid fields in datasets with randomly generated values.

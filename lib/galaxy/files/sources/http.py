@@ -1,28 +1,15 @@
 import logging
 import re
 import urllib.request
-from typing import (
-    cast,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Dict, List, Optional, cast
 
 from typing_extensions import Unpack
 
 from galaxy.files.uris import validate_non_local
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    get_charset_from_http_headers,
-    stream_to_open_named_file,
-)
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT, get_charset_from_http_headers, stream_to_open_named_file
 from galaxy.util.config_parsers import IpAllowedListEntryT
-from . import (
-    BaseFilesSource,
-    FilesSourceOptions,
-    FilesSourceProperties,
-    PluginKind,
-)
+
+from . import BaseFilesSource, FilesSourceOptions, FilesSourceProperties, PluginKind
 
 log = logging.getLogger(__name__)
 

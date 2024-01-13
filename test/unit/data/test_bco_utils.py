@@ -4,6 +4,7 @@ from galaxy.model import WorkflowStep
 from galaxy.model.orm.now import now
 from galaxy.model.store._bco_convert_utils import SoftwarePrerequisiteTracker
 from galaxy.schema.bco import (
+    SPEC_VERSION,
     BioComputeObjectCore,
     ContributionEnum,
     Contributor,
@@ -13,14 +14,9 @@ from galaxy.schema.bco import (
     ParametricDomain,
     PipelineStep,
     ProvenanceDomain,
-    SPEC_VERSION,
     UsabilityDomain,
 )
-from galaxy.schema.bco.util import (
-    extension_domains,
-    galaxy_execution_domain,
-    write_to_file,
-)
+from galaxy.schema.bco.util import extension_domains, galaxy_execution_domain, write_to_file
 
 
 def example_bc_core_object() -> BioComputeObjectCore:

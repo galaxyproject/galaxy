@@ -4,16 +4,13 @@ import shutil
 from typing import TYPE_CHECKING
 
 import pytest
+from galaxy_test.driver import integration_util
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.registry import Registry
-from galaxy.util.checkers import (
-    is_bz2,
-    is_gzip,
-    is_zip,
-)
+from galaxy.util.checkers import is_bz2, is_gzip, is_zip
 from galaxy.util.hash_util import md5_hash_file
-from galaxy_test.driver import integration_util
+
 from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

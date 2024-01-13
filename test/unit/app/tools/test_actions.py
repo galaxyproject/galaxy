@@ -1,8 +1,5 @@
 import string
-from typing import (
-    cast,
-    Optional,
-)
+from typing import Optional, cast
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
@@ -11,11 +8,7 @@ from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.parser.xml import parse_change_format
-from galaxy.tools.actions import (
-    DefaultToolAction,
-    determine_output_format,
-    on_text_for_names,
-)
+from galaxy.tools.actions import DefaultToolAction, determine_output_format, on_text_for_names
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
 

@@ -3,16 +3,10 @@ import json
 import subprocess
 import wave
 from functools import lru_cache
-from typing import (
-    List,
-    Tuple,
-)
+from typing import List, Tuple
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import (
-    ListParameter,
-    MetadataElement,
-)
+from galaxy.datatypes.metadata import ListParameter, MetadataElement
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import which
 

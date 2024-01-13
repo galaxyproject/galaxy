@@ -1,12 +1,6 @@
-from galaxy_test.base.populators import (
-    skip_without_datatype,
-    skip_without_visualization_plugin,
-)
-from .framework import (
-    managed_history,
-    selenium_test,
-    SeleniumTestCase,
-)
+from galaxy_test.base.populators import skip_without_datatype, skip_without_visualization_plugin
+
+from .framework import SeleniumTestCase, managed_history, selenium_test
 
 
 class TestVisualizations(SeleniumTestCase):

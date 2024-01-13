@@ -10,24 +10,17 @@ import os.path
 import re
 import shutil
 import tempfile
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Optional,
-)
+from typing import Any, Callable, Dict, Optional
 
 try:
     import pysam
 except ImportError:
     pysam = None  # type: ignore[assignment]
 
-from galaxy.tool_util.parser.util import (
-    DEFAULT_DELTA,
-    DEFAULT_DELTA_FRAC,
-)
+from galaxy.tool_util.parser.util import DEFAULT_DELTA, DEFAULT_DELTA_FRAC
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
+
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 

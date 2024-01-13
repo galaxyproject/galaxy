@@ -5,15 +5,10 @@ import logging
 import os
 import shutil
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions, util
 from galaxy.model import Job
-from galaxy.web import (
-    expose_api_anonymous_and_sessionless,
-    expose_api_raw_anonymous_and_sessionless,
-)
+from galaxy.web import expose_api_anonymous_and_sessionless, expose_api_raw_anonymous_and_sessionless
+
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)

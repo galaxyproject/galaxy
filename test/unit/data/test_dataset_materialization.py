@@ -11,18 +11,16 @@ from galaxy.model import (
     store,
 )
 from galaxy.model.base import transaction
-from galaxy.model.deferred import (
-    materialize_collection_instance,
-    materializer_factory,
-)
+from galaxy.model.deferred import materialize_collection_instance, materializer_factory
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_ld_library_deferred_model_store_dict,
 )
+
 from .model.test_model_store import (
+    StoreFixtureContextWithHistory,
     perform_import_from_store_dict,
     setup_fixture_context_with_history,
-    StoreFixtureContextWithHistory,
 )
 from .test_model_copy import _create_hda
 

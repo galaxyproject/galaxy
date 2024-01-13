@@ -5,13 +5,7 @@ import operator
 import os
 import re
 from tempfile import NamedTemporaryFile
-from typing import (
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
-)
+from typing import Callable, Dict, List, Optional, Union
 
 from sqlalchemy.orm.scoping import ScopedSession
 
@@ -27,38 +21,27 @@ from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
+from galaxy.model.store.discover import UNSET, DiscoveredFile, JsonCollectedDatasetMatch
+from galaxy.model.store.discover import MetadataSourceProvider as AbstractMetadataSourceProvider
+from galaxy.model.store.discover import ModelPersistenceContext
+from galaxy.model.store.discover import PermissionProvider as AbstractPermissionProvider
 from galaxy.model.store.discover import (
+    RegexCollectedDatasetMatch,
+    SessionlessModelPersistenceContext,
     discover_target_directory,
-    DiscoveredFile,
-    JsonCollectedDatasetMatch,
-    MetadataSourceProvider as AbstractMetadataSourceProvider,
-    ModelPersistenceContext,
-    PermissionProvider as AbstractPermissionProvider,
     persist_elements_to_folder,
     persist_elements_to_hdca,
     persist_hdas,
-    RegexCollectedDatasetMatch,
-    SessionlessModelPersistenceContext,
-    UNSET,
 )
-from galaxy.objectstore import (
-    ObjectStore,
-    persist_extra_files,
-)
+from galaxy.objectstore import ObjectStore, persist_extra_files
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
     ToolProvidedMetadataDatasetCollection,
 )
-from galaxy.tool_util.parser.output_objects import (
-    ToolOutput,
-    ToolOutputCollection,
-)
+from galaxy.tool_util.parser.output_objects import ToolOutput, ToolOutputCollection
 from galaxy.tool_util.provided_metadata import BaseToolProvidedMetadata
-from galaxy.util import (
-    shrink_and_unicodify,
-    unicodify,
-)
+from galaxy.util import shrink_and_unicodify, unicodify
 
 DATASET_ID_TOKEN = "DATASET_ID"
 

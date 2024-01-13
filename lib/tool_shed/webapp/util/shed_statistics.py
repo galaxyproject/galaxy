@@ -1,10 +1,6 @@
-from time import (
-    gmtime,
-    strftime,
-)
+from time import gmtime, strftime
 
 from sqlalchemy import select
-
 from tool_shed.webapp.model import Repository
 
 

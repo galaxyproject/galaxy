@@ -2,26 +2,21 @@ import configparser
 import logging
 import os
 import re
-from typing import (
-    List,
-    Optional,
-    Tuple,
-    TYPE_CHECKING,
-)
-
-from markupsafe import escape
-from sqlalchemy import (
-    delete,
-    false,
-    select,
-)
-from sqlalchemy.orm import joinedload
+from typing import TYPE_CHECKING, List, Optional, Tuple
 
 import tool_shed.dependencies.repository
-from galaxy import (
-    util,
-    web,
+from markupsafe import escape
+from sqlalchemy import delete, false, select
+from sqlalchemy.orm import joinedload
+from tool_shed.util.common_util import generate_clone_url_for
+from tool_shed.util.hg_util import changeset2rev, create_hgrc_file, get_hgrc_path, init_repository
+from tool_shed.util.metadata_util import (
+    get_next_downloadable_changeset_revision,
+    get_repository_metadata_by_changeset_revision,
+    repository_metadata_by_changeset_revision,
 )
+
+from galaxy import util, web
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
@@ -52,24 +47,9 @@ from galaxy.tool_shed.util.repository_util import (
     repository_was_previously_installed,
     set_repository_attributes,
 )
-from tool_shed.util.common_util import generate_clone_url_for
-from tool_shed.util.hg_util import (
-    changeset2rev,
-    create_hgrc_file,
-    get_hgrc_path,
-    init_repository,
-)
-from tool_shed.util.metadata_util import (
-    get_next_downloadable_changeset_revision,
-    get_repository_metadata_by_changeset_revision,
-    repository_metadata_by_changeset_revision,
-)
 
 if TYPE_CHECKING:
-    from tool_shed.context import (
-        ProvidesRepositoriesContext,
-        ProvidesUserContext,
-    )
+    from tool_shed.context import ProvidesRepositoriesContext, ProvidesUserContext
     from tool_shed.structured_app import ToolShedApp
     from tool_shed.webapp.model import Repository
 
