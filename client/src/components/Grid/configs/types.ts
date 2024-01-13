@@ -61,7 +61,7 @@ interface OperationHandlerMessage {
     status: string;
 }
 
-type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
+type OperationHandlerReturn = Promise<OperationHandlerMessage | undefined> | void;
 
 export type RowData = Record<string, unknown>;
 

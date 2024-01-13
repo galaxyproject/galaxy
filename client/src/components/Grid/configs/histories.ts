@@ -63,9 +63,22 @@ const batch: BatchOperationArray = [
         title: "Delete",
         icon: faTrash,
         condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
-        handler: (data: Array<HistoryEntry>) => {
-            // Delete all
-            console.log(data);
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l("Are you sure that you want to delete these histories?"))) {
+                try {
+                    console.log(data);
+                    //await deleteHistory({ history_id: String(data.id) });
+                    return {
+                        status: "success",
+                        message: `Histories have been deleted.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to delete histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
         },
     },
 ];

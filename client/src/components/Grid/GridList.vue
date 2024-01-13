@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -48,7 +48,10 @@ const gridData = ref();
 const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
+
+// selection references
 const selected = ref(new Set<RowData>());
+const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selected.value.size));
 
 // page references
 const currentPage = ref(1);
@@ -192,6 +195,14 @@ function onSelect(rowData: RowData) {
     selected.value = new Set(selected.value);
 }
 
+function onSelectAll(current: boolean): void {
+    if (current) {
+        selected.value = new Set(gridData.value);
+    } else {
+        selected.value = new Set();
+    }
+}
+
 /**
  * Initialize grid data
  */
@@ -262,7 +273,9 @@ watch(operationMessage, () => {
         </BAlert>
         <table v-else class="grid-table">
             <thead>
-                <th v-if="!!gridConfig.batch">Select</th>
+                <th v-if="!!gridConfig.batch">
+                    <BFormCheckbox class="m-2" :indeterminate="selectedIndeterminate" @change="onSelectAll" />
+                </th>
                 <th
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
@@ -285,13 +298,12 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
-                <th v-if="!!gridConfig.batch" class="p-2 cursor-pointer" @click="onSelect(rowData)">
-                    <FontAwesomeIcon
-                        v-if="selected.has(rowData)"
-                        icon="far fa-check-square"
-                        class="fa-lg"
-                        data-description="grid selected" />
-                    <FontAwesomeIcon v-else icon="far fa-square" class="fa-lg" data-description="grid selected" />
+                <th v-if="!!gridConfig.batch">
+                    <BFormCheckbox
+                        :checked="selected.has(rowData)"
+                        class="m-2 cursor-pointer"
+                        data-description="grid selected"
+                        @change="onSelect(rowData)" />
                 </th>
                 <td
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
@@ -366,6 +378,7 @@ watch(operationMessage, () => {
 .grid-header {
     @extend .grid-sticky;
     top: 0;
+    z-index: 2;
 }
 .grid-sticky {
     z-index: 1;
