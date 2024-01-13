@@ -50,6 +50,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
@@ -273,6 +274,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
     def check_watched_item(self, job_state):
+        check_database_connection(self.app.model.session())
         if self.use_mq:
             # Might still need to check pod IPs.
             job_wrapper = job_state.job_wrapper
@@ -972,6 +974,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         galaxy_job_id = None
         remote_job_id = None
         try:
+            check_database_connection(self.sa_session)
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...

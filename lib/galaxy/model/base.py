@@ -58,6 +58,19 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
 
 
+def check_database_connection(session):
+    """
+    In the event of a database disconnect, if there exists an active database
+    transaction, that transaction becomes invalidated. Accessing the database
+    will raise sqlalchemy.exc.PendingRollbackError. This handles this situation
+    by rolling back the invalidated transaction.
+    Ref: https://docs.sqlalchemy.org/en/14/errors.html#can-t-reconnect-until-invalid-transaction-is-rolled-back
+    """
+    if session and session.connection().invalidated:
+        log.error("Database transaction rolled back due to invalid state.")
+        session.rollback()
+
+
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
