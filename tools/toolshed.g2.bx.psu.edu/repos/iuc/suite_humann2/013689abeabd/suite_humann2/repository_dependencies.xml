@@ -1,0 +1,17 @@
+<?xml version="1.0" ?>
+<repositories description="HUMAnN2 for functionally profiling metagenomes and metatranscriptomes at species-level resolution">
+    <repository owner="iuc" name="humann2_associate" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="e0c79dd40625"/>
+    <repository owner="iuc" name="humann2_strain_profiler" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="50f98eb4854d"/>
+    <repository owner="iuc" name="humann2_regroup_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="e66ab198ec15"/>
+    <repository owner="iuc" name="humann2_reduce_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="e0b670a43758"/>
+    <repository owner="iuc" name="humann2_renorm_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="c6676a890f50"/>
+    <repository owner="iuc" name="humann2_join_tables" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="d05ac93eabf3"/>
+    <repository owner="iuc" name="humann2_unpack_pathways" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="cad93abecac9"/>
+    <repository owner="iuc" name="humann2_split_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="7e3fdbe9b6a2"/>
+    <repository owner="iuc" name="humann2" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="cda49fede0c2"/>
+    <repository owner="iuc" name="humann2_rna_dna_norm" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="de70d23958de"/>
+    <repository owner="iuc" name="humann2_split_stratified_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="93adca140c9a"/>
+    <repository owner="iuc" name="humann2_barplot" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="09c1bbec1032"/>
+    <repository owner="iuc" name="humann2_rename_table" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="639640ad2450"/>
+    <repository owner="iuc" name="humann2_genefamilies_genus_level" toolshed="https://toolshed.g2.bx.psu.edu" changeset_revision="654548ae1357"/>
+</repositories>

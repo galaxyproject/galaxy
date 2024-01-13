@@ -1,0 +1,11 @@
+<tool id="example_addition" name="Example Addition" version="1.0.0">
+  <description>Add two numbers</description>
+  <command interpreter="Rscript">
+    example_tool.R --vanilla
+  </command>
+  <outputs>
+    <data name="output" format="txt" />
+  </outputs>
+
+  <help>This tool adds two numbers and produces the sum.</help>
+</tool>

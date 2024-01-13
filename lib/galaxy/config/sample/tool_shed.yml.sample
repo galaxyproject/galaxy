@@ -1,8 +1,7 @@
 tool_shed:
-
   # Verbosity of console log messages.  Acceptable values can be found
   # here: https://docs.python.org/library/logging.html#logging-levels
-  #log_level: DEBUG
+  log_level: DEBUG
 
   # By default, the Tool Shed uses a SQLite database at
   # 'database/community.sqlite'.  You may use a SQLAlchemy connection
@@ -152,17 +151,17 @@ tool_shed:
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
   # users, groups, roles, libraries, and more.
-  #admin_users: null
+  admin_users: fanxingfu3344@gmail.com
 
   # Force everyone to log in (disable anonymous access)
-  #require_login: false
+  require_login: false
 
   # Allow unregistered users to create new accounts (otherwise, they
   # will have to be created by an admin).
-  #allow_user_creation: true
+  allow_user_creation: true
 
   # Allow administrators to delete accounts.
-  #allow_user_deletion: false
+  allow_user_deletion: false
 
   # For use by email messages sent from the Tool Shed.
   # (smtp.your_tool_shed_server)
@@ -422,4 +421,3 @@ tool_shed:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #datatypes_config_file: datatypes_conf.xml
-
