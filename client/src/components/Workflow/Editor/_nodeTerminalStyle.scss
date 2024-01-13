@@ -1,6 +1,6 @@
 @mixin node-terminal-style($side) {
     --size: 11px;
-    --offset-extra: 0px;
+    --offset-extra: 4px;
 
     position: absolute;
     #{$side}: calc(var(--offset-extra) * -1 - 0.65rem);
