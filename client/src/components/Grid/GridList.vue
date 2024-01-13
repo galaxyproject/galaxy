@@ -4,7 +4,6 @@ import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BAlert, BButton, BPagination } from "bootstrap-vue";
-import type { Ref } from "vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -49,7 +48,7 @@ const gridData = ref();
 const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
-const selected: Ref<{ [key: number]: boolean }> = ref({});
+const selected = ref(new Set<RowData>());
 
 // page references
 const currentPage = ref(1);
@@ -124,6 +123,15 @@ async function getGridData() {
 /**
  * Execute grid operation and display message if available
  */
+async function onBatchOperation(operation: BatchOperation, rowDataArray: Array<RowData>) {
+    const response = await operation.handler(rowDataArray);
+    if (response) {
+        await getGridData();
+        operationMessage.value = response.message;
+        operationStatus.value = response.status || "success";
+    }
+}
+
 async function onOperation(operation: Operation, rowData: RowData) {
     const response = await operation.handler(rowData);
     if (response) {
@@ -174,13 +182,14 @@ function onFilter(filter?: string) {
     }
 }
 
-function onBatch(operation: BatchOperation) {
-    alert(operation.title);
-}
-
-function onSelect(rowIndex: number) {
-    selected.value[rowIndex] = !selected.value[rowIndex];
-    selected.value = { ...selected.value };
+// Select multiple rows
+function onSelect(rowData: RowData) {
+    if (selected.value.has(rowData)) {
+        selected.value.delete(rowData);
+    } else {
+        selected.value.add(rowData);
+    }
+    selected.value = new Set(selected.value);
 }
 
 /**
@@ -276,9 +285,9 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
-                <th v-if="!!gridConfig.batch" class="p-2 cursor-pointer" @click="onSelect(rowIndex)">
+                <th v-if="!!gridConfig.batch" class="p-2 cursor-pointer" @click="onSelect(rowData)">
                     <FontAwesomeIcon
-                        v-if="selected[rowIndex]"
+                        v-if="selected.has(rowData)"
                         icon="far fa-check-square"
                         class="fa-lg"
                         data-description="grid selected" />
@@ -326,17 +335,18 @@ watch(operationMessage, () => {
         <div class="flex-grow-1 h-100" />
         <div class="grid-footer">
             <div v-if="isAvailable && gridConfig.batch" class="d-flex justify-content-between pt-3">
-                <BButton
-                    v-for="(batchOperation, batchIndex) in gridConfig.batch"
-                    :key="batchIndex"
-                    class="mx-3"
-                    size="sm"
-                    variant="primary"
-                    :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
-                    @click="onBatch(batchOperation)">
-                    <Icon :icon="batchOperation.icon" class="mr-1" />
-                    <span v-localize>{{ batchOperation.title }}</span>
-                </BButton>
+                <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
+                    <BButton
+                        v-if="!batchOperation.condition || batchOperation.condition(Array.from(selected))"
+                        class="mx-3"
+                        size="sm"
+                        variant="primary"
+                        :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
+                        @click="onBatchOperation(batchOperation, Array.from(selected))">
+                        <Icon :icon="batchOperation.icon" class="mr-1" />
+                        <span v-localize>{{ batchOperation.title }}</span>
+                    </BButton>
+                </div>
                 <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
             </div>
             <div v-else-if="isAvailable" class="d-flex justify-content-center pt-3">

@@ -43,7 +43,7 @@ export type FieldHandler = (data: RowData) => void;
 export interface BatchOperation {
     title: string;
     icon: IconDefinition;
-    condition?: (data: Array<RowData>, config: GalaxyConfiguration) => boolean;
+    condition?: (data: Array<RowData>) => boolean;
     handler: (data: Array<RowData>) => OperationHandlerReturn;
 }
 

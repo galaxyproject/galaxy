@@ -57,6 +57,19 @@ const actions: ActionArray = [
     },
 ];
 
+// Batch operation
+const batch: BatchOperationArray = [
+    {
+        title: "Delete",
+        icon: faTrash,
+        condition: (data: Array<HistoryEntry>) => data.length > 0 && !data.some((x) => x.deleted),
+        handler: (data: Array<HistoryEntry>) => {
+            // Delete all
+            console.log(data);
+        },
+    },
+];
+
 /**
  * Declare columns to be displayed
  */
@@ -205,17 +218,6 @@ const fields: FieldArray = [
         key: "sharing",
         title: "Status",
         type: "sharing",
-    },
-];
-
-const batch: BatchOperationArray = [
-    {
-        title: "Delete",
-        icon: faTrash,
-        handler: (data: Array<HistoryEntry>) => {
-            // Delete all
-            console.log(data);
-        },
     },
 ];
 
