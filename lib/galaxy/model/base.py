@@ -67,6 +67,7 @@ def check_database_connection(session):
     Ref: https://docs.sqlalchemy.org/en/14/errors.html#can-t-reconnect-until-invalid-transaction-is-rolled-back
     """
     if session and session.connection().invalidated:
+        log.error("Database transaction rolled back due to invalid state.")
         session.rollback()
 
 
