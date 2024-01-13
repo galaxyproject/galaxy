@@ -51,6 +51,7 @@ const operationStatus = ref("");
 
 // selection references
 const selected = ref(new Set<RowData>());
+const selectedAll = computed(() => gridData.value.length === selected.value.size);
 const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selected.value.size));
 
 // page references
@@ -275,7 +276,11 @@ watch(operationMessage, () => {
         <table v-else class="grid-table">
             <thead>
                 <th v-if="!!gridConfig.batch">
-                    <BFormCheckbox class="m-2" :indeterminate="selectedIndeterminate" @change="onSelectAll" />
+                    <BFormCheckbox
+                        class="m-2"
+                        :checked="selectedAll"
+                        :indeterminate="selectedIndeterminate"
+                        @change="onSelectAll" />
                 </th>
                 <th
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
@@ -358,7 +363,7 @@ watch(operationMessage, () => {
                             :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
                             <Icon :icon="batchOperation.icon" class="mr-1" />
-                            <span v-localize>{{ batchOperation.title }}</span>
+                            <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
                         </BButton>
                     </div>
                 </div>

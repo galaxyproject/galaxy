@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistories, deleteHistory, historiesQuery, undeleteHistory, undeleteHistories } from "@/api/histories";
+import { deleteHistories, deleteHistory, historiesQuery, undeleteHistories, undeleteHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
