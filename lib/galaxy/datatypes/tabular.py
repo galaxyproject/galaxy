@@ -810,6 +810,8 @@ class Sam(Tabular, _BamOrSam):
         if dataset.has_data():
             with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
+                dataset.metadata.data_lines = None
+                dataset.metadata.has_data_lines = False
                 if (
                     self.max_optional_metadata_filesize >= 0
                     and dataset.get_size() > self.max_optional_metadata_filesize
@@ -819,8 +821,9 @@ class Sam(Tabular, _BamOrSam):
                         if line.startswith("@"):
                             comment_lines += 1
                         else:
-                            # No more comments, and the file is too big to look at the whole thing. Give up.
-                            dataset.metadata.data_lines = None
+                            # No more comments, and the file is too big to look at the whole thing.
+                            # Give up, but record the fact that there was at least one line of data
+                            dataset.metadata.has_data_lines = True
                             break
                 else:
                     # Otherwise, read the whole thing and set num data lines.
@@ -828,6 +831,7 @@ class Sam(Tabular, _BamOrSam):
                         if line.startswith("@"):
                             comment_lines += 1
                     dataset.metadata.data_lines = i + 1 - comment_lines
+                    dataset.metadata.has_data_lines = bool(dataset.metadata.data_lines)
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = [
