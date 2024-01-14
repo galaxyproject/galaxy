@@ -304,13 +304,13 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
-                <th v-if="!!gridConfig.batch">
+                <td v-if="!!gridConfig.batch">
                     <BFormCheckbox
                         :checked="selected.has(rowData)"
                         class="m-2 cursor-pointer"
                         data-description="grid selected"
                         @change="onSelect(rowData)" />
-                </th>
+                </td>
                 <td
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"

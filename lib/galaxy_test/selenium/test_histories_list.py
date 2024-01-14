@@ -206,7 +206,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Insert a tag
-        tag_column = 3
+        tag_column = 4
         tags_cell = self.select_grid_cell("#histories-grid", self.history2_name, tag_column)
         self.add_tag(tags_cell, self.history2_tags[0])
 
