@@ -1281,7 +1281,6 @@ class FastAPIInvocations:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
         """
-        TODO - expose anonymous
         Input can be an archive describing a Galaxy model store containing an
         workflow invocation - for instance one created with with write_store
         or prepare_store_download endpoint.
@@ -1318,7 +1317,6 @@ class FastAPIInvocations:
         query. If neither a workflow_id or history_id is supplied, all the current user's
         workflow invocations will be indexed (as determined by the invocation being
         executed on one of the user's histories)
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         invocation_payload = InvocationIndexPayload(
             workflow_id=workflow_id,
@@ -1720,7 +1718,6 @@ class FastAPIInvocations:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
 
-    # Should I even create models for those as they will be removed?
     # TODO: remove this endpoint after 23.1 release
     @router.get(
         "/api/invocations/{invocation_id}/biocompute",
