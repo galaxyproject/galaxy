@@ -917,7 +917,6 @@ export interface paths {
          * query. If neither a workflow_id or history_id is supplied, all the current user's
          * workflow invocations will be indexed (as determined by the invocation being
          * executed on one of the user's histories)
-         * :raises: exceptions.MessageException, exceptions.ObjectNotFound
          */
         get: operations["index_invocations_api_invocations_get"];
     };
@@ -3051,7 +3050,11 @@ export interface components {
         };
         /** CreateInvocationsFromStorePayload */
         CreateInvocationsFromStorePayload: {
-            /** History ID */
+            /**
+             * History ID
+             * @description The ID of the history associated with the invocations.
+             * @example 0123456789ABCDEF
+             */
             history_id: string;
             /**
              * Legacy Job State
@@ -3079,7 +3082,6 @@ export interface components {
              * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
              */
             view?: components["schemas"]["InvocationSerializationView"] | null;
-            [key: string]: unknown | undefined;
         };
         /** CreateLibrariesFromStore */
         CreateLibrariesFromStore: {
@@ -16575,7 +16577,6 @@ export interface operations {
          * query. If neither a workflow_id or history_id is supplied, all the current user's
          * workflow invocations will be indexed (as determined by the invocation being
          * executed on one of the user's histories)
-         * :raises: exceptions.MessageException, exceptions.ObjectNotFound
          */
         parameters?: {
             /** @description Return only invocations for this Workflow ID */
