@@ -221,8 +221,9 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
         present_histories = self.get_present_histories()
         assert len(present_histories) == len(expected_histories)
+        name_column = 1
         for index, row in enumerate(present_histories):
-            cell = row.find_elements(By.TAG_NAME, "td")[0]
+            cell = row.find_elements(By.TAG_NAME, "td")[name_column]
             if not sort_by_matters:
                 assert cell.text in expected_histories
             else:
