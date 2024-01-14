@@ -113,7 +113,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history4_name], False)
 
         self.components.histories.advanced_search_toggle.wait_for_and_click()
-        self.components.histories.advanced_search_filter(filter="deleted").wait_for_and_click()
+        self.components.histories.advanced_search_filter(filter="purged").wait_for_and_click()
         self.components.histories.advanced_search_submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
