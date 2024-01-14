@@ -576,6 +576,16 @@ class NavigatesGalaxy(HasDriver):
 
         return cell
 
+    def check_grid_rows(self, grid_name, item_names):
+        grid = self.wait_for_selector(grid_name)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            item_name = td[1].text
+            if item_name in item_names:
+                checkbox = td[0].find_element(self.by.TAG_NAME, "input")
+                # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
+                self.driver.execute_script("$(arguments[0]).click();", checkbox)
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             self.navigation.grids.free_text_search,

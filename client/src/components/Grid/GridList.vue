@@ -363,7 +363,7 @@ watch(operationMessage, () => {
                             class="mr-2"
                             size="sm"
                             variant="primary"
-                            :data-description="`grid action ${batchOperation.title.toLowerCase()}`"
+                            :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
                             @click="onBatchOperation(batchOperation, Array.from(selected))">
                             <Icon :icon="batchOperation.icon" class="mr-1" />
                             <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
