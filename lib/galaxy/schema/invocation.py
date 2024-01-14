@@ -489,11 +489,6 @@ class InvocationUpdatePayload(Model):
 
 
 class InvocationIOBase(Model):
-    # TODO - resolve
-    # the tests in test/integration/test_workflow_tasks.py ,
-    # between line 42 and 56 fail, if this id is not allowed be None
-    # They all fail, when trying to populate the response of the show_invocation operation
-    # Is it intended to allow None here?
     id: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="ID", description="The encoded ID of the dataset/dataset collection."
     )
@@ -621,9 +616,9 @@ class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseMod
 
 
 class CreateInvocationFromStore(StoreContentSource):
-    # TODO - add proper description
-    history_id: DecodedDatabaseIdField = Field(default=..., title="History ID", description="")
-    model_config = ConfigDict(extra="allow")
+    history_id: int = Field(
+        default=..., title="History ID", description="The ID of the history associated with the invocations."
+    )
 
 
 class InvocationSerializationView(str, Enum):
@@ -660,5 +655,8 @@ class InvocationSerializationParams(BaseModel):
 
 
 class CreateInvocationsFromStorePayload(CreateInvocationFromStore, InvocationSerializationParams):
-    # TODO - add proper description
-    history_id: str = Field(default=..., title="History ID", description="")
+    history_id: DecodedDatabaseIdField = Field(
+        default=...,
+        title="History ID",
+        description="The ID of the history associated with the invocations.",
+    )
