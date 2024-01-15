@@ -144,29 +144,23 @@ function togglePreferences() {
                 No matching notifications with current filters.
             </BAlert>
 
-            <TransitionGroup name="notifications-list" tag="div">
-                <BCard
+            <TransitionGroup name="notifications-list" class="notifications-list" tag="div">
+                <div
                     v-for="item in filteredNotifications"
                     v-show="filteredNotifications.length > 0"
                     :key="item.id"
-                    class="my-2 notification-card"
+                    class="notification-card"
                     :class="!item.seen_time ? 'border-dark' : ''">
-                    <BRow align-h="start" align-v="center">
-                        <BCol cols="auto">
-                            <BButtonGroup>
-                                <FontAwesomeIcon
-                                    v-if="!item.seen_time"
-                                    size="sm"
-                                    class="unread-status position-absolute align-self-center mr-1"
-                                    icon="circle" />
-                                <BFormCheckbox
-                                    :checked="selectedNotificationIds.includes(item.id)"
-                                    @change="selectOrDeselectNotification([item])" />
-                            </BButtonGroup>
-                        </BCol>
-                        <NotificationItem :notification="item" />
-                    </BRow>
-                </BCard>
+                    <BButtonGroup>
+                        <FontAwesomeIcon v-if="!item.seen_time" size="sm" class="unread-status" icon="circle" />
+
+                        <BFormCheckbox
+                            :checked="selectedNotificationIds.includes(item.id)"
+                            @change="selectOrDeselectNotification([item])" />
+                    </BButtonGroup>
+
+                    <NotificationItem :notification="item" />
+                </div>
             </TransitionGroup>
         </div>
     </div>
@@ -175,9 +169,26 @@ function togglePreferences() {
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
 
-.unread-status {
-    left: -1rem;
-    color: $brand-primary;
+.notifications-list {
+    padding-bottom: 0.5rem;
+
+    .notification-card {
+        display: flex;
+        align-items: center;
+        justify-content: start;
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        background-color: transparent;
+        border: 1px solid #e5e5e5;
+        border-radius: 0.5rem;
+
+        .unread-status {
+            left: -1rem;
+            margin-right: 0.25rem;
+            color: $brand-primary;
+            align-self: center;
+        }
+    }
 }
 
 .notifications-list-enter-active {
