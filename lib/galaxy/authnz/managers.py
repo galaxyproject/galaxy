@@ -5,6 +5,7 @@ import logging
 import os
 import random
 import string
+import sys
 
 import requests
 from cloudauthz import CloudAuthz
@@ -14,7 +15,6 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.config import GALAXY_SCHEMAS_PATH
 from galaxy.util import (
     asbool,
     etree,
@@ -35,7 +35,12 @@ from .psa_authnz import (
     Strategy,
 )
 
-OIDC_BACKEND_SCHEMA = GALAXY_SCHEMAS_PATH / "oidc_backends_config.xsd"
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib_resources import files
+
+OIDC_BACKEND_SCHEMA = files("galaxy.authnz.xsd") / "oidc_backends_config.xsd"
 
 log = logging.getLogger(__name__)
 

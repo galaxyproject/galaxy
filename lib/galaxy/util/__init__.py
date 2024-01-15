@@ -299,20 +299,19 @@ def parse_xml(
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
+    schema = None
     if remove_comments and LXML_AVAILABLE:
         # If using stdlib etree comments are always removed,
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
-    try:
-        schema = None
-        if schemafname:
-            with open(str(schemafname), "rb") as schema_file:
-                schema_root = etree.XML(schema_file.read())
-                schema = etree.XMLSchema(schema_root)
 
+    if LXML_AVAILABLE and schemafname:
+        with open(str(schemafname), "rb") as schema_file:
+            schema_root = etree.XML(schema_file.read())
+            schema = etree.XMLSchema(schema_root)
+
+    try:
         tree = etree.parse(str(fname), parser=parser)
-        if schema:
-            schema.assertValid(tree)
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -320,6 +319,8 @@ def parse_xml(
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
                     elem.tail = elem.tail.strip()
+        if schema:
+            schema.assertValid(tree)
     except OSError as e:
         if e.errno is None and not os.path.exists(fname):
             # lxml doesn't set errno
@@ -330,6 +331,7 @@ def parse_xml(
         raise
     except etree.DocumentInvalid as e:
         log.exception(f"Validation of file %s failed with error {e}" % fname)
+        raise
     return tree
 
 
