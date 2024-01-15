@@ -79,6 +79,7 @@
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section id="filter" name="Filter and Sort">
+    <tool file="stats/filtering_1_1_0.xml" />
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />

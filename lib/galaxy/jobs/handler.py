@@ -37,7 +37,10 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.managers.jobs import get_jobs_to_check_at_startup
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
@@ -400,6 +403,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the waiting queue. If the job has dependencies with errors, it is marked as having errors and removed from the
         queue. If the job belongs to an inactive user it is ignored.  Otherwise, the job is dispatched.
         """
+        check_database_connection(self.sa_session)
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         resubmit_jobs = []

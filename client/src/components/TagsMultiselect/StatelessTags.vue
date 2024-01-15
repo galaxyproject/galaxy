@@ -8,8 +8,8 @@ import Multiselect from "vue-multiselect";
 
 import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";
-import { useUserTags } from "@/composables/user";
 import { useUid } from "@/composables/utils/uid";
+import { useUserTagsStore } from "@/stores/userTagsStore";
 
 import Tag from "./Tag.vue";
 
@@ -39,7 +39,7 @@ const emit = defineEmits<{
 
 library.add(faTags, faCheck, faTimes, faPlus);
 
-const { userTags, addLocalTag } = useUserTags();
+const { userTags, addLocalTag } = useUserTagsStore();
 const { warning } = useToast();
 
 function onAddTag(tag: string) {

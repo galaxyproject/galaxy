@@ -54,7 +54,10 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -310,6 +313,7 @@ class ModelManager(Generic[U]):
         :raises exceptions.ObjectNotFound: if no model is found
         :raises exceptions.InconsistentDatabase: if more than one model is found
         """
+        check_database_connection(self.session())
         # overridden to raise serializable errors
         try:
             return query.one()
