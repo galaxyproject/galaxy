@@ -16,6 +16,7 @@ import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
@@ -150,7 +151,7 @@ function onToggleSidebar(toggle: string) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'visualizations'].includes(activity.id)"
+                                v-else-if="['tools', 'visualizations', 'multiview'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -193,6 +194,7 @@ function onToggleSidebar(toggle: string) {
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
+            <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
         </FlexPanel>

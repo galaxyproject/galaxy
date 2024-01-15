@@ -1,26 +1,30 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faClock, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faClock, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 type PinnedHistory = { id: string };
 
 const filter = ref("");
+const showAdvanced = ref(false);
 const showSelectModal = ref(false);
 const initialLoaded = ref(false);
 
-library.add(faClock, faCheckSquare, faTimes);
+library.add(faCheckSquare, faClock, faTimes, faUndo);
 
 const { currentUser } = storeToRefs(useUserStore());
 const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());
@@ -77,7 +81,6 @@ function addHistoriesToList(incomingHistories: PinnedHistory[]) {
         const historyExists = historyStore.pinnedHistories.some((h: PinnedHistory) => h.id === history.id);
         if (!historyExists) {
             historyStore.pinHistory(history.id);
-            historyStore.loadHistoryById(history.id);
         }
     });
     // Unpin histories that are already pinned but not in the incoming list
@@ -99,60 +102,57 @@ const showRecentTitle = computed(() => {
 function showRecent() {
     historyStore.pinnedHistories = [];
     Toast.info(
-        "Showing the 4 most recently updated histories. Pin histories to this view by clicking on Select Histories."
+        "Showing the 4 most recently updated histories. Pin histories to this view by clicking on Select Histories.",
+        "History Multiview"
     );
-}
-
-function updateFilter(newFilter: string) {
-    filter.value = newFilter;
 }
 </script>
 
 <template>
-    <div v-if="currentUser">
+    <div v-if="currentUser" class="d-flex flex-column">
+        <div class="d-flex">
+            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">History Multiview</Heading>
+
+            <div class="d-flex justify-content-between">
+                <div>
+                    <b-button-group v-b-tooltip.hover.noninteractive :title="showRecentTitle">
+                        <b-button
+                            size="sm"
+                            data-description="show recent histories"
+                            variant="outline-primary"
+                            :disabled="!hasPinnedHistories"
+                            @click="showRecent">
+                            <FontAwesomeIcon v-if="hasPinnedHistories" icon="undo" />
+                            <FontAwesomeIcon v-else icon="clock" />
+                            <span v-localize>Recent</span>
+                        </b-button>
+                    </b-button-group>
+                    <b-button
+                        v-b-tooltip.hover.noninteractive
+                        :title="localize('Open modal to select/deselect histories')"
+                        size="sm"
+                        data-description="open select histories modal"
+                        variant="outline-primary"
+                        @click="showSelectModal = true">
+                        <FontAwesomeIcon icon="fa-check-square" />
+                        <span v-localize>Select</span>
+                    </b-button>
+                </div>
+            </div>
+        </div>
         <b-alert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
         </b-alert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
-            <div class="d-flex justify-content-between">
-                <div class="w-100">
-                    <b-input-group>
-                        <b-form-input
-                            v-model="filter"
-                            size="sm"
-                            debounce="500"
-                            :class="filter && 'font-weight-bold'"
-                            :placeholder="localize('search datasets in selected histories')"
-                            data-description="filter text input"
-                            @keyup.esc="updateFilter('')" />
-                        <b-input-group-append>
-                            <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
-                                <FontAwesomeIcon icon="fa-times" fixed-width />
-                            </b-button>
-                        </b-input-group-append>
-                    </b-input-group>
-                </div>
-                <b-button-group v-b-tooltip.hover.noninteractive :title="showRecentTitle">
-                    <b-button
-                        size="sm"
-                        data-description="show recent histories"
-                        class="text-nowrap ml-1"
-                        :disabled="!hasPinnedHistories"
-                        @click="showRecent">
-                        <FontAwesomeIcon icon="fa-clock" />
-                        <span v-localize>Show Recent</span>
-                    </b-button>
-                </b-button-group>
-                <b-button
-                    size="sm"
-                    data-description="open select histories modal"
-                    class="text-nowrap ml-1"
-                    @click="showSelectModal = true">
-                    <FontAwesomeIcon icon="fa-check-square" />
-                    <span v-localize>Select Histories</span>
-                </b-button>
-            </div>
+            <FilterMenu
+                name="History Multiview"
+                :placeholder="localize('Search datasets and collections in selected histories')"
+                :filter-class="HistoryFilters"
+                :filter-text.sync="filter"
+                :loading="historiesLoading"
+                :show-advanced.sync="showAdvanced" />
             <MultipleViewList
+                v-show="!showAdvanced"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"

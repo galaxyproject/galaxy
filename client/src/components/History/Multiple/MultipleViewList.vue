@@ -9,6 +9,7 @@ import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScr
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
@@ -67,10 +68,9 @@ async function onDrop(evt: any) {
                     } else {
                         Toast.info(localize("Collection copied to new history"));
                     }
-                    historyStore.loadHistoryById(currentHistoryId);
                 })
                 .catch((error) => {
-                    Toast.error(error);
+                    Toast.error(errorMessageAsString(error));
                 });
             // pin the newly created history via the drop
             historyStore.pinHistory(currentHistoryId);

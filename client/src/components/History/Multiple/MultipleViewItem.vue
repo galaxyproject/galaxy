@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -20,6 +20,10 @@ const props = defineProps<Props>();
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
+
+onMounted(() => {
+    historyStore.loadHistoryById(props.source.id);
+});
 
 const selectedCollections = ref<any[]>([]);
 

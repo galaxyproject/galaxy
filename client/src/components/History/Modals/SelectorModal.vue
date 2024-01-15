@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * TODO: Refactor this to use the new `HistoryScrollList` component
+ */
+
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
@@ -200,7 +204,7 @@ function setFilterValue(newFilter: string, newValue: string) {
 function openInMulti(history: HistorySummary) {
     router.push("/histories/view_multiple");
     historyStore.pinHistory(history.id);
-    historyStore.loadHistoryById(history.id);
+    historyStore.loadHistoryById(history.id); // TODO: remove
     modal.value?.hide();
 }
 
@@ -362,7 +366,7 @@ async function loadMore(noScroll = false) {
     </div>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import "theme/blue.scss";
 
 .history-selector-modal .modal-open .modal {
