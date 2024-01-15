@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 
@@ -21,14 +22,18 @@ from sqlalchemy import (
     exists,
     false,
     func,
+    or_,
     select,
     true,
 )
+from sqlalchemy.orm import aliased
 from typing_extensions import Literal
 
-from galaxy import (
-    exceptions as glx_exceptions,
-    model,
+from galaxy import model
+from galaxy.exceptions import (
+    MessageException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.managers import (
     deletable,
@@ -43,6 +48,7 @@ from galaxy.managers.base import (
     SortableManager,
     StorageCleanerManager,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.model import (
     History,
@@ -50,7 +56,14 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
+from galaxy.model.index_filter_util import (
+    append_user_filter,
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
 from galaxy.schema.fields import Security
+from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -66,8 +79,20 @@ from galaxy.schema.storage_cleaner import (
 )
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 
 log = logging.getLogger(__name__)
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "user": "user",
+    "tag": "tag",
+    "is": "is",
+}
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -92,6 +117,109 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         self.hda_manager = hda_manager
         self.contents_manager = contents_manager
         self.contents_filters = contents_filters
+
+    def index_query(
+        self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[List[model.History], int]:
+        show_deleted = False
+        show_own = payload.show_own
+        show_published = payload.show_published
+        show_purged = False
+        show_shared = payload.show_shared
+        is_admin = trans.user_is_admin
+        user = trans.user
+
+        if not user:
+            message = "Requires user to log in."
+            raise RequestParameterInvalidException(message)
+
+        stmt = select(self.model_class).outerjoin(model.User)
+
+        filters = []
+        if show_own or (not show_published and not show_shared and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if show_shared:
+            filters.append(self.user_share_model.user == user)
+            stmt = stmt.outerjoin(self.model_class.users_shared_with)
+        stmt = stmt.where(or_(*filters))
+
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def p_tag_filter(term_text: str, quoted: bool):
+                nonlocal stmt
+                alias = aliased(model.HistoryTagAssociation)
+                stmt = stmt.outerjoin(self.model_class.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        pg = p_tag_filter(term.text, term.quoted)
+                        stmt = stmt.where(pg)
+                    elif key == "name":
+                        stmt = stmt.where(text_column_filter(self.model_class.name, term))
+                    elif key == "user":
+                        stmt = append_user_filter(stmt, self.model_class, term)
+                    elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
+                        elif q == "importable":
+                            stmt = stmt.where(self.model_class.importable == true())
+                        elif q == "published":
+                            stmt = stmt.where(self.model_class.published == true())
+                        elif q == "purged":
+                            show_purged = True
+                        elif q == "shared_with_me":
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise RequestParameterInvalidException(message)
+                            stmt = stmt.where(self.user_share_model.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = p_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    stmt = stmt.outerjoin(self.model_class.user.of_type(alias))
+                    stmt = stmt.where(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.name,
+                                tf,
+                                alias.username,
+                            ],
+                            term,
+                        )
+                    )
+
+        if show_published and not is_admin:
+            show_deleted = False
+            show_purged = False
+
+        if show_purged:
+            stmt = stmt.where(self.model_class.purged == true())
+        else:
+            stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false()))
+
+        if include_total_count:
+            total_matches = get_count(trans.sa_session, stmt)
+        else:
+            total_matches = None
+        if payload.sort_by == "username":
+            sort_column = model.User.username
+        else:
+            sort_column = getattr(model.History, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        stmt = stmt.order_by(sort_column)
+        if payload.limit is not None:
+            stmt = stmt.limit(payload.limit)
+        if payload.offset is not None:
+            stmt = stmt.offset(payload.offset)
+        return trans.sa_session.scalars(stmt), total_matches
 
     def copy(self, history, user, **kwargs):
         """
@@ -210,7 +338,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # TODO: add functional/non-orm orders (such as rating)
         if default:
             return self.parse_order_by(default)
-        raise glx_exceptions.RequestParameterInvalidException(
+        raise RequestParameterInvalidException(
             "Unknown order_by", order_by=order_by_string, available=["create_time", "update_time", "name", "size"]
         )
 
@@ -386,7 +514,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         record to restore the history and its datasets as a new copy.
         """
         if history.archive_export_id is not None and history.purged and not force:
-            raise glx_exceptions.RequestParameterInvalidException(
+            raise RequestParameterInvalidException(
                 "Cannot restore an archived (and purged) history that is associated with an archive export record. "
                 "Please try importing it back as a new copy from the associated archive export record instead. "
                 "You can still force the un-archiving of the purged history by setting the 'force' parameter."
@@ -596,11 +724,11 @@ class HistoryExportManager:
         if jeha_id != "latest":
             matching_exports = [e for e in matching_exports if e.id == jeha_id]
         if len(matching_exports) == 0:
-            raise glx_exceptions.ObjectNotFound("Failed to find target history export")
+            raise ObjectNotFound("Failed to find target history export")
 
         jeha = matching_exports[0]
         if not jeha.ready:
-            raise glx_exceptions.MessageException("Export not available or not yet ready.")
+            raise MessageException("Export not available or not yet ready.")
 
         return jeha
 
@@ -897,3 +1025,8 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
 
     def username_contains(self, item, val: str) -> bool:
         return val.lower() in str(item.user.username).lower()
+
+
+def get_count(session, statement):
+    stmt = select(func.count()).select_from(statement)
+    return session.scalar(stmt)

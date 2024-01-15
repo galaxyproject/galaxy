@@ -32,6 +32,11 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.history import (
+    HistoryIndexQueryPayload,
+    HistoryQueryResultList,
+    HistorySortByEnum,
+)
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -59,7 +64,9 @@ from galaxy.webapps.galaxy.api import (
     as_form,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
     try_get_request_body_as_json,
 )
 from galaxy.webapps.galaxy.api.common import (
@@ -75,6 +82,20 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
 
+query_tags = [
+    IndexQueryTag("name", "The history's name."),
+    IndexQueryTag("annotation", "The history's annotation.", "a"),
+    IndexQueryTag("tag", "The history's tags.", "t"),
+]
+
+AllHistoriesQueryParam = Query(
+    default=False,
+    title="All Histories",
+    description=(
+        "Whether all histories from other users in this Galaxy should be included. "
+        "Only admins are allowed to query all histories."
+    ),
+)
 
 JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     title="Job Export History ID",
@@ -85,13 +106,30 @@ JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     examples=["latest"],
 )
 
-AllHistoriesQueryParam = Query(
-    default=False,
-    title="All Histories",
-    description=(
-        "Whether all histories from other users in this Galaxy should be included. "
-        "Only admins are allowed to query all histories."
-    ),
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="History",
+    tags=query_tags,
+    free_text_fields=["title", "description", "slug", "tag"],
+)
+
+ShowOwnQueryParam: bool = Query(default=True, title="Show histories owned by user.", description="")
+
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published histories.", description="")
+
+ShowSharedQueryParam: bool = Query(
+    default=False, title="Include histories shared with authenticated user.", description=""
+)
+
+SortByQueryParam: HistorySortByEnum = Query(
+    default="update_time",
+    title="Sort attribute",
+    description="Sort index by this specified attribute",
+)
+
+SortDescQueryParam: bool = Query(
+    default=True,
+    title="Sort Descending",
+    description="Sort in descending order?",
 )
 
 
@@ -130,6 +168,37 @@ class FastAPIHistories:
         return self.service.index(
             trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
         )
+
+    @router.get(
+        "/api/histories/query",
+        summary="Returns histories available to the current user.",
+    )
+    def query(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        show_own: bool = ShowOwnQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: HistorySortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
+    ) -> HistoryQueryResultList:
+        payload = HistoryIndexQueryPayload.construct(
+            show_own=show_own,
+            show_published=show_published,
+            show_shared=show_shared,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/histories/count",

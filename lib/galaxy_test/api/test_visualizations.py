@@ -59,7 +59,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         self._update_viz(ids[1], dict(deleted=True))
         index_ids = self._index_ids(dict(search="visualization-filter-1"))
         assert ids[1] not in index_ids
-        index_ids = self._index_ids(dict(search="is:deleted"))
+        index_ids = self._index_ids(dict(search="is:deleted", show_published=False))
         assert ids[1] in index_ids
 
     def test_create(self):

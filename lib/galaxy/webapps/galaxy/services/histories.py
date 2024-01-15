@@ -51,6 +51,10 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.history import (
+    HistoryIndexQueryPayload,
+    HistoryQueryResultList,
+)
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -210,6 +214,23 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         # otherwise, do the default filter of removing the deleted histories
         return [model.History.deleted == false()]
+
+    def index_query(
+        self,
+        trans,
+        payload: HistoryIndexQueryPayload,
+        include_total_count: bool = False,
+    ) -> Tuple[HistoryQueryResultList, int]:
+        """Return a list of History accessible by the user
+
+        :rtype:     list
+        :returns:   dictionaries containing History details
+        """
+        entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
+        return (
+            HistoryQueryResultList(root=[entry.to_dict(view="element") for entry in entries]),
+            total_matches,
+        )
 
     def create(
         self,
