@@ -21,10 +21,10 @@ fi
 cd "$(dirname "$0")"
 
 # Use a throw-away virtualenv
-TEST_PYTHON=${TEST_PYTHON:-"python"}
+TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
-virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
+"$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
 pip install --upgrade pip setuptools wheel
 if [ $FOR_PULSAR -eq 0 ]; then
