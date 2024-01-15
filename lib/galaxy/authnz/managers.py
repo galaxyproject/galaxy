@@ -5,7 +5,6 @@ import logging
 import os
 import random
 import string
-import sys
 
 import requests
 from cloudauthz import CloudAuthz
@@ -23,6 +22,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.resources import files
 from .custos_authnz import (
     CustosAuthFactory,
     KEYCLOAK_BACKENDS,
@@ -34,11 +34,6 @@ from .psa_authnz import (
     Storage,
     Strategy,
 )
-
-if sys.version_info >= (3, 9):
-    from importlib.resources import files
-else:
-    from importlib_resources import files
 
 OIDC_BACKEND_SCHEMA = files("galaxy.authnz.xsd") / "oidc_backends_config.xsd"
 
