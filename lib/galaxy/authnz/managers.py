@@ -108,7 +108,7 @@ class AuthnzManager:
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file, OIDC_BACKEND_SCHEMA)
+            tree = parse_xml(config_file, schemafname=OIDC_BACKEND_SCHEMA)
             root = tree.getroot()
             if root.tag != "OIDC":
                 raise etree.ParseError(
