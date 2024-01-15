@@ -49,8 +49,8 @@ const hoverDraggableOrToggle = computed(
     () => (hoverDraggableDebounced.value || hoverToggle.value) && !isDragging.value
 );
 
-const toggleLinger = 1000;
-const toggleShowDelay = 100;
+const toggleLinger = 500;
+const toggleShowDelay = 800;
 let showToggleTimeout: ReturnType<typeof setTimeout> | undefined;
 
 watch(
@@ -198,7 +198,7 @@ const sideClasses = computed(() => ({
         border-right-style: solid;
 
         .drag-handle {
-            right: -0.75rem;
+            right: -4px;
         }
     }
 
@@ -206,7 +206,7 @@ const sideClasses = computed(() => ({
         border-left-style: solid;
 
         .drag-handle {
-            left: -0.75rem;
+            left: -4px;
         }
     }
 }
@@ -215,9 +215,10 @@ const sideClasses = computed(() => ({
     background: none;
     border: none;
     position: absolute;
-    width: 1rem;
+    width: 10px;
     padding: 0;
     height: 100%;
+    z-index: 10000;
 
     &:hover {
         cursor: ew-resize;
