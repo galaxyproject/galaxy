@@ -60,6 +60,7 @@ from typing import (
     Union,
 )
 
+import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import (
     etree,
@@ -336,7 +337,6 @@ def lint_xml(
 
 def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
-    import galaxy.tool_util.linters
 
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
     linter_modules.extend(extra_modules)
@@ -353,7 +353,6 @@ def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter
             continue
 
         for name, value in inspect.getmembers(module):
-            # print(name)
             if callable(value) and name.startswith("lint_"):
                 # Look at the first argument to the linter to decide
                 # if we should lint the XML description or the abstract
@@ -376,3 +375,17 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
     tool_source = get_tool_source(xml_tree=tool_xml)
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
+
+
+def list_linters(extra_modules: Optional[List[str]] = None) -> List[str]:
+    extra_modules = extra_modules or []
+    linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
+    linter_modules.extend(extra_modules)
+    linters = list()
+    for module in linter_modules:
+        for name, value in inspect.getmembers(module):
+            if callable(value) and name.startswith("lint_"):
+                linters.append(name[5:])
+            elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
+                linters.append(name)
+    return linters

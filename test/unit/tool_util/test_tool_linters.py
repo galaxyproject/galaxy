@@ -8,6 +8,7 @@ from galaxy.tool_util.lint import (
     lint_tool_source_with_modules,
     lint_xml_with,
     LintContext,
+    list_linters,
     XMLLintMessageLine,
     XMLLintMessageXPath,
 )
@@ -2070,3 +2071,23 @@ def test_xml_comments_are_ignored(lint_ctx: LintContext):
     lint_xml_with(lint_ctx, tool_xml)
     for lint_message in lint_ctx.message_list:
         assert "Comment" not in lint_message.message
+
+
+def test_list_linters():
+    linters = list_linters()
+    assert len(linters) >= 129
+    # make sure that linters from all modules are available
+    for prefix in [
+        "Citations",
+        "Command",
+        "CWL",
+        "ToolProfile",
+        "Help",
+        "Inputs",
+        "Outputs",
+        "StdIO",
+        "Tests",
+        "XMLOrder",
+        "XSD",
+    ]:
+        assert len([x for x in linters if x.startswith(prefix)])
