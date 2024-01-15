@@ -3487,6 +3487,16 @@ class FilterFailedDatasetsTool(FilterDatasetsTool):
         return element.element_object.is_ok
 
 
+class KeepSuccessDatasetsTool(FilterDatasetsTool):
+    tool_type = "keep_success_datasets_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        return element.element_object.is_ok
+
+
 class FilterEmptyDatasetsTool(FilterDatasetsTool):
     tool_type = "filter_empty_datasets_collection"
     require_dataset_ok = False

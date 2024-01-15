@@ -3255,6 +3255,106 @@ input_c:
             # Follow proves one job was filtered out of the result of cat1
             assert len(filter_jobs_by_tool("cat1")) == 1, jobs
 
+    def test_keep_success_mapping_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    state:
+       input:
+         $link: input_c
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    state:
+      input:
+        $link: mixed_collection/out_file1
+
+  cat:
+    tool_id: cat1
+    state:
+      input1:
+        $link: filtered_collection
+""",
+                test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            jobs = summary.jobs
+
+            def filter_jobs_by_tool(tool_id):
+                return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+            assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
+            assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
+            # Follow proves one job was filtered out of the result of cat1
+            assert len(filter_jobs_by_tool("cat1")) == 1, jobs
+
+    def test_keep_success_mapping_paused(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    state:
+       input:
+         $link: input_c
+
+  cat:
+    tool_id: cat1
+    state:
+      input1:
+        $link: mixed_collection/out_file1
+
+  filtered_collection:
+    tool_id: "__FILTER_FAILED_DATASETS__"
+    state:
+      input:
+        $link: cat/out_file1
+
+""",
+                test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            jobs = summary.jobs
+
+            def filter_jobs_by_tool(tool_id):
+                return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+            assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
+            assert len(filter_jobs_by_tool("cat1")) == 2, jobs
+            assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
+
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
