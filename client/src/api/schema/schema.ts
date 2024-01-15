@@ -19471,7 +19471,7 @@ export interface operations {
         /** Import a data manager bundle */
         parameters?: {
             query?: {
-                tool_data_file_path?: Record<string, never>;
+                tool_data_file_path?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
