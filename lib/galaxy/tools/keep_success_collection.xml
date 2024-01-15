@@ -48,7 +48,7 @@ Keep datasets in success (green) from a collection.
 Description
 ===========
 
-This tool takes a dataset collection and filters in (keep) datasets in the success (green) state. This is useful for continuing a multi-sample analysis when one of more of the samples fails or is slow to run or is in paused state.
+This tool takes a dataset collection and filters in (keep) datasets in the success (green) state. This is useful for continuing a multi-sample analysis when one of more of the samples fails or is in paused state.
 
 .. image:: ${static_path}/images/tools/collection_ops/keep_success.svg
   :width: 500
