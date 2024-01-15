@@ -295,7 +295,7 @@ def unique_id(KEY_SIZE=128):
 
 
 def parse_xml(
-    fname: StrPath, schemafname: Union[StrPath, None] = None, strip_whitespace=True, remove_comments=True
+    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
@@ -329,8 +329,8 @@ def parse_xml(
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
-    except etree.DocumentInvalid as e:
-        log.exception(f"Validation of file %s failed with error {e}" % fname)
+    except etree.DocumentInvalid:
+        log.exception("Validation of file %s failed", fname)
         raise
     return tree
 
