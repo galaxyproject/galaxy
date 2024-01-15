@@ -2,13 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type MessageNotification } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 
-import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faInbox);
@@ -42,16 +40,44 @@ const notificationVariant = computed(() => {
 </script>
 
 <template>
-    <BCol>
-        <BRow align-v="center">
-            <Heading size="md" :bold="!props.options.notification.seen_time" class="mb-0">
+    <div class="message-notification">
+        <div class="message-notification-header">
+            <div
+                :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''"
+                class="message-notification-title">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
                 {{ props.options.notification?.content?.subject }}
-            </Heading>
+            </div>
+
             <NotificationActions v-if="!props.options.previewMode" :notification="props.options.notification" />
-        </BRow>
-        <BRow>
+        </div>
+
+        <div>
             <span id="notification-message" v-html="renderMarkdown(props.options.notification.content.message)" />
-        </BRow>
-    </BCol>
+        </div>
+    </div>
 </template>
+
+<style scoped lang="scss">
+.message-notification {
+    container: message-notification / inline-size;
+
+    width: 100%;
+    flex-grow: 1;
+
+    .message-notification-title {
+        font-size: 1rem;
+    }
+
+    @container message-notification (min-width: 576px) {
+        .message-notification-header {
+            display: flex;
+            align-items: center;
+
+            .message-notification-title {
+                font-size: 1.25rem;
+            }
+        }
+    }
+}
+</style>
