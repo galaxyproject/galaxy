@@ -3327,7 +3327,7 @@ steps:
         $link: mixed_collection/out_file1
 
   filtered_collection:
-    tool_id: "__FILTER_FAILED_DATASETS__"
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
     state:
       input:
         $link: cat/out_file1
