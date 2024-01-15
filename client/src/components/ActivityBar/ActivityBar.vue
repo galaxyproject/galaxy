@@ -17,6 +17,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import NotificationsBox from "@/components/Panels/NotificationsBox.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
@@ -196,10 +197,9 @@ function toggleContextMenu(evt: MouseEvent) {
                     v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
-                    :is-active="isActiveRoute('/user/notifications')"
+                    :is-active="isActiveSideBar('notifications')"
                     title="Notifications"
-                    to="/user/notifications"
-                    @click="onToggleSidebar()" />
+                    @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
@@ -215,6 +215,9 @@ function toggleContextMenu(evt: MouseEvent) {
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
             <WorkflowBox />
+        </FlexPanel>
+        <FlexPanel v-else-if="isActiveSideBar('notifications')" key="notifications" side="left" :collapsible="false">
+            <NotificationsBox />
         </FlexPanel>
         <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
             <ActivitySettings />
