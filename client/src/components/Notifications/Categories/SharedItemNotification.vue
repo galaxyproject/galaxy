@@ -2,14 +2,13 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BLink, BRow } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { SharedItemNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
 
-import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faExternalLinkAlt, faRetweet);
@@ -54,15 +53,19 @@ function markNotificationAsSeen() {
 </script>
 
 <template>
-    <BCol>
-        <BRow align-v="center">
-            <Heading size="md" :bold="!notification.seen_time" class="mb-0">
+    <div class="shared-item-notification">
+        <div class="shared-item-notification-header">
+            <div
+                :class="!props.notification.seen_time ? 'font-weight-bold' : ''"
+                class="shared-item-notification-title">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="retweet" />
                 {{ sharedItemType }} shared with you by <em>{{ content.owner_name }}</em>
-            </Heading>
+            </div>
+
             <NotificationActions :notification="notification" />
-        </BRow>
-        <BRow>
+        </div>
+
+        <div>
             <p id="notification-message" class="m-0">
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
@@ -80,6 +83,30 @@ function markNotificationAsSeen() {
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>
-        </BRow>
-    </BCol>
+        </div>
+    </div>
 </template>
+
+<style scoped lang="scss">
+.shared-item-notification {
+    container: shared-item-notification / inline-size;
+
+    width: 100%;
+    flex-grow: 1;
+
+    .shared-item-notification-title {
+        font-size: 1rem;
+    }
+
+    @container shared-item-notification (min-width: 576px) {
+        .shared-item-notification-header {
+            display: flex;
+            align-items: center;
+
+            .shared-item-notification-title {
+                font-size: 1.25rem;
+            }
+        }
+    }
+}
+</style>
