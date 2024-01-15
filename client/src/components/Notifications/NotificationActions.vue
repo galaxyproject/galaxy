@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
+import { BButton, BInputGroup } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 import type { UserNotification } from "@/api/notifications";
@@ -34,9 +34,10 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 </script>
 
 <template>
-    <BCol v-if="notification">
-        <BRow align-h="end" align-v="center">
-            <UtcDate class="mx-2" :date="notification.create_time" mode="elapsed" />
+    <div v-if="notification" class="notification-actions">
+        <div class="notification-actions-buttons">
+            <UtcDate :date="notification.create_time" mode="elapsed" />
+
             <BInputGroup>
                 <AsyncButton
                     v-if="!notification.seen_time"
@@ -44,6 +45,7 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     title="Mark as read"
                     icon="check"
                     :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
+
                 <BButton
                     v-else-if="notification.expiration_time"
                     id="expiration-time-button"
@@ -52,12 +54,25 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     :title="getNotificationExpirationTitle(notification)">
                     <FontAwesomeIcon icon="hourglass-half" />
                 </BButton>
+
                 <AsyncButton
                     id="delete-button"
                     icon="trash"
                     title="Delete"
                     :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />
             </BInputGroup>
-        </BRow>
-    </BCol>
+        </div>
+    </div>
 </template>
+
+<style scoped lang="scss">
+.notification-actions {
+    margin-left: auto;
+
+    .notification-actions-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+</style>
