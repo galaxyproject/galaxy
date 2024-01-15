@@ -1,4 +1,3 @@
-import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
 import type { Color } from "@/components/Workflow/Editor/Comments/colors";
@@ -15,7 +14,7 @@ import {
 import { assertDefined } from "@/utils/assertions";
 import { hasKeys, match } from "@/utils/utils";
 
-import { useScopePointerStore } from "./scopePointerStore";
+import { defineScopedStore } from "./scopedStore";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
 import { Step, useWorkflowStepStore } from "./workflowStepStore";
 
@@ -92,220 +91,216 @@ function assertCommentDataValid(
 
 export type WorkflowCommentStore = ReturnType<typeof useWorkflowCommentStore>;
 
-export const useWorkflowCommentStore = (workflowId: string) => {
-    const { scope } = useScopePointerStore();
+export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore", (workflowId) => {
+    const commentsRecord = ref<Record<number, WorkflowComment>>({});
+    const localCommentsMetadata = ref<Record<number, CommentsMetadata>>({});
 
-    return defineStore(`workflowCommentStore${scope(workflowId)}`, () => {
-        const commentsRecord = ref<Record<number, WorkflowComment>>({});
-        const localCommentsMetadata = ref<Record<number, CommentsMetadata>>({});
+    const comments = computed(() => Object.values(commentsRecord.value));
 
-        const comments = computed(() => Object.values(commentsRecord.value));
+    function $reset() {
+        commentsRecord.value = {};
+        localCommentsMetadata.value = {};
+    }
 
-        function $reset() {
-            commentsRecord.value = {};
-            localCommentsMetadata.value = {};
-        }
+    const addComments = (commentsArray: WorkflowComment[], defaultPosition: [number, number] = [0, 0]) => {
+        commentsArray.forEach((comment) => {
+            const newComment = structuredClone(comment);
+            newComment.position[0] += defaultPosition[0];
+            newComment.position[1] += defaultPosition[1];
 
-        const addComments = (commentsArray: WorkflowComment[], defaultPosition: [number, number] = [0, 0]) => {
-            commentsArray.forEach((comment) => {
-                const newComment = structuredClone(comment);
-                newComment.position[0] += defaultPosition[0];
-                newComment.position[1] += defaultPosition[1];
-
-                set(commentsRecord.value, newComment.id, newComment);
-            });
-        };
-
-        const highestCommentId = computed(() => comments.value[comments.value.length - 1]?.id ?? -1);
-
-        const isJustCreated = computed(() => (id: number) => localCommentsMetadata.value[id]?.justCreated ?? false);
-
-        const getComment = computed(() => (id: number) => {
-            const comment = commentsRecord.value[id];
-            assertDefined(comment);
-            return comment;
+            set(commentsRecord.value, newComment.id, newComment);
         });
+    };
 
-        function changePosition(id: number, position: [number, number]) {
-            const comment = getComment.value(id);
-            set(comment, "position", vecReduceFigures(position));
+    const highestCommentId = computed(() => comments.value[comments.value.length - 1]?.id ?? -1);
+
+    const isJustCreated = computed(() => (id: number) => localCommentsMetadata.value[id]?.justCreated ?? false);
+
+    const getComment = computed(() => (id: number) => {
+        const comment = commentsRecord.value[id];
+        assertDefined(comment);
+        return comment;
+    });
+
+    function changePosition(id: number, position: [number, number]) {
+        const comment = getComment.value(id);
+        set(comment, "position", vecReduceFigures(position));
+    }
+
+    function changeSize(id: number, size: [number, number]) {
+        const comment = getComment.value(id);
+        set(comment, "size", vecReduceFigures(size));
+    }
+
+    function changeData(id: number, data: unknown) {
+        const comment = getComment.value(id);
+        assertCommentDataValid(comment.type, data);
+        set(comment, "data", data);
+    }
+
+    function changeColor(id: number, color: WorkflowCommentColor) {
+        const comment = getComment.value(id);
+        set(comment, "color", color);
+    }
+
+    function addPoint(id: number, point: [number, number]) {
+        const comment = getComment.value(id);
+        if (!(comment.type === "freehand")) {
+            throw new Error("Can only add points to freehand comment");
         }
 
-        function changeSize(id: number, size: [number, number]) {
-            const comment = getComment.value(id);
-            set(comment, "size", vecReduceFigures(size));
-        }
+        comment.data.line.push(point);
 
-        function changeData(id: number, data: unknown) {
-            const comment = getComment.value(id);
-            assertCommentDataValid(comment.type, data);
-            set(comment, "data", data);
-        }
+        comment.size = vecMax(comment.size, vecSubtract(point, comment.position));
 
-        function changeColor(id: number, color: WorkflowCommentColor) {
-            const comment = getComment.value(id);
-            set(comment, "color", color);
-        }
+        const prevPosition = comment.position;
+        comment.position = vecMin(comment.position, point);
 
-        function addPoint(id: number, point: [number, number]) {
-            const comment = getComment.value(id);
-            if (!(comment.type === "freehand")) {
-                throw new Error("Can only add points to freehand comment");
+        const diff = vecSubtract(prevPosition, comment.position);
+        comment.size = vecAdd(comment.size, diff);
+    }
+
+    function deleteComment(id: number) {
+        del(commentsRecord.value, id);
+    }
+
+    /**
+     * Adds a single comment. Sets the `userCreated` flag.
+     * Meant to be used when a user adds an comment.
+     * @param comment
+     */
+    function createComment(comment: BaseWorkflowComment) {
+        markJustCreated(comment.id);
+        addComments([comment as WorkflowComment]);
+    }
+
+    function markJustCreated(id: number) {
+        const metadata = localCommentsMetadata.value[id];
+
+        if (metadata) {
+            set(metadata, "justCreated", true);
+        } else {
+            set(localCommentsMetadata.value, id, { justCreated: true });
+        }
+    }
+
+    function clearJustCreated(id: number) {
+        const metadata = localCommentsMetadata.value[id];
+
+        if (metadata) {
+            del(metadata, "justCreated");
+        }
+    }
+
+    function deleteFreehandComments() {
+        Object.values(commentsRecord.value).forEach((comment) => {
+            if (comment.type === "freehand") {
+                deleteComment(comment.id);
             }
+        });
+    }
 
-            comment.data.line.push(point);
+    function commentToRectangle(comment: WorkflowComment): Rectangle {
+        return {
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        };
+    }
 
-            comment.size = vecMax(comment.size, vecSubtract(point, comment.position));
+    /** Calculates which comments are within frames and attaches that information to the parent comments */
+    function resolveCommentsInFrames() {
+        // reverse to give frames on top of other frames higher precedence
+        const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
+        let candidates = [...comments.value];
 
-            const prevPosition = comment.position;
-            comment.position = vecMin(comment.position, point);
+        frameComments.forEach((frame) => {
+            const bounds = new AxisAlignedBoundingBox();
+            bounds.fitRectangle(commentToRectangle(frame));
+            frame.child_comments = [];
 
-            const diff = vecSubtract(prevPosition, comment.position);
-            comment.size = vecAdd(comment.size, diff);
-        }
+            // remove when matched, so each comment can only be linked to one frame
+            candidates = candidates.flatMap((comment) => {
+                const rect: Rectangle = commentToRectangle(comment);
 
-        function deleteComment(id: number) {
-            del(commentsRecord.value, id);
-        }
-
-        /**
-         * Adds a single comment. Sets the `userCreated` flag.
-         * Meant to be used when a user adds an comment.
-         * @param comment
-         */
-        function createComment(comment: BaseWorkflowComment) {
-            markJustCreated(comment.id);
-            addComments([comment as WorkflowComment]);
-        }
-
-        function markJustCreated(id: number) {
-            const metadata = localCommentsMetadata.value[id];
-
-            if (metadata) {
-                set(metadata, "justCreated", true);
-            } else {
-                set(localCommentsMetadata.value, id, { justCreated: true });
-            }
-        }
-
-        function clearJustCreated(id: number) {
-            const metadata = localCommentsMetadata.value[id];
-
-            if (metadata) {
-                del(metadata, "justCreated");
-            }
-        }
-
-        function deleteFreehandComments() {
-            Object.values(commentsRecord.value).forEach((comment) => {
-                if (comment.type === "freehand") {
-                    deleteComment(comment.id);
+                if (comment !== frame && bounds.contains(rect)) {
+                    // push id and remove from candidates when in bounds
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    frame.child_comments!.push(comment.id);
+                    return [];
+                } else {
+                    // otherwise do nothing and keep in list
+                    return [comment];
                 }
             });
-        }
+        });
+    }
 
-        function commentToRectangle(comment: WorkflowComment): Rectangle {
+    const stateStore = useWorkflowStateStore(workflowId);
+
+    function stepToRectangle(step: Step): Rectangle | null {
+        const rect = stateStore.stepPosition[step.id];
+
+        if (rect && step.position) {
             return {
-                x: comment.position[0],
-                y: comment.position[1],
-                width: comment.size[0],
-                height: comment.size[1],
+                x: step.position.left,
+                y: step.position.top,
+                width: rect.width,
+                height: rect.height,
             };
+        } else {
+            return null;
         }
+    }
 
-        /** Calculates which comments are within frames and attaches that information to the parent comments */
-        function resolveCommentsInFrames() {
-            // reverse to give frames on top of other frames higher precedence
-            const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
-            let candidates = [...comments.value];
+    const stepStore = useWorkflowStepStore(workflowId);
 
-            frameComments.forEach((frame) => {
-                const bounds = new AxisAlignedBoundingBox();
-                bounds.fitRectangle(commentToRectangle(frame));
-                frame.child_comments = [];
+    /** Calculates which steps are within frames and attaches that information to the parent comments */
+    function resolveStepsInFrames() {
+        // reverse to give frames on top of other frames higher precedence
+        const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
+        let candidates = [...Object.values(stepStore.steps)];
 
-                // remove when matched, so each comment can only be linked to one frame
-                candidates = candidates.flatMap((comment) => {
-                    const rect: Rectangle = commentToRectangle(comment);
+        frameComments.forEach((frame) => {
+            const bounds = new AxisAlignedBoundingBox();
+            bounds.fitRectangle(commentToRectangle(frame));
+            frame.child_steps = [];
 
-                    if (comment !== frame && bounds.contains(rect)) {
-                        // push id and remove from candidates when in bounds
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                        frame.child_comments!.push(comment.id);
-                        return [];
-                    } else {
-                        // otherwise do nothing and keep in list
-                        return [comment];
-                    }
-                });
+            // remove when matched, so each step can only be linked to one frame
+            candidates = candidates.flatMap((step) => {
+                const rect = stepToRectangle(step);
+
+                if (rect && bounds.contains(rect)) {
+                    // push id and remove from candidates when in bounds
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    frame.child_steps!.push(step.id);
+                    return [];
+                } else {
+                    // otherwise do nothing and keep in list
+                    return [step];
+                }
             });
-        }
+        });
+    }
 
-        const stateStore = useWorkflowStateStore(workflowId);
-
-        function stepToRectangle(step: Step): Rectangle | null {
-            const rect = stateStore.stepPosition[step.id];
-
-            if (rect && step.position) {
-                return {
-                    x: step.position.left,
-                    y: step.position.top,
-                    width: rect.width,
-                    height: rect.height,
-                };
-            } else {
-                return null;
-            }
-        }
-
-        const stepStore = useWorkflowStepStore(workflowId);
-
-        /** Calculates which steps are within frames and attaches that information to the parent comments */
-        function resolveStepsInFrames() {
-            // reverse to give frames on top of other frames higher precedence
-            const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
-            let candidates = [...Object.values(stepStore.steps)];
-
-            frameComments.forEach((frame) => {
-                const bounds = new AxisAlignedBoundingBox();
-                bounds.fitRectangle(commentToRectangle(frame));
-                frame.child_steps = [];
-
-                // remove when matched, so each step can only be linked to one frame
-                candidates = candidates.flatMap((step) => {
-                    const rect = stepToRectangle(step);
-
-                    if (rect && bounds.contains(rect)) {
-                        // push id and remove from candidates when in bounds
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                        frame.child_steps!.push(step.id);
-                        return [];
-                    } else {
-                        // otherwise do nothing and keep in list
-                        return [step];
-                    }
-                });
-            });
-        }
-
-        return {
-            commentsRecord,
-            comments,
-            addComments,
-            highestCommentId,
-            isJustCreated,
-            changePosition,
-            changeSize,
-            changeData,
-            changeColor,
-            addPoint,
-            deleteComment,
-            createComment,
-            clearJustCreated,
-            deleteFreehandComments,
-            resolveCommentsInFrames,
-            resolveStepsInFrames,
-            $reset,
-        };
-    })();
-};
+    return {
+        commentsRecord,
+        comments,
+        addComments,
+        highestCommentId,
+        isJustCreated,
+        changePosition,
+        changeSize,
+        changeData,
+        changeColor,
+        addPoint,
+        deleteComment,
+        createComment,
+        clearJustCreated,
+        deleteFreehandComments,
+        resolveCommentsInFrames,
+        resolveStepsInFrames,
+        $reset,
+    };
+});
