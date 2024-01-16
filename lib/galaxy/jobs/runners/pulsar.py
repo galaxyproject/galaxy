@@ -274,7 +274,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return JobDestination(runner="pulsar", params=url_to_destination_params(url))
 
     def check_watched_item(self, job_state):
-        check_database_connection(self.app.model.session())
         if self.use_mq:
             # Might still need to check pod IPs.
             job_wrapper = job_state.job_wrapper
