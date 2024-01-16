@@ -33,6 +33,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     const inputCatcherActive = ref<boolean>(false);
     const inputCatcherEventListeners = new Set<InputCatcherEventListener>();
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
+    const toolbarVisible = useUserLocalStorage("workflow-editor-toolbar-visible", true);
 
     const commentOptions = reactive({
         bold: false,
@@ -83,6 +84,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     }
 
     return {
+        toolbarVisible,
         snapActive,
         snapDistance,
         currentTool,
