@@ -7102,9 +7102,9 @@ input_c:
             self._assert_status_code_is(other_import_response, 200)
             other_id = other_import_response.json()["id"]
             workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=other_id)
-            # response = self._get(f"workflows/{other_id}/usage")
-            # self._assert_status_code_is(response, 200)
-            # assert len(response.json()) == 0
+            response = self._get(f"workflows/{other_id}/usage")
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 0
             run_workflow_response = self.workflow_populator.invoke_workflow_raw(
                 workflow_id, workflow_request, assert_ok=True
             )
@@ -7118,9 +7118,9 @@ input_c:
         workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
         with self._different_user():
             workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=workflow_id)
-            # response = self._get(f"workflows/{workflow_id}/usage")
-            # self._assert_status_code_is(response, 200)
-            # assert len(response.json()) == 0
+            response = self._get(f"workflows/{workflow_id}/usage")
+            self._assert_status_code_is(response, 200)
+            assert len(response.json()) == 0
             run_workflow_response = self.workflow_populator.invoke_workflow_raw(
                 workflow_id, workflow_request, assert_ok=True
             )
@@ -7133,9 +7133,9 @@ input_c:
     def test_invocations_not_accessible_by_different_user_for_published_workflow(self):
         workflow_id = self.workflow_populator.simple_workflow("test_usage", publish=True)
         workflow_request, history_id, _ = self._setup_workflow_run(workflow_id=workflow_id)
-        # response = self._get(f"workflows/{workflow_id}/usage")
-        # self._assert_status_code_is(response, 200)
-        # assert len(response.json()) == 0
+        response = self._get(f"workflows/{workflow_id}/usage")
+        self._assert_status_code_is(response, 200)
+        assert len(response.json()) == 0
         run_workflow_response = self.workflow_populator.invoke_workflow_raw(
             workflow_id, workflow_request, assert_ok=True
         )
