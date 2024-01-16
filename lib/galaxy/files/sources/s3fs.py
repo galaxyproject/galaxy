@@ -83,6 +83,7 @@ class S3FsFilesSource(BaseFilesSource):
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         extra_props = opts.extra_props or {} if opts else {}
+        self._props = self._serialization_props(user_context)
         fs = s3fs.S3FileSystem(**{**self._props, **extra_props})
         return fs
 
@@ -107,7 +108,7 @@ class S3FsFilesSource(BaseFilesSource):
         effective_props = {}
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        effective_props["bucket"] = self._bucket
+        self._bucket = self._evaluate_prop(self._bucket, user_context=user_context)
         return effective_props
 
     def score_url_match(self, url: str):
@@ -121,3 +122,4 @@ class S3FsFilesSource(BaseFilesSource):
 
 
 __all__ = ("S3FsFilesSource",)
+
