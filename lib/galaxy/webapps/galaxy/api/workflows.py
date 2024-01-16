@@ -1311,13 +1311,6 @@ class FastAPIInvocations:
         step_details: StepDetailQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
-        """If workflow_id is supplied (either via URL or query parameter) it should be an
-        encoded StoredWorkflow id and returned invocations will be restricted to that
-        workflow. history_id (an encoded History id) can be used to further restrict the
-        query. If neither a workflow_id or history_id is supplied, all the current user's
-        workflow invocations will be indexed (as determined by the invocation being
-        executed on one of the user's histories)
-        """
         invocation_payload = InvocationIndexPayload(
             workflow_id=workflow_id,
             history_id=history_id,
@@ -1343,6 +1336,12 @@ class FastAPIInvocations:
         summary="Get the list of a user's workflow invocations.",
         name="index_invocations",
     )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+        deprecated=True,
+    )
     def index_workflow_invocations(
         self,
         response: Response,
@@ -1360,7 +1359,6 @@ class FastAPIInvocations:
         step_details: StepDetailQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
-        """An alias for GET '/api/invocations'"""
         invocations = self.index_invocations(
             response=response,
             workflow_id=workflow_id,
