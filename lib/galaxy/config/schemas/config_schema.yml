@@ -1886,8 +1886,16 @@ mapping:
         required: False
         desc: |
           The upload store is a temporary directory in which files uploaded by the
-          tus middleware or server will be placed.
+          tus middleware or server for user uploads will be placed.
           Defaults to new_file_path if not set.
+
+      tus_upload_store_job_files:
+        type: str
+        required: False
+        desc: |
+          The upload store is a temporary directory in which files uploaded by the
+          tus middleware or server for remote job files (Pulsar) will be placed.
+          Defaults to tus_upload_store if not set.
 
       chunk_upload_size:
         type: int
