@@ -60,7 +60,7 @@ class FastAPIConfiguration:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        view: Optional[str] = SerializationViewQueryParam,
+        view: SerializationViewQueryParam = None,
         keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """

@@ -1,18 +1,13 @@
 import logging
-from enum import Enum
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Tuple,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
-)
+from pydantic import Field
 
 from galaxy.celery.tasks import (
     prepare_invocation_download,
@@ -22,6 +17,7 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ObjectNotFound,
 )
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import (
     fetch_job_states,
@@ -38,6 +34,9 @@ from galaxy.model.store import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
+    CreateInvocationFromStore,
+    InvocationSerializationParams,
+    InvocationSerializationView,
     InvocationStep,
     WorkflowInvocationResponse,
 )
@@ -57,45 +56,13 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
+    ConsumesModelStores,
     ensure_celery_tasks_enabled,
     model_store_storage_target,
     ServiceBase,
 )
 
 log = logging.getLogger(__name__)
-
-
-class InvocationSerializationView(str, Enum):
-    element = "element"
-    collection = "collection"
-
-
-class InvocationSerializationParams(BaseModel):
-    """Contains common parameters for customizing model serialization."""
-
-    view: Optional[InvocationSerializationView] = Field(
-        default=None,
-        title="View",
-        description=(
-            "The name of the view used to serialize this item. "
-            "This will return a predefined set of attributes of the item."
-        ),
-        examples=["element"],
-    )
-    step_details: bool = Field(
-        default=False,
-        title="Include step details",
-        description="Include details for individual invocation steps and populate a steps attribute in the resulting dictionary",
-    )
-    legacy_job_state: bool = Field(
-        default=False,
-        description="""Populate the invocation step state with the job state instead of the invocation step state.
-        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
-        Partially scheduled steps may provide incomplete information and the listed steps outputs
-        are not the mapped over step outputs but the individual job outputs.""",
-        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
-        json_schema_extra={"deprecated": True},
-    )
 
 
 class InvocationIndexPayload(InvocationIndexQueryPayload):
@@ -110,7 +77,7 @@ class WriteInvocationStoreToPayload(WriteStoreToPayload, BcoGenerationParameters
     pass
 
 
-class InvocationsService(ServiceBase):
+class InvocationsService(ServiceBase, ConsumesModelStores):
     def __init__(
         self,
         security: IdEncodingHelper,
@@ -287,3 +254,17 @@ class InvocationsService(ServiceBase):
                 export_store.export_workflow_invocation(workflow_invocation)
                 export_target.seek(0)
             return export_target.read()
+
+    def create_from_store(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: CreateInvocationFromStore,
+        serialization_params: InvocationSerializationParams,
+    ):
+        history = self._histories_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            history=history,
+        )
+        return self.serialize_workflow_invocations(object_tracker.invocations_by_key.values(), serialization_params)

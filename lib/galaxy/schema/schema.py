@@ -1429,18 +1429,14 @@ class InvocationSortByEnum(str, Enum):
 
 
 class InvocationIndexQueryPayload(Model):
-    workflow_id: Optional[DecodedDatabaseIdField] = Field(
+    workflow_id: Optional[int] = Field(
         None, title="Workflow ID", description="Return only invocations for this Workflow ID"
     )
-    history_id: Optional[DecodedDatabaseIdField] = Field(
+    history_id: Optional[int] = Field(
         None, title="History ID", description="Return only invocations for this History ID"
     )
-    job_id: Optional[DecodedDatabaseIdField] = Field(
-        None, title="Job ID", description="Return only invocations for this Job ID"
-    )
-    user_id: Optional[DecodedDatabaseIdField] = Field(
-        None, title="User ID", description="Return invocations for this User ID"
-    )
+    job_id: Optional[int] = Field(None, title="Job ID", description="Return only invocations for this Job ID")
+    user_id: Optional[int] = Field(None, title="User ID", description="Return invocations for this User ID")
     sort_by: Optional[InvocationSortByEnum] = Field(
         None, title="Sort By", description="Sort Workflow Invocations by this attribute"
     )

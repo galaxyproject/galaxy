@@ -908,6 +908,17 @@ export interface paths {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
+    "/api/invocations": {
+        /** Get the list of a user's workflow invocations. */
+        get: operations["index_invocations_api_invocations_get"];
+    };
+    "/api/invocations/from_store": {
+        /**
+         * Create Invocations From Store
+         * @description Create invocation(s) from a supplied model store.
+         */
+        post: operations["create_invocations_from_store_api_invocations_from_store_post"];
+    };
     "/api/invocations/steps/{step_id}": {
         /** Show details of workflow invocation step. */
         get: operations["step_api_invocations_steps__step_id__get"];
@@ -1788,6 +1799,10 @@ export interface paths {
          */
         put: operations["enable_link_access_api_workflows__workflow_id__enable_link_access_put"];
     };
+    "/api/workflows/{workflow_id}/invocations": {
+        /** Get the list of a user's workflow invocations. */
+        get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
+    };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
         /**
          * Get detailed description of a workflow invocation.
@@ -1892,6 +1907,13 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_workflows__workflow_id__unpublish_put"];
+    };
+    "/api/workflows/{workflow_id}/usage": {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @deprecated
+         */
+        get: operations["index_invocations_api_workflows__workflow_id__usage_get"];
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}": {
         /**
@@ -3021,6 +3043,41 @@ export interface components {
             store_content_uri?: string | null;
             /** Store Dict */
             store_dict?: Record<string, never> | null;
+        };
+        /** CreateInvocationsFromStorePayload */
+        CreateInvocationsFromStorePayload: {
+            /**
+             * History ID
+             * @description The ID of the history associated with the invocations.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * Legacy Job State
+             * @deprecated
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             * @default false
+             */
+            legacy_job_state?: boolean;
+            model_store_format?: components["schemas"]["ModelStoreFormat"] | null;
+            /**
+             * Include step details
+             * @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary
+             * @default false
+             */
+            step_details?: boolean;
+            /** Store Content Uri */
+            store_content_uri?: string | null;
+            /** Store Dict */
+            store_dict?: Record<string, never> | null;
+            /**
+             * View
+             * @description The name of the view used to serialize this item. This will return a predefined set of attributes of the item.
+             */
+            view?: components["schemas"]["InvocationSerializationView"] | null;
         };
         /** CreateLibrariesFromStore */
         CreateLibrariesFromStore: {
@@ -4559,11 +4616,6 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
-        /**
-         * ExtendedInvocationStepState
-         * @enum {string}
-         */
-        ExtendedInvocationStepState: "new" | "ready" | "scheduled" | "ok";
         /** ExtraFileEntry */
         ExtraFileEntry: {
             /** @description The class of this entry, either File or Directory. */
@@ -6963,6 +7015,11 @@ export interface components {
          */
         InvocationReport: {
             /**
+             * Errors
+             * @description Errors associated with the invocation.
+             */
+            errors?: Record<string, never> | null;
+            /**
              * Galaxy Version
              * @description The version of Galaxy this object was generated with.
              */
@@ -6973,6 +7030,21 @@ export interface components {
              */
             generate_version?: string | null;
             /**
+             * Histories
+             * @description Histories associated with the invocation.
+             */
+            histories?: Record<string, never> | null;
+            /**
+             * History dataset collections
+             * @description History dataset collections associated with the invocation.
+             */
+            history_dataset_collections?: Record<string, never> | null;
+            /**
+             * History datasets
+             * @description History datasets associated with the invocation.
+             */
+            history_datasets?: Record<string, never> | null;
+            /**
              * Workflow ID
              * @description The workflow this invocation has been triggered for.
              * @example 0123456789ABCDEF
@@ -6981,13 +7053,21 @@ export interface components {
             /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
-             * @default
              */
             invocation_markdown?: string | null;
             /**
+             * Invocations
+             * @description Other invocations associated with the invocation.
+             */
+            invocations?: Record<string, never> | null;
+            /**
+             * Jobs
+             * @description Jobs associated with the invocation.
+             */
+            jobs?: Record<string, never> | null;
+            /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
-             * @default
              */
             markdown?: string | null;
             /**
@@ -7013,8 +7093,22 @@ export interface components {
              * @description The name of the user who owns this report.
              */
             username: string;
-            [key: string]: unknown | undefined;
+            /**
+             * Workflows
+             * @description Workflows associated with the invocation.
+             */
+            workflows?: Record<string, never> | null;
         };
+        /**
+         * InvocationSerializationView
+         * @enum {string}
+         */
+        InvocationSerializationView: "element" | "collection";
+        /**
+         * InvocationSortByEnum
+         * @enum {string}
+         */
+        InvocationSortByEnum: "create_time" | "update_time" | "None";
         /**
          * InvocationState
          * @enum {string}
@@ -7074,7 +7168,7 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state?: components["schemas"]["ExtendedInvocationStepState"] | null;
+            state?: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"] | null;
             /** Subworkflow Invocation Id */
             subworkflow_invocation_id: string | null;
             /**
@@ -7214,6 +7308,11 @@ export interface components {
              */
             uuid?: string | null;
         };
+        /**
+         * InvocationStepState
+         * @enum {string}
+         */
+        InvocationStepState: "new" | "ready" | "scheduled";
         /** InvocationUnexpectedFailureResponse */
         InvocationUnexpectedFailureResponse: {
             /**
@@ -16465,6 +16564,86 @@ export interface operations {
             };
         };
     };
+    index_invocations_api_invocations_get: {
+        /** Get the list of a user's workflow invocations. */
+        parameters?: {
+            /** @description Return only invocations for this Workflow ID */
+            /** @description Return only invocations for this History ID */
+            /** @description Return only invocations for this Job ID */
+            /** @description Return invocations for this User ID. */
+            /** @description Sort Workflow Invocations by this attribute */
+            /** @description Sort in descending order? */
+            /** @description Set to false to only include terminal Invocations. */
+            /** @description Limit the number of invocations to return. */
+            /** @description Number of invocations to skip. */
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            /** @description View to be passed to the serializer */
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            query?: {
+                workflow_id?: string | null;
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: string | null;
+                step_details?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invocations_from_store_api_invocations_from_store_post: {
+        /**
+         * Create Invocations From Store
+         * @description Create invocation(s) from a supplied model store.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvocationsFromStorePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     step_api_invocations_steps__step_id__get: {
         /** Show details of workflow invocation step. */
         parameters: {
@@ -21294,6 +21473,57 @@ export interface operations {
             };
         };
     };
+    index_invocations_api_workflows__workflow_id__invocations_get: {
+        /** Get the list of a user's workflow invocations. */
+        parameters: {
+            /** @description Return only invocations for this History ID */
+            /** @description Return only invocations for this Job ID */
+            /** @description Return invocations for this User ID. */
+            /** @description Sort Workflow Invocations by this attribute */
+            /** @description Sort in descending order? */
+            /** @description Set to false to only include terminal Invocations. */
+            /** @description Limit the number of invocations to return. */
+            /** @description Number of invocations to skip. */
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            /** @description View to be passed to the serializer */
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            query?: {
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: string | null;
+                step_details?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
         /**
          * Get detailed description of a workflow invocation.
@@ -21898,6 +22128,60 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_invocations_api_workflows__workflow_id__usage_get: {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @deprecated
+         */
+        parameters: {
+            /** @description Return only invocations for this History ID */
+            /** @description Return only invocations for this Job ID */
+            /** @description Return invocations for this User ID. */
+            /** @description Sort Workflow Invocations by this attribute */
+            /** @description Sort in descending order? */
+            /** @description Set to false to only include terminal Invocations. */
+            /** @description Limit the number of invocations to return. */
+            /** @description Number of invocations to skip. */
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            /** @description View to be passed to the serializer */
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            query?: {
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: string | null;
+                step_details?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Validation Error */

@@ -23,7 +23,6 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from pydantic import ConfigDict
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -36,7 +35,10 @@ from galaxy.files.uris import (
     stream_url_to_str,
     validate_uri_access,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -48,9 +50,12 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
+    CreateInvocationFromStore,
+    CreateInvocationsFromStorePayload,
     InvocationJobsResponse,
     InvocationMessageResponseModel,
     InvocationReport,
+    InvocationSerializationParams,
     InvocationStep,
     InvocationStepJobsResponseCollectionJobsModel,
     InvocationStepJobsResponseJobModel,
@@ -61,11 +66,11 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    InvocationSortByEnum,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    StoreContentSource,
     WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
@@ -77,7 +82,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
@@ -96,13 +100,13 @@ from galaxy.webapps.galaxy.api import (
     Router,
     search_query_param,
 )
+from galaxy.webapps.galaxy.api.common import SerializationViewQueryParam
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
 )
 from galaxy.webapps.galaxy.services.invocations import (
     InvocationIndexPayload,
-    InvocationSerializationParams,
     InvocationsService,
     PrepareStoreDownloadPayload,
     WriteInvocationStoreToPayload,
@@ -119,11 +123,6 @@ from galaxy.workflow.run_request import build_workflow_run_configs
 log = logging.getLogger(__name__)
 
 router = Router(tags=["workflows"])
-
-
-class CreateInvocationFromStore(StoreContentSource):
-    history_id: Optional[str]
-    model_config = ConfigDict(extra="allow")
 
 
 class WorkflowsAPIController(
@@ -791,80 +790,6 @@ class WorkflowsAPIController(
         else:
             return encoded_invocations[0]
 
-    @expose_api
-    def index_invocations(self, trans: GalaxyWebTransaction, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations
-        GET /api/invocations
-
-        Get the list of a user's workflow invocations. If workflow_id is supplied
-        (either via URL or query parameter) it should be an encoded StoredWorkflow id
-        and returned invocations will be restricted to that workflow. history_id (an encoded
-        History id) can be used to further restrict the query. If neither a workflow_id or
-        history_id is supplied, all the current user's workflow invocations will be indexed
-        (as determined by the invocation being executed on one of the user's histories).
-
-        :param  workflow_id:      an encoded stored workflow id to restrict query to
-        :type   workflow_id:      str
-
-        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                  by default.
-        :type   instance:         boolean
-
-        :param  history_id:       an encoded history id to restrict query to
-        :type   history_id:       str
-
-        :param  job_id:           an encoded job id to restrict query to
-        :type   job_id:           str
-
-        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
-        :type   user_id:          str
-
-        :param  view:             level of detail to return per invocation 'element' or 'collection'.
-        :type   view:             str
-
-        :param  step_details:     If 'view' is 'element', also include details on individual steps.
-        :type   step_details:     bool
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        invocation_payload = InvocationIndexPayload(**kwd)
-        serialization_params = InvocationSerializationParams(**kwd)
-        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
-        trans.response.headers["total_matches"] = total_matches
-        return [i.model_dump(mode="json") for i in invocations]
-
-    @expose_api_anonymous
-    def create_invocations_from_store(self, trans, payload, **kwd):
-        """
-        POST /api/invocations/from_store
-
-        Create invocation(s) from a supplied model store.
-
-        Input can be an archive describing a Galaxy model store containing an
-        workflow invocation - for instance one created with with write_store
-        or prepare_store_download endpoint.
-        """
-        create_payload = CreateInvocationFromStore(**payload)
-        serialization_params = InvocationSerializationParams(**payload)
-        # refactor into a service...
-        return [i.model_dump(mode="json") for i in self._create_from_store(trans, create_payload, serialization_params)]
-
-    def _create_from_store(
-        self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
-    ):
-        history = self.history_manager.get_owned(
-            self.decode_id(payload.history_id), trans.user, current_history=trans.history
-        )
-        object_tracker = self.create_objects_from_store(
-            trans,
-            payload,
-            history=history,
-        )
-        return self.invocations_service.serialize_workflow_invocations(
-            object_tracker.invocations_by_key.values(), serialization_params
-        )
-
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
@@ -997,9 +922,12 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
-InstanceQueryParam: Optional[bool] = Query(
-    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
-)
+InstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID.",
+    ),
+]
 
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
@@ -1195,7 +1123,7 @@ class FastAPIWorkflows:
         self,
         workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        instance: Optional[bool] = InstanceQueryParam,
+        instance: InstanceQueryParam = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
 
@@ -1247,21 +1175,93 @@ LegacyJobStateQueryParam = Annotated[
     ),
 ]
 
-
-HistoryIdQueryParam: Annotated[
+WorkflowIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
-        default=None,
-        description="Optional identifier of a History. Use it to restrict the search within a particular History.",
+        title="Workflow ID",
+        description="Return only invocations for this Workflow ID",
+    ),
+]
+
+HistoryIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="History ID",
+        description="Return only invocations for this History ID",
+    ),
+]
+
+JobIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="Job ID",
+        description="Return only invocations for this Job ID",
+    ),
+]
+
+UserIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="User ID",
+        description="Return invocations for this User ID.",
+    ),
+]
+
+InvocationsSortByQueryParam = Annotated[
+    Optional[InvocationSortByEnum],
+    Query(
+        title="Sort By",
+        description="Sort Workflow Invocations by this attribute",
+    ),
+]
+
+InvocationsSortDescQueryParam = Annotated[
+    bool,
+    Query(
+        title="Sort Descending",
+        description="Sort in descending order?",
+    ),
+]
+
+InvocationsIncludeTerminalQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Include Terminal",
+        description="Set to false to only include terminal Invocations.",
+    ),
+]
+
+InvocationsLimitQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Limit",
+        description="Limit the number of invocations to return.",
+    ),
+]
+
+InvocationsOffsetQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Offset",
+        description="Number of invocations to skip.",
     ),
 ]
 
 
-JobIdQueryParam = Annotated[
-    DecodedDatabaseIdField,
+InvocationsInstanceQueryParam = Annotated[
+    Optional[bool],
     Query(
-        title="Job ID",
-        description="The ID of the job",
+        title="Instance",
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
+    ),
+]
+
+CreateInvocationsFromStoreBody = Annotated[
+    CreateInvocationsFromStorePayload,
+    Body(
+        default=...,
+        title="Create invocations from store",
+        description="The values and serialization parameters for creating invocations from a supplied model store.",
     ),
 ]
 
@@ -1269,6 +1269,113 @@ JobIdQueryParam = Annotated[
 @router.cbv
 class FastAPIInvocations:
     invocations_service: InvocationsService = depends(InvocationsService)
+
+    @router.post(
+        "/api/invocations/from_store",
+        name="create_invocations_from_store",
+        description="Create invocation(s) from a supplied model store.",
+    )
+    def create_invocations_from_store(
+        self,
+        payload: CreateInvocationsFromStoreBody,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        """
+        Input can be an archive describing a Galaxy model store containing an
+        workflow invocation - for instance one created with with write_store
+        or prepare_store_download endpoint.
+        """
+        create_payload = CreateInvocationFromStore(**payload.model_dump())
+        serialization_params = InvocationSerializationParams(**payload.model_dump())
+        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
+
+    @router.get(
+        "/api/invocations",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+    )
+    def index_invocations(
+        self,
+        response: Response,
+        workflow_id: WorkflowIdQueryParam = None,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        invocation_payload = InvocationIndexPayload(
+            workflow_id=workflow_id,
+            history_id=history_id,
+            job_id=job_id,
+            user_id=user_id,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
+            instance=instance,
+        )
+        serialization_params = InvocationSerializationParams(
+            view=view,
+            step_details=step_details,
+        )
+        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
+        response.headers["total_matches"] = str(total_matches)
+        return invocations
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+        deprecated=True,
+    )
+    def index_workflow_invocations(
+        self,
+        response: Response,
+        workflow_id: StoredWorkflowIDPathParam,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        invocations = self.index_invocations(
+            response=response,
+            workflow_id=workflow_id,
+            history_id=history_id,
+            job_id=job_id,
+            user_id=user_id,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
+            instance=instance,
+            view=view,
+            step_details=step_details,
+            trans=trans,
+        )
+        return invocations
 
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
@@ -1609,7 +1716,6 @@ class FastAPIInvocations:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
 
-    # Should I even create models for those as they will be removed?
     # TODO: remove this endpoint after 23.1 release
     @router.get(
         "/api/invocations/{invocation_id}/biocompute",
