@@ -307,7 +307,7 @@ def set_datatypes_registry(d_registry):
 class HasTags:
     dict_collection_visible_keys = ["tags"]
     dict_element_visible_keys = ["tags"]
-    tags: List["ItemTagAssociation"]
+    tags: Mapped[List["ItemTagAssociation"]]
 
     def to_dict(self, *args, **kwargs):
         rval = super().to_dict(*args, **kwargs)
@@ -738,29 +738,33 @@ class User(Base, Dictifiable, RepresentById):
     active: Mapped[bool] = mapped_column(Boolean, index=True, default=True, nullable=False)
     activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), nullable=True, index=True)
 
-    addresses = relationship(
+    addresses: Mapped[List["UserAddress"]] = relationship(
         "UserAddress", back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
     )
     cloudauthz = relationship("CloudAuthz", back_populates="user")
     custos_auth = relationship("CustosAuthnzToken", back_populates="user")
-    default_permissions = relationship("DefaultUserPermissions", back_populates="user")
-    groups = relationship("UserGroupAssociation", back_populates="user")
-    histories = relationship(
+    default_permissions: Mapped[List["DefaultUserPermissions"]] = relationship(
+        "DefaultUserPermissions", back_populates="user"
+    )
+    groups: Mapped[List["UserGroupAssociation"]] = relationship("UserGroupAssociation", back_populates="user")
+    histories: Mapped[List["History"]] = relationship(
         "History", back_populates="user", order_by=lambda: desc(History.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
-    active_histories = relationship(
+    active_histories: Mapped[List["History"]] = relationship(
         "History",
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted)) & (not_(History.archived))),  # type: ignore[has-type]
         viewonly=True,
         order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
     )
-    galaxy_sessions = relationship(
+    galaxy_sessions: Mapped[List["GalaxySession"]] = relationship(
         "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
-    quotas = relationship("UserQuotaAssociation", back_populates="user")
-    quota_source_usages = relationship("UserQuotaSourceUsage", back_populates="user")
+    quotas: Mapped[List["UserQuotaAssociation"]] = relationship("UserQuotaAssociation", back_populates="user")
+    quota_source_usages: Mapped[List["UserQuotaSourceUsage"]] = relationship(
+        "UserQuotaSourceUsage", back_populates="user"
+    )
     social_auth = relationship("UserAuthnzToken", back_populates="user")
-    stored_workflow_menu_entries = relationship(
+    stored_workflow_menu_entries: Mapped[List["StoredWorkflowMenuEntry"]] = relationship(
         "StoredWorkflowMenuEntry",
         primaryjoin=(
             lambda: (StoredWorkflowMenuEntry.user_id == User.id)
@@ -771,12 +775,14 @@ class User(Base, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         collection_class=ordering_list("order_index"),
     )
-    _preferences = relationship("UserPreference", collection_class=attribute_mapped_collection("name"))
-    values = relationship(
+    _preferences: Mapped[List["UserPreference"]] = relationship(
+        "UserPreference", collection_class=attribute_mapped_collection("name")
+    )
+    values: Mapped[List["FormValues"]] = relationship(
         "FormValues", primaryjoin=(lambda: User.form_values_id == FormValues.id)  # type: ignore[has-type]
     )
     # Add type hint (will this work w/SA?)
-    api_keys = relationship(
+    api_keys: Mapped[List["APIKeys"]] = relationship(
         "APIKeys",
         back_populates="user",
         order_by=lambda: desc(APIKeys.create_time),
@@ -787,16 +793,20 @@ class User(Base, Dictifiable, RepresentById):
             )
         ),
     )
-    data_manager_histories = relationship("DataManagerHistoryAssociation", back_populates="user")
-    roles = relationship("UserRoleAssociation", back_populates="user")
-    stored_workflows = relationship(
+    data_manager_histories: Mapped[List["DataManagerHistoryAssociation"]] = relationship(
+        "DataManagerHistoryAssociation", back_populates="user"
+    )
+    roles: Mapped[List["UserRoleAssociation"]] = relationship("UserRoleAssociation", back_populates="user")
+    stored_workflows: Mapped[List["StoredWorkflow"]] = relationship(
         "StoredWorkflow",
         back_populates="user",
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),  # type: ignore[has-type]
         cascade_backrefs=False,
     )
-    all_notifications = relationship("UserNotificationAssociation", back_populates="user", cascade_backrefs=False)
-    non_private_roles = relationship(
+    all_notifications: Mapped[List["UserNotificationAssociation"]] = relationship(
+        "UserNotificationAssociation", back_populates="user", cascade_backrefs=False
+    )
+    non_private_roles: Mapped[List["UserRoleAssociation"]] = relationship(
         "UserRoleAssociation",
         viewonly=True,
         primaryjoin=(
@@ -3088,7 +3098,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),  # type: ignore[has-type]
         viewonly=True,
     )
-    tags = relationship("HistoryTagAssociation", order_by=lambda: HistoryTagAssociation.id, back_populates="history")
+    tags: Mapped[List["HistoryTagAssociation"]] = relationship(
+        "HistoryTagAssociation", order_by=lambda: HistoryTagAssociation.id, back_populates="history"
+    )
     annotations = relationship(
         "HistoryAnnotationAssociation", order_by=lambda: HistoryAnnotationAssociation.id, back_populates="history"
     )
@@ -3586,7 +3598,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
 
 
 class UserShareAssociation(RepresentById):
-    user: Optional[User]
+    user: Mapped[User]
 
 
 class HistoryUserShareAssociation(Base, UserShareAssociation):
@@ -3595,7 +3607,7 @@ class HistoryUserShareAssociation(Base, UserShareAssociation):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     history_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("history.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User")
+    user: Mapped[User] = relationship("User")
     history = relationship("History", back_populates="users_shared_with")
 
 
@@ -6803,7 +6815,7 @@ class HistoryDatasetCollectionAssociation(
         back_populates="history_dataset_collection_associations",
         uselist=False,
     )
-    tags = relationship(
+    tags: Mapped[List["HistoryDatasetCollectionTagAssociation"]] = relationship(
         "HistoryDatasetCollectionTagAssociation",
         order_by=lambda: HistoryDatasetCollectionTagAssociation.id,
         back_populates="dataset_collection",
@@ -7152,7 +7164,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
     collection = relationship("DatasetCollection")
     folder = relationship("LibraryFolder")
 
-    tags = relationship(
+    tags: Mapped[List["LibraryDatasetCollectionTagAssociation"]] = relationship(
         "LibraryDatasetCollectionTagAssociation",
         order_by=lambda: LibraryDatasetCollectionTagAssociation.id,
         back_populates="dataset_collection",
@@ -7512,12 +7524,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         primaryjoin=(lambda: StoredWorkflow.latest_workflow_id == Workflow.id),  # type: ignore[has-type]
         lazy=False,
     )
-    tags = relationship(
+    tags: Mapped[List["StoredWorkflowTagAssociation"]] = relationship(
         "StoredWorkflowTagAssociation",
         order_by=lambda: StoredWorkflowTagAssociation.id,
         back_populates="stored_workflow",
     )
-    owner_tags = relationship(
+    owner_tags: Mapped[List["StoredWorkflowTagAssociation"]] = relationship(
         "StoredWorkflowTagAssociation",
         primaryjoin=(
             lambda: and_(
@@ -7874,7 +7886,7 @@ class WorkflowStep(Base, RepresentById):
         back_populates="parent_workflow_steps",
     )
     dynamic_tool = relationship("DynamicTool", primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id))
-    tags = relationship(
+    tags: Mapped[List["WorkflowStepTagAssociation"]] = relationship(
         "WorkflowStepTagAssociation", order_by=lambda: WorkflowStepTagAssociation.id, back_populates="workflow_step"
     )
     annotations = relationship(
@@ -8376,7 +8388,7 @@ class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     stored_workflow_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("stored_workflow.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User")
+    user: Mapped[User] = relationship("User")
     stored_workflow = relationship("StoredWorkflow", back_populates="users_shared_with")
 
 
@@ -10205,7 +10217,9 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
         primaryjoin=(lambda: Page.latest_revision_id == PageRevision.id),  # type: ignore[has-type]
         lazy=False,
     )
-    tags = relationship("PageTagAssociation", order_by=lambda: PageTagAssociation.id, back_populates="page")
+    tags: Mapped[List["PageTagAssociation"]] = relationship(
+        "PageTagAssociation", order_by=lambda: PageTagAssociation.id, back_populates="page"
+    )
     annotations = relationship(
         "PageAnnotationAssociation", order_by=lambda: PageAnnotationAssociation.id, back_populates="page"
     )
@@ -10286,7 +10300,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     page_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("page.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User")
+    user: Mapped[User] = relationship("User")
     page = relationship("Page", back_populates="users_shared_with")
 
 
@@ -10328,7 +10342,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
         primaryjoin=(lambda: Visualization.latest_revision_id == VisualizationRevision.id),
         lazy=False,
     )
-    tags = relationship(
+    tags: Mapped[List["VisualizationTagAssociation"]] = relationship(
         "VisualizationTagAssociation", order_by=lambda: VisualizationTagAssociation.id, back_populates="visualization"
     )
     annotations = relationship(
@@ -10442,7 +10456,7 @@ class VisualizationUserShareAssociation(Base, UserShareAssociation):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     visualization_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("visualization.id"), index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    user = relationship("User")
+    user: Mapped[User] = relationship("User")
     visualization = relationship("Visualization", back_populates="users_shared_with")
 
 
