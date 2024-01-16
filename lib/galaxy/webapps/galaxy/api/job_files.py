@@ -103,7 +103,11 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         elif "session_id" in payload:
             # code stolen from basic.py
             session_id = payload["session_id"]
-            upload_store = trans.app.config.tus_upload_store or trans.app.config.new_file_path
+            upload_store = (
+                trans.app.config.tus_upload_store_job_files
+                or trans.app.config.tus_upload_store
+                or trans.app.config.new_file_path
+            )
             if re.match(r"^[\w-]+$", session_id) is None:
                 raise ValueError("Invalid session id format.")
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
