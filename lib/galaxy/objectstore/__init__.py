@@ -6,6 +6,7 @@ tools
 """
 
 import abc
+import dataclasses
 import logging
 import os
 import random
@@ -18,6 +19,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -304,6 +306,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         return None
 
     @abc.abstractmethod
+    def get_concrete_store_backends(self) -> List["ConcreteObjectStore"]:
+        """Return list of concrete objectstore backends."""
+
+    @abc.abstractmethod
     def get_store_usage_percent(self):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
@@ -355,7 +361,6 @@ class BaseObjectStore(ObjectStore):
         self.galaxy_enable_quotas = config.enable_quotas
         extra_dirs = {}
         extra_dirs["job_work"] = config.jobs_directory
-        extra_dirs["temp"] = config.new_file_path
         extra_dirs.update({e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])})
         self.extra_dirs = extra_dirs
 
@@ -450,6 +455,9 @@ class BaseObjectStore(ObjectStore):
     def get_object_url(self, obj, **kwargs):
         return self._invoke("get_object_url", obj, **kwargs)
 
+    def get_concrete_store_backends(self) -> List["ConcreteObjectStore"]:
+        return self._invoke("get_concrete_store_backends")
+
     def get_concrete_store_name(self, obj):
         return self._invoke("get_concrete_store_name", obj)
 
@@ -492,6 +500,13 @@ class BaseObjectStore(ObjectStore):
         raise NotImplementedError()
 
 
+@dataclasses.dataclass
+class DiskPath:
+    file_path: Optional[str] = None
+    object_store_cache_path: Optional[str] = None
+    extra_dirs: Optional[Dict[str, str]] = None
+
+
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
 
@@ -529,6 +544,12 @@ class ConcreteObjectStore(BaseObjectStore):
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
         self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
         self.badges = read_badges(config_dict)
+
+    def get_concrete_store_backends(self):
+        return [self]
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath()
 
     def to_dict(self):
         rval = super().to_dict()
@@ -660,6 +681,9 @@ class DiskObjectStore(ConcreteObjectStore):
         as_dict = super().to_dict()
         as_dict["files_dir"] = self.file_path
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(file_path=self.file_path, extra_dirs=self.extra_dirs)
 
     def __get_filename(
         self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False
@@ -970,6 +994,12 @@ class NestedObjectStore(BaseObjectStore):
     def _get_object_url(self, obj, **kwargs):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
+
+    def _get_concrete_store_backends(self, **kwargs):
+        backends = []
+        for backend in self.backends.values():
+            backends.extend(backend.get_concrete_store_backends())
+        return backends
 
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
@@ -1469,24 +1499,6 @@ def build_object_store_from_config(
         return objectstore_class(config=config, config_dict=config_dict, **objectstore_constructor_kwds)
 
 
-def local_extra_dirs(func):
-    """Non-local plugin decorator using local directories for the extra_dirs (job_work and temp)."""
-
-    def wraps(self, *args, **kwargs):
-        if kwargs.get("base_dir", None) is None:
-            return func(self, *args, **kwargs)
-        else:
-            for c in self.__class__.__mro__:
-                if c.__name__ == "DiskObjectStore":
-                    return getattr(c, func.__name__)(self, *args, **kwargs)
-            raise Exception(
-                "Could not call DiskObjectStore's %s method, does your "
-                "Object Store plugin inherit from DiskObjectStore?" % func.__name__
-            )
-
-    return wraps
-
-
 def config_to_dict(config):
     """Dict-ify the portion of a config object consumed by the ObjectStore class and its subclasses."""
     return {
@@ -1619,3 +1631,18 @@ def persist_extra_files(
                     create=True,
                     preserve_symlinks=True,
                 )
+
+
+def get_disk_paths(objectstore: BaseObjectStore, include_extra_dirs=False) -> Set[str]:
+    backends = objectstore.get_concrete_store_backends()
+    paths = set()
+    for backend in backends:
+        disk_path = backend.get_disk_paths()
+        if disk_path.file_path:
+            paths.add(disk_path.file_path)
+        if disk_path.object_store_cache_path:
+            paths.add(disk_path.object_store_cache_path)
+        if include_extra_dirs and disk_path.extra_dirs:
+            for extra_dir in disk_path.extra_dirs.values():
+                paths.add(extra_dir)
+    return paths

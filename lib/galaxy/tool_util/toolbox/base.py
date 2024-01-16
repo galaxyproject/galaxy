@@ -188,6 +188,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._filter_factory = FilterFactory(self)
         self._tool_tag_manager = self.tool_tag_manager()
         self._init_tools_from_configs(config_filenames)
+        self._tool_panel_views = {}
+
+        if self.app.name == "galaxy" and not self.app.is_webapp:
+            # Tool panel and such only needed in webapp
+            return
 
         if self.app.name == "galaxy" and self._integrated_tool_panel_config_has_contents:
             self._load_tool_panel()
@@ -223,17 +228,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         for edam_view in listify(self.app.config.edam_panel_views):
             mode = EdamPanelMode[edam_view]
-            tool_panel_views_list.append(EdamToolPanelView(self.app.datatypes_registry.edam, mode=mode))
+            tool_panel_views_list.append(EdamToolPanelView(self.app.edam, mode=mode))
 
         if view_sources is not None:
             for definition in view_sources.get_definitions():
                 tool_panel_views_list.append(StaticToolPanelView(definition))
 
-        self._tool_panel_views = {}
         for tool_panel_view in tool_panel_views_list:
             self._tool_panel_views[tool_panel_view.to_model().id] = tool_panel_view
 
-        if self.app.name == "galaxy":
+        if self.app.name == "galaxy" and self.app.is_webapp:
             self._load_tool_panel_views()
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()

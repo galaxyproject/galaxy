@@ -26,6 +26,7 @@ from galaxy.managers.datatypes import (
     view_mapping,
     view_sniffers,
 )
+from galaxy.tool_util.edam_util import EdamDict
 from . import (
     depends,
     Router,
@@ -57,6 +58,7 @@ IdentifierOnly: Optional[bool] = Query(
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
+    edam: EdamDict = depends(EdamDict)
 
     @router.get(
         "/api/datatypes",
@@ -129,7 +131,7 @@ class FastAPIDatatypes:
     )
     async def edam_formats(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM formats."""
-        return cast(Dict[str, str], view_edam_formats(self.datatypes_registry))
+        return cast(Dict[str, str], view_edam_formats(self.edam, self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_formats/detailed",
@@ -141,7 +143,7 @@ class FastAPIDatatypes:
     async def edam_formats_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM formats.
         EDAM formats contain the EDAM iri, label, and definition."""
-        return view_edam_formats(self.datatypes_registry, True)
+        return view_edam_formats(self.edam, self.datatypes_registry, True)
 
     @router.get(
         "/api/datatypes/edam_data",
@@ -151,7 +153,7 @@ class FastAPIDatatypes:
     )
     async def edam_data(self) -> Dict[str, str]:
         """Gets a map of datatypes and their corresponding EDAM data."""
-        return cast(Dict[str, str], view_edam_data(self.datatypes_registry))
+        return cast(Dict[str, str], view_edam_data(self.edam, self.datatypes_registry))
 
     @router.get(
         "/api/datatypes/edam_data/detailed",
@@ -163,4 +165,4 @@ class FastAPIDatatypes:
     async def edam_data_detailed(self):
         """Gets a map of datatypes and their corresponding EDAM data.
         EDAM data contains the EDAM iri, label, and definition."""
-        return view_edam_data(self.datatypes_registry, True)
+        return view_edam_data(self.edam, self.datatypes_registry, True)

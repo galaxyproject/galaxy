@@ -21,7 +21,10 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from . import ConcreteObjectStore
+from . import (
+    ConcreteObjectStore,
+    DiskPath,
+)
 from .caching import (
     CacheTarget,
     enable_cache_monitor,
@@ -244,6 +247,9 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         as_dict = super().to_dict()
         as_dict.update(self._config_to_dict())
         return as_dict
+
+    def get_disk_paths(self) -> DiskPath:
+        return DiskPath(object_store_cache_path=self.staging_path)
 
     @property
     def cache_target(self) -> CacheTarget:

@@ -164,6 +164,7 @@ class StandaloneDataManagers(DataManagersInterface):
 
 class StandaloneInstallationTarget(InstallationTarget):
     name: str = "galaxy"
+    is_webapp: bool = True
     tool_shed_registry: Registry
     security: IdEncodingHelper
     _toolbox: TestToolBox

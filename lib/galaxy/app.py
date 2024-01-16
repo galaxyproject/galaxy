@@ -121,6 +121,10 @@ from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManag
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
+from galaxy.tool_util.edam_util import (
+    EdamDict,
+    load_edam_tree,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
 from galaxy.tools.cache import ToolCache
@@ -688,6 +692,21 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.tool_shed_repository_cache = self._register_singleton(ToolShedRepositoryCache)
         # Watch various config files for immediate reload
         self.watchers = self._register_singleton(ConfigWatchers)
+        if self.is_webapp:
+            # Load edam data
+            edam_ontology_path = self.config.edam_toolbox_ontology_path
+            self.edam = self._register_singleton(
+                EdamDict,
+                load_edam_tree(
+                    None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
+                    "format_",
+                    "data_",
+                    "operation_",
+                    "topic_",
+                ),
+            )
+        else:
+            self.edam = self._register_singleton(EdamDict, EdamDict())
         self._configure_toolbox()
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)  # type: ignore[type-abstract]
