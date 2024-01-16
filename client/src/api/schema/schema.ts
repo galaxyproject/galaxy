@@ -909,15 +909,7 @@ export interface paths {
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
     "/api/invocations": {
-        /**
-         * Get the list of a user's workflow invocations.
-         * @description If workflow_id is supplied (either via URL or query parameter) it should be an
-         * encoded StoredWorkflow id and returned invocations will be restricted to that
-         * workflow. history_id (an encoded History id) can be used to further restrict the
-         * query. If neither a workflow_id or history_id is supplied, all the current user's
-         * workflow invocations will be indexed (as determined by the invocation being
-         * executed on one of the user's histories)
-         */
+        /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_invocations_get"];
     };
     "/api/invocations/from_store": {
@@ -1808,10 +1800,7 @@ export interface paths {
         put: operations["enable_link_access_api_workflows__workflow_id__enable_link_access_put"];
     };
     "/api/workflows/{workflow_id}/invocations": {
-        /**
-         * Get the list of a user's workflow invocations.
-         * @description An alias for GET '/api/invocations'
-         */
+        /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
@@ -1918,6 +1907,13 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_workflows__workflow_id__unpublish_put"];
+    };
+    "/api/workflows/{workflow_id}/usage": {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @deprecated
+         */
+        get: operations["index_invocations_api_workflows__workflow_id__usage_get"];
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}": {
         /**
@@ -16569,15 +16565,7 @@ export interface operations {
         };
     };
     index_invocations_api_invocations_get: {
-        /**
-         * Get the list of a user's workflow invocations.
-         * @description If workflow_id is supplied (either via URL or query parameter) it should be an
-         * encoded StoredWorkflow id and returned invocations will be restricted to that
-         * workflow. history_id (an encoded History id) can be used to further restrict the
-         * query. If neither a workflow_id or history_id is supplied, all the current user's
-         * workflow invocations will be indexed (as determined by the invocation being
-         * executed on one of the user's histories)
-         */
+        /** Get the list of a user's workflow invocations. */
         parameters?: {
             /** @description Return only invocations for this Workflow ID */
             /** @description Return only invocations for this History ID */
@@ -21486,10 +21474,7 @@ export interface operations {
         };
     };
     index_invocations_api_workflows__workflow_id__invocations_get: {
-        /**
-         * Get the list of a user's workflow invocations.
-         * @description An alias for GET '/api/invocations'
-         */
+        /** Get the list of a user's workflow invocations. */
         parameters: {
             /** @description Return only invocations for this History ID */
             /** @description Return only invocations for this Job ID */
@@ -22143,6 +22128,60 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_invocations_api_workflows__workflow_id__usage_get: {
+        /**
+         * Get the list of a user's workflow invocations.
+         * @deprecated
+         */
+        parameters: {
+            /** @description Return only invocations for this History ID */
+            /** @description Return only invocations for this Job ID */
+            /** @description Return invocations for this User ID. */
+            /** @description Sort Workflow Invocations by this attribute */
+            /** @description Sort in descending order? */
+            /** @description Set to false to only include terminal Invocations. */
+            /** @description Limit the number of invocations to return. */
+            /** @description Number of invocations to skip. */
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            /** @description View to be passed to the serializer */
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            query?: {
+                history_id?: string | null;
+                job_id?: string | null;
+                user_id?: string | null;
+                sort_by?: components["schemas"]["InvocationSortByEnum"] | null;
+                sort_desc?: boolean;
+                include_terminal?: boolean | null;
+                limit?: number | null;
+                offset?: number | null;
+                instance?: boolean | null;
+                view?: string | null;
+                step_details?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Validation Error */
