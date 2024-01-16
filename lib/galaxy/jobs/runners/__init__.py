@@ -33,7 +33,10 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
@@ -829,6 +832,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 pass
             # Iterate over the list of watched jobs and check state
             try:
+                check_database_connection(self.sa_session)
                 self.check_watched_items()
             except Exception:
                 log.exception("Unhandled exception checking active jobs")
