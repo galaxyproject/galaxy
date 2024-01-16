@@ -492,7 +492,7 @@ export default {
                 label: null,
                 position: defaultPosition(this.graphOffset, this.transform),
             });
-            this.stateStore.setActiveNode(id);
+            this.stateStore.activeNodeId = id;
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -570,11 +570,11 @@ export default {
         },
         onAttributes() {
             this._ensureParametersSet();
-            this.stateStore.setActiveNode(null);
+            this.stateStore.activeNodeId = null;
             this.showInPanel = "attributes";
         },
         onWorkflowTextEditor() {
-            this.stateStore.setActiveNode(null);
+            this.stateStore.activeNodeId = null;
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
@@ -667,7 +667,7 @@ export default {
         },
         onLint() {
             this._ensureParametersSet();
-            this.stateStore.setActiveNode(null);
+            this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
         },
         onUpgrade() {
@@ -752,7 +752,7 @@ export default {
                         outputs: response.outputs,
                         config_form: response.config_form,
                     });
-                    this.stateStore.setActiveNode(stepData.id);
+                    this.stateStore.activeNodeId = stepData.id;
                 }
             );
         },
