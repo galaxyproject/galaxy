@@ -138,8 +138,7 @@ function onToggleSidebar(toggle: string) {
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onToggleSidebar()" />
+                                :tooltip="activity.tooltip" />
                             <InteractiveItem
                                 v-else-if="activity.id === 'interactivetools'"
                                 :id="`activity-${activity.id}`"
