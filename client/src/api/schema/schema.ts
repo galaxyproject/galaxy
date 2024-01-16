@@ -495,11 +495,11 @@ export interface paths {
     };
     "/api/histories/batch/delete": {
         /** Marks several histories with the given IDs as deleted. */
-        post: operations["batch_delete_api_histories_batch_delete_post"];
+        put: operations["batch_delete_api_histories_batch_delete_put"];
     };
     "/api/histories/batch/undelete": {
         /** Marks several histories with the given IDs as undeleted. */
-        post: operations["batch_undelete_api_histories_batch_undelete_post"];
+        put: operations["batch_undelete_api_histories_batch_undelete_put"];
     };
     "/api/histories/count": {
         /** Returns number of histories for the current user. */
@@ -13862,7 +13862,7 @@ export interface operations {
             };
         };
     };
-    batch_delete_api_histories_batch_delete_post: {
+    batch_delete_api_histories_batch_delete_put: {
         /** Marks several histories with the given IDs as deleted. */
         parameters?: {
             /** @description View to be passed to the serializer */
@@ -13901,7 +13901,7 @@ export interface operations {
             };
         };
     };
-    batch_undelete_api_histories_batch_undelete_post: {
+    batch_undelete_api_histories_batch_undelete_put: {
         /** Marks several histories with the given IDs as undeleted. */
         parameters?: {
             /** @description View to be passed to the serializer */

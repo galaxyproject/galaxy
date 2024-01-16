@@ -387,7 +387,7 @@ class FastAPIHistories:
             purge = payload.purge
         return self.service.delete(trans, history_id, serialization_params, purge)
 
-    @router.post(
+    @router.put(
         "/api/histories/batch/delete",
         summary="Marks several histories with the given IDs as deleted.",
     )
@@ -418,7 +418,7 @@ class FastAPIHistories:
     ) -> AnyHistoryView:
         return self.service.undelete(trans, history_id, serialization_params)
 
-    @router.post(
+    @router.put(
         "/api/histories/batch/undelete",
         summary="Marks several histories with the given IDs as undeleted.",
     )
