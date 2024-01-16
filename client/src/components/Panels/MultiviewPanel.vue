@@ -29,7 +29,7 @@ const loading = ref(false);
 
 const isAnonymous = computed(() => useUserStore().isAnonymous);
 const historyStore = useHistoryStore();
-const { histories, historiesLoading, currentHistoryId } = storeToRefs(historyStore);
+const { historiesLoading, currentHistoryId } = storeToRefs(historyStore);
 
 const pinnedHistoryCount = computed(() => {
     return Object.keys(historyStore.pinnedHistories).length;
@@ -155,12 +155,6 @@ function userTitle(title: string) {
                 Please <a :href="withPrefix('/login')">log in or register</a> to create multiple histories.
             </b-badge>
         </div>
-        <HistoryList
-            v-show="!showAdvanced"
-            multiple
-            :filter="filter"
-            :histories="histories"
-            :loading.sync="loading"
-            @setFilter="setFilter" />
+        <HistoryList v-show="!showAdvanced" multiple :filter="filter" :loading.sync="loading" @setFilter="setFilter" />
     </div>
 </template>

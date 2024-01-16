@@ -26,7 +26,6 @@ type PinnedHistory = { id: string };
 
 const props = defineProps({
     multiple: { type: Boolean, default: false },
-    histories: { type: Array as PropType<HistorySummary[]>, default: () => [] },
     selectedHistories: { type: Array as PropType<PinnedHistory[]>, default: () => [] },
     additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
     showModal: { type: Boolean, default: false },
@@ -49,7 +48,7 @@ const showAdvanced = ref(false);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
-const { currentHistoryId, totalHistoryCount, pinnedHistories } = storeToRefs(useHistoryStore());
+const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
 const { currentUser } = storeToRefs(useUserStore());
 
 const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
@@ -85,13 +84,10 @@ watch(
     }
 );
 
-// reactive proxy for props.histories, as the prop is not
-// always guaranteed to be reactive for some strange reason.
-// TODO: Re investigate when upgrading to vue3
 /** `historyStore` histories for current user */
 const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
-    () => props.histories as HistoryDetailed[],
+    () => histories.value as HistoryDetailed[],
     (h: HistoryDetailed[]) => {
         historiesProxy.value = h.filter(
             (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)

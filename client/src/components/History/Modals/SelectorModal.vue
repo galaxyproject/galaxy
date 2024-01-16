@@ -124,7 +124,6 @@ function setFilterValue(newFilter: string, newValue: string) {
             <HistoryList
                 v-show="!showAdvanced"
                 :multiple="props.multiple"
-                :histories="histories"
                 :selected-histories="selectedHistories"
                 :additional-options="props.additionalOptions"
                 :show-modal.sync="propShowModal"

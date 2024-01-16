@@ -180,6 +180,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             await createNewHistory();
         }
         Vue.delete(storedHistories.value, deletedHistory.id);
+        unpinHistories([deletedHistory.id]);
         await handleTotalCountChange(1, true);
     }
 
