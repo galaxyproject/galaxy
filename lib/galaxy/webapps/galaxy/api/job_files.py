@@ -123,7 +123,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 pass
         return {"message": "ok"}
 
-    @expose_api_raw_anonymous_and_sessionless
+    @expose_api_anonymous_and_sessionless
     def tus_patch(self, trans, **kwds):
         """
         Exposed as PATCH /api/job_files/resumable_upload.
@@ -155,7 +155,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         return None
 
-    @expose_api_raw_anonymous_and_sessionless
+    @expose_api_anonymous_and_sessionless
     def tus_hooks(self, trans, **kwds):
         """No-op but if hook specified the way we do for user upload it would hit this action.
 
