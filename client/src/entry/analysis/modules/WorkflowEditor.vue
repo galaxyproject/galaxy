@@ -1,6 +1,7 @@
 <template>
     <Editor
         v-if="editorConfig"
+        :key="editorConfig.id"
         :workflow-id="editorConfig.id"
         :data-managers="editorConfig.dataManagers"
         :initial-version="editorConfig.initialVersion"
