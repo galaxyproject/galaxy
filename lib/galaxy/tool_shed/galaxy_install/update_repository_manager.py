@@ -75,7 +75,7 @@ class UpdateRepositoryManager:
             # the repository revision is the latest installable revision, and whether the repository
             # has been deprecated in the Tool Shed.
             for repository in self.context.query(self.app.install_model.ToolShedRepository).filter(
-                self.app.install_model.ToolShedRepository.table.c.deleted == false()
+                self.app.install_model.ToolShedRepository.deleted == false()
             ):
                 tool_shed_status_dict = get_tool_shed_status_for_installed_repository(self.app, repository)
                 if tool_shed_status_dict:
