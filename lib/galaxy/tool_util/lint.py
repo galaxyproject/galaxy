@@ -101,6 +101,13 @@ class Linter(ABC):
         """
         return cls.__name__
 
+    @classmethod
+    def list_listers(cls) -> List[str]:
+        """
+        list the names of all linter derived from Linter
+        """
+        return [s.__name__ for s in cls.__subclasses__()]
+
 
 class LintMessage:
     """
@@ -375,17 +382,3 @@ def lint_xml_with(lint_context, tool_xml, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
     tool_source = get_tool_source(xml_tree=tool_xml)
     return lint_tool_source_with(lint_context, tool_source, extra_modules=extra_modules)
-
-
-def list_linters(extra_modules: Optional[List[str]] = None) -> List[str]:
-    extra_modules = extra_modules or []
-    linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
-    linter_modules.extend(extra_modules)
-    linters = list()
-    for module in linter_modules:
-        for name, value in inspect.getmembers(module):
-            if callable(value) and name.startswith("lint_"):
-                linters.append(name[5:])
-            elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
-                linters.append(name)
-    return linters

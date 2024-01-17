@@ -8,7 +8,7 @@ from galaxy.tool_util.lint import (
     lint_tool_source_with_modules,
     lint_xml_with,
     LintContext,
-    list_linters,
+    Linter,
     XMLLintMessageLine,
     XMLLintMessageXPath,
 )
@@ -2074,8 +2074,10 @@ def test_xml_comments_are_ignored(lint_ctx: LintContext):
 
 
 def test_list_linters():
-    linters = list_linters()
-    assert len(linters) >= 129
+    linter_names = Linter.list_listers()
+    # make sure to add/remove a test for new/removed linters if this number changes
+    assert len(linter_names) == 129
+    assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
         "Citations",
@@ -2090,4 +2092,4 @@ def test_list_linters():
         "XMLOrder",
         "XSD",
     ]:
-        assert len([x for x in linters if x.startswith(prefix)])
+        assert len([x for x in linter_names if x.startswith(prefix)])
