@@ -67,8 +67,9 @@ class S3FsFilesSource(BaseFilesSource):
             return list(map(to_dict, res))
 
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
+        fs = self._open_fs(user_context=user_context, opts=opts)
         bucket_path = self._bucket_path(source_path)
-        self._open_fs(user_context=user_context, opts=opts).download(bucket_path, native_path)
+        fs.download(bucket_path, native_path)
 
     def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         bucket_path = self._bucket_path(target_path)
