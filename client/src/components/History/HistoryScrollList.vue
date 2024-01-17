@@ -208,7 +208,7 @@ async function loadMore(noScroll = false) {
                         :data-pk="history.id"
                         button
                         :class="{
-                            current: !isMultiviewPanel && history.id === currentHistoryId,
+                            current: history.id === currentHistoryId,
                             'panel-item': isMultiviewPanel,
                         }"
                         :active="isActiveItem(history)"
@@ -373,6 +373,10 @@ async function loadMore(noScroll = false) {
             display: flex;
             border-radius: 0;
 
+            &.current {
+                border-left: 0.25rem solid $brand-primary;
+            }
+
             &.panel-item {
                 justify-content: space-between;
                 align-items: center;
@@ -382,10 +386,6 @@ async function loadMore(noScroll = false) {
             }
 
             &:not(&.panel-item) {
-                &.current {
-                    border-left: 0.25rem solid $brand-primary;
-                }
-
                 &:first-child {
                     border-top-left-radius: inherit;
                     border-top-right-radius: inherit;

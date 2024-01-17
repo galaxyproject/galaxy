@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
@@ -13,6 +16,9 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
+
+// @ts-ignore bad library types
+library.add(faCheckSquare, faPlus);
 
 const historyStore = useHistoryStore();
 
@@ -37,10 +43,23 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
+async function createAndPin() {
+    try {
+        await historyStore.createNewHistory();
+        if (!historyStore.currentHistoryId) {
+            throw new Error("Error creating history");
+        }
+
+        if (historyStore.pinnedHistories.length > 0) {
+            historyStore.pinHistory(historyStore.currentHistoryId);
+        }
+    } catch (error: any) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+    }
+}
+
 const showDropZone = ref(false);
-const historyPickerText = computed(() =>
-    showDropZone.value ? localize("Create new history with this item") : localize("Select histories")
-);
 const processingDrop = ref(false);
 async function onDrop(evt: any) {
     if (processingDrop.value) {
@@ -100,14 +119,27 @@ async function onDrop(evt: any) {
             </VirtualList>
 
             <div
-                class="history-picker text-primary d-flex m-3 align-items-center text-nowrap"
-                @click.stop="$emit('update:show-modal', true)"
+                class="history-picker"
                 @drop.prevent="onDrop"
                 @dragenter.prevent="showDropZone = true"
                 @dragover.prevent
                 @dragleave.prevent="showDropZone = false">
-                {{ historyPickerText }}
-                <HistoryDropZone v-if="showDropZone" style="left: 0" />
+                <span v-if="!showDropZone" class="d-flex flex-column h-100">
+                    <div class="history-picker-box top-picker text-primary" @click.stop="createAndPin">
+                        <FontAwesomeIcon icon="plus" class="mr-1" />
+                        {{ localize("Create and pin new history") }}
+                    </div>
+                    <div
+                        class="history-picker-box bottom-picker text-primary"
+                        @click.stop="$emit('update:show-modal', true)">
+                        <FontAwesomeIcon icon="check-square" class="mr-1" />
+                        {{ localize("Select histories") }}
+                    </div>
+                </span>
+                <div v-else class="history-picker-box history-picker-drop-zone text-primary">
+                    {{ localize("Create new history with this item") }}
+                    <HistoryDropZone />
+                </div>
             </div>
         </div>
     </div>
@@ -116,11 +148,32 @@ async function onDrop(evt: any) {
 <style lang="scss" scoped>
 .list-container {
     .history-picker {
-        border: dotted lightgray;
-        cursor: pointer;
-        width: 15rem;
-        position: relative;
-        justify-content: center;
+        min-width: 15rem;
+        max-width: 15rem;
+        margin: 1rem;
+        .history-picker-box {
+            border: dotted lightgray;
+            cursor: pointer;
+            position: relative;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            text-wrap: none;
+            &.top-picker {
+                height: 20%;
+            }
+            &.bottom-picker {
+                height: 80%;
+            }
+            &:not(.history-picker-drop-zone) {
+                &:hover {
+                    background-color: rgba(0, 0, 0, 0.1);
+                }
+            }
+            &.history-picker-drop-zone {
+                height: 100%;
+            }
+        }
     }
 
     position: relative;
