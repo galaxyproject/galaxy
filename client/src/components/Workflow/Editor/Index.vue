@@ -169,6 +169,7 @@ import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
 
+import { replaceLabel } from "@/components/Markdown/parse";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -642,7 +643,10 @@ export default {
         },
         onLabel(nodeId, newLabel) {
             const step = { ...this.steps[nodeId], label: newLabel };
+            const oldLabel = this.steps[nodeId].label;
             this.onUpdateStep(step);
+            const newMarkdown = replaceLabel(this.markdownText, "step", oldLabel, newLabel);
+            this.onReportUpdate(newMarkdown);
         },
         onScrollTo(stepId) {
             this.scrollToId = stepId;
