@@ -60,7 +60,9 @@ async function createAndPin() {
         if (!currentHistoryId.value) {
             throw new Error("Error creating history");
         }
-        historyStore.pinHistory(currentHistoryId.value);
+        if (pinnedHistoryCount.value > 0) {
+            historyStore.pinHistory(currentHistoryId.value);
+        }
         router.push("/histories/view_multiple");
     } catch (error: any) {
         console.error(error);
@@ -101,10 +103,10 @@ function userTitle(title: string) {
                     <b-button-group>
                         <b-button
                             v-b-tooltip.bottom.hover
-                            data-description="create new history and pin"
+                            data-description="create new history for multiview"
                             size="sm"
                             variant="link"
-                            :title="userTitle('Create new history and pin to multiview')"
+                            :title="userTitle('Create new history and show in multiview')"
                             :disabled="isAnonymous"
                             @click="createAndPin">
                             <Icon fixed-width icon="plus" />
