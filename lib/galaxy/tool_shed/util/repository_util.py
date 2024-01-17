@@ -48,9 +48,7 @@ def check_for_updates(
         success_count = 0
         repository_names_not_updated = []
         updated_count = 0
-        for repository in install_model_context.query(ToolShedRepository).filter(
-            ToolShedRepository.table.c.deleted == false()
-        ):
+        for repository in install_model_context.query(ToolShedRepository).filter(ToolShedRepository.deleted == false()):
             ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
                 tool_shed_registry, install_model_context, repository
             )
@@ -298,18 +296,18 @@ def get_installed_repository(
             )
     query = app.install_model.context.query(app.install_model.ToolShedRepository)
     if repository_id:
-        clause_list = [app.install_model.ToolShedRepository.table.c.id == repository_id]
+        clause_list = [app.install_model.ToolShedRepository.id == repository_id]
     else:
         clause_list = [
-            app.install_model.ToolShedRepository.table.c.tool_shed == tool_shed,
-            app.install_model.ToolShedRepository.table.c.name == name,
-            app.install_model.ToolShedRepository.table.c.owner == owner,
+            app.install_model.ToolShedRepository.tool_shed == tool_shed,
+            app.install_model.ToolShedRepository.name == name,
+            app.install_model.ToolShedRepository.owner == owner,
         ]
     if changeset_revision is not None:
-        clause_list.append(app.install_model.ToolShedRepository.table.c.changeset_revision == changeset_revision)
+        clause_list.append(app.install_model.ToolShedRepository.changeset_revision == changeset_revision)
     if installed_changeset_revision is not None:
         clause_list.append(
-            app.install_model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision
+            app.install_model.ToolShedRepository.installed_changeset_revision == installed_changeset_revision
         )
     return query.filter(and_(*clause_list)).first()
 
@@ -443,16 +441,16 @@ def get_repository_by_name_and_owner(app, name, owner, eagerload_columns=None):
     if is_tool_shed_client(app):
         return repository_query.filter(
             and_(
-                app.install_model.ToolShedRepository.table.c.name == name,
-                app.install_model.ToolShedRepository.table.c.owner == owner,
+                app.install_model.ToolShedRepository.name == name,
+                app.install_model.ToolShedRepository.owner == owner,
             )
         ).first()
     # We're in the tool shed.
     q = repository_query.filter(
         and_(
-            app.model.Repository.table.c.name == name,
-            app.model.User.table.c.username == owner,
-            app.model.Repository.table.c.user_id == app.model.User.table.c.id,
+            app.model.Repository.name == name,
+            app.model.User.username == owner,
+            app.model.Repository.user_id == app.model.User.id,
         )
     )
     if eagerload_columns:

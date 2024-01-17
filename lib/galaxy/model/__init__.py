@@ -1754,7 +1754,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         if session and self.id and state not in Job.finished_states:
             # generate statement that will not revert DELETING or DELETED back to anything non-terminal
             rval = session.execute(
-                update(Job.table)
+                update(Job)
                 .where(Job.id == self.id, ~Job.state.in_((Job.states.DELETING, Job.states.DELETED)))
                 .values(state=state)
             )
@@ -1995,12 +1995,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             subq = subq.with_for_update(skip_locked=True).subquery()
         implicit_statement = (
             HistoryDatasetCollectionAssociation.table.update()
-            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(select(subq)))
+            .where(HistoryDatasetCollectionAssociation.id.in_(select(subq)))
             .values(update_time=update_time)
         )
         explicit_statement = (
             HistoryDatasetCollectionAssociation.table.update()
-            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id)
+            .where(HistoryDatasetCollectionAssociation.job_id == self.id)
             .values(update_time=update_time)
         )
         sa_session.execute(explicit_statement)
@@ -3465,17 +3465,17 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         # .expression acts as a column_property and should return a scalar
         # first, get the distinct datasets within a history that are not purged
         hda_to_dataset_join = join(
-            HistoryDatasetAssociation, Dataset, HistoryDatasetAssociation.table.c.dataset_id == Dataset.table.c.id
+            HistoryDatasetAssociation, Dataset, HistoryDatasetAssociation.dataset_id == Dataset.id
         )
         distinct_datasets = (
             select(
                 # use labels here to better access from the query above
-                HistoryDatasetAssociation.table.c.history_id.label("history_id"),
+                HistoryDatasetAssociation.history_id.label("history_id"),
                 Dataset.total_size.label("dataset_size"),
                 Dataset.id.label("dataset_id"),
             )
-            .where(HistoryDatasetAssociation.table.c.purged != true())
-            .where(Dataset.table.c.purged != true())
+            .where(HistoryDatasetAssociation.purged != true())
+            .where(Dataset.purged != true())
             .select_from(hda_to_dataset_join)
             # TODO: slow (in general) but most probably here - index total_size for easier sorting/distinct?
             .distinct()
@@ -8536,7 +8536,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         if session and self.id and state not in priority_states:
             # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
             session.execute(
-                update(WorkflowInvocation.table)
+                update(WorkflowInvocation)
                 .where(
                     WorkflowInvocation.id == self.id,
                     or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
@@ -8565,7 +8565,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
         )
-        sa_session.execute(update(Job.table).where(Job.id.in_(job_subq)).values({"state": Job.states.DELETING}))
+        sa_session.execute(update(Job).where(Job.id.in_(job_subq)).values({"state": Job.states.DELETING}))
 
         job_collection_subq = (
             select(Job.id)
@@ -8581,9 +8581,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         )
 
         sa_session.execute(
-            update(Job.table)
-            .where(Job.table.c.id.in_(job_collection_subq.element))
-            .values({"state": Job.states.DELETING})
+            update(Job).where(Job.id.in_(job_collection_subq.element)).values({"state": Job.states.DELETING})
         )
 
         for invocation in self.subworkflow_invocations:
