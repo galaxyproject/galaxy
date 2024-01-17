@@ -207,6 +207,9 @@ class SessionlessContext:
     def flush(self) -> None:
         pass
 
+    def rollback(self) -> None:
+        pass
+
     def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
