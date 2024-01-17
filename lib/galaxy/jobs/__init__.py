@@ -65,7 +65,10 @@ from galaxy.model import (
     store,
     Task,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    commit,
+    transaction,
+)
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
@@ -1270,7 +1273,7 @@ class MinimalJobWrapper(HasResourceParameters):
         job.dependencies = self.tool.dependencies
         self.sa_session.add(job)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
         log.debug(f"Job wrapper for Job [{job.id}] prepared {prepare_timer}")
 
     def _setup_working_directory(self, job=None):
@@ -1461,7 +1464,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
             self.sa_session.add(job)
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
         else:
             for dataset_assoc in job.output_datasets:
                 dataset = dataset_assoc.dataset
@@ -1520,7 +1523,7 @@ class MinimalJobWrapper(HasResourceParameters):
         job.set_state(model.Job.states.RESUBMITTED)
         self.sa_session.add(job)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
     def change_state(self, state, info=False, flush=True, job=None):
         if job is None:
@@ -1548,7 +1551,7 @@ class MinimalJobWrapper(HasResourceParameters):
             job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
 
     def get_state(self) -> str:
         job = self.get_job()
@@ -1566,7 +1569,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.sa_session.add(job)
         if flush:
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
 
     @property
     def home_target(self):
@@ -1593,7 +1596,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
         return True
 
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
@@ -2036,7 +2039,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # waits on invocation and the other updates invocation and waits on
         # user).
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
         # Finally set the job state.  This should only happen *after* all
         # dataset creation, and will allow us to eliminate force_history_refresh.
@@ -2045,7 +2048,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # If job was composed of tasks, don't attempt to recollect statistics
             self._collect_metrics(job, job_metrics_directory)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
         if job.state == job.states.ERROR:
             self._report_error()
         cleanup_job = self.cleanup_job
@@ -2275,7 +2278,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     context = self.get_dataset_finish_context(dict(), output_dataset_assoc)
                     output_dataset_assoc.dataset.extension = context.get("ext", "data")
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
         if tmp_dir is None:
             # this dir should should relative to the exec_dir
             tmp_dir = self.app.config.new_file_path
@@ -2509,7 +2512,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             self.sa_session.add(cont)
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
 
 
 class JobWrapper(MinimalJobWrapper):
@@ -2552,7 +2555,7 @@ class JobWrapper(MinimalJobWrapper):
         self.sa_session.add(job)
         if flush:
             with transaction(self.sa_session):
-                self.sa_session.commit()
+                commit(self.sa_session)
 
 
 class TaskWrapper(JobWrapper):
@@ -2608,7 +2611,7 @@ class TaskWrapper(JobWrapper):
         tool_evaluator.set_compute_environment(compute_environment)
 
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
         if not self.remote_command_line:
             (
@@ -2627,7 +2630,7 @@ class TaskWrapper(JobWrapper):
         task.command_line = self.command_line
         self.sa_session.add(task)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
         self.status = "prepared"
         return self.extra_filenames
@@ -2656,7 +2659,7 @@ class TaskWrapper(JobWrapper):
         task.state = state
         self.sa_session.add(task)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
     def get_state(self):
         task = self.get_task()
@@ -2676,7 +2679,7 @@ class TaskWrapper(JobWrapper):
         # DBTODO Check task job_runner_stuff
         self.sa_session.add(task)
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
     def finish(self, stdout, stderr, tool_exit_code=None, **kwds):
         # DBTODO integrate previous finish logic.
@@ -2718,7 +2721,7 @@ class TaskWrapper(JobWrapper):
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
     def cleanup(self, delete_files=True):
         # There is no task cleanup.  The job cleans up for all tasks.

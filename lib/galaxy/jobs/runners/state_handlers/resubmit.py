@@ -3,7 +3,10 @@ from datetime import datetime
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    commit,
+    transaction,
+)
 from ._safe_eval import safe_eval
 
 __all__ = ("failure",)
@@ -85,7 +88,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
             job_runner.sa_session.add(job)
             # Is this safe to do here?
             with transaction(job_runner.sa_session):
-                job_runner.sa_session.commit()
+                commit(job_runner.sa_session)
         # Cache the destination to prevent rerunning dynamic after
         # resubmit
         job_state.job_wrapper.job_runner_mapper.cached_job_destination = new_destination

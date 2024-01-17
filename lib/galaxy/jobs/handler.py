@@ -39,6 +39,7 @@ from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.managers.jobs import get_jobs_to_check_at_startup
 from galaxy.model.base import (
     check_database_connection,
+    commit,
     transaction,
 )
 from galaxy.structured_app import MinimalManagerApp
@@ -301,7 +302,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 except Exception:
                     log.exception("Error while recovering job %s during application startup.", job.id)
             with transaction(session):
-                session.commit()
+                commit(session)
 
     def _check_job_at_startup(self, job):
         if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
@@ -580,7 +581,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             del self.job_wrappers[id]
         # Commit updated state
         with transaction(self.sa_session):
-            self.sa_session.commit()
+            commit(self.sa_session)
 
         # Done with the session
         self.sa_session.remove()
