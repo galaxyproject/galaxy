@@ -19,6 +19,7 @@ from typing import (
 )
 
 from sqlalchemy import event
+from sqlalchemy.exc import PendingRollbackError
 from sqlalchemy.orm import (
     object_session,
     scoped_session,
@@ -39,6 +40,25 @@ log = logging.getLogger(__name__)
 # for details
 _request_state: Dict[str, str] = {}
 REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
+
+
+def commit(session: Union[scoped_session, Session, "SessionlessContext"]):
+    """
+    Wraps SQLAlchemy's Session.commit method. Should be called from galaxy instead of using
+    SQLAlchemy's method directly.
+    """
+    err = None
+    try:
+        session.commit()
+    except PendingRollbackError as e:
+        err = e
+    except Exception as e:
+        err = e
+        raise
+    finally:
+        if err:
+            session.rollback()
+            log.error("Database transaction rolled back due to the following error: %s" % err)
 
 
 @contextlib.contextmanager
