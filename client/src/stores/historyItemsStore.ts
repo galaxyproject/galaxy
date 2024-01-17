@@ -14,7 +14,7 @@ import { mergeArray } from "@/store/historyStore/model/utilities";
 import { LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
-type HistoryItem = DatasetSummary | HDCASummary;
+export type HistoryItem = DatasetSummary | HDCASummary;
 
 const limit = 100;
 
