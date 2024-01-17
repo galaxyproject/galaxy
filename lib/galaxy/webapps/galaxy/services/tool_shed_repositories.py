@@ -74,7 +74,7 @@ class ToolShedRepositoriesService:
         stmt = select(ToolShedRepository)
         for key, value in kwd.items():
             if value is not None:
-                column = ToolShedRepository.table.c[key]
+                column = ToolShedRepository.__table__.c[key]
                 stmt = stmt.filter(column == value)
         stmt = stmt.order_by(ToolShedRepository.name).order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
         session = self._install_model_context

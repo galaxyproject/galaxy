@@ -81,6 +81,8 @@ class Base(metaclass=DeclarativeMeta):
     registry = mapper_registry
     metadata = mapper_registry.metadata
     __init__ = mapper_registry.constructor
+    table: Table
+    __table__: Table
 
     @classmethod
     def __declare_last__(cls):
