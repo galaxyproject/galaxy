@@ -81,14 +81,12 @@ class S3FsFilesSource(BaseFilesSource):
         bucket_path = self._bucket_path(_bucket_name, source_path)
         fs.download(bucket_path, native_path)
 
-
     def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         _props = self._serialization_props(user_context)
         _bucket_name = _props.get("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
         bucket_path = self._bucket_path(_bucket_name, target_path)
         fs.upload(native_path, bucket_path)
-
 
     def _bucket_path(self, bucket_name: str, path: str):
         if path.startswith("s3://"):
