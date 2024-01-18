@@ -234,7 +234,7 @@ history_panel:
   tag_editor:
     selectors:
       _: '${scope} .details .stateless-tags'
-      toggle: '${_} .toggle-link'
+      toggle: '${_} .toggle-button'
       display: '${_} .tag span'
       input: '${_} input'
       tag_area: '${_} .multiselect__tags'
