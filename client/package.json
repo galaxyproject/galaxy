@@ -104,6 +104,7 @@
     "vue-router": "^3.6.5",
     "vue-rx": "^6.2.0",
     "vue-virtual-scroll-list": "^2.3.5",
+    "vue2-teleport": "^1.0.1",
     "vuedraggable": "^2.24.3",
     "winbox": "^0.2.82",
     "xml-beautifier": "^0.5.0"

@@ -304,6 +304,7 @@ export default {
 
 .content-item {
     cursor: default;
+    container-type: inline-size;
 
     .name {
         word-break: break-all;
