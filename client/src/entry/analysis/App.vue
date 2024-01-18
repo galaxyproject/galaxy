@@ -170,12 +170,14 @@ export default {
         },
     },
     mounted() {
-        this.Galaxy = getGalaxyInstance();
-        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        this.Galaxy.modal = new Modal.View();
-        this.Galaxy.frame = this.windowManager;
-        if (this.Galaxy.config.enable_notification_system) {
-            this.startNotificationsPolling();
+        if (!this.embedded) {
+            this.Galaxy = getGalaxyInstance();
+            this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
+            this.Galaxy.modal = new Modal.View();
+            this.Galaxy.frame = this.windowManager;
+            if (this.Galaxy.config.enable_notification_system) {
+                this.startNotificationsPolling();
+            }
         }
     },
     created() {
