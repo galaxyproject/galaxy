@@ -29,6 +29,5 @@ the session is properly discarded and the next iteration of `check_watched_items
 a new, clean session to work with. As the work within `JobHandlerQueue.monitor` is happening within a single thread it is not technically necessary to set a custom scope, and one could simply call `app.model.session.close`; however, there is very little cost associated to setting a custom scope and it becomes very clear
 where the session lifespan starts and ends.
 
-Handling the session state at the outermost possible calling context is preferable over alternative approaches, like anticipating unspecified database-related exceptions within `check_watched_items`, or wrapping methods that interact with the session to always issue a rollback, because the calling context can determine what the appropriate action is.
 
 As a guiding principle an attempt should be made to manage the session state and database-related exception handling as high up in the calling stack as possible.
