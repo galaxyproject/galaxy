@@ -57,8 +57,9 @@ class S3FsFilesSource(BaseFilesSource):
 
     def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
         _props = self._serialization_props(user_context)
+        # we need to pop the 'bucket' here, because the argument is not recognised in a downstream function
+        _bucket_name = _props.pop("bucket", "")
         fs = self._open_fs(props=_props, opts=opts)
-        _bucket_name = _props.get("bucket", "")
         if recursive:
             res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(_bucket_name, path)
@@ -75,14 +76,19 @@ class S3FsFilesSource(BaseFilesSource):
 
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         _props = self._serialization_props(user_context)
-        fs = self._open_fs(props=_props, opts=opts)
         _bucket_name = _props.get("bucket", "")
+        fs = self._open_fs(props=_props, opts=opts)
         bucket_path = self._bucket_path(_bucket_name, source_path)
         fs.download(bucket_path, native_path)
 
+
     def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        bucket_path = self._bucket_path(target_path)
-        self._open_fs(user_context=user_context, opts=opts).upload(native_path, bucket_path)
+        _props = self._serialization_props(user_context)
+        _bucket_name = _props.get("bucket", "")
+        fs = self._open_fs(props=_props, opts=opts)
+        bucket_path = self._bucket_path(_bucket_name, target_path)
+        fs.upload(native_path, bucket_path)
+
 
     def _bucket_path(self, bucket_name: str, path: str):
         if path.startswith("s3://"):
