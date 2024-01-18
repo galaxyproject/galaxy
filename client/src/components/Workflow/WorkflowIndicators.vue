@@ -139,12 +139,12 @@ function onViewUserPublished() {
 @import "theme/blue.scss";
 
 .workflow-badge {
-    background: white;
+    background: $brand-secondary;
     color: $brand-primary;
     border: 1px solid $brand-primary;
 
     &:hover {
-        color: white;
+        color: $brand-secondary;
         background: $brand-primary;
     }
 }

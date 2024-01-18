@@ -282,7 +282,7 @@ onMounted(() => {
                             :pressed="showDeleted"
                             variant="outline-primary"
                             @click="onToggleDeleted">
-                            <FontAwesomeIcon :icon="faTrash" />
+                            <FontAwesomeIcon :icon="faTrash" fixed-width />
                             Show deleted
                         </BButton>
 
@@ -294,7 +294,7 @@ onMounted(() => {
                             :pressed="showBookmarked"
                             variant="outline-primary"
                             @click="onToggleBookmarked">
-                            <FontAwesomeIcon :icon="faStar" />
+                            <FontAwesomeIcon :icon="faStar" fixed-width />
                             Show bookmarked
                         </BButton>
                     </div>
@@ -399,7 +399,6 @@ onMounted(() => {
     .workflows-list-header {
         top: 0;
         z-index: 100;
-        background-color: white;
     }
 
     .cards-list {
