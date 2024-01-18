@@ -31,17 +31,25 @@ function onInvocations() {
             v-b-tooltip.hover
             pill
             :title="localize('View workflow invocations')"
-            class="outline-badge cursor-pointer"
+            class="outline-badge cursor-pointer list-view"
             @click="onInvocations">
             <FontAwesomeIcon :icon="faSitemap" />
             <span v-if="workflow.run_count > 0">
-                <span class="compact-view">workflow runs:</span>
+                workflow runs:
                 {{ workflow.run_count }}
             </span>
-            <span v-else>
-                <span class="compact-view">workflow never run</span>
-            </span>
+            <span v-else> workflow never run </span>
         </BBadge>
+
+        <BButton
+            v-b-tooltip.hover
+            :title="localize('View workflow invocations')"
+            class="inline-icon-button card-view"
+            variant="link"
+            size="sm"
+            @click="onInvocations">
+            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+        </BButton>
 
         <BBadge
             v-if="workflow.last_run_time"
@@ -50,9 +58,9 @@ function onInvocations() {
             :title="`Last run: ${formatDistanceToNow(parseISO(`${workflow.last_run_time}Z`), {
                 addSuffix: true,
             })}. Click to view details.`"
-            class="outline-badge cursor-pointer">
+            class="outline-badge cursor-pointer card-view">
             <FontAwesomeIcon :icon="faClock" />
-            <span class="compact-view">last run:</span>
+            last run:
             <UtcDate :date="workflow.last_run_time" mode="elapsed" />
         </BBadge>
     </div>
@@ -61,8 +69,14 @@ function onInvocations() {
 <style scoped lang="scss">
 @import "breakpoints.scss";
 
+@container (min-width: #{$breakpoint-md}) {
+    .card-view {
+        display: none;
+    }
+}
+
 @container (max-width: #{$breakpoint-md}) {
-    .compact-view {
+    .list-view {
         display: none;
     }
 }
