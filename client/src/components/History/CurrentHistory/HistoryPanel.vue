@@ -259,9 +259,9 @@ async function onUndelete(item: HistoryItem) {
     isLoading.value = true;
 
     try {
-      await updateContentFields(item, { deleted: false });
+        await updateContentFields(item, { deleted: false });
     } finally {
-      isLoading.value = false;
+        isLoading.value = false;
     }
 }
 
@@ -270,9 +270,9 @@ async function onUnhide(item: HistoryItem) {
     isLoading.value = true;
 
     try {
-      await updateContentFields(item, { visible: true });
+        await updateContentFields(item, { visible: true });
     } finally {
-      isLoading.value = false;
+        isLoading.value = false;
     }
 }
 
@@ -334,7 +334,7 @@ async function onDrop(evt: any) {
 }
 
 function updateFilterValue(newFilterText: string, newValue: any) {
-    const currentFilterText = filterText.value
+    const currentFilterText = filterText.value;
     filterText.value = filterClass.setFilterValue(currentFilterText, newFilterText, newValue);
 }
 
