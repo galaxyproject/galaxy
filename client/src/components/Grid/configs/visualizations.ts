@@ -3,6 +3,7 @@ import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
 import { fetcher } from "@/api/schema";
+import { updateTags } from "@/api/tags";
 import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -16,7 +17,6 @@ const { emit } = useEventBus<string>("grid-router-push");
  * Api endpoint handlers
  */
 const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
-const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
  * Local types
@@ -69,7 +69,6 @@ const fields: FieldArray = [
         key: "title",
         type: "operations",
         width: 40,
-        condition: (data: VisualizationEntry) => !data.deleted,
         operations: [
             {
                 title: "Open",
@@ -172,11 +171,7 @@ const fields: FieldArray = [
         type: "tags",
         handler: async (data: VisualizationEntry) => {
             try {
-                await updateTags({
-                    item_id: data.id as string,
-                    item_class: "Visualization",
-                    item_tags: data.tags as Array<string>,
-                });
+                await updateTags(data.id as string, "Visualization", data.tags as Array<string>);
             } catch (e) {
                 rethrowSimple(e);
             }
@@ -194,7 +189,7 @@ const fields: FieldArray = [
     },
     {
         key: "sharing",
-        title: "Shared",
+        title: "Status",
         type: "sharing",
     },
 ];

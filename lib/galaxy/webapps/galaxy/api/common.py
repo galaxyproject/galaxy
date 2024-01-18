@@ -87,11 +87,13 @@ QuotaIdPathParam = Annotated[
     Path(..., title="Quota ID", description="The ID of the Quota."),
 ]
 
-SerializationViewQueryParam: Optional[str] = Query(
-    None,
-    title="View",
-    description="View to be passed to the serializer",
-)
+SerializationViewQueryParam = Annotated[
+    Optional[str],
+    Query(
+        title="View",
+        description="View to be passed to the serializer",
+    ),
+]
 
 SerializationKeysQueryParam: Optional[str] = Query(
     None,
@@ -151,7 +153,7 @@ def parse_serialization_params(
 
 
 def query_serialization_params(
-    view: Optional[str] = SerializationViewQueryParam,
+    view: SerializationViewQueryParam = None,
     keys: Optional[str] = SerializationKeysQueryParam,
 ) -> SerializationParams:
     return parse_serialization_params(view=view, keys=keys)

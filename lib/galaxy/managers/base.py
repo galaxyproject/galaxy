@@ -54,7 +54,10 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
@@ -296,20 +299,21 @@ class ModelManager(Generic[U]):
         return query
 
     # .... query resolution
-    def one(self, **kwargs) -> Query:
+    def one(self, **kwargs) -> U:
         """
         Sends kwargs to build the query and returns one and only one model.
         """
         query = self.query(**kwargs)
         return self._one_with_recast_errors(query)
 
-    def _one_with_recast_errors(self, query: Query) -> Query:
+    def _one_with_recast_errors(self, query: Query) -> U:
         """
         Call sqlalchemy's one and recast errors to serializable errors if any.
 
         :raises exceptions.ObjectNotFound: if no model is found
         :raises exceptions.InconsistentDatabase: if more than one model is found
         """
+        check_database_connection(self.session())
         # overridden to raise serializable errors
         try:
             return query.one()
@@ -319,7 +323,7 @@ class ModelManager(Generic[U]):
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
-    def by_id(self, id: int) -> Query:
+    def by_id(self, id: int) -> U:
         """
         Gets a model by primary id.
         """
@@ -349,7 +353,7 @@ class ModelManager(Generic[U]):
         items = self._apply_fn_filters_gen(items, fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
-    def count(self, filters=None, **kwargs):
+    def count(self, filters=None, **kwargs) -> int:
         """
         Returns the number of objects matching the given filters.
 
@@ -399,7 +403,7 @@ class ModelManager(Generic[U]):
                 orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
 
-    def _orm_list(self, query=None, **kwargs):
+    def _orm_list(self, query: Optional[Query] = None, **kwargs) -> List[U]:
         """
         Sends kwargs to build the query return all models found.
         """
@@ -490,13 +494,13 @@ class ModelManager(Generic[U]):
                 session.commit()
         return item
 
-    def copy(self, item, **kwargs):
+    def copy(self, item, **kwargs) -> U:
         """
         Clone or copy an item.
         """
         raise exceptions.NotImplemented("Abstract method")
 
-    def update(self, item, new_values, flush=True, **kwargs):
+    def update(self, item, new_values, flush=True, **kwargs) -> U:
         """
         Given a dictionary of new values, update `item` and return it.
 

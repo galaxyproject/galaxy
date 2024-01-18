@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, unref } from "vue";
+import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
@@ -60,7 +60,14 @@ async function getJobMetrics() {
         await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
     }
 }
-getJobMetrics();
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true }
+);
 
 const ec2Instances = ref<EC2[]>();
 import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));

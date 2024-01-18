@@ -48,7 +48,6 @@ function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     let elementsType;
     let importType;
     const selectionType = selection.selectionType;
-    const copyElements = !defaultHideSourceItems;
     if (!selectionType) {
         // Have HDAs from the history panel.
         elements = selection.toJSON();
@@ -82,7 +81,7 @@ function createCollectionViaRules(selection, defaultHideSourceItems = true) {
         ftpUploadSite: selection.ftpUploadSite,
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function (elements, collectionType, name, hideSourceItems) {
-            return selection.createHDCA(elements, collectionType, name, hideSourceItems, copyElements);
+            return selection.createHDCA(elements, collectionType, name, hideSourceItems);
         },
     });
     return promise;

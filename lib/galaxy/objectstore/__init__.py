@@ -1437,6 +1437,7 @@ def build_object_store_from_config(
     if config_xml is None and config_dict is None:
         config_file = config.object_store_config_file
         if os.path.exists(config_file):
+            log.debug("Reading object store config from file: %s", config_file)
             if config_file.endswith(".xml") or config_file.endswith(".xml.sample"):
                 # This is a top level invocation of build_object_store_from_config, and
                 # we have an object_store_conf.xml -- read the .xml and build
@@ -1448,6 +1449,11 @@ def build_object_store_from_config(
                     config_dict = yaml.safe_load(f)
                 from_object = "dict"
                 store = config_dict.get("type")
+        elif config.object_store_config:
+            log.debug("Reading object store config from object_store_config option")
+            from_object = "dict"
+            config_dict = config.object_store_config
+            store = config_dict.get("type")
         else:
             store = config.object_store
     elif config_xml is not None:

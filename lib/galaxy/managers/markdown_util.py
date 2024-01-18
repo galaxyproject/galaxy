@@ -73,10 +73,10 @@ PATH_LABEL_PATTERN = re.compile(r"path=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 SIZE_PATTERN = re.compile(r"size=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)"
+    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
 )
 ENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)"
+    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
 )
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re.DOTALL)
@@ -930,9 +930,13 @@ history_dataset_collection_display(input={})
         elif step_match:
             target_match = step_match
             name = find_non_empty_group(target_match)
-            ref_object_type = "job"
             invocation_step = invocation.step_invocation_for_label(name)
-            ref_object = invocation_step and invocation_step.job
+            if invocation_step and invocation_step.job:
+                ref_object_type = "job"
+                ref_object = invocation_step.job
+            elif invocation_step and invocation_step.implicit_collection_jobs:
+                ref_object_type = "implicit_collection_jobs"
+                ref_object = invocation_step.implicit_collection_jobs
         else:
             target_match = None
             ref_object = None

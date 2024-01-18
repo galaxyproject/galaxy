@@ -28,6 +28,7 @@ from typing_extensions import (
 
 from galaxy.schema import schema
 from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -41,6 +42,7 @@ from galaxy.schema.schema import (
     JOB_MODEL_CLASS,
     JobState,
     Model,
+    StoreContentSource,
     UpdateTimeField,
     WithModelClass,
 )
@@ -304,15 +306,6 @@ class InvocationStepState(str, Enum):
     # FAILED = 'failed',  TODO: implement and expose
 
 
-class ExtendedInvocationStepState(str, Enum):
-    NEW = "new"  # Brand new workflow invocation step
-    READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
-    SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
-    # CANCELLED = 'cancelled',  TODO: implement and expose
-    # FAILED = 'failed',  TODO: implement and expose
-    OK = "ok"  # Workflow invocation step has completed successfully - TODO: is this a correct description?
-
-
 class InvocationStepOutput(Model):
     src: INVOCATION_STEP_OUTPUT_SRC = Field(
         literal_to_value(INVOCATION_STEP_OUTPUT_SRC),
@@ -378,9 +371,7 @@ class InvocationStep(Model, WithModelClass):
             ),
         ]
     ]
-    # TODO The state can differ from InvocationStepState is this intended?
-    # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
-    state: Optional[ExtendedInvocationStepState] = Field(
+    state: Optional[Union[InvocationStepState, JobState]] = Field(
         default=None,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
@@ -427,12 +418,12 @@ class InvocationReport(Model, WithModelClass):
         description="Format of the invocation report.",
     )
     markdown: Optional[str] = Field(
-        default="",
+        default=None,
         title="Markdown",
         description="Raw galaxy-flavored markdown contents of the report.",
     )
     invocation_markdown: Optional[str] = Field(
-        default="",
+        default=None,
         title="Markdown",
         description="Raw galaxy-flavored markdown contents of the report.",
     )
@@ -454,7 +445,43 @@ class InvocationReport(Model, WithModelClass):
     )
     generate_time: Optional[str] = schema.GenerateTimeField
     generate_version: Optional[str] = schema.GenerateVersionField
-    model_config = ConfigDict(extra="allow")
+
+    errors: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Errors",
+        description="Errors associated with the invocation.",
+    )
+
+    history_datasets: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="History datasets",
+        description="History datasets associated with the invocation.",
+    )
+    workflows: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Workflows",
+        description="Workflows associated with the invocation.",
+    )
+    history_dataset_collections: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="History dataset collections",
+        description="History dataset collections associated with the invocation.",
+    )
+    jobs: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Jobs",
+        description="Jobs associated with the invocation.",
+    )
+    histories: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Histories",
+        description="Histories associated with the invocation.",
+    )
+    invocations: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="Invocations",
+        description="Other invocations associated with the invocation.",
+    )
 
 
 class InvocationUpdatePayload(Model):
@@ -462,11 +489,6 @@ class InvocationUpdatePayload(Model):
 
 
 class InvocationIOBase(Model):
-    # TODO - resolve
-    # the tests in test/integration/test_workflow_tasks.py ,
-    # between line 42 and 56 fail, if this id is not allowed be None
-    # They all fail, when trying to populate the response of the show_invocation operation
-    # Is it intended to allow None here?
     id: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="ID", description="The encoded ID of the dataset/dataset collection."
     )
@@ -591,3 +613,50 @@ class InvocationStepJobsResponseJobModel(InvocationJobsSummaryBaseModel):
 
 class InvocationStepJobsResponseCollectionJobsModel(InvocationJobsSummaryBaseModel):
     model: IMPLICIT_COLLECTION_JOBS_MODEL_CLASS
+
+
+class CreateInvocationFromStore(StoreContentSource):
+    history_id: int = Field(
+        default=..., title="History ID", description="The ID of the history associated with the invocations."
+    )
+
+
+class InvocationSerializationView(str, Enum):
+    element = "element"
+    collection = "collection"
+
+
+class InvocationSerializationParams(BaseModel):
+    """Contains common parameters for customizing model serialization."""
+
+    view: Optional[InvocationSerializationView] = Field(
+        default=None,
+        title="View",
+        description=(
+            "The name of the view used to serialize this item. "
+            "This will return a predefined set of attributes of the item."
+        ),
+        examples=["element"],
+    )
+    step_details: bool = Field(
+        default=False,
+        title="Include step details",
+        description="Include details for individual invocation steps and populate a steps attribute in the resulting dictionary",
+    )
+    legacy_job_state: bool = Field(
+        default=False,
+        description="""Populate the invocation step state with the job state instead of the invocation step state.
+        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+        Partially scheduled steps may provide incomplete information and the listed steps outputs
+        are not the mapped over step outputs but the individual job outputs.""",
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
+    )
+
+
+class CreateInvocationsFromStorePayload(CreateInvocationFromStore, InvocationSerializationParams):
+    history_id: DecodedDatabaseIdField = Field(
+        default=...,
+        title="History ID",
+        description="The ID of the history associated with the invocations.",
+    )

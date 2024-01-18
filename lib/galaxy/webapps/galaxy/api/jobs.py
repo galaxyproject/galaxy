@@ -149,6 +149,12 @@ InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
+ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Implicit Collection Jobs ID",
+    description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
+)
+
 SortByQueryParam: JobIndexSortByEnum = Query(
     default=JobIndexSortByEnum.update_time,
     title="Sort By",
@@ -215,6 +221,7 @@ class FastAPIJobs:
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+        implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
@@ -232,6 +239,7 @@ class FastAPIJobs:
             history_id=history_id,
             workflow_id=workflow_id,
             invocation_id=invocation_id,
+            implicit_collection_jobs_id=implicit_collection_jobs_id,
             order_by=order_by,
             search=search,
             limit=limit,

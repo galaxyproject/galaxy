@@ -1,0 +1,111 @@
+---
+history_dataset_display:
+  side_panel_name: Dataset
+  help: |
+    Display a dataset and relevant options for viewing, importing, downloading,
+    and visualization in the resulting document. To embed a dataset directly
+    into the document use the "history_dataset_embedded" / "Embedded Dataset"
+    directive.
+
+history_dataset_collection_display:
+  side_panel_name: Collection
+  help: |
+    Display a dataset collection and relevant options for viewing, importing, downloading
+    in the resulting documenting.
+
+history_dataset_as_image:
+  side_panel_name: Image
+  help: |
+    Embed a dataset in the resulting document as an image. This only works for simple image
+    types. This can be used to present graphs and other visual summaries of an analysis into
+    a Galaxy Markdown document summary.
+
+history_dataset_index:
+  side_panel_name: Dataset Index
+  help: |
+    For Galaxy composite datasets (datasets that consist on multiple files), this option will
+    display the contents of the composite dataset as files and folders in the resulting document.
+history_dataset_embedded:
+  side_panel_name: Embedded Dataset
+history_dataset_as_table:
+  side_panel_name: Embedded Dataset as table
+history_dataset_type:
+  side_panel_name: Dataset Type
+history_dataset_link:
+  side_panel_name: Link to Dataset
+history_dataset_name:
+  side_panel_name: Name of Dataset
+history_dataset_peek:
+  side_panel_name: Peek into Dataset
+history_dataset_info:
+  side_panel_name: Dataset Details
+
+history_link:
+  side_panel_name: Link to Import
+  help:
+    report: |
+      Add a link to import the history the workflow invocation was executed in.
+    page: |
+      Add a link to import the target history referenced by the directive.
+
+invocation_time:
+  side_panel_name:
+    report: Time Workflow
+    page: Time a Workflow
+
+  side_panel_description: was invoked
+
+invocation_inputs:
+  side_panel_name: Invocation Inputs
+
+invocation_outputs:
+  side_panel_name: Invocation Output
+
+workflow_license:
+  side_panel_name: Workflow License
+
+workflow_image:
+  side_panel_name: Workflow (as image)
+
+workflow_display:
+  side_panel_name:
+    report: Current Workflow
+    page: Display a Workflow
+  side_panel_description: containing all steps
+
+generate_galaxy_version:
+  side_panel_name: Galaxy Version
+  side_panel_description: as text
+
+  help: |
+    Report the current Galaxy version at the time %MODE% generation.
+
+    Warning: This is the Galaxy version at the time the %MODE% was generated and
+    not the time of an analysis. This option makes the most sense for PDF generation
+    of %MODE%s designed for external archiving or printing.
+
+generate_time:
+  side_panel_name: Current Time
+  side_panel_description: as text
+  help: |
+    Report the current time of %MODE% generation.
+
+    Warning: This is the time the %MODE% was generated and not the time of
+    an analysis. This option makes the most sense for PDF generation of %MODE%s
+    designed for external archiving or printing.
+
+job_metrics:
+  side_panel_name: Job Metrics
+  side_panel_description: as table
+
+job_parameters:
+  side_panel_name: Job Parameters
+  side_panel_description: as table
+
+tool_stdout:
+  side_panel_name: Tool Output
+  side_panel_description: of job run
+
+tool_stderr:
+  side_panel_name: Tool Error
+  side_panel_description: of job run

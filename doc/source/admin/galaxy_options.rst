@@ -1442,6 +1442,24 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_config``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying an object_store_config_file, the object
+    store configuration can be embedded into Galaxy's config with this
+    option.
+    This option has no effect if the file specified by
+    object_store_config_file exists. Otherwise, if this option is set,
+    it overrides any other objectstore settings.
+    The syntax, available instrumenters, and documentation of their
+    options is explained in detail in the object store sample
+    configuration file, `object_store_conf.sample.yml`
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_cache_monitor_driver``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

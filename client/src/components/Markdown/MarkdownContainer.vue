@@ -49,10 +49,6 @@ const props = defineProps({
         type: Object,
         default: null,
     },
-    jobs: {
-        type: Object,
-        default: null,
-    },
     time: {
         type: String,
         default: null,
@@ -151,11 +147,13 @@ function argToBoolean(args, name, booleanDefault) {
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :title="args.title"
                 :footer="args.footer" />
             <JobParameters
                 v-else-if="name == 'job_parameters'"
                 :job-id="args.job_id"
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :param="args.param || undefined"
                 :title="args.title"
                 :footer="args.footer" />
@@ -169,7 +167,11 @@ function argToBoolean(args, name, booleanDefault) {
                 v-else-if="name == 'history_dataset_collection_display'"
                 :args="args"
                 :collections="collections" />
-            <ToolStd v-else-if="['tool_stdout', 'tool_stderr'].includes(name)" :args="args" :name="name" :jobs="jobs" />
+            <ToolStd
+                v-else-if="['tool_stdout', 'tool_stderr'].includes(name)"
+                :job-id="args.job_id"
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
+                :name="name" />
             <HistoryDatasetDisplay
                 v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(name)"
                 :args="args"

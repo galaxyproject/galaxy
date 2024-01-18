@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import (
     Body,
     Path,
@@ -66,7 +68,7 @@ class FastAPIToolData:
         require_admin=True,
     )
     async def create(
-        self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
+        self, tool_data_file_path: Optional[str] = None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
         result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())

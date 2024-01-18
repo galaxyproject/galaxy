@@ -126,6 +126,8 @@ class ConditionalStepWhen(BooleanToolParameter):
 
 def to_cwl(value, hda_references, step):
     element_identifier = None
+    if isinstance(value, model.HistoryDatasetCollectionAssociation):
+        value = value.collection
     if isinstance(value, model.DatasetCollectionElement) and value.hda:
         element_identifier = value.element_identifier
         value = value.hda
@@ -155,14 +157,13 @@ def to_cwl(value, hda_references, step):
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
             return properties
-    elif hasattr(value, "collection"):
-        collection = value.collection
-        if collection.collection_type == "list":
-            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in collection.dataset_elements]
+    elif isinstance(value, model.DatasetCollection):
+        if value.collection_type == "list":
+            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in value.dataset_elements]
         else:
             # Could be record or nested lists
             rval = {}
-            for element in collection.elements:
+            for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
                     element.element_object, hda_references=hda_references, step=step
                 )

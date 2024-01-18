@@ -3,13 +3,14 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import GridBoolean from "./GridElements/GridBoolean.vue";
+import GridDatasets from "./GridElements/GridDatasets.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
@@ -150,6 +151,7 @@ function onSearch(query: string) {
 function onSort(sortKey: string) {
     if (sortBy.value !== sortKey) {
         sortBy.value = sortKey;
+        sortDesc.value = false;
     } else {
         sortDesc.value = !sortDesc.value;
     }
@@ -246,13 +248,17 @@ watch(operationMessage, () => {
                     class="text-nowrap px-2"
                     :data-description="`grid header ${fieldIndex}`">
                     <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                        <BLink @click="onSort(fieldEntry.key)">
+                        <BButton
+                            variant="link"
+                            class="text-nowrap font-weight-bold"
+                            :data-description="`grid sort key ${fieldEntry.key}`"
+                            @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
-                                <FontAwesomeIcon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
-                                <FontAwesomeIcon v-else icon="caret-down" data-description="grid sort desc" />
+                                <FontAwesomeIcon v-if="sortDesc" icon="caret-down" data-description="grid sort desc" />
+                                <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
                             </span>
-                        </BLink>
+                        </BButton>
                     </span>
                     <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
                 </th>
@@ -273,6 +279,7 @@ watch(operationMessage, () => {
                             :title="rowData[fieldEntry.key]"
                             @execute="onOperation($event, rowData)" />
                         <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
+                        <GridDatasets v-else-if="fieldEntry.type == 'datasets'" :historyId="rowData[fieldEntry.key]" />
                         <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                         <GridLink
                             v-else-if="fieldEntry.type == 'link'"
@@ -298,13 +305,7 @@ watch(operationMessage, () => {
         </table>
         <div class="flex-grow-1 h-100" />
         <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
-            <BPagination
-                v-model="currentPage"
-                :total-rows="totalRows"
-                :per-page="limit"
-                class="m-0"
-                size="sm"
-                aria-controls="grid-table" />
+            <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
         </div>
     </div>
 </template>

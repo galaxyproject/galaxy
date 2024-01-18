@@ -3020,16 +3020,20 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     dict_element_visible_keys = [
         "id",
         "name",
-        "genome_build",
-        "deleted",
-        "purged",
         "archived",
-        "update_time",
-        "published",
-        "importable",
-        "slug",
+        "create_time",
+        "deleted",
         "empty",
+        "genome_build",
+        "hid_counter",
+        "importable",
         "preferred_object_store_id",
+        "purged",
+        "published",
+        "slug",
+        "tags",
+        "update_time",
+        "username",
     ]
     default_name = "Unnamed history"
 
@@ -3062,6 +3066,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def empty(self):
         return self.hid_counter is None or self.hid_counter == 1
+
+    @property
+    def username(self):
+        if user := self.user:
+            return user.username
+        return None
 
     @property
     def count(self):
@@ -8569,6 +8579,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def to_dict(self, view="collection", value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
+        if rval["state"] is None:
+            # bugs could result in no state being set
+            rval["state"] = self.states.FAILED
         if view == "element":
             steps = []
             for step in self.steps:
