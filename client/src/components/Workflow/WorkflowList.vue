@@ -78,7 +78,6 @@ const showBookmarked = ref(false);
 const listHeader = ref<any>(null);
 const advancedFiltering = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
-const showHighlight = ref<"published" | "imported" | "">("");
 
 const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | undefined>>> = computed(() => {
     return {
@@ -148,19 +147,13 @@ function onToggleBookmarked() {
     showBookmarked.value = !showBookmarked.value;
 }
 
-function onToggleShowHighlight(h: "published" | "imported") {
-    if (showHighlight.value === h) {
-        showHighlight.value = "";
-    } else {
-        showHighlight.value = h;
-    }
-}
-
-async function load(overlayLoading = false) {
-    if (overlayLoading) {
-        overlay.value = true;
-    } else {
-    loading.value = true;
+async function load(overlayLoading = false, silent = false) {
+    if (!silent) {
+        if (overlayLoading) {
+            overlay.value = true;
+        } else {
+            loading.value = true;
+        }
     }
 
     let search = filterText.value;
@@ -192,7 +185,7 @@ async function load(overlayLoading = false) {
             filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
         }
 
-            workflowsLoaded.value = filteredWorkflows;
+        workflowsLoaded.value = filteredWorkflows;
 
         if (showBookmarked.value) {
             totalWorkflows.value = filteredWorkflows.length;
@@ -298,41 +291,6 @@ onMounted(() => {
                             Show bookmarked
                         </BButton>
                     </div>
-
-                    <div v-if="activeList !== 'published'">
-                        Highlights:
-                        <BButton
-                            id="highlight-published-workflows"
-                            v-b-tooltip.hover
-                            size="sm"
-                            :title="
-                                showHighlight === 'published'
-                                    ? 'Highlight published workflows'
-                                    : 'Hide published workflows highlight'
-                            "
-                            :pressed="showHighlight === 'published'"
-                            variant="outline-primary"
-                            @click="onToggleShowHighlight('published')">
-                            <FontAwesomeIcon :icon="faGlobe" />
-                            Published
-                        </BButton>
-
-                        <BButton
-                            id="highlight-imported-workflows"
-                            v-b-tooltip.hover
-                            size="sm"
-                            :title="
-                                showHighlight === 'imported'
-                                    ? 'Highlight imported workflows'
-                                    : 'Hide imported workflows highlight'
-                            "
-                            :pressed="showHighlight === 'imported'"
-                            variant="outline-primary"
-                            @click="onToggleShowHighlight('imported')">
-                            <FontAwesomeIcon :icon="faUpload" />
-                            Imported
-                        </BButton>
-                    </div>
                 </template>
             </ListHeader>
         </div>
@@ -351,21 +309,20 @@ onMounted(() => {
 
         <BOverlay
             v-else
-                id="workflow-cards"
+            id="workflow-cards"
             :show="overlay"
             rounded="sm"
             class="cards-list mt-2"
             :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
-                    <WorkflowCard
+            <WorkflowCard
                 v-for="w in workflowsLoaded"
                 :key="w.id"
                 :workflow="w"
-                        :show-highlight="showHighlight"
-                        :published-view="published"
-                        :grid-view="view === 'grid'"
+                :published-view="published"
+                :grid-view="view === 'grid'"
                 :class="view === 'grid' ? 'grid-view' : 'list-view'"
-                        @refreshList="load"
-                        @tagClick="onTagClick" />
+                @refreshList="load"
+                @tagClick="onTagClick" />
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"

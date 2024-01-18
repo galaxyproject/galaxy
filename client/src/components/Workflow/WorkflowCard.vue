@@ -26,14 +26,12 @@ library.add(faEdit, faEye, faPen, faUpload);
 interface Props {
     workflow: any;
     gridView?: boolean;
-    showHighlight?: string;
     publishedView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
-    showHighlight: "",
 });
 
 const emit = defineEmits<{
@@ -62,16 +60,6 @@ const description = computed(() => {
         return null;
     }
 });
-const showHighlightComputed = computed(() => {
-    if (!props.publishedView && props.showHighlight) {
-        if (props.showHighlight === "published") {
-            return workflow.value.published;
-        } else if (props.showHighlight === "imported") {
-            return workflow.value.source_metadata;
-        }
-    }
-    return false;
-});
 
 function onEdit() {
     router.push(`/workflows/edit?id=${workflow.value.id}`);
@@ -94,7 +82,7 @@ function toggleShowPreview(val: boolean = false) {
 async function onTagsUpdate(tags: string[]) {
     workflow.value.tags = tags;
     await updateWorkflow(workflow.value.id, { tags });
-    emit("refreshList", false, true);
+    emit("refreshList", true, true);
 }
 
 async function onTagClick(tag: string) {
@@ -107,7 +95,7 @@ async function onTagClick(tag: string) {
         <div
             class="workflow-card-container"
             :class="{
-                'workflow-shared-trs': showHighlightComputed,
+                'workflow-shared': workflow.published,
             }">
             <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -310,7 +298,7 @@ async function onTagClick(tag: string) {
         }
     }
 
-    .workflow-shared-trs {
+    .workflow-shared {
         border-left: 0.25rem solid $brand-primary;
     }
 
