@@ -10,6 +10,7 @@ import threading
 import time
 import traceback
 import typing
+import uuid
 from queue import (
     Empty,
     Queue,
@@ -829,12 +830,19 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                     self.watched.append(async_job_state)
             except Empty:
                 pass
+            # Ideally we'd construct a sqlalchemy session now and pass it into `check_watched_items`
+            # and have that be the only session being used. The next best thing is to scope
+            # the session and discard it after each check_watched_item loop
+            scoped_id = str(uuid.uuid4())
+            self.app.model.set_request_id(scoped_id)
             # Iterate over the list of watched jobs and check state
             try:
                 check_database_connection(self.sa_session)
                 self.check_watched_items()
             except Exception:
                 log.exception("Unhandled exception checking active jobs")
+            finally:
+                self.app.model.unset_request_id(scoped_id)
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 
