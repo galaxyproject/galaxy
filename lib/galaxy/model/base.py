@@ -58,7 +58,7 @@ def commit(session: Union[scoped_session, Session, "SessionlessContext"]):
     finally:
         if err:
             session.rollback()
-            log.error("Database transaction rolled back due to the following error: %s" % err)
+            log.error("Database transaction rolled back due to the following error: %s", err)
 
 
 @contextlib.contextmanager
