@@ -234,7 +234,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 :title="action.tooltip"
                 :href="action.href"
                 @click="action.onClick">
-                <FontAwesomeIcon :icon="action.icon" />
+                <FontAwesomeIcon :icon="action.icon" fixed-width />
             </BButton>
         </div>
 
@@ -259,7 +259,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 :title="action.title"
                 :target="action.target"
                 @click="action.onClick?.()">
-                <FontAwesomeIcon :icon="action.icon" />
+                <FontAwesomeIcon :icon="action.icon" fixed-width />
                 <span>{{ action.title }}</span>
             </BDropdownItem>
         </BDropdown>

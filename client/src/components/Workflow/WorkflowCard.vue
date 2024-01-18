@@ -161,7 +161,6 @@ async function onTagClick(tag: string) {
 
                 <div class="workflow-card-actions">
                     <WorkflowActionsExtend
-                        class="mr-2"
                         :workflow="workflow"
                         :published="publishedView"
                         @refreshList="emit('refreshList', true)" />
@@ -180,7 +179,7 @@ async function onTagClick(tag: string) {
                             "
                             variant="outline-primary"
                             @click="onEdit">
-                            <FontAwesomeIcon :icon="faEdit" />
+                            <FontAwesomeIcon :icon="faEdit" fixed-width />
                             Edit
                         </BButton>
 
@@ -246,8 +245,7 @@ async function onTagClick(tag: string) {
         gap: 0.5rem;
         flex-direction: column;
         justify-content: space-between;
-        background-color: white;
-        border: 1px solid #e5e5e5;
+        border: 1px solid $brand-secondary;
         border-radius: 0.5rem;
         padding: 0.5rem;
 
@@ -273,7 +271,9 @@ async function onTagClick(tag: string) {
 
         .workflow-card-actions {
             display: flex;
-            margin-top: 0.5rem;
+            gap: 0.25rem;
+            margin-top: 0.25rem;
+            align-items: center;
             justify-content: end;
         }
 
@@ -299,9 +299,6 @@ async function onTagClick(tag: string) {
 
         @container workflow-card (max-width: #{$breakpoint-sm}) {
             .workflow-card-actions {
-                display: flex;
-                gap: 0.5rem;
-                align-items: center;
                 justify-content: space-between;
             }
         }

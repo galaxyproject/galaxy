@@ -462,7 +462,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .outline-badge {
     border: 1px solid $brand-primary;
     color: $brand-primary;
-    background-color: white;
+    background-color: transparent;
 
     &:hover {
         background-color: $brand-primary !important;
