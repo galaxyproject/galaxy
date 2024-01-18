@@ -146,6 +146,7 @@
         v-else
         :markdown-text="markdownText"
         :markdown-config="markdownConfig"
+        mode="report"
         :title="'Workflow Report: ' + name"
         :steps="steps"
         @onUpdate="onReportUpdate">

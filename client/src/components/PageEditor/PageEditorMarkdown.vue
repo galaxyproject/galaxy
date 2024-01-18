@@ -1,5 +1,10 @@
 <template>
-    <MarkdownEditor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
+    <MarkdownEditor
+        :title="title"
+        :markdown-text="markdownText"
+        :markdown-config="contentData"
+        mode="page"
+        @onUpdate="onUpdate">
         <template v-slot:buttons>
             <b-button
                 id="save-button"
