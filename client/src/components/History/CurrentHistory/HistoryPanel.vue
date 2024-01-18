@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
+import { GetComponentPropTypes } from "types/utilityTypes";
 import { computed, onMounted, PropType, ref, set as VueSet, unref, watch } from "vue";
 
 import { copyDataset } from "@/api/datasets";
@@ -46,13 +47,7 @@ const props = defineProps({
         default: 0,
     },
     history: {
-        // TODO: Decide on what to do here
-        type: Object as PropType<
-            {
-                id: string;
-                preferred_object_store_id: string;
-            } & Record<string, any>
-        >,
+        type: Object as PropType<Record<string, any> & GetComponentPropTypes<typeof HistoryCounter>["history"]>,
         required: true,
     },
     filter: {
@@ -241,8 +236,12 @@ async function loadHistoryItems() {
 async function onDelete(item: HistoryItem, recursive = false) {
     isLoading.value = true;
     setInvisible(item);
-    await deleteContent(item, { recursive: recursive });
-    isLoading.value = false;
+
+    try {
+        await deleteContent(item, { recursive: recursive });
+    } finally {
+        isLoading.value = false;
+    }
 }
 
 function onHideSelection(selectedItems: HistoryItem[]) {
@@ -258,15 +257,23 @@ function onScroll(newOffset: number) {
 async function onUndelete(item: HistoryItem) {
     setInvisible(item);
     isLoading.value = true;
-    await updateContentFields(item, { deleted: false });
-    isLoading.value = false;
+
+    try {
+      await updateContentFields(item, { deleted: false });
+    } finally {
+      isLoading.value = false;
+    }
 }
 
 async function onUnhide(item: HistoryItem) {
     setInvisible(item);
     isLoading.value = true;
-    await updateContentFields(item, { visible: true });
-    isLoading.value = false;
+
+    try {
+      await updateContentFields(item, { visible: true });
+    } finally {
+      isLoading.value = false;
+    }
 }
 
 function reloadContents() {
@@ -322,16 +329,13 @@ async function onDrop(evt: any) {
 
         historyStore.loadHistoryById(props.history.id);
     } catch (error) {
-        onError(error);
+        Toast.error(`${error}`);
     }
 }
 
-function onError(error: any) {
-    Toast.error(`${error}`);
-}
-
-function updateFilterVal(newFilter: any, newVal: any) {
-    filterText.value = filterClass.setFilterValue(filterText.value, newFilter, newVal);
+function updateFilterValue(newFilterText: string, newValue: any) {
+    const currentFilterText = filterText.value
+    filterText.value = filterClass.setFilterValue(currentFilterText, newFilterText, newValue);
 }
 
 function getItemKey(item: HistoryItem) {
@@ -488,9 +492,9 @@ onMounted(async () => {
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
-                                    @tag-click="updateFilterVal('tag', $event)"
+                                    @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
-                                    @toggleHighlights="updateFilterVal('related', item.hid)"
+                                    @toggleHighlights="updateFilterValue('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
