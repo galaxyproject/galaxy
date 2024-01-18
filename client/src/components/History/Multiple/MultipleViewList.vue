@@ -32,6 +32,11 @@ const props = withDefaults(
     }
 );
 
+// defineEmits below
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+}>();
+
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
 const { arrived } = useAnimationFrameScroll(scrollContainer);
 
@@ -99,9 +104,20 @@ async function onDrop(evt: any) {
         processingDrop.value = false;
     }
 }
+
+async function onKeyDown(evt: KeyboardEvent) {
+    if (evt.key === "Enter" || evt.key === " ") {
+        if ((evt.target as HTMLElement)?.classList?.contains("top-picker")) {
+            await createAndPin();
+        } else if ((evt.target as HTMLElement)?.classList?.contains("bottom-picker")) {
+            emit("update:show-modal", true);
+        }
+    }
+}
 </script>
 
 <template>
+    <!-- eslint-disable vuejs-accessibility/no-static-element-interactions -->
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <VirtualList
@@ -125,13 +141,19 @@ async function onDrop(evt: any) {
                 @dragover.prevent
                 @dragleave.prevent="showDropZone = false">
                 <span v-if="!showDropZone" class="d-flex flex-column h-100">
-                    <div class="history-picker-box top-picker text-primary" @click.stop="createAndPin">
+                    <div
+                        class="history-picker-box top-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="createAndPin">
                         <FontAwesomeIcon icon="plus" class="mr-1" />
                         {{ localize("Create and pin new history") }}
                     </div>
                     <div
                         class="history-picker-box bottom-picker text-primary"
-                        @click.stop="$emit('update:show-modal', true)">
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('update:show-modal', true)">
                         <FontAwesomeIcon icon="check-square" class="mr-1" />
                         {{ localize("Select histories") }}
                     </div>
@@ -146,6 +168,7 @@ async function onDrop(evt: any) {
 </template>
 
 <style lang="scss" scoped>
+@import "scss/theme/blue.scss";
 .list-container {
     .history-picker {
         min-width: 15rem;
@@ -167,7 +190,7 @@ async function onDrop(evt: any) {
             }
             &:not(.history-picker-drop-zone) {
                 &:hover {
-                    background-color: rgba(0, 0, 0, 0.1);
+                    background-color: rgba($brand-info, 0.2);
                 }
             }
             &.history-picker-drop-zone {

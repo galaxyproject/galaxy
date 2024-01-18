@@ -68,7 +68,7 @@ const props = defineProps({
     },
     isMultiViewItem: {
         type: Boolean,
-        default: false
+        default: false,
     },
 });
 
