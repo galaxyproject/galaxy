@@ -24,7 +24,7 @@ const { datatypesMapper } = useDatatypesMapper();
 
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
-stateStore.setScale(0.75);
+stateStore.scale = 0.75;
 
 const loading = ref(true);
 const errored = ref(false);
