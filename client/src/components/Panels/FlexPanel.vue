@@ -49,8 +49,8 @@ const hoverDraggableOrToggle = computed(
     () => (hoverDraggableDebounced.value || hoverToggle.value) && !isDragging.value
 );
 
-const toggleLinger = 1000;
-const toggleShowDelay = 100;
+const toggleLinger = 500;
+const toggleShowDelay = 600;
 let showToggleTimeout: ReturnType<typeof setTimeout> | undefined;
 
 watch(
@@ -169,44 +169,66 @@ const sideClasses = computed(() => ({
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
+$border-width: 6px;
+
 .flex-panel {
     z-index: 100;
     flex-shrink: 0;
     display: flex;
     width: var(--width);
     position: relative;
-    border-color: $border-color;
-    border-width: 1px;
+    border-color: transparent;
+    border-width: $border-width;
     box-shadow: 1px 0 transparent;
     transition: border-color 0.1s, box-shadow 0.1s;
     align-items: stretch;
     flex-direction: column;
 
+    &::after {
+        content: "";
+        position: absolute;
+        height: 100%;
+        width: 1px;
+        background-color: $border-color;
+    }
+
     &.show-hover {
         border-color: $brand-info;
 
-        &.left {
-            box-shadow: 1px 0 $brand-info;
-        }
-
-        &.right {
-            box-shadow: -1px 0 $brand-info;
+        &::after {
+            background-color: $brand-info;
         }
     }
 
     &.left {
         border-right-style: solid;
 
+        &::after {
+            right: -1px;
+        }
+
         .drag-handle {
-            right: -0.75rem;
+            right: -$border-width;
+
+            &:hover {
+                right: calc(-1 * $border-width - var(--hover-expand) / 2);
+            }
         }
     }
 
     &.right {
         border-left-style: solid;
 
+        &::after {
+            left: -1px;
+        }
+
         .drag-handle {
-            left: -0.75rem;
+            left: -$border-width;
+
+            &:hover {
+                left: calc(-1 * $border-width - var(--hover-expand) / 2);
+            }
         }
     }
 }
@@ -214,13 +236,18 @@ const sideClasses = computed(() => ({
 .drag-handle {
     background: none;
     border: none;
+    border-radius: 0;
     position: absolute;
-    width: 1rem;
+    width: $border-width;
     padding: 0;
     height: 100%;
+    z-index: 10000;
+
+    --hover-expand: 4px;
 
     &:hover {
         cursor: ew-resize;
+        width: calc($border-width + var(--hover-expand));
     }
 }
 
