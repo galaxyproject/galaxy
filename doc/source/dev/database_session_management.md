@@ -11,7 +11,7 @@ The default scope of the Session object registry is [thread local](https://docs.
 
 ### WSGI, ASGI, Celery
 
-In the context of the web app (WSGI and ASGI) there is a clearly delineated lifespan for a session, and that lifespan isn't tied to a thread. The scope of the Session object registry is set at the beginning of a web request using `app.model.set_request_id(request_id)`. At the end of a web request we remove the scope using `app.model.unset_request_id(request_id)`. This also closes and removes any action Session object. Similarly, we set the scope for each Celery task execution using `set_request_id` and `unset_request_id`.
+In the context of the web app (WSGI and ASGI) there is a clearly delineated lifespan for a session, and that lifespan isn't tied to a thread. The scope of the Session object registry is set at the beginning of a web request using `app.model.set_request_id(request_id)`. At the end of a web request we remove the scope using `app.model.unset_request_id(request_id)`. This also closes and removes any active Session object. Similarly, we set the scope for each Celery task execution using `set_request_id` and `unset_request_id`.
 
 By using this mechanism we are certain that web requests and celery tasks receive a new Session object and that any resources held by the session are released.
 
