@@ -78,32 +78,15 @@ function onViewUserPublished() {
 
 <template>
     <div>
-        <span class="mr-1">
-            <small>
-                edited
-                <UtcDate :date="workflow.update_time" mode="elapsed" />
-            </small>
-        </span>
-
-        <BBadge
-            v-if="shared && !publishedView"
+        <BButton
+            v-if="workflow.published && !publishedView"
             v-b-tooltip
-            class="outline-badge cursor-pointer mx-1"
-            :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
-            @click="onViewMySharedByUser">
-            <FontAwesomeIcon :icon="faUsers" size="sm" />
-            <span class="font-weight-bold"> {{ workflow.owner }} </span>
-        </BBadge>
-
-        <BBadge
-            v-if="publishedView"
-            v-b-tooltip
-            class="outline-badge cursor-pointer mx-1"
-            :title="publishedTitle"
-            @click="onViewUserPublished">
-            <FontAwesomeIcon :icon="faUser" size="sm" />
-            <span class="font-weight-bold"> {{ workflow.owner }} </span>
-        </BBadge>
+            size="sm"
+            class="workflow-published-icon inline-icon-button"
+            to="/workflows/list_published"
+            title="Published workflow. Click to view all published workflows">
+            <FontAwesomeIcon :icon="faGlobe" fixed-width />
+        </BButton>
 
         <BButton
             v-if="sourceType.includes('trs')"
@@ -123,15 +106,32 @@ function onViewUserPublished() {
             <FontAwesomeIcon :icon="faLink" fixed-width @click="onCopyLink" />
         </BButton>
 
-        <BButton
-            v-if="workflow.published && !publishedView"
+        <span class="mr-1">
+            <small>
+                edited
+                <UtcDate :date="workflow.update_time" mode="elapsed" />
+            </small>
+        </span>
+
+        <BBadge
+            v-if="shared && !publishedView"
             v-b-tooltip
-            size="sm"
-            class="workflow-published-icon inline-icon-button"
-            to="/workflows/list_published"
-            title="Published workflow. Click to view all published workflows">
-            <FontAwesomeIcon :icon="faGlobe" />
-        </BButton>
+            class="outline-badge cursor-pointer mx-1"
+            :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
+            @click="onViewMySharedByUser">
+            <FontAwesomeIcon :icon="faUsers" size="sm" fixed-width />
+            <span class="font-weight-bold"> {{ workflow.owner }} </span>
+        </BBadge>
+
+        <BBadge
+            v-if="publishedView"
+            v-b-tooltip
+            class="outline-badge cursor-pointer mx-1"
+            :title="publishedTitle"
+            @click="onViewUserPublished">
+            <FontAwesomeIcon :icon="faUser" size="sm" fixed-width />
+            <span class="font-weight-bold"> {{ workflow.owner }} </span>
+        </BBadge>
     </div>
 </template>
 
