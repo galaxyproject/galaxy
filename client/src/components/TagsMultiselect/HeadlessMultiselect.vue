@@ -318,10 +318,11 @@ const bounds = useElementBounding(root);
     left: var(--left);
 
     width: var(--width);
-    height: min(400px, calc(100% - var(--top) - var(--height) - 12px));
+    height: min(300px, calc(100% - var(--top) - var(--height) - 12px));
 
     display: flex;
     flex-direction: column;
+    box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
 
     .headless-multiselect__option {
         padding: 0.5rem;
