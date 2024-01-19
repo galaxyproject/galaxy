@@ -171,6 +171,10 @@ export interface paths {
          */
         get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
     };
+    "/api/datasets/{dataset_id}/object_store_id": {
+        /** Update an object store ID for a dataset you own. */
+        put: operations["datasets__update_object_store_id"];
+    };
     "/api/datasets/{dataset_id}/parameters_display": {
         /**
          * Resolve parameters as a list for nested display.
@@ -2910,6 +2914,8 @@ export interface components {
             badges: components["schemas"]["BadgeDict"][];
             /** Description */
             description?: string | null;
+            /** Device */
+            device?: string | null;
             /** Name */
             name?: string | null;
             /** Object Store Id */
@@ -10599,6 +10605,14 @@ export interface components {
              */
             synopsis?: string | null;
         };
+        /** UpdateObjectStoreIdPayload */
+        UpdateObjectStoreIdPayload: {
+            /**
+             * Object Store Id
+             * @description Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.
+             */
+            object_store_id: string;
+        };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
             /**
@@ -12206,6 +12220,38 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (components["schemas"]["JobMetric"] | null)[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    datasets__update_object_store_id: {
+        /** Update an object store ID for a dataset you own. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the History Dataset. */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateObjectStoreIdPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
