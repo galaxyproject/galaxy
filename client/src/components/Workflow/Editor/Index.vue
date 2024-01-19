@@ -691,9 +691,10 @@ export default {
         async onNavigate(url) {
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
+            } else {
+                await this.onSave(true);
             }
 
-            await this.onSave(true);
             this.hasChanges = false;
             this.$router.push(url);
         },
