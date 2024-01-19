@@ -1,6 +1,7 @@
 <template>
     <Editor
         v-if="editorConfig"
+        :key="editorReloadKey"
         :workflow-id="editorConfig.id"
         :data-managers="editorConfig.dataManagers"
         :initial-version="editorConfig.initialVersion"
@@ -23,6 +24,7 @@ export default {
             storedWorkflowId: null,
             workflowId: null,
             editorConfig: null,
+            editorReloadKey: 0,
         };
     },
     watch: {
@@ -43,7 +45,13 @@ export default {
             } else if (storedWorkflowId) {
                 params.id = storedWorkflowId;
             }
+
+            const previousId = this.editorConfig?.id;
             this.editorConfig = await urlData({ url: "/workflow/editor", params });
+
+            if (previousId !== undefined && previousId !== this.editorConfig?.id) {
+                this.editorReloadKey += 1;
+            }
         },
     },
 };
