@@ -97,9 +97,9 @@ class ToolsService(ServiceBase):
             },
         }
         create_payload.update(files_payload)
-        return self._create(trans, create_payload)
+        return self.create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
+    def create(self, trans: ProvidesHistoryContext, payload):
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
@@ -136,7 +136,6 @@ class ToolsService(ServiceBase):
         # History not set correctly as part of this API call for
         # dataset upload.
         if history_id := payload.get("history_id"):
-            history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
             target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
