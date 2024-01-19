@@ -299,6 +299,12 @@ const bounds = useElementBounding(root);
         flex-grow: 1;
         margin: 0;
         border: none;
+
+        &:focus,
+        &:focus-visible {
+            outline: none;
+            border: none;
+        }
     }
 
     button {
