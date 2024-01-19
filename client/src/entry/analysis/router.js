@@ -124,7 +124,14 @@ export function getRouter(Galaxy) {
                 }),
             },
             /** Workflow editor */
-            { path: "/workflows/edit", component: WorkflowEditorModule },
+            {
+                path: "/workflows/edit",
+                component: WorkflowEditorModule,
+                props: (route) => ({
+                    id: route.query.id,
+                    workflowId: route.query.workflow_id,
+                }),
+            },
             /** Published resources routes */
             {
                 path: "/published/history",

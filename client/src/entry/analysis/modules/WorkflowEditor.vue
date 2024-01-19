@@ -12,22 +12,35 @@
 </template>
 <script>
 import Editor from "components/Workflow/Editor/Index";
-import Query from "utils/query-string-parsing";
 import { urlData } from "utils/url";
 
 export default {
     components: {
         Editor,
     },
+    props: {
+        id: {
+            type: String,
+            default: undefined,
+        },
+        workflowId: {
+            type: String,
+            default: undefined,
+        },
+    },
     data() {
         return {
-            storedWorkflowId: null,
-            workflowId: null,
             editorConfig: null,
         };
     },
     watch: {
-        "$route.params": {
+        id: {
+            handler() {
+                this.getEditorConfig();
+            },
+            immediate: true,
+        },
+        workflowId: {
             handler() {
                 this.getEditorConfig();
             },
@@ -36,13 +49,11 @@ export default {
     },
     methods: {
         async getEditorConfig() {
-            const storedWorkflowId = Query.get("id");
-            const workflowId = Query.get("workflow_id");
             const params = {};
-            if (workflowId) {
-                params.workflow_id = workflowId;
-            } else if (storedWorkflowId) {
-                params.id = storedWorkflowId;
+            if (this.workflowId) {
+                params.workflow_id = this.workflowId;
+            } else if (this.id) {
+                params.id = this.id;
             }
             this.editorConfig = await urlData({ url: "/workflow/editor", params });
         },
