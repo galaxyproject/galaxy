@@ -261,7 +261,7 @@ class Base(_HasTable, metaclass=DeclarativeMeta):
 
 
 class RepresentById:
-    id: int
+    id: Mapped[int]
 
     def __repr__(self):
         try:
@@ -420,7 +420,7 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
-    update_time: DateTime
+    update_time: Mapped[Optional[datetime]]
 
     @property
     def seconds_since_updated(self):
