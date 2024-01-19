@@ -2943,7 +2943,7 @@ def is_hda(d):
     return isinstance(d, HistoryDatasetAssociation)
 
 
-class HistoryAudit(Base, RepresentById):
+class HistoryAudit(Base):
     __tablename__ = "history_audit"
     __table_args__ = (PrimaryKeyConstraint(sqlite_on_conflict="IGNORE"),)
 
@@ -2953,6 +2953,14 @@ class HistoryAudit(Base, RepresentById):
     # This class should never be instantiated.
     # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
     __init__ = None  # type: ignore[assignment]
+
+    def __repr__(self):
+        try:
+            r = f"<galaxy.model.{self.__class__.__name__}({cached_id(self)}) at {hex(id(self))}>"
+        except Exception:
+            r = object.__repr__(self)
+            log.exception("Caught exception attempting to generate repr for: %s", r)
+        return r
 
     @classmethod
     def prune(cls, sa_session):
