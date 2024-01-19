@@ -12,10 +12,12 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    HTTPException,
     Request,
     UploadFile,
 )
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -30,6 +32,10 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
+)
+from galaxy.schema.tools import (
+    CreateToolPayload,
+    CreateToolResponse,
 )
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -58,6 +64,15 @@ log = logging.getLogger(__name__)
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
+
+CreateToolBody = Annotated[
+    CreateToolPayload,
+    Body(
+        default=...,
+        title="",
+        description="",
+    ),
+]
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -102,6 +117,25 @@ class FetchTools:
                 if isinstance(value, StarletteUploadFile):
                     files2.append(value)
         return self.service.create_fetch(trans, payload, files2)
+
+    @router.post(
+        "/api/tools",
+        summary="Execute tool with a given parameter payload",
+    )
+    def create(
+        self,
+        payload: CreateToolBody,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> CreateToolResponse:
+        tool_id = payload.tool_id
+        tool_uuid = payload.tool_uuid
+        if tool_id in PROTECTED_TOOLS:
+            raise HTTPException(
+                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        if tool_id is None and tool_uuid is None:
+            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
+        return CreateToolResponse(**self.service.create(trans, payload.model_dump()))
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -568,29 +602,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Returns global tool error stack
         """
         return global_tool_errors.error_stack
-
-    @expose_api_anonymous
-    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
-        """
-        POST /api/tools
-        Execute tool with a given parameter payload
-
-        :param input_format: input format for the payload. Possible values are
-          the default 'legacy' (where inputs nested inside conditionals or
-          repeats are identified with e.g. '<conditional_name>|<input_name>') or
-          '21.01' (where inputs inside conditionals or repeats are nested
-          elements).
-        :type input_format: str
-        """
-        tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException(
-                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
-        return self.service._create(trans, payload, **kwd)
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:
