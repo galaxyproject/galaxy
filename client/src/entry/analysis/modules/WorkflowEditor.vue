@@ -37,19 +37,27 @@ export default {
     },
     methods: {
         async getEditorConfig() {
-            const storedWorkflowId = Query.get("id");
-            const workflowId = Query.get("workflow_id");
-            const params = {};
-            if (workflowId) {
-                params.workflow_id = workflowId;
-            } else if (storedWorkflowId) {
-                params.id = storedWorkflowId;
+            let reloadEditor = true;
+
+            // this will only be the case the first time the route updates from a new workflow
+            if (!this.storedWorkflowId && !this.workflowId) {
+                reloadEditor = false;
             }
 
-            const previousId = this.editorConfig?.id;
+            this.storedWorkflowId = Query.get("id");
+            this.workflowId = Query.get("workflow_id");
+
+            const params = {};
+
+            if (this.workflowId) {
+                params.workflow_id = this.workflowId;
+            } else if (this.storedWorkflowId) {
+                params.id = this.storedWorkflowId;
+            }
+
             this.editorConfig = await urlData({ url: "/workflow/editor", params });
 
-            if (previousId !== undefined && previousId !== this.editorConfig?.id) {
+            if (reloadEditor) {
                 this.editorReloadKey += 1;
             }
         },
