@@ -35,7 +35,7 @@ from galaxy.schema.fetch_data import (
 )
 from galaxy.schema.tools import (
     CreateToolPayload,
-    CreateToolResponse,
+    ToolResponse,
 )
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -126,7 +126,7 @@ class FetchTools:
         self,
         payload: CreateToolBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> CreateToolResponse:
+    ) -> ToolResponse:
         tool_id = payload.tool_id
         tool_uuid = payload.tool_uuid
         if tool_id in PROTECTED_TOOLS:
@@ -135,7 +135,7 @@ class FetchTools:
             )
         if tool_id is None and tool_uuid is None:
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
-        return CreateToolResponse(**self.service.create(trans, payload.model_dump()))
+        return ToolResponse(**self.service.create(trans, payload.model_dump()))
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
