@@ -1592,6 +1592,10 @@ export interface paths {
         /** Show installed tool shed repository. */
         get: operations["show_api_tool_shed_repositories__id__get"];
     };
+    "/api/tools": {
+        /** Execute tool with a given parameter payload */
+        post: operations["create_api_tools_post"];
+    };
     "/api/tools/fetch": {
         /** Upload files to Galaxy */
         post: operations["fetch_form_api_tools_fetch_post"];
@@ -3413,6 +3417,68 @@ export interface components {
              * @description The relative URL to get this particular Quota details from the rest API.
              */
             url: string;
+        };
+        /** CreateToolPayload */
+        CreateToolPayload: {
+            /**
+             * Action
+             * @description The action to perform
+             */
+            action?: string | null;
+            /**
+             * Data Manager Mode
+             * @description The mode of the data manager
+             */
+            data_manager_mode?: string | null;
+            /**
+             * History ID
+             * @description The ID of the history
+             */
+            history_id?: string | null;
+            /**
+             * Input Format
+             * @description The format of the input
+             * @default legacy
+             */
+            input_format?: string | null;
+            /**
+             * Inputs
+             * @description The input data
+             * @default {}
+             */
+            inputs?: Record<string, never>;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the preferred object store
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Send Email Notification
+             * @description Flag indicating whether to send email notification
+             */
+            send_email_notification?: boolean | null;
+            /**
+             * Tool ID
+             * @description The ID of the tool to execute.
+             */
+            tool_id?: Record<string, never> | null;
+            /**
+             * Tool UUID
+             * @description The UUID of the tool to execute.
+             */
+            tool_uuid?: Record<string, never> | null;
+            /**
+             * Tool Version
+             * @description The version of the tool
+             */
+            tool_version?: string | null;
+            /**
+             * Use Cached Job
+             * @description Flag indicating whether to use a cached job
+             * @default false
+             */
+            use_cached_job?: boolean | null;
+            [key: string]: unknown | undefined;
         };
         /** CreatedEntryResponse */
         CreatedEntryResponse: {
@@ -12064,6 +12130,44 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolResponse */
+        ToolResponse: {
+            /**
+             * Errors
+             * @description Job errors related to the creation of the tool.
+             * @default []
+             */
+            errors?: Record<string, never>[];
+            /**
+             * Implicit Collections
+             * @description The implicit dataset collections of the tool.
+             * @default []
+             */
+            implicit_collections?: Record<string, never>[];
+            /**
+             * Jobs
+             * @description The jobs of the tool.
+             * @default []
+             */
+            jobs?: Record<string, never>[];
+            /**
+             * Output Collections
+             * @description The output dataset collections of the tool.
+             * @default []
+             */
+            output_collections?: Record<string, never>[];
+            /**
+             * Outputs
+             * @description The outputs of the tool.
+             * @default []
+             */
+            outputs?: Record<string, never>[];
+            /**
+             * Produces Entry Points
+             * @description Flag indicating whether the creation of the tool produces entry points.
+             */
+            produces_entry_points: boolean;
         };
         /** ToolStep */
         ToolStep: {
@@ -22659,6 +22763,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["InstalledToolShedRepository"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_tools_post: {
+        /** Execute tool with a given parameter payload */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateToolPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ToolResponse"];
                 };
             };
             /** @description Validation Error */
