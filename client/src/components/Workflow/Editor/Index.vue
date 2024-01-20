@@ -688,11 +688,15 @@ export default {
             const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url) {
-            this.onSave(true).then(() => {
-                this.hasChanges = false;
-                this.$router.push(url);
-            });
+        async onNavigate(url) {
+            if (this.isNewTempWorkflow) {
+                await this.onCreate();
+            } else {
+                await this.onSave(true);
+            }
+
+            this.hasChanges = false;
+            this.$router.push(url);
         },
         onSave(hideProgress = false) {
             if (!this.nameValidate()) {
