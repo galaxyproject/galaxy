@@ -87,13 +87,17 @@ router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
+CreateDataForm = as_form(CreateToolPayload)
+
 
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+    async def fetch_json(
+        self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans
+    ) -> ToolResponse:
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -107,7 +111,7 @@ class FetchTools:
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> ToolResponse:
         files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
 
         # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
@@ -122,7 +126,7 @@ class FetchTools:
         "/api/tools",
         summary="Execute tool with a given parameter payload",
     )
-    def create(
+    def create_json(
         self,
         payload: CreateToolBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
@@ -135,7 +139,7 @@ class FetchTools:
             )
         if tool_id is None and tool_uuid is None:
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
-        return ToolResponse(**self.service.create(trans, payload.model_dump()))
+        return self.service.create(trans, payload.model_dump())
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
