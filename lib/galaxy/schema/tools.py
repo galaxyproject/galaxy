@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -13,20 +14,17 @@ from pydantic import (
 )
 
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import Model
+from galaxy.schema.jobs import (
+    EncodedJobDetails,
+    ShowFullJobResponse,
+)
+from galaxy.schema.schema import (
+    JobSummary,
+    Model,
+)
 
 
 class CreateToolPayload(Model):
-    # def __init__(self, **data):
-    #     self.model_config = ConfigDict(extra="allow")
-    #     # Dynamically add fields based on keys starting with 'files_' or '__files_'
-    #     for key, value in data.items():
-    #         if key.startswith("files_") or key.startswith("__files_"):
-    #             setattr(
-    #                 self, key, Field(default=value, title=key, description="Files related to the creation of the tool.")
-    #             )
-    #     super().__init__(**data)
-
     tool_id: Optional[Any] = Field(
         default=None,
         title="Tool ID",
@@ -104,8 +102,8 @@ class ToolResponse(Model):
         title="Output Collections",
         description="The output dataset collections of the tool.",
     )
-    #    jobs: List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]] = Field(
-    jobs: List[Dict[str, Any]] = Field(
+    jobs: List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]] = Field(
+        #   jobs: List[Dict[str, Any]] = Field(
         default=[],
         title="Jobs",
         description="The jobs of the tool.",
