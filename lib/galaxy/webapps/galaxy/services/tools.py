@@ -33,6 +33,7 @@ from galaxy.schema.fetch_data import (
     FetchDataPayload,
     FilesPayload,
 )
+from galaxy.schema.tools import ToolResponse
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
@@ -60,7 +61,7 @@ class ToolsService(ServiceBase):
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[List[UploadFile]] = None,
-    ):
+    ) -> ToolResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
@@ -99,7 +100,7 @@ class ToolsService(ServiceBase):
         create_payload.update(files_payload)
         return self.create(trans, create_payload)
 
-    def create(self, trans: ProvidesHistoryContext, payload):
+    def create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
@@ -195,7 +196,7 @@ class ToolsService(ServiceBase):
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> ToolResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
@@ -213,9 +214,6 @@ class ToolsService(ServiceBase):
             # correspond with which tool file outputs
             output_dict["output_name"] = output_name
             outputs.append(output_dict)
-
-        for job in vars.get("jobs", []):
-            rval["jobs"].append(job.to_dict(view="collection"))
 
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
@@ -240,7 +238,12 @@ class ToolsService(ServiceBase):
             rval["implicit_collections"].append(output_dict)
 
         trans.security.encode_all_ids(rval, recursive=True)
-        return rval
+
+        # Encoding the job ids is handled by the pydantic model
+        for job in vars.get("jobs", []):
+            rval["jobs"].append(job.to_dict(view="collection"))
+
+        return ToolResponse(**rval)
 
     def _search(self, q, view):
         """
