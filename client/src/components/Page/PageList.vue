@@ -37,7 +37,7 @@
                 <StatelessTags
                     :value="row.item.tags"
                     :index="row.index"
-                    :disabled="published"
+                    :disabled="published || !currentUserOwnsItem(row.item)"
                     @input="(tags) => onTags(tags, row.index)"
                     @tag-click="onTagClick" />
             </template>
@@ -80,6 +80,7 @@
 <script>
 import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
+import { storeToRefs } from "pinia";
 import { updateTags } from "./services";
 import { pagesProvider } from "components/providers/PageProvider";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
@@ -93,6 +94,8 @@ import IndexFilter from "components/Indices/IndexFilter";
 import { absPath } from "@/utils/redirect";
 import { useRouter } from "vue-router/composables";
 import { getGalaxyInstance } from "app";
+
+import { useUserStore } from "@/stores/userStore";
 
 import SharingIndicators from "components/Indices/SharingIndicators";
 
@@ -155,8 +158,10 @@ export default {
     },
     setup() {
         const router = useRouter();
+        const { currentUser } = storeToRefs(useUserStore());
         return {
             router,
+            currentUser,
         };
     },
     data() {
@@ -228,6 +233,9 @@ export default {
         },
         shareLink: function (item) {
             this.router.push(`sharing?id=${item.id}`);
+        },
+        currentUserOwnsItem: function (item) {
+            return item.username === this.currentUser.username;
         },
         decorateData(page) {
             const Galaxy = getGalaxyInstance();
