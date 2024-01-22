@@ -11,7 +11,7 @@ from pydantic import (
 from typing_extensions import Literal
 
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
@@ -107,7 +107,7 @@ class QuotaBase(Model, WithModelClass):
     """Base model containing common fields for Quotas."""
 
     model_class: QUOTA = ModelClassField(QUOTA)
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",

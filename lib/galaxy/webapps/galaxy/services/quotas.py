@@ -55,13 +55,13 @@ class QuotasService(ServiceBase):
             encoded_id = Security.security.encode_id(quota.id)
             item["url"] = url_for(route, id=encoded_id)
             rval.append(item)
-        return QuotaSummaryList.model_construct(root=rval)
+        return QuotaSummaryList(root=rval)
 
     def show(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, deleted: bool = False) -> QuotaDetails:
         """Displays information about a quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=deleted)
         rval = quota.to_dict(view="element", value_mapper={"total_disk_usage": float})
-        return QuotaDetails.model_construct(**rval)
+        return QuotaDetails(**rval)
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
@@ -71,7 +71,7 @@ class QuotasService(ServiceBase):
         item = quota.to_dict()
         item["url"] = url_for("quota", id=Security.security.encode_id(quota.id))
         item["message"] = message
-        return CreateQuotaResult.model_construct(**item)
+        return CreateQuotaResult(**item)
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
