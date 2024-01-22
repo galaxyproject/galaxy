@@ -192,7 +192,7 @@ function getHighlight(item: HistoryItem) {
         return undefined;
     }
 
-    const highlightsKey = filterClass.getFilterValue(unref(filterText), "related");
+    const highlightsKey = parseInt(filterClass.getFilterValue(unref(filterText), "related"));
     if (!highlightsKey) {
         return undefined;
     }
