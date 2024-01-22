@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BInputGroup } from "bootstrap-vue";
+import { BButton, BButtonGroup } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
 import type { UserNotification } from "@/api/notifications";
@@ -35,15 +35,19 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 
 <template>
     <div v-if="notification" class="notification-actions">
-        <div class="notification-actions-buttons">
-            <UtcDate :date="notification.create_time" mode="elapsed" />
+        <div class="notification-actions-body">
+            <BBadge v-b-tooltip pill>
+                <UtcDate :date="notification.create_time" mode="elapsed" />
+            </BBadge>
 
-            <BInputGroup>
+            <BButtonGroup class="notification-actions-buttons">
                 <AsyncButton
                     v-if="!notification.seen_time"
                     id="mark-as-read-button"
                     title="Mark as read"
                     icon="check"
+                    size="sm"
+                    class="inline-icon-button"
                     :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
 
                 <BButton
@@ -51,16 +55,20 @@ function getNotificationExpirationTitle(notification: UserNotification) {
                     id="expiration-time-button"
                     v-b-tooltip.hover
                     variant="link"
+                    size="sm"
+                    class="inline-icon-button"
                     :title="getNotificationExpirationTitle(notification)">
-                    <FontAwesomeIcon icon="hourglass-half" />
+                    <FontAwesomeIcon icon="hourglass-half" fixed-width />
                 </BButton>
 
                 <AsyncButton
                     id="delete-button"
                     icon="trash"
                     title="Delete"
+                    size="sm"
+                    class="inline-icon-button"
                     :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />
-            </BInputGroup>
+            </BButtonGroup>
         </div>
     </div>
 </template>
@@ -69,10 +77,15 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 .notification-actions {
     margin-left: auto;
 
-    .notification-actions-buttons {
+    .notification-actions-body {
         display: flex;
+        gap: 0.5rem;
         align-items: center;
         justify-content: space-between;
+
+        .notification-actions-buttons {
+            gap: 0.5rem;
+        }
     }
 }
 </style>
