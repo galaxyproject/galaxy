@@ -9,15 +9,15 @@ Highlights
 ===========================================================
 
 Workflow Updates
-----------------
+-----------------------------------------------------------
 
-**Workflow comments** are a brand new feature of the Galaxy Workflow Editor. They add a suite of tools to help you visually explain and structure your Workflows. Comments are saved on your workflow, so they can be shared with other workflow contributors, help guide workflow users, or just help you keep track of your work and sort your thoughts, while developing a workflow. They can also help you with teaching, live demos, and providing feedback on a workflow, all directly inside the workflow editor!
+Workflow comments
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Workflow comments are a brand new feature of the Galaxy Workflow Editor. They add a suite of tools to help you visually explain and structure your Workflows. Comments are saved on your workflow, so they can be shared with other workflow contributors, help guide workflow users, or just help you keep track of your work and sort your thoughts, while developing a workflow. They can also help you with teaching, live demos, and providing feedback on a workflow, all directly inside the workflow editor!
 
 .. figure:: images/23.2-wf-comments-1.png
    :alt: In the menu that pops up, when a comment is selected, it can be styled in multiple ways, making the whole text italic, bold, coloured, or larger/smaller.
-
-.. figure:: images/23.2-wf-comments-2.png
-   :alt: Example of a structured workflow.
 
 Workflow comments tools are made available as part of the Editor Toolbar - a new UI element in the workflow editor. They include:
 
@@ -27,66 +27,84 @@ Workflow comments tools are made available as part of the Editor Toolbar - a new
 * a frame comments tool that allows you to visually group parts of your workflow together, steps and comments alike;
 * freehand comments tools - a pen and an eraser that enable drawing directly on your Workflow, making them perfect for showing what you are referring to in live demos, leaving quick marks when reviewing or debugging a Workflow, drawing arrows to show what your markdown comment is referring to, etc.
 
+.. figure:: images/23.2-wf-comments-2.png
+   :alt: Example of a structured workflow.
+
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/ndPeBov5O0s" title="Galaxy 23.2 - Workflow Comments - Placing Text Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+|
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/lAOvpGRxTk4" title="Galaxy 23.2 - Workflow Comments -  Placing Frame Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+|
+Workflow sharing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. raw:: html
-
-   <iframe width="560" height="315" src="https://www.youtube.com/embed/ZvPUGcTFJYA" title="Galaxy 23.2 - Workflow Comments - Moving Frame Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
-The **Published Workflow Sharing** page UI has been overhauled to make the page more informative, visually appealing, and easier to navigate. Some of the key improvements include adding a new read-only mode to the workflow editor, embedding an interactive view of the workflow editor, adding more information about the workflow, adding a run button, etc. The page is now responsive, which makes it usable on smaller screens.
+The Published Workflow Sharing page UI has been overhauled to make the page more informative, visually appealing, and easier to navigate. Some of the key improvements include adding a new read-only mode to the workflow editor, embedding an interactive view of the workflow editor, adding more information about the workflow, adding a run button, etc. The page is now responsive, which makes it usable on smaller screens.
 
 .. figure:: images/23.2-pub-wf-sharing.png
    :alt: The new Workflow Sharing page.
 
-**Workflow Publishing** now has a configurable iframe embed:
+Workflow publishing
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Workflow Publishing now has a configurable iframe embed:
 
 .. figure:: images/23.2-wf-pub-iframe.png
    :alt: iframe embed with copy url button and options.
 
-**Workflow Reports**
+Workflow reports
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 In response to user feedback and suggestions, a lot of work went into improving the page and workflow report editor options. Workflow image and license information have been added to Galaxy markdown capabilities. Workflow version is now included in the report; time is displayed in UTC time format. A variety of minor issues including invocation report and the job metrics markdown component have been fixed. To address requests to add citation information for the Galaxy instance on which the workflow has been executed, several new directives have been added to Galaxy Markdown: Galaxy URL, organization URL, citation URL, support URL, help URL, terms URL, and resources URL - alongside new configuration options to support them.
 
 InvenioRDM Integrated into Galaxy
 ---------------------------------
 
-**InvenioRDM** has been integrated into Galaxy. Users can now import files directly from InvenioRDM repositories into Galaxy, and publish records containing artifacts (Histories, datasets, etc.) from Galaxy to InvenioRDM.
+InvenioRDM has been integrated into Galaxy. Users can now import files directly from InvenioRDM repositories into Galaxy, and publish records containing artifacts (Histories, datasets, etc.) from Galaxy to InvenioRDM.
 
-**Importing files**
+Importing data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 To import from InvenioRDM, you simply select the InvenioRDM repository as a remote file source in the *Upload* tool and then select the records or individual files you want to import into your history, just like you would do with any other remote file source in Galaxy:
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/GzN6heU70j4" title="Galaxy 23.2 - Invenio - Importing Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
+|
+Exporting data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 To export your data to InvenioRDM, you need to set up your InvenioRDM API personal token. You can create a new personal token in your InvenioRDM account settings if you don't have one. In Galaxy, you need to add that personal token to your account (go to *User > Preferences > Manage Information*).
 
-**Exporting your Histories**
+Exporting your Histories
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Once you have set your personal token, you can publish your histories by selecting the InvenioRDM repository as a remote file source in the *Export History to File* menu option. You will be able to select an existing draft record or create a new one, and the files will be uploaded to it. Once exported, you will be able to import the history snapshot from the published record at any time.
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/Qoy-buGb26Y" title="Galaxy 23.2 - Invenio - Exporting Histories" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+|
+Archiving your Histories
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Archiving your Histories**
 When you are completely happy with your history, you can archive it, taking it out of your active histories and freeing up some disk quota. You can do so by selecting the *Archive History* menu option. The process will be similar to exporting a history; however, your history will be purged from Galaxy once the process is completed. You will be able to import the history as a copy from the published record at any time.
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/CNXQphjW6LE" title="Galaxy 23.2 - Invenio - Archiving Histories" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+|
+Exporting your Datasets
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**Exporting your Datasets**
 You can also publish individual datasets to InvenioRDM by selecting the InvenioRDM repository as a remote file source using the *Export Datasets* tool. Since the tool interface is a bit limited, you will need to create your draft record manually in advance, and then you can select it when exporting the datasets.
 
 .. raw:: html
 
    <iframe width="560" height="315" src="https://www.youtube.com/embed/t3baif6JFfA" title="Galaxy 23.2 - Invenio - Exporting Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
+|
 Miscellaneous Improvements
 --------------------------
 
