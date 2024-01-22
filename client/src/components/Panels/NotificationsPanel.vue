@@ -11,7 +11,8 @@ import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import NotificationItem from "@/components/Notifications/NotificationItem.vue";
+import NotificationCard from "@/components/Notifications/NotificationCard.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 library.add(faCheckDouble);
 
@@ -44,57 +45,49 @@ function goToAllNotifications() {
 </script>
 
 <template>
-    <div class="unified-panel" data-description="notifications" aria-labelledby="notifications-box-heading">
-        <div unselectable="on">
-            <div class="unified-panel-header-inner">
-                <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h2 v-localize class="m-1 h-sm">Unread notifications</h2>
+    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" @goToAll="goToAllNotifications">
+        <template v-slot:header-buttons>
+            <BButtonGroup>
+                <BButton
+                    v-b-tooltip.bottom.hover
+                    :disabled="!unreadNotifications.length"
+                    data-description="mark all as read"
+                    size="sm"
+                    variant="link"
+                    title="Mark all as read"
+                    @click="onMarkAllAsRead">
+                    <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
+                </BButton>
+            </BButtonGroup>
+        </template>
 
-                    <BButtonGroup>
-                        <BButton
-                            v-if="unreadNotifications.length > 0"
-                            v-b-tooltip.bottom.hover
-                            data-description="mark all as read"
-                            size="sm"
-                            variant="link"
-                            title="Mark all as read"
-                            @click="onMarkAllAsRead">
-                            <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
-                        </BButton>
-                    </BButtonGroup>
-                </nav>
-
-                <BAlert v-if="loadingNotifications" key="loading-notifications" show class="mx-2">
-                    <LoadingSpan message="Loading notifications" />
-                </BAlert>
-
-                <div v-else-if="unreadNotifications.length" class="unified-panel-header-description mx-3 my-2">
-                    You have {{ unreadNotifications.length }} unread notifications.
-                </div>
-
-                <BAlert v-else key="no-notifications-message" show class="mx-2">
-                    No unread notifications to show.
-                </BAlert>
+        <template v-slot:header>
+            <div v-if="!loadingNotifications && unreadNotifications.length">
+                You have {{ unreadNotifications.length }} unread notifications.
             </div>
-        </div>
+        </template>
 
-        <TransitionGroup name="notifications-box-list" tag="div" class="unified-panel-body">
+        <BAlert v-if="loadingNotifications" key="loading-notifications" show>
+            <LoadingSpan message="Loading notifications" />
+        </BAlert>
+
+        <BAlert v-else-if="!unreadNotifications.length" key="no-notifications-message" show>
+            No unread notifications to show.
+        </BAlert>
+
+        <TransitionGroup name="notifications-box-list" tag="div">
             <div v-for="notification in unreadNotifications" :key="notification.id" class="notifications-box-card">
-                <NotificationItem :notification="notification" />
+                <NotificationCard :notification="notification" />
             </div>
         </TransitionGroup>
-
-        <BButton class="m-2" variant="primary" @click="goToAllNotifications"> All notifications </BButton>
-    </div>
+    </ActivityPanel>
 </template>
 
 <style lang="scss" scoped>
+@import "theme/blue.scss";
+
 .notifications-box-card {
-    margin: 0.5rem 0.25rem;
-    padding: 0.5rem 0.75rem;
-    background-color: white;
-    border: 1px solid #e5e5e5;
-    border-radius: 0.5rem;
+    background-color: $body-bg;
 }
 
 .notifications-box-list-enter-active {

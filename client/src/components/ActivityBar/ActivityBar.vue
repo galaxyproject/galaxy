@@ -17,7 +17,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import NotificationsBox from "@/components/Panels/NotificationsBox.vue";
+import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
@@ -217,7 +217,7 @@ function toggleContextMenu(evt: MouseEvent) {
             <WorkflowBox />
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('notifications')" key="notifications" side="left" :collapsible="false">
-            <NotificationsBox />
+            <NotificationsPanel />
         </FlexPanel>
         <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
             <ActivitySettings />
