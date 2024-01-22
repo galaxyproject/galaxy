@@ -458,3 +458,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         color: $brand-light;
     }
 }
+
+.card-container {
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid $brand-secondary;
+}
