@@ -19,7 +19,7 @@ import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
-import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 
 const { config, isConfigLoaded } = useConfig();
 
@@ -214,7 +214,7 @@ function toggleContextMenu(evt: MouseEvent) {
             <ToolPanel />
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
-            <WorkflowBox />
+            <WorkflowPanel />
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('notifications')" key="notifications" side="left" :collapsible="false">
             <NotificationsPanel />
