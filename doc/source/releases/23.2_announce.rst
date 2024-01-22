@@ -8,23 +8,13 @@ Late 2023 Galaxy Release (v 23.2)
 Highlights
 ===========================================================
 
-Feature1
---------
+**Workflow comments** are a brand new feature of the Galaxy Workflow Editor. They add a suite of tools - such as text, markdown, freehand commenting and more - to help visually explain and structure Workflows. Workflow publishing and workflow sharing UI have received significant updates. A lot of work has been done on improving the page and workflow report editor options; a variety of new directives have been added to Galaxy Markdown.
 
-Feature description.
+**InvenioRDM** has been integrated into Galaxy. Users can now import files directly from InvenioRDM repositories into Galaxy, and publish records containing artifacts (Histories, datasets, etc.) from Galaxy to InvenioRDM.
 
-Feature2
---------
+**Miscellaneous improvements.** There have been numerous updates to the UI, including Galaxy Help forum integration, improved navigation and styling, helpful warnings, improvements to search, etc. Check out the `23.2 user release notes <23.2_announce_user.html>`__ for all the details. 
 
-Feature description.
-
-Feature3
---------
-
-Feature description.
-
-Also check out the `23.2 user release notes <23.2_announce_user.html>`__. Are you an admin? Check out `some admin relevant PRs
-<https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.2+is%3Aclosed+is%3Apr>`__.
+Are you an admin? See the Administration Notes below, and check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A23.2+is%3Aclosed+is%3Apr>`__.
 
 Get Galaxy
 ===========================================================
@@ -45,7 +35,16 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 
 Administration Notes
 ===========================================================
-Add content or drop section.
+
+* A lot of work has been done on path-based interactive tools, including major additions to documentation and configuration. (`#16795 <https://github.com/galaxyproject/galaxy/pull/16795>`__)
+* It is now possible to configure per-user limits for celery task execution (`#16232 <https://github.com/galaxyproject/galaxy/pull/16232>`__)
+* An admin panel for managing notifications and broadcasts has been added. Admins will be able to schedule/update/delete a broadcast and send message notifications to selected users, roles or groups. (`#16278 <https://github.com/galaxyproject/galaxy/pull/16278>`__)
+* Configuration options are now available for carbon emissions reporting. (`#16307 <https://github.com/galaxyproject/galaxy/pull/16307>`__)
+* The pgcleanup script has been modified to allow periodically deleting old datasets; operations can now be restricted to specific object store ids. (`#16340 <https://github.com/galaxyproject/galaxy/pull/16340>`__)
+* Tool memory usage has been improved. (`#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`__)
+* Documentation added for tool panel and panel view administration. (`#17078 <https://github.com/galaxyproject/galaxy/pull/17078>`__)
+* Support added for cgroups-v2 (`#17169 <https://github.com/galaxyproject/galaxy/pull/17169>`__)
+* Support added for configuring job metrics inline; documentation improved (`#17178 <https://github.com/galaxyproject/galaxy/pull/17178>`__)
 
 Configuration Changes
 ===========================================================
