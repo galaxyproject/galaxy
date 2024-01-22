@@ -45,7 +45,7 @@ const notificationVariant = computed(() => {
             <div
                 :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''"
                 class="message-notification-title">
-                <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
+                <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" fixed-width size="sm" />
                 {{ props.options.notification?.content?.subject }}
             </div>
 
@@ -67,6 +67,9 @@ const notificationVariant = computed(() => {
 
     .message-notification-title {
         font-size: 1rem;
+        display: flex;
+        gap: 0.2rem;
+        align-items: center;
     }
 
     @container message-notification (min-width: 576px) {
