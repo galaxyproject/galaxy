@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-if="configIsLoaded" class="h4 clearfix mb-3">
+        <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
             <ButtonSpinner
                 id="run-workflow"
@@ -21,20 +21,22 @@
                     <span class="fa fa-cog" />
                 </template>
                 <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                        >Send results to a new history</b-form-checkbox
-                    >
+                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                        Send results to a new history
+                    </b-form-checkbox>
                     <b-form-checkbox
                         v-if="reuseAllowed(currentUser)"
                         v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run."
-                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                    >
-                    <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
-                        >Send outputs and intermediate to different object stores?</b-form-checkbox
-                    >
+                        title="This may skip executing jobs that you have already run.">
+                        Attempt to re-use jobs with identical parameters?
+                    </b-form-checkbox>
+                    <b-form-checkbox
+                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                        v-model="splitObjectStore">
+                        Send outputs and intermediate to different object stores?
+                    </b-form-checkbox>
                     <WorkflowStorageConfiguration
-                        v-if="config.object_store_allows_id_selection"
+                        v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         :split-object-store="splitObjectStore"
                         :invocation-preferred-object-store-id="preferredObjectStoreId"
                         :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
@@ -45,7 +47,7 @@
         </div>
         <FormDisplay
             :inputs="formInputs"
-            :allowEmptyValueOnRequiredInput="true"
+            :allow-empty-value-on-required-input="true"
             @onChange="onChange"
             @onValidation="onValidation" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
@@ -54,17 +56,19 @@
 </template>
 
 <script>
+import ButtonSpinner from "components/Common/ButtonSpinner";
+import FormDisplay from "components/Form/FormDisplay";
+import { allowCachedJobs } from "components/Tool/utilities";
+import { isWorkflowInput } from "components/Workflow/constants";
+import { storeToRefs } from "pinia";
+import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
+
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
-import { storeToRefs } from "pinia";
-import FormDisplay from "components/Form/FormDisplay";
-import ButtonSpinner from "components/Common/ButtonSpinner";
+
 import { invokeWorkflow } from "./services";
-import { isWorkflowInput } from "components/Workflow/constants";
-import { errorMessageAsString } from "utils/simple-error";
-import { allowCachedJobs } from "components/Tool/utilities";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
-import Vue from "vue";
 
 export default {
     components: {
@@ -87,9 +91,9 @@ export default {
         },
     },
     setup() {
-        const { config, isLoaded: configIsLoaded } = useConfig(true);
+        const { config, isConfigLoaded } = useConfig(true);
         const { currentUser } = storeToRefs(useUserStore());
-        return { config, configIsLoaded, currentUser };
+        return { config, isConfigLoaded, currentUser };
     },
     data() {
         const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
@@ -118,18 +122,21 @@ export default {
             });
             // Add actual input modules.
             this.model.steps.forEach((step, i) => {
-                if (!isWorkflowInput(step.step_type)) {
-                    return;
+                if (isWorkflowInput(step.step_type)) {
+                    const stepName = new String(step.step_index);
+                    const stepLabel = step.step_label || new String(step.step_index + 1);
+                    const help = step.annotation;
+                    const longFormInput = step.inputs[0];
+                    const stepAsInput = Object.assign({}, longFormInput, {
+                        name: stepName,
+                        help: help,
+                        label: stepLabel,
+                    });
+                    // disable collection mapping...
+                    stepAsInput.flavor = "module";
+                    inputs.push(stepAsInput);
+                    this.inputTypes[stepName] = step.step_type;
                 }
-                const stepName = new String(step.step_index);
-                const stepLabel = step.step_label || new String(step.step_index + 1);
-                const help = step.annotation;
-                const longFormInput = step.inputs[0];
-                const stepAsInput = Object.assign({}, longFormInput, { name: stepName, help: help, label: stepLabel });
-                // disable collection mapping...
-                stepAsInput.flavor = "module";
-                inputs.push(stepAsInput);
-                this.inputTypes[stepName] = step.step_type;
             });
             return inputs;
         },

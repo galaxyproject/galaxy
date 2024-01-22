@@ -1,6 +1,6 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import beautify from "xml-beautifier";
 

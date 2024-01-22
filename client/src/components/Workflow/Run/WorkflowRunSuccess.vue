@@ -16,7 +16,7 @@
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
         </div>
-        <workflow-invocation-state
+        <WorkflowInvocationState
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"
@@ -26,12 +26,13 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
-import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
 import { refreshContentsWrapper } from "utils/data";
+import Webhooks from "utils/webhooks";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

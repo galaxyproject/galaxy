@@ -2,13 +2,13 @@
     <li class="dataset-source">
         <a v-if="browserCompatUri" v-b-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
             {{ source.source_uri }}
-            <font-awesome-icon icon="external-link-alt" />
+            <FontAwesomeIcon icon="external-link-alt" />
         </a>
         <span v-else>
             {{ source.source_uri }}
         </span>
         <span v-b-tooltip.hover title="Copy URI"
-            ><font-awesome-icon icon="copy" style="cursor: pointer" @click="copyLink"
+            ><FontAwesomeIcon icon="copy" style="cursor: pointer" @click="copyLink"
         /></span>
         <br />
         <DatasetSourceTransform :transform="source.transform" />
@@ -16,12 +16,13 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { copy } from "utils/clipboard";
-import DatasetSourceTransform from "./DatasetSourceTransform";
 import _l from "utils/localization";
+
+import DatasetSourceTransform from "./DatasetSourceTransform";
 
 library.add(faCopy, faExternalLinkAlt);
 

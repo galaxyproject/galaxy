@@ -12,7 +12,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         self.install_repository(owner, name, latest_install_revision, tool_shed_url=self.url)
         response = self.galaxy_interactor._get("tools?in_panel=False")
         response.raise_for_status()
-        expected_tool = f"{self.host}:{self.port}/repos/{owner}/{name}/Add_a_column1/1.1.0"
+        expected_tool = populator.tool_guid(self, repository, "Add_a_column1", "1.1.0")
         tool_ids = [t["id"] for t in response.json()]
         assert expected_tool in tool_ids, f"Didn't find {expected_tool} in {tool_ids}"
 

@@ -1,25 +1,27 @@
 import { getGalaxyInstance } from "app";
-
-import Admin from "entry/analysis/modules/Admin";
-import Home from "components/admin/Home";
 import ActiveInvocations from "components/admin/ActiveInvocations";
 import DataManager from "components/admin/DataManager/DataManager";
-import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
+import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
 import DataManagerTable from "components/admin/DataManager/DataManagerTable";
 import DataManagerView from "components/admin/DataManager/DataManagerView";
 import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
+import ToolboxDependencies from "components/admin/Dependencies/Landing";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
-import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
+import Home from "components/admin/Home";
 import JobsList from "components/admin/JobsList";
-import RegisterForm from "components/Login/RegisterForm";
+import BroadcastForm from "components/admin/Notifications/BroadcastForm";
+import NotificationForm from "components/admin/Notifications/NotificationForm";
+import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
+import FormGeneric from "components/Form/FormGeneric";
+import Grid from "components/Grid/Grid";
+import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
-import ToolboxDependencies from "components/admin/Dependencies/Landing";
+import Admin from "entry/analysis/modules/Admin";
 
 export default [
     {
@@ -93,6 +95,31 @@ export default [
                         props: true,
                     },
                 ],
+            },
+
+            // notifications and broadcasts
+            {
+                path: "notifications",
+                component: NotificationsManagement,
+            },
+
+            {
+                path: "notifications/create_new_broadcast",
+                name: "NewBroadcast",
+                component: BroadcastForm,
+            },
+
+            {
+                path: "notifications/edit_broadcast/:id",
+                name: "EditBroadcast",
+                component: BroadcastForm,
+                props: true,
+            },
+
+            {
+                path: "notifications/create_new_notification",
+                name: "NewNotification",
+                component: NotificationForm,
             },
 
             // grids

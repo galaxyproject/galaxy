@@ -1,10 +1,11 @@
 <script setup>
-import { computed, ref, watch } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
 import { LastQueue } from "utils/promise-queue";
+import { computed, ref, watch } from "vue";
+
 import { determineWidth } from "./utilities";
 
 const lastQueue = new LastQueue(10);
@@ -73,7 +74,7 @@ watch(position, () => {
             <slot />
             <div v-if="side === 'right'" class="flex-panel-footer d-flex px-2 py-1">
                 <div id="right-drag">
-                    <font-awesome-icon icon="grip-lines-vertical" />
+                    <FontAwesomeIcon icon="grip-lines-vertical" />
                     <div
                         ref="draggable"
                         class="interaction-area"
@@ -84,18 +85,18 @@ watch(position, () => {
                 </div>
                 <div class="flex-fill" />
                 <div v-if="collapsible" class="cursor-pointer">
-                    <font-awesome-icon icon="chevron-right" />
+                    <FontAwesomeIcon icon="chevron-right" />
                     <div id="right-collapse" class="interaction-area" @click="toggle" />
                 </div>
             </div>
             <div v-else class="flex-panel-footer d-flex px-2 py-1">
                 <div v-if="collapsible" class="cursor-pointer">
-                    <font-awesome-icon icon="chevron-left" />
+                    <FontAwesomeIcon icon="chevron-left" />
                     <div id="left-collapse" class="interaction-area" @click="toggle" />
                 </div>
                 <div class="flex-fill" />
                 <div id="left-drag">
-                    <font-awesome-icon icon="grip-lines-vertical" />
+                    <FontAwesomeIcon icon="grip-lines-vertical" />
                     <div
                         ref="draggable"
                         class="interaction-area"
@@ -110,11 +111,11 @@ watch(position, () => {
     </div>
     <div v-else>
         <div v-if="side === 'right'" class="flex-panel-right-expand cursor-pointer px-2 py-1">
-            <font-awesome-icon icon="chevron-left" />
+            <FontAwesomeIcon icon="chevron-left" />
             <div id="right-expand" class="interaction-area" @click="toggle" />
         </div>
         <div v-else class="flex-panel-left-expand cursor-pointer px-2 py-1">
-            <font-awesome-icon icon="chevron-right" />
+            <FontAwesomeIcon icon="chevron-right" />
             <div id="left-expand" class="interaction-area" @click="toggle" />
         </div>
     </div>

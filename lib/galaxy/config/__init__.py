@@ -33,6 +33,7 @@ from urllib.parse import urlparse
 
 import yaml
 
+from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -516,7 +517,7 @@ class BaseAppConfiguration(HasDynamicProperties):
         for key in self.schema.paths_to_resolve:
             value = getattr(self, key)
             # Check if value is a list or should be listified; if so, listify and resolve each item separately.
-            if type(value) is list or (self.listify_options and key in self.listify_options):
+            if isinstance(value, list) or (self.listify_options and key in self.listify_options):
                 saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
                 setattr(self, key, "_")  # replace value with temporary placeholder
                 resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
@@ -545,7 +546,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
-        if type(current_value) is list:
+        if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
             # check and, if needed, update each path in the list
@@ -636,6 +637,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "fetch_url_whitelist": "fetch_url_allowlist",
         "containers_resolvers_config_file": "container_resolvers_config_file",
         "activation_email": "email_from",
+        "ga4gh_service_organization_name": "organization_name",
+        "ga4gh_service_organization_url": "organization_url",
     }
 
     deprecated_options = list(renamed_options.keys()) + [
@@ -682,7 +685,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {
         "build_sites_config_file",
         "datatypes_config_file",
-        "job_metrics_config_file",
         "tool_data_table_config_path",
         "tool_config_file",
     }
@@ -691,49 +693,52 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "tool_data_table_config_path",
         "tool_config_file",
     }
-    database_connection: str
-    tool_path: str
-    tool_data_path: str
-    new_file_path: str
-    drmaa_external_runjob_script: str
-    track_jobs_in_database: bool
-    monitor_thread_join_timeout: int
-    manage_dependency_relationships: bool
-    enable_tool_shed_check: bool
-    builds_file_path: str
-    len_file_path: str
-    integrated_tool_panel_config: str
-    toolbox_filter_base_modules: List[str]
-    tool_filters: List[str]
-    tool_label_filters: List[str]
-    tool_section_filters: List[str]
-    user_tool_filters: List[str]
-    user_tool_section_filters: List[str]
-    user_tool_label_filters: List[str]
-    password_expiration_period: timedelta
-    shed_tool_data_path: str
-    hours_between_check: int
-    galaxy_data_manager_data_path: str
-    use_remote_user: bool
-    preserve_python_environment: str
-    email_from: Optional[str]
-    workflow_resource_params_mapper: str
-    sanitize_allowlist_file: str
+
     allowed_origin_hostnames: List[str]
-    trust_jupyter_notebook_conversion: bool
-    user_library_import_symlink_allowlist: List[str]
-    user_library_import_dir_auto_creation: bool
+    builds_file_path: str
+    carbon_intensity: float
     container_resolvers_config_file: str
-    tool_dependency_dir: Optional[str]
-    involucro_path: str
-    mulled_channels: List[str]
-    nginx_upload_store: str
-    tus_upload_store: str
-    pretty_datetime_format: str
-    visualization_plugins_directory: str
+    database_connection: str
+    drmaa_external_runjob_script: str
+    email_from: Optional[str]
+    enable_tool_shed_check: bool
+    galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
+    geographical_server_location_name: str
+    hours_between_check: int
+    integrated_tool_panel_config: str
+    involucro_path: str
+    len_file_path: str
+    manage_dependency_relationships: bool
+    monitor_thread_join_timeout: int
+    mulled_channels: List[str]
+    new_file_path: str
+    nginx_upload_store: str
+    password_expiration_period: timedelta
+    preserve_python_environment: str
+    pretty_datetime_format: str
+    sanitize_allowlist_file: str
+    shed_tool_data_path: str
     themes: Dict[str, Dict[str, str]]
     themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
+    tool_data_path: str
+    tool_dependency_dir: Optional[str]
+    tool_filters: List[str]
+    tool_label_filters: List[str]
+    tool_path: str
+    tool_section_filters: List[str]
+    toolbox_filter_base_modules: List[str]
+    track_jobs_in_database: bool
+    trust_jupyter_notebook_conversion: bool
+    tus_upload_store: str
+    use_remote_user: bool
+    user_library_import_dir_auto_creation: bool
+    user_library_import_symlink_allowlist: List[str]
+    user_tool_filters: List[str]
+    user_tool_label_filters: List[str]
+    user_tool_section_filters: List[str]
+    visualization_plugins_directory: str
+    workflow_resource_params_mapper: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -835,6 +840,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
+
+        # Carbon emissions configuration
+        carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
+        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
+        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))

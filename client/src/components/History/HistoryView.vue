@@ -43,8 +43,10 @@
 
 <script>
 import { mapActions, mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
+
 import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import CollectionPanel from "./CurrentCollection/CollectionPanel";
 import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CopyModal from "./Modals/CopyModal";

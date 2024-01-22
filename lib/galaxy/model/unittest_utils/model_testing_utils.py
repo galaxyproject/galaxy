@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from typing import (
     Callable,
     Iterator,
-    NewType,
     Optional,
 )
 
@@ -20,7 +19,11 @@ from sqlalchemy.engine import (
 )
 from sqlalchemy.sql.compiler import IdentifierPreparer
 
-from galaxy.model.database_utils import create_database
+from galaxy.model.database_utils import (
+    create_database,
+    DbUrl,
+    is_postgres,
+)
 
 # GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
@@ -31,8 +34,6 @@ skip_if_not_postgres_uri = pytest.mark.skipif(
 skip_if_not_mysql_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_MYSQL_URI"), reason="GALAXY_TEST_CONNECT_MYSQL_URI not set"
 )
-
-DbUrl = NewType("DbUrl", str)
 
 
 @contextmanager
@@ -219,10 +220,6 @@ def get_stored_obj(session, cls, obj_id=None, where_clause=None, unique=False):
 def get_stored_instance_by_id(session, cls_, id):
     statement = select(cls_).where(cls_.__table__.c.id == id)
     return session.execute(statement).scalar_one()
-
-
-def is_postgres(url: DbUrl) -> bool:
-    return url.startswith("postgres")
 
 
 def _is_mysql(url: DbUrl) -> bool:

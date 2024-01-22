@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { BButton } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { ref } from "vue";
 
 const loading = ref(false);
 
@@ -29,6 +29,11 @@ const props = defineProps({
         required: false,
         default: "link",
     },
+    disabled: {
+        type: Boolean,
+        required: false,
+        default: false,
+    },
 });
 
 async function onClick() {
@@ -44,7 +49,7 @@ async function onClick() {
         :title="title"
         :size="size"
         :variant="variant"
-        :disabled="loading"
+        :disabled="loading || disabled"
         @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" title="loading"></span>
         <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />

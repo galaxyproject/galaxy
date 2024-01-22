@@ -1,16 +1,18 @@
 import { createTestingPinia } from "@pinia/testing";
-import { PiniaVuePlugin } from "pinia";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { PiniaVuePlugin } from "pinia";
+import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
+
+import { useConfig } from "@/composables/config";
 import { useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
-import { useConfig } from "@/composables/config";
+
 import mountTarget from "./ActivityBar.vue";
 
 jest.mock("composables/config");
 useConfig.mockReturnValue({
     config: {},
-    isLoaded: true,
+    isConfigLoaded: true,
 });
 
 jest.mock("vue-router/composables", () => ({
@@ -34,12 +36,6 @@ function testActivity(id, newOptions = {}) {
     };
     return { ...defaultOptions, ...newOptions };
 }
-
-const createBubbledEvent = (type, props = {}) => {
-    const event = new Event(type, { bubbles: true });
-    Object.assign(event, props);
-    return event;
-};
 
 describe("ActivityBar", () => {
     let activityStore;
@@ -72,7 +68,7 @@ describe("ActivityBar", () => {
             name: "workflow-name",
         });
         const bar = wrapper.find("[data-description='activity bar']");
-        bar.element.dispatchEvent(createBubbledEvent("dragenter", { clientX: 0, clientY: 0 }));
+        dispatchEvent(bar, "dragenter");
         const emittedEvent = wrapper.emitted()["dragstart"][0][0];
         expect(emittedEvent.to).toBe("/workflows/run?id=workflow-id");
     });

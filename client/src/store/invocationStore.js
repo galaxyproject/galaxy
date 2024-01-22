@@ -1,12 +1,12 @@
+import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
 export const state = {
     invocationDetailsById: {},
     invocationJobsSummaryById: {},
     invocationStepById: {},
 };
-
-import Vue from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
 
 const getters = {
     getInvocationById: (state) => (invocationId) => {

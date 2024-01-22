@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import draggable from "vuedraggable";
-import { ref, type Ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
+import { type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
+import draggable from "vuedraggable";
+
+import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
+import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
-import ContextMenu from "@/components/Common/ContextMenu.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
+import { useUserStore } from "@/stores/userStore";
+
 import ActivityItem from "./ActivityItem.vue";
 import ActivitySettings from "./ActivitySettings.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
+import UploadItem from "./Items/UploadItem.vue";
+import ContextMenu from "@/components/Common/ContextMenu.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
-const { config } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -191,7 +193,7 @@ function toggleContextMenu(evt: MouseEvent) {
             </b-nav>
             <b-nav vertical class="flex-nowrap p-1">
                 <NotificationItem
-                    v-if="!isAnonymous && config.enable_notification_system"
+                    v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
                     :is-active="isActiveRoute('/user/notifications')"
@@ -209,7 +211,7 @@ function toggleContextMenu(evt: MouseEvent) {
             </b-nav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
-            <ToolBox />
+            <ToolPanel />
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
             <WorkflowBox />

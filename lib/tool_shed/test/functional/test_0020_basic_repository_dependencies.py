@@ -1,7 +1,6 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -38,17 +37,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            column_maker_repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded column_maker tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(column_maker_repository, "column_maker/column_maker.tar")
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
         """Create and populate the emboss_5_0020 repository."""
@@ -61,17 +50,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded emboss.tar",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(repository, "emboss/emboss.tar")
 
     def test_0025_generate_and_upload_repository_dependencies_xml(self):
         """Generate and upload the repository_dependencies.xml file"""
@@ -90,6 +69,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             repository=repository, repository_tuples=[repository_tuple], filepath=repository_dependencies_path
         )
 
+    @skip_if_api_v2
     def test_0030_verify_emboss_5_dependencies(self):
         """Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision."""
         repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)

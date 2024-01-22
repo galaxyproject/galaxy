@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { bytesToString } from "@/utils/utils";
-import type { DataValuePoint } from "./Charts";
-import { computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { computed } from "vue";
+
+import { bytesToString } from "@/utils/utils";
+
+import type { DataValuePoint } from "./Charts";
 
 library.add(faArchive);
 

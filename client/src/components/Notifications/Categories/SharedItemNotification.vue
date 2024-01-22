@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { BCol, BRow, BLink } from "bootstrap-vue";
-import Heading from "@/components/Common/Heading.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
-import NotificationActions from "@/components/Notifications/NotificationActions.vue";
-import type { SharedItemNotification } from "@/components/Notifications";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BCol, BLink, BRow } from "bootstrap-vue";
+import { computed } from "vue";
+
+import type { SharedItemNotification } from "@/api/notifications";
+import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
+
+import Heading from "@/components/Common/Heading.vue";
+import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faExternalLinkAlt, faRetweet);
 
@@ -65,7 +67,7 @@ function markNotificationAsSeen() {
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
                 <span>shared </span>
-                <b-link
+                <BLink
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
                     class="text-primary"
@@ -74,7 +76,7 @@ function markNotificationAsSeen() {
                     @click="markNotificationAsSeen()">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
-                </b-link>
+                </BLink>
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>

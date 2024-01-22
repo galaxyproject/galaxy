@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
-import { computed, unref } from "vue";
-import { deletePage } from "./services";
-import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, unref } from "vue";
+
+import { deletePage } from "@/api/pages";
+import { useUserStore } from "@/stores/userStore";
+import _l from "@/utils/localization";
 
 library.add(faCaretDown);
 
@@ -28,15 +29,14 @@ const emit = defineEmits(["onRemove", "onSuccess", "onError"]);
 
 const readOnly = computed(() => props.page.shared || props.published || unref(isAnonymous));
 
-function onDelete(page_id: string) {
-    deletePage(page_id)
-        .then((response) => {
-            emit("onRemove", page_id);
-            emit("onSuccess");
-        })
-        .catch((error) => {
-            emit("onError", error);
-        });
+async function onDelete(pageId: string) {
+    try {
+        await deletePage(pageId);
+        emit("onRemove", pageId);
+        emit("onSuccess");
+    } catch (error) {
+        emit("onError", error);
+    }
 }
 </script>
 <template>
@@ -47,7 +47,7 @@ function onDelete(page_id: string) {
             aria-haspopup="true"
             :data-page-dropdown="props.page.id"
             aria-expanded="false">
-            <font-awesome-icon icon="caret-down" class="fa-lg" />
+            <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="page-title">{{ props.page.title }}</span>
         </b-link>
         <p v-if="props.page.description">{{ props.page.description }}</p>

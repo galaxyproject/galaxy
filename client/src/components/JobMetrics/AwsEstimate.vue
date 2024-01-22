@@ -50,7 +50,7 @@ const computedAwsEstimate = computed(() => {
 
 <template>
     <div v-if="computedAwsEstimate" id="aws-estimate" class="mt-4">
-        <h3>AWS estimate</h3>
+        <h2>AWS estimate</h2>
 
         <strong id="aws-cost">{{ computedAwsEstimate.price }} USD</strong>
 

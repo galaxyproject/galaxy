@@ -30,6 +30,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+
 export default {
     props: {
         topics: { type: Array, required: true },

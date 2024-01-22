@@ -40,16 +40,16 @@
             </td>
         </div>
         <br />
-        <job-outputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
+        <JobOutputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
 import JobOutputs from "../JobInformation/JobOutputs";
 import JobParametersArrayValue from "./JobParametersArrayValue";
 

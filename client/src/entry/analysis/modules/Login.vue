@@ -24,8 +24,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import LoginIndex from "components/Login/LoginIndex";
 import ChangePassword from "components/Login/ChangePassword";
+import LoginIndex from "components/Login/LoginIndex";
 
 export default {
     components: {

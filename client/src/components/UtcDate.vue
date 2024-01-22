@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { computed } from "vue";
 
 interface UtcDateProps {
     date: string;

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import Multiselect from "vue-multiselect";
-import { useMultiselect } from "@/composables/useMultiselect";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
-import Tag from "./Tag.vue";
-import { useUserTags } from "@/composables/user";
-import { useToast } from "@/composables/toast";
-import { useUid } from "@/composables/utils/uid";
-
+import { faCheck, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Ref } from "vue";
+import { computed, ref } from "vue";
+import Multiselect from "vue-multiselect";
+
+import { useToast } from "@/composables/toast";
+import { useMultiselect } from "@/composables/useMultiselect";
+import { useUid } from "@/composables/utils/uid";
+import { useUserTagsStore } from "@/stores/userTagsStore";
+
+import Tag from "./Tag.vue";
 
 interface StatelessTagsProps {
     value?: string[];
@@ -38,7 +39,7 @@ const emit = defineEmits<{
 
 library.add(faTags, faCheck, faTimes, faPlus);
 
-const { userTags, addLocalTag } = useUserTags();
+const { userTags, addLocalTag } = useUserTagsStore();
 const { warning } = useToast();
 
 function onAddTag(tag: string) {

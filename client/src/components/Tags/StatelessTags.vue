@@ -12,7 +12,7 @@ upstream component or environment that is accessed through props and events -->
             @click.prevent="toggleTagDisplay">
             {{ linkText }}
         </a>
-        <vue-tags-input
+        <VueTagsInput
             v-if="tagsVisible"
             v-model="tagText"
             class="tags-input tag-area"
@@ -28,12 +28,13 @@ upstream component or environment that is accessed through props and events -->
             <template v-slot:tag-center="t">
                 <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>
-        </vue-tags-input>
+        </VueTagsInput>
     </div>
 </template>
 
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
+
 import { createTag, VALID_TAG_RE } from "./model";
 
 export default {

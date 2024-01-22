@@ -7,6 +7,7 @@
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
+            data-description="filter text input"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
@@ -79,6 +80,11 @@ export default {
         query(queryNew) {
             this.setQuery(queryNew);
         },
+    },
+    created() {
+        if (this.query) {
+            this.setQuery(this.query);
+        }
     },
     methods: {
         clearTimer() {

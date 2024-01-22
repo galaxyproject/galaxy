@@ -230,11 +230,6 @@
     <a href="${ sharable_link }" target="_blank">${ sharable_link }</a>
 </%def>
 
-<%def name="render_clone_str( repository )"><%
-        from tool_shed.util.common_util import generate_clone_url_for_repository_in_tool_shed
-        clone_str = generate_clone_url_for_repository_in_tool_shed( trans.user, repository )
-    %>hg clone ${ clone_str }</%def>
-
 <%def name="render_folder( folder, folder_pad, parent=None, row_counter=None, is_root_folder=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( folder.id )
@@ -1051,7 +1046,7 @@
 
 <%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
-        from tool_shed.util.encoding_util import tool_shed_encode
+        from galaxy.util.tool_shed.encoding_util import tool_shed_encode
 
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata

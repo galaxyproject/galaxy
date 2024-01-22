@@ -1,26 +1,28 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
+import { faArrowsAltH, faExclamation, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { ComputedRef } from "vue";
+import { computed, ref, useAttrs } from "vue";
+
+import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } from "./parameterTypes";
+
 import FormBoolean from "./Elements/FormBoolean.vue";
+import FormColor from "./Elements/FormColor.vue";
+import FormData from "./Elements/FormData/FormData.vue";
+import FormDataDialog from "./Elements/FormDataDialog.vue";
+import FormDirectory from "./Elements/FormDirectory.vue";
+import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
 import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
-import FormParameter from "./Elements/FormParameter.vue";
-import FormSelection from "./Elements/FormSelection.vue";
-import FormColor from "./Elements/FormColor.vue";
-import FormDirectory from "./Elements/FormDirectory.vue";
 import FormNumber from "./Elements/FormNumber.vue";
-import FormText from "./Elements/FormText.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
-import FormUpload from "./Elements/FormUpload.vue";
-import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
+import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed, useAttrs } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamation, faTimes, faArrowsAltH } from "@fortawesome/free-solid-svg-icons";
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-
-import type { ComputedRef } from "vue";
-import type { FormParameterTypes, FormParameterAttributes, FormParameterValue } from "./parameterTypes";
+import FormText from "./Elements/FormText.vue";
+import FormUpload from "./Elements/FormUpload.vue";
 
 interface FormElementProps {
     id?: string;
@@ -31,8 +33,8 @@ interface FormElementProps {
     help?: string;
     error?: string;
     warning?: string;
-    backbonejs?: boolean;
     disabled?: boolean;
+    loading?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
@@ -48,7 +50,6 @@ interface FormElementProps {
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
     refreshOnChange: false,
-    backbonejs: false,
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
@@ -203,9 +204,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                     <label :for="props.id">{{ props.title }}</label>
                 </span>
             </span>
-            <span v-else-if="props.title" class="ui-form-title-text"
-                ><label :for="props.id">{{ props.title }}</label></span
-            >
+            <span v-else-if="props.title" class="ui-form-title-text">
+                <label :for="props.id">{{ props.title }}</label>
+            </span>
 
             <span
                 v-if="isRequired && isRequiredType && props.title"
@@ -271,23 +272,33 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
+            <FormData
+                v-else-if="['data', 'data_collection'].includes(props.type)"
+                :id="id"
+                v-model="currentValue"
+                :loading="loading"
+                :extension="attrs.extension"
+                :flavor="attrs.flavor"
+                :multiple="attrs.multiple"
+                :optional="attrs.optional"
+                :options="attrs.options"
+                :tag="attrs.tag"
+                :type="props.type" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
                 v-model="currentValue"
                 :options="attrs.options"
                 :multiple="attrs.multiple" />
+            <FormDataDialog
+                v-else-if="props.type === 'data_dialog'"
+                :id="id"
+                v-model="currentValue"
+                :multiple="attrs.multiple === 'true'" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
-            <FormParameter
-                v-else-if="backbonejs"
-                :id="props.id"
-                v-model="currentValue"
-                :data-label="props.title"
-                :type="props.type ?? (attrs.options ? 'select' : 'text')"
-                :attributes="attrs" />
             <FormTags
                 v-else-if="props.type === 'tags'"
                 v-model="currentValue"
@@ -306,7 +317,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
 
 .ui-form-element {
     margin-top: $margin-v * 0.25;
-    margin-bottom: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.5;
     overflow: visible;
     clear: both;
 

@@ -1,13 +1,11 @@
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
-import { watchHistoryOnce } from "./watchHistory";
-import { useHistoryStore } from "stores/historyStore";
-import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
-import { datasetStore } from "store/historyStore/datasetStore";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState } from "pinia";
-import { mount, createLocalVue } from "@vue/test-utils";
-import Vuex from "vuex";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
+
+import { watchHistoryOnce } from "./watchHistory";
 
 const pinia = createPinia();
 
@@ -50,16 +48,9 @@ describe("watchHistory", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         const localVue = createLocalVue();
-        localVue.use(Vuex);
         useHistoryItemsStore(pinia);
 
         wrapper = mount(testApp, {
-            store: new Vuex.Store({
-                modules: {
-                    collectionElements: collectionElementsStore,
-                    dataset: datasetStore,
-                },
-            }),
             localVue,
             pinia,
         });

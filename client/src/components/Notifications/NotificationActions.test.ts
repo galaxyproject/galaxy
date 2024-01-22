@@ -1,12 +1,15 @@
-import { setActivePinia } from "pinia";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
-import NotificationActions from "./NotificationActions.vue";
-import { useNotificationsStore } from "@/stores/notificationsStore";
-import type { UserNotification } from "@/components/Notifications/index";
+import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
+import Vue from "vue";
+
+import type { UserNotification } from "@/api/notifications";
 import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import NotificationActions from "./NotificationActions.vue";
 
 const localVue = getLocalVue(true);
 
@@ -14,7 +17,7 @@ async function mouthNotificationActions() {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
-    const wrapper = mount(NotificationActions, {
+    const wrapper = mount(NotificationActions as object, {
         propsData: {
             notification: Math.random() > 0.5 ? generateMessageNotification() : generateNewSharedItemNotification(),
         },
@@ -48,7 +51,7 @@ async function mouthNotificationActions() {
 }
 
 function updateSeenTime(
-    wrapper: Wrapper<NotificationActions>,
+    wrapper: Wrapper<Vue>,
     notification: UserNotification,
     newSeenTime: string | undefined = undefined
 ) {
@@ -78,7 +81,8 @@ describe("NotificationActions.vue", () => {
 
         await wrapper.vm.$nextTick();
 
-        expect(spyOnUpdateNotification).toHaveBeenCalled();
+        expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
+
         expect(wrapper.find("#expiration-time-button").exists()).toBe(true);
     });
 

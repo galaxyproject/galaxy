@@ -1,4 +1,4 @@
-import type { Step, Steps, PostJobAction } from "@/stores/workflowStepStore";
+import type { PostJobAction, Step, Steps } from "@/stores/workflowStepStore";
 import Utils from "@/utils/utils";
 
 class UntypedParameterReference {

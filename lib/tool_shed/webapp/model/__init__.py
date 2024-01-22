@@ -399,6 +399,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -414,6 +415,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type ComputedRef } from "vue";
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
+import { computed, type ComputedRef, onMounted, ref } from "vue";
+
 import { getAllValues, type Option } from "./utilities";
+
 import FormDrilldownList from "./FormDrilldownList.vue";
 
 const props = defineProps<{
@@ -60,7 +62,7 @@ onMounted(() => {
             @change="handleClick(option.value)">
             {{ option.name }}
         </component>
-        <form-drilldown-list
+        <FormDrilldownList
             v-if="hasOptions"
             v-show="showChildren"
             class="pl-5"

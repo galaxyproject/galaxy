@@ -21,6 +21,7 @@ from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
+    PluginKind,
 )
 
 log = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class HTTPFilesSourceProperties(FilesSourceProperties, total=False):
 
 class HTTPFilesSource(BaseFilesSource):
     plugin_type = "http"
+    plugin_kind = PluginKind.stock
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         kwds: FilesSourceProperties = dict(

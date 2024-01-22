@@ -1,12 +1,17 @@
 import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
-import testData from "./testData.json";
-import NewUserWelcome from "./NewUserWelcome.vue";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
+
 import { getResource } from "./getResource";
+import testData from "./testData.json";
+
+import NewUserWelcome from "./NewUserWelcome.vue";
 
 const localVue = getLocalVue();
-import MockConfigProvider from "../providers/MockConfigProvider";
 
+jest.mock("@/api/schema");
 jest.mock("./getResource");
 
 // mock resource connector
@@ -16,11 +21,11 @@ describe("New user first view", () => {
     let wrapper;
 
     beforeEach(async () => {
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+        const pinia = createPinia();
         wrapper = mount(NewUserWelcome, {
             localVue,
-            stubs: {
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
-            },
+            pinia,
         });
         wrapper.setData({ loaded: true, newUser: testData });
     });

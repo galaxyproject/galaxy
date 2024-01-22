@@ -57,11 +57,13 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
     WORKFLOW_WITH_RULES_1,
+    WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT,
 )
 from ._framework import ApiTestCase
 from .sharable import SharingApiTests
@@ -873,6 +875,24 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         assert update_response["name"] == "my cool new name"
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["license"] == "AAL"
+
+    def test_update_name_empty(self):
+        # Update doesn't allow empty names.
+
+        # Load a workflow with a given name.
+        original_name = "test update name"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        assert workflow["name"] == original_name
+
+        # Try to update the name to an empty string (also change steps to force an update).
+        data = {"name": "", "steps": {}}
+        update_response = self._update_workflow(workflow["id"], data)
+        assert update_response.json()["err_msg"] == "Workflow must have a valid name"
+        self._assert_status_code_is(update_response, 400)
+        workflow_dict = self.workflow_populator.download_workflow(workflow["id"])
+        assert workflow_dict["name"] == original_name
 
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
@@ -4059,11 +4079,79 @@ input1:
             invocation_url = self._api_url(f"workflows/{uploaded_workflow_id}/usage/{invocation_id}", use_key=True)
             delete_response = delete(invocation_url)
             self._assert_status_code_is(delete_response, 200)
-
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=uploaded_workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=False,
+            )
             invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert invocation["state"] == "cancelled"
             message = invocation["messages"][0]
             assert message["reason"] == "user_request"
+
+    @skip_without_tool("collection_creates_dynamic_nested")
+    def test_cancel_workflow_invocation_deletes_jobs(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  list_input:
+    type: collection
+    collection_type: list
+steps:
+  first_step:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: list_input
+    state:
+      sleep_time: 60
+  subworkflow_step:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        list_input:
+          type: collection
+          collection_type: list
+      steps:
+        intermediate_step:
+          tool_id: identifier_multiple
+          in:
+            input1: list_input
+      subworkflow:
+    in:
+      list_input: first_step/out_file1
+test_data:
+  list_input:
+    collection_type: list
+    elements:
+      - identifier: 1
+        content: A
+      - identifier: 2
+        content: B
+""",
+                history_id=history_id,
+                wait=False,
+            )
+            # wait_for_invocation just waits until scheduling complete, not jobs or subworkflow invocations
+            self.workflow_populator.wait_for_invocation("null", summary.invocation_id, assert_ok=True)
+            invocation_before_cancellation = self.workflow_populator.get_invocation(summary.invocation_id)
+            assert invocation_before_cancellation["state"] == "scheduled"
+            subworkflow_invocation_id = invocation_before_cancellation["steps"][2]["subworkflow_invocation_id"]
+            self.workflow_populator.cancel_invocation(summary.invocation_id)
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=summary.workflow_id,
+                invocation_id=summary.invocation_id,
+                assert_ok=False,
+            )
+            invocation_jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
+            for job in invocation_jobs:
+                assert job["state"] == "deleted"
+            subworkflow_invocation_jobs = self.workflow_populator.get_invocation_jobs(subworkflow_invocation_id)
+            for job in subworkflow_invocation_jobs:
+                assert job["state"] == "deleted"
 
     def test_workflow_failed_output_not_found(self, history_id):
         summary = self._run_workflow(
@@ -4720,6 +4808,57 @@ data_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 3, content
+
+    def test_run_with_default_file_dataset_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "hda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["file_ext"] == "txt"
+            assert "chr1" in dataset_details["peek"]
+
+    def test_run_with_default_file_dataset_input_and_explicit_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
+                test_data="""
+default_file_input:
+  value: 1.fasta
+  type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "hda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["file_ext"] == "txt"
+            assert (
+                "gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCA"
+                in dataset_details["peek"]
+            )
+
+    def test_run_with_default_file_in_step_inline(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "chr1" in content
 
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:

@@ -252,9 +252,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     return int(self.runner_params["k8s_run_as_user_id"])
                 except Exception:
                     log.warning(
-                        'User ID passed for Kubernetes runner needs to be an integer or "$uid", value '
-                        + self.runner_params["k8s_run_as_user_id"]
-                        + " passed is invalid"
+                        'User ID passed for Kubernetes runner needs to be an integer or "$uid", value %s passed is invalid',
+                        self.runner_params["k8s_run_as_user_id"],
                     )
                     return None
         return None
@@ -269,9 +268,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     return int(self.runner_params["k8s_run_as_group_id"])
                 except Exception:
                     log.warning(
-                        'Group ID passed for Kubernetes runner needs to be an integer or "$gid", value '
-                        + self.runner_params["k8s_run_as_group_id"]
-                        + " passed is invalid"
+                        'Group ID passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
+                        self.runner_params["k8s_run_as_group_id"],
                     )
         return None
 
@@ -284,9 +282,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return int(self.runner_params["k8s_supplemental_group_id"])
             except Exception:
                 log.warning(
-                    'Supplemental group passed for Kubernetes runner needs to be an integer or "$gid", value '
-                    + self.runner_params["k8s_supplemental_group_id"]
-                    + " passed is invalid"
+                    'Supplemental group passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
+                    self.runner_params["k8s_supplemental_group_id"],
                 )
                 return None
         return None
@@ -297,9 +294,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return int(self.runner_params["k8s_fs_group_id"])
             except Exception:
                 log.warning(
-                    'FS group passed for Kubernetes runner needs to be an integer or "$gid", value '
-                    + self.runner_params["k8s_fs_group_id"]
-                    + " passed is invalid"
+                    'FS group passed for Kubernetes runner needs to be an integer or "$gid", value %s passed is invalid',
+                    self.runner_params["k8s_fs_group_id"],
                 )
                 return None
         return None

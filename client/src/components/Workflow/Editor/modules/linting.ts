@@ -1,8 +1,10 @@
-import { terminalFactory } from "./terminals";
-import type { Step, Steps } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import type { useConnectionStore } from "@/stores/workflowConnectionStore";
+import type { Step, Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+
+import { terminalFactory } from "./terminals";
 
 interface LintState {
     stepId: number;
@@ -13,11 +15,16 @@ interface LintState {
     autofix?: boolean;
 }
 
-export function getDisconnectedInputs(steps: Steps = {}, datatypesMapper: DatatypesMapperModel) {
+export function getDisconnectedInputs(
+    steps: Steps = {},
+    datatypesMapper: DatatypesMapperModel,
+    connectionStore: ReturnType<typeof useConnectionStore>,
+    stepStore: ReturnType<typeof useWorkflowStepStore>
+) {
     const inputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
         step.inputs.map((inputSource) => {
-            const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper);
+            const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper, connectionStore, stepStore);
             if (!inputTerminal.optional && inputTerminal.connections.length === 0) {
                 const inputLabel = inputSource.label || inputSource.name;
                 inputs.push({
@@ -113,7 +120,13 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
     return items;
 }
 
-export function fixAllIssues(steps: Steps, parameters: UntypedParameters, datatypesMapper: DatatypesMapperModel) {
+export function fixAllIssues(
+    steps: Steps,
+    parameters: UntypedParameters,
+    datatypesMapper: DatatypesMapperModel,
+    connectionStore: ReturnType<typeof useConnectionStore>,
+    stepStore: ReturnType<typeof useWorkflowStepStore>
+) {
     const actions = [];
     const untypedParameters = getUntypedParameters(parameters);
     for (const untypedParameter of untypedParameters) {
@@ -121,7 +134,7 @@ export function fixAllIssues(steps: Steps, parameters: UntypedParameters, dataty
             actions.push(fixUntypedParameter(untypedParameter));
         }
     }
-    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper);
+    const disconnectedInputs = getDisconnectedInputs(steps, datatypesMapper, connectionStore, stepStore);
     for (const disconnectedInput of disconnectedInputs) {
         if (disconnectedInput.autofix) {
             actions.push(fixDisconnectedInput(disconnectedInput));

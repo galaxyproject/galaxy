@@ -1,18 +1,17 @@
 <template>
-    <b-link v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
-        <font-awesome-icon v-if="checked" :icon="['fas', 'star']" />
-        <font-awesome-icon v-else :icon="['far', 'star']" />
-    </b-link>
+    <BLink v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
+        <FontAwesomeIcon v-if="checked" :icon="['fas', 'star']" />
+        <FontAwesomeIcon v-else :icon="['far', 'star']" />
+    </BLink>
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink } from "bootstrap-vue";
-import { VBTooltip } from "bootstrap-vue";
-
-import { faStar } from "@fortawesome/free-solid-svg-icons";
-import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+import { faStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink, VBTooltip } from "bootstrap-vue";
+
 library.add(faStar, farStar);
 
 const CHECKED_DESCRIPTION = "Remove bookmark";

@@ -1,5 +1,5 @@
-import flushPromises from "flush-promises";
 import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { default as CloudAuth } from "./CloudAuth";

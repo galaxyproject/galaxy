@@ -27,7 +27,7 @@
                             >Invocation ID: <code>{{ row.item.id }}</code></b
                         >
                     </small>
-                    <workflow-invocation-state :invocation-id="row.item.id" @invocation-cancelled="refresh" />
+                    <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </b-card>
             </template>
             <template v-slot:cell(expand)="data">
@@ -50,7 +50,7 @@
                     :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
                     class="truncate">
                     <b-link href="#" @click.stop="swapRowDetails(data)">
-                        <b>{{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
                     </b-link>
                 </div>
             </template>
@@ -60,7 +60,7 @@
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
                     <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        {{ getHistoryNameById(data.item.history_id) }}
                     </b-link>
                 </div>
             </template>
@@ -86,16 +86,18 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
-import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
+import { mapActions, mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
+
 import paginationMixin from "./paginationMixin";
+
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 export default {
     components: {

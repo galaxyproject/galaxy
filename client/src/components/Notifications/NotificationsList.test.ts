@@ -1,12 +1,15 @@
-import { setActivePinia } from "pinia";
-import flushPromises from "flush-promises";
-import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "@tests/jest/helpers";
 import { createTestingPinia } from "@pinia/testing";
-import { mergeObjectListsById } from "@/utils/utils";
-import NotificationsList from "./NotificationsList.vue";
-import { generateNotificationsList } from "./test-utils";
+import { getLocalVue } from "@tests/jest/helpers";
+import { shallowMount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { setActivePinia } from "pinia";
+
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import { mergeObjectListsById } from "@/utils/utils";
+
+import { generateNotificationsList } from "./test-utils";
+
+import NotificationsList from "./NotificationsList.vue";
 
 const localVue = getLocalVue(true);
 

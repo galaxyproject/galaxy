@@ -2,14 +2,14 @@
     <b-card v-if="jobs">
         <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
             <template v-slot:row-details="row">
-                <job-provider :id="row.item.id" v-slot="{ item, loading }">
+                <JobProvider :id="row.item.id" v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
                     <div v-else>
-                        <job-information v-if="item" :job_id="item.id" />
+                        <JobInformation v-if="item" :job_id="item.id" />
                         <p></p>
-                        <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
+                        <JobParameters v-if="item" :job-id="item.id" :include-title="false" />
                     </div>
-                </job-provider>
+                </JobProvider>
             </template>
             <template v-slot:cell(create_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -21,12 +21,12 @@
     </b-card>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { JobProvider } from "components/providers";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
+import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

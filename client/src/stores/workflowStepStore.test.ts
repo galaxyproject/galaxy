@@ -1,8 +1,9 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { useConnectionStore } from "./workflowConnectionStore";
 import type { NewStep, StepInputConnection } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { useConnectionStore } from "./workflowConnectionStore";
 
 const stepInputConnection: StepInputConnection = {
     "1": {
@@ -31,29 +32,29 @@ describe("Connection Store", () => {
     });
 
     it("adds step", () => {
-        const stepStore = useWorkflowStepStore();
+        const stepStore = useWorkflowStepStore("mock-workflow");
         expect(stepStore.steps).toStrictEqual({});
         stepStore.addStep(workflowStepZero);
         expect(stepStore.getStep(0)).toStrictEqual(workflowStepZero);
         expect(workflowStepZero.id).toBe(0);
     });
     it("removes step", () => {
-        const stepStore = useWorkflowStepStore();
+        const stepStore = useWorkflowStepStore("mock-workflow");
         const addedStep = stepStore.addStep(workflowStepZero);
         expect(addedStep.id).toBe(0);
         stepStore.removeStep(addedStep.id);
         expect(stepStore.getStep(0)).toBe(undefined);
     });
     it("creates connection if step has connection", () => {
-        const stepStore = useWorkflowStepStore();
-        const connectionStore = useConnectionStore();
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const connectionStore = useConnectionStore("mock-workflow");
         stepStore.addStep(workflowStepZero);
         stepStore.addStep(workflowStepOne);
         expect(connectionStore.connections.length).toBe(1);
     });
     it("removes connection if step has connection", () => {
-        const stepStore = useWorkflowStepStore();
-        const connectionStore = useConnectionStore();
+        const stepStore = useWorkflowStepStore("mock-workflow");
+        const connectionStore = useConnectionStore("mock-workflow");
         stepStore.addStep(workflowStepZero);
         const stepOne = stepStore.addStep(workflowStepOne);
         expect(connectionStore.connections.length).toBe(1);

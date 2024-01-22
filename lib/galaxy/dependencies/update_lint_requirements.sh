@@ -2,12 +2,10 @@
 
 set -e
 
-# This script updates the pinned requirements for both linting and typechecking.
-# The requirements are split into two parts due to incompatible dependencies:
-# flake8 requires importlib-metadata 4.2; typecheck requirements do not
-# depende on importlib-metadata; however, they must be installed into the same
-# virtual environment as Galaxy's core dependencies, which depend on
-# importlib-metadata 4.13.
+# This script updates the pinned requirements for linting.
+# The lint requirements are split from the other ones due to incompatible
+# dependencies: flake8 requires importlib-metadata 4.2, while the Galaxy's core
+# dependencies depend on importlib-metadata 4.13.
 
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
@@ -23,4 +21,3 @@ update_pinned_reqs() {
 }
 
 update_pinned_reqs lint
-update_pinned_reqs typecheck

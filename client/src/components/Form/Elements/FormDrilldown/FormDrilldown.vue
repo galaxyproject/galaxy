@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, type ComputedRef } from "vue";
-import FormDrilldownList from "./FormDrilldownList.vue";
+
 import { getAllValues, type Option, type Value } from "./utilities";
+
+import FormDrilldownList from "./FormDrilldownList.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -87,7 +89,7 @@ function onSelectAll(selected: boolean): void {
             @change="onSelectAll">
             Select / Deselect All
         </b-form-checkbox>
-        <form-drilldown-list
+        <FormDrilldownList
             :multiple="multiple"
             :current-value="currentValue"
             :options="options"

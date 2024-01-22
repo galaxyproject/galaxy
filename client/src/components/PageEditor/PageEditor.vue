@@ -1,6 +1,6 @@
 <template>
     <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-    <page-editor-markdown
+    <PageEditorMarkdown
         v-else
         :title="title"
         :page-id="pageId"
@@ -11,10 +11,11 @@
 
 <script>
 import axios from "axios";
+import LoadingSpan from "components/LoadingSpan";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
+
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
 export default {

@@ -845,7 +845,7 @@ class GalaxyInteractorApi:
                 password=password,
                 username=username,
             )
-            test_user = self._post("users", data, key=admin_key).json()
+            test_user = self._post("users", data, key=admin_key, json=True).json()
         return test_user
 
     def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
@@ -959,14 +959,21 @@ class GalaxyInteractorApi:
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.put(url, **kwd)
 
-    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False, allow_redirects=True):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwargs: Dict[str, Any] = {}
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
-        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
+        return requests.get(
+            url,
+            params=data,
+            headers=headers,
+            timeout=util.DEFAULT_SOCKET_TIMEOUT,
+            allow_redirects=allow_redirects,
+            **kwargs,
+        )
 
     def _head(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)

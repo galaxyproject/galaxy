@@ -42,13 +42,11 @@ def selectwrapper(tool, value, multiple=False, optional=False):
     optional = 'optional="true"' if optional else ""
     multiple = 'multiple="true"' if multiple else ""
     xml = XML(
-        """<param name="blah" type="select" {} {}>
+        f"""<param name="blah" type="select" {multiple} {optional}>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>""".format(
-            multiple, optional
-        )
+    </param>"""
     )
     parameter = SelectToolParameter(tool, xml)
     return SelectToolParameterWrapper(parameter, value)
@@ -310,10 +308,12 @@ MOCK_DATASET_EXT = "bam"
 class MockDataset:
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
-        self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
         self.tags = []
+
+    def get_file_name(self, sync_cache=True):
+        return MOCK_DATASET_PATH
 
 
 class MockTool:

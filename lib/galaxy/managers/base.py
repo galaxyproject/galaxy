@@ -54,7 +54,10 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.storage_cleaner import (
@@ -194,24 +197,6 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
 
 
 # =============================================================================
-def munge_lists(listA, listB):
-    """
-    Combine two lists into a single list.
-
-    (While allowing them to be None, non-lists, or lists.)
-    """
-    # TODO: there's nothing specifically filter or model-related here - move to util
-    if listA is None:
-        return listB
-    if listB is None:
-        return listA
-    if not isinstance(listA, list):
-        listA = [listA]
-    if not isinstance(listB, list):
-        listB = [listB]
-    return listA + listB
-
-
 U = TypeVar("U", bound=model._HasTable)
 
 
@@ -288,14 +273,6 @@ class ModelManager(Generic[U]):
             query = query.filter(filter)
         return query
 
-    def _munge_filters(self, filtersA, filtersB):
-        """
-        Combine two lists into a single list.
-
-        (While allowing them to be None, non-lists, or lists.)
-        """
-        return munge_lists(filtersA, filtersB)
-
     # .... order, limit, and offset
     def _apply_order_by(self, query: Query, order_by) -> Query:
         """
@@ -341,6 +318,7 @@ class ModelManager(Generic[U]):
         :raises exceptions.ObjectNotFound: if no model is found
         :raises exceptions.InconsistentDatabase: if more than one model is found
         """
+        check_database_connection(self.session())
         # overridden to raise serializable errors
         try:
             return query.one()
@@ -348,17 +326,6 @@ class ModelManager(Generic[U]):
             raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
         except sqlalchemy.orm.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
-
-    def _one_or_none(self, query):
-        """
-        Return the object if found, None if it's not.
-
-        :raises exceptions.InconsistentDatabase: if more than one model is found
-        """
-        try:
-            return self._one_with_recast_errors(query)
-        except exceptions.ObjectNotFound:
-            return None
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
     def by_id(self, id: int) -> Query:
@@ -487,7 +454,7 @@ class ModelManager(Generic[U]):
         if not ids:
             return []
         ids_filter = parsed_filter("orm", self.model_class.__table__.c.id.in_(ids))
-        found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
+        found = self.list(filters=combine_lists(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -1389,3 +1356,24 @@ class StorageCleanerManager(Protocol):
     def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
         """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError
+
+
+def combine_lists(listA: Any, listB: Any) -> List:
+    """
+    Combine two lists into a single list.
+
+    Arguments can be None, non-lists, or lists. If an argument is None, it will
+    not be included in the returned list. If both arguments are None, an empty
+    list will be returned.
+    """
+
+    def make_list(item):
+        # Check for None explicitly: __bool__ may be overwritten.
+        if item is None:
+            return []
+        elif isinstance(item, list):
+            return item
+        else:
+            return [item]
+
+    return make_list(listA) + make_list(listB)

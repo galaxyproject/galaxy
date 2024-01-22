@@ -1,19 +1,21 @@
 <template>
-    <Published :item="visualization">
+    <PublishedItem :item="visualization">
         <template v-slot>
             <CenterFrame :src="getUrl" />
         </template>
-    </Published>
+    </PublishedItem>
 </template>
 
 <script>
-import { urlData } from "utils/url";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
-import Published from "components/Common/Published";
+import { urlData } from "@/utils/url";
+
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
+
 export default {
     components: {
         CenterFrame,
-        Published,
+        PublishedItem,
     },
     props: {
         id: {

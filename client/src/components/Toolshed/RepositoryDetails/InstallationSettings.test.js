@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import InstallationSettings from "./InstallationSettings";
 
 jest.mock("app");
@@ -20,6 +21,7 @@ describe("InstallationSettings", () => {
                 changesetRevision: "changesetRevision",
                 requiresPanel: true,
                 toolshedUrl: "toolshedUrl",
+                currentPanel: {},
             },
             localVue,
         });

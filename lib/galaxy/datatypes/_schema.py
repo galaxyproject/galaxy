@@ -47,6 +47,11 @@ class DatatypeDetails(BaseModel):
     composite_files: Optional[List[CompositeFileInfo]] = Field(
         default=None, title="Composite files", description="A collection of files composing this data type"
     )
+    upload_warning: Optional[str] = Field(
+        default=None,
+        title="Upload warning",
+        description="End-user information regarding potential pitfalls with this upload type.",
+    )
 
 
 class DatatypesMap(BaseModel):

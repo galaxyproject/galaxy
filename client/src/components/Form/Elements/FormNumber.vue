@@ -8,16 +8,16 @@
                 <!-- regular dot and dot on numpad have different codes -->
                 <b-form-input
                     v-model="currentValue"
+                    class="ui-input"
                     :no-wheel="true"
                     :step="step"
-                    size="sm"
                     :type="fieldType"
                     @change="onInputChange"
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput" />
             </b-col>
             <b-col v-if="isRangeValid" class="pl-0">
-                <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
+                <b-form-input v-model="currentValue" class="ui-input" :min="min" :max="max" :step="step" type="range" />
             </b-col>
         </b-row>
     </div>

@@ -31,8 +31,9 @@
 <script>
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
+
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
-import { mapGetters } from "vuex";
 
 export default {
     name: "QuotaMeter",
@@ -42,7 +43,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("config", ["config"]),
+        ...mapState(useConfigStore, ["config"]),
         ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;

@@ -41,11 +41,12 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import CollectionPanel from "components/History/CurrentCollection/CollectionPanel";
+import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import LoadingSpan from "components/LoadingSpan";
+import { mapActions, mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {

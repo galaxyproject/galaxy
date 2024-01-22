@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 import { ref } from "vue";
+
+import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 interface ToolSelectProps {
     toolPreferredObjectStoreId?: String | null;

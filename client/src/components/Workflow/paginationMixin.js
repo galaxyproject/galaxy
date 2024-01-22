@@ -1,7 +1,7 @@
-import QueryStringParsing from "utils/query-string-parsing";
 import LoadingSpan from "components/LoadingSpan";
-import { errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import QueryStringParsing from "utils/query-string-parsing";
+import { errorMessageAsString } from "utils/simple-error";
 
 export default {
     components: { LoadingSpan },

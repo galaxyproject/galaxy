@@ -1,4 +1,5 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
+
 import { useActivityStore } from "@/stores/activityStore";
 
 // mock Galaxy object

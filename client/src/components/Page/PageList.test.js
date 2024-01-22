@@ -1,18 +1,24 @@
-import PageList from "./PageList.vue";
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
 import { parseISO, formatDistanceToNow } from "date-fns";
 import { useUserStore } from "stores/userStore";
+import { getLocalVue, wait } from "tests/jest/helpers";
+
+import PageList from "./PageList.vue";
+
 
 jest.mock("app");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
+
+const debounceDelay = 500; // in ms - see FilterMenu.props.debounceDelay
 
 describe("PgeList.vue", () => {
     let axiosMock;
@@ -105,6 +111,9 @@ describe("PgeList.vue", () => {
             propsData,
             localVue,
             pinia,
+            stubs: {
+                icon: { template: "<div></div>" },
+            },
         });
     }
 
@@ -142,6 +151,10 @@ describe("PgeList.vue", () => {
     });
 
     describe("with single private page", () => {
+        function findSearchBar(wrapper) {
+            return wrapper.find("[data-description='filter text input']");
+        }
+
         beforeEach(async () => {
             axiosMock
                 .onGet("/api/pages", { params: { search: "", ...personalGridApiParams } })
@@ -176,14 +189,14 @@ describe("PgeList.vue", () => {
         });
 
         it("starts with an empty filter", async () => {
-            expect(wrapper.find("#page-search").element.value).toBe("");
+            expect(findSearchBar(wrapper).element.value).toBe("");
         });
 
         it("fetches filtered results when search filter is used", async () => {
-            await wrapper.find("#page-search").setValue("mytext");
-            await flushPromises();
-            expect(wrapper.find("#page-search").element.value).toBe("mytext");
-            expect(wrapper.vm.filter).toBe("mytext");
+            await findSearchBar(wrapper).setValue("mytext");
+            expect(findSearchBar(wrapper).element.value).toBe("mytext");
+            await wait(debounceDelay);
+            expect(wrapper.vm.filterText).toBe("mytext");
         });
 
         it("updates filter when a tag is clicked", async () => {
@@ -191,7 +204,7 @@ describe("PgeList.vue", () => {
             expect(tags.length).toBe(3);
             tags[0].trigger("click");
             await flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagThis'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagThis'");
         });
 
         it("updates filter when a tag is clicked only on the first click", async () => {
@@ -201,7 +214,7 @@ describe("PgeList.vue", () => {
             tags[0].trigger("click");
             tags[0].trigger("click");
             await flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagThis'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagThis'");
         });
     });
     describe("with single published and importable page on personal grid", () => {
@@ -220,7 +233,7 @@ describe("PgeList.vue", () => {
             const row = rows[0];
             row.find(".sharing-indicator-published").trigger("click");
             await flushPromises();
-            expect(wrapper.vm.filter).toBe("is:published");
+            expect(wrapper.vm.filterText).toBe("is:published");
         });
 
         it("updates filter when shared with me icon is clicked", async () => {
@@ -228,7 +241,7 @@ describe("PgeList.vue", () => {
             const row = rows[0];
             row.find(".sharing-indicator-shared").trigger("click");
             await flushPromises();
-            expect(wrapper.vm.filter).toBe("is:shared_with_me");
+            expect(wrapper.vm.filterText).toBe("is:shared_with_me");
         });
 
         it("updates filter when importable icon is clicked", async () => {
@@ -236,7 +249,7 @@ describe("PgeList.vue", () => {
             const row = rows[0];
             row.find(".sharing-indicator-importable").trigger("click");
             await flushPromises();
-            expect(wrapper.vm.filter).toBe("is:importable");
+            expect(wrapper.vm.filterText).toBe("is:importable");
         });
     });
     describe("with single page on published grid", () => {

@@ -65,7 +65,7 @@ export default {
             required: true,
         },
         currentPanel: {
-            type: Array,
+            type: Object,
             default: null,
         },
         toolDynamicConfigs: {
@@ -99,9 +99,9 @@ export default {
             return this.toolConfigs.length > 1;
         },
         toolSections() {
-            const panel = this.currentPanel;
+            const panel = Object.values(this.currentPanel);
             if (panel) {
-                return panel.filter((x) => x.elems);
+                return panel.filter((x) => x.tools);
             } else {
                 return [];
             }

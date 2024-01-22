@@ -2,7 +2,7 @@
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
-                <font-awesome-icon icon="home" />
+                <FontAwesomeIcon icon="home" />
             </b-button>
             <b-button
                 v-if="currentUser && currentUser.is_admin"
@@ -10,7 +10,7 @@
                 v-b-toggle.collapse-2
                 title="Create new folder"
                 class="mr-1">
-                <font-awesome-icon icon="plus" />
+                <FontAwesomeIcon icon="plus" />
                 {{ titleLibrary }}
             </b-button>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
@@ -34,7 +34,7 @@
                         <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
                             <b-button id="save_new_library" type="submit" :title="titleSave">
-                                <font-awesome-icon :icon="['far', 'save']" />
+                                <FontAwesomeIcon :icon="['far', 'save']" />
                                 {{ titleSave }}
                             </b-button>
                         </template>
@@ -89,7 +89,7 @@
                     @toggleDescriptionExpand="toggleDescriptionExpand(item)" />
             </template>
             <template v-slot:cell(is_unrestricted)="row">
-                <font-awesome-icon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
+                <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
                 <b-button
@@ -97,7 +97,7 @@
                     size="sm"
                     :title="'Undelete ' + row.item.name"
                     @click="undelete(row.item)">
-                    <font-awesome-icon icon="unlock" />
+                    <FontAwesomeIcon icon="unlock" />
                     {{ titleUndelete }}
                 </b-button>
                 <b-button
@@ -106,7 +106,7 @@
                     class="lib-btn permission_folder_btn"
                     :title="'Permissions of ' + row.item.name"
                     @click="saveChanges(row.item)">
-                    <font-awesome-icon :icon="['far', 'save']" />
+                    <FontAwesomeIcon :icon="['far', 'save']" />
                     {{ titleSave }}
                 </b-button>
                 <b-button
@@ -116,11 +116,11 @@
                     :title="`Edit ${row.item.name}`"
                     @click="toggleEditMode(row.item)">
                     <div v-if="!row.item.editMode">
-                        <font-awesome-icon icon="pencil-alt" />
+                        <FontAwesomeIcon icon="pencil-alt" />
                         {{ titleEdit }}
                     </div>
                     <div v-else>
-                        <font-awesome-icon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="['fas', 'times']" />
                         {{ titleCancel }}
                     </div>
                 </b-button>
@@ -130,7 +130,7 @@
                     class="lib-btn permission_library_btn"
                     :title="'Permissions of ' + row.item.name"
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
-                    <font-awesome-icon icon="users" />
+                    <FontAwesomeIcon icon="users" />
                     Manage
                 </b-button>
                 <b-button
@@ -139,7 +139,7 @@
                     class="lib-btn delete-lib-btn"
                     :title="`Delete ${row.item.name}`"
                     @click="deleteLibrary(row.item)">
-                    <font-awesome-icon icon="trash" />
+                    <FontAwesomeIcon icon="trash" />
                     {{ titleDelete }}
                 </b-button>
             </template>
@@ -181,21 +181,22 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import Vue from "vue";
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { getAppRoot } from "onload/loadConfig";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "./services";
-import { fields } from "./table-fields";
-import { Toast } from "composables/toast";
 import { initLibrariesIcons } from "components/Libraries/icons";
-import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
+import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
 import SearchField from "components/Libraries/LibraryFolder/SearchField";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import { mapState } from "pinia";
+import _l from "utils/localization";
+import Vue from "vue";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useUserStore } from "@/stores/userStore";
+
+import { Services } from "./services";
+import { fields } from "./table-fields";
 
 initLibrariesIcons();
 

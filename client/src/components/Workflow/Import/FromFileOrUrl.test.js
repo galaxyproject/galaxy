@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 
 let lastPostRequest;

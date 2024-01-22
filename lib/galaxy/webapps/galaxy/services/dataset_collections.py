@@ -31,7 +31,6 @@ from galaxy.schema.fields import (
     ModelClassField,
 )
 from galaxy.schema.schema import (
-    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -186,11 +185,11 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         instance_type: DatasetCollectionInstanceType = "history",
-    ) -> AnyHDCA:
+    ) -> HDCADetailed:
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance: Union["HistoryDatasetCollectionAssociation", "LibraryDatasetCollectionAssociation"]
+        dataset_collection_instance: Union[HistoryDatasetCollectionAssociation, LibraryDatasetCollectionAssociation]
         if instance_type == "history":
             dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", id)
             parent = dataset_collection_instance.history
@@ -210,7 +209,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         return rval
 
     def dce_content(self, trans: ProvidesHistoryContext, dce_id: DecodedDatabaseIdField) -> DCESummary:
-        dce: Optional[DatasetCollectionElement] = trans.model.session.query(DatasetCollectionElement).get(dce_id)
+        dce: Optional[DatasetCollectionElement] = trans.model.session.get(DatasetCollectionElement, dce_id)
         if not dce:
             raise exceptions.ObjectNotFound("No DatasetCollectionElement found")
         if not trans.user_is_admin:
@@ -249,7 +248,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id, check_ownership=True
         )
 

@@ -12,7 +12,7 @@
                     @click.prevent.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
+                <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -71,9 +71,11 @@
 
 <script>
 import { copy as sendToClipboard } from "utils/clipboard";
+
 import { absPath, prependPath } from "@/utils/redirect";
-import { downloadUrlMixin } from "./mixins.js";
+
 import DatasetDownload from "./DatasetDownload";
+import { downloadUrlMixin } from "./mixins.js";
 
 export default {
     components: {

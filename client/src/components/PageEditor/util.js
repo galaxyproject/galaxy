@@ -1,7 +1,7 @@
 import axios from "axios";
-import _l from "utils/localization";
+import { hide_modal, show_modal } from "layout/modal";
 import { getAppRoot } from "onload/loadConfig";
-import { show_modal, hide_modal } from "layout/modal";
+import _l from "utils/localization";
 import { rethrowSimple } from "utils/simple-error";
 
 export async function save(pageId, content, showProgress = true) {

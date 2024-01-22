@@ -1,17 +1,17 @@
-import { expect, jest } from "@jest/globals";
+import "jest-location-mock";
 
-import { mount, shallowMount, createWrapper } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { expect, jest } from "@jest/globals";
 import { createTestingPinia } from "@pinia/testing";
-import { mockFetcher } from "@/schema/__mocks__";
+import { createWrapper, mount, shallowMount, Wrapper } from "@vue/test-utils";
+import { createPinia, PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import PageDropdown from "./PageDropdown.vue";
 
-import "jest-location-mock";
-
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const waitRAF = () => new Promise((resolve) => requestAnimationFrame(resolve));
 
@@ -33,7 +33,7 @@ const PAGE_DATA_SHARED = {
 };
 
 describe("PageDropdown.vue", () => {
-    let wrapper: any;
+    let wrapper: Wrapper<Vue>;
 
     function pageOptions() {
         return wrapper.findAll(".dropdown-menu .dropdown-item");
@@ -50,9 +50,18 @@ describe("PageDropdown.vue", () => {
                 propsData,
                 localVue,
                 pinia: pinia,
+                stubs: {
+                    RouterLink: true,
+                },
             });
             const userStore = useUserStore();
-            userStore.currentUser = { email: "my@email", id: "1", tags_used: [], isAnonymous: false };
+            userStore.currentUser = {
+                email: "my@email",
+                id: "1",
+                tags_used: [],
+                isAnonymous: false,
+                total_disk_usage: 1048576,
+            };
         });
 
         it("should show page title", async () => {
@@ -84,6 +93,9 @@ describe("PageDropdown.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    RouterLink: true,
+                },
             });
         });
 
@@ -99,7 +111,7 @@ describe("PageDropdown.vue", () => {
     describe("clicking page deletion on owned page", () => {
         const pinia = createPinia();
 
-        async function mountAndDelete() {
+        async function mountAndDelete({ confirm = true } = {}) {
             const propsData = {
                 root: "/rootprefixdelete/",
                 page: PAGE_DATA_OWNED,
@@ -110,13 +122,27 @@ describe("PageDropdown.vue", () => {
                 pinia: pinia,
                 stubs: {
                     transition: false,
+                    RouterLink: true,
                 },
             });
             const userStore = useUserStore();
-            userStore.currentUser = { email: "my@email", id: "1", tags_used: [], isAnonymous: false };
+            userStore.currentUser = {
+                email: "my@email",
+                id: "1",
+                tags_used: [],
+                isAnonymous: false,
+                total_disk_usage: 1048576,
+            };
             wrapper.find(".page-dropdown").trigger("click");
             await wrapper.vm.$nextTick();
             wrapper.find(".dropdown-item-delete").trigger("click");
+
+            if (confirm) {
+                await confirmDeletion();
+            }
+        }
+
+        async function confirmDeletion() {
             // this is here because b-modal is lazy loading and portalling
             // see https://github.com/bootstrap-vue/bootstrap-vue/blob/dev/src/components/modal/modal.spec.js#L233
             await wrapper.vm.$nextTick();
@@ -141,15 +167,8 @@ describe("PageDropdown.vue", () => {
             mockFetcher.path("/api/pages/{id}").method("delete").mock({ status: 204 });
             await mountAndDelete();
             const emitted = wrapper.emitted();
-            expect(emitted["onRemove"][0][0]).toEqual("page1235");
+            expect(emitted["onRemove"]?.[0]?.[0]).toEqual("page1235");
             expect(emitted["onSuccess"]).toBeTruthy();
-        });
-
-        it("should not fire deletion API request if not confirmed", async () => {
-            await mountAndDelete();
-            const emitted = wrapper.emitted();
-            expect(emitted["onRemove"]).toBeFalsy();
-            expect(emitted["onSuccess"]).toBeFalsy();
         });
 
         it("should emit an error on API fail", async () => {
@@ -162,6 +181,13 @@ describe("PageDropdown.vue", () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
             expect(emitted["onError"]).toBeTruthy();
+        });
+
+        it("should not fire deletion API request if not confirmed", async () => {
+            await mountAndDelete({ confirm: false });
+            const emitted = wrapper.emitted();
+            expect(emitted["onRemove"]).toBeFalsy();
+            expect(emitted["onSuccess"]).toBeFalsy();
         });
     });
 });

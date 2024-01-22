@@ -18,6 +18,7 @@ from galaxy import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
+from galaxy.managers.users import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname,
@@ -188,7 +189,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
+            pw_expires = getattr(trans.app.config, "password_expiration_period", None)
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 return {
@@ -293,9 +294,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
             )
         else:
             # Find the user
-            user = (
-                trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            )
+            user = get_user_by_email(trans.sa_session, email)
             if not user:
                 # Probably wrong email address
                 return trans.show_error_message(

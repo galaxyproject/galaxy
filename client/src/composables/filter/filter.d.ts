@@ -1,5 +1,5 @@
+import type { MaybeRefOrGetter } from "@vueuse/core";
 import type { Ref } from "vue";
-import type { MaybeComputedRef } from "@vueuse/core";
 
 /**
  * Reactively filter an array of objects, by comparing `filter` to all `fields`.
@@ -9,7 +9,7 @@ import type { MaybeComputedRef } from "@vueuse/core";
  * @param objectFields string array of fields to filter by on each object
  */
 export declare function useFilterObjectArray<O extends object, K extends keyof O>(
-    array: MaybeComputedRef<Array<O>>,
-    filter: MaybeComputedRef<string>,
-    objectFields: MaybeComputedRef<Array<K>>
+    array: MaybeRefOrGetter<Array<O>>,
+    filter: MaybeRefOrGetter<string>,
+    objectFields: MaybeRefOrGetter<Array<K>>
 ): Ref<O[]>;

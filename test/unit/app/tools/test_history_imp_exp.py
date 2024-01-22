@@ -5,6 +5,8 @@ import tempfile
 from shutil import rmtree
 from unittest.mock import Mock
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.exceptions import MalformedContents
@@ -170,9 +172,9 @@ def test_export_dataset():
     dataset_source = datasets[0].dataset.sources[0]
     assert dataset_source.source_uri == "http://google.com/mycooldata.txt"
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -273,9 +275,9 @@ def test_multi_inputs():
     for hid in [1, 2]:
         assert hid in hids
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -704,7 +706,8 @@ def test_import_1901_default():
     # There was a deleted dataset so skip to 3
     assert dataset1.hid == 3, dataset1.hid
 
-    jobs = app.model.context.query(model.Job).filter_by(history_id=new_history.id).order_by(model.Job.table.c.id).all()
+    stmt = select(model.Job).filter_by(history_id=new_history.id).order_by(model.Job.id)
+    jobs = app.model.session.scalars(stmt).all()
     assert len(jobs) == 2
     assert jobs[0].tool_id == "upload1"
     assert jobs[1].tool_id == "cat"

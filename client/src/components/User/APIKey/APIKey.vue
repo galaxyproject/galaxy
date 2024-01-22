@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from "vue";
-import svc from "./model/service";
-import APIKeyItem from "./APIKeyItem";
 import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
+import { ref } from "vue";
+
+import APIKeyItem from "./APIKeyItem";
+import svc from "./model/service";
 
 const apiKey = ref(null);
 const loading = ref(false);

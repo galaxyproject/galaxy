@@ -150,19 +150,18 @@ class WorkflowsAPIController(
         workflow_ids = payload.get("workflow_ids")
         if workflow_ids is None:
             workflow_ids = []
-        elif type(workflow_ids) != list:
+        elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
         workflow_ids_decoded = []
         # Decode the encoded workflow ids
         for ids in workflow_ids:
             workflow_ids_decoded.append(trans.security.decode_id(ids))
-        sess = trans.sa_session
+        session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
-            sess.delete(m)
+            session.delete(m)
         user.stored_workflow_menu_entries = []
-        q = sess.query(model.StoredWorkflow)
         # To ensure id list is unique
         seen_workflow_ids = set()
         for wf_id in workflow_ids_decoded:
@@ -171,10 +170,11 @@ class WorkflowsAPIController(
             else:
                 seen_workflow_ids.add(wf_id)
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = q.get(wf_id)
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
             user.stored_workflow_menu_entries.append(m)
-        with transaction(sess):
-            sess.commit()
+        with transaction(session):
+            session.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
@@ -192,12 +192,8 @@ class WorkflowsAPIController(
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
+            if wf_count == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
         if kwd.get("legacy", False):
@@ -479,6 +475,8 @@ class WorkflowsAPIController(
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
                 sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                if not sanitized_name:
+                    raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
@@ -534,7 +532,7 @@ class WorkflowsAPIController(
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
 
-            if "steps" in workflow_dict:
+            if "steps" in workflow_dict or "comments" in workflow_dict:
                 try:
                     workflow_update_options = WorkflowUpdateOptions(**payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
@@ -911,7 +909,9 @@ class WorkflowsAPIController(
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
+        workflow_invocation = self.workflow_manager.request_invocation_cancellation(
+            trans, decoded_workflow_invocation_id
+        )
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
@@ -1178,11 +1178,11 @@ query_tags = [
     IndexQueryTag("user", "The stored workflow's owner's username.", "u"),
     IndexQueryTag(
         "is:published",
-        "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
+        "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
         "is:share_with_me",
-        "Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.",
+        "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
     ),
 ]
 

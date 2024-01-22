@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
 import * as d3 from "d3";
+import { onMounted, ref, watch } from "vue";
 
 const props = defineProps<{
     data: { name: string; value: number }[];

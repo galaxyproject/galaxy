@@ -1,7 +1,7 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
         :data-state="state"
         tabindex="0"
@@ -9,7 +9,7 @@
         @keydown="onKeyDown">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold" data-description="content item header info">
+                <span class="p-1" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
@@ -21,7 +21,7 @@
                         class="p-0"
                         title="Input"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-up" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'active'"
@@ -31,7 +31,7 @@
                         title="Inputs/Outputs highlighted for this item"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
-                        <font-awesome-icon icon="check-circle" />
+                        <FontAwesomeIcon icon="check-circle" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'output'"
@@ -40,13 +40,13 @@
                         class="p-0"
                         title="Output"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-down" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
                     </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
                     <span class="id hid">{{ id }}:</span>
-                    <span class="content-title name">{{ name }}</span>
+                    <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
                     <b-badge variant="secondary" title="This dataset has been permanently deleted">
@@ -54,7 +54,7 @@
                     </b-badge>
                 </span>
                 <ContentOptions
-                    v-else
+                    v-if="!isPlaceholder && !item.purged"
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -89,8 +89,8 @@
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
-                v-if="expandDataset"
-                :dataset="item"
+                v-if="expandDataset && item.id"
+                :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"
@@ -101,20 +101,22 @@
 </template>
 
 <script>
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
-import CollectionDescription from "./Collection/CollectionDescription";
-import ContentOptions from "./ContentOptions";
-import DatasetDetails from "./Dataset/DatasetDetails";
-import { updateContentFields } from "components/History/model/queries";
-import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { updateContentFields } from "components/History/model/queries";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
+
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
+import CollectionDescription from "./Collection/CollectionDescription";
+import { JobStateSummary } from "./Collection/JobStateSummary";
+import ContentOptions from "./ContentOptions";
+import DatasetDetails from "./Dataset/DatasetDetails";
+import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
+
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
 export default {
     components: {
         CollectionDescription,
@@ -124,18 +126,19 @@ export default {
         FontAwesomeIcon,
     },
     props: {
-        writable: { type: Boolean, default: true },
-        expandDataset: { type: Boolean, required: true },
-        addHighlightBtn: { type: Boolean, default: false },
-        highlight: { type: String, default: null },
         id: { type: Number, required: true },
-        isDataset: { type: Boolean, default: true },
-        isHistoryItem: { type: Boolean, default: false },
         item: { type: Object, required: true },
         name: { type: String, required: true },
+        expandDataset: { type: Boolean, default: false },
+        writable: { type: Boolean, default: true },
+        addHighlightBtn: { type: Boolean, default: false },
+        highlight: { type: String, default: null },
+        isDataset: { type: Boolean, default: true },
+        isHistoryItem: { type: Boolean, default: false },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
         filterable: { type: Boolean, default: false },
+        isPlaceholder: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -164,6 +167,9 @@ export default {
             return this.contentState && this.contentState.icon;
         },
         state() {
+            if (this.isPlaceholder) {
+                return "placeholder";
+            }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
                     if (this.item.job_state_summary[state] > 0) {
@@ -205,6 +211,9 @@ export default {
                 visualize: `/visualizations?dataset_id=${id}`,
             };
         },
+        isBeingUsed() {
+            return Object.values(this.itemUrls).includes(this.$route.path) ? "being-used" : "";
+        },
     },
     methods: {
         onKeyDown(event) {
@@ -217,6 +226,9 @@ export default {
             }
         },
         onClick() {
+            if (this.isPlaceholder) {
+                return;
+            }
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
@@ -286,6 +298,11 @@ export default {
     // improve focus visibility
     &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.being-used {
+        border-left: 0.25rem solid $brand-primary;
+        margin-left: 0rem !important;
     }
 }
 </style>

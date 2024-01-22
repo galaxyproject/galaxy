@@ -95,11 +95,11 @@ class ModelStoreManager:
         include_deleted = request.include_deleted
         store_directory = request.store_directory
 
-        history = self._sa_session.query(model.History).get(history_id)
+        history = self._sa_session.get(model.History, history_id)
         # symlink files on export, on worker files will tarred up in a dereferenced manner.
         with DirectoryModelExportStore(store_directory, app=self._app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-        job = self._sa_session.query(model.Job).get(job_id)
+        job = self._sa_session.get(model.Job, job_id)
         job.state = model.Job.states.NEW
         with transaction(self._sa_session):
             self._sa_session.commit()
@@ -137,10 +137,10 @@ class ModelStoreManager:
                 short_term_storage_target.path
             ) as export_store:
                 if request.content_type == HistoryContentType.dataset:
-                    hda = self._sa_session.query(model.HistoryDatasetAssociation).get(request.content_id)
+                    hda = self._sa_session.get(model.HistoryDatasetAssociation, request.content_id)
                     export_store.add_dataset(hda)
                 else:
-                    hdca = self._sa_session.query(model.HistoryDatasetCollectionAssociation).get(request.content_id)
+                    hdca = self._sa_session.get(model.HistoryDatasetCollectionAssociation, request.content_id)
                     export_store.export_collection(
                         hdca, include_hidden=request.include_hidden, include_deleted=request.include_deleted
                     )
@@ -157,7 +157,7 @@ class ModelStoreManager:
                 export_files=export_files,
                 bco_export_options=self._bco_export_options(request),
             )(short_term_storage_target.path) as export_store:
-                invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
+                invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
                 export_store.export_workflow_invocation(
                     invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
                 )
@@ -174,7 +174,7 @@ class ModelStoreManager:
             bco_export_options=self._bco_export_options(request),
             user_context=user_context,
         )(target_uri) as export_store:
-            invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
+            invocation = self._sa_session.get(model.WorkflowInvocation, request.invocation_id)
             export_store.export_workflow_invocation(
                 invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
@@ -199,10 +199,10 @@ class ModelStoreManager:
             self._app, model_store_format, export_files=export_files, user_context=user_context
         )(target_uri) as export_store:
             if request.content_type == HistoryContentType.dataset:
-                hda = self._sa_session.query(model.HistoryDatasetAssociation).get(request.content_id)
+                hda = self._sa_session.get(model.HistoryDatasetAssociation, request.content_id)
                 export_store.add_dataset(hda)
             else:
-                hdca = self._sa_session.query(model.HistoryDatasetCollectionAssociation).get(request.content_id)
+                hdca = self._sa_session.get(model.HistoryDatasetCollectionAssociation, request.content_id)
                 export_store.export_collection(
                     hdca, include_hidden=request.include_hidden, include_deleted=request.include_deleted
                 )
@@ -267,7 +267,7 @@ class ModelStoreManager:
         )
         history_id = request.history_id
         if history_id:
-            history = self._sa_session.query(model.History).get(history_id)
+            history = self._sa_session.get(model.History, history_id)
         else:
             history = None
         user_context = self._build_user_context(request.user.user_id)

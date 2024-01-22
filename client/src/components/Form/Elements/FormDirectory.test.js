@@ -1,14 +1,17 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import FormDirectory from "./FormDirectory";
 import FilesDialog from "components/FilesDialog/FilesDialog";
-
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
 import { rootResponse } from "components/FilesDialog/testingData";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
+
+import FormDirectory from "./FormDirectory";
+
 const localVue = getLocalVue();
 jest.mock("app");
+jest.mock("@/api/schema");
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;
@@ -45,19 +48,21 @@ describe("DirectoryPathEditableBreadcrumb", () => {
     };
 
     beforeEach(async () => {
-        const axiosMock = new MockAdapter(axios);
         spyOnUrlSet = jest.spyOn(FormDirectory.methods, "setUrl");
         spyOnAddPath = jest.spyOn(FormDirectory.methods, "addPath");
         spyOnUpdateURL = jest.spyOn(FormDirectory.methods, "updateURL");
 
-        // register axios paths
-        axiosMock.onGet("/api/remote_files/plugins").reply(200, rootResponse);
+        mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+
+        const pinia = createPinia();
 
         wrapper = mount(FormDirectory, {
             propsData: {
                 callback: () => {},
             },
             localVue: localVue,
+            pinia,
         });
         await flushPromises();
         await init();

@@ -1,10 +1,7 @@
 <script setup>
-import Vue from "vue";
-import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
-import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
+import { BDropdownItem, BNavItem, BNavItemDropdown, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import { ref, computed } from "vue";
-import { getCurrentInstance } from "vue";
+import Vue, { computed, getCurrentInstance, ref } from "vue";
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -73,7 +70,7 @@ function open(tab, event) {
 </script>
 
 <template>
-    <b-nav-item
+    <BNavItem
         v-if="!menu"
         :id="tab.id"
         v-b-tooltip.hover.bottom
@@ -93,8 +90,8 @@ function open(tab, event) {
         <template v-else>
             {{ tab.title }}
         </template>
-    </b-nav-item>
-    <b-nav-item-dropdown
+    </BNavItem>
+    <BNavItemDropdown
         v-else
         :id="tab.id"
         ref="dropdown"
@@ -111,7 +108,7 @@ function open(tab, event) {
         </template>
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
-            <b-dropdown-item
+            <BDropdownItem
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
                 :href="withPrefix(item.url)"
@@ -122,7 +119,7 @@ function open(tab, event) {
                 :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
-            </b-dropdown-item>
+            </BDropdownItem>
         </template>
-    </b-nav-item-dropdown>
+    </BNavItemDropdown>
 </template>

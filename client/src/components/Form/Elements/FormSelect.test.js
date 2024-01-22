@@ -1,13 +1,18 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import MountTarget from "./FormSelect";
+
+import MountTarget from "./FormSelection.vue";
 
 const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
+    const pinia = createTestingPinia();
+
     return mount(MountTarget, {
         localVue,
         propsData,
+        pinia,
     });
 }
 
@@ -55,7 +60,7 @@ describe("FormSelect", () => {
         await wrapper.setProps({ value: "value_1" });
         const selectedValue = wrapper.find(".multiselect__option--selected");
         expect(selectedValue.text()).toBe("label_1");
-        selectedValue.trigger("click");
+        options.at(0).trigger("click");
         const nullValue = wrapper.emitted().input[0][0];
         expect(nullValue).toBe(null);
         await wrapper.setProps({ value: null });

@@ -178,6 +178,40 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
     @expose_api_anonymous_and_sessionless
+    def panel_views(self, trans: GalaxyWebTransaction, **kwds):
+        """
+        GET /api/tool_panels
+        returns a dictionary of available tool panel views and default view
+        """
+
+        rval = {}
+        rval["default_panel_view"] = self.app.toolbox._default_panel_view
+        rval["views"] = self.app.toolbox.panel_view_dicts()
+        return rval
+
+    @expose_api_anonymous_and_sessionless
+    def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
+        """
+        GET /api/tool_panels/{view}
+
+        returns a dictionary of tools and tool sections for the given view
+
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        """
+
+        # Read param.
+        trackster = util.string_as_bool(kwds.get("trackster", "False"))
+
+        # Return panel view.
+        try:
+            return self.app.toolbox.to_panel_view(trans, trackster=trackster, view=view)
+        except exceptions.MessageException:
+            raise
+        except Exception:
+            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+
+    @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}

@@ -1,8 +1,8 @@
+import { getPathDestination } from "components/Dataset/compositeDatasetUtils";
+
 export const state = {
     datasetPathDestination: {},
 };
-
-import { getPathDestination } from "components/Dataset/compositeDatasetUtils";
 
 const getters = {
     pathDestination: (state) => (history_dataset_id, path) => {

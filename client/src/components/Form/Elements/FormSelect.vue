@@ -1,39 +1,73 @@
 <script setup lang="ts">
-import { computed, onMounted, watch, type ComputedRef } from "vue";
+import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
 import Multiselect from "vue-multiselect";
-import { useMultiselect } from "@/composables/useMultiselect";
 
-type SelectValue = string | number | null;
+import { useMultiselect } from "@/composables/useMultiselect";
+import { uid } from "@/utils/utils";
+
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+type SelectValue = Record<string, unknown> | string | number | null;
 
 interface SelectOption {
     label: string;
     value: SelectValue;
 }
 
-const props = withDefaults(
-    defineProps<{
-        multiple?: boolean;
-        optional?: boolean;
-        options: Array<[string, SelectValue]>;
-        value?: Array<SelectValue> | string | number;
-    }>(),
-    {
-        multiple: false,
-        optional: false,
-        value: null,
-    }
-);
+const props = defineProps({
+    id: { type: String, default: `form-select-${uid()}` },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
+    multiple: {
+        type: Boolean,
+        default: false,
+    },
+    optional: {
+        type: Boolean,
+        default: false,
+    },
+    options: {
+        type: Array as PropType<Array<SelectOption>>,
+        required: true,
+    },
+    placeholder: {
+        type: String,
+        default: "Select Value",
+    },
+    value: {
+        type: String as PropType<SelectValue | SelectValue[]>,
+        default: null,
+    },
+});
 
 const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
 
 /**
- * Determine dom wrapper class
+ * When there are more options than this, push selected options to the end
  */
-const cls: ComputedRef<string> = computed(() => {
-    return props.multiple ? "form-select-multiple" : "form-select-single";
+const optionReorderThreshold = 8;
+
+const reorderedOptions = computed(() => {
+    if (props.options.length <= optionReorderThreshold) {
+        return props.options;
+    } else {
+        const selectedOptions: SelectOption[] = [];
+        const unselectedOptions: SelectOption[] = [];
+
+        props.options.forEach((option) => {
+            if (selectedValues.value.includes(option.value)) {
+                selectedOptions.push(option);
+            } else {
+                unselectedOptions.push(option);
+            }
+        });
+
+        return [...unselectedOptions, ...selectedOptions];
+    }
 });
 
 /**
@@ -44,28 +78,10 @@ const deselectLabel: ComputedRef<string> = computed(() => {
 });
 
 /**
- * Translates input options for consumption by the
- * select component into an array of objects
- */
-const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
-    const result: Array<SelectOption> = props.options.map((option) => ({
-        label: option[0],
-        value: option[1],
-    }));
-    if (props.optional && !props.multiple) {
-        result.unshift({
-            label: "Nothing selected",
-            value: null,
-        });
-    }
-    return result;
-});
-
-/**
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return formattedOptions.value.length > 0;
+    return props.options.length > 0;
 });
 
 /**
@@ -73,7 +89,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = formattedOptions.value[0];
+        const v = props.options[0];
         if (v) {
             return v.value;
         }
@@ -91,15 +107,13 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 /**
  * Tracks selected values
  */
-const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
-    return Array.isArray(props.value) ? props.value : [props.value];
-});
+const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -140,22 +154,23 @@ onMounted(() => {
 </script>
 
 <template>
-    <multiselect
+    <Multiselect
         v-if="hasOptions"
+        :id="id"
         v-model="currentValue"
         :allow-empty="optional"
-        :class="['form-select', cls]"
-        :close-on-select="!multiple"
-        :deselect-label="deselectLabel"
-        :options="formattedOptions"
-        :multiple="multiple"
-        :selected-label="selectedLabel"
         :aria-expanded="ariaExpanded"
-        placeholder="Select value"
+        :close-on-select="!multiple"
+        :disabled="disabled"
+        :deselect-label="deselectLabel"
+        label="label"
+        :multiple="multiple"
+        :options="reorderedOptions"
+        :placeholder="placeholder"
+        :selected-label="selectedLabel"
         select-label="Click to select"
         track-by="value"
-        label="label"
         @open="onOpen"
         @close="onClose" />
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <b-alert v-else v-localize class="w-100" variant="warning" show> No options available. </b-alert>
 </template>

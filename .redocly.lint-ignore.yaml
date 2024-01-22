@@ -14,3 +14,6 @@ _schema.yaml:
       #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1metadata_file
     - '#/paths/~1api~1histories~1{history_id}~1contents~1{id}~1validate'
     - '#/paths/~1api~1histories~1{history_id}~1contents~1{type}s~1{id}'
+_shed_schema.yaml:
+  no-empty-servers:
+    - '#/openapi'

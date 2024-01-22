@@ -30,7 +30,8 @@ class HasExtraFilesPath(Protocol):
 
 
 class HasFileName(Protocol):
-    file_name: Any
+    def get_file_name(self, sync_cache=True) -> str:
+        ...
 
 
 class HasHid(Protocol):

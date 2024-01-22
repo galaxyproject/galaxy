@@ -126,6 +126,14 @@ class AbstractToolTagManager(metaclass=abc.ABCMeta):
         """Parse out tags and persist them."""
 
 
+class NullToolTagManager(AbstractToolTagManager):
+    def reset_tags(self) -> None:
+        return None
+
+    def handle_tags(self, tool_id, tool_definition_source) -> None:
+        return None
+
+
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -1322,6 +1330,25 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     continue
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
+
+    def to_panel_view(self, trans, view="default_panel_view", **kwds):
+        """
+        Create a panel view representation of the toolbox.
+        Uses the structure:
+            {section_id: { section but with .tools=List[all tool ids] }, ...}}
+        """
+        if view == "default_panel_view":
+            view = self._default_panel_view
+        view_contents: Dict[str, Dict] = {}
+        panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
+        for elt in panel_elts:
+            # Only use cache for objects that are Tools.
+            if hasattr(elt, "tool_type"):
+                view_contents[elt.id] = self.get_tool_to_dict(trans, elt, tool_help=False)
+            else:
+                kwargs = dict(trans=trans, link_details=True, tool_help=False, toolbox=self, only_ids=True)
+                view_contents[elt.id] = elt.to_dict(**kwargs)
+        return view_contents
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
         """If tool with same lineage already in panel (or section) - find

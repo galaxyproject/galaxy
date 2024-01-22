@@ -1,9 +1,11 @@
+import { createLocalVue, shallowMount } from "@vue/test-utils";
+
+import { Model } from "./model";
+import { Services } from "./services";
+import { UrlTracker } from "./utilities";
+
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
-import { Model } from "./model";
-import { UrlTracker } from "./utilities";
-import { Services } from "./services";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
 
 jest.mock("app");
 

@@ -1,11 +1,17 @@
 <template>
     <b-card nobody>
-        <JobMetrics class="job-metrics" :job-id="args.job_id" />
+        <JobMetrics
+            class="job-metrics"
+            :job-id="args.job_id"
+            :should-show-aws-estimate="false"
+            :should-show-carbon-emissions-estimates="false"
+            :include-title="false" />
     </b-card>
 </template>
 
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
+
 export default {
     components: {
         JobMetrics,

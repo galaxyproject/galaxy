@@ -693,22 +693,22 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                         zpath = f"{zpath}.html"  # fake the real nature of the html file
                     try:
                         if archive_format == "zip":
-                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.get_file_name(), zpath)  # add the primary of a composite set
                         else:
-                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.get_file_name(), zpath)  # add the primary of a composite set
                     except OSError:
                         log.exception(
                             "Unable to add composite parent %s to temporary library download archive",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                         )
                         raise exceptions.InternalServerError("Unable to create archive for download.")
                     except ObjectNotFound:
-                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
+                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.get_file_name())
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception(
                             "Unable to add composite parent %s to temporary library download archive",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                         )
                         raise exceptions.InternalServerError(
                             f"Unable to add composite parent to temporary library download archive. {util.unicodify(e)}"
@@ -734,19 +734,19 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                             )
                 else:
                     try:
-                        archive.write(ldda.dataset.file_name, path)
+                        archive.write(ldda.dataset.get_file_name(), path)
                     except OSError:
                         log.exception(
-                            "Unable to write %s to temporary library download archive", ldda.dataset.file_name
+                            "Unable to write %s to temporary library download archive", ldda.dataset.get_file_name()
                         )
                         raise exceptions.InternalServerError("Unable to create archive for download")
                     except ObjectNotFound:
-                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
+                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.get_file_name())
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
                         log.exception(
                             "Unable to add %s to temporary library download archive %s",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                             outfname,
                         )
                         raise exceptions.InternalServerError(f"Unknown error. {util.unicodify(e)}")
@@ -761,14 +761,14 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 single_ld = library_datasets[0]
                 ldda = single_ld.library_dataset_dataset_association
                 dataset = ldda.dataset
-                fStat = os.stat(dataset.file_name)
+                fStat = os.stat(dataset.get_file_name())
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers["Content-Length"] = str(fStat.st_size)
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
                 try:
-                    return open(dataset.file_name, "rb")
+                    return open(dataset.get_file_name(), "rb")
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:

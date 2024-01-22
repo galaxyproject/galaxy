@@ -23,7 +23,7 @@ from galaxy.util import (
     unicodify,
 )
 from .custos_authnz import (
-    CustosAuthnz,
+    CustosAuthFactory,
     KEYCLOAK_BACKENDS,
 )
 from .psa_authnz import (
@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 # Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
 DEFAULT_OIDC_IDP_ICONS = {
     "google": "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
-    "elixir": "https://elixir-europe.org/sites/default/files/images/login-button-orange.png",
+    "elixir": "https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png",
     "okta": "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
 }
 
@@ -67,7 +67,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "Setter":
@@ -79,7 +79,7 @@ class AuthnzManager:
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
                     log.error(
                         "Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
-                        " found these attributes: `{}`; skipping this node.".format(child.attrib)
+                        f" found these attributes: `{child.attrib}`; skipping this node."
                     )
                     continue
                 try:
@@ -110,7 +110,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "provider":
@@ -165,6 +165,9 @@ class AuthnzManager:
             rtv["tenant_id"] = config_xml.find("tenant_id").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
+        # this is a EGI Check-in specific config
+        if config_xml.find("checkin_env") is not None:
+            rtv["checkin_env"] = config_xml.find("checkin_env").text
 
         return rtv
 
@@ -210,7 +213,7 @@ class AuthnzManager:
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
-            identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
+            identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
                 if provider in KEYCLOAK_BACKENDS:
                     return (
@@ -240,11 +243,11 @@ class AuthnzManager:
             return False, msg, None
 
     @staticmethod
-    def _get_identity_provider_class(implementation):
+    def _get_identity_provider_factory(implementation):
         if implementation == "psa":
             return PSAAuthnz
         elif implementation == "custos":
-            return CustosAuthnz
+            return CustosAuthFactory.GetCustosBasedAuthProvider
         else:
             return None
 

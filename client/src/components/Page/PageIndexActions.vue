@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 
 const router = useRouter();
 library.add(faPlus);
@@ -15,9 +14,9 @@ function create() {
 </script>
 <template>
     <span>
-        <b-button id="page-create" class="m-1" @click="create">
-            <font-awesome-icon icon="plus" />
+        <BButton id="page-create" class="m-1" @click="create">
+            <FontAwesomeIcon icon="plus" />
             {{ "Create" | localize }}
-        </b-button>
+        </BButton>
     </span>
 </template>

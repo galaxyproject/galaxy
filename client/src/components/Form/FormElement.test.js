@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import FormElement from "./FormElement";
+
 import FormHidden from "./Elements/FormHidden";
 import FormText from "./Elements/FormText";
+import FormElement from "./FormElement";
 
 const localVue = getLocalVue();
 

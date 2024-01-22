@@ -148,7 +148,7 @@ class JobIO(Dictifiable):
 
     @property
     def job(self):
-        return self.sa_session.query(Job).get(self.job_id)
+        return self.sa_session.get(Job, self.job_id)
 
     @classmethod
     def from_json(cls, path, sa_session):
@@ -206,12 +206,12 @@ class JobIO(Dictifiable):
         return cast(OutputHdasAndType, self.job_outputs.output_hdas_and_paths)
 
     def get_input_dataset_fnames(self, ds: DatasetInstance) -> List[str]:
-        filenames = [ds.file_name]
+        filenames = [ds.get_file_name()]
         # we will need to stage in metadata file names also
         # TODO: would be better to only stage in metadata files that are actually needed (found in command line, referenced in config files, etc.)
         for value in ds.metadata.values():
             if isinstance(value, MetadataFile):
-                filenames.append(value.file_name)
+                filenames.append(value.get_file_name())
         return filenames
 
     def get_input_fnames(self) -> List[str]:
@@ -231,7 +231,7 @@ class JobIO(Dictifiable):
         return paths
 
     def get_input_path(self, dataset: DatasetInstance) -> DatasetPath:
-        real_path = dataset.file_name
+        real_path = dataset.get_file_name()
         false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, "input")
         return DatasetPath(
             dataset.dataset.id,
@@ -250,7 +250,7 @@ class JobIO(Dictifiable):
 
     def get_output_path(self, dataset):
         if getattr(dataset, "fake_dataset_association", False):
-            return dataset.file_name
+            return dataset.get_file_name()
         assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
         for hda, dataset_path in self.output_hdas_and_paths.values():
             if hda.id == dataset.id:
@@ -276,13 +276,16 @@ class JobIO(Dictifiable):
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(
-                da.dataset.dataset.id, da.dataset.file_name, false_path=da_false_path, mutable=mutable
+                da.dataset.dataset.id,
+                da.dataset.get_file_name(sync_cache=False),
+                false_path=da_false_path,
+                mutable=mutable,
             )
             job_outputs.append(JobOutput(da.name, da.dataset, dataset_path))
 
         if special:
             false_path = dataset_path_rewriter.rewrite_dataset_path(special, "output")
-            dsp = DatasetPath(special.dataset.id, special.dataset.file_name, false_path)
+            dsp = DatasetPath(special.dataset.id, special.dataset.get_file_name(), false_path)
             job_outputs.append(JobOutput("output_file", special.fda, dsp))
 
         self.job_outputs.set_job_outputs(job_outputs)

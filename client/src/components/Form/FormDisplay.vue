@@ -2,6 +2,7 @@
     <FormInputs
         :key="id"
         :inputs="formInputs"
+        :loading="loading"
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
         :sustain-conditionals="sustainConditionals"
@@ -16,8 +17,10 @@
 
 <script>
 import Vue from "vue";
+
 import FormInputs from "./FormInputs";
-import { visitInputs, validateInputs, matchInputs } from "./utilities";
+import { matchInputs, validateInputs, visitInputs } from "./utilities";
+
 export default {
     components: {
         FormInputs,
@@ -34,6 +37,10 @@ export default {
         errors: {
             type: Object,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,
@@ -167,7 +174,6 @@ export default {
             });
         },
         onChangeForm() {
-            this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
             this.onChange(true);
         },
         onCloneInputs() {
@@ -203,7 +209,7 @@ export default {
                 }
             }
         },
-        getOffsetTop(element, padding = 150) {
+        getOffsetTop(element, padding = 200) {
             let offsetTop = 0;
             while (element) {
                 offsetTop += element.offsetTop;
@@ -221,7 +227,7 @@ export default {
                     if (element) {
                         const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
                         }
                     }
                 }

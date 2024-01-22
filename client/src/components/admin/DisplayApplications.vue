@@ -12,8 +12,8 @@
     </div>
 </template>
 <script>
-import BaseList from "./BaseList";
 import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices";
+import BaseList from "./BaseList";
 
 export default {
     components: {

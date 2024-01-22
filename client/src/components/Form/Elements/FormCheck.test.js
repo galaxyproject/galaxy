@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import MountTarget from "./FormCheck";
 
 const localVue = getLocalVue(true);
@@ -23,7 +24,7 @@ describe("FormCheck", () => {
         const n = 3;
         const options = [];
         for (let i = 0; i < n; i++) {
-            options.push([`label_${i}`, `value_${i}`]);
+            options.push({ label: `label_${i}`, value: `value_${i}` });
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='checkbox']");
@@ -51,7 +52,7 @@ describe("FormCheck", () => {
         const emptyValues = [0, null, false, true, undefined];
         const options = [];
         for (let i = 0; i < emptyValues.length; i++) {
-            options.push([`label_${i}`, emptyValues[i]]);
+            options.push({ label: `label_${i}`, value: emptyValues[i] });
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='checkbox']");
@@ -69,7 +70,7 @@ describe("FormCheck", () => {
         const n = 3;
         const options = [];
         for (let i = 0; i < n; i++) {
-            options.push([`label_${i}`, `value_${i}`]);
+            options.push({ label: `label_${i}`, value: `value_${i}` });
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='checkbox']");
@@ -83,7 +84,7 @@ describe("FormCheck", () => {
         await inputs.at(0).setChecked();
         expect(inputs.at(0).element.checked).toBeTruthy();
         /* ...confirm corresponding options checked */
-        const values = options.map((option) => option[1]);
+        const values = options.map((option) => option.value);
         expect(wrapper.emitted()["input"][0][0]).toStrictEqual(values);
         /* 2 - confirm select-all option UNchecked */
         await inputs.at(0).setChecked(false);

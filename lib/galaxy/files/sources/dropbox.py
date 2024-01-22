@@ -1,11 +1,7 @@
 try:
     from fs.dropboxfs import DropboxFS
 except ImportError:
-    # fs.dropboxfs < 0.3
-    try:
-        from dropboxfs.dropboxfs import DropboxFS
-    except ImportError:
-        DropboxFS = None
+    DropboxFS = None
 
 from typing import (
     Optional,
@@ -27,6 +23,10 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
+        # accessToken has been renamed to access_token in fs.dropboxfs 1.0
+        if "accessToken" in props:
+            props["access_token"] = props.pop("accessToken")
+
         handle = DropboxFS(**{**props, **extra_props})
         return handle
 

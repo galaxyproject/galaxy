@@ -124,4 +124,4 @@ def __workflow_fixure(trans):
     workflow_id = workflow.id
     trans.app.model.context.expunge_all()
 
-    return trans.app.model.context.query(model.Workflow).get(workflow_id)
+    return trans.app.model.session.get(model.Workflow, workflow_id)

@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-input-group>
+        <BInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
                 <b-form-input
                     :id="id"
@@ -14,38 +14,37 @@
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
-            <b-input-group-append>
-                <b-button
+            <BInputGroupAppend>
+                <BButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <font-awesome-icon icon="question" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon icon="question" />
+                </BButton>
+                <BButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Clear Filters (esc)"
                     :size="size"
                     @click="onReset">
-                    <font-awesome-icon icon="times" />
-                </b-button>
-            </b-input-group-append>
-        </b-input-group>
-        <b-modal v-model="showHelp" title="Filtering Options Help" ok-only>
+                    <FontAwesomeIcon icon="times" />
+                </BButton>
+            </BInputGroupAppend>
+        </BInputGroup>
+        <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
-        </b-modal>
+        </BModal>
     </span>
 </template>
 
 <script>
-import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
-import DebouncedInput from "components/DebouncedInput";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faTimes, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
+import DebouncedInput from "components/DebouncedInput";
 
 library.add(faTimes, faQuestion);
 

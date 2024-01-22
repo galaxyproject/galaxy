@@ -2,13 +2,13 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
-import $ from "jquery";
 import Backbone from "backbone";
+import $ from "jquery";
 import Ui from "mvc/ui/ui-misc";
 import Tabs from "mvc/ui/ui-tabs";
+import Description from "mvc/visualization/chart/views/description";
 import Groups from "mvc/visualization/chart/views/groups";
 import Settings from "mvc/visualization/chart/views/settings";
-import Description from "mvc/visualization/chart/views/description";
 
 export default Backbone.View.extend({
     initialize: function (app, options) {

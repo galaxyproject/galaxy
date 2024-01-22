@@ -1,16 +1,18 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import ToolForm from "./ToolForm";
-import MockConfigProvider from "../providers/MockConfigProvider";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
-import Vue from "vue";
-import Vuex from "vuex";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
 import { useHistoryStore } from "stores/historyStore";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+import Vue from "vue";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
+
+import ToolForm from "./ToolForm";
+
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 const pinia = createPinia();
@@ -22,6 +24,11 @@ describe("ToolForm", () => {
     let historyStore;
 
     beforeEach(() => {
+        mockFetcher
+            .path("/api/configuration")
+            .method("get")
+            .mock({ data: { enable_tool_source_display: false, object_store_allows_id_selection: false } });
+
         axiosMock = new MockAdapter(axios);
 
         const toolData = {
@@ -38,12 +45,6 @@ describe("ToolForm", () => {
         const citations = [];
         axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
 
-        const store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-            },
-        });
-
         wrapper = mount(ToolForm, {
             propsData: {
                 id: "tool_id",
@@ -52,11 +53,8 @@ describe("ToolForm", () => {
             localVue,
             stubs: {
                 UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 FormDisplay: true,
             },
-            store,
-            provide: { store },
             pinia,
         });
         userStore = useUserStore();

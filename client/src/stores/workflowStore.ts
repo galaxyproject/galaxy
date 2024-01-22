@@ -1,12 +1,16 @@
-import { defineStore } from "pinia";
 import axios from "axios";
-import type { Steps } from "@/stores/workflowStepStore";
-import { getAppRoot } from "@/onload/loadConfig";
+import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-interface Workflow {
-    [index: string]: any;
+import { getAppRoot } from "@/onload/loadConfig";
+import type { Steps } from "@/stores/workflowStepStore";
+
+export interface Workflow {
+    name: string;
+    id: string;
     steps: Steps;
+    step_count?: number;
+    latest_id?: string;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

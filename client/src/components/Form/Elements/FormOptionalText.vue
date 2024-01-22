@@ -19,6 +19,7 @@
 
 <script>
 import FormText from "./FormText";
+
 export default {
     components: {
         FormText,

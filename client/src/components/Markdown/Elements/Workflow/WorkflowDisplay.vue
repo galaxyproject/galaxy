@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, ref, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+
 import { withPrefix } from "@/utils/redirect";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import WorkflowTree from "./WorkflowTree.vue";
 import { isEmpty } from "@/utils/utils";
+
+import WorkflowTree from "./WorkflowTree.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface WorkflowDisplayProps {
     workflowId: string;
+    workflowVersion?: string;
     embedded?: boolean;
     expanded?: boolean;
 }
 
 const props = withDefaults(defineProps<WorkflowDisplayProps>(), {
+    workflowVersion: null,
     embedded: false,
     expanded: false,
 });
@@ -29,7 +33,13 @@ const loading = ref(true);
 const workflowName = computed(() => (itemContent.value ? itemContent.value.name : "..."));
 const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.workflowId}/download?format=json-download`));
 const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.workflowId}`));
-const itemUrl = computed(() => withPrefix(`/api/workflows/${props.workflowId}/download?style=preview`));
+const itemUrl = computed(() => {
+    let extra = "";
+    if (props.workflowVersion) {
+        extra = `&version=${props.workflowVersion}`;
+    }
+    return withPrefix(`/api/workflows/${props.workflowId}/download?style=preview${extra}`);
+});
 
 onMounted(async () => {
     axios

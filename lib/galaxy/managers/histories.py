@@ -16,7 +16,6 @@ from typing import (
 )
 
 from sqlalchemy import (
-    and_,
     asc,
     desc,
     false,
@@ -37,12 +36,18 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    combine_lists,
     ModelDeserializingError,
     Serializer,
     SortableManager,
     StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.model import (
+    History,
+    HistoryUserShareAssociation,
+    Job,
+)
 from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -125,7 +130,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return super().is_owner(item, user)
 
     # TODO: possibly to sharable or base
-    def most_recent(self, user, filters=None, current_history=None, **kwargs):
+    def most_recent(self, user, filters=None, current_history=None):
         """
         Return the most recently update history for the user.
 
@@ -134,10 +139,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
-        desc_update_time = desc(self.model_class.update_time)
-        filters = self._munge_filters(filters, self.model_class.user_id == user.id)
-        # TODO: normalize this return value
-        return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
+        filters = combine_lists(filters, History.user_id == user.id)
+        stmt = select(History).where(*filters).order_by(History.update_time.desc()).limit(1)
+        return self.session().scalars(stmt).first()
 
     # .... purgable
     def purge(self, history, flush=True, **kwargs):
@@ -149,7 +153,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
-                self.hda_manager.purge(hda, flush=True)
+                self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
         super().purge(history, flush=flush, **kwargs)
@@ -217,13 +221,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         # TODO: defer to jobModelManager (if there was one)
         # TODO: genericize the params to allow other filters
-        jobs = (
-            self.session()
-            .query(model.Job)
-            .filter(model.Job.history == history)
-            .filter(model.Job.state.in_(model.Job.non_ready_states))
-        )
-        return jobs
+        stmt = select(Job).where(Job.history == history).where(Job.state.in_(Job.non_ready_states))
+        return self.session().scalars(stmt)
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -341,17 +340,13 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return extra
 
     def is_history_shared_with(self, history: model.History, user: model.User) -> bool:
-        return bool(
-            self.session()
-            .query(self.user_share_model)
-            .filter(
-                and_(
-                    self.user_share_model.table.c.user_id == user.id,
-                    self.user_share_model.table.c.history_id == history.id,
-                )
-            )
-            .first()
+        stmt = (
+            select(HistoryUserShareAssociation.id)
+            .where(HistoryUserShareAssociation.user_id == user.id)
+            .where(HistoryUserShareAssociation.history_id == history.id)
+            .limit(1)
         )
+        return bool(self.session().execute(stmt).first())
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
@@ -426,7 +421,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         }
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
-        stmt = select([func.sum(model.History.disk_size), func.count(model.History.id)]).where(
+        stmt = select(func.sum(model.History.disk_size), func.count(model.History.id)).where(
             model.History.user_id == user.id,
             model.History.deleted == true(),
             model.History.purged == false(),
@@ -500,7 +495,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             try:
                 history = self.history_manager.get_owned(history_id, user)
                 self._unarchive_if_needed(history)
-                self.history_manager.purge(history, flush=False)
+                self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
                 total_free_bytes += int(history.disk_size)
             except BaseException as e:
@@ -884,3 +879,19 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
                 "update_time": {"op": ("le", "ge", "gt", "lt"), "val": self.parse_date},
             }
         )
+        self.fn_filter_parsers.update(
+            {
+                "username": {
+                    "op": {
+                        "eq": self.username_eq,
+                        "contains": self.username_contains,
+                    },
+                },
+            }
+        )
+
+    def username_eq(self, item, val: str) -> bool:
+        return val.lower() == str(item.user.username).lower()
+
+    def username_contains(self, item, val: str) -> bool:
+        return val.lower() in str(item.user.username).lower()

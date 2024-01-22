@@ -176,7 +176,7 @@ def _create_hda(
 
 def _check_metadata_file(hda):
     assert hda.metadata.bam_index.id
-    copied_index = hda.metadata.bam_index.file_name
+    copied_index = hda.metadata.bam_index.get_file_name()
     assert os.path.exists(copied_index)
     with open(copied_index) as f:
         assert f.read() == "moo"

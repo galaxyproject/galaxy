@@ -1,6 +1,8 @@
 import _l from "utils/localization";
 import Vue from "vue";
+
 import { collectionCreatorModalSetup } from "./common/modal";
+
 import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
 
 function pairedListCollectionCreatorModal(elements, options) {

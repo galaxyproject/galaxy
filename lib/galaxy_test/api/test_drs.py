@@ -131,7 +131,7 @@ class TestDrsApi(ApiTestCase):
         for method in HTTP_METHODS:
             api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}/access/fakeid")
             error_response = method(api_url)
-            assert type(error_response.status_code) == int
+            assert isinstance(error_response.status_code, int)
             assert error_response.status_code == 404
             error_as_dict = error_response.json()
             assert "status_code" in error_as_dict

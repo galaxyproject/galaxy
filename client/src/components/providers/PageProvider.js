@@ -1,4 +1,5 @@
 import axios from "axios";
+
 import { cleanPaginationParameters } from "./utils";
 
 export function pagesProvider(ctx, callback, extraParams = {}) {

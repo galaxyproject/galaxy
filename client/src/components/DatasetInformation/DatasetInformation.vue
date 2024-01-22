@@ -37,13 +37,13 @@
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
                         <td>
-                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /></div>
+                            <div id="dataset-id">{{ dataset.id }} <DecodedId :id="dataset.id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.history_id">
                         <td>History API ID</td>
                         <td>
-                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /></div>
+                            <div id="history_id">{{ dataset.history_id }} <DecodedId :id="dataset.history_id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.uuid">
@@ -77,13 +77,14 @@
 </template>
 
 <script>
-import { bytesToString } from "utils/utils";
-import { withPrefix } from "utils/redirect";
-import UtcDate from "components/UtcDate";
-import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
-import DatasetSources from "./DatasetSources";
+import UtcDate from "components/UtcDate";
+import { withPrefix } from "utils/redirect";
+import { bytesToString } from "utils/utils";
+
+import DecodedId from "../DecodedId";
 import DatasetHashes from "./DatasetHashes";
+import DatasetSources from "./DatasetSources";
 
 export default {
     components: {

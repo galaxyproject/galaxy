@@ -178,6 +178,7 @@ class ExportHistoryToolAction(ToolAction):
             include_hidden=incoming["include_hidden"],
             include_deleted=incoming["include_deleted"],
             compressed=compressed,
+            user=trans.user,
         )
 
         return job, {}

@@ -1,7 +1,6 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "Add column"
@@ -20,7 +19,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        self.login(email=common.admin_email, username=common.admin_username)
+        self.login(email=common.admin_email, username=common.admin_username, explicit_logout=True)
 
     def test_0005_create_category(self):
         """Create a category for this test suite"""
@@ -39,17 +38,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball.")
 
     def test_0015_create_emboss_6_repository(self):
         """Create and populate the emboss_6_0030 repository."""
@@ -62,16 +51,10 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_dependent_repository(self):
@@ -86,16 +69,10 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             category=category,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_create_emboss_repository(self):
@@ -109,16 +86,10 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded the tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0030_generate_repository_dependencies_for_emboss_5(self):
@@ -189,6 +160,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             repository=emboss_repository, repository_tuples=[emboss_tuple], filepath=repository_dependencies_path
         )
 
+    @skip_if_api_v2
     def test_0050_verify_repository_dependency_revisions(self):
         """Verify that different metadata revisions of the emboss repository have different repository dependencies."""
         repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)

@@ -19,6 +19,7 @@ import os
 import tempfile
 
 import requests
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.model.base import transaction
@@ -50,16 +51,17 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         if not TestJobFilesIntegration.initialized:
             history_id = self.dataset_populator.new_history()
             sa_session = self.sa_session
-            assert len(sa_session.query(model.HistoryDatasetAssociation).all()) == 0
+            stmt = select(model.HistoryDatasetAssociation)
+            assert len(sa_session.scalars(stmt).all()) == 0
             self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
-            assert len(sa_session.query(model.HistoryDatasetAssociation).all()) == 1
-            self.input_hda = sa_session.query(model.HistoryDatasetAssociation).all()[0]
+            assert len(sa_session.scalars(stmt).all()) == 1
+            self.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
-        data = {"path": self.input_hda.file_name, "job_key": job_key}
+        data = {"path": self.input_hda.get_file_name(), "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         head_response = requests.head(get_url, params=data)
         api_asserts.assert_status_code_is_ok(head_response)
@@ -123,11 +125,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def create_static_job_with_state(self, state):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
-        hda = sa_session.query(model.HistoryDatasetAssociation).all()[0]
+        hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
         assert hda
-        history = sa_session.query(model.History).all()[0]
+        history = sa_session.scalars(select(model.History)).all()[0]
         assert history
-        user = sa_session.query(model.User).all()[0]
+        user = sa_session.scalars(select(model.User)).all()[0]
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2

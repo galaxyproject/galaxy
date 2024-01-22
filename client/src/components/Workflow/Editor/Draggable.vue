@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { ref, inject, reactive, PropType } from "vue";
+import type { ZoomTransform } from "d3-zoom";
+import { storeToRefs } from "pinia";
 import type { Ref } from "vue";
+import { computed, inject, PropType, reactive, ref } from "vue";
+
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
+import { useWorkflowStores } from "@/composables/workflowStores";
+
 import { useDraggable } from "./composables/useDraggable.js";
-import type { ZoomTransform } from "d3-zoom";
 
 const props = defineProps({
     rootOffset: {
@@ -24,22 +28,34 @@ const props = defineProps({
         required: false,
         default: null,
     },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
+const emit = defineEmits<{
+    (e: "mousedown", event: DragEvent): void;
+    (e: "mouseup", event: DragEvent): void;
+    (e: "move", position: Position & { unscaled: Position & Size }, event: DragEvent): void;
+    (e: "dragstart", event: DragEvent): void;
+    (e: "start"): void;
+    (e: "stop"): void;
+}>();
 
-let dragImg: HTMLImageElement | undefined;
+let dragImg: HTMLImageElement | null = null;
 const draggable = ref();
 const size = reactive(useAnimationFrameSize(draggable));
 const transform: Ref<ZoomTransform> | undefined = inject("transform");
 
 type Position = { x: number; y: number };
+type Size = { width: number; height: number };
 
 const { throttle } = useAnimationFrameThrottle();
 
 let dragging = false;
 
-const onStart = (position: Position, event: DragEvent) => {
+const onStart = (_position: Position, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
 
@@ -61,6 +77,25 @@ const onStart = (position: Position, event: DragEvent) => {
     }
 };
 
+const { toolbarStore } = useWorkflowStores();
+const { snapActive } = storeToRefs(toolbarStore);
+
+function getSnappedPosition<T extends Position>(position: T) {
+    if (snapActive.value) {
+        return {
+            ...position,
+            x: Math.round(position.x / toolbarStore.snapDistance) * toolbarStore.snapDistance,
+            y: Math.round(position.y / toolbarStore.snapDistance) * toolbarStore.snapDistance,
+        } as T;
+    } else {
+        return {
+            ...position,
+            x: position.x,
+            y: position.y,
+        } as T;
+    }
+}
+
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
 
@@ -76,22 +111,25 @@ const onMove = (position: Position, event: DragEvent) => {
                 x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
                 y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
             };
-            emit("move", newPosition, event);
+            emit("move", getSnappedPosition(newPosition), event);
         }
     });
 };
 
-const onEnd = (position: Position, event: DragEvent) => {
+const onEnd = (_position: Position, event: DragEvent) => {
     if (dragImg) {
         document.body.removeChild(dragImg);
+        dragImg = null;
     }
 
     dragging = false;
-    emit("mouseup");
+    emit("mouseup", event);
     emit("stop");
 };
 
-useDraggable(draggable, {
+const maybeDraggable = computed(() => (props.disabled ? null : draggable.value));
+
+useDraggable(maybeDraggable, {
     preventDefault: props.preventDefault,
     stopPropagation: props.stopPropagation,
     useCapture: false,

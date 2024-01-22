@@ -700,7 +700,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     def active_history_jobs(self, history_id: str) -> list:
         all_history_jobs = self.history_jobs(history_id)
-        active_jobs = [j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+        active_jobs = [
+            j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running", "deleting"]
+        ]
         return active_jobs
 
     def cancel_job(self, job_id: str) -> Response:
@@ -1021,6 +1023,28 @@ class BaseDatasetPopulator(BasePopulator):
         }
         self.wait_for_history(history_id, assert_ok=True)
         return self.run_tool("collection_creates_list", inputs, history_id)
+
+    def new_error_dataset(self, history_id: str) -> str:
+        payload = self.run_tool_payload(
+            tool_id="test_data_source",
+            inputs={
+                "URL": f"file://{os.path.join(os.getcwd(), 'README.rst')}",
+                "URL_method": "get",
+                "data_type": "bed",
+            },
+            history_id=history_id,
+        )
+        create_response = self._post("tools", data=payload)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_object = create_response.json()
+        api_asserts.assert_has_keys(create_object, "outputs")
+        assert len(create_object["outputs"]) == 1
+        output = create_object["outputs"][0]
+        self.wait_for_history(history_id, assert_ok=False)
+        # wait=False to allow errors
+        output_details = self.get_history_dataset_details(history_id, dataset=output, wait=False)
+        assert output_details["state"] == "error", output_details
+        return output_details["id"]
 
     def run_exit_code_from_file(self, history_id: str, hdca_id: str) -> dict:
         exit_code_inputs = {
@@ -1675,6 +1699,11 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
+    def cancel_invocation(self, invocation_id: str):
+        response = self._delete(f"invocations/{invocation_id}")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
     def history_invocations(self, history_id: str) -> List[Dict[str, Any]]:
         history_invocations_response = self._get("invocations", {"history_id": history_id})
         api_asserts.assert_status_code_is(history_invocations_response, 200)
@@ -2057,10 +2086,17 @@ class BaseWorkflowPopulator(BasePopulator):
 
         return workflow_request, history_id, workflow_id
 
+    def get_invocation_jobs(self, invocation_id: str) -> List[Dict[str, Any]]:
+        jobs_response = self._get("jobs", data={"invocation_id": invocation_id})
+        api_asserts.assert_status_code_is(jobs_response, 200)
+        jobs = jobs_response.json()
+        assert isinstance(jobs, list)
+        return jobs
+
     def wait_for_invocation_and_jobs(
         self, history_id: str, workflow_id: str, invocation_id: str, assert_ok: bool = True
     ) -> None:
-        state = self.wait_for_invocation(workflow_id, invocation_id)
+        state = self.wait_for_invocation(workflow_id, invocation_id, assert_ok=assert_ok)
         if assert_ok:
             assert state == "scheduled", state
         time.sleep(0.5)
@@ -3083,7 +3119,18 @@ def wait_on_state(
             return state
 
     if skip_states is None:
-        skip_states = ["running", "queued", "new", "ready", "stop", "stopped", "setting_metadata", "waiting"]
+        skip_states = [
+            "running",
+            "queued",
+            "new",
+            "ready",
+            "stop",
+            "stopped",
+            "setting_metadata",
+            "waiting",
+            "cancelling",
+            "deleting",
+        ]
     if ok_states is None:
         ok_states = ["ok", "scheduled", "deferred"]
     # Remove ok_states from skip_states, so we can wait for a state to becoming running

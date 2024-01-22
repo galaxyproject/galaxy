@@ -1,5 +1,5 @@
+import UploadUtils from "components/Upload/utils";
 import { defineStore } from "pinia";
-import UploadUtils from "mvc/upload/upload-utils";
 
 export const useDatatypeStore = defineStore("datatypeStore", {
     state: () => ({

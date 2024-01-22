@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from "pinia";
+
 import { useJobMetricsStore } from "./jobMetricsStore";
 
 describe("stores/jobMetricsStore", () => {

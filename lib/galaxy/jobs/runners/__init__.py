@@ -10,11 +10,13 @@ import threading
 import time
 import traceback
 import typing
+import uuid
 from queue import (
     Empty,
     Queue,
 )
 
+from sqlalchemy import select
 from sqlalchemy.orm import object_session
 
 import galaxy.jobs
@@ -397,11 +399,12 @@ class BaseJobRunner:
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
                 if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    joda = (
-                        self.sa_session.query(self.app.model.JobToOutputDatasetAssociation)
+                    stmt = (
+                        select(self.app.model.JobToOutputDatasetAssociation)
                         .filter_by(job=job, dataset=dataset)
-                        .first()
+                        .limit(1)
                     )
+                    joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
         # for dataset_assoc in job.output_datasets + job.output_library_datasets:
@@ -825,11 +828,18 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                     self.watched.append(async_job_state)
             except Empty:
                 pass
+            # Ideally we'd construct a sqlalchemy session now and pass it into `check_watched_items`
+            # and have that be the only session being used. The next best thing is to scope
+            # the session and discard it after each check_watched_item loop
+            scoped_id = str(uuid.uuid4())
+            self.app.model.set_request_id(scoped_id)
             # Iterate over the list of watched jobs and check state
             try:
                 self.check_watched_items()
             except Exception:
                 log.exception("Unhandled exception checking active jobs")
+            finally:
+                self.app.model.unset_request_id(scoped_id)
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 

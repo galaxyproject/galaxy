@@ -25,6 +25,7 @@ from typing import (
 import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
+from sqlalchemy import select
 
 from galaxy import (
     model,
@@ -59,7 +60,11 @@ from galaxy.jobs.runners import (
     JobState,
 )
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model import store
+from galaxy.model import (
+    Job,
+    store,
+    Task,
+)
 from galaxy.model.base import transaction
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
@@ -904,24 +909,24 @@ class JobConfiguration(ConfiguresHandlers):
         return rval
 
     def is_id(self, collection):
-        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+        """Given a collection of handlers or destinations, indicate whether the collection represents a real ID
 
         :param collection: A representation of a destination or handler
         :type collection: tuple or list
 
         :returns: bool
         """
-        return type(collection) == tuple
+        return isinstance(collection, tuple)
 
     def is_tag(self, collection):
-        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+        """Given a collection of handlers or destinations, indicate whether the collection represents a tag
 
         :param collection: A representation of a destination or handler
         :type collection: tuple or list
 
         :returns: bool
         """
-        return type(collection) == list
+        return isinstance(collection, list)
 
     def convert_legacy_destinations(self, job_runners):
         """Converts legacy (from a URL) destinations to contain the appropriate runner params defined in the URL.
@@ -1044,11 +1049,8 @@ class MinimalJobWrapper(HasResourceParameters):
     def remote_command_line(self):
         use_remote = self.get_destination_configuration("tool_evaluation_strategy") == "remote"
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
-        return (
-            use_remote
-            and self.external_output_metadata.extended
-            and not self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=self.get_job()).first()
-        )
+        stmt = select(model.JobExportHistoryArchive).filter_by(job=self.get_job()).limit(1)
+        return use_remote and self.external_output_metadata.extended and not self.sa_session.scalars(stmt).first()
 
     def tool_directory(self):
         tool_dir = self.tool and self.tool.tool_dir
@@ -1183,7 +1185,7 @@ class MinimalJobWrapper(HasResourceParameters):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
     def get_job(self) -> model.Job:
-        return self.sa_session.query(model.Job).get(self.job_id)
+        return self.sa_session.get(Job, self.job_id)
 
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
@@ -1234,10 +1236,12 @@ class MinimalJobWrapper(HasResourceParameters):
         job = self._load_job()
 
         def get_special():
-            jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+            stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
+            jeha = self.sa_session.scalars(stmt).first()
             if jeha:
                 return jeha.fda
-            return self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
+            stmt = select(model.GenomeIndexToolData).filter_by(job=job).limit(1)
+            return self.sa_session.scalars(stmt).first()
 
         # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
         if job.tool_id == "upload1":
@@ -1245,6 +1249,9 @@ class MinimalJobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
+        if hasattr(self.app, "interactivetool_manager"):
+            self.interactivetools = tool_evaluator.populate_interactivetools()
+            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
         (
             self.command_line,
@@ -1253,9 +1260,6 @@ class MinimalJobWrapper(HasResourceParameters):
             self.environment_variables,
         ) = tool_evaluator.build()
         job.command_line = self.command_line
-        if hasattr(self.app, "interactivetool_manager"):
-            self.interactivetools = tool_evaluator.populate_interactivetools()
-            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir  # noqa: B018
@@ -1525,13 +1529,14 @@ class MinimalJobWrapper(HasResourceParameters):
             self.sa_session.commit()
 
     def change_state(self, state, info=False, flush=True, job=None):
-        job_supplied = job is not None
-        if not job_supplied:
+        if job is None:
             job = self.get_job()
             self.sa_session.refresh(job)
-        # Else:
-        # If this is a new job (e.g. initially queued) - we are in the same
-        # thread and no other threads are working on the job yet - so don't refresh.
+        else:
+            # job attributes may have been changed, so we can't refresh here,
+            # but we want to make sure that the terminal state check below works
+            # on the current job state value to minimize race conditions.
+            self.sa_session.expire(job, ["state"])
 
         if job.state in model.Job.terminal_states:
             log.warning(
@@ -1543,9 +1548,10 @@ class MinimalJobWrapper(HasResourceParameters):
             return
         if info:
             job.info = info
-        job.set_state(state)
+        state_changed = job.set_state(state)
         self.sa_session.add(job)
-        job.update_output_states(self.app.application_stack.supports_skip_locked())
+        if state_changed:
+            job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()
@@ -1668,7 +1674,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 # the outputs and set them accordingly
                 object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
 
-                def split_object_stores(output_name):
+                def split_object_stores(output_name):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
                         output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:
@@ -1717,8 +1723,8 @@ class MinimalJobWrapper(HasResourceParameters):
             while trynum < self.app.config.retry_job_output_collection:
                 try:
                     # Attempt to short circuit NFS attribute caching
-                    os.stat(dataset.dataset.file_name)
-                    os.chown(dataset.dataset.file_name, os.getuid(), -1)
+                    os.stat(dataset.dataset.get_file_name())
+                    os.chown(dataset.dataset.get_file_name(), os.getuid(), -1)
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
@@ -1770,7 +1776,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # If Galaxy was expected to sniff type and didn't - do so.
                     if dataset.ext == "_sniff_":
                         extension = sniff.handle_uploaded_dataset_file(
-                            dataset.dataset.file_name, self.app.datatypes_registry
+                            dataset.dataset.get_file_name(), self.app.datatypes_registry
                         )
                         dataset.extension = extension
 
@@ -2582,12 +2588,12 @@ class TaskWrapper(JobWrapper):
 
     def get_job(self):
         if self.job_id:
-            return self.sa_session.query(model.Job).get(self.job_id)
+            return self.sa_session.get(Job, self.job_id)
         else:
             return None
 
     def get_task(self):
-        return self.sa_session.query(model.Task).get(self.task_id)
+        return self.sa_session.get(Task, self.task_id)
 
     def get_id_tag(self):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly

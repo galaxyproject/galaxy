@@ -1,12 +1,13 @@
-import WorkflowDropdown from "./WorkflowDropdown";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
-import { ROOT_COMPONENT } from "utils/navigation";
-import { PiniaVuePlugin, createPinia } from "pinia";
+import { createPinia, PiniaVuePlugin } from "pinia";
 import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+import { ROOT_COMPONENT } from "utils/navigation";
+
+import WorkflowDropdown from "./WorkflowDropdown";
 
 const localVue = getLocalVue(true);
 localVue.use(PiniaVuePlugin);

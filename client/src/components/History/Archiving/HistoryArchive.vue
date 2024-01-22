@@ -1,24 +1,26 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import {
+    ArchivedHistorySummary,
+    fetchArchivedHistories,
+    reimportArchivedHistoryFromExportRecord,
+} from "@/api/histories.archived";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
-import UtcDate from "@/components/UtcDate.vue";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import DelayedInput from "@/components/Common/DelayedInput.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import * as ArchiveServices from "@/stores/services/historyArchive.services";
-import {
-    reimportHistoryFromExportRecordAsync,
-    type ArchivedHistorySummary,
-} from "@/stores/services/historyArchive.services";
-import { BAlert, BButton, BButtonGroup, BBadge, BPagination, BListGroup, BListGroupItem } from "bootstrap-vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUndo, faCopy, faEye } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from "vue-router/composables";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useToast } from "@/composables/toast";
-import { useConfirmDialog } from "@/composables/confirmDialog";
+import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
 const historyStore = useHistoryStore();
@@ -55,7 +57,7 @@ async function updateSearchQuery(query: string) {
 
 async function loadArchivedHistories() {
     isLoading.value = true;
-    const result = await ArchiveServices.fetchArchivedHistories({
+    const result = await fetchArchivedHistories({
         query: searchText.value,
         currentPage: currentPage.value,
         pageSize: perPage.value,
@@ -116,7 +118,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     }
 
     try {
-        await reimportHistoryFromExportRecordAsync(history);
+        await reimportArchivedHistoryFromExportRecord(history);
         toast.success(
             localize(
                 `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`
@@ -135,44 +137,44 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     <section id="archived-histories" class="d-flex flex-column">
         <h1>Archived Histories</h1>
         <div>
-            <delayed-input
+            <DelayedInput
                 :query="searchText"
                 class="m-1 mb-3"
                 placeholder="Search by name"
                 @change="updateSearchQuery" />
-            <b-alert v-if="isLoading" variant="info" show>
-                <loading-span v-if="isLoading" message="Loading archived histories" />
-            </b-alert>
-            <b-alert v-else-if="noHistoriesMatchingFilter" variant="info" show>
+            <BAlert v-if="isLoading" variant="info" show>
+                <LoadingSpan v-if="isLoading" message="Loading archived histories" />
+            </BAlert>
+            <BAlert v-else-if="noHistoriesMatchingFilter" variant="info" show>
                 There are no archived histories matching your current filter: <b>{{ searchText }}</b>
-            </b-alert>
-            <b-alert v-else-if="noResults" variant="info" show>
+            </BAlert>
+            <BAlert v-else-if="noResults" variant="info" show>
                 You do not have any archived histories. You can select the 'Archive History' option from the history
                 menu to archive a history.
-            </b-alert>
-            <b-list-group v-else>
-                <b-list-group-item v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
+            </BAlert>
+            <BListGroup v-else>
+                <BListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="sm">
                             {{ history.name }}
                         </Heading>
 
                         <div class="d-flex align-items-center flex-gapx-1 badges">
-                            <b-badge
+                            <BBadge
                                 v-if="history.published"
                                 v-b-tooltip
                                 pill
                                 :title="localize('This history is public.')">
                                 {{ localize("Published") }}
-                            </b-badge>
-                            <b-badge
+                            </BBadge>
+                            <BBadge
                                 v-if="!history.purged"
                                 v-b-tooltip
                                 pill
                                 :title="localize('Amount of items in history')">
                                 {{ history.count }} {{ localize("items") }}
-                            </b-badge>
-                            <b-badge
+                            </BBadge>
+                            <BBadge
                                 v-if="history.export_record_data"
                                 v-b-tooltip
                                 pill
@@ -182,16 +184,16 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                     )
                                 ">
                                 {{ localize("Snapshot available") }}
-                            </b-badge>
-                            <b-badge v-b-tooltip pill :title="localize('Last edited/archived')">
+                            </BBadge>
+                            <BBadge v-b-tooltip pill :title="localize('Last edited/archived')">
                                 <UtcDate :date="history.update_time" mode="elapsed" />
-                            </b-badge>
+                            </BBadge>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-start align-items-center mt-1">
-                        <b-button-group class="actions">
-                            <b-button
+                        <BButtonGroup class="actions">
+                            <BButton
                                 v-b-tooltip
                                 :title="localize('View this history')"
                                 variant="link"
@@ -199,8 +201,8 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onViewHistoryInCenterPanel(history)">
                                 <FontAwesomeIcon icon="fa-eye" size="lg" />
                                 View
-                            </b-button>
-                            <b-button
+                            </BButton>
+                            <BButton
                                 v-b-tooltip
                                 :title="localize('Unarchive this history and move it back to your active histories')"
                                 variant="link"
@@ -208,9 +210,9 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onRestoreHistory(history)">
                                 <FontAwesomeIcon icon="fa-undo" size="lg" />
                                 Unarchive
-                            </b-button>
+                            </BButton>
 
-                            <b-button
+                            <BButton
                                 v-if="canImportCopy(history)"
                                 v-b-tooltip
                                 :title="localize('Import a new copy of this history from the associated export record')"
@@ -219,16 +221,16 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onImportCopy(history)">
                                 <FontAwesomeIcon icon="fa-copy" size="lg" />
                                 Import Copy
-                            </b-button>
-                        </b-button-group>
+                            </BButton>
+                        </BButtonGroup>
                     </div>
 
                     <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
 
                     <StatelessTags class="my-1" :value="history.tags" :disabled="true" :max-visible-tags="10" />
-                </b-list-group-item>
-            </b-list-group>
-            <b-pagination
+                </BListGroupItem>
+            </BListGroup>
+            <BPagination
                 v-if="showPagination"
                 v-model="currentPage"
                 class="mt-3"

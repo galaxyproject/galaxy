@@ -2,6 +2,9 @@ import getpass
 import logging
 import os
 import shutil
+from typing import Optional
+
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.model import store
@@ -48,7 +51,8 @@ class JobImportHistoryArchiveWrapper:
         # Import history.
         #
 
-        jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
+        stmt = select(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).limit(1)
+        jiha = self.sa_session.scalars(stmt).first()
         if not jiha:
             return None
         user = jiha.job.user
@@ -99,7 +103,15 @@ class JobExportHistoryArchiveWrapper:
         self.job_id = job_id
         self.sa_session = self.app.model.context
 
-    def setup_job(self, history, store_directory, include_hidden=False, include_deleted=False, compressed=True):
+    def setup_job(
+        self,
+        history,
+        store_directory,
+        include_hidden=False,
+        include_deleted=False,
+        compressed=True,
+        user: Optional[model.User] = None,
+    ):
         """
         Perform setup for job to export a history into an archive.
         """
@@ -118,6 +130,6 @@ class JobExportHistoryArchiveWrapper:
         )
         if app.config.enable_celery_tasks:
             # symlink files on export, on worker files will tarred up in a dereferenced manner.
-            export_history.delay(request=request)
+            export_history.delay(request=request, task_user_id=getattr(user, "id", None))
         else:
             export_history(request=request)

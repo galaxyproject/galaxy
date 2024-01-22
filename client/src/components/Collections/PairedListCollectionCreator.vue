@@ -324,8 +324,8 @@
                                 </div>
                             </div>
                         </div>
-                        <splitpanes horizontal style="height: 400px">
-                            <pane>
+                        <div class="pairing-split-parent">
+                            <div class="pairing-split-child">
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">
                                         {{ l("No datasets were found matching the current filters.") }}
@@ -334,7 +334,7 @@
                                 <div class="unpaired-columns flex-column-container scroll-container flex-row">
                                     <div class="forward-column flex-column column truncate">
                                         <ol class="column-datasets">
-                                            <unpaired-dataset-element-view
+                                            <UnpairedDatasetElementView
                                                 v-for="element in forwardElements"
                                                 :key="element.id"
                                                 :class="{
@@ -359,7 +359,7 @@
                                     </div>
                                     <div class="reverse-column flex-column column truncate">
                                         <ol class="column-datasets">
-                                            <unpaired-dataset-element-view
+                                            <UnpairedDatasetElementView
                                                 v-for="element in reverseElements"
                                                 :key="element.id"
                                                 :class="{
@@ -372,8 +372,8 @@
                                         </ol>
                                     </div>
                                 </div>
-                            </pane>
-                            <pane>
+                            </div>
+                            <div class="pairing-split-child">
                                 <div class="column-header">
                                     <div class="column-title paired-column-title">
                                         <span class="title"> {{ numOfPairs }} {{ l(" pairs") }}</span>
@@ -389,7 +389,7 @@
                                 <div class="paired-columns flex-column-container scroll-container flex-row">
                                     <ol class="column-datasets">
                                         <draggable v-model="pairedElements" @start="drag = true" @end="drag = false">
-                                            <paired-element-view
+                                            <PairedElementView
                                                 v-for="pair in pairedElements"
                                                 :key="pair.id"
                                                 :pair="pair"
@@ -398,8 +398,8 @@
                                         </draggable>
                                     </ol>
                                 </div>
-                            </pane>
-                        </splitpanes>
+                            </div>
+                        </div>
                     </template>
                 </collection-creator>
             </div>
@@ -407,26 +407,23 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import mixin from "./common/mixin";
-import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
-import levenshteinDistance from "utils/levenshtein";
-import PairedElementView from "./PairedElementView";
-import STATES from "mvc/dataset/states";
-import naturalSort from "utils/natural-sort";
-import "splitpanes/dist/splitpanes.css";
-import { Splitpanes, Pane } from "splitpanes";
-import draggable from "vuedraggable";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import STATES from "mvc/dataset/states";
+import levenshteinDistance from "utils/levenshtein";
+import _l from "utils/localization";
+import naturalSort from "utils/natural-sort";
+import Vue from "vue";
+import draggable from "vuedraggable";
+
+import mixin from "./common/mixin";
+import PairedElementView from "./PairedElementView";
+import UnpairedDatasetElementView from "./UnpairedDatasetElementView";
 
 Vue.use(BootstrapVue);
 export default {
     components: {
         UnpairedDatasetElementView,
         PairedElementView,
-        Splitpanes,
-        Pane,
         draggable,
     },
     mixins: [mixin],
@@ -1190,11 +1187,14 @@ li.dataset.paired {
         text-align: center;
     }
 }
-.splitpanes--horizontal > .splitpanes__splitter {
-    min-height: 6px;
-    background: linear-gradient(0deg, #ccc, #111);
+.pairing-split-parent {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
 }
-.splitpanes__pane {
-    overflow: scroll;
+
+.pairing-split-child {
+    flex: 1;
+    overflow-y: auto;
 }
 </style>

@@ -388,7 +388,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             content_id=content_id,
             **payload.dict(),
         )
-        result = prepare_history_content_download.delay(request=request)
+        result = prepare_history_content_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
 
     def write_store(
@@ -410,7 +410,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         request = WriteHistoryContentTo(
             user=trans.async_request_user, content_id=content_id, contents_type=contents_type, **payload.dict()
         )
-        result = write_history_content_to.delay(request=request)
+        result = write_history_content_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
 
     def index_jobs_summary(
@@ -491,7 +491,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             short_term_storage_request_id=short_term_storage_target.request_id,
             history_dataset_collection_association_id=dataset_collection_instance.id,
         )
-        result = prepare_dataset_collection_download.delay(request=request)
+        result = prepare_dataset_collection_download.delay(
+            request=request, task_user_id=getattr(trans.user, "id", None)
+        )
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
@@ -821,7 +823,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             # ---- for composite files, we use id and name for a directory and, inside that, ...
             if self.hda_manager.is_composite(content):
                 # ...save the 'main' composite file (gen. html)
-                paths_and_files.append((content.file_name, os.path.join(archive_path, f"{content.name}.html")))
+                paths_and_files.append((content.get_file_name(), os.path.join(archive_path, f"{content.name}.html")))
                 for extra_file in self.hda_manager.extra_files(content):
                     extra_file_basename = os.path.basename(extra_file)
                     archive_extra_file_path = os.path.join(archive_path, extra_file_basename)
@@ -833,7 +835,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 # some dataset names can contain their original file extensions, don't repeat
                 if not archive_path.endswith(f".{content.extension}"):
                     archive_path += f".{content.extension}"
-                paths_and_files.append((content.file_name, archive_path))
+                paths_and_files.append((content.get_file_name(), archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
@@ -862,7 +864,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         async_result = None
         if purge:
-            async_result = self.hda_manager.purge(hda)
+            async_result = self.hda_manager.purge(hda, user=trans.user)
         else:
             self.hda_manager.delete(hda, stop_job=stop_job)
         serialization_params.default_view = "detailed"
@@ -1267,9 +1269,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
             dbkey = payload.dbkey
             copy_required = dbkey is not None
-            copy_elements = payload.copy_elements or copy_required
+            copy_elements = payload.copy_elements
             if copy_required and not copy_elements:
-                raise exceptions.RequestParameterMissingException(
+                raise exceptions.RequestParameterInvalidException(
                     "copy_elements passed as 'false' but it is required to change specified attributes"
                 )
             dataset_instance_attributes = {}
@@ -1433,7 +1435,7 @@ class HistoryItemOperator:
             return
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
-        self.hda_manager.purge(item, flush=True)
+        self.hda_manager.purge(item, flush=True, user=trans.user)
 
     def _change_datatype(
         self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
@@ -1454,7 +1456,14 @@ class HistoryItemOperator:
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
             # chain these for sequential execution. chord would be nice, but requires a non-RPC backend.
-            chain(*wrapped_tasks, touch.si(item_id=item.id, model_class="HistoryDatasetCollectionAssociation")).delay()
+            chain(
+                *wrapped_tasks,
+                touch.si(
+                    item_id=item.id,
+                    model_class="HistoryDatasetCollectionAssociation",
+                    task_user_id=getattr(trans.user, "id", None),
+                ),
+            ).delay()
 
     def _change_item_datatype(
         self, item: HistoryDatasetAssociation, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
@@ -1470,7 +1479,9 @@ class HistoryItemOperator:
                 trans.app.datatypes_registry.change_datatype(item, params.datatype)
             item.dataset.state = item.dataset.states.DEFERRED
         else:
-            return change_datatype.si(dataset_id=item.id, datatype=params.datatype)
+            return change_datatype.si(
+                dataset_id=item.id, datatype=params.datatype, task_user_id=getattr(trans.user, "id", None)
+            )
 
     def _change_dbkey(self, item: HistoryItemModel, params: ChangeDbkeyOperationParams):
         if isinstance(item, HistoryDatasetAssociation):

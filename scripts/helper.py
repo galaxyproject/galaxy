@@ -43,13 +43,13 @@ if args.hda_id:
         hda_id = int(args.hda_id)
     except Exception:
         hda_id = int(helper.decode_id(args.hda_id))
-    hda = model.context.current.query(model.HistoryDatasetAssociation).get(hda_id)
-    print(f'HDA "{hda.id}" is Dataset "{hda.dataset.id}" at: {hda.file_name}')
+    hda = model.session.get(model.HistoryDatasetAssociation, hda_id)
+    print(f'HDA "{hda.id}" is Dataset "{hda.dataset.id}" at: {hda.get_file_name()}')
 
 if args.ldda_id:
     try:
         ldda_id = int(args.ldda_id)
     except Exception:
         ldda_id = int(helper.decode_id(args.ldda_id))
-    ldda = model.context.current.query(model.HistoryDatasetAssociation).get(ldda_id)
-    print(f'LDDA "{ldda.id}" is Dataset "{ldda.dataset.id}" at: {ldda.file_name}')
+    ldda = model.session.get(model.LibraryDatasetDatasetAssociation, ldda_id)
+    print(f'LDDA "{ldda.id}" is Dataset "{ldda.dataset.id}" at: {ldda.get_file_name()}')

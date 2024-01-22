@@ -3,9 +3,10 @@
     <InvocationsList v-if="currentUser?.id" :user-id="currentUser.id" />
 </template>
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import InvocationsList from "components/Workflow/InvocationsList";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {

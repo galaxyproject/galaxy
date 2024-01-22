@@ -1,10 +1,10 @@
 <template>
-    <b-row class="ml-3 mb-1">
+    <BRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-broadcast-tower" />
         <div class="pref-content pr-1">
             <a id="beacon-settings" href="javascript:void(0)"><b v-b-modal.modal-beacon v-localize>Manage Beacon</b></a>
             <div v-localize class="form-text text-muted">Contribute variants to Beacon</div>
-            <b-modal
+            <BModal
                 id="modal-beacon"
                 ref="modal"
                 size="xl"
@@ -33,30 +33,30 @@
                     initiated the query to negotiate further information exchange or data access.
                 </p>
 
-                <b-alert v-if="enabled" show>
+                <BAlert v-if="enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is <span class="bold">enabled</span> for your profile
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <b-button variant="danger" @click="optOut">Disable</b-button>
+                            <BButton variant="danger" @click="optOut">Disable</BButton>
                         </div>
                     </div>
-                </b-alert>
+                </BAlert>
 
                 <!-- Setting to show when beacon is disabled -->
-                <b-alert v-if="!enabled" show>
+                <BAlert v-if="!enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is currently <span class="bold">disabled</span> - no data will be shared
                         </div>
                         <div class="fill"></div>
                         <div>
-                            <b-button variant="success" @click="optIn">Enable</b-button>
+                            <BButton variant="success" @click="optIn">Enable</BButton>
                         </div>
                     </div>
-                </b-alert>
+                </BAlert>
 
                 <div v-if="enabled">
                     <p>
@@ -77,7 +77,7 @@
                         <div class="no-shrink">No beacon history found</div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <b-button @click="createBeaconHistory">Create Beacon History</b-button>
+                            <BButton @click="createBeaconHistory">Create Beacon History</BButton>
                         </div>
                     </div>
 
@@ -94,7 +94,7 @@
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <b-button @click="switchHistory(beaconHistory.id)">Switch to History</b-button>
+                            <BButton @click="switchHistory(beaconHistory.id)">Switch to History</BButton>
                         </div>
                     </div>
                 </div>
@@ -111,16 +111,17 @@
                         </li>
                     </ul>
                 </div>
-            </b-modal>
+            </BModal>
         </div>
-    </b-row>
+    </BRow>
 </template>
 
 <script>
 import axios from "axios";
+import { BAlert, BButton, BModal, BRow } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
-import { BAlert, BButton, BModal, BRow } from "bootstrap-vue";
+
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {

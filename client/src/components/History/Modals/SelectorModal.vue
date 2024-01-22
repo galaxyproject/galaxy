@@ -1,42 +1,43 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faListAlt } from "@fortawesome/free-regular-svg-icons";
+import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useInfiniteScroll } from "@vueuse/core";
+import { BBadge, BButton, BButtonGroup, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
+import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
-import {
-    BModal,
-    BFormGroup,
-    BFormInput,
-    BListGroup,
-    BListGroupItem,
-    BBadge,
-    BButtonGroup,
-    BButton,
-} from "bootstrap-vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-import UtcDate from "@/components/UtcDate.vue";
-import { computed, onMounted, onUnmounted, ref, watch, type PropType, type Ref } from "vue";
-import localize from "@/utils/localization";
-import Heading from "@/components/Common/Heading.vue";
-import type { components } from "@/schema";
+import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
+
+import type { HistoryDetailed, HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, expandNameTag } from "@/utils/filtering";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faColumns, faSignInAlt, faArrowDown } from "@fortawesome/free-solid-svg-icons";
-import { faListAlt } from "@fortawesome/free-regular-svg-icons";
-import { useInfiniteScroll } from "@vueuse/core";
-import isEqual from "lodash.isequal";
+import Filtering, { compare, contains, expandNameTag, toDate } from "@/utils/filtering";
+import localize from "@/utils/localization";
+
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 const validFilters = {
-    name: contains("name"),
-    tag: contains("tags", "tag", expandNameTag),
-    annotation: contains("annotation"),
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
+    annotation: { placeholder: "annotation", type: String, handler: contains("annotation"), menuItem: true },
+    update_time: {
+        placeholder: "updated time",
+        type: Date,
+        handler: compare("update_time", "le", toDate),
+        isRangeInput: true,
+        menuItem: true,
+    },
+    update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
+    update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
-const HistoriesFilters = new Filtering(validFilters, false);
+const HistoriesFilters = new Filtering(validFilters);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
-type HistorySummary = components["schemas"]["HistorySummary"];
-type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 
 const props = defineProps({
     multiple: { type: Boolean, default: false },
@@ -58,7 +59,7 @@ const propShowModal = computed({
     get: () => {
         return props.showModal;
     },
-    set: (val) => {
+    set: (val: boolean) => {
         emit("update:show-modal", val);
     },
 });
@@ -66,6 +67,7 @@ const propShowModal = computed({
 const selectedHistories: Ref<{ id: string }[]> = ref([]);
 const filter = ref("");
 const busy = ref(false);
+const showAdvanced = ref(false);
 const modal: Ref<BModal | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
@@ -85,7 +87,7 @@ onMounted(async () => {
 // retain previously selected histories when you reopen the modal in multi view
 watch(
     () => propShowModal.value,
-    (show) => {
+    (show: boolean) => {
         if (props.multiple && show) {
             selectedHistories.value = [...pinnedHistories.value];
         }
@@ -102,7 +104,7 @@ onUnmounted(() => {
 
 watch(
     () => filter.value,
-    async (newVal, oldVal) => {
+    async (newVal: string, oldVal: string) => {
         if (newVal !== "" && validFilter.value && newVal !== oldVal) {
             await loadMore(true);
         }
@@ -115,7 +117,7 @@ watch(
 const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
     () => props.histories as HistoryDetailed[],
-    (h) => {
+    (h: HistoryDetailed[]) => {
         historiesProxy.value = h.filter(
             (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)
         );
@@ -131,7 +133,7 @@ const filtered: Ref<HistorySummary[]> = computed(() => {
         filteredHistories = historiesProxy.value;
     } else {
         const filters = HistoriesFilters.getFiltersForText(filter.value);
-        filteredHistories = historiesProxy.value.filter((history) => {
+        filteredHistories = historiesProxy.value.filter((history: HistorySummary) => {
             if (!HistoriesFilters.testFilters(filters, history)) {
                 return false;
             }
@@ -185,6 +187,10 @@ function setCenterPanelHistory(history: HistorySummary) {
     modal.value?.hide();
 }
 
+function setFilterValue(newFilter: string, newValue: string) {
+    filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
+}
+
 function openInMulti(history: HistorySummary) {
     router.push("/histories/view_multiple");
     historyStore.pinHistory(history.id);
@@ -207,7 +213,7 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <b-modal
+        <BModal
             ref="modal"
             v-model="propShowModal"
             class="history-selector-modal"
@@ -218,16 +224,23 @@ async function loadMore(noScroll = false) {
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
 
-            <b-form-group :description="localize('Filter histories')">
-                <b-form-input v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
-            </b-form-group>
+            <BFormGroup :description="localize('Filter histories')">
+                <FilterMenu
+                    ref="filterMenuRef"
+                    name="Histories"
+                    placeholder="search histories"
+                    :filter-class="HistoriesFilters"
+                    :filter-text.sync="filter"
+                    :loading="busy"
+                    :show-advanced.sync="showAdvanced" />
+            </BFormGroup>
 
-            <b-badge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</b-badge>
+            <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
 
-            <div ref="scrollableDiv" class="history-selector-modal-list">
-                <b-list-group>
-                    <b-list-group-item
+            <div v-show="!showAdvanced" ref="scrollableDiv" class="history-selector-modal-list">
+                <BListGroup>
+                    <BListGroupItem
                         v-for="history in filtered"
                         :key="history.id"
                         :data-pk="history.id"
@@ -242,12 +255,12 @@ async function loadMore(noScroll = false) {
                             </Heading>
 
                             <div class="d-flex align-items-center flex-gapx-1">
-                                <b-badge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                <BBadge v-b-tooltip pill :title="localize('Amount of items in history')">
                                     {{ history.count }} {{ localize("items") }}
-                                </b-badge>
-                                <b-badge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
+                                </BBadge>
+                                <BBadge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
                                     <UtcDate :date="history.update_time" mode="elapsed" />
-                                </b-badge>
+                                </BBadge>
                             </div>
                         </div>
 
@@ -258,13 +271,14 @@ async function loadMore(noScroll = false) {
                             class="my-1"
                             :value="history.tags"
                             :disabled="true"
-                            :max-visible-tags="10" />
+                            :max-visible-tags="10"
+                            @tag-click="setFilterValue('tag', $event)" />
 
                         <div
                             v-if="props.additionalOptions.length > 0"
                             class="d-flex justify-content-end align-items-center mt-1">
-                            <b-button-group>
-                                <b-button
+                            <BButtonGroup>
+                                <BButton
                                     v-if="props.additionalOptions.includes('set-current')"
                                     v-b-tooltip
                                     :title="localize('Set as current history')"
@@ -272,9 +286,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCurrentHistory(history)">
                                     <FontAwesomeIcon icon="fa-sign-in-alt" />
-                                </b-button>
+                                </BButton>
 
-                                <b-button
+                                <BButton
                                     v-if="props.additionalOptions.includes('multi')"
                                     v-b-tooltip
                                     :title="localize('Open in multi-view')"
@@ -282,9 +296,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => openInMulti(history)">
                                     <FontAwesomeIcon icon="fa-columns" />
-                                </b-button>
+                                </BButton>
 
-                                <b-button
+                                <BButton
                                     v-if="props.additionalOptions.includes('center')"
                                     v-b-tooltip
                                     :title="localize('Open in center panel')"
@@ -292,10 +306,10 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCenterPanelHistory(history)">
                                     <FontAwesomeIcon icon="far fa-list-alt" />
-                                </b-button>
-                            </b-button-group>
+                                </BButton>
+                            </BButtonGroup>
                         </div>
-                    </b-list-group-item>
+                    </BListGroupItem>
                     <div>
                         <div v-if="allLoaded || filter !== ''" class="list-end my-2">
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
@@ -303,13 +317,13 @@ async function loadMore(noScroll = false) {
                         </div>
                         <b-overlay :show="busy" opacity="0.5" />
                     </div>
-                </b-list-group>
+                </BListGroup>
             </div>
 
             <template v-slot:modal-footer>
                 <div v-if="!allLoaded" class="mr-auto">
                     <i>Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                    <b-button
+                    <BButton
                         v-b-tooltip.noninteractive.hover
                         class="load-more-hist-button"
                         size="sm"
@@ -317,19 +331,19 @@ async function loadMore(noScroll = false) {
                         variant="link"
                         @click="loadMore()">
                         <FontAwesomeIcon icon="fa-arrow-down" />
-                    </b-button>
+                    </BButton>
                 </div>
-                <b-button
+                <BButton
                     v-if="multiple"
                     v-localize
                     :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
                     variant="primary"
                     @click="selectHistories">
                     Change Selected
-                </b-button>
+                </BButton>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>
-        </b-modal>
+        </BModal>
     </div>
 </template>
 

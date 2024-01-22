@@ -1,6 +1,6 @@
 <template>
     <div>
-        <loading-span v-if="loading" message="Loading categories" />
+        <LoadingSpan v-if="loading" message="Loading categories" />
         <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
                 <b-link
@@ -15,10 +15,11 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
+import Vue from "vue";
+
+import { Services } from "../services";
 
 Vue.use(BootstrapVue);
 

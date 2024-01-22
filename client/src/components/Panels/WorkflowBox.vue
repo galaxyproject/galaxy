@@ -1,16 +1,28 @@
 <script setup lang="ts">
-import { withPrefix } from "@/utils/redirect";
-import { useUserStore } from "@/stores/userStore";
-import { computed } from "vue";
-import WorkflowSearch from "@/components/Workflow/WorkflowSearch.vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUpload, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faGlobe, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { helpHtml, WorkflowFilters } from "@/components/Workflow/WorkflowFilters";
+import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "@/utils/redirect";
+
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+
+const router = useRouter();
 
 // @ts-ignore bad library types
 library.add(faUpload, faGlobe);
 
 const isAnonymous = computed(() => useUserStore().isAnonymous);
+
+function onSearch(filters: Record<string, string | boolean>, filterText?: string, query?: string) {
+    const path = "/workflows/list";
+    const routerParams = query ? { path, query: { query } } : { path };
+    router.push(routerParams);
+}
 
 function userTitle(title: string) {
     if (isAnonymous.value == true) {
@@ -35,7 +47,7 @@ function userTitle(title: string) {
                             variant="link"
                             :title="userTitle('Create new workflow')"
                             :disabled="isAnonymous"
-                            @click="$router.push('/workflows/create')">
+                            @click="$router.push('/workflows/edit')">
                             <Icon fixed-width icon="plus" />
                         </b-button>
                         <b-button
@@ -67,7 +79,17 @@ function userTitle(title: string) {
                     Please <a :href="withPrefix('/login')">log in or register</a> to create workflows.
                 </b-badge>
             </div>
-            <WorkflowSearch v-else />
+            <FilterMenu
+                v-else
+                name="Workflows"
+                :filter-class="WorkflowFilters"
+                has-help
+                menu-type="standalone"
+                @on-search="onSearch">
+                <template v-slot:menu-help-text>
+                    <div v-html="helpHtml"></div>
+                </template>
+            </FilterMenu>
         </div>
     </div>
 </template>

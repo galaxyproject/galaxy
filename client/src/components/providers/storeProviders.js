@@ -1,12 +1,12 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
+import { mapActions, mapState } from "pinia";
+import { useDbKeyStore } from "stores/dbKeyStore";
 import { prependPath } from "utils/redirect";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
-import { HasAttributesMixin } from "./utils";
 
-import { useDbKeyStore } from "stores/dbKeyStore";
-import { mapActions, mapState } from "pinia";
 import { useDatatypeStore } from "../../stores/datatypeStore";
+import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -145,9 +145,8 @@ export const DatasetCollectionElementProvider = {
  * Provider component interface to the actual stores i.e. history items and collection elements stores.
  * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
  * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
- * @param {String} storeCountGetter The query stats store getter passes its matches counts to the slot of the corresponding provider.
  */
-export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undefined) => {
+export const StoreProvider = (storeAction, storeGetter) => {
     return {
         mixins: [HasAttributesMixin],
         watch: {
@@ -167,12 +166,9 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
             this.load();
         },
         computed: {
-            ...mapGetters([storeGetter, storeCountGetter]),
+            ...mapGetters([storeGetter]),
             result() {
                 return this[storeGetter](this.attributes);
-            },
-            count() {
-                return storeCountGetter ? this[storeCountGetter]() : undefined;
             },
         },
         render() {
@@ -180,7 +176,6 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
                 error: this.error,
                 loading: this.loading,
                 result: this.result,
-                count: this.count,
             });
         },
         methods: {
@@ -199,7 +194,3 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
         },
     };
 };
-
-export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
-export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
-export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

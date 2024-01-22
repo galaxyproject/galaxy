@@ -2,28 +2,20 @@
  * Central Vuex store
  */
 
+import config from "config";
+import localForage from "localforage";
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
-import localForage from "localforage";
 
-import config from "config";
-
-import { gridSearchStore } from "./gridSearchStore";
-import { tagStore } from "./tagStore";
-import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
-import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, datasetStore } from "./historyStore";
-import { configStore } from "./configStore";
-import { toolStore } from "./toolStore";
-import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
-import { collectionAttributesStore } from "./collectionAttributesStore";
-import { panelStore } from "./panelStore";
-
-// Syncs vuex to Galaxy store until Galaxy vals to not exist
+import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
+import { gridSearchStore } from "./gridSearchStore";
+import { invocationStore } from "./invocationStore";
+import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
+import { tagStore } from "./tagStore";
 
 Vue.use(Vuex);
 
@@ -50,18 +42,12 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            collectionAttributesStore: collectionAttributesStore,
-            collectionElements: collectionElementsStore,
-            config: configStore,
             destinationParameters: jobDestinationParametersStore,
-            dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
             gridSearch: gridSearchStore,
-            panels: panelStore,
             tags: tagStore,
-            tools: toolStore,
         },
     };
 

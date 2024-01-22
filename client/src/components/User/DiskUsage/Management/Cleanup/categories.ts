@@ -1,14 +1,16 @@
-import localize from "@/utils/localization";
 import { ref } from "vue";
+
+import localize from "@/utils/localization";
+
 import {
-    cleanupDiscardedDatasets,
+    cleanupDatasets,
+    cleanupHistories,
+    fetchArchivedHistories,
+    fetchArchivedHistoriesSummary,
     fetchDiscardedDatasets,
     fetchDiscardedDatasetsSummary,
-    cleanupDiscardedHistories,
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
-    fetchArchivedHistoriesSummary,
-    fetchArchivedHistories,
 } from "../services";
 import type { CleanupCategory } from "./model";
 
@@ -28,7 +30,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchDiscardedDatasetsSummary,
                     fetchItems: fetchDiscardedDatasets,
-                    cleanupItems: cleanupDiscardedDatasets,
+                    cleanupItems: cleanupDatasets,
                 },
                 {
                     id: "deleted_histories",
@@ -40,7 +42,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchDiscardedHistoriesSummary,
                     fetchItems: fetchDiscardedHistories,
-                    cleanupItems: cleanupDiscardedHistories,
+                    cleanupItems: cleanupHistories,
                 },
             ],
         },
@@ -58,7 +60,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchArchivedHistoriesSummary,
                     fetchItems: fetchArchivedHistories,
-                    cleanupItems: cleanupDiscardedHistories,
+                    cleanupItems: cleanupHistories,
                 },
             ],
         },

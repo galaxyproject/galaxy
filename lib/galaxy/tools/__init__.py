@@ -29,6 +29,11 @@ import webob.exc
 from lxml import etree
 from mako.template import Template
 from packaging.version import Version
+from sqlalchemy import (
+    delete,
+    func,
+    select,
+)
 
 from galaxy import (
     exceptions,
@@ -40,6 +45,10 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model import (
+    Job,
+    StoredWorkflow,
+)
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -301,6 +310,12 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
     "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
+    "CONVERTER_Bam_Bai_0": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_cram_to_bam_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
+    "CONVERTER_fasta_to_fai": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_sam_to_bigwig_0": safe_update(parse_version("1.0.2"), parse_version("1.0.3")),
+    "CONVERTER_bam_to_coodinate_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_bam_to_qname_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
 }
 
 
@@ -363,9 +378,9 @@ class PersistentToolTagManager(AbstractToolTagManager):
 
     def reset_tags(self):
         log.info(
-            f"removing all tool tag associations ({str(self.sa_session.query(self.app.model.ToolTagAssociation).count())})"
+            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation))))})"
         )
-        self.sa_session.query(self.app.model.ToolTagAssociation).delete()
+        self.sa_session.execute(delete(self.app.model.ToolTagAssociation))
         with transaction(self.sa_session):
             self.sa_session.commit()
 
@@ -376,7 +391,8 @@ class PersistentToolTagManager(AbstractToolTagManager):
             for tag_name in tag_names:
                 if tag_name == "":
                     continue
-                tag = self.sa_session.query(self.app.model.Tag).filter_by(name=tag_name).first()
+                stmt = select(self.app.model.Tag).filter_by(name=tag_name).limit(1)
+                tag = self.sa_session.scalars(stmt).first()
                 if not tag:
                     tag = self.app.model.Tag(name=tag_name)
                     self.sa_session.add(tag)
@@ -632,7 +648,8 @@ class ToolBox(AbstractToolBox):
         which is encoded in the tool panel.
         """
         id = self.app.security.decode_id(workflow_id)
-        stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
+        session = self.app.model.context
+        stored = session.get(StoredWorkflow, id)
         return stored.latest_workflow
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
@@ -1300,7 +1317,7 @@ class Tool(Dictifiable):
     def tests(self):
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
-        return self.__tests
+        return None
 
     @property
     def _repository_dir(self):
@@ -2851,7 +2868,7 @@ class ExpressionTool(Tool):
                 # Skip filtered outputs
                 continue
             if val.output_type == "data":
-                with open(out_data[key].file_name) as f:
+                with open(out_data[key].get_file_name()) as f:
                     src = json.load(f)
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
                 dataset_id = src["id"]
@@ -3029,7 +3046,7 @@ class SetMetadataTool(Tool):
                 self.sa_session.commit()
 
     def job_failed(self, job_wrapper, message, exception=False):
-        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         if job:
             inp_data = {}
             for dataset_assoc in job.input_datasets:
@@ -3076,7 +3093,7 @@ class InteractiveTool(Tool):
 
     def job_failed(self, job_wrapper, message, exception=False):
         super().job_failed(job_wrapper, message, exception=exception)
-        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         self.__remove_interactivetool_by_job(job)
 
 
@@ -3098,7 +3115,7 @@ class DataManagerTool(OutputParameterJSONTool):
         super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
-        data_manager = self.app.data_managers.get_manager(data_manager_id, None)
+        data_manager = self.app.data_managers.get_manager(data_manager_id)
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
@@ -3109,10 +3126,10 @@ class DataManagerTool(OutputParameterJSONTool):
             pass
         elif data_manager_mode == "bundle":
             for bundle_path, dataset in data_manager.write_bundle(out_data).items():
-                dataset = cast(model.HistoryDatasetAssociation, dataset)
-                dataset.dataset.object_store.update_from_file(
-                    dataset.dataset,
-                    extra_dir=dataset.dataset.extra_files_path_name,
+                hda = cast(model.HistoryDatasetAssociation, dataset)
+                hda.dataset.object_store.update_from_file(
+                    hda.dataset,
+                    extra_dir=hda.dataset.extra_files_path_name,
                     file_name=bundle_path,
                     alt_name=os.path.basename(bundle_path),
                     create=True,
@@ -3491,7 +3508,7 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
         dataset_instance: model.DatasetInstance = element.element_object
         if dataset_instance.has_data():
             # We have data, but it might just be a compressed archive of nothing
-            file_name = dataset_instance.file_name
+            file_name = dataset_instance.get_file_name()
             _, fh = get_fileobj_raw(file_name, mode="rb")
             if len(fh.read(1)):
                 return True
@@ -3551,7 +3568,7 @@ class SortTool(DatabaseOperationTool):
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
                 try:
-                    with open(hda.file_name) as fh:
+                    with open(hda.get_file_name()) as fh:
                         sorted_elements = [old_elements_dict[line.strip()] for line in fh]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
@@ -3602,7 +3619,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 copied_value = dce_object.copy(flush=False)
             new_elements[new_label] = copied_value
 
-        new_labels_path = new_labels_dataset_assoc.file_name
+        new_labels_path = new_labels_dataset_assoc.get_file_name()
         with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
@@ -3726,7 +3743,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     )
             new_elements[dce.element_identifier] = copied_value
 
-        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags_path = new_tags_dataset_assoc.get_file_name()
         with open(new_tags_path) as fh:
             new_tags = fh.readlines(1024 * 1000000)
         # We have a tabular file, where the first column is an existing element identifier,
@@ -3751,7 +3768,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         filtered_elements = {}
         discarded_elements = {}
 
-        filtered_path = filter_dataset_assoc.file_name
+        filtered_path = filter_dataset_assoc.get_file_name()
         with open(filtered_path) as fh:
             filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
 

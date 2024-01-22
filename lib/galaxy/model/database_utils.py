@@ -1,6 +1,9 @@
 import sqlite3
 from contextlib import contextmanager
-from typing import Optional
+from typing import (
+    NewType,
+    Optional,
+)
 
 from sqlalchemy import (
     create_engine,
@@ -17,6 +20,8 @@ from sqlalchemy.sql.expression import (
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import Job
+
+DbUrl = NewType("DbUrl", str)
 
 
 def database_exists(db_url, database=None):
@@ -166,3 +171,7 @@ def _statement_executed_without_error(statement: ClauseElement, engine: Engine) 
             return True
     except Exception:
         return False
+
+
+def is_postgres(url: DbUrl) -> bool:
+    return url.startswith("postgres")

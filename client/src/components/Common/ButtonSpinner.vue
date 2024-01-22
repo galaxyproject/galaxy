@@ -6,7 +6,7 @@
         variant="info"
         title="Please Wait..."
         class="d-flex flex-nowrap align-items-center text-nowrap">
-        <font-awesome-icon icon="spinner" class="mr-2" spin />{{ title }}
+        <FontAwesomeIcon icon="spinner" class="mr-2" spin />{{ title }}
     </b-button>
     <b-button
         v-else
@@ -16,13 +16,13 @@
         :title="tooltip"
         :disabled="disabled"
         @click="$emit('onClick')">
-        <font-awesome-icon icon="play" class="mr-2" />{{ title }}
+        <FontAwesomeIcon icon="play" class="mr-2" />{{ title }}
     </b-button>
 </template>
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSpinner, faPlay } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faSpinner);
 library.add(faPlay);

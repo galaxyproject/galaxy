@@ -3,6 +3,7 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
 import FolderDetails from "./FolderDetails";
 import apiResponse from "./response.test.json";
 

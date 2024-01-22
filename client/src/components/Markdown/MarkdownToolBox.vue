@@ -10,21 +10,18 @@
                 <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
                 </b-alert>
-                <tool-section
-                    v-if="isWorkflow"
-                    :category="historyInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <tool-section v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="jobSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="isWorkflow"
                     :category="workflowInEditorSection"
                     :expanded="true"
                     @onClick="onClick" />
-                <tool-section v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="otherSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
+                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="hasVisualizations"
                     :category="visualizationSection"
                     :expanded="true"
@@ -44,12 +41,13 @@
 </template>
 
 <script>
-import Vue from "vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
-import MarkdownDialog from "./MarkdownDialog";
 import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
+import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 
@@ -193,6 +191,16 @@ export default {
                         name: "Workflow Display",
                         emitter: "onWorkflowId",
                     },
+                    {
+                        id: "workflow_license",
+                        name: "Workflow License",
+                        emitter: "onWorkflowId",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Workflow Image",
+                        emitter: "onWorkflowId",
+                    },
                 ],
             },
             workflowInEditorSection: {
@@ -217,6 +225,14 @@ export default {
                         name: "Current Workflow",
                         description: "containing all steps",
                     },
+                    {
+                        id: "workflow_image",
+                        name: "Current Workflow Image",
+                    },
+                    {
+                        id: "workflow_license",
+                        name: "Current Workflow License",
+                    },
                 ],
             },
             otherSection: {
@@ -235,6 +251,48 @@ export default {
                     },
                 ],
             },
+            linksSection: {
+                title: "Galaxy Instance Links",
+                name: "links",
+                elems: [
+                    {
+                        id: "instance_access_link",
+                        name: "Access",
+                        description: "(link used to access this Galaxy)",
+                    },
+                    {
+                        id: "instance_resources_link",
+                        name: "Resources",
+                        description: "(link for more information about this Galaxy)",
+                    },
+                    {
+                        id: "instance_help_link",
+                        name: "Help",
+                        description: "(link for finding help content for this Galaxy)",
+                    },
+                    {
+                        id: "instance_support_link",
+                        name: "Support",
+                        description: "(link for support for this Galaxy)",
+                    },
+                    {
+                        id: "instance_citation_link",
+                        name: "Citation",
+                        description: "(link describing how to cite this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_terms_link",
+                        name: "Terms and Conditions",
+                        description: "(link describing terms and conditions for using this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_organization_link",
+                        name: "Organization",
+                        description: "(link describing organization that runs this Galaxy instance)",
+                    },
+                ],
+            },
+
             visualizationSection: {
                 title: "Visualizations",
                 name: "visualizations",

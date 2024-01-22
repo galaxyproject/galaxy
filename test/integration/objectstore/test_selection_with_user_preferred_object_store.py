@@ -8,6 +8,8 @@ from typing import (
     Optional,
 )
 
+from sqlalchemy import select
+
 from galaxy.model import Dataset
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.workflow_fixtures import (
@@ -482,5 +484,7 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
 
     @property
     def _latest_dataset(self):
-        latest_dataset = self._app.model.session.query(Dataset).order_by(Dataset.table.c.id.desc()).first()
+        latest_dataset = self._app.model.session.scalars(
+            select(Dataset).order_by(Dataset.table.c.id.desc()).limit(1)
+        ).first()
         return latest_dataset

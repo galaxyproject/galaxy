@@ -1,11 +1,14 @@
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import Node from "./Node.vue";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "tests/jest/helpers";
+
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+
 import { mockOffset } from "./test_fixtures";
+
+import Node from "./Node.vue";
 
 jest.mock("app");
 
@@ -15,7 +18,7 @@ describe("Node", () => {
     it("test attributes", async () => {
         const testingPinia = createTestingPinia();
         setActivePinia(testingPinia);
-        const wrapper = shallowMount(Node, {
+        const wrapper = shallowMount(Node as any, {
             propsData: {
                 id: 0,
                 contentId: "tool name",
@@ -27,6 +30,9 @@ describe("Node", () => {
             },
             localVue,
             pinia: testingPinia,
+            provide: {
+                workflowId: "mock-workflow",
+            },
         });
         await flushPromises();
         // fa-wrench is the tool icon ...

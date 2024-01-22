@@ -36,6 +36,7 @@ from pulsar.client import (
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.job_execution.compute_environment import (
@@ -49,6 +50,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
@@ -971,13 +973,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
         galaxy_job_id = None
         remote_job_id = None
         try:
+            check_database_connection(self.sa_session)
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...
-                sa_session = self.app.model.session
-                galaxy_job_id = (
-                    sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
-                )
+                stmt = select(model.Job).filter(model.Job.job_runner_external_id == remote_job_id)
+                galaxy_job_id = self.app.model.session.execute(stmt).scalar_one().id
             else:
                 galaxy_job_id = remote_job_id
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
@@ -1123,7 +1124,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_input_path_rewrite is not None:
             local_input_path = local_input_path_rewrite
         else:
-            local_input_path = dataset.file_name
+            local_input_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
         return remote_path
 
@@ -1132,7 +1133,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_output_path_rewrite is not None:
             local_output_path = local_output_path_rewrite
         else:
-            local_output_path = dataset.file_name
+            local_output_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_output_path_rewrite(local_output_path)
         return remote_path
 

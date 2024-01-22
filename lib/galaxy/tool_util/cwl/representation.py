@@ -151,7 +151,7 @@ def type_descriptions_for_field_types(field_types):
 
 def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     if dataset_wrapper.ext == "expression.json":
-        with open(dataset_wrapper.file_name) as f:
+        with open(dataset_wrapper.get_file_name()) as f:
             return json.load(f)
 
     if dataset_wrapper.ext == "directory":
@@ -201,7 +201,7 @@ def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
 
     # get archive location
     try:
-        archive_location = dataset_wrapper.unsanitized.file_name
+        archive_location = dataset_wrapper.unsanitized.get_file_name()
     except Exception:
         archive_location = None
 

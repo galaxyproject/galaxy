@@ -1,5 +1,4 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
     faArrowUp,
     faBell,
@@ -11,6 +10,7 @@ import {
     faClock,
     faCloud,
     faCodeBranch,
+    faCog,
     faColumns,
     faCompress,
     faCopy,
@@ -18,19 +18,19 @@ import {
     faEllipsisH,
     faEllipsisV,
     faExchangeAlt,
+    faExclamationTriangle,
     faExternalLinkAlt,
     faEye,
+    faFile,
     faFileArchive,
     faFileExport,
     faFilter,
-    faFile,
     faFolder,
-    faCog,
     faHdd,
     faInfoCircle,
     faLaptop,
-    faList,
     faLink,
+    faList,
     faLock,
     faMinusSquare,
     faPause,
@@ -46,11 +46,11 @@ import {
     faTools,
     faTrash,
     faTrashRestore,
-    faExclamationTriangle,
     faUndo,
     faUserLock,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(
     faArrowUp,

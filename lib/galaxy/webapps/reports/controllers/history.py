@@ -63,43 +63,47 @@ class History(BaseUIController):
         # from history h, galaxy_user u
         # where h.user_id = u.id and h.deleted='f'
         # group by email order by email desc
-        histories = sa.select(
-            (
+        histories = (
+            sa.select(
                 sa.func.count(galaxy.model.History.table.c.id).label("history"),
                 galaxy.model.User.table.c.email.label("email"),
-            ),
-            from_obj=[sa.outerjoin(galaxy.model.History.table, galaxy.model.User.table)],
-            whereclause=and_(
-                galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
-                galaxy.model.History.table.c.deleted == "f",
-            ),
-            group_by=["email"],
-            order_by=[sa.desc("email"), "history"],
+            )
+            .select_from(sa.outerjoin(galaxy.model.History.table, galaxy.model.User.table))
+            .where(
+                and_(
+                    galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
+                    galaxy.model.History.table.c.deleted == "f",
+                )
+            )
+            .group_by("email")
+            .order_by(sa.desc("email"), "history")
         )
 
         # select u.email, count(d.id)
         # from galaxy_user u, dataset d, history_dataset_association hd,history h
         # where d.id=hd.dataset_id and h.id=hd.history_id and u.id = h.user_id and h.deleted='f'
         # group by u.email;
-        datasets = sa.select(
-            (
+        datasets = (
+            sa.select(
                 sa.func.count(galaxy.model.Dataset.table.c.id).label("dataset"),
                 sa.func.sum(galaxy.model.Dataset.table.c.total_size).label("size"),
                 galaxy.model.User.table.c.email.label("email"),
-            ),
-            from_obj=[
+            )
+            .select_from(
                 galaxy.model.User.table,
                 galaxy.model.Dataset.table,
                 galaxy.model.HistoryDatasetAssociation.table,
                 galaxy.model.History.table,
-            ],
-            whereclause=and_(
-                galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
-                galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
-                galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
-                galaxy.model.History.table.c.deleted == "f",
-            ),
-            group_by=["email"],
+            )
+            .where(
+                and_(
+                    galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
+                    galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
+                    galaxy.model.History.table.c.user_id == galaxy.model.User.table.c.id,
+                    galaxy.model.History.table.c.deleted == "f",
+                )
+            )
+            .group_by("email")
         )
 
         # execute requests, replace None fields by "Unknown"
@@ -178,11 +182,13 @@ class History(BaseUIController):
                 galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,
                 galaxy.model.History.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.history_id,
             )
-        histories = sa.select(
-            (galaxy.model.Dataset.table.c.state.label("state"), galaxy.model.History.table.c.name.label("name")),
-            from_obj=from_obj,
-            whereclause=whereclause,
-            order_by=["name"],
+        histories = (
+            sa.select(
+                galaxy.model.Dataset.table.c.state.label("state"), galaxy.model.History.table.c.name.label("name")
+            )
+            .select_from(from_obj)
+            .where(whereclause)
+            .order_by("name")
         )
 
         # execute requests, replace None fields by "Unknown"

@@ -1,7 +1,8 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import ObjectStoreBadges from "./ObjectStoreBadges";
+
 import ObjectStoreBadge from "./ObjectStoreBadge";
+import ObjectStoreBadges from "./ObjectStoreBadges";
 
 const localVue = getLocalVue(true);
 

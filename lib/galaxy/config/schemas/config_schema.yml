@@ -1180,10 +1180,19 @@ mapping:
         type: str
         required: false
         desc: |
-          URL of the support resource for the galaxy instance.  Used in activation
-          emails.
+          URL of the support resource for the galaxy instance.  Used outside of web contexts
+          such as in activation emails and in Galaxy markdown report generation.
 
           Example value 'https://galaxyproject.org/'
+
+      instance_access_url:
+        type: str
+        required: false
+        desc: |
+          URL used to access this Galaxy server. Used outside of web contexts
+          such as in Galaxy markdown report generation.
+
+          Example value 'https://usegalaxy.org'
 
       email_domain_blocklist_file:
         type: str
@@ -1365,6 +1374,39 @@ mapping:
           CPU, RAM and runtime usage is mapped against AWS pricing table.
           Please note, that those numbers are only estimates.
 
+      carbon_emission_estimates:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          This flag enables carbon emissions estimates for every job based on its runtime metrics.
+          CPU and RAM usage and the total job runtime are used to determine an estimate value.
+          These estimates and are based off of the work of the Green Algorithms Project and
+          the United States Environmental Protection Agency (EPA).
+          Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+          for more detals.
+
+      geographical_server_location_code:
+        type: str
+        default: "GLOBAL"
+        required: false
+        desc: |
+          The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+          This is used to make carbon emissions estimates more accurate as the location effects the
+          carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+          `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+          visit https://galaxyproject.org/admin/carbon_emissions
+
+      power_usage_effectiveness:
+        type: float
+        default: 1.67
+        required: false
+        desc: |
+          The estimated power usage effectiveness of the data centre housing the server your galaxy
+          instance is running on. This can make carbon emissions estimates more accurate.
+          For more information on how to calculate a PUE value, visit
+          https://en.wikipedia.org/wiki/Power_usage_effectiveness
+
       interactivetools_enable:
         type: bool
         default: false
@@ -1407,15 +1449,6 @@ mapping:
         required: false
         desc: |
           Prefix to use in the formation of the subdomain or path for interactive tools
-
-      interactivetools_shorten_url:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Shorten the uuid portion of the subdomain or path for interactive tools.
-          Especially useful for avoiding the need for wildcard certificates by keeping
-          subdomain under 63 chars
 
       retry_interactivetool_metadata_internally:
         type: bool
@@ -2898,6 +2931,36 @@ mapping:
           a real admin user account via API.
           You should probably not set this on a production server.
 
+      organization_name:
+        type: str
+        required: false
+        desc: |
+          The name of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "Not Evil Corporation".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint for the Galaxy DRS API.
+          If unset, one will be generated using ga4gh_service_id (but only in the context
+          of GA4GH APIs).
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      organization_url:
+        type: str
+        required: false
+        desc: |
+          The URL of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "notevilcorp.com".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
       ga4gh_service_id:
         type: str
         required: false
@@ -2914,28 +2977,6 @@ mapping:
           value as a prefix and append the service type to this ID. For instance for the DRS
           service "id" (available via the DRS API) for the above configuration value would be
           org.usegalaxy.drs.
-
-      ga4gh_service_organization_name:
-        type: str
-        required: false
-        desc: |
-          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using ga4gh_service_id.
-
-          For more information on GA4GH service definitions - check out
-          https://github.com/ga4gh-discovery/ga4gh-service-registry
-          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
-
-      ga4gh_service_organization_url:
-        type: str
-        required: False
-        desc: |
-          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using the URL the target API requests are made against.
-
-          For more information on GA4GH service definitions - check out
-          https://github.com/ga4gh-discovery/ga4gh-service-registry
-          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 
       ga4gh_service_environment:
         type: str
@@ -3088,7 +3129,24 @@ mapping:
         path_resolves_to: config_dir
         required: false
         desc: |
-          XML config file that contains the job metric collection configuration.
+          YAML or XML config file that contains the job metric collection configuration.
+
+      job_metrics:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a job_metrics_config_file, the definition of the
+          metrics to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a job_metrics_config_file is used.
+
+          The syntax, available instrumenters, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+
+          By default, the core plugin is enabled. Setting this option to false or an empty list disables metrics
+          entirely.
 
       expose_potentially_sensitive_job_metrics:
         type: bool
@@ -3682,6 +3740,14 @@ mapping:
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
 
+      celery_user_rate_limit:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          If set to a non-0 value, upper limit on number of
+          tasks that can be executed per user per second.
+
       use_pbkdf2:
         type: bool
         default: true
@@ -3871,3 +3937,19 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      help_forum_api_url:
+        type: str
+        required: false
+        default: https://help.galaxyproject.org/
+        per_host: true
+        desc: |
+          The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
+
+      enable_help_forum_tool_panel_integration:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.

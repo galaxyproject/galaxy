@@ -13,6 +13,8 @@ from typing import (
     Dict,
     List,
     Tuple,
+    Type,
+    Union,
 )
 
 from sqlalchemy.exc import OperationalError
@@ -34,7 +36,11 @@ from galaxy.jobs import (
     TaskWrapper,
 )
 from galaxy.jobs.mapper import JobNotReadyException
-from galaxy.model.base import transaction
+from galaxy.managers.jobs import get_jobs_to_check_at_startup
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
@@ -100,10 +106,11 @@ class JobHandler(JobHandlerI):
 
 
 class ItemGrabber:
+    grab_model: Union[Type[model.Job], Type[model.WorkflowInvocation]]
+
     def __init__(
         self,
         app,
-        grab_type="Job",
         handler_assignment_method=None,
         max_grab=None,
         self_handler_tags=None,
@@ -111,8 +118,6 @@ class ItemGrabber:
     ):
         self.app = app
         self.sa_session = app.model.context
-        self.grab_this = getattr(model, grab_type)
-        self.grab_type = grab_type
         self.handler_assignment_method = handler_assignment_method
         self.self_handler_tags = self_handler_tags
         self.max_grab = max_grab
@@ -122,27 +127,33 @@ class ItemGrabber:
         self._supports_returning = self.app.application_stack.supports_returning()
 
     def setup_query(self):
+        if self.grab_model is model.Job:
+            grab_condition = self.grab_model.state == self.grab_model.states.NEW
+        elif self.grab_model is model.WorkflowInvocation:
+            grab_condition = self.grab_model.state.in_((self.grab_model.states.NEW, self.grab_model.states.CANCELLING))
+        else:
+            raise NotImplementedError(f"Grabbing {self.grab_model.__name__} not implemented")
         subq = (
-            select([self.grab_this.id])
+            select(self.grab_model.id)
             .where(
                 and_(
-                    self.grab_this.table.c.handler.in_(self.self_handler_tags),
-                    self.grab_this.table.c.state == self.grab_this.states.NEW,
+                    self.grab_model.handler.in_(self.self_handler_tags),
+                    grab_condition,
                 )
             )
-            .order_by(self.grab_this.table.c.id)
+            .order_by(self.grab_model.id)
         )
         if self.max_grab:
             subq = subq.limit(self.max_grab)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = (
-            self.grab_this.table.update()
-            .where(self.grab_this.table.c.id.in_(subq))
+            self.grab_model.table.update()
+            .where(self.grab_model.id.in_(subq))
             .values(handler=self.app.config.server_name)
         )
         if self._supports_returning:
-            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
+            self._grab_query = self._grab_query.returning(self.grab_model.id)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts["isolation_level"] = "SERIALIZABLE"
         log.info(
@@ -182,7 +193,9 @@ class ItemGrabber:
                     if self._supports_returning:
                         rows = proxy.fetchall()
                         if rows:
-                            log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                            log.debug(
+                                f"Grabbed {self.grab_model.__name__}(s): {', '.join(str(row[0]) for row in rows)}"
+                            )
                         else:
                             trans.rollback()
                 except OperationalError as e:
@@ -190,9 +203,19 @@ class ItemGrabber:
                     # and should have attribute `code`. Other engines should just report the message and move on.
                     if int(getattr(e.orig, "pgcode", -1)) != 40001:
                         log.debug(
-                            "Grabbing %s failed (serialization failures are ok): %s", self.grab_type, unicodify(e)
+                            "Grabbing %s failed (serialization failures are ok): %s",
+                            self.grab_model.__name__,
+                            unicodify(e),
                         )
                     trans.rollback()
+
+
+class InvocationGrabber(ItemGrabber):
+    grab_model = model.WorkflowInvocation
+
+
+class JobGrabber(ItemGrabber):
+    grab_model = model.Job
 
 
 class StopSignalException(Exception):
@@ -235,13 +258,12 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
         self.job_grabber = None
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = JobGrabber.get_grabbable_handler_assignment_method(
             self.app.job_config.handler_assignment_methods
         )
         if handler_assignment_method:
-            self.job_grabber = ItemGrabber(
+            self.job_grabber = JobGrabber(
                 app=app,
-                grab_type="Job",
                 handler_assignment_method=handler_assignment_method,
                 max_grab=self.app.job_config.handler_max_grab,
                 self_handler_tags=self.app.job_config.self_handler_tags,
@@ -272,9 +294,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the database and requeues or cleans up as necessary. Only run as the job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        stmt = self._build_check_jobs_at_startup_statement()
         with self.sa_session() as session:
-            for job in session.scalars(stmt):
+            for job in get_jobs_to_check_at_startup(session, self.track_jobs_in_database, self.app.config):
                 try:
                     self._check_job_at_startup(job)
                 except Exception:
@@ -319,22 +340,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             job_wrapper = self.__recover_job_wrapper(job)
             self.dispatcher.recover(job, job_wrapper)
         pass
-
-    def _build_check_jobs_at_startup_statement(self):
-        if self.track_jobs_in_database:
-            in_list = (model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.STOPPED)
-        else:
-            in_list = (model.Job.states.NEW, model.Job.states.QUEUED, model.Job.states.RUNNING)
-
-        stmt = (
-            select(model.Job)
-            .execution_options(yield_per=model.YIELD_PER_ROWS)
-            .filter(model.Job.state.in_(in_list) & (model.Job.handler == self.app.config.server_name))
-        )
-        if self.app.config.user_activation_on:
-            # Filter out the jobs of inactive users.
-            stmt = stmt.outerjoin(model.User).filter(or_((model.Job.user_id == null()), (model.User.active == true())))
-        return stmt
 
     def __recover_job_wrapper(self, job):
         # Already dispatched and running
@@ -398,6 +403,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the waiting queue. If the job has dependencies with errors, it is marked as having errors and removed from the
         queue. If the job belongs to an inactive user it is ignored.  Otherwise, the job is dispatched.
         """
+        check_database_connection(self.sa_session)
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         resubmit_jobs = []
@@ -784,7 +790,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
                 self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(
-                    f"input data {idata.hid} (file: {idata.file_name}) was deleted before the job started"
+                    f"input data {idata.hid} (file: {idata.get_file_name()}) was deleted before the job started"
                 )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
@@ -818,7 +824,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         rval = self.user_job_count.get(user_id, 0)
         if not self.app.config.cache_user_job_count:
             result = self.sa_session.execute(
-                select([func.count(model.Job.table.c.id)]).where(
+                select(func.count(model.Job.table.c.id)).where(
                     and_(
                         model.Job.table.c.state.in_(
                             (model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.RESUBMITTED)
@@ -837,7 +843,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         if self.user_job_count is None and self.app.config.cache_user_job_count:
             self.user_job_count = {}
             query = self.sa_session.execute(
-                select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)])
+                select(model.Job.table.c.user_id, func.count(model.Job.table.c.user_id))
                 .where(
                     and_(
                         model.Job.table.c.state.in_(
@@ -867,7 +873,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             rval.update(cached)
             result = self.sa_session.execute(
                 select(
-                    [model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")]
+                    model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
                 )
                 .where(
                     and_(
@@ -888,11 +894,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.user_job_count_per_destination = {}
             result = self.sa_session.execute(
                 select(
-                    [
-                        model.Job.table.c.user_id,
-                        model.Job.table.c.destination_id,
-                        func.count(model.Job.table.c.user_id).label("job_count"),
-                    ]
+                    model.Job.table.c.user_id,
+                    model.Job.table.c.destination_id,
+                    func.count(model.Job.table.c.user_id).label("job_count"),
                 )
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id)
@@ -988,7 +992,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.total_job_count_per_destination = {}
             result = self.sa_session.execute(
                 select(
-                    [model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")]
+                    model.Job.table.c.destination_id, func.count(model.Job.table.c.destination_id).label("job_count")
                 )
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.destination_id)

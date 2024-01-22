@@ -64,8 +64,6 @@ class PagesService(ServiceBase):
     ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
 
-        :param deleted: Display deleted pages
-
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
@@ -149,5 +147,5 @@ class PagesService(ServiceBase):
             document_type=PdfDocumentType.page,
             short_term_storage_request_id=request_id,
         )
-        result = prepare_pdf_download.delay(request=pdf_download_request)
+        result = prepare_pdf_download.delay(request=pdf_download_request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=request_id, task=async_task_summary(result))

@@ -72,9 +72,12 @@ def test_parsing_mothur() -> None:
 
 @dataclass
 class OutputDataset:
-    file_name: str
+    file_name_: str
     extra_files_path: str
     ext: str = "data_manager_json"
+
+    def get_file_name(self, sync_cache=True) -> str:
+        return self.file_name_
 
     def extra_files_path_exists(self) -> bool:
         return os.path.exists(self.extra_files_path)
