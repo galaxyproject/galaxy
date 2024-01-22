@@ -24,7 +24,7 @@ const emit = defineEmits(["select"]);
 <template>
     <div
         class="notification-card card-container"
-        :class="props.unreadBorder && !props.notification.seen_time ? 'border-dark' : ''">
+        :class="props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : ''">
         <BFormCheckbox
             v-if="props.selectable"
             class="notification-card-select"
@@ -48,13 +48,6 @@ const emit = defineEmits(["select"]);
 
     .notification-card-select {
         padding-top: 0.35rem;
-    }
-
-    .unread-status {
-        left: -1rem;
-        margin-right: 0.25rem;
-        color: $brand-primary;
-        align-self: center;
     }
 }
 </style>
