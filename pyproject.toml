@@ -59,7 +59,7 @@ dparse = "*"
 edam-ontology = "*"
 fastapi = ">=0.108"
 fs = "*"
-future = "*"
+future = { git = "https://github.com/nsoranzo/python-future.git", branch = "python312-imp-module_past" }
 galaxy_sequence_utils = "*"
 graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
 gravity = ">=1.0.4"
@@ -93,7 +93,7 @@ pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
 pysam = ">=0.21"  # for Python 3.11 support on macOS
-python = ">=3.8,<3.12"  # Keep maximum version strict to appease numpy and scipy
+python = ">=3.8,<3.13"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
