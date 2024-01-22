@@ -125,6 +125,7 @@ class FetchTools:
     @router.post(
         "/api/tools",
         summary="Execute tool with a given parameter payload",
+        route_class_override=JsonApiRoute,
     )
     def create_json(
         self,
@@ -140,6 +141,43 @@ class FetchTools:
         if tool_id is None and tool_uuid is None:
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
         return self.service.create(trans, payload.model_dump())
+
+    @router.post(
+        "/api/tools",
+        summary="Execute tool with a given parameter payload",
+        route_class_override=FormDataApiRoute,
+    )
+    async def create_form(
+        self,
+        request: Request,
+        payload: CreateToolPayload = Depends(CreateDataForm.as_form),
+        files: Optional[List[UploadFile]] = None,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ToolResponse:
+        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
+
+        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
+        if not files2:
+            data = await request.form()
+            for value in data.values():
+                if isinstance(value, StarletteUploadFile):
+                    files2.append(value)
+
+        tool_id = payload.tool_id
+        tool_uuid = payload.tool_uuid
+        if tool_id in PROTECTED_TOOLS:
+            raise HTTPException(
+                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        if tool_id is None and tool_uuid is None:
+            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
+
+        # create method expects a dict, not a pydantic model
+        create_payload = payload.model_dump()
+
+        for i, file in enumerate(files2):
+            create_payload[f"files_{i}|file_data"] = file
+        return self.service.create(trans, create_payload)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
