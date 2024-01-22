@@ -14,10 +14,10 @@ Workflow Updates
 **Workflow comments** are a brand new feature of the Galaxy Workflow Editor. They add a suite of tools to help you visually explain and structure your Workflows. Comments are saved on your workflow, so they can be shared with other workflow contributors, help guide workflow users, or just help you keep track of your work and sort your thoughts, while developing a workflow. They can also help you with teaching, live demos, and providing feedback on a workflow, all directly inside the workflow editor!
 
 .. figure:: images/23.2-wf-comments-1.png
-   :alt: TODO.
+   :alt: In the menu that pops up, when a comment is selected, it can be styled in multiple ways, making the whole text italic, bold, coloured, or larger/smaller.
 
 .. figure:: images/23.2-wf-comments-2.png
-   :alt: TODO.
+   :alt: Example of a structured workflow.
 
 Workflow comments tools are made available as part of the Editor Toolbar - a new UI element in the workflow editor. They include:
 
@@ -42,12 +42,12 @@ Workflow comments tools are made available as part of the Editor Toolbar - a new
 The **Published Workflow Sharing** page UI has been overhauled to make the page more informative, visually appealing, and easier to navigate. Some of the key improvements include adding a new read-only mode to the workflow editor, embedding an interactive view of the workflow editor, adding more information about the workflow, adding a run button, etc. The page is now responsive, which makes it usable on smaller screens.
 
 .. figure:: images/23.2-pub-wf-sharing.png
-   :alt: TODO.
+   :alt: The new Workflow Sharing page.
 
 **Workflow Publishing** now has a configurable iframe embed:
 
 .. figure:: images/23.2-wf-pub-iframe.png
-   :alt: TODO.
+   :alt: iframe embed with copy url button and options.
 
 **Workflow Reports**
 In response to user feedback and suggestions, a lot of work went into improving the page and workflow report editor options. Workflow image and license information have been added to Galaxy markdown capabilities. Workflow version is now included in the report; time is displayed in UTC time format. A variety of minor issues including invocation report and the job metrics markdown component have been fixed. To address requests to add citation information for the Galaxy instance on which the workflow has been executed, several new directives have been added to Galaxy Markdown: Galaxy URL, organization URL, citation URL, support URL, help URL, terms URL, and resources URL - alongside new configuration options to support them.
