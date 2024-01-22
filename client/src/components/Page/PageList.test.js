@@ -7,6 +7,7 @@ import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
 import { parseISO, formatDistanceToNow } from "date-fns";
+import { useUserStore } from "stores/userStore";
 
 jest.mock("app");
 
@@ -95,11 +96,24 @@ describe("PgeList.vue", () => {
     const mockPublishedPageData = [publishedPage];
     const mockTwoPageData = [privatePage, pageA];
 
-    function mountPersonalGrid() {
+    function mountGrid(propsData) {
+        const pinia = createTestingPinia();
+        const userStore = useUserStore();
+        userStore.currentUser = { username: "jimmyPage", tags_used: [] };
+
         wrapper = mount(PageList, {
-            propsData: propsDataPersonalGrid,
+            propsData,
             localVue,
+            pinia,
         });
+    }
+
+    function mountPersonalGrid() {
+        mountGrid(propsDataPersonalGrid);
+    }
+
+    function mountPublishedGrid() {
+        mountGrid(propsDataPublishedGrid);
     }
 
     describe(" with empty page list", () => {
@@ -135,11 +149,7 @@ describe("PgeList.vue", () => {
             jest.spyOn(PageList.methods, "decorateData").mockImplementation((page) => {
                 page.shared = false;
             });
-            wrapper = mount(PageList, {
-                propsData: propsDataPersonalGrid,
-                localVue,
-                pinia: createTestingPinia(),
-            });
+            mountPersonalGrid();
             await flushPromises();
         });
 
@@ -202,11 +212,7 @@ describe("PgeList.vue", () => {
             jest.spyOn(PageList.methods, "decorateData").mockImplementation((page) => {
                 page.shared = true;
             });
-            wrapper = mount(PageList, {
-                propsData: propsDataPersonalGrid,
-                localVue,
-                pinia: createTestingPinia(),
-            });
+            mountPersonalGrid();
             await flushPromises();
         });
         it("updates filter when published icon is clicked", async () => {
@@ -241,11 +247,7 @@ describe("PgeList.vue", () => {
             jest.spyOn(PageList.methods, "decorateData").mockImplementation((page) => {
                 page.shared = false;
             });
-            wrapper = mount(PageList, {
-                propsData: propsDataPublishedGrid,
-                localVue,
-                pinia: createTestingPinia(),
-            });
+            mountPublishedGrid();
             await flushPromises();
         });
 
@@ -282,11 +284,7 @@ describe("PgeList.vue", () => {
             jest.spyOn(PageList.methods, "decorateData").mockImplementation((page) => {
                 page.shared = false;
             });
-            wrapper = mount(PageList, {
-                propsData: propsDataPublishedGrid,
-                localVue,
-                pinia: createTestingPinia(),
-            });
+            mountPublishedGrid();
             await flushPromises();
         });
 
