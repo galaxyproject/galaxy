@@ -626,7 +626,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
                 self.history_manager.purge(history, flush=False, user=user)
                 success_item_count += 1
                 total_free_bytes += int(history.disk_size)
-            except BaseException as e:
+            except Exception as e:
                 errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
 
         if success_item_count:

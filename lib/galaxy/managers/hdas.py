@@ -419,7 +419,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                 dataset_ids_to_remove.add(hda.dataset.id)
                 success_item_count += 1
                 total_free_bytes += quota_amount
-            except BaseException as e:
+            except Exception as e:
                 errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
         if success_item_count:

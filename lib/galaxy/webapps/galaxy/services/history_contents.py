@@ -1348,7 +1348,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         try:
             self.item_operator.apply(operation, item, params, trans)
             return None
-        except BaseException as exc:
+        except Exception as exc:
             return BulkOperationItemError(
                 item=EncodedHistoryContentItem(id=item.id, history_content_type=item.history_content_type),
                 error=str(exc),
