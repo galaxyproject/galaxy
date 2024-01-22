@@ -29,15 +29,15 @@ Workflow comments tools are made available as part of the Editor Toolbar - a new
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/ndPeBov5O0s?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Workflow Comments - Placing Text Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/lAOvpGRxTk4?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Workflow Comments -  Placing Frame Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/ZvPUGcTFJYA?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Workflow Comments - Moving Frame Comments" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 The **Published Workflow Sharing** page UI has been overhauled to make the page more informative, visually appealing, and easier to navigate. Some of the key improvements include adding a new read-only mode to the workflow editor, embedding an interactive view of the workflow editor, adding more information about the workflow, adding a run button, etc. The page is now responsive, which makes it usable on smaller screens.
 
@@ -62,7 +62,7 @@ To import from InvenioRDM, you simply select the InvenioRDM repository as a remo
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/GzN6heU70j4?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Invenio - Importing Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 To export your data to InvenioRDM, you need to set up your InvenioRDM API personal token. You can create a new personal token in your InvenioRDM account settings if you don't have one. In Galaxy, you need to add that personal token to your account (go to *User > Preferences > Manage Information*).
 
@@ -71,21 +71,21 @@ Once you have set your personal token, you can publish your histories by selecti
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/Qoy-buGb26Y?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Invenio - Exporting Histories" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 **Archiving your Histories**
 When you are completely happy with your history, you can archive it, taking it out of your active histories and freeing up some disk quota. You can do so by selecting the *Archive History* menu option. The process will be similar to exporting a history; however, your history will be purged from Galaxy once the process is completed. You will be able to import the history as a copy from the published record at any time.
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/CNXQphjW6LE?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Invenio - Archiving Histories" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 **Exporting your Datasets**
 You can also publish individual datasets to InvenioRDM by selecting the InvenioRDM repository as a remote file source using the *Export Datasets* tool. Since the tool interface is a bit limited, you will need to create your draft record manually in advance, and then you can select it when exporting the datasets.
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen alt="TODO."></iframe>
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/t3baif6JFfA?list=PLNFLKDpdM3B9x3rZTeUfAu9mXkMe4bIPI" title="Galaxy 23.2 - Invenio - Exporting Datasets" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Miscellaneous Improvements
 --------------------------
