@@ -163,16 +163,17 @@ class ShedToolDataTableManager:
         if os.path.exists(tool_data_table_conf_filename):
             tree, error_message = xml_util.parse_xml(tool_data_table_conf_filename)
             if tree:
-                for elem in tree.getroot():
-                    # Append individual table elems or other elemes, but not tables elems.
-                    if elem.tag == "tables":
-                        # TODO: this code need to be revised
-                        for _table_elem in elems:
-                            elems.append(elem)
-                    else:
-                        elems.append(elem)
+                root = tree.getroot()
+                if root.tag == "tables":
+                    elems = list(root)
+                else:
+                    log.warning(
+                        "The '%s' data table file has '%s' instead of <tables> as root element, skipping.",
+                        tool_data_table_conf_filename,
+                        root.tag,
+                    )
         else:
-            log.debug(
+            log.warning(
                 "The '%s' data table file was not found, but was expected to be copied from '%s' during repository installation.",
                 tool_data_table_conf_filename,
                 TOOL_DATA_TABLE_FILE_SAMPLE_NAME,
