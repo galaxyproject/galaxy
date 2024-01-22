@@ -1603,7 +1603,7 @@ export interface paths {
     };
     "/api/tools": {
         /** Execute tool with a given parameter payload */
-        post: operations["create_api_tools_post"];
+        post: operations["create_form_api_tools_post"];
     };
     "/api/tools/fetch": {
         /** Upload files to Galaxy */
@@ -2536,6 +2536,42 @@ export interface components {
             history_id?: Record<string, never>;
             /** Name */
             name?: Record<string, never>;
+        };
+        /** Body_create_form_api_tools_post */
+        Body_create_form_api_tools_post: {
+            /** Action */
+            action?: Record<string, never>;
+            /** Data Manager Mode */
+            data_manager_mode?: Record<string, never>;
+            /** Files */
+            files?: string[] | null;
+            /** History Id */
+            history_id?: Record<string, never>;
+            /**
+             * Input Format
+             * @default legacy
+             */
+            input_format?: Record<string, never>;
+            /**
+             * Inputs
+             * @default {}
+             */
+            inputs?: Record<string, never>;
+            /** Preferred Object Store Id */
+            preferred_object_store_id?: Record<string, never>;
+            /** Send Email Notification */
+            send_email_notification?: Record<string, never>;
+            /** Tool Id */
+            tool_id?: Record<string, never>;
+            /** Tool Uuid */
+            tool_uuid?: Record<string, never>;
+            /** Tool Version */
+            tool_version?: Record<string, never>;
+            /**
+             * Use Cached Job
+             * @default false
+             */
+            use_cached_job?: Record<string, never>;
         };
         /** Body_fetch_form_api_tools_fetch_post */
         Body_fetch_form_api_tools_fetch_post: {
@@ -11850,7 +11886,11 @@ export interface components {
              * @description The jobs of the tool.
              * @default []
              */
-            jobs?: Record<string, never>[];
+            jobs?: (
+                | components["schemas"]["ShowFullJobResponse"]
+                | components["schemas"]["EncodedJobDetails"]
+                | components["schemas"]["JobSummary"]
+            )[];
             /**
              * Output Collections
              * @description The output dataset collections of the tool.
@@ -19994,7 +20034,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ToolResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22085,7 +22125,7 @@ export interface operations {
             };
         };
     };
-    create_api_tools_post: {
+    create_form_api_tools_post: {
         /** Execute tool with a given parameter payload */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -22093,9 +22133,9 @@ export interface operations {
                 "run-as"?: string | null;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
-                "application/json": components["schemas"]["CreateToolPayload"];
+                "multipart/form-data": components["schemas"]["Body_create_form_api_tools_post"];
             };
         };
         responses: {
