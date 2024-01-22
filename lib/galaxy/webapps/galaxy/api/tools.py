@@ -176,7 +176,7 @@ class FetchTools:
         create_payload = payload.model_dump()
 
         for i, file in enumerate(files2):
-            create_payload[f"files_{i}|file_data"] = file
+            create_payload[f"files_{i}|file_data"] = file.file
         return self.service.create(trans, create_payload)
 
 
