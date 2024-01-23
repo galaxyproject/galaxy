@@ -64,7 +64,8 @@ def check_for_updates(
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)
     else:
-        repository = install_model_context.get(ToolShedRepository, repository_id)
+        repository = install_model_context.get(ToolShedRepository, repository_id)  # type:ignore[assignment]
+        assert repository
         ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
             tool_shed_registry, install_model_context, repository
         )
