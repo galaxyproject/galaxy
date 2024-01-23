@@ -4706,12 +4706,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 ).values()
             )
         )
+        return self.attach_implicitly_converted_dataset(trans.sa_session, new_dataset, target_ext)
+
+    def attach_implicitly_converted_dataset(self, session, new_dataset, target_ext: str):
         new_dataset.name = self.name
         self.copy_attributes(new_dataset)
         assoc = ImplicitlyConvertedDatasetAssociation(
             parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False
         )
-        session = trans.sa_session
         session.add(new_dataset)
         session.add(assoc)
         with transaction(session):
@@ -6048,7 +6050,7 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
         return True  # always allow inheriting, used for replacement
 
 
-class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
+class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
     __tablename__ = "implicitly_converted_dataset_association"
 
     id = Column(Integer, primary_key=True)
@@ -6086,7 +6088,15 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
     )
 
     def __init__(
-        self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True
+        self,
+        id=None,
+        parent=None,
+        dataset=None,
+        file_type=None,
+        deleted=False,
+        purged=False,
+        metadata_safe=True,
+        for_import=False,
     ):
         self.id = id
         add_object_to_object_session(self, dataset)
@@ -6094,14 +6104,18 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.dataset_ldda = dataset
-        else:
+        elif not for_import:
             raise AttributeError(f"Unknown dataset type provided for dataset: {type(dataset)}")
+            # else if for import - these connections might not have been included in the store,
+            # recover the data we can?
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
-        else:
+        elif not for_import:
             raise AttributeError(f"Unknown dataset type provided for parent: {type(parent)}")
+            # else if for import - these connections might not have been included in the store,
+            # recover the data we can?
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
@@ -6120,6 +6134,18 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
                 os.unlink(self.get_file_name())
             except Exception as e:
                 log.error(f"Failed to purge associated file ({self.get_file_name()}) from disk: {unicodify(e)}")
+
+    def _serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            file_type=self.type,
+        )
+        if self.parent_hda:
+            rval["parent_hda"] = serialization_options.get_identifier(id_encoder, self.parent_hda)
+        if self.dataset:
+            rval["hda"] = serialization_options.get_identifier(id_encoder, self.dataset)
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
