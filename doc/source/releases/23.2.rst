@@ -14,6 +14,9 @@ Enhancements
 
 .. feature
 
+* Initial release notes  for 23.2
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 17259`_
 * Make form repeat blocks reorderable
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 14892`_
@@ -135,6 +138,9 @@ Enhancements
   `Pull Request 16345`_
 .. enhancement_tag_jobs
 
+* Enable job resubmissions in k8s runner
+  (thanks to `@pcm32 <https://github.com/pcm32>`__).
+  `Pull Request 15238`_
 * Towards SQLAlchemy 2.0 (upgrades to SQLAlchemy Core usage)
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16264`_
@@ -154,6 +160,9 @@ Enhancements
   `Pull Request 17178`_
 .. enhancement
 
+* Improve embed performance
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17326`_
 * Add parameter name to validation errors
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 15440`_
@@ -554,6 +563,9 @@ Fixes
   `Pull Request 17233`_
 .. bug_tag_tools
 
+* Add back 1.1.0 version of Filtering1 tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16883`_
 * Add missing requirements to perl tools
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16763`_
@@ -571,6 +583,9 @@ Fixes
   `Pull Request 17036`_
 .. bug_tag_workflows
 
+* Fix ``to_cwl`` for nested collections
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17276`_
 * Fix workflow output display without label
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16749`_
@@ -629,6 +644,12 @@ Fixes
   `Pull Request 17104`_
 .. bug_tag_jobs
 
+* Rollback invalidated transaction
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17280`_
+* Rollback invalidated transaction: catch them earlier
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17312`_
 * Ensure Job belongs to current SQLAlchemy session
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16647`_
@@ -666,6 +687,30 @@ Fixes
   `Pull Request 17055`_
 .. bug
 
+* Remove duplicates when copying sections for tool panel view
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17117`_
+* Tagging component performance improvements
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17253`_
+* Always copy datasets in collection builder modals
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17268`_
+* Install newer celery on python 3.8+
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17309`_
+* Backport Rollback invalidated transaction: catch them earlier
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17315`_
+* Discard SQLAlchemy session after task completion
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17317`_
+* Scope session for job  runner monitor loop
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17319`_
+* Fix subworkflow edit button
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17330`_
 * Disable verbose parso logging in db_shell.py
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16410`_

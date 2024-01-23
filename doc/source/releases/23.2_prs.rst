@@ -1,5 +1,21 @@
 
 .. github_links
+.. _Pull Request 15238: https://github.com/galaxyproject/galaxy/pull/15238
+.. _Pull Request 16883: https://github.com/galaxyproject/galaxy/pull/16883
+.. _Pull Request 17117: https://github.com/galaxyproject/galaxy/pull/17117
+.. _Pull Request 17253: https://github.com/galaxyproject/galaxy/pull/17253
+.. _Pull Request 17259: https://github.com/galaxyproject/galaxy/pull/17259
+.. _Pull Request 17268: https://github.com/galaxyproject/galaxy/pull/17268
+.. _Pull Request 17276: https://github.com/galaxyproject/galaxy/pull/17276
+.. _Pull Request 17280: https://github.com/galaxyproject/galaxy/pull/17280
+.. _Pull Request 17309: https://github.com/galaxyproject/galaxy/pull/17309
+.. _Pull Request 17312: https://github.com/galaxyproject/galaxy/pull/17312
+.. _Pull Request 17315: https://github.com/galaxyproject/galaxy/pull/17315
+.. _Pull Request 17317: https://github.com/galaxyproject/galaxy/pull/17317
+.. _Pull Request 17319: https://github.com/galaxyproject/galaxy/pull/17319
+.. _Pull Request 17323: https://github.com/galaxyproject/galaxy/pull/17323
+.. _Pull Request 17326: https://github.com/galaxyproject/galaxy/pull/17326
+.. _Pull Request 17330: https://github.com/galaxyproject/galaxy/pull/17330
 .. _Pull Request 14892: https://github.com/galaxyproject/galaxy/pull/14892
 .. _Pull Request 14955: https://github.com/galaxyproject/galaxy/pull/14955
 .. _Pull Request 15000: https://github.com/galaxyproject/galaxy/pull/15000
