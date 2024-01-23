@@ -363,7 +363,7 @@ class FastZipFile(zipfile.ZipFile):
 
     def _open_to_write(self, *args, **kwargs):  # type: ignore[no-untyped-def]
         zwf = super()._open_to_write(*args, **kwargs)  # type: ignore[misc]
-        if isal_zlib:
+        if isal_zlib and self.compression == zipfile.ZIP_DEFLATED:
             zwf._compressor = isal_zlib.compressobj(isal_zlib.ISAL_DEFAULT_COMPRESSION, isal_zlib.DEFLATED, -15, 9)
         return zwf
 
