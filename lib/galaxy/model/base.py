@@ -201,7 +201,9 @@ def ensure_object_added_to_session(object_to_add, *, object_in_session=None, ses
     if session:
         session.add(object_to_add)
         return True
-    if object_in_session and object_session(object_in_session):
-        object_session(object_in_session).add(object_to_add)
-        return True
+    if object_in_session:
+        session = object_session(object_in_session)
+        if session:
+            session.add(object_to_add)
+            return True
     return False
