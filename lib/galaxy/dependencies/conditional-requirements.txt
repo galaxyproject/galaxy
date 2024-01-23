@@ -37,6 +37,9 @@ chronos-python==1.2.1
 # Kubernetes job runner
 pykube-ng==21.3.0
 
+# ARC job runner
+pyarcrest==0.3
+
 # Synnefo / Pithos+ object store client
 kamaki
 
