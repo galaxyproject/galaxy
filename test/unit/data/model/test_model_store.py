@@ -607,9 +607,7 @@ def test_import_export_edit_collection():
     sa_session.add(hc1)
     sa_session.add(h)
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(import_history)
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
@@ -682,9 +680,7 @@ def test_import_export_composite_datasets():
 
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
     d1.dataset.create_extra_files_path()
-    sa_session.add_all((h, d1))
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(h, d1)
 
     primary = NamedTemporaryFile("w")
     primary.write("cool primary file")
@@ -709,9 +705,7 @@ def test_import_export_composite_datasets():
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(import_history)
     _perform_import_from_directory(temp_directory, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
@@ -734,9 +728,7 @@ def test_edit_metadata_files():
     h = model.History(name="Test History", user=u)
 
     d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
-    sa_session.add_all((h, d1))
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(h, d1)
     index = NamedTemporaryFile("w")
     index.write("cool bam index")
     metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
@@ -751,9 +743,7 @@ def test_edit_metadata_files():
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(import_history)
     _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
@@ -790,12 +780,8 @@ def _setup_simple_export(export_kwds):
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
 
-    sa_session = app.model.context
-
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(import_history)
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:
@@ -843,9 +829,7 @@ def _setup_simple_cat_job(app, state="ok"):
     j.add_input_dataset("input1", d1)
     j.add_output_dataset("out_file1", d2)
 
-    sa_session.add_all((d1, d2, h, j))
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(d1, d2, h, j)
 
     app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
     app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
@@ -880,9 +864,7 @@ def _setup_invocation(app):
     workflow_invocation.add_input(d1, step=workflow_step_1)
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, d2)
-    sa_session.add(workflow_invocation)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(workflow_invocation)
     return workflow_invocation
 
 
@@ -928,8 +910,7 @@ def _setup_simple_collection_job(app, state="ok"):
     sa_session.add(hc2)
     sa_session.add(hc3)
     sa_session.add(j)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
 
     return u, h, c1, c2, c3, hc1, hc2, hc3, j
 
@@ -955,9 +936,7 @@ def _setup_collection_invocation(app):
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
 
-    sa_session.add(workflow_invocation)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.add_and_commit(workflow_invocation)
     return workflow_invocation
 
 
@@ -1036,15 +1015,17 @@ class MockWorkflowContentsManager:
         workflow = model.Workflow()
         workflow.steps = [workflow_step_1]
         stored_workflow.latest_workflow = workflow
-        sa_session = app.model.context
-        sa_session.add_all((stored_workflow, workflow))
-        with transaction(sa_session):
-            sa_session.commit()
+        app.add_and_commit(stored_workflow, workflow)
         return workflow
 
 
 class TestApp(GalaxyDataTestApp):
     workflow_contents_manager = MockWorkflowContentsManager()
+
+    def add_and_commit(self, *objs):
+        session = self.model.session
+        session.add_all(objs)
+        self.commit()
 
     def commit(self):
         session = self.model.session
