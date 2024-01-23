@@ -73,9 +73,7 @@ def test_import_export_history_hidden_false_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    session = app.model.session
-    with transaction(session):
-        session.commit()
+    app.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -87,9 +85,7 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    session = app.model.session
-    with transaction(session):
-        session.commit()
+    app.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -251,8 +247,7 @@ def test_import_library_require_permissions():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
@@ -280,8 +275,7 @@ def test_import_export_library():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
 
     subfolder = model.LibraryFolder(name="sub folder 1", description="sub folder")
     root_folder.add_folder(subfolder)
@@ -295,8 +289,7 @@ def test_import_export_library():
     sa_session.add(ld)
     sa_session.add(ldda)
 
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
@@ -338,8 +331,7 @@ def test_import_export_invocation():
     sa_session = app.model.context
     h2 = model.History(user=workflow_invocation.user)
     sa_session.add(h2)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
 
     import_model_store = store.get_import_model_store_for_directory(
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
@@ -1054,6 +1046,11 @@ class MockWorkflowContentsManager:
 class TestApp(GalaxyDataTestApp):
     workflow_contents_manager = MockWorkflowContentsManager()
 
+    def commit(self):
+        session = self.model.session
+        with transaction(session):
+            session.commit()
+
 
 def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
     app = TestApp()
@@ -1091,8 +1088,7 @@ def setup_fixture_context_with_history(
     app, sa_session, user = setup_fixture_context_with_user(**kwd)
     history = model.History(name=history_name, user=user)
     sa_session.add(history)
-    with transaction(sa_session):
-        sa_session.commit()
+    app.commit()
     return StoreFixtureContextWithHistory(app, sa_session, user, history)
 
 
