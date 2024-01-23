@@ -1101,10 +1101,7 @@ class ToolDataTableManager(Dictifiable):
         except Exception as e:
             out_elems = []
             log.debug("Could not parse existing tool data table config, assume no existing elements: %s", e)
-        for elem in remove_elems:
-            # handle multiple occurrences of remove elem in existing elems
-            while elem in out_elems:
-                remove_elems.remove(elem)
+        out_elems = [elem for elem in out_elems if elem not in remove_elems]
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
