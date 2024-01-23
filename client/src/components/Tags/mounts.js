@@ -4,7 +4,6 @@
  */
 
 import { mountVueComponent } from "utils/mountVueComponent";
-import { redirectToUrl } from "utils/redirect";
 
 import { BackboneTagService } from "./backboneTagService";
 import Tags from "./Tags";
@@ -41,21 +40,7 @@ const makoClickHandler = (options, vm) =>
             return;
         }
 
-        const { tagClickFn = "none", clickUrl } = options;
-
-        switch (tagClickFn) {
-            case "community_tag_click":
-                if (undefined !== clickUrl) {
-                    const suffix = tag.value ? `:${tag.value}` : "";
-                    const href = `${clickUrl}?f-tags=${tag.text}${suffix}`;
-                    redirectToUrl(href);
-                }
-                break;
-
-            case "add_tag_to_grid_filter":
-                vm.$store.dispatch("toggleSearchTag", tag);
-                break;
-        }
+        console.error("MAKO Tag click handler deprecated");
     };
 
 /**

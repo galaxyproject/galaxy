@@ -9,7 +9,6 @@ import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 
-import { gridSearchStore } from "./gridSearchStore";
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 import { tagStore } from "./tagStore";
 
@@ -38,7 +37,6 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            gridSearch: gridSearchStore,
             tags: tagStore,
         },
     };
