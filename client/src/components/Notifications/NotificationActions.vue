@@ -75,7 +75,9 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 
 <style scoped lang="scss">
 .notification-actions {
-    margin-left: auto;
+    @container notification-content (max-width: 576px) {
+        grid-row: 3;
+    }
 
     .notification-actions-body {
         display: flex;

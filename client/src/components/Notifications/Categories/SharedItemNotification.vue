@@ -34,6 +34,7 @@ const sharedItemType = computed(() => {
         return "Item";
     }
 });
+
 const notificationVariant = computed(() => {
     switch (props.notification.variant) {
         case "urgent":
@@ -53,60 +54,37 @@ function markNotificationAsSeen() {
 </script>
 
 <template>
-    <div class="shared-item-notification">
-        <div class="shared-item-notification-header">
-            <div
-                :class="!props.notification.seen_time ? 'font-weight-bold' : ''"
-                class="shared-item-notification-title">
-                <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="retweet" />
-                {{ sharedItemType }} shared with you by <em>{{ content.owner_name }}</em>
+    <div class="notification-container">
+        <div class="notification-header">
+            <div :class="!props.notification.seen_time ? 'font-weight-bold' : ''" class="notification-title">
+                <FontAwesomeIcon :class="`text-${notificationVariant}`" :icon="faRetweet" fixed-width size="sm" />
+                {{ sharedItemType }}
+                shared with you by <em>{{ content.owner_name }}</em>
             </div>
-
-            <NotificationActions :notification="notification" />
         </div>
 
-        <div>
-            <p id="notification-message" class="m-0">
-                <span>The user</span>
-                <b>{{ content.owner_name }}</b>
-                <span>shared </span>
-                <BLink
-                    v-b-tooltip.bottom
-                    :title="`View ${content.item_type} in new tab`"
-                    class="text-primary"
-                    :href="sharedItemUrl"
-                    target="_blank"
-                    @click="markNotificationAsSeen()">
-                    {{ content.item_name }}
-                    <FontAwesomeIcon icon="external-link-alt" />
-                </BLink>
-                <em>{{ content.item_type }}</em>
-                <span> with you.</span>
-            </p>
-        </div>
+        <NotificationActions class="notification-actions" :notification="notification" />
+
+        <p id="notification-message" class="notification-message">
+            <span>The user</span>
+            <b>{{ content.owner_name }}</b>
+            <span>shared </span>
+            <BLink
+                v-b-tooltip.bottom
+                :title="`View ${content.item_type} in new tab`"
+                class="text-primary"
+                :href="sharedItemUrl"
+                target="_blank"
+                @click="markNotificationAsSeen()">
+                {{ content.item_name }}
+                <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
+            </BLink>
+            <em>{{ content.item_type }}</em>
+            <span> with you.</span>
+        </p>
     </div>
 </template>
 
 <style scoped lang="scss">
-.shared-item-notification {
-    container: shared-item-notification / inline-size;
-
-    width: 100%;
-    flex-grow: 1;
-
-    .shared-item-notification-title {
-        font-size: 1rem;
-    }
-
-    @container shared-item-notification (min-width: 576px) {
-        .shared-item-notification-header {
-            display: flex;
-            align-items: center;
-
-            .shared-item-notification-title {
-                font-size: 1.25rem;
-            }
-        }
-    }
-}
+@import "style.scss";
 </style>

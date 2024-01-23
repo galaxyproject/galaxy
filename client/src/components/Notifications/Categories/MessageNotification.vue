@@ -40,47 +40,26 @@ const notificationVariant = computed(() => {
 </script>
 
 <template>
-    <div class="message-notification">
-        <div class="message-notification-header">
-            <div
-                :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''"
-                class="message-notification-title">
-                <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" fixed-width size="sm" />
+    <div class="notification-container">
+        <div class="notification-header">
+            <div :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''" class="notification-title">
+                <FontAwesomeIcon :class="`text-${notificationVariant}`" :icon="faInbox" fixed-width size="sm" />
                 {{ props.options.notification?.content?.subject }}
             </div>
-
-            <NotificationActions v-if="!props.options.previewMode" :notification="props.options.notification" />
         </div>
 
-        <div>
-            <span id="notification-message" v-html="renderMarkdown(props.options.notification.content.message)" />
-        </div>
+        <NotificationActions
+            v-if="!props.options.previewMode"
+            class="notification-actions"
+            :notification="props.options.notification" />
+
+        <span
+            id="notification-message"
+            class="notification-message"
+            v-html="renderMarkdown(props.options.notification.content.message)" />
     </div>
 </template>
 
 <style scoped lang="scss">
-.message-notification {
-    container: message-notification / inline-size;
-
-    width: 100%;
-    flex-grow: 1;
-
-    .message-notification-title {
-        font-size: 1rem;
-        display: flex;
-        gap: 0.2rem;
-        align-items: center;
-    }
-
-    @container message-notification (min-width: 576px) {
-        .message-notification-header {
-            display: flex;
-            align-items: center;
-
-            .message-notification-title {
-                font-size: 1.25rem;
-            }
-        }
-    }
-}
+@import "style.scss";
 </style>
