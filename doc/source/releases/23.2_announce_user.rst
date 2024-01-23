@@ -172,6 +172,9 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Add back 1.1.0 version of Filtering1 tool
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16883`_
 * Update cellxgene interactive tool to 1.1.1
   (thanks to `@pcm32 <https://github.com/pcm32>`__).
   `Pull Request 15313`_
