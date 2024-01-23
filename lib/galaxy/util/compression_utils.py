@@ -34,7 +34,7 @@ from .checkers import (
 try:
     from isal import isal_zlib
 except ImportError:
-    isal_zlib = None  # type: ignore[assignment]
+    isal_zlib = None  # type: ignore[assignment,unused-ignore]
 
 
 log = logging.getLogger(__name__)
