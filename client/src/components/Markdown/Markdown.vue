@@ -70,7 +70,6 @@ import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { mapActions } from "pinia";
-import store from "store";
 import Vue from "vue";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -96,7 +95,6 @@ Vue.use(BootstrapVue);
 library.add(faDownload, faEdit);
 
 export default {
-    store: store,
     components: {
         MarkdownContainer,
         FontAwesomeIcon,
