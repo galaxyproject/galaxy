@@ -175,6 +175,36 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(4)
 
     @selenium_test
+    def test_upload_modal_retains_content(self):
+        self.home()
+
+        # initialize 2 uploads and close modal
+        self.upload_start_click()
+        self.upload_queue_local_file(self.get_filename("1.sam"))
+        self.upload_paste_data("some pasted data")
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # reopen modal and check that the files are still there
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-init")
+        self.wait_for_selector_visible("#upload-row-1.upload-init")
+
+        # perform upload and close modal
+        self.upload_start()
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # add another pasted file, but don't upload it
+        self.upload_start_click()
+        self.upload_paste_data("some more pasted data")
+        self.wait_for_and_click_selector("button#btn-close")
+
+        # reopen modal and see 2 uploaded, 1 yet to upload
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-success")
+        self.wait_for_selector_visible("#upload-row-1.upload-success")
+        self.wait_for_selector_visible("#upload-row-2.upload-init")
+
+    @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_1_datasets(self):
