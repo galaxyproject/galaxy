@@ -113,7 +113,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.orm.attributes import flag_modified
-from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.sql import exists
 from typing_extensions import (
     Literal,
@@ -775,7 +775,7 @@ class User(Base, Dictifiable, RepresentById):
         collection_class=ordering_list("order_index"),
     )
     _preferences: Mapped[List["UserPreference"]] = relationship(
-        "UserPreference", collection_class=attribute_mapped_collection("name")
+        "UserPreference", collection_class=attribute_keyed_dict("name")
     )
     values: Mapped[List["FormValues"]] = relationship(
         "FormValues", primaryjoin=(lambda: User.form_values_id == FormValues.id)  # type: ignore[has-type]
