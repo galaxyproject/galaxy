@@ -339,7 +339,6 @@ export default Backbone.View.extend({
         // Remove filter condition.
         this.grid.remove_filter(name, value);
 
-
         // Execute
         this.go_page_one();
         this.execute();
