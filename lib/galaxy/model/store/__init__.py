@@ -2758,7 +2758,7 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        rval = shutil.make_archive(out_file, "zip", self.export_directory)
+        rval = shutil.make_archive(out_file, "fastzip", self.export_directory)
         if not self.file_source_uri:
             shutil.move(rval, self.out_file)
         else:
