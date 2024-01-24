@@ -40,7 +40,7 @@ class AccessibleManagerMixin:
         # override in subclasses
         raise exceptions.NotImplemented("Abstract interface Method")
 
-    def get_accessible(self, id: int, user: model.User, **kwargs: Any) -> "Query":
+    def get_accessible(self, id: int, user: model.User, **kwargs: Any):
         """
         Return the item with the given id if it's accessible to user,
         otherwise raise an error.
