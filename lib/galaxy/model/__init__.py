@@ -307,7 +307,6 @@ def set_datatypes_registry(d_registry):
 class HasTags:
     dict_collection_visible_keys = ["tags"]
     dict_element_visible_keys = ["tags"]
-    tags: Mapped[List["ItemTagAssociation"]]
 
     def to_dict(self, *args, **kwargs):
         rval = super().to_dict(*args, **kwargs)
