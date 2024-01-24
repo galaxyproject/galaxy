@@ -10,7 +10,6 @@ import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
-import { tagStore } from "./tagStore";
 
 Vue.use(Vuex);
 
@@ -36,9 +35,6 @@ const panelsPersistence = new VuexPersistence({
 export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
-        modules: {
-            tags: tagStore,
-        },
     };
 
     // Watches for changes in Galaxy and sets those values on Vuex until Galaxy is gone
