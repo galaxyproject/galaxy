@@ -7,7 +7,6 @@
 
 import { getGalaxyInstance } from "app";
 import { storeToRefs } from "pinia";
-import defaultStore from "store/index";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getCurrentHistoryFromServer } from "stores/services/history.services";
@@ -42,7 +41,7 @@ function setVisibilityThrottle() {
     }
 }
 
-export async function watchHistoryOnce(store) {
+export async function watchHistoryOnce() {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
@@ -97,7 +96,7 @@ export async function watchHistoryOnce(store) {
     }
 }
 
-export async function watchHistory(store = defaultStore) {
+export async function watchHistory() {
     const { isWatching } = storeToRefs(useHistoryItemsStore());
     // Only set up visibility listeners once, whenever a watch is first started
     if (watchingVisibility === false) {
@@ -106,7 +105,7 @@ export async function watchHistory(store = defaultStore) {
         document.addEventListener("visibilitychange", setVisibilityThrottle);
     }
     try {
-        await watchHistoryOnce(store);
+        await watchHistoryOnce();
     } catch (error) {
         // error alerting the user that watch history failed
         console.warn(error);
@@ -114,7 +113,7 @@ export async function watchHistory(store = defaultStore) {
         isWatching.value = watchingVisibility;
     } finally {
         watchTimeout = setTimeout(() => {
-            watchHistory(store);
+            watchHistory();
         }, throttlePeriod);
     }
 }

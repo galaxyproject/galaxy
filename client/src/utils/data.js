@@ -19,7 +19,7 @@ import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectio
 export async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
-        // TODO: use central store (vuex) for this.
+        // TODO: use central store for this.
         return galaxy.currHistoryPanel.model.id;
     } else {
         // Otherwise manually fetch the current history json and use that id.
