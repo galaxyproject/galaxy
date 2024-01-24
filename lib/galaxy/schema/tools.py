@@ -24,7 +24,7 @@ from galaxy.schema.schema import (
 )
 
 
-class CreateToolPayload(Model):
+class ExecuteToolPayload(Model):
     tool_id: Optional[Any] = Field(
         default=None,
         title="Tool ID",

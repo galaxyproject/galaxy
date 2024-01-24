@@ -12,7 +12,6 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
-    HTTPException,
     Request,
     UploadFile,
 )
@@ -34,7 +33,7 @@ from galaxy.schema.fetch_data import (
     FetchDataPayload,
 )
 from galaxy.schema.tools import (
-    CreateToolPayload,
+    ExecuteToolPayload,
     ToolResponse,
 )
 from galaxy.tools.evaluation import global_tool_errors
@@ -59,14 +58,11 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
-PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
 CreateToolBody = Annotated[
-    CreateToolPayload,
+    ExecuteToolPayload,
     Body(
         default=...,
         title="",
@@ -87,7 +83,7 @@ router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
-CreateDataForm = as_form(CreateToolPayload)
+CreateDataForm = as_form(ExecuteToolPayload)
 
 
 @router.cbv
@@ -127,30 +123,22 @@ class FetchTools:
         summary="Execute tool with a given parameter payload",
         route_class_override=JsonApiRoute,
     )
-    def create_json(
+    def execute_json(
         self,
         payload: CreateToolBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ToolResponse:
-        tool_id = payload.tool_id
-        tool_uuid = payload.tool_uuid
-        if tool_id in PROTECTED_TOOLS:
-            raise HTTPException(
-                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
-        if tool_id is None and tool_uuid is None:
-            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
-        return self.service.create(trans, payload.model_dump())
+        return self.service.execute(trans, payload)
 
     @router.post(
         "/api/tools",
         summary="Execute tool with a given parameter payload",
         route_class_override=FormDataApiRoute,
     )
-    async def create_form(
+    async def execute_form(
         self,
         request: Request,
-        payload: CreateToolPayload = Depends(CreateDataForm.as_form),
+        payload: ExecuteToolPayload = Depends(CreateDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ToolResponse:
@@ -162,22 +150,7 @@ class FetchTools:
             for value in data.values():
                 if isinstance(value, StarletteUploadFile):
                     files2.append(value)
-
-        tool_id = payload.tool_id
-        tool_uuid = payload.tool_uuid
-        if tool_id in PROTECTED_TOOLS:
-            raise HTTPException(
-                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
-        if tool_id is None and tool_uuid is None:
-            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
-
-        # create method expects a dict, not a pydantic model
-        create_payload = payload.model_dump()
-
-        for i, file in enumerate(files2):
-            create_payload[f"files_{i}|file_data"] = file.file
-        return self.service.create(trans, create_payload)
+        return self.service.execute(trans, payload, files2)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):

@@ -10,6 +10,7 @@ from typing import (
     Union,
 )
 
+from fastapi import HTTPException
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -33,7 +34,10 @@ from galaxy.schema.fetch_data import (
     FetchDataPayload,
     FilesPayload,
 )
-from galaxy.schema.tools import ToolResponse
+from galaxy.schema.tools import (
+    ExecuteToolPayload,
+    ToolResponse,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
@@ -41,6 +45,10 @@ from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_ta
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
 
 
 class ToolsService(ServiceBase):
@@ -56,6 +64,19 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def create_temp_file(self, trans, files) -> Dict[str, FilesPayload]:
+        files_payload = {}
+        for i, upload_file in enumerate(files):
+            with tempfile.NamedTemporaryFile(
+                dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+            ) as dest:
+                shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+            upload_file.file.close()
+            files_payload[f"files_{i}|file_data"] = FilesPayload(
+                filename=upload_file.filename, local_filename=dest.name
+            )
+        return files_payload
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
@@ -68,16 +89,7 @@ class ToolsService(ServiceBase):
         clean_payload = {}
         files_payload = {}
         if files:
-            for i, upload_file in enumerate(files):
-                with tempfile.NamedTemporaryFile(
-                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-                ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
-                    util.umask_fix_perms(dest.name, trans.app.config.umask, 0o0666)
-                upload_file.file.close()
-                files_payload[f"files_{i}|file_data"] = FilesPayload(
-                    filename=upload_file.filename, local_filename=dest.name
-                )
+            files_payload = self.create_temp_file(trans, files)
         for key, value in payload.items():
             if key == "key":
                 continue
@@ -98,6 +110,26 @@ class ToolsService(ServiceBase):
             },
         }
         create_payload.update(files_payload)
+        return self.create(trans, create_payload)
+
+    def execute(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: ExecuteToolPayload,
+        files: Optional[List[UploadFile]] = None,
+    ) -> ToolResponse:
+        tool_id = payload.tool_id
+        tool_uuid = payload.tool_uuid
+        if tool_id in PROTECTED_TOOLS:
+            raise HTTPException(
+                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        if tool_id is None and tool_uuid is None:
+            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
+
+        create_payload = payload.model_dump()
+        if files:
+            create_payload.update(self.create_temp_file(trans, files))
         return self.create(trans, create_payload)
 
     def create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
