@@ -20,10 +20,7 @@ from sqlalchemy import (
     or_,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -1069,7 +1066,7 @@ def summarize_job_outputs(job: model.Job, tool, params):
     return outputs
 
 
-def get_jobs_to_check_at_startup(session: Session, track_jobs_in_database: bool, config):
+def get_jobs_to_check_at_startup(session: galaxy_scoped_session, track_jobs_in_database: bool, config):
     if track_jobs_in_database:
         in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
     else:

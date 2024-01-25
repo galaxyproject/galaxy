@@ -2,7 +2,6 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -152,11 +151,11 @@ class GroupsManager:
         return group
 
 
-def get_group_by_name(session: Session, name: str):
+def get_group_by_name(session: galaxy_scoped_session, name: str):
     stmt = select(Group).filter(Group.name == name).limit(1)
     return session.scalars(stmt).first()
 
 
-def get_not_deleted_groups(session: Session):
+def get_not_deleted_groups(session: galaxy_scoped_session):
     stmt = select(Group).where(Group.deleted == false())
     return session.scalars(stmt)

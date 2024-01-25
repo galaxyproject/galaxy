@@ -24,10 +24,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -64,6 +61,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
@@ -644,12 +642,12 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     )
 
 
-def get_page_revision(session: Session, page_id: int):
+def get_page_revision(session: galaxy_scoped_session, page_id: int):
     stmt = select(PageRevision).filter_by(page_id=page_id)
     return session.scalars(stmt)
 
 
-def get_shared_pages(session: Session, user: User):
+def get_shared_pages(session: galaxy_scoped_session, user: User):
     stmt = (
         select(PageUserShareAssociation)
         .where(PageUserShareAssociation.user == user)
@@ -660,12 +658,12 @@ def get_shared_pages(session: Session, user: User):
     return session.scalars(stmt)
 
 
-def get_page(session: Session, user: User, slug: str):
+def get_page(session: galaxy_scoped_session, user: User, slug: str):
     stmt = _build_page_query(select(Page), user, slug)
     return session.scalars(stmt).first()
 
 
-def page_exists(session: Session, user: User, slug: str) -> bool:
+def page_exists(session: galaxy_scoped_session, user: User, slug: str) -> bool:
     stmt = _build_page_query(select(Page.id), user, slug)
     return session.scalars(stmt).first() is not None
 
