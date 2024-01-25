@@ -3,6 +3,7 @@ import isEqual from "lodash.isequal";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -20,7 +21,11 @@ interface EntryPoint {
 }
 
 export const useEntryPointStore = defineStore("entryPointStore", () => {
-    const pollTimeout = ref<NodeJS.Timeout | undefined>(undefined);
+    const { startWatchingResource: startWatchingEntryPoints } = useResourceWatcher(fetchEntryPoints, {
+        shortPollingInterval: 10000,
+        enableBackgroundPolling: false, //No need to poll when the user is not on the page
+    });
+
     const entryPoints = ref<EntryPoint[]>([]);
 
     const entryPointsForJob = computed(() => {
@@ -31,18 +36,6 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         return (hdaId: string) =>
             entryPoints.value.filter((entryPoint) => entryPoint["output_datasets_ids"].includes(hdaId));
     });
-
-    async function ensurePollingEntryPoints() {
-        await fetchEntryPoints();
-        pollTimeout.value = setTimeout(() => {
-            ensurePollingEntryPoints();
-        }, 10000);
-    }
-
-    function stopPollingEntryPoints() {
-        clearTimeout(pollTimeout.value);
-        pollTimeout.value = undefined;
-    }
 
     async function fetchEntryPoints() {
         const url = `${getAppRoot()}api/entry_points`;
@@ -96,8 +89,6 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         fetchEntryPoints,
         updateEntryPoints,
         removeEntryPoint,
-        pollTimeout,
-        ensurePollingEntryPoints,
-        stopPollingEntryPoints,
+        startWatchingEntryPoints,
     };
 });

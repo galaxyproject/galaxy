@@ -41,7 +41,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getAppRoot } from "onload/loadConfig";
-import { mapActions, mapState } from "pinia";
+import { mapState } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 
 library.add(faExternalLinkAlt);
@@ -61,12 +61,6 @@ export default {
         interactiveToolsLink: function () {
             return getAppRoot() + "interactivetool_entry_points/list";
         },
-    },
-    created: function () {
-        this.ensurePollingEntryPoints();
-    },
-    methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
     },
 };
 </script>
