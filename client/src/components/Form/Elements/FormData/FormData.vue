@@ -109,6 +109,17 @@ const currentValue = computed({
         return null;
     },
     set: (val) => {
+        if (val && Array.isArray(val) && val.length > 0) {
+            val.sort((a, b) => {
+                const aHid = a.hid;
+                const bHid = b.hid;
+                if (aHid && bHid) {
+                    return aHid - bHid;
+                } else {
+                    return 0;
+                }
+            });
+        }
         $emit("input", createValue(val));
     },
 });
