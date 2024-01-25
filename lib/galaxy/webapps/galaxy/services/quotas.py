@@ -162,8 +162,6 @@ class QuotasService(ServiceBase):
 
 
 def get_quotas(session: galaxy_scoped_session, deleted: bool = False):
-    is_deleted = true()
-    if not deleted:
-        is_deleted = false()
+    is_deleted = true() if deleted else false()
     stmt = select(Quota).where(Quota.deleted == is_deleted)
     return session.scalars(stmt)
