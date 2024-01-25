@@ -5457,7 +5457,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         return (type_coerce(cls.content_type, Unicode) + "-" + type_coerce(cls.id, Unicode)).label("type_id")
 
 
-class HistoryDatasetAssociationHistory(Base, Serializable):
+class HistoryDatasetAssociationHistory(Base):
     __tablename__ = "history_dataset_association_history"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
