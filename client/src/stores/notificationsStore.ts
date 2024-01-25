@@ -12,10 +12,13 @@ import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
+const ACTIVE_POLLING_INTERVAL = 5000;
+const INACTIVE_POLLING_INTERVAL = 30000;
+
 export const useNotificationsStore = defineStore("notificationsStore", () => {
     const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
-        shortPollingInterval: 5000,
-        longPollingInterval: 30000,
+        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+        longPollingInterval: INACTIVE_POLLING_INTERVAL,
     });
     const broadcastsStore = useBroadcastsStore();
 

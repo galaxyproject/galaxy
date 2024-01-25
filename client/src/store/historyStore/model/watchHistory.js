@@ -19,6 +19,9 @@ import { useDatasetStore } from "@/stores/datasetStore";
 
 const limit = 1000;
 
+const ACTIVE_POLLING_INTERVAL = 3000;
+const INACTIVE_POLLING_INTERVAL = 60000;
+
 // last time the history has changed
 let lastUpdateTime = null;
 
@@ -26,8 +29,8 @@ let lastUpdateTime = null;
 let lastRequestDate = new Date();
 
 const { startWatchingResource: startWatchingHistory } = useResourceWatcher(watchHistory, {
-    shortPollingInterval: 3000,
-    longPollingInterval: 60000,
+    shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+    longPollingInterval: INACTIVE_POLLING_INTERVAL,
 });
 
 export { startWatchingHistory };
