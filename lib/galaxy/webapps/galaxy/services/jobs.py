@@ -30,9 +30,11 @@ from galaxy.managers.jobs import (
 )
 from galaxy.model import ToolRequest
 from galaxy.schema.jobs import JobAssociation
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
-    EncodedDatasetSourceId,
+    EncodedDatabaseIdField,
+    EncodedDatasetSourceId,    
     JobIndexQueryPayload,
 )
 from galaxy.schema.tasks import (
