@@ -614,19 +614,23 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     if item_class == "History":
         history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
+        assert history
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
         hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
+        assert hda
         item_name = hda.name
     elif item_class == "StoredWorkflow":
         wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
+        assert wf
         item_name = wf.name
     elif item_class == "Visualization":
         visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
+        assert visualization
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     if encode:

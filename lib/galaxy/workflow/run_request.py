@@ -379,6 +379,7 @@ def build_workflow_run_configs(
             try:
                 if input_source == "ldda":
                     ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
+                    assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
@@ -387,6 +388,7 @@ def build_workflow_run_configs(
                     ldda = trans.sa_session.get(
                         LibraryDataset, trans.security.decode_id(input_id)
                     ).library_dataset_dataset_association
+                    assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
