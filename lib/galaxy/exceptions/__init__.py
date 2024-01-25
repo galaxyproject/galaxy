@@ -38,7 +38,7 @@ class MessageException(Exception):
         self.extra_error_info = extra_error_info
 
     @staticmethod
-    def from_code(status_code: int, message: Optional[str]) -> "MessageException":
+    def from_code(status_code: int, message: Optional[str] = None) -> "MessageException":
         exception_class = MessageException
         if status_code == 404:
             exception_class = ObjectNotFound
