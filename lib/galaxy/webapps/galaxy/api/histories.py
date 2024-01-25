@@ -51,6 +51,7 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingStatus,
     StoreExportPayload,
+    ToolRequestModel,
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
@@ -269,6 +270,17 @@ class FastAPIHistories:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> List[Any]:
         return self.service.citations(trans, history_id)
+
+    @router.get(
+        "/api/histories/{id}/tool_requests",
+        summary="Return all the tool requests for the tools submitted to this history.",
+    )
+    def tool_requests(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        id: DecodedDatabaseIdField = HistoryIDPathParam,
+    ) -> List[ToolRequestModel]:
+        return self.service.tool_requests(trans, id)
 
     @router.post(
         "/api/histories",

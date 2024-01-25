@@ -1,0 +1,33 @@
+<macros>
+  <xml name="common_conditional_tags">
+    <command><![CDATA[
+echo 'test: $conditional_parameter.test_parameter' >> '$output';
+cat '$inputs' >> '$inputs_json';
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    </configfiles>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="inputs_json" format="json" />
+    </outputs>
+    <help>
+        This is a test tool used to establish and verify the behavior of some aspect of Galaxy's
+        parameter handling.
+    </help>
+  </xml>
+  <xml name="assert_output">
+    <output name="output">
+        <assert_contents>
+            <yield />
+        </assert_contents>
+    </output>
+  </xml>
+  <xml name="assert_inputs_json">
+    <output name="inputs_json">
+        <assert_contents>
+            <yield />
+        </assert_contents>
+    </output>
+  </xml>
+</macros>

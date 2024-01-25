@@ -68,11 +68,14 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
 from galaxy.work.context import WorkRequestContext
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -150,6 +153,12 @@ InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
+ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
+)
+
 SortByQueryParam: JobIndexSortByEnum = Query(
     default=JobIndexSortByEnum.update_time,
     title="Sort By",
@@ -201,6 +210,13 @@ DeleteJobBody = Body(title="Delete/cancel job", description="The values to delet
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
 
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
+
     @router.get("/api/jobs")
     def index(
         self,
@@ -216,6 +232,7 @@ class FastAPIJobs:
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
@@ -233,6 +250,7 @@ class FastAPIJobs:
             history_id=history_id,
             workflow_id=workflow_id,
             invocation_id=invocation_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -358,6 +376,19 @@ class FastAPIJobs:
         output_associations = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+
+        for job_output_collection_association in job.output_dataset_collection_instances:
+            output_associations.append(
+                {
+                    "name": job_output_collection_association.name,
+                    "dataset_collection_instance": {
+                        "src": "hdca",
+                        "id": trans.security.encode_id(
+                            job_output_collection_association.dataset_collection_instance.id
+                        ),
+                    },
+                }
+            )
         return output_associations
 
     @router.get(
