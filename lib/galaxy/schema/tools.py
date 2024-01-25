@@ -103,7 +103,6 @@ class ToolResponse(Model):
         description="The output dataset collections of the tool.",
     )
     jobs: List[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]] = Field(
-        #   jobs: List[Dict[str, Any]] = Field(
         default=[],
         title="Jobs",
         description="The jobs of the tool.",
