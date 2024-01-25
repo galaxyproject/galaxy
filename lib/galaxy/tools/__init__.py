@@ -3498,6 +3498,11 @@ class KeepSuccessDatasetsTool(FilterDatasetsTool):
 
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
+        if (
+            element.element_object.state != model.Dataset.states.PAUSED
+            and element.element_object.state in model.Dataset.non_ready_states
+        ):
+            raise ToolInputsNotReadyException("An input dataset is pending.")
         return element.element_object.is_ok
 
 

@@ -3266,21 +3266,18 @@ inputs:
 steps:
   mixed_collection:
     tool_id: exit_code_from_file
-    state:
-       input:
-         $link: input_c
+    in:
+       input: input_c
 
   filtered_collection:
     tool_id: "__KEEP_SUCCESS_DATASETS__"
-    state:
-      input:
-        $link: mixed_collection/out_file1
+    in:
+      input: mixed_collection/out_file1
 
   cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: filtered_collection
+    in:
+      input1: filtered_collection/output
 """,
                 test_data="""
 input_c:
