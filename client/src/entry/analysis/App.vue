@@ -63,6 +63,7 @@ import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 import { ref, watch } from "vue";
 
+import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -83,6 +84,9 @@ export default {
         ConfirmDialog,
         UploadModal,
         BroadcastsOverlay,
+    },
+    directives: {
+        short,
     },
     setup() {
         const userStore = useUserStore();
