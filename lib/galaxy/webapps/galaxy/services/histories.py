@@ -43,14 +43,20 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
-from galaxy.model import HistoryDatasetAssociation
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    ToolRequest,
+)
 from galaxy.model.base import transaction
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -71,6 +77,7 @@ from galaxy.schema.schema import (
     ShareHistoryWithStatus,
     ShareWithPayload,
     StoreExportPayload,
+    ToolRequestModel,
     WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
@@ -532,6 +539,23 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             for history in histories
         ]
         return rval
+
+    def tool_requests(
+        self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField
+    ) -> List[ToolRequestModel]:
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        tool_requests = history.tool_requests
+
+        def to_model(tool_request: ToolRequest) -> ToolRequestModel:
+            as_dict = {
+                "id": Security.secure.encode_id(tool_request.id),
+                "request": tool_request.request,
+                "state": tool_request.state,
+                "state_message": tool_request.state_message,
+            }
+            return ToolRequestModel.construct(**as_dict)
+
+        return [to_model(tr) for tr in tool_requests]
 
     def citations(self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField):
         """

@@ -1,0 +1,529 @@
+# auto generated file for JavaScript testing, do not modify manually
+# -----
+# PYTHONPATH="lib" python test/unit/tool_util/test_parameter_specification.py
+# -----
+cwl_boolean:
+  name: parameter
+  parameter_type: cwl_boolean
+cwl_boolean_optional:
+  name: parameter
+  parameter_type: cwl_union
+  parameters:
+  - name: parameter
+    parameter_type: cwl_null
+  - name: parameter
+    parameter_type: cwl_boolean
+cwl_directory:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: cwl_directory
+  refresh_on_change: false
+cwl_file:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: cwl_file
+  refresh_on_change: false
+cwl_float:
+  name: parameter
+  parameter_type: cwl_float
+cwl_float_optional:
+  name: parameter
+  parameter_type: cwl_union
+  parameters:
+  - name: parameter
+    parameter_type: cwl_null
+  - name: parameter
+    parameter_type: cwl_float
+cwl_int:
+  name: parameter
+  parameter_type: cwl_integer
+cwl_int_optional:
+  name: parameter
+  parameter_type: cwl_union
+  parameters:
+  - name: parameter
+    parameter_type: cwl_null
+  - name: parameter
+    parameter_type: cwl_integer
+cwl_string:
+  name: parameter
+  parameter_type: cwl_string
+cwl_string_optional:
+  name: parameter
+  parameter_type: cwl_union
+  parameters:
+  - name: parameter
+    parameter_type: cwl_null
+  - name: parameter
+    parameter_type: cwl_string
+gx_boolean:
+  argument: null
+  falsevalue: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_boolean
+  refresh_on_change: false
+  truevalue: null
+  value: false
+gx_color:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_color
+  refresh_on_change: false
+gx_conditional_boolean:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: conditional_parameter
+  optional: false
+  parameter_type: gx_conditional
+  refresh_on_change: false
+  test_parameter:
+    argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: test_parameter
+    optional: false
+    parameter_type: gx_boolean
+    refresh_on_change: false
+    truevalue: null
+    value: false
+  whens:
+  - discriminator: true
+    parameters:
+    - argument: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      max: null
+      min: null
+      name: integer_parameter
+      optional: false
+      parameter_type: gx_integer
+      refresh_on_change: false
+      value: null
+  - discriminator: false
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      refresh_on_change: false
+      truevalue: null
+      value: false
+gx_conditional_conditional_boolean:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: outer_conditional_parameter
+  optional: false
+  parameter_type: gx_conditional
+  refresh_on_change: false
+  test_parameter:
+    argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: outer_test_parameter
+    optional: false
+    parameter_type: gx_boolean
+    refresh_on_change: false
+    truevalue: null
+    value: false
+  whens:
+  - discriminator: true
+    parameters:
+    - argument: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: inner_conditional_parameter
+      optional: false
+      parameter_type: gx_conditional
+      refresh_on_change: false
+      test_parameter:
+        argument: null
+        falsevalue: null
+        help: null
+        hidden: false
+        is_dynamic: false
+        label: null
+        name: inner_test_parameter
+        optional: false
+        parameter_type: gx_boolean
+        refresh_on_change: false
+        truevalue: null
+        value: false
+      whens:
+      - discriminator: true
+        parameters:
+        - argument: null
+          help: null
+          hidden: false
+          is_dynamic: false
+          label: null
+          max: null
+          min: null
+          name: integer_parameter
+          optional: false
+          parameter_type: gx_integer
+          refresh_on_change: false
+          value: null
+      - discriminator: false
+        parameters:
+        - argument: null
+          falsevalue: null
+          help: null
+          hidden: false
+          is_dynamic: false
+          label: null
+          name: boolean_parameter
+          optional: false
+          parameter_type: gx_boolean
+          refresh_on_change: false
+          truevalue: null
+          value: false
+  - discriminator: false
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      refresh_on_change: false
+      truevalue: null
+      value: false
+gx_data:
+  argument: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  multiple: false
+  name: parameter
+  optional: false
+  parameter_type: gx_data
+  refresh_on_change: false
+gx_data_collection:
+  argument: null
+  collection_type: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_data_collection
+  refresh_on_change: false
+gx_data_collection_optional:
+  argument: null
+  collection_type: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: true
+  parameter_type: gx_data_collection
+  refresh_on_change: false
+gx_data_multiple:
+  argument: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  multiple: true
+  name: parameter
+  optional: false
+  parameter_type: gx_data
+  refresh_on_change: false
+gx_data_multiple_optional:
+  argument: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  multiple: true
+  name: parameter
+  optional: true
+  parameter_type: gx_data
+  refresh_on_change: false
+gx_data_optional:
+  argument: null
+  extensions:
+  - data
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  multiple: false
+  name: parameter
+  optional: true
+  parameter_type: gx_data
+  refresh_on_change: false
+gx_float:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  name: parameter
+  optional: false
+  parameter_type: gx_float
+  refresh_on_change: false
+  value: null
+gx_float_optional:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  name: parameter
+  optional: true
+  parameter_type: gx_float
+  refresh_on_change: false
+  value: null
+gx_hidden:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_hidden
+  refresh_on_change: false
+gx_hidden_optional:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: true
+  parameter_type: gx_hidden
+  refresh_on_change: false
+gx_int:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  name: parameter
+  optional: false
+  parameter_type: gx_integer
+  refresh_on_change: false
+  value: null
+gx_int_optional:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  max: null
+  min: null
+  name: parameter
+  optional: true
+  parameter_type: gx_integer
+  refresh_on_change: false
+  value: null
+gx_repeat_boolean:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_repeat
+  parameters:
+  - argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: boolean_parameter
+    optional: false
+    parameter_type: gx_boolean
+    refresh_on_change: false
+    truevalue: null
+    value: false
+  refresh_on_change: false
+gx_select:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  multiple: false
+  name: parameter
+  optional: false
+  options:
+  - label: Ex1
+    value: --ex1
+  - label: Ex2
+    value: ex2
+  - label: Ex3
+    value: --ex3
+  - label: Ex4
+    value: --ex4
+  - label: Ex5
+    value: ex5
+  parameter_type: gx_select
+  refresh_on_change: false
+gx_select_multiple:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  multiple: true
+  name: parameter
+  optional: false
+  options:
+  - label: Ex1
+    value: --ex1
+  - label: Ex2
+    value: ex2
+  - label: Ex3
+    value: --ex3
+  - label: Ex4
+    value: --ex4
+  - label: Ex5
+    value: ex5
+  parameter_type: gx_select
+  refresh_on_change: false
+gx_select_multiple_optional:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  multiple: true
+  name: parameter
+  optional: true
+  options:
+  - label: Ex1
+    value: --ex1
+  - label: Ex2
+    value: ex2
+  - label: Ex3
+    value: --ex3
+  - label: Ex4
+    value: --ex4
+  - label: Ex5
+    value: ex5
+  parameter_type: gx_select
+  refresh_on_change: false
+gx_select_optional:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  multiple: false
+  name: parameter
+  optional: true
+  options:
+  - label: Ex1
+    value: --ex1
+  - label: Ex2
+    value: ex2
+  - label: Ex3
+    value: --ex3
+  - label: Ex4
+    value: --ex4
+  - label: Ex5
+    value: ex5
+  parameter_type: gx_select
+  refresh_on_change: false
+gx_text:
+  area: false
+  argument: null
+  default_options: []
+  default_value: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: false
+  parameter_type: gx_text
+  refresh_on_change: false
+gx_text_optional:
+  area: false
+  argument: null
+  default_options: []
+  default_value: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: parameter
+  optional: true
+  parameter_type: gx_text
+  refresh_on_change: false

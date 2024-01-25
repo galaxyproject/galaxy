@@ -28,6 +28,7 @@ def main() -> None:
     parser_builder.add_version_command()
     parser_builder.add_dbversion_command()
     parser_builder.add_init_command()
+    parser_builder.add_revision_command()
 
     args = parser.parse_args()
     args.func(args)
