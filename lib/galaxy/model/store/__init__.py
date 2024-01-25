@@ -1992,7 +1992,6 @@ class DirectoryModelExportStore(ModelExportStore):
                 as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
             )
             arcname = os.path.join(dir_name, target_filename)
-
             src = file_name
             dest = os.path.join(export_directory, arcname)
             add(src, dest)
@@ -2005,7 +2004,10 @@ class DirectoryModelExportStore(ModelExportStore):
                 file_list = []
 
             if len(file_list):
-                arcname = os.path.join(dir_name, f"extra_files_path_{dataset_hid}")
+                extra_files_target_filename = get_export_dataset_extra_files_dir_name(
+                    as_dict["name"], as_dict["extension"], dataset_hid, conversion_key=conversion_key
+                )
+                arcname = os.path.join(dir_name, extra_files_target_filename)
                 add(extra_files_path, os.path.join(export_directory, arcname))
                 as_dict["extra_files_path"] = arcname
             else:
@@ -2980,6 +2982,13 @@ def get_export_dataset_filename(name: str, ext: str, hid: int, conversion_key: O
         return f"{base}_{hid}.{ext}"
     else:
         return f"{base}_{hid}_conversion_{conversion_key}.{ext}"
+
+
+def get_export_dataset_extra_files_dir_name(name: str, ext: str, hid: int, conversion_key: Optional[str]) -> str:
+    if not conversion_key:
+        return f"extra_files_path_{hid}"
+    else:
+        return f"extra_files_path_{hid}_conversion_{conversion_key}"
 
 
 def imported_store_for_metadata(

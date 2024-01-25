@@ -147,6 +147,49 @@ def test_import_export_history_with_implicit_conversion():
     assert imported_history.active_datasets[2].hid == imported_history.active_datasets[1].hid
 
 
+def test_import_export_history_with_implicit_conversion_and_extra_files():
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    convert_ext = "fasta"
+    implicit_hda = model.HistoryDatasetAssociation(extension=convert_ext, create_dataset=True, flush=False, history=h)
+    implicit_hda.hid = d2.hid
+    # this adds and flushes the result...
+    d2.attach_implicitly_converted_dataset(app.model.context, implicit_hda, convert_ext)
+    app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
+
+    d2.dataset.create_extra_files_path()
+    implicit_hda.dataset.create_extra_files_path()
+
+    app.write_primary_file(d2, "cool primary file 1")
+    app.write_composite_file(d2, "cool composite file", "child_file")
+
+    app.write_primary_file(implicit_hda, "cool primary file implicit")
+    app.write_composite_file(implicit_hda, "cool composite file implicit", "child_file_converted")
+
+    assert len(h.active_datasets) == 3
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
+
+    assert len(imported_history.active_datasets) == 3
+    recovered_hda_2 = imported_history.active_datasets[1]
+    assert recovered_hda_2.implicitly_converted_datasets
+    imported_conversion = recovered_hda_2.implicitly_converted_datasets[0]
+    assert imported_conversion.type == "fasta"
+    assert imported_conversion.dataset == imported_history.active_datasets[2]
+
+    # implicit conversions have the same HID... ensure this property is recovered...
+    assert imported_history.active_datasets[2].hid == imported_history.active_datasets[1].hid
+
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        imported_history.active_datasets[1], "child_file", "cool composite file"
+    )
+
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        imported_history.active_datasets[2], "child_file_converted", "cool composite file implicit"
+    )
+
+
 def test_import_export_bag_archive():
     """Test a simple job import/export using a BagIt archive."""
     dest_parent = mkdtemp()
@@ -721,15 +764,24 @@ def test_import_export_composite_datasets():
     _perform_import_from_directory(temp_directory, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
-    root_extra_files_path = import_dataset.extra_files_path
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        import_dataset, "child_file", "cool composite file"
+    )
+
+
+def _assert_extra_files_has_parent_directory_with_single_file_containing(
+    dataset, expected_file_name, expected_contents
+):
+    root_extra_files_path = dataset.extra_files_path
     assert len(os.listdir(root_extra_files_path)) == 1
     assert os.listdir(root_extra_files_path)[0] == "parent_dir"
     composite_sub_dir = os.path.join(root_extra_files_path, "parent_dir")
     child_files = os.listdir(composite_sub_dir)
     assert len(child_files) == 1
+    assert child_files[0] == expected_file_name
     with open(os.path.join(composite_sub_dir, child_files[0])) as f:
         contents = f.read()
-        assert contents == "cool composite file"
+        assert contents == expected_contents
 
 
 def test_edit_metadata_files():
@@ -1048,7 +1100,9 @@ class TestApp(GalaxyDataTestApp):
         primary = NamedTemporaryFile("w")
         primary.write(contents)
         primary.flush()
-        self.object_store.update_from_file(dataset_instance.dataset, file_name=primary.name, create=True, preserve_symlinks=True)
+        self.object_store.update_from_file(
+            dataset_instance.dataset, file_name=primary.name, create=True, preserve_symlinks=True
+        )
 
     def write_composite_file(self, dataset_instance, contents, file_name):
         composite1 = NamedTemporaryFile("w")
