@@ -709,23 +709,8 @@ def test_import_export_composite_datasets():
     d1.dataset.create_extra_files_path()
     app.add_and_commit(h, d1)
 
-    primary = NamedTemporaryFile("w")
-    primary.write("cool primary file")
-    primary.flush()
-    app.object_store.update_from_file(d1.dataset, file_name=primary.name, create=True, preserve_symlinks=True)
-
-    composite1 = NamedTemporaryFile("w")
-    composite1.write("cool composite file")
-    composite1.flush()
-
-    app.object_store.update_from_file(
-        d1.dataset,
-        extra_dir=os.path.normpath(os.path.join(d1.extra_files_path, "parent_dir")),
-        alt_name="child_file",
-        file_name=composite1.name,
-        create=True,
-        preserve_symlinks=True,
-    )
+    app.write_primary_file(d1, "cool primary file")
+    app.write_composite_file(d1, "cool composite file", "child_file")
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
@@ -1058,6 +1043,27 @@ class TestApp(GalaxyDataTestApp):
         session = self.model.session
         with transaction(session):
             session.commit()
+
+    def write_primary_file(self, dataset_instance, contents):
+        primary = NamedTemporaryFile("w")
+        primary.write(contents)
+        primary.flush()
+        self.object_store.update_from_file(dataset_instance.dataset, file_name=primary.name, create=True, preserve_symlinks=True)
+
+    def write_composite_file(self, dataset_instance, contents, file_name):
+        composite1 = NamedTemporaryFile("w")
+        composite1.write(contents)
+        composite1.flush()
+
+        dataset_instance.dataset.create_extra_files_path()
+        self.object_store.update_from_file(
+            dataset_instance.dataset,
+            extra_dir=os.path.normpath(os.path.join(dataset_instance.extra_files_path, "parent_dir")),
+            alt_name=file_name,
+            file_name=composite1.name,
+            create=True,
+            preserve_symlinks=True,
+        )
 
 
 def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
