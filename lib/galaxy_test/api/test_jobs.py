@@ -989,7 +989,7 @@ steps:
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         # create a job
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         job_id = tool_response.json()["jobs"][0]["id"]
         # delete the job without message
         delete_job_response = self._delete(f"jobs/{job_id}")
@@ -1039,7 +1039,7 @@ steps:
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         # search for the job and get the corresponding values
         search_response = self._post("jobs/search", data=search_payload, json=True)
@@ -1051,7 +1051,7 @@ steps:
         empty_search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(empty_search_response, 200)
         assert len(empty_search_response.json()) == 0
-        tool_response = self._post("tools", data=search_payload)
+        tool_response = self._post("tools", data=search_payload, json=True)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         self._search(search_payload, expected_search_count=1)
         return tool_response

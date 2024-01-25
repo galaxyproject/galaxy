@@ -818,7 +818,7 @@ class GalaxyInteractorApi:
         data = dict(
             history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
         )
-        return self._post("tools", files=files, data=data)
+        return self._post("tools", files=files, data=data, json=True)
 
     def ensure_user_with_email(self, email, password=None):
         admin_key = self.master_api_key
