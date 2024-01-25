@@ -27,7 +27,7 @@ describe("stores/EntryPointStore", () => {
         expect(store.entryPoints.length).toBe(2);
     });
     it("stops polling", async () => {
-        expect(store.pollTimeout >= 0).toBeTruthy();
+        expect(store.pollTimeout !== undefined).toBeTruthy();
         store.stopPollingEntryPoints();
         expect(store.pollTimeout === undefined).toBeTruthy();
     });
