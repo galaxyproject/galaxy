@@ -11,7 +11,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import insert as ps_insert
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
 
 from galaxy.model import CeleryUserRateLimit
 from galaxy.model.base import transaction
@@ -70,7 +69,7 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
 
     @abstractmethod
     def calculate_task_start_time(
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         return now
 
@@ -99,7 +98,7 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
     )
 
     def calculate_task_start_time(  # type: ignore
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         with transaction(sa_session):
             result = sa_session.execute(
@@ -138,7 +137,7 @@ class GalaxyTaskBeforeStartUserRateLimitStandard(GalaxyTaskBeforeStartUserRateLi
     )
 
     def calculate_task_start_time(
-        self, user_id: int, sa_session: Session, task_interval_secs: float, now: datetime.datetime
+        self, user_id: int, sa_session: galaxy_scoped_session, task_interval_secs: float, now: datetime.datetime
     ) -> datetime.datetime:
         last_scheduled_time = None
         with transaction(sa_session):
