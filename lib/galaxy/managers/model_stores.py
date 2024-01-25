@@ -100,6 +100,7 @@ class ModelStoreManager:
         with DirectoryModelExportStore(store_directory, app=self._app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
         job = self._sa_session.get(model.Job, job_id)
+        assert job
         job.state = model.Job.states.NEW
         with transaction(self._sa_session):
             self._sa_session.commit()
