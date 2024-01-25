@@ -360,7 +360,7 @@ class JobSearch:
 
         # build one subquery that selects a job with correct job parameters
 
-        subq = select(model.Job.id).where(
+        stmt = select(model.Job.id).where(
             and_(
                 model.Job.tool_id == tool_id,
                 model.Job.user_id == user.id,
@@ -368,22 +368,22 @@ class JobSearch:
             )
         )
         if tool_version:
-            subq = subq.where(Job.tool_version == str(tool_version))
+            stmt = stmt.where(Job.tool_version == str(tool_version))
 
         if job_state is None:
-            subq = subq.where(
+            stmt = stmt.where(
                 Job.state.in_(
                     [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
                 )
             )
         else:
             if isinstance(job_state, str):
-                subq = subq.where(Job.state == job_state)
+                stmt = stmt.where(Job.state == job_state)
             elif isinstance(job_state, list):
-                subq = subq.where(or_(*[Job.state == s for s in job_state]))
+                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
 
         # exclude jobs with deleted outputs
-        subq = subq.where(
+        stmt = stmt.where(
             and_(
                 model.Job.any_output_dataset_collection_instances_deleted == false(),
                 model.Job.any_output_dataset_deleted == false(),
@@ -403,7 +403,7 @@ class JobSearch:
             wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(JobParameter)
             if value_dump == wildcard_value:
-                subq = subq.join(a).where(
+                stmt = stmt.join(a).where(
                     and_(
                         Job.id == a.job_id,
                         a.name == k,
@@ -411,7 +411,7 @@ class JobSearch:
                     )
                 )
             else:
-                subq = subq.join(a).where(
+                stmt = stmt.join(a).where(
                     and_(
                         Job.id == a.job_id,
                         a.name == k,
@@ -419,7 +419,8 @@ class JobSearch:
                     )
                 )
 
-        query = select(Job.id).select_from(Job.table.join(subq, subq.c.id == Job.id))
+        stmt_sq = stmt.subquery()
+        query = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
         data_conditions = []
 
