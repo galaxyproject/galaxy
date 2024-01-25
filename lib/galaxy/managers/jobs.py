@@ -137,13 +137,13 @@ class JobManager:
                 )
             elif invocation_id is not None:
                 wfi_step = wfi_step.where(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
-            wfi_step = wfi_step.subquery()
+            wfi_step_sq = wfi_step.subquery()
 
-            stmt1 = stmt.join(wfi_step)
+            stmt1 = stmt.join(wfi_step_sq)
             stmt2 = stmt.join(ImplicitCollectionJobsJobAssociation).join(
-                wfi_step,
+                wfi_step_sq,
                 ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
-                == wfi_step.c.implicit_collection_jobs_id,
+                == wfi_step_sq.c.implicit_collection_jobs_id,
             )
             # Ensure the result is models, not tuples
             sq = stmt1.union(stmt2).subquery()
