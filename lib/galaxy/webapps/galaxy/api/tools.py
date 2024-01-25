@@ -31,6 +31,11 @@ from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
 )
+from galaxy.tool_util.verify.interactor import (
+    ToolTestCase,
+    ToolTestCaseList,
+)
+from galaxy.tools import Tool
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import (
@@ -318,7 +323,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return test_counts_by_tool
 
     @expose_api_anonymous_and_sessionless
-    def test_data(self, trans: GalaxyWebTransaction, id, **kwd):
+    def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> ToolTestCaseList:
         """
         GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
 
@@ -333,6 +338,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
+        tools: List[Tool]
         if tool_version == "*":
             tools = self.app.toolbox.get_tool(id, get_all_versions=True)
             for tool in tools:
@@ -341,10 +347,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         else:
             tools = [self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)]
 
-        test_defs = []
+        test_defs: List[ToolTestCase] = []
         for tool in tools:
-            test_defs.extend([t.to_dict() for t in tool.tests])
-        return test_defs
+            test_defs.extend([t.to_model() for t in tool.tests])
+        return ToolTestCaseList(__root__=test_defs)
 
     @web.require_admin
     @expose_api
