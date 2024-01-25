@@ -7,19 +7,21 @@ import {
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
 } from "@/api/notifications";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
-const STATUS_POLLING_DELAY = 5000;
-
 export const useNotificationsStore = defineStore("notificationsStore", () => {
+    const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
+        shortPollingInterval: 5000,
+        longPollingInterval: 30000,
+    });
     const broadcastsStore = useBroadcastsStore();
 
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotification[]>([]);
 
-    const pollId = ref<NodeJS.Timeout | undefined>(undefined);
     const loadingNotifications = ref<boolean>(false);
     const lastNotificationUpdate = ref<Date | null>(null);
 
@@ -31,7 +33,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     async function getNotificationStatus() {
-        stopPollingNotifications();
         try {
             if (!lastNotificationUpdate.value) {
                 loadingNotifications.value = true;
@@ -56,22 +57,12 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         }
     }
 
-    async function startPollingNotifications() {
-        await getNotificationStatus();
-        pollId.value = setTimeout(() => startPollingNotifications(), STATUS_POLLING_DELAY);
-    }
-
-    function stopPollingNotifications() {
-        clearTimeout(pollId.value);
-        pollId.value = undefined;
-    }
-
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
         await updateBatchNotificationsOnServer(request);
         if (request.changes.deleted) {
             notifications.value = notifications.value.filter((n) => !request.notification_ids.includes(n.id));
         }
-        await startPollingNotifications();
+        startWatchingNotifications();
     }
 
     async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
@@ -85,6 +76,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         loadingNotifications,
         updateNotification,
         updateBatchNotification,
-        startPollingNotifications,
+        startWatchingNotifications,
     };
 });
