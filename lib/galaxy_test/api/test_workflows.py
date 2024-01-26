@@ -3299,7 +3299,8 @@ input_c:
 
             assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
             assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
-            # Follow proves one job was filtered out of the result of cat1
+            # Follow proves one job was filtered out of the exit_code_from_file
+            # And a single one has been sent to cat1
             assert len(filter_jobs_by_tool("cat1")) == 1, jobs
 
     def test_keep_success_mapping_paused(self):
