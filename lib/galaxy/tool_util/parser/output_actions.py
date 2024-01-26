@@ -324,7 +324,7 @@ class MetadataToolOutputAction(ToolOutputAction):
             else:
                 # fallback when Cheetah not available, equivalent to how this was handled prior 23.0
                 # definitely not needed for CWL tool parsing
-                log.warning("Cheetah not installed, falling back to legacy 'apply_action' behavior.")
+                log.warning("Cheetah not installed, falling back to legacy 'apply_action' behavior.")  # type: ignore[unreachable]
                 value = self.default
         if value is not None:
             setattr(output_dataset.metadata, self.name, value)

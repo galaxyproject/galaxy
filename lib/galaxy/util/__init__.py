@@ -176,7 +176,7 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):
+    if s.startswith(prefix):  # type: ignore[unreachable]
         return s[len(prefix) :]
     return s
 
@@ -356,9 +356,9 @@ def parse_xml(
         if schema:
             schema.assertValid(tree)
     except OSError as e:
-        if e.errno is None and not os.path.exists(fname):
+        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
             # lxml doesn't set errno
-            e.errno = errno.ENOENT
+            e.errno = errno.ENOENT  # type: ignore[unreachable]
         raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)

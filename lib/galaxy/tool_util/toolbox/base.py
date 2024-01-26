@@ -761,7 +761,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def has_tool(self, tool_id: str, tool_version: Optional[str] = None, exact: bool = False):
         return self.get_tool(tool_id, tool_version=tool_version, exact=exact) is not None
 
-    def is_missing_shed_tool(self, tool_id: str) -> bool:
+    def is_missing_shed_tool(self, tool_id: Optional[str]) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""
         if tool_id is None:
             # This is not a tool ID.

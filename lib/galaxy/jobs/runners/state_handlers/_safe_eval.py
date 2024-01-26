@@ -127,8 +127,6 @@ def _check_expression(text, allowed_variables=None):
     except SyntaxError:
         return False
 
-    if not isinstance(module, Module):
-        return False
     statements = module.body
     if not len(statements) == 1:
         return False
