@@ -1659,6 +1659,7 @@ class Tool(Dictifiable):
     def populate_tool_shed_info(self, tool_shed_repository):
         if tool_shed_repository:
             self.tool_shed = tool_shed_repository.tool_shed
+            assert self.tool_shed
             self.repository_name = tool_shed_repository.name
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision
