@@ -36,7 +36,7 @@ const defaultOptions = {
         { id: "hda1", hid: 1, name: "hdaName1", src: "hda", tags: ["tag1"] },
         { id: "hda2", hid: 2, name: "hdaName2", src: "hda", tags: ["tag1", "tag2"] },
         { id: "hda3", hid: 3, name: "hdaName3", src: "hda", tags: ["tag2", "tag3"] },
-        { id: "hda3", hid: 4, name: "hdaName4", src: "hda" },
+        { id: "hda4", hid: 4, name: "hdaName4", src: "hda" },
     ],
     hdca: [
         { id: "hdca5", hid: 5, name: "hdcaName5", src: "hdca" },
@@ -61,7 +61,7 @@ describe("FormData", () => {
         const value_1 = {
             batch: false,
             product: false,
-            values: [{ id: "hda3", src: "hda", map_over_type: null }],
+            values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
         const options = wrapper.find(".btn-group").findAll("button");
         expect(options.length).toBe(4);
@@ -122,7 +122,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toBe("4: hdaName4");
+        expect(selectedValues.at(0).text()).toBe("3: hdaName3");
         expect(selectedValues.at(1).text()).toBe("2: hdaName2");
         const value_0 = {
             batch: false,
