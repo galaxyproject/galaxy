@@ -5267,7 +5267,7 @@ If ``true``, this output will sniffed and its format determined automatically by
     <xs:attribute name="default_identifier_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
-This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond\|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
