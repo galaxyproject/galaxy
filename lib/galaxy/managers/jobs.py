@@ -391,7 +391,6 @@ class JobSearch:
         )
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = None
             if v == {"__class__": "RuntimeValue"}:
                 # TODO: verify this is always None. e.g. run with runtime input input
                 v = None
@@ -400,10 +399,8 @@ class JobSearch:
                 continue
             elif k == "chromInfo" and "?.len" in v:
                 continue
-                wildcard_value = '"%?.len"'
-            if not wildcard_value:
-                value_dump = json.dumps(v, sort_keys=True)
-                wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            value_dump = json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(JobParameter)
             if value_dump == wildcard_value:
                 subq = subq.join(a).where(
@@ -601,9 +598,6 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
-                        wildcard_value = '"%?.len"'
-                    if not wildcard_value:
-                        wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
