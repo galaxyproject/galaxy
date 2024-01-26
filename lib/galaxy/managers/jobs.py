@@ -355,68 +355,8 @@ class JobSearch:
                 return key, value
             return key, value
 
-        # build one subquery that selects a job with correct job parameters
+        stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
-        stmt = select(model.Job.id).where(
-            and_(
-                model.Job.tool_id == tool_id,
-                model.Job.user_id == user.id,
-                model.Job.copied_from_job_id.is_(None),  # Always pick original job
-            )
-        )
-        if tool_version:
-            stmt = stmt.where(Job.tool_version == str(tool_version))
-
-        if job_state is None:
-            stmt = stmt.where(
-                Job.state.in_(
-                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
-                )
-            )
-        else:
-            if isinstance(job_state, str):
-                stmt = stmt.where(Job.state == job_state)
-            elif isinstance(job_state, list):
-                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
-
-        # exclude jobs with deleted outputs
-        stmt = stmt.where(
-            and_(
-                model.Job.any_output_dataset_collection_instances_deleted == false(),
-                model.Job.any_output_dataset_deleted == false(),
-            )
-        )
-
-        for k, v in wildcard_param_dump.items():
-            if v == {"__class__": "RuntimeValue"}:
-                # TODO: verify this is always None. e.g. run with runtime input input
-                v = None
-            elif k.endswith("|__identifier__"):
-                # We've taken care of this while constructing the conditions based on ``input_data`` above
-                continue
-            elif k == "chromInfo" and "?.len" in v:
-                continue
-            value_dump = json.dumps(v, sort_keys=True)
-            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
-            a = aliased(JobParameter)
-            if value_dump == wildcard_value:
-                stmt = stmt.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value == value_dump,
-                    )
-                )
-            else:
-                stmt = stmt.join(a).where(
-                    and_(
-                        Job.id == a.job_id,
-                        a.name == k,
-                        a.value.like(wildcard_value),
-                    )
-                )
-
-        stmt_sq = stmt.subquery()
         query = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
         data_conditions = []
@@ -626,6 +566,69 @@ class JobSearch:
             return job
         log.info("No equivalent jobs found %s", search_timer)
         return None
+
+    def _build_job_subquery(self, tool_id, user_id, tool_version, job_state, wildcard_param_dump):
+        """Build subquery that selects a job with correct job parameters."""
+        stmt = select(model.Job.id).where(
+            and_(
+                model.Job.tool_id == tool_id,
+                model.Job.user_id == user_id,
+                model.Job.copied_from_job_id.is_(None),  # Always pick original job
+            )
+        )
+        if tool_version:
+            stmt = stmt.where(Job.tool_version == str(tool_version))
+
+        if job_state is None:
+            stmt = stmt.where(
+                Job.state.in_(
+                    [Job.states.NEW, Job.states.QUEUED, Job.states.WAITING, Job.states.RUNNING, Job.states.OK]
+                )
+            )
+        else:
+            if isinstance(job_state, str):
+                stmt = stmt.where(Job.state == job_state)
+            elif isinstance(job_state, list):
+                stmt = stmt.where(or_(*[Job.state == s for s in job_state]))
+
+        # exclude jobs with deleted outputs
+        stmt = stmt.where(
+            and_(
+                model.Job.any_output_dataset_collection_instances_deleted == false(),
+                model.Job.any_output_dataset_deleted == false(),
+            )
+        )
+
+        for k, v in wildcard_param_dump.items():
+            if v == {"__class__": "RuntimeValue"}:
+                # TODO: verify this is always None. e.g. run with runtime input input
+                v = None
+            elif k.endswith("|__identifier__"):
+                # We've taken care of this while constructing the conditions based on ``input_data`` above
+                continue
+            elif k == "chromInfo" and "?.len" in v:
+                continue
+            value_dump = json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            a = aliased(JobParameter)
+            if value_dump == wildcard_value:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value == value_dump,
+                    )
+                )
+            else:
+                stmt = stmt.join(a).where(
+                    and_(
+                        Job.id == a.job_id,
+                        a.name == k,
+                        a.value.like(wildcard_value),
+                    )
+                )
+
+        return stmt.subquery()
 
 
 def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
