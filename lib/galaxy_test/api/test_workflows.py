@@ -3352,23 +3352,29 @@ input_c:
             # Check there are 3 exit_code_from_file
             assert len(filter_jobs_by_tool("exit_code_from_file")) == 3, jobs
             # Check output collection has 3 elements
-            output_mixed_collection_id = invocation['steps'][1]['output_collections']['out_file1']['id']
-            mixed_collection = self.dataset_populator.get_history_collection_details(history_id, content_id=output_mixed_collection_id, assert_ok=False)
+            output_mixed_collection_id = invocation["steps"][1]["output_collections"]["out_file1"]["id"]
+            mixed_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_mixed_collection_id, assert_ok=False
+            )
             assert mixed_collection["element_count"] == 3, mixed_collection
             # Check 3 jobs cat1 has been "scheduled":
             assert len(filter_jobs_by_tool("cat1")) == 3, jobs
             # Check 2 are 'ok' the other is 'paused'
-            output_cat_id = invocation['steps'][2]['output_collections']['out_file1']['id']
-            cat_collection = self.dataset_populator.get_history_collection_details(history_id, content_id=output_cat_id, assert_ok=False)
+            output_cat_id = invocation["steps"][2]["output_collections"]["out_file1"]["id"]
+            cat_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_cat_id, assert_ok=False
+            )
             assert cat_collection["element_count"] == 3, cat_collection
             cat1_states = [e["object"]["state"] for e in cat_collection["elements"]]
-            assert 'paused' in cat1_states, jobs
-            assert len([s for s in cat1_states if s == 'ok']) == 2, cat_collection
+            assert "paused" in cat1_states, jobs
+            assert len([s for s in cat1_states if s == "ok"]) == 2, cat_collection
             # Check the KEEP_SUCCESS_DATASETS have been run
             assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
             # Check the output has 2 elements
-            output_filtered_id = invocation['steps'][3]['output_collections']['output']['id']
-            output_filtered = self.dataset_populator.get_history_collection_details(history_id, content_id=output_filtered_id, assert_ok=False)
+            output_filtered_id = invocation["steps"][3]["output_collections"]["output"]["id"]
+            output_filtered = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_filtered_id, assert_ok=False
+            )
             assert output_filtered["element_count"] == 2, output_filtered
 
     def test_workflow_request(self):
