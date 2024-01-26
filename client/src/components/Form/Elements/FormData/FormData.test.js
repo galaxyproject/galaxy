@@ -153,6 +153,39 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[2][0]).toEqual(null);
     });
 
+    it("properly sorts multiple datasets", async () => {
+        const wrapper = createTarget({
+            value: {
+                // the order of values does not matter here
+                values: [
+                    { id: "hda2", src: "hda" },
+                    { id: "hda3", src: "hda" },
+                    { id: "hda1", src: "hda" },
+                ],
+            },
+            multiple: true,
+            optional: true,
+            options: defaultOptions,
+        });
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(3);
+        // the values in the multiselect are sorted by hid DESC
+        expect(selectedValues.at(0).text()).toBe("3: hdaName3");
+        expect(selectedValues.at(1).text()).toBe("2: hdaName2");
+        expect(selectedValues.at(2).text()).toBe("1: hdaName1");
+        await selectedValues.at(0).trigger("click");
+        const value_sorted = {
+            batch: false,
+            product: false,
+            values: [
+                // the values in the emitted input are sorted by hid ASC
+                { id: "hda1", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+            ],
+        };
+        expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
+    });
+
     it("dataset collection as hda", async () => {
         const wrapper = createTarget({
             value: { values: [{ id: "dce1", src: "dce" }] },
