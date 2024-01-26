@@ -2098,7 +2098,6 @@ def _wait_for_installation(repository: galaxy_model.ToolShedRepository, refresh)
                 "Repository installation timed out, %d seconds elapsed, repository state is %s."
                 % (timeout_counter, repository.status)
             )
-            break
         time.sleep(1)
 
 
