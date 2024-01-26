@@ -1,4 +1,5 @@
 import logging
+import re
 import shutil
 import tempfile
 from json import dumps
@@ -77,6 +78,31 @@ class ToolsService(ServiceBase):
             )
         return files_payload
 
+    def create_temp_file_execute(self, trans, files) -> Dict[str, FilesPayload]:
+        # TODO - could access headers from request maybe better to do that
+        # header_content = request.headers["content-type"]
+        files_payload = {}
+        for i, upload_file in enumerate(files):
+            with tempfile.NamedTemporaryFile(
+                dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+            ) as dest:
+                shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+            upload_file.file.close()
+
+            # try to grab the name from the header
+            try:
+                header_items = upload_file.headers.items()[0]
+                name_search = re.search(r'name="([^"]+)"', header_items[1])
+                if name_search:
+                    name = name_search.group(1)
+                else:
+                    raise Exception("No name found in header")
+            # if we can't find the name in the header use the index
+            except Exception:
+                name = f"files_{i}|file_data"
+            files_payload[name] = FilesPayload(filename=upload_file.filename, local_filename=dest.name)
+        return files_payload
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
@@ -129,7 +155,7 @@ class ToolsService(ServiceBase):
 
         create_payload = payload.model_dump()
         if files:
-            create_payload.update(self.create_temp_file(trans, files))
+            create_payload.update(self.create_temp_file_execute(trans, files))
         return self.create(trans, create_payload)
 
     def create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
