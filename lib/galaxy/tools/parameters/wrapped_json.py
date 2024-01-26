@@ -57,7 +57,7 @@ def data_collection_input_to_staging_path_and_source_path(
             *v.element_identifiers_extensions_paths_and_metadata_files
         )
     else:
-        element_identifiers, extensions, source_paths, metadata_files = [], [], [], []
+        element_identifiers, extensions, source_paths, metadata_files = (), (), (), ()
     return [
         {
             "element_identifier": element_identifier,
