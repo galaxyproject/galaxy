@@ -789,7 +789,7 @@ class Tool(Dictifiable):
         # tool_data_table_conf.xml entries exist.
         self.input_params: List[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
-        self.tool_shed = None
+        self.tool_shed: Optional[str] = None
         self.repository_name = None
         self.repository_owner = None
         self.changeset_revision = None
