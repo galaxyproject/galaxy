@@ -1113,7 +1113,6 @@ class Yaml(Text):
                 return True
             except yaml.YAMLError:
                 return False
-            return False
 
 
 @build_sniff_from_prefix
