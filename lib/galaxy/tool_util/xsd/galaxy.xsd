@@ -7606,7 +7606,7 @@ the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="path"/>
+      <xs:enumeration value="paths"/>
       <xs:enumeration value="staging_path_and_source_path"/>
     </xs:restriction>
   </xs:simpleType>
