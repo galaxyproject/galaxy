@@ -138,7 +138,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         uploader.upload()
         upload_session_url = uploader.url
         assert upload_session_url
-        tus_session_id = upload_session_url.rsplit("/", 1)[1]
+        tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
         data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
