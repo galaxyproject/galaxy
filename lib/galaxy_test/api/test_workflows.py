@@ -3314,22 +3314,18 @@ inputs:
 steps:
   mixed_collection:
     tool_id: exit_code_from_file
-    state:
-       input:
-         $link: input_c
+    in:
+       input: input_c
 
   cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: mixed_collection/out_file1
+    in:
+      input1: mixed_collection/out_file1
 
   filtered_collection:
     tool_id: "__KEEP_SUCCESS_DATASETS__"
-    state:
-      input:
-        $link: cat/out_file1
-
+    in:
+      input: cat/out_file1
 """,
                 test_data="""
 input_c:
