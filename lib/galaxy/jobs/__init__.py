@@ -79,7 +79,6 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
 )
 from galaxy.util import (
-    etree,
     parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
@@ -643,7 +642,7 @@ class JobConfiguration(ConfiguresHandlers):
                             field_name, self.resource_parameters
                         )
                         raise KeyError(message)
-                    fields.append(etree.fromstring(self.resource_parameters[field_name]))
+                    fields.append(parse_xml_string(self.resource_parameters[field_name]))
 
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)

@@ -1,6 +1,7 @@
 annotated-types==0.6.0 ; python_version >= "3.8" and python_version < "3.13"
 cffi==1.16.0 ; python_version >= "3.8" and python_version < "3.13"
 cryptography==41.0.7 ; python_version >= "3.8" and python_version < "3.13"
+lxml-stubs==0.5.1 ; python_version >= "3.8" and python_version < "3.13"
 mypy-extensions==1.0.0 ; python_version >= "3.8" and python_version < "3.13"
 mypy==1.8.0 ; python_version >= "3.8" and python_version < "3.13"
 pycparser==2.21 ; python_version >= "3.8" and python_version < "3.13"

@@ -661,6 +661,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 section = ToolSection(elem)
                 for section_elem in elem:
                     section_id = section_elem.get("id")
+                    assert section_id
                     if section_elem.tag == "tool":
                         section.elems.stub_tool(section_id)
                     elif section_elem.tag == "workflow":

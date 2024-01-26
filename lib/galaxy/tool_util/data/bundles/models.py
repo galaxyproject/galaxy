@@ -167,11 +167,11 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
         source_value = ""
     else:
         source_base = source_elem.get("base", None)
-        source_value = source_elem.text
+        source_value = source_elem.text or ""
     target_elem = move_elem.find("target")
     if target_elem is None:
         target_base = None
-        target_value = ""
+        target_value: Optional[str] = ""
     else:
         target_base = target_elem.get("base", None)
         target_value = target_elem.text

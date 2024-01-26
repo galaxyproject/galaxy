@@ -1,4 +1,8 @@
 from logging import getLogger
+from typing import (
+    Dict,
+    Union,
+)
 
 from galaxy.util import parse_xml_string
 from . import (
@@ -64,7 +68,7 @@ class Torque(BaseJobExec):
     def get_single_status(self, job_id):
         return f"qstat -f {job_id}"
 
-    def parse_status(self, status, job_ids):
+    def parse_status(self, status: str, job_ids) -> Union[Dict, None]:
         # in case there's noise in the output, find the big blob 'o xml
         tree = None
         rval = {}
@@ -80,11 +84,15 @@ class Torque(BaseJobExec):
             return None
         else:
             for job in tree.findall("Job"):
-                id = job.find("Job_Id").text
-                if id in job_ids:
-                    state = job.find("job_state").text
+                job_id_elem = job.find("Job_Id")
+                assert job_id_elem is not None
+                id_ = job_id_elem.text
+                if id_ in job_ids:
+                    job_state_elem = job.find("job_state")
+                    assert job_state_elem is not None
+                    state = job_state_elem.text
                     # map PBS job states to Galaxy job states.
-                    rval[id] = self._get_job_state(state)
+                    rval[id_] = self._get_job_state(state)
         return rval
 
     def parse_single_status(self, status, job_id):

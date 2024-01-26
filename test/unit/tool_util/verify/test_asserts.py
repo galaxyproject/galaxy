@@ -2,6 +2,7 @@ import gzip
 import os
 import shutil
 import tempfile
+from typing import Tuple
 
 try:
     import h5py
@@ -10,7 +11,7 @@ except ImportError:
 
 from galaxy.tool_util.parser.xml import __parse_assert_list_from_elem
 from galaxy.tool_util.verify import asserts
-from galaxy.util import etree
+from galaxy.util import parse_xml_string
 
 TABULAR_ASSERTION = """
     <assert_contents>
@@ -1314,8 +1315,8 @@ if h5py is not None:
         assert len(a) == 1
 
 
-def run_assertions(assertion_xml, data, decompress=None):
-    assertion = etree.fromstring(assertion_xml)
+def run_assertions(assertion_xml: str, data, decompress=False) -> Tuple:
+    assertion = parse_xml_string(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
     try:
         asserts.verify_assertions(data, assertion_description, decompress=decompress)

@@ -166,6 +166,7 @@ watchdog = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
+lxml-stubs = "*"
 pydantic = ">=2"  # for pydantic.mypy plugin
 types-bleach = "*"
 types-boto = "*"

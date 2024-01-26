@@ -7,7 +7,7 @@ import pytest
 try:
     import psycopg
 except ImportError:
-    psycopg = None
+    psycopg = None  # type: ignore[assignment]
 
 try:
     import psycopg2
