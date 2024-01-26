@@ -3346,7 +3346,7 @@ input_c:
 
             def filter_jobs_by_tool(tool_id):
                 return [j for j in summary.jobs if j["tool_id"] == tool_id]
-        
+
             # Get invocation to access output collections
             invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
             # Check there are 3 exit_code_from_file
