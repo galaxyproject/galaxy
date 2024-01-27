@@ -385,40 +385,7 @@ class JobSearch:
                 elif t == "hdca":
                     query = self._build_stmt_for_hdca(query, data_conditions, used_ids, k, v)
                 elif t == "dce":
-                    a = aliased(model.JobToInputDatasetCollectionElementAssociation)
-                    b = aliased(model.DatasetCollectionElement)
-                    c = aliased(model.DatasetCollectionElement)
-                    d = aliased(model.HistoryDatasetAssociation)
-                    e = aliased(model.HistoryDatasetAssociation)
-                    query = query.add_columns(a.dataset_collection_element_id)
-                    query = (
-                        query.join(a, a.job_id == model.Job.id)
-                        .join(b, b.id == a.dataset_collection_element_id)
-                        .join(
-                            c,
-                            and_(
-                                c.element_identifier == b.element_identifier,
-                                or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
-                            ),
-                        )
-                        .outerjoin(d, d.id == c.hda_id)
-                        .outerjoin(e, e.dataset_id == d.dataset_id)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            or_(
-                                c.child_collection_id == b.child_collection_id,
-                                and_(
-                                    c.hda_id == b.hda_id,
-                                    d.id == c.hda_id,
-                                    e.dataset_id == d.dataset_id,
-                                ),
-                            ),
-                            c.id == v,
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_element_id)
+                    query = self._build_stmt_for_dce(query, data_conditions, used_ids, k, v)
                 else:
                     return []
 
@@ -636,6 +603,43 @@ class JobSearch:
             )
         )
         used_ids.append(a.dataset_collection_id)
+        return stmt
+
+    def _build_stmt_for_dce(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionElementAssociation)
+        b = aliased(model.DatasetCollectionElement)
+        c = aliased(model.DatasetCollectionElement)
+        d = aliased(model.HistoryDatasetAssociation)
+        e = aliased(model.HistoryDatasetAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_element_id)
+        stmt = (
+            stmt.join(a, a.job_id == model.Job.id)
+            .join(b, b.id == a.dataset_collection_element_id)
+            .join(
+                c,
+                and_(
+                    c.element_identifier == b.element_identifier,
+                    or_(c.hda_id == b.hda_id, c.child_collection_id == b.child_collection_id),
+                ),
+            )
+            .outerjoin(d, d.id == c.hda_id)
+            .outerjoin(e, e.dataset_id == d.dataset_id)
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                or_(
+                    c.child_collection_id == b.child_collection_id,
+                    and_(
+                        c.hda_id == b.hda_id,
+                        d.id == c.hda_id,
+                        e.dataset_id == d.dataset_id,
+                    ),
+                ),
+                c.id == v,
+            )
+        )
+        used_ids.append(a.dataset_collection_element_id)
         return stmt
 
 
