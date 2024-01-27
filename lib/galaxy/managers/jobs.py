@@ -379,63 +379,7 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    a = aliased(model.JobToInputDatasetAssociation)
-                    b = aliased(model.HistoryDatasetAssociation)
-                    c = aliased(model.HistoryDatasetAssociation)
-                    d = aliased(model.JobParameter)
-                    e = aliased(model.HistoryDatasetAssociationHistory)
-                    query = query.add_columns(a.dataset_id)
-                    used_ids.append(a.dataset_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    stmt = select(model.HistoryDatasetAssociation.id).where(
-                        model.HistoryDatasetAssociation.id == e.history_dataset_association_id
-                    )
-                    # b is the HDA used for the job
-                    query = query.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
-                    name_condition = []
-                    if identifier:
-                        query = query.join(d)
-                        data_conditions.append(
-                            and_(
-                                d.name.in_({f"{_}|__identifier__" for _ in k}),
-                                d.value == json.dumps(identifier),
-                            )
-                        )
-                    else:
-                        stmt = stmt.where(e.name == c.name)
-                        name_condition.append(b.name == c.name)
-                    stmt = (
-                        stmt.where(
-                            e.extension == c.extension,
-                        )
-                        .where(
-                            a.dataset_version == e.version,
-                        )
-                        .where(
-                            e._metadata == c._metadata,
-                        )
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,  # c is the requested job input HDA
-                            # We need to make sure that the job we are looking for has been run with identical inputs.
-                            # Here we deal with 3 requirements:
-                            #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
-                            #  - b's update_time is older than the job create time, meaning no changes occurred
-                            #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
-                            or_(
-                                and_(
-                                    or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
-                                    b.extension == c.extension,
-                                    b.metadata == c.metadata,
-                                    *name_condition,
-                                ),
-                                b.id.in_(stmt),
-                            ),
-                            or_(b.deleted == false(), c.deleted == false()),
-                        )
-                    )
+                    query = self._build_stmt_for_hda(query, data_conditions, used_ids, k, v, identifier)
                 elif t == "ldda":
                     a = aliased(model.JobToInputLibraryDatasetAssociation)
                     query = query.add_columns(a.ldda_id)
@@ -629,6 +573,66 @@ class JobSearch:
                 )
 
         return stmt.subquery()
+
+    def _build_stmt_for_hda(self, stmt, data_conditions, used_ids, k, v, identifier):
+        a = aliased(model.JobToInputDatasetAssociation)
+        b = aliased(model.HistoryDatasetAssociation)
+        c = aliased(model.HistoryDatasetAssociation)
+        d = aliased(model.JobParameter)
+        e = aliased(model.HistoryDatasetAssociationHistory)
+        stmt = stmt.add_columns(a.dataset_id)
+        used_ids.append(a.dataset_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        hda_stmt = select(model.HistoryDatasetAssociation.id).where(
+            model.HistoryDatasetAssociation.id == e.history_dataset_association_id
+        )
+        # b is the HDA used for the job
+        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        name_condition = []
+        if identifier:
+            stmt = stmt.join(d)
+            data_conditions.append(
+                and_(
+                    d.name.in_({f"{_}|__identifier__" for _ in k}),
+                    d.value == json.dumps(identifier),
+                )
+            )
+        else:
+            hda_stmt = hda_stmt.where(e.name == c.name)
+            name_condition.append(b.name == c.name)
+        hda_stmt = (
+            hda_stmt.where(
+                e.extension == c.extension,
+            )
+            .where(
+                a.dataset_version == e.version,
+            )
+            .where(
+                e._metadata == c._metadata,
+            )
+        )
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,  # c is the requested job input HDA
+                # We need to make sure that the job we are looking for has been run with identical inputs.
+                # Here we deal with 3 requirements:
+                #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
+                #  - b's update_time is older than the job create time, meaning no changes occurred
+                #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
+                or_(
+                    and_(
+                        or_(a.dataset_version.in_([0, b.version]), b.update_time < model.Job.create_time),
+                        b.extension == c.extension,
+                        b.metadata == c.metadata,
+                        *name_condition,
+                    ),
+                    b.id.in_(hda_stmt),
+                ),
+                or_(b.deleted == false(), c.deleted == false()),
+            )
+        )
+        return stmt
 
 
 def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
