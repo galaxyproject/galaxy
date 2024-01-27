@@ -167,6 +167,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             details = details.replace("\n", " ").strip()
+            details = details.replace("|", "\\|").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
                 details += (
