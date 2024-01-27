@@ -381,11 +381,7 @@ class JobSearch:
                 if t == "hda":
                     query = self._build_stmt_for_hda(query, data_conditions, used_ids, k, v, identifier)
                 elif t == "ldda":
-                    a = aliased(model.JobToInputLibraryDatasetAssociation)
-                    query = query.add_columns(a.ldda_id)
-                    query = query.join(a, a.job_id == model.Job.id)
-                    data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
-                    used_ids.append(a.ldda_id)
+                    query = self._build_stmt_for_ldda(query, data_conditions, used_ids, k, v)
                 elif t == "hdca":
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
@@ -632,6 +628,14 @@ class JobSearch:
                 or_(b.deleted == false(), c.deleted == false()),
             )
         )
+        return stmt
+
+    def _build_stmt_for_ldda(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputLibraryDatasetAssociation)
+        stmt = stmt.add_columns(a.ldda_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id)
+        data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
+        used_ids.append(a.ldda_id)
         return stmt
 
 
