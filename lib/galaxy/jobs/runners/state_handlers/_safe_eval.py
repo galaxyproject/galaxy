@@ -1,5 +1,4 @@
 from ast import (
-    Module,
     parse,
     walk,
 )
