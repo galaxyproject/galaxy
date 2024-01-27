@@ -5,6 +5,7 @@ from datetime import (
     date,
     datetime,
 )
+from typing import List
 
 import sqlalchemy
 from boltons.iterutils import remap
@@ -359,7 +360,7 @@ class JobSearch:
 
         stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
-        data_conditions = []
+        data_conditions: List = []
 
         # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
@@ -367,7 +368,7 @@ class JobSearch:
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids = []
+        used_ids: List = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whethter
             # the input is in a repeat, or not (section and conditional)
@@ -525,7 +526,7 @@ class JobSearch:
             model.HistoryDatasetAssociation.id == e.history_dataset_association_id
         )
         # b is the HDA used for the job
-        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)
+        stmt = stmt.join(b, a.dataset_id == b.id).join(c, c.dataset_id == b.dataset_id)  # type:ignore[attr-defined]
         name_condition = []
         if identifier:
             stmt = stmt.join(d)
@@ -623,7 +624,7 @@ class JobSearch:
                 ),
             )
             .outerjoin(d, d.id == c.hda_id)
-            .outerjoin(e, e.dataset_id == d.dataset_id)
+            .outerjoin(e, e.dataset_id == d.dataset_id)  # type:ignore[attr-defined]
         )
         data_conditions.append(
             and_(
@@ -633,7 +634,7 @@ class JobSearch:
                     and_(
                         c.hda_id == b.hda_id,
                         d.id == c.hda_id,
-                        e.dataset_id == d.dataset_id,
+                        e.dataset_id == d.dataset_id,  # type:ignore[attr-defined]
                     ),
                 ),
                 c.id == v,
