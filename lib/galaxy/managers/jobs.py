@@ -383,32 +383,7 @@ class JobSearch:
                 elif t == "ldda":
                     query = self._build_stmt_for_ldda(query, data_conditions, used_ids, k, v)
                 elif t == "hdca":
-                    a = aliased(model.JobToInputDatasetCollectionAssociation)
-                    b = aliased(model.HistoryDatasetCollectionAssociation)
-                    c = aliased(model.HistoryDatasetCollectionAssociation)
-                    query = query.add_columns(a.dataset_collection_id)
-                    query = (
-                        query.join(a, a.job_id == model.Job.id)
-                        .join(b, b.id == a.dataset_collection_id)
-                        .join(c, b.name == c.name)
-                    )
-                    data_conditions.append(
-                        and_(
-                            a.name.in_(k),
-                            c.id == v,
-                            or_(
-                                and_(b.deleted == false(), b.id == v),
-                                and_(
-                                    or_(
-                                        c.copied_from_history_dataset_collection_association_id == b.id,
-                                        b.copied_from_history_dataset_collection_association_id == c.id,
-                                    ),
-                                    c.deleted == false(),
-                                ),
-                            ),
-                        )
-                    )
-                    used_ids.append(a.dataset_collection_id)
+                    query = self._build_stmt_for_hdca(query, data_conditions, used_ids, k, v)
                 elif t == "dce":
                     a = aliased(model.JobToInputDatasetCollectionElementAssociation)
                     b = aliased(model.DatasetCollectionElement)
@@ -636,6 +611,31 @@ class JobSearch:
         stmt = stmt.join(a, a.job_id == model.Job.id)
         data_conditions.append(and_(a.name.in_(k), a.ldda_id == v))
         used_ids.append(a.ldda_id)
+        return stmt
+
+    def _build_stmt_for_hdca(self, stmt, data_conditions, used_ids, k, v):
+        a = aliased(model.JobToInputDatasetCollectionAssociation)
+        b = aliased(model.HistoryDatasetCollectionAssociation)
+        c = aliased(model.HistoryDatasetCollectionAssociation)
+        stmt = stmt.add_columns(a.dataset_collection_id)
+        stmt = stmt.join(a, a.job_id == model.Job.id).join(b, b.id == a.dataset_collection_id).join(c, b.name == c.name)
+        data_conditions.append(
+            and_(
+                a.name.in_(k),
+                c.id == v,
+                or_(
+                    and_(b.deleted == false(), b.id == v),
+                    and_(
+                        or_(
+                            c.copied_from_history_dataset_collection_association_id == b.id,
+                            b.copied_from_history_dataset_collection_association_id == c.id,
+                        ),
+                        c.deleted == false(),
+                    ),
+                ),
+            )
+        )
+        used_ids.append(a.dataset_collection_id)
         return stmt
 
 
