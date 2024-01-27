@@ -357,11 +357,11 @@ class JobSearch:
 
         stmt_sq = self._build_job_subquery(tool_id, user.id, tool_version, job_state, wildcard_param_dump)
 
-        query = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
+        stmt = select(Job.id).select_from(Job.table.join(stmt_sq, stmt_sq.c.id == Job.id))
 
         data_conditions = []
 
-        # We now build the query filters that relate to the input datasets
+        # We now build the stmt filters that relate to the input datasets
         # that this job uses. We keep track of the requested dataset id in `requested_ids`,
         # the type (hda, hdca or lda) in `data_types`
         # and the ids that have been used in the job that has already been run in `used_ids`.
@@ -379,19 +379,19 @@ class JobSearch:
                 data_types.append(t)
                 identifier = type_values["identifier"]
                 if t == "hda":
-                    query = self._build_stmt_for_hda(query, data_conditions, used_ids, k, v, identifier)
+                    stmt = self._build_stmt_for_hda(stmt, data_conditions, used_ids, k, v, identifier)
                 elif t == "ldda":
-                    query = self._build_stmt_for_ldda(query, data_conditions, used_ids, k, v)
+                    stmt = self._build_stmt_for_ldda(stmt, data_conditions, used_ids, k, v)
                 elif t == "hdca":
-                    query = self._build_stmt_for_hdca(query, data_conditions, used_ids, k, v)
+                    stmt = self._build_stmt_for_hdca(stmt, data_conditions, used_ids, k, v)
                 elif t == "dce":
-                    query = self._build_stmt_for_dce(query, data_conditions, used_ids, k, v)
+                    stmt = self._build_stmt_for_dce(stmt, data_conditions, used_ids, k, v)
                 else:
                     return []
 
-            query = query.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
+            stmt = stmt.where(*data_conditions).group_by(model.Job.id, *used_ids).order_by(model.Job.id.desc())
 
-        for job in self.sa_session.execute(query):
+        for job in self.sa_session.execute(stmt):
             # We found a job that is equal in terms of tool_id, user, state and input datasets,
             # but to be able to verify that the parameters match we need to modify all instances of
             # dataset_ids (HDA, LDDA, HDCA) in the incoming param_dump to point to those used by the
