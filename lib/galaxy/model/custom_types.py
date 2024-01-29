@@ -117,6 +117,8 @@ class JSONType(TypeDecorator):
 
 
 class DoubleEncodedJsonType(JSONType):
+    cache_ok = True
+
     def process_result_value(self, value, dialect):
         value = super().process_result_value(value, dialect)
         if isinstance(value, str):
