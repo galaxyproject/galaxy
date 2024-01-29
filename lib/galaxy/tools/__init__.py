@@ -1933,7 +1933,15 @@ class Tool(Dictifiable, ToolParameterBundle):
         log.info(validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
-    def handle_input_2(self, trans, tool_request: ToolRequest, history=None, use_cached_job=False):
+    def handle_input_2(
+        self,
+        trans,
+        tool_request: ToolRequest,
+        history=None,
+        use_cached_job=False,
+        preferred_object_store_id: Optional[str] = None,
+        input_format="legacy",
+    ):
         # TODO: original 1 added preferred object store on rebase, need to add it here.
         request_context = proxy_work_context_for_history(trans, history=history)
         tool_request_state = RequestInternalToolState(tool_request.request)
@@ -1953,11 +1961,12 @@ class Tool(Dictifiable, ToolParameterBundle):
                 request_context,
                 self,
                 mapping_params,
-                history=history,
-                tool_request=tool_request,
-                rerun_remap_job_id=rerun_remap_job_id,
+                history,
+                tool_request,
+                completed_jobs,
+                rerun_remap_job_id,
+                preferred_object_store_id,
                 collection_info=collection_info,
-                completed_jobs=completed_jobs,
             )
 
     def handle_input(
