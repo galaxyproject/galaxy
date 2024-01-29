@@ -189,10 +189,6 @@ config/galaxy.yml.sample:galaxy
 -  mapping.galaxy.mapping.ga4gh_service_organization_url
 -  mapping.galaxy.mapping.interactivetools_shorten_url
 
-Deprecation Notices
-===========================================================
-Add content or drop section.
-
 Release Notes
 ===========================================================
 
