@@ -111,6 +111,7 @@ from sqlalchemy.sql import exists
 from typing_extensions import (
     Literal,
     Protocol,
+    TypeAlias,
     TypedDict,
 )
 
@@ -1380,7 +1381,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
-    states = JobState
+    states: TypeAlias = JobState
 
     # states that are not expected to change, except through admin action or re-scheduling
     terminal_states = [states.OK, states.ERROR, states.DELETED]

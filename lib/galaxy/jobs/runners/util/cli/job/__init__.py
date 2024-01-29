@@ -11,10 +11,12 @@ from typing import (
     List,
 )
 
+from typing_extensions import TypeAlias
+
 try:
     from galaxy.model import Job
 
-    job_states = Job.states
+    job_states: TypeAlias = Job.states
 except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     class job_states(str, Enum):  # type: ignore[no-redef]
@@ -64,13 +66,13 @@ class BaseJobExec(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_status(self, status: str, job_ids: List[str]) -> Dict[str, str]:
+    def parse_status(self, status: str, job_ids: List[str]) -> Dict[str, job_states]:
         """
         Parse the statuses of output from get_status command.
         """
 
     @abstractmethod
-    def parse_single_status(self, status, job_id):
+    def parse_single_status(self, status: str, job_id: str) -> job_states:
         """
         Parse the status of output from get_single_status command.
         """
