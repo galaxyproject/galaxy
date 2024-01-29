@@ -4,7 +4,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from sqlalchemy import func
+from sqlalchemy import (
+    func,
+    text,
+)
 
 from galaxy import model as m
 from galaxy.exceptions import (
@@ -86,7 +89,11 @@ class GenomeFilterMixin:
             # Doesn't filter genome_build for collections
             if model_class.__name__ == "HistoryDatasetCollectionAssociation":
                 return False
-            column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            # TODO: should use is_postgres(self.app.config.database_connection) in 23.2
+            if self.app.config.database_connection.startswith("postgres"):
+                column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
+            else:
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
             lower_val = val.lower()  # Ignore case
             if op == "eq":
                 cond = func.lower(column) == lower_val
