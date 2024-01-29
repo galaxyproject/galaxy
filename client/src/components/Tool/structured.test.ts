@@ -1,5 +1,7 @@
-import { structuredInputs, validate } from "./structured";
+import SPEC_PARAMETERS from "./parameter_models.yml";
+import SPEC_TESTS from "./parameter_specification.yml";
 import { TextParameterModel, ToolParameterModel } from "./parameterModels";
+import { structuredInputs, validate } from "./structured";
 
 describe("structured.js", () => {
     it("should parse galaxy integer parameters", () => {
@@ -7,43 +9,43 @@ describe("structured.js", () => {
         const si = structuredInputs({ parameter: "5" }, [
             { name: "parameter", parameter_type: "gx_integer", optional: false },
         ]);
-        expect(si["parameter"]).toBe(5);
+        expect(si).toHaveProperty("parameter");
+        if ("parameter" in si) {
+            const val = si["parameter"];
+            expect(val).toBe(5);
+        }
     });
 });
 
-import SPEC_PARAMETERS from "./parameter_models.yml";
-import SPEC_TESTS from "./parameter_specification.yml";
+type TestCase = { [ParameterName: string]: any };
 
-class FileTestCases {
-    request_invalid: Array<any>;
-    request_valid: Array<any>;
+interface FileTestCases {
+    request_invalid: Array<TestCase>;
+    request_valid: Array<TestCase>;
 }
 
-function itShouldValidateParameters(file, parameters) {
+type ParameterSpecification = { [FileName: string]: FileTestCases };
+
+function itShouldValidateParameters(file: string, parameters: Array<TestCase>) {
     for (const [index, parameter] of parameters.entries()) {
         itShouldValidateParameter(file, index, parameter);
     }
 }
 
-function itShouldInvalidateParameters(file, parameters) {
+function itShouldInvalidateParameters(file: string, parameters: Array<TestCase>) {
     for (const [index, parameter] of parameters.entries()) {
         itShouldInvalidateParameter(file, index, parameter);
     }
 }
 
-function toToolParameterModel(jsonObject): ToolParameterModel {
-    const modal: TextParameterModel = jsonObject;
-    return modal;
-}
-
 function parameterModelsForFile(filename: string): Array<ToolParameterModel> {
     const parameterModel = SPEC_PARAMETERS[filename];
-    const parameterObject: ToolParameterModel = toToolParameterModel(parameterModel);
+    const parameterObject: ToolParameterModel = parameterModel as TextParameterModel;
     const inputs = [parameterObject];
     return inputs;
 }
 
-function itShouldValidateParameter(file, index, parameterTestCase) {
+function itShouldValidateParameter(file: string, index: number, parameterTestCase: TestCase) {
     let doc = " for file [" + file + "] and valid parameter combination [" + index + "]";
     if (parameterTestCase._doc) {
         doc = " - " + parameterTestCase._doc;
@@ -54,7 +56,7 @@ function itShouldValidateParameter(file, index, parameterTestCase) {
     });
 }
 
-function itShouldInvalidateParameter(file, index, parameterTestCase) {
+function itShouldInvalidateParameter(file: string, index: number, parameterTestCase: TestCase) {
     let doc = " for file [" + file + "] and invalid parameter combination [" + index + "]";
     if (parameterTestCase._doc) {
         doc = " - " + parameterTestCase._doc;
@@ -66,8 +68,7 @@ function itShouldInvalidateParameter(file, index, parameterTestCase) {
 }
 
 describe("Tool Parameter Specification", () => {
-    for (const [file, combos] of Object.entries(SPEC_TESTS)) {
-        const testCases: FileTestCases = Object.assign(new FileTestCases(), combos);
+    for (const [file, testCases] of Object.entries(SPEC_TESTS as ParameterSpecification)) {
         if (testCases.request_valid) {
             itShouldValidateParameters(file, testCases.request_valid);
         }

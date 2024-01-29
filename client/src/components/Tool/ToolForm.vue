@@ -99,15 +99,15 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
 import { getGalaxyInstance } from "app";
+import axios from "axios";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
+import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
@@ -118,9 +118,9 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolRecommendation from "../ToolRecommendation";
-import { getToolFormData, getToolInputs, updateToolFormData, submitJob, submitToolRequest } from "./services";
-import ToolCard from "./ToolCard";
+import { getToolFormData, getToolInputs, submitJob, submitToolRequest, updateToolFormData } from "./services";
 import { structuredInputs } from "./structured";
+import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
 export default {

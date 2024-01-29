@@ -692,7 +692,6 @@ class CwlUnionParameterModel(BaseToolParameterModelDefinition):
         return union_type(union_of_cwl_types)
 
     def pydantic_template(self, state_representation: StateRepresentationT) -> DynamicModelInformation:
-
         return DynamicModelInformation(
             self.name,
             (self.py_type, ...),
@@ -785,7 +784,6 @@ class ToolParameterBundle(Protocol):
 
 
 class ToolParameterBundleModel(BaseModel):
-
     input_models: List[ToolParameterT]
 
 

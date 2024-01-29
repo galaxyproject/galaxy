@@ -49,7 +49,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Job,
     StoredWorkflow,
-    ToolRequest
+    ToolRequest,
 )
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import matching

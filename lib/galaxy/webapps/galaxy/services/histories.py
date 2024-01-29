@@ -43,7 +43,7 @@ from galaxy.managers.histories import (
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
 from galaxy.model import (
-    HistoryDatasetAssociation,    
+    HistoryDatasetAssociation,
     ToolRequest,
 )
 from galaxy.model.base import transaction

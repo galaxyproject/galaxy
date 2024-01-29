@@ -133,7 +133,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
             options: Optional[List[LabelValue]] = None
             if is_static:
                 options = []
-                for (option_label, option_value, selected) in input_source.parse_static_options():
+                for option_label, option_value, selected in input_source.parse_static_options():
                     options.append(LabelValue(label=option_label, value=option_value, selected=selected))
             return SelectParameterModel(
                 name=input_source.parse_name(),
@@ -151,7 +151,7 @@ def _from_input_source_galaxy(input_source: InputSource) -> ToolParameterT:
         if isinstance(test_parameter, BooleanParameterModel):
             default_value = test_parameter.value
         # TODO: handle select parameter model...
-        for (value, case_inputs_sources) in input_source.parse_when_input_sources():
+        for value, case_inputs_sources in input_source.parse_when_input_sources():
             if isinstance(test_parameter, BooleanParameterModel):
                 # TODO: investigate truevalue/falsevalue when...
                 from galaxy.util import string_as_bool

@@ -21,8 +21,11 @@ import {
     ToolParameterModel,
 } from "./parameterModels";
 
-export function structuredInputs(formInputs: object, toolInputs: Array<ToolParameterModel>): object {
-    const structuredInputs = {};
+type StructuredInputs = { [parameterName: string]: any };
+type FormInputs = { [parameterName: string]: any };
+
+export function structuredInputs(formInputs: FormInputs, toolInputs: Array<ToolParameterModel>): StructuredInputs {
+    const structuredInputs: StructuredInputs = {};
     for (const toolInput of toolInputs) {
         const inputKey = toolInput.name;
         structuredInputs[inputKey] = parseInt(formInputs[inputKey]);
@@ -30,7 +33,7 @@ export function structuredInputs(formInputs: object, toolInputs: Array<ToolParam
     const validationResult = validateParameters(structuredInputs, toolInputs);
     if (validationResult.length !== 0) {
         console.log(`Failed structured input validation with... '${validationResult}'`);
-        throw "Failed parameter validation";
+        throw Error("Failed parameter validation");
     }
     return structuredInputs;
 }
@@ -125,7 +128,7 @@ function isCwlFloat(model: ToolParameterModel): model is CwlFloatParameterModel 
     return model.parameter_type == "cwl_float";
 }
 
-const isBool = (v) => {
+const isBool = (v: any) => {
     return typeof v == "boolean";
 };
 
@@ -149,11 +152,13 @@ function isObjectWithKeys(inputObject: any, requiredKeys: Array<string>): boolea
     return true;
 }
 
-function isSrcReferenceObject(v, srcTypes: Array<string>) {
+function isSrcReferenceObject(v: any, srcTypes: Array<string>) {
     return isObjectWithKeys(v, ["src", "id"]) && srcTypes.indexOf(v.src) >= 0 && isString(v.id);
 }
 
-function isArrayOf(inputObject: any, typeCheck): boolean {
+type TypeChecker = (v: any) => boolean;
+
+function isArrayOf(inputObject: any, typeCheck: TypeChecker): boolean {
     if (!Array.isArray(inputObject)) {
         return false;
     }
@@ -165,11 +170,11 @@ function isArrayOf(inputObject: any, typeCheck): boolean {
     return true;
 }
 
-const isDataDict = (v) => {
+const isDataDict = (v: any) => {
     return isSrcReferenceObject(v, ["hda", "ldda"]);
 };
 
-const isBatch = (v, valueChecker) => {
+const isBatch = (v: any, valueChecker: TypeChecker) => {
     if (!isObjectWithKeys(v, ["__class__", "values"]) || v["__class__"] != "Batch") {
         return false;
     }
@@ -186,7 +191,7 @@ function simpleCwlTypeChecker(parameterModel: ToolParameterModel) {
     } else if (isCwlFile(parameterModel)) {
         checkType = isDataDict;
     } else if (isCwlNull(parameterModel)) {
-        checkType = (v) => {
+        checkType = (v: any) => {
             return v == null;
         };
     } else if (isCwlBoolean(parameterModel)) {
@@ -196,12 +201,12 @@ function simpleCwlTypeChecker(parameterModel: ToolParameterModel) {
     } else if (isCwlFloat(parameterModel)) {
         checkType = isFloat;
     } else {
-        throw "Unknown simple CWL type encountered.";
+        throw Error("Unknown simple CWL type encountered.");
     }
     return checkType;
 }
 
-function checkCwlUnionType(parameterModel: CwlUnionParameterModel, inputValue) {
+function checkCwlUnionType(parameterModel: CwlUnionParameterModel, inputValue: any) {
     for (const unionedModel of parameterModel.parameters) {
         if (simpleCwlTypeChecker(unionedModel)(inputValue)) {
             return true;
@@ -210,13 +215,13 @@ function checkCwlUnionType(parameterModel: CwlUnionParameterModel, inputValue) {
     return false;
 }
 
-function validateParameter(inputKey: string, inputValue, parameterModel: ToolParameterModel) {
-    const results = [];
+function validateParameter(inputKey: string, inputValue: any, parameterModel: ToolParameterModel) {
+    const results: string[] = [];
     let checkType = null;
 
-    function handleOptional(typeCheck, parameter) {
-        if (parameter.optional) {
-            return (v) => {
+    function handleOptional(typeCheck: TypeChecker, parameter: ToolParameterModel) {
+        if ("optional" in parameter && parameter.optional) {
+            return (v: any) => {
                 return v === null || typeCheck(v);
             };
         } else {
@@ -235,21 +240,21 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
     } else if (isGxHidden(parameterModel)) {
         checkType = handleOptional(isString, parameterModel);
     } else if (isGxColor(parameterModel)) {
-        const isColorString = (v) => {
+        const isColorString = (v: any) => {
             return isString(v) && /^#[0-9A-F]{6}$/i.test(v);
         };
         checkType = handleOptional(isColorString, parameterModel);
     } else if (isGxData(parameterModel)) {
-        const isMultiDataDict = (v) => {
+        const isMultiDataDict = (v: any) => {
             return isSrcReferenceObject(v, ["hda", "ldda", "hdca"]);
         };
-        const isArrayOfDataDict = (v) => {
+        const isArrayOfDataDict = (v: any) => {
             return isArrayOf(v, isMultiDataDict);
         };
-        const isBatchData = (v) => {
+        const isBatchData = (v: any) => {
             return isBatch(v, isMultiDataDict);
         };
-        let checkRaw;
+        let checkRaw: TypeChecker;
         if (parameterModel.multiple) {
             checkRaw = handleOptional((v) => {
                 return isMultiDataDict(v) || isArrayOfDataDict(v);
@@ -257,17 +262,17 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
         } else {
             checkRaw = isDataDict;
         }
-        checkType = (v) => {
+        checkType = (v: any) => {
             return checkRaw(v) || isBatchData(v);
         };
         checkType = handleOptional(checkType, parameterModel);
     } else if (isGxSelect(parameterModel)) {
-        let isElement;
+        let isElement: TypeChecker;
         if (parameterModel.options != null) {
             const optionValues = parameterModel.options.map((lv) => {
                 return lv.value;
             });
-            const isOneOfOptions = (v) => {
+            const isOneOfOptions = (v: any) => {
                 return isString(v) && optionValues.indexOf(v) !== -1;
             };
             isElement = isOneOfOptions;
@@ -275,7 +280,7 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
             isElement = isString;
         }
         if (parameterModel.multiple) {
-            checkType = (v) => {
+            checkType = (v: any) => {
                 return isArrayOf(v, isElement);
             };
         } else {
@@ -283,7 +288,7 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
         }
         checkType = handleOptional(checkType, parameterModel);
     } else if (isGxDataCollection(parameterModel)) {
-        const isDataCollectionDict = (v) => {
+        const isDataCollectionDict = (v: any) => {
             return isSrcReferenceObject(v, ["hdca"]);
         };
         checkType = handleOptional(isDataCollectionDict, parameterModel);
@@ -294,7 +299,7 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
     } else if (isCwlFile(parameterModel)) {
         checkType = simpleCwlTypeChecker(parameterModel);
     } else if (isCwlUnion(parameterModel)) {
-        checkType = (v) => {
+        checkType = (v: any) => {
             return checkCwlUnionType(parameterModel, v);
         };
     } else if (isCwlBoolean(parameterModel)) {
@@ -340,10 +345,13 @@ function validateParameter(inputKey: string, inputValue, parameterModel: ToolPar
     return results;
 }
 
-function validateParameters(structuredInputs: object, parameterModels: Array<ToolParameterModel>): Array<string> {
+function validateParameters(
+    structuredInputs: StructuredInputs,
+    parameterModels: Array<ToolParameterModel>
+): Array<string> {
     const results = [];
     const keysEncountered = [];
-    const parameterModelsByName = {};
+    const parameterModelsByName: { [name: string]: ToolParameterModel } = {};
     parameterModels.forEach((v) => {
         parameterModelsByName[v.name] = v;
     });
@@ -355,8 +363,10 @@ function validateParameters(structuredInputs: object, parameterModels: Array<Too
         }
         const inputValue = structuredInputs[inputKey];
         const parameterModel = parameterModelsByName[inputKey];
-        const parameterResults = validateParameter(inputKey, inputValue, parameterModel);
-        extendValidationResults(results, parameterResults);
+        if (parameterModel) {
+            const parameterResults = validateParameter(inputKey, inputValue, parameterModel);
+            extendValidationResults(results, parameterResults);
+        }
     }
     for (const parameterModel of parameterModels) {
         const inputKey = parameterModel.name;
@@ -364,7 +374,7 @@ function validateParameters(structuredInputs: object, parameterModels: Array<Too
             continue;
         }
         const toolInput = parameterModelsByName[inputKey];
-        if (toolInput.optional === true) {
+        if ("optional" in toolInput && toolInput.optional === true) {
             continue;
         }
         results.push(`Non optional parameter ${inputKey} was not found in inputs.`);
