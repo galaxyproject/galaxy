@@ -108,12 +108,6 @@ JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
     examples=["latest"],
 )
 
-QQVModeParam: bool = Query(
-    default=True,
-    title="Use query parameters q/qv-mode",
-    description="Filtering parameters are evaluated in q/qv-mode",
-)
-
 SearchQueryParam: Optional[str] = search_query_param(
     model_name="History",
     tags=query_tags,
@@ -183,7 +177,6 @@ class FastAPIHistories:
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
-        qqv_mode: Optional[bool] = QQVModeParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: Optional[bool] = AllHistoriesQueryParam,
@@ -194,7 +187,7 @@ class FastAPIHistories:
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> Union[List[AnyHistoryView], HistoryQueryResultList]:
-        if qqv_mode:
+        if search is None:
             return self.service.index(
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )

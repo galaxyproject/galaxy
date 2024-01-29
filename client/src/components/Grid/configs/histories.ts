@@ -34,7 +34,6 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
     const { data, headers } = await historiesQuery({
         limit,
         offset,
-        qqv_mode: false,
         search,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,

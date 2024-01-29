@@ -13858,7 +13858,6 @@ export interface operations {
              * Free text search terms will be searched against the following attributes of the
              * Historys: `title`, `description`, `slug`, `tag`.
              */
-            /** @description Filtering parameters are evaluated in q/qv-mode */
             /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
             /**
              * @deprecated
@@ -13878,7 +13877,6 @@ export interface operations {
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 sort_desc?: boolean;
                 search?: string | null;
-                qqv_mode?: boolean | null;
                 all?: boolean | null;
                 deleted?: boolean | null;
                 q?: string[] | null;
