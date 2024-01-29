@@ -160,6 +160,12 @@ Enhancements
   `Pull Request 17178`_
 .. enhancement
 
+* Make release titles consistent
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17341`_
+* Use python-isal for fast zip deflate compression in rocrate export
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17342`_
 * Improve embed performance
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 17326`_
@@ -378,6 +384,9 @@ Enhancements
   `Pull Request 17182`_
 .. small_enhancement
 
+* Ensure release notes include all PRs added during the freeze by re-running the release note bootstrapping
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17344`_
 * Tool Shed client build separation
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 15000`_
@@ -687,6 +696,12 @@ Fixes
   `Pull Request 17055`_
 .. bug
 
+* Write to a temp filename in posix file source plugin
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 17350`_
+* Always store multi select data input values in fixed order
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17352`_
 * Remove duplicates when copying sections for tool panel view
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 17117`_
