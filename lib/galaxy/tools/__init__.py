@@ -26,7 +26,6 @@ from typing import (
 from urllib.parse import unquote_plus
 
 import webob.exc
-from lxml import etree
 from mako.template import Template
 from packaging.version import Version
 from sqlalchemy import (
@@ -150,6 +149,7 @@ from galaxy.util import (
     listify,
     Params,
     parse_xml_string,
+    parse_xml_string_to_etree,
     rst_to_html,
     string_as_bool,
     unicodify,
@@ -535,7 +535,7 @@ class ToolBox(AbstractToolBox):
             if tool_document:
                 tool_source = self.get_expanded_tool_source(
                     config_file=config_file,
-                    xml_tree=etree.ElementTree(etree.fromstring(tool_document["document"].encode("utf-8"))),
+                    xml_tree=parse_xml_string_to_etree(tool_document["document"]),
                     macro_paths=tool_document["macro_paths"],
                 )
             else:

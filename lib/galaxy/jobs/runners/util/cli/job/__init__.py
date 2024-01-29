@@ -6,6 +6,10 @@ from abc import (
     abstractmethod,
 )
 from enum import Enum
+from typing import (
+    Dict,
+    List,
+)
 
 try:
     from galaxy.model import Job
@@ -60,7 +64,7 @@ class BaseJobExec(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_status(self, status, job_ids):
+    def parse_status(self, status: str, job_ids: List[str]) -> Dict[str, str]:
         """
         Parse the statuses of output from get_status command.
         """

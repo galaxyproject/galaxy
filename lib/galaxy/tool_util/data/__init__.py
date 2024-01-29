@@ -169,8 +169,9 @@ class ToolDataTable(Dictifiable):
         filename: Optional[StrPath] = None,
         other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
-        self.name = config_element.get("name")
-        self.comment_char = config_element.get("comment_char")
+        name = config_element.get("name")
+        assert name
+        self.name = name
         self.empty_field_value = config_element.get("empty_field_value", "")
         self.empty_field_values: Dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
@@ -179,7 +180,7 @@ class ToolDataTable(Dictifiable):
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
-        self.missing_index_file = None
+        self.missing_index_file: Optional[str] = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
@@ -348,11 +349,19 @@ class TabularToolDataTable(ToolDataTable):
         # store repo info if available:
         repo_elem = config_element.find("tool_shed_repository")
         if repo_elem is not None:
+            tool_shed_elem = repo_elem.find("tool_shed")
+            assert tool_shed_elem is not None
+            repository_name_elem = repo_elem.find("repository_name")
+            assert repository_name_elem is not None
+            repository_owner_elem = repo_elem.find("repository_owner")
+            assert repository_owner_elem is not None
+            installed_changeset_revision_elem = repo_elem.find("installed_changeset_revision")
+            assert installed_changeset_revision_elem is not None
             repo_info = dict(
-                tool_shed=repo_elem.find("tool_shed").text,
-                name=repo_elem.find("repository_name").text,
-                owner=repo_elem.find("repository_owner").text,
-                installed_changeset_revision=repo_elem.find("installed_changeset_revision").text,
+                tool_shed=tool_shed_elem.text,
+                name=repository_name_elem.text,
+                owner=repository_owner_elem.text,
+                installed_changeset_revision=installed_changeset_revision_elem.text,
             )
         else:
             repo_info = None
@@ -375,12 +384,13 @@ class TabularToolDataTable(ToolDataTable):
                     tmp_file.flush()
                 else:
                     # Pull the filename from a global config
-                    filename = file_element.get("from_config", None) or None
+                    filename = file_element.get("from_config")
                     if filename:
                         filename = self.other_config_dict.get(filename, None)
-            filename = file_path = _expand_here_template(filename, here=self.here)
+            if filename:
+                filename = _expand_here_template(filename, here=self.here)
             found = False
-            if file_path is None:
+            if filename is None:
                 log.debug(
                     "Encountered a file element (%s) that does not contain a path value when loading tool data table '%s'.",
                     util.xml_to_string(file_element),
@@ -399,7 +409,7 @@ class TabularToolDataTable(ToolDataTable):
                 # regular galaxy app has and uses tool_data_path.
                 # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
-                filename = os.path.split(file_path)[1]
+                filename = os.path.split(filename)[1]
                 filename = os.path.join(tool_data_path, filename)
             if self.tool_data_path_files.exists(filename):
                 found = True
@@ -526,11 +536,11 @@ class TabularToolDataTable(ToolDataTable):
         else:
             self.largest_index = 0
             for column_elem in config_element.findall("column"):
-                name = column_elem.get("name", None)
+                name = column_elem.get("name")
                 assert name is not None, "Required 'name' attribute missing from column def"
-                index = column_elem.get("index", None)
-                assert index is not None, "Required 'index' attribute missing from column def"
-                index = int(index)
+                index_attr = column_elem.get("index")
+                assert index_attr is not None, "Required 'index' attribute missing from column def"
+                index = int(index_attr)
                 self.columns[name] = index
                 if index > self.largest_index:
                     self.largest_index = index

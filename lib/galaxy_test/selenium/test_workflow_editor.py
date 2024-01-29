@@ -1110,8 +1110,10 @@ steps:
         # check if all options were applied
         comment_content: WebElement = editor.comment.text_inner.wait_for_visible()
         assert comment_content.text == "Hello World"
-        assert "bold" in comment_content.get_attribute("class")
-        assert "italic" in comment_content.get_attribute("class")
+        comment_content_class = comment_content.get_attribute("class")
+        assert comment_content_class
+        assert "bold" in comment_content_class
+        assert "italic" in comment_content_class
 
         # check for correct size
         width, height = self.get_element_size(editor.comment._.wait_for_visible())

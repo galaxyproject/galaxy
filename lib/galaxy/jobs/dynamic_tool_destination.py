@@ -1647,14 +1647,14 @@ def get_destination_list_from_job_config(job_config_location) -> set:
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):
-            if isinstance(destination.get("id"), str):
-                destination_list.add(destination.get("id"))
-
+            destination_id = destination.get("id")
+            if destination_id:
+                destination_list.add(destination_id)
             else:
                 error = f"Destination ID '{str(destination)}"
                 error += "' in job configuration file cannot be"
                 error += " parsed. Things may not work as expected!"
-                log.debug(error)
+                log.warning(error)
 
     return destination_list
 
