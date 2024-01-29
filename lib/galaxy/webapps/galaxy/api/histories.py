@@ -141,7 +141,7 @@ class DeleteHistoryPayload(BaseModel):
 
 
 class DeleteHistoriesPayload(BaseModel):
-    ids: Annotated[List[HistoryIDPathParam], Field(title="IDs", description="List of history IDs to be deleted.")]
+    ids: Annotated[List[DecodedDatabaseIdField], Field(title="IDs", description="List of history IDs to be deleted.")]
     purge: Annotated[
         bool, Field(default=False, title="Purge", description="Whether to definitely remove this history from disk.")
     ]
