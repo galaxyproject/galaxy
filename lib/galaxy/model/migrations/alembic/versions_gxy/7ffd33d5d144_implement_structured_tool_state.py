@@ -1,7 +1,7 @@
 """implement structured tool state
 
 Revision ID: 7ffd33d5d144
-Revises: c39f1de47a04
+Revises: 8a19186a6ee7
 Create Date: 2022-11-09 15:53:11.451185
 
 """
@@ -17,7 +17,7 @@ from galaxy.model.custom_types import JSONType
 
 # revision identifiers, used by Alembic.
 revision = "7ffd33d5d144"
-down_revision = "c39f1de47a04"
+down_revision = "8a19186a6ee7"
 branch_labels = None
 depends_on = None
 
