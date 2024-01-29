@@ -36,7 +36,6 @@ from galaxy.schema import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
-    HistoryQueryResultList,
     HistorySortByEnum,
 )
 from galaxy.schema.schema import (
@@ -186,7 +185,7 @@ class FastAPIHistories:
             description="Whether to return only deleted items.",
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
-    ) -> Union[List[AnyHistoryView], HistoryQueryResultList]:
+    ) -> List[AnyHistoryView]:
         if search is None:
             return self.service.index(
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all

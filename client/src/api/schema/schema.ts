@@ -2235,6 +2235,11 @@ export interface components {
              */
             user_id?: string | null;
             /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
              * Username and slug
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
@@ -6400,6 +6405,11 @@ export interface components {
              */
             user_id?: string | null;
             /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
              * Username and slug
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
@@ -6426,61 +6436,6 @@ export interface components {
             user_id?: string | null;
             [key: string]: unknown | undefined;
         };
-        /** HistoryQueryResult */
-        HistoryQueryResult: {
-            /**
-             * Annotation
-             * @description The annotation of this History.
-             */
-            annotation?: string | null;
-            /**
-             * Create Time
-             * @description The time and date this item was created.
-             */
-            create_time: string | null;
-            /**
-             * Deleted
-             * @description Whether this History has been deleted.
-             */
-            deleted: boolean;
-            /**
-             * ID
-             * @description Encoded ID of the History.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Importable
-             * @description Whether this History can be imported.
-             */
-            importable: boolean;
-            /**
-             * Name
-             * @description The name of the History.
-             */
-            name: string;
-            /**
-             * Published
-             * @description Whether this History has been published.
-             */
-            published: boolean;
-            /**
-             * Tags
-             * @description A list of tags to add to this item.
-             */
-            tags: components["schemas"]["TagCollection"] | null;
-            /**
-             * Update Time
-             * @description The last time and date this item was updated.
-             */
-            update_time: string | null;
-            [key: string]: unknown | undefined;
-        };
-        /**
-         * HistoryQueryResultList
-         * @default []
-         */
-        HistoryQueryResultList: components["schemas"]["HistoryQueryResult"][];
         /**
          * HistorySummary
          * @description History summary information.
@@ -13894,13 +13849,11 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | (
-                              | components["schemas"]["HistoryDetailed"]
-                              | components["schemas"]["HistorySummary"]
-                              | components["schemas"]["HistoryMinimal"]
-                          )[]
-                        | components["schemas"]["HistoryQueryResultList"];
+                    "application/json": (
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryMinimal"]
+                    )[];
                 };
             };
             /** @description Validation Error */
