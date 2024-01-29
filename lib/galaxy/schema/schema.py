@@ -1283,6 +1283,7 @@ HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
+
     contents_url: ContentsUrlField
     size: int = Field(
         ...,
@@ -1336,13 +1337,6 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
             "A dictionary keyed to possible dataset states and valued with the number "
             "of datasets in this history that have those states."
         ),
-    )
-
-
-class HistoryDetailedList(RootModel):
-    root: List[HistoryDetailed] = Field(
-        default=[],
-        title="List with detailed information of Histories.",
     )
 
 
