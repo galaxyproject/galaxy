@@ -297,7 +297,7 @@ def expand_meta_parameters_2(app, tool: ToolParameterBundle, incoming: RequestIn
 
 
 def __expand_collection_parameter(trans, input_key, incoming_val, collections_to_match, linked=False):
-    # If subcollectin multirun of data_collection param - value will
+    # If subcollection multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     if "|" in incoming_val:
         encoded_hdc_id, subcollection_type = incoming_val.split("|", 1)
@@ -327,7 +327,7 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
 
 
 def __expand_collection_parameter_2(app, input_key, incoming_val, collections_to_match, linked=False):
-    # If subcollectin multirun of data_collection param - value will
+    # If subcollection multirun of data_collection param - value will
     # be "hdca_id|subcollection_type" else it will just be hdca_id
     try:
         src = incoming_val["src"]
@@ -338,7 +338,7 @@ def __expand_collection_parameter_2(app, input_key, incoming_val, collections_to
     except TypeError:
         hdc_id = incoming_val
         subcollection_type = None
-    hdc = app.model.context.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
+    hdc = app.model.context.get(HistoryDatasetCollectionAssociation, hdc_id)
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
