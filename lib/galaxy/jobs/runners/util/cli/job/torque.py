@@ -1,8 +1,4 @@
 from logging import getLogger
-from typing import (
-    Dict,
-    Union,
-)
 
 from galaxy.util import parse_xml_string
 from . import (
@@ -68,7 +64,7 @@ class Torque(BaseJobExec):
     def get_single_status(self, job_id):
         return f"qstat -f {job_id}"
 
-    def parse_status(self, status: str, job_ids) -> Union[Dict, None]:
+    def parse_status(self, status, job_ids):
         # in case there's noise in the output, find the big blob 'o xml
         tree = None
         rval = {}
@@ -81,7 +77,7 @@ class Torque(BaseJobExec):
                 tree = None
         if tree is None:
             log.warning(f"No valid qstat XML return from `qstat -x`, got the following: {status}")
-            return None
+            return {}
         else:
             for job in tree.findall("Job"):
                 job_id_elem = job.find("Job_Id")
@@ -91,6 +87,7 @@ class Torque(BaseJobExec):
                     job_state_elem = job.find("job_state")
                     assert job_state_elem is not None
                     state = job_state_elem.text
+                    assert state
                     # map PBS job states to Galaxy job states.
                     rval[id_] = self._get_job_state(state)
         return rval
@@ -103,11 +100,9 @@ class Torque(BaseJobExec):
         # no state found, job has exited
         return job_states.OK
 
-    def _get_job_state(self, state):
+    def _get_job_state(self, state: str) -> str:
         try:
-            return {"E": job_states.RUNNING, "R": job_states.RUNNING, "Q": job_states.QUEUED, "C": job_states.OK}.get(
-                state
-            )
+            return {"E": job_states.RUNNING, "R": job_states.RUNNING, "Q": job_states.QUEUED, "C": job_states.OK}[state]
         except KeyError:
             raise KeyError(f"Failed to map torque status code [{state}] to job state.")
 
