@@ -150,7 +150,7 @@ Please mind `http` and `https`.
         <!-- <icon>https://path/to/icon</icon>  -->
         <!-- (Optional) Enable PKCE for this IDP -->
         <!-- <pkce_support>false</pkce_support> -->
-        <!-- (Optional) the audiences accepted on the access-token for this IDP.
+        <!-- (Optional) the audiences accepted on the access-token for this IDP. -->
         <!-- <accepted_audiences>galaxy</accepted_audiences> -->
 
     </provider>
