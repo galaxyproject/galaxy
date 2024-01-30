@@ -173,7 +173,7 @@ export default {
             this.Galaxy.modal = new Modal.View();
             this.Galaxy.frame = this.windowManager;
             if (this.Galaxy.config.enable_notification_system) {
-                this.startNotificationsPolling();
+                this.startWatchingNotifications();
             }
         }
     },
@@ -189,9 +189,9 @@ export default {
         }
     },
     methods: {
-        startNotificationsPolling() {
+        startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
-            notificationsStore.startPollingNotifications();
+            notificationsStore.startWatchingNotifications();
         },
         openUrl(urlObj) {
             if (!urlObj.target) {
