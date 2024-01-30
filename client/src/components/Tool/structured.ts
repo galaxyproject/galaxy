@@ -374,7 +374,7 @@ function validateParameters(
             continue;
         }
         const toolInput = parameterModelsByName[inputKey];
-        if ("optional" in toolInput && toolInput.optional === true) {
+        if (toolInput && "optional" in toolInput && toolInput.optional === true) {
             continue;
         }
         results.push(`Non optional parameter ${inputKey} was not found in inputs.`);
