@@ -544,9 +544,12 @@ class NavigatesGalaxy(HasDriver):
         target_item = None
         grid = self.components.grids.body.wait_for_visible()
         for row in grid.find_elements(By.TAG_NAME, "tr"):
-            name_cell = row.find_elements(By.TAG_NAME, "td")[0]
-            if item_name in name_cell.text:
-                target_item = name_cell
+            for name_column in range(2):
+                name_cell = row.find_elements(By.TAG_NAME, "td")[name_column]
+                if item_name in name_cell.text:
+                    target_item = name_cell
+                    break
+            if target_item is not None:
                 break
 
         if target_item is None:
@@ -564,7 +567,7 @@ class NavigatesGalaxy(HasDriver):
         grid = self.wait_for_selector(grid_name)
         for row in grid.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
-            if td[0].text == item_name:
+            if item_name in [td[0].text, td[1].text]:
                 cell = td[column_index]
                 break
 
@@ -572,6 +575,16 @@ class NavigatesGalaxy(HasDriver):
             raise AssertionError(f"Failed to find cell for item with name [{item_name}]")
 
         return cell
+
+    def check_grid_rows(self, grid_name, item_names):
+        grid = self.wait_for_selector(grid_name)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            item_name = td[1].text
+            if item_name in item_names:
+                checkbox = td[0].find_element(self.by.TAG_NAME, "input")
+                # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
+                self.driver.execute_script("$(arguments[0]).click();", checkbox)
 
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(

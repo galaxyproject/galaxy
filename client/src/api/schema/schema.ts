@@ -493,6 +493,14 @@ export interface paths {
          */
         get: operations["get_archived_histories_api_histories_archived_get"];
     };
+    "/api/histories/batch/delete": {
+        /** Marks several histories with the given IDs as deleted. */
+        put: operations["batch_delete_api_histories_batch_delete_put"];
+    };
+    "/api/histories/batch/undelete": {
+        /** Marks several histories with the given IDs as undeleted. */
+        put: operations["batch_undelete_api_histories_batch_undelete_put"];
+    };
     "/api/histories/count": {
         /** Returns number of histories for the current user. */
         get: operations["count_api_histories_count_get"];
@@ -4041,6 +4049,20 @@ export interface components {
              * @description The number of datasets successfully processed.
              */
             success_count: number;
+        };
+        /** DeleteHistoriesPayload */
+        DeleteHistoriesPayload: {
+            /**
+             * IDs
+             * @description List of history IDs to be deleted.
+             */
+            ids: string[];
+            /**
+             * Purge
+             * @description Whether to definitely remove this history from disk.
+             * @default false
+             */
+            purge?: boolean;
         };
         /** DeleteHistoryContentPayload */
         DeleteHistoryContentPayload: {
@@ -10453,6 +10475,14 @@ export interface components {
              */
             title?: string | null;
         };
+        /** UndeleteHistoriesPayload */
+        UndeleteHistoriesPayload: {
+            /**
+             * IDs
+             * @description List of history IDs to be undeleted.
+             */
+            ids: string[];
+        };
         /**
          * UpdateCollectionAttributePayload
          * @description Contains attributes that can be updated for all elements in a dataset collection.
@@ -13920,6 +13950,83 @@ export interface operations {
                         | components["schemas"]["ArchivedHistorySummary"]
                         | components["schemas"]["ArchivedHistoryDetailed"]
                         | Record<string, never>
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_api_histories_batch_delete_put: {
+        /** Marks several histories with the given IDs as deleted. */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                purge?: boolean;
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteHistoriesPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryMinimal"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_undelete_api_histories_batch_undelete_put: {
+        /** Marks several histories with the given IDs as undeleted. */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UndeleteHistoriesPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };

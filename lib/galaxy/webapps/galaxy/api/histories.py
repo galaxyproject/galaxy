@@ -22,6 +22,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -137,6 +138,17 @@ class DeleteHistoryPayload(BaseModel):
     purge: bool = Field(
         default=False, title="Purge", description="Whether to definitely remove this history from disk."
     )
+
+
+class DeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[DecodedDatabaseIdField], Field(title="IDs", description="List of history IDs to be deleted.")]
+    purge: Annotated[
+        bool, Field(default=False, title="Purge", description="Whether to definitely remove this history from disk.")
+    ]
+
+
+class UndeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[DecodedDatabaseIdField], Field(title="IDs", description="List of history IDs to be undeleted.")]
 
 
 @as_form
@@ -375,6 +387,25 @@ class FastAPIHistories:
             purge = payload.purge
         return self.service.delete(trans, history_id, serialization_params, purge)
 
+    @router.put(
+        "/api/histories/batch/delete",
+        summary="Marks several histories with the given IDs as deleted.",
+    )
+    def batch_delete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: bool = Query(default=False),
+        payload: DeleteHistoriesPayload = Body(...),
+    ) -> List[AnyHistoryView]:
+        if payload:
+            purge = payload.purge
+        results = []
+        for history_id in payload.ids:
+            result = self.service.delete(trans, history_id, serialization_params, purge)
+            results.append(result)
+        return results
+
     @router.post(
         "/api/histories/deleted/{history_id}/undelete",
         summary="Restores a deleted history with the given ID (that hasn't been purged).",
@@ -386,6 +417,22 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.undelete(trans, history_id, serialization_params)
+
+    @router.put(
+        "/api/histories/batch/undelete",
+        summary="Marks several histories with the given IDs as undeleted.",
+    )
+    def batch_undelete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UndeleteHistoriesPayload = Body(...),
+    ) -> List[AnyHistoryView]:
+        results = []
+        for history_id in payload.ids:
+            result = self.service.undelete(trans, history_id, serialization_params)
+            results.append(result)
+        return results
 
     @router.put(
         "/api/histories/{history_id}",

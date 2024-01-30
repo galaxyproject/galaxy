@@ -3,11 +3,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
+import { BatchOperation, FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridDatasets from "./GridElements/GridDatasets.vue";
@@ -48,6 +48,11 @@ const gridData = ref();
 const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
+
+// selection references
+const selected = ref(new Set<RowData>());
+const selectedAll = computed(() => gridData.value.length === selected.value.size);
+const selectedIndeterminate = computed(() => ![0, gridData.value.length].includes(selected.value.size));
 
 // page references
 const currentPage = ref(1);
@@ -98,6 +103,7 @@ function displayInitialMessage() {
  * Request grid data
  */
 async function getGridData() {
+    selected.value = new Set();
     if (props.gridConfig) {
         try {
             const offset = props.limit * (currentPage.value - 1);
@@ -122,6 +128,15 @@ async function getGridData() {
 /**
  * Execute grid operation and display message if available
  */
+async function onBatchOperation(operation: BatchOperation, rowDataArray: Array<RowData>) {
+    const response = await operation.handler(rowDataArray);
+    if (response) {
+        await getGridData();
+        operationMessage.value = response.message;
+        operationStatus.value = response.status || "success";
+    }
+}
+
 async function onOperation(operation: Operation, rowData: RowData) {
     const response = await operation.handler(rowData);
     if (response) {
@@ -169,6 +184,24 @@ function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandl
 function onFilter(filter?: string) {
     if (filter) {
         applyFilter(filter, true);
+    }
+}
+
+// Select multiple rows
+function onSelect(rowData: RowData) {
+    if (selected.value.has(rowData)) {
+        selected.value.delete(rowData);
+    } else {
+        selected.value.add(rowData);
+    }
+    selected.value = new Set(selected.value);
+}
+
+function onSelectAll(current: boolean): void {
+    if (current) {
+        selected.value = new Set(gridData.value);
+    } else {
+        selected.value = new Set();
     }
 }
 
@@ -242,6 +275,13 @@ watch(operationMessage, () => {
         </BAlert>
         <table v-else class="grid-table">
             <thead>
+                <th v-if="!!gridConfig.batch">
+                    <BFormCheckbox
+                        class="m-2"
+                        :checked="selectedAll"
+                        :indeterminate="selectedIndeterminate"
+                        @change="onSelectAll" />
+                </th>
                 <th
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
@@ -264,6 +304,13 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
+                <td v-if="!!gridConfig.batch">
+                    <BFormCheckbox
+                        :checked="selected.has(rowData)"
+                        class="m-2 cursor-pointer"
+                        data-description="grid selected"
+                        @change="onSelect(rowData)" />
+                </td>
                 <td
                     v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
@@ -304,8 +351,30 @@ watch(operationMessage, () => {
             </tr>
         </table>
         <div class="flex-grow-1 h-100" />
-        <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
-            <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+        <div class="grid-footer">
+            <div v-if="isAvailable && gridConfig.batch" class="d-flex justify-content-between pt-3">
+                <div class="d-flex">
+                    <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
+                        <BButton
+                            v-if="
+                                selected.size > 0 &&
+                                (!batchOperation.condition || batchOperation.condition(Array.from(selected)))
+                            "
+                            class="mr-2"
+                            size="sm"
+                            variant="primary"
+                            :data-description="`grid batch ${batchOperation.title.toLowerCase()}`"
+                            @click="onBatchOperation(batchOperation, Array.from(selected))">
+                            <Icon :icon="batchOperation.icon" class="mr-1" />
+                            <span v-localize>{{ batchOperation.title }} ({{ selected.size }})</span>
+                        </BButton>
+                    </div>
+                </div>
+                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+            </div>
+            <div v-else-if="isAvailable" class="d-flex justify-content-center pt-3">
+                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
+            </div>
         </div>
     </div>
 </template>
@@ -322,7 +391,7 @@ watch(operationMessage, () => {
     top: 0;
 }
 .grid-sticky {
-    z-index: 1;
+    z-index: 2;
     background: $white;
     opacity: 0.95;
     position: sticky;
