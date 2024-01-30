@@ -89,6 +89,7 @@ gx_color:
   optional: false
   parameter_type: gx_color
   refresh_on_change: false
+  value: '#aabbcc'
 gx_conditional_boolean:
   argument: null
   help: null
@@ -113,7 +114,8 @@ gx_conditional_boolean:
     truevalue: null
     value: false
   whens:
-  - discriminator: true
+  - discriminator: 'true'
+    is_default_when: false
     parameters:
     - argument: null
       help: null
@@ -126,8 +128,63 @@ gx_conditional_boolean:
       optional: false
       parameter_type: gx_integer
       refresh_on_change: false
-      value: null
-  - discriminator: false
+      value: 1
+  - discriminator: 'false'
+    is_default_when: true
+    parameters:
+    - argument: null
+      falsevalue: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      name: boolean_parameter
+      optional: false
+      parameter_type: gx_boolean
+      refresh_on_change: false
+      truevalue: null
+      value: false
+gx_conditional_boolean_checked:
+  argument: null
+  help: null
+  hidden: false
+  is_dynamic: false
+  label: null
+  name: conditional_parameter
+  optional: false
+  parameter_type: gx_conditional
+  refresh_on_change: false
+  test_parameter:
+    argument: null
+    falsevalue: null
+    help: null
+    hidden: false
+    is_dynamic: false
+    label: null
+    name: test_parameter
+    optional: false
+    parameter_type: gx_boolean
+    refresh_on_change: false
+    truevalue: null
+    value: true
+  whens:
+  - discriminator: 'true'
+    is_default_when: true
+    parameters:
+    - argument: null
+      help: null
+      hidden: false
+      is_dynamic: false
+      label: null
+      max: null
+      min: null
+      name: integer_parameter
+      optional: false
+      parameter_type: gx_integer
+      refresh_on_change: false
+      value: 1
+  - discriminator: 'false'
+    is_default_when: false
     parameters:
     - argument: null
       falsevalue: null
@@ -165,7 +222,8 @@ gx_conditional_conditional_boolean:
     truevalue: null
     value: false
   whens:
-  - discriminator: true
+  - discriminator: 'true'
+    is_default_when: false
     parameters:
     - argument: null
       help: null
@@ -190,7 +248,8 @@ gx_conditional_conditional_boolean:
         truevalue: null
         value: false
       whens:
-      - discriminator: true
+      - discriminator: 'true'
+        is_default_when: false
         parameters:
         - argument: null
           help: null
@@ -203,8 +262,9 @@ gx_conditional_conditional_boolean:
           optional: false
           parameter_type: gx_integer
           refresh_on_change: false
-          value: null
-      - discriminator: false
+          value: 1
+      - discriminator: 'false'
+        is_default_when: true
         parameters:
         - argument: null
           falsevalue: null
@@ -218,7 +278,8 @@ gx_conditional_conditional_boolean:
           refresh_on_change: false
           truevalue: null
           value: false
-  - discriminator: false
+  - discriminator: 'false'
+    is_default_when: true
     parameters:
     - argument: null
       falsevalue: null
@@ -330,7 +391,7 @@ gx_float:
   optional: false
   parameter_type: gx_float
   refresh_on_change: false
-  value: null
+  value: 1.0
 gx_float_optional:
   argument: null
   help: null
@@ -376,7 +437,7 @@ gx_int:
   optional: false
   parameter_type: gx_integer
   refresh_on_change: false
-  value: null
+  value: 1
 gx_int_optional:
   argument: null
   help: null
@@ -389,7 +450,7 @@ gx_int_optional:
   optional: true
   parameter_type: gx_integer
   refresh_on_change: false
-  value: null
+  value: 1
 gx_repeat_boolean:
   argument: null
   help: null
@@ -424,14 +485,19 @@ gx_select:
   optional: false
   options:
   - label: Ex1
+    selected: false
     value: --ex1
   - label: Ex2
+    selected: false
     value: ex2
   - label: Ex3
+    selected: false
     value: --ex3
   - label: Ex4
+    selected: false
     value: --ex4
   - label: Ex5
+    selected: false
     value: ex5
   parameter_type: gx_select
   refresh_on_change: false
@@ -446,14 +512,19 @@ gx_select_multiple:
   optional: false
   options:
   - label: Ex1
+    selected: false
     value: --ex1
   - label: Ex2
+    selected: false
     value: ex2
   - label: Ex3
+    selected: false
     value: --ex3
   - label: Ex4
+    selected: false
     value: --ex4
   - label: Ex5
+    selected: false
     value: ex5
   parameter_type: gx_select
   refresh_on_change: false
@@ -468,14 +539,19 @@ gx_select_multiple_optional:
   optional: true
   options:
   - label: Ex1
+    selected: false
     value: --ex1
   - label: Ex2
+    selected: false
     value: ex2
   - label: Ex3
+    selected: false
     value: --ex3
   - label: Ex4
+    selected: false
     value: --ex4
   - label: Ex5
+    selected: false
     value: ex5
   parameter_type: gx_select
   refresh_on_change: false
@@ -490,14 +566,19 @@ gx_select_optional:
   optional: true
   options:
   - label: Ex1
+    selected: false
     value: --ex1
   - label: Ex2
+    selected: false
     value: ex2
   - label: Ex3
+    selected: false
     value: --ex3
   - label: Ex4
+    selected: false
     value: --ex4
   - label: Ex5
+    selected: false
     value: ex5
   parameter_type: gx_select
   refresh_on_change: false
