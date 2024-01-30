@@ -23,10 +23,10 @@ try:
 # Compatibility
 except ImportError:
 
-    def get_args(tp: Any) -> tuple:
+    def get_args(tp: Any) -> tuple:  # type: ignore
         return getattr(tp, "__args__", ()) if tp is not Generic else Generic  # type: ignore[return-value,assignment]
 
-    def get_origin(tp: Any) -> Optional[Any]:
+    def get_origin(tp: Any) -> Optional[Any]:  # type: ignore
         return getattr(tp, "__origin__", None)
 
 

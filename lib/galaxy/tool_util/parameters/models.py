@@ -55,7 +55,7 @@ StateRepresentationT = Literal["request", "request_internal", "job_internal", "t
 
 
 # could be made more specific - validators need to be classmethod
-ValidatorDictT = Dict[str, "classmethod[Any]"]
+ValidatorDictT = Dict[str, "classmethod[Any, Any, Any]"]
 
 
 class DynamicModelInformation(NamedTuple):
@@ -245,7 +245,7 @@ class MultiDataInstanceInternal(StrictModel):
 
 
 class DataTestCaseValue(StrictModel):
-    src: TestCaseDataSrcT = Field("class")
+    src: TestCaseDataSrcT
     path: str
 
 

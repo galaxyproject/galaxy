@@ -29,11 +29,13 @@ from galaxy.managers.jobs import (
     view_show_job,
 )
 from galaxy.model import ToolRequest
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.jobs import JobAssociation
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
-    EncodedDatabaseIdField,
     EncodedDatasetSourceId,
     JobIndexQueryPayload,
 )
@@ -59,13 +61,13 @@ log = logging.getLogger(__name__)
 
 
 class JobRequest(BaseModel):
-    tool_id: Optional[str] = Field(title="tool_id", description="TODO")
-    tool_uuid: Optional[str] = Field(title="tool_uuid", description="TODO")
-    tool_version: Optional[str] = Field(title="tool_version", description="TODO")
-    history_id: Optional[DecodedDatabaseIdField] = Field("history_id", description="TODO")
+    tool_id: Optional[str] = Field(default=None, title="tool_id", description="TODO")
+    tool_uuid: Optional[str] = Field(default=None, title="tool_uuid", description="TODO")
+    tool_version: Optional[str] = Field(default=None, title="tool_version", description="TODO")
+    history_id: Optional[DecodedDatabaseIdField] = Field(default=None, title="history_id", description="TODO")
     inputs: Optional[Dict[str, Any]] = Field(default_factory=lambda: {}, title="Inputs", description="TODO")
     use_cached_jobs: Optional[bool] = Field(default=None, title="use_cached_jobs")
-    rerun_remap_job_id: Optional[DecodedDatabaseIdField] = Field("rerun_remap_job_id", description="TODO")
+    rerun_remap_job_id: Optional[DecodedDatabaseIdField] = Field(default=None, title="rerun_remap_job_id", description="TODO")
     send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
 
 
