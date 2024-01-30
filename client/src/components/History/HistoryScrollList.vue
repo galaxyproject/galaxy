@@ -10,6 +10,8 @@ import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch }
 import { useRouter } from "vue-router/composables";
 
 import type { HistoryDetailed, HistorySummary } from "@/api";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -54,6 +56,15 @@ const { currentUser } = storeToRefs(useUserStore());
 const hasNoResults = computed(() => props.filter && filtered.value.length == 0);
 const validFilter = computed(() => props.filter && props.filter.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
+
+// check if we have scrolled to the top or bottom of the scrollable div
+const { arrived } = useAnimationFrameScroll(scrollableDiv);
+const isScrollable = ref(false);
+useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.height >= clientSize.height + 1;
+});
+const scrolledTop = computed(() => !isScrollable.value || arrived.top);
+const scrolledBottom = computed(() => !isScrollable.value || arrived.bottom);
 
 onMounted(async () => {
     useInfiniteScroll(scrollableDiv.value, () => loadMore());
@@ -190,7 +201,13 @@ async function loadMore(noScroll = false) {
             <b-alert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</b-alert>
         </div>
 
-        <div class="history-list-container" :class="{ 'in-panel': isMultiviewPanel }">
+        <div
+            class="history-list-container"
+            :class="{
+                'in-panel': isMultiviewPanel,
+                'scrolled-top': scrolledTop,
+                'scrolled-bottom': scrolledBottom,
+            }">
             <div
                 v-show="!showAdvanced"
                 ref="scrollableDiv"
@@ -345,13 +362,50 @@ async function loadMore(noScroll = false) {
 }
 
 .history-list-container {
+    position: relative;
+
     &.in-panel {
-        position: relative;
         flex-grow: 1;
     }
 
     &:not(&.in-panel) {
         @extend .flex-column-overflow;
+    }
+
+    &:before,
+    &:after {
+        position: absolute;
+        content: "";
+        pointer-events: none;
+        z-index: 10;
+        height: 30px;
+        width: 100%;
+        opacity: 0;
+
+        background-repeat: no-repeat;
+        transition: opacity 0.4s;
+    }
+
+    &:before {
+        top: 0;
+        background-image: linear-gradient(to bottom, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
+    }
+
+    &:not(.scrolled-top) {
+        &:before {
+            opacity: 1;
+        }
+    }
+
+    &:after {
+        bottom: 0;
+        background-image: linear-gradient(to top, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
+    }
+
+    &:not(.scrolled-bottom) {
+        &:after {
+            opacity: 1;
+        }
     }
 }
 
