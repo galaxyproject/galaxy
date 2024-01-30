@@ -338,6 +338,7 @@ export default {
             showSaveAsModal: false,
             transform: { x: 0, y: 0, k: 1 },
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
+            debounceTimer: null,
         };
     },
     computed: {
@@ -645,8 +646,18 @@ export default {
             const step = { ...this.steps[nodeId], label: newLabel };
             const oldLabel = this.steps[nodeId].label;
             this.onUpdateStep(step);
-            const newMarkdown = replaceLabel(this.markdownText, "step", oldLabel, newLabel);
+            const stepType = this.steps[nodeId].type;
+            const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
+            const labelType = isInput ? "input" : "step";
+            const newMarkdown = replaceLabel(this.markdownText, labelType, oldLabel, newLabel);
+            if (newMarkdown !== this.markdownText) {
+                this.debouncedToast("Label updated in workflow report.", 1500);
+            }
             this.onReportUpdate(newMarkdown);
+        },
+        debouncedToast(message, delay) {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => Toast.success(message), delay);
         },
         onScrollTo(stepId) {
             this.scrollToId = stepId;
