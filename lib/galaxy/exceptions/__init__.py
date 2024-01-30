@@ -15,6 +15,7 @@ bit web-oriented. However this module is a dependency of modules and tools that
 have nothing to do with the web - keep this in mind when defining exception names
 and messages.
 """
+from typing import Optional
 
 from .error_codes import (
     error_codes_by_name,
@@ -25,18 +26,19 @@ from .error_codes import (
 class MessageException(Exception):
     """Most generic Galaxy exception - indicates merely that some exceptional condition happened."""
 
+    err_msg: str
     # status code to be set when used with API.
     status_code: int = 400
     # Error code information embedded into API json responses.
     err_code: ErrorCode = error_codes_by_name["UNKNOWN"]
 
-    def __init__(self, err_msg=None, type="info", **extra_error_info):
+    def __init__(self, err_msg: Optional[str] = None, type="info", **extra_error_info):
         self.err_msg = err_msg or self.err_code.default_error_message
         self.type = type
         self.extra_error_info = extra_error_info
 
     @staticmethod
-    def from_code(status_code, message):
+    def from_code(status_code: int, message: Optional[str] = None) -> "MessageException":
         exception_class = MessageException
         if status_code == 404:
             exception_class = ObjectNotFound
@@ -44,7 +46,7 @@ class MessageException(Exception):
             exception_class = InternalServerError
         return exception_class(message)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.err_msg
 
 
