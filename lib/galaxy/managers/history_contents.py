@@ -631,8 +631,8 @@ class HistoryContentsFilters(
         return [self.decode_type_id(type_id) for type_id in type_id_list_string.split(sep)]
 
     def _add_parsers(self):
-        database_connection: str = self.app.config.database_connection
         super()._add_parsers()
+        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         genomes.GenomeFilterMixin._add_parsers(self, database_connection)
         deletable.PurgableFiltersMixin._add_parsers(self)
