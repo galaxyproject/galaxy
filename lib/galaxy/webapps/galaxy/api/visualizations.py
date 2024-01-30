@@ -4,6 +4,7 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
+
 import json
 import logging
 from typing import Optional
@@ -365,7 +366,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             "id",
-            "model_class"
+            "model_class",
             # TODO: fill out when we create to_dict, get_dict, whatevs
         )
         # TODO: importable

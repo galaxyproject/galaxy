@@ -1,5 +1,6 @@
 """ Module for reasoning about structure of and matching hierarchical collections of data.
 """
+
 import logging
 
 log = logging.getLogger(__name__)

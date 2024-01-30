@@ -3,6 +3,7 @@ API operations on a history.
 
 .. seealso:: :class:`galaxy.model.History`
 """
+
 import logging
 from typing import (
     Any,

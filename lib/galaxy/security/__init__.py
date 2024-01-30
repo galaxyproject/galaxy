@@ -2,6 +2,7 @@
 Galaxy Security
 
 """
+
 from typing import (
     List,
     Optional,

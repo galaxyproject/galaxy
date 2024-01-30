@@ -10,6 +10,7 @@ potential history flavor would allow objects to be referenced by HID. This
 second idea is unimplemented, it is just an example of the general concept of
 context specific processing.
 """
+
 import abc
 import base64
 import codecs

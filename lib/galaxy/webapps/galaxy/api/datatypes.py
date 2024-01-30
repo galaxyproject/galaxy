@@ -1,6 +1,7 @@
 """
 API operations allowing clients to determine datatype supported by Galaxy.
 """
+
 import logging
 from typing import (
     cast,

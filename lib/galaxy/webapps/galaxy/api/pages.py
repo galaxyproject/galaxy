@@ -1,6 +1,7 @@
 """
 API for updating Galaxy Pages
 """
+
 import io
 import logging
 from typing import Optional

@@ -560,9 +560,9 @@ class ToolEvaluator:
                     # Remove key so that new wrapped object will occupy key slot
                     del param_dict[key]
                     # And replace with new wrapped key
-                    param_dict[
-                        wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)
-                    ] = wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    param_dict[wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)] = (
+                        wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    )
 
     def build(self):
         """
@@ -686,9 +686,9 @@ class ToolEvaluator:
             )
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable[
-                "value"
-            ] = f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
+            environment_variable["value"] = (
+                f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
+            )
             environment_variable["raw"] = True
             environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)

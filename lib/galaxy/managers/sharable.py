@@ -9,6 +9,7 @@ A sharable Galaxy object:
     can be published effectively making it available to all other Users
     can be rated
 """
+
 import logging
 import re
 from typing import (

@@ -1,6 +1,7 @@
 """
 Job runner plugin for executing jobs on the local system via the command line.
 """
+
 import datetime
 import logging
 import os

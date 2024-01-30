@@ -1,4 +1,5 @@
 """ Data providers code for PhyloViz """
+
 from typing import (
     Any,
     Dict,

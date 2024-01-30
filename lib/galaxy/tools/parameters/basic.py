@@ -2029,9 +2029,7 @@ class BaseDataToolParameter(ToolParameter):
                 raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
 
 
-def src_id_to_item(
-    sa_session: "Session", value: Dict[str, Any], security: "IdEncodingHelper"
-) -> Union[
+def src_id_to_item(sa_session: "Session", value: Dict[str, Any], security: "IdEncodingHelper") -> Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -2248,9 +2246,9 @@ class DataToolParameter(BaseDataToolParameter):
                     or (not input.dynamic_options and not input.options)
                     or not input.options.converter_safe
                 ):
-                    converter_safe[
-                        0
-                    ] = False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    converter_safe[0] = (
+                        False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    )
 
         self.tool.visit_inputs(other_values, visitor)
         return False not in converter_safe

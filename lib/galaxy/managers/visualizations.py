@@ -4,6 +4,7 @@ Manager and Serializers for Visualizations.
 Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
+
 import logging
 from typing import (
     Dict,

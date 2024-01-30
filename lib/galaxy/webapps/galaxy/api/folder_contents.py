@@ -1,6 +1,7 @@
 """
 API operations on the contents of a library folder.
 """
+
 import logging
 from typing import Optional
 

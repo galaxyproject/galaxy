@@ -2,6 +2,7 @@
 Class encapsulating the management of repository dependencies installed or being installed
 into Galaxy from the Tool Shed.
 """
+
 import json
 import logging
 import os

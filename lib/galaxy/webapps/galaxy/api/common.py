@@ -1,4 +1,5 @@
 """This module contains utility functions shared across the api package."""
+
 from typing import (
     Any,
     Dict,

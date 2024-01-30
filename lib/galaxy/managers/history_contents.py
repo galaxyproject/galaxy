@@ -2,6 +2,7 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+
 import json
 import logging
 from typing import (

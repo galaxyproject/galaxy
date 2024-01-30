@@ -425,9 +425,9 @@ class Data(metaclass=DataMeta):
         self, dataset: DatasetHasHidProtocol, to_ext: Optional[str], headers: Headers, **kwd
     ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
-        headers[
-            "content-type"
-        ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        headers["content-type"] = (
+            "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        )
         filename = self._download_filename(
             dataset,
             to_ext,
@@ -476,9 +476,9 @@ class Data(metaclass=DataMeta):
                 element_identifier=kwd.get("element_identifier"),
                 filename_pattern=kwd.get("filename_pattern"),
             )
-            headers[
-                "content-type"
-            ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            headers["content-type"] = (
+                "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            )
             headers["Content-Disposition"] = f'attachment; filename="{filename}"'
             return open(data.get_file_name(), "rb"), headers
 

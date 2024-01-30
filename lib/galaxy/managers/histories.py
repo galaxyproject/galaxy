@@ -4,6 +4,7 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
+
 import logging
 from typing import (
     Any,
@@ -853,9 +854,9 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_active": self.serialize_contents_active,
             #  TODO: Use base manager's serialize_id for user_id (and others)
             #  after refactoring hierarchy here?
-            "user_id": lambda item, key, encode_id=True, **context: self.app.security.encode_id(item.user_id)
-            if item.user_id is not None and encode_id
-            else item.user_id,
+            "user_id": lambda item, key, encode_id=True, **context: (
+                self.app.security.encode_id(item.user_id) if item.user_id is not None and encode_id else item.user_id
+            ),
         }
         self.serializers.update(serializers)
 

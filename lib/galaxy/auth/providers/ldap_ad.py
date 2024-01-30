@@ -89,7 +89,6 @@ def _parse_ldap_options(options_unparsed):
 
 
 class LDAP(AuthProvider):
-
     """
     Attempts to authenticate users against an LDAP server.
 

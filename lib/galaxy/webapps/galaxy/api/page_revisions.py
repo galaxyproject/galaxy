@@ -1,6 +1,7 @@
 """
 API for updating Galaxy Pages
 """
+
 import logging
 
 from galaxy.managers.base import get_object

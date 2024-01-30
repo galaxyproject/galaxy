@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool tests."""
+
 import typing
 from inspect import (
     Parameter,

@@ -35,16 +35,13 @@ class DDLOperation(ABC):
                 return None
 
     @abstractmethod
-    def execute(self) -> Optional[Any]:
-        ...
+    def execute(self) -> Optional[Any]: ...
 
     @abstractmethod
-    def pre_execute_check(self) -> bool:
-        ...
+    def pre_execute_check(self) -> bool: ...
 
     @abstractmethod
-    def log_check_not_passed(self) -> None:
-        ...
+    def log_check_not_passed(self) -> None: ...
 
     def _is_repair_mode(self) -> bool:
         """`--repair` option has been passed to the command."""
@@ -82,12 +79,10 @@ class DDLAlterOperation(DDLOperation):
             return self.non_batch_execute()  # use regular op context for non-sqlite db
 
     @abstractmethod
-    def batch_execute(self, batch_op) -> Optional[Any]:
-        ...
+    def batch_execute(self, batch_op) -> Optional[Any]: ...
 
     @abstractmethod
-    def non_batch_execute(self) -> Optional[Any]:
-        ...
+    def non_batch_execute(self) -> Optional[Any]: ...
 
 
 class CreateTable(DDLOperation):

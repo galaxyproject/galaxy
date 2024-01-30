@@ -3,6 +3,7 @@ Revision ID: ddbdbc40bdc1
 Revises: 92fb564c7095
 Create Date: 2023-08-14 13:41:59.442243
 """
+
 import sqlalchemy as sa
 
 from galaxy.model.custom_types import (

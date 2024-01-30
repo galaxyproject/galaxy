@@ -6,6 +6,7 @@ first.
 Maybe this doesn't make sense and maybe much of this stuff could be replaced
 with itertools product and permutations. These are open questions.
 """
+
 from typing import (
     Dict,
     TypeVar,

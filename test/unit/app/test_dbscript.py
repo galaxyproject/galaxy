@@ -4,6 +4,7 @@ Testing approach:
 - Use alembic api for setup and accessing the database.
 - Run command as subprocess, verify captured output + database state.
 """
+
 import os
 from typing import NewType
 

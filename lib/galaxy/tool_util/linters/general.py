@@ -1,4 +1,5 @@
 """This module contains linting functions for general aspects of the tool."""
+
 import re
 
 from galaxy.tool_util.version import (

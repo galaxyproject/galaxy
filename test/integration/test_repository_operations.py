@@ -20,7 +20,6 @@ REVISION_4 = "071084070619"
 
 
 class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
-
     """Test data manager installation and table reload through the API"""
 
     @classmethod

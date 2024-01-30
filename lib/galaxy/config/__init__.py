@@ -1,6 +1,7 @@
 """
 Universe configuration builder.
 """
+
 # absolute_import needed for tool_shed package.
 
 import configparser
@@ -231,9 +232,9 @@ class BaseAppConfiguration(HasDynamicProperties):
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options: Optional[Dict[str, str]] = None
     deprecated_dirs: Dict[str, str] = {}
-    paths_to_check_against_root: Set[
-        str
-    ] = set()  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
+    paths_to_check_against_root: Set[str] = (
+        set()
+    )  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
     add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
     object_store_store_by: str

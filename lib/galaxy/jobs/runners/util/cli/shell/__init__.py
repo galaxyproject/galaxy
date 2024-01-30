@@ -1,6 +1,7 @@
 """
 Abstract base class for runners which execute commands via a shell.
 """
+
 from abc import (
     ABCMeta,
     abstractmethod,

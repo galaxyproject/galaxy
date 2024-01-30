@@ -31,8 +31,7 @@ HTML_REGEXPS = (
 
 
 class CompressionChecker(Protocol):
-    def __call__(self, file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
-        ...
+    def __call__(self, file_path: str, check_content: bool = True) -> Tuple[bool, bool]: ...
 
 
 def check_html(name, file_path: bool = True) -> bool:

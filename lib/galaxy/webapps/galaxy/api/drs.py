@@ -1,4 +1,5 @@
 """Implement a DRS server for Galaxy dataset objects (experimental)."""
+
 import logging
 from io import IOBase
 from typing import cast

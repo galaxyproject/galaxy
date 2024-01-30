@@ -1,6 +1,7 @@
 """ This module contains functionality to aid in extracting workflows from
 histories.
 """
+
 import logging
 from typing import Optional
 

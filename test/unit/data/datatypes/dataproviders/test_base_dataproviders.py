@@ -2,6 +2,7 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
+
 import os
 import tempfile
 from io import StringIO

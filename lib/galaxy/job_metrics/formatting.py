@@ -1,4 +1,5 @@
 """Utilities related to formatting job metrics for human consumption."""
+
 from typing import (
     Any,
     NamedTuple,

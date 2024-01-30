@@ -2,6 +2,7 @@
 Data providers that iterate over a source that is not in memory
 or not in a file.
 """
+
 import gzip
 import logging
 import subprocess

@@ -1231,12 +1231,10 @@ class InputInstance:
         self.area = area
 
     @overload
-    def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict:
-        ...
+    def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict: ...
 
     @overload
-    def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]:
-        ...
+    def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]: ...
 
     def to_dict(self, itemwise: bool = True) -> Union[InputInstanceDict, InputInstanceArrayDict]:
         if itemwise and self.array:

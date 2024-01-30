@@ -45,23 +45,23 @@ FileObjType = Union[FileObjTypeStr, FileObjTypeBytes]
 
 
 @overload
-def get_fileobj(filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeStr:
-    ...
+def get_fileobj(
+    filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeStr: ...
 
 
 @overload
-def get_fileobj(filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None) -> FileObjTypeBytes:
-    ...
+def get_fileobj(
+    filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
+) -> FileObjTypeBytes: ...
 
 
 @overload
-def get_fileobj(filename: str) -> FileObjTypeStr:
-    ...
+def get_fileobj(filename: str) -> FileObjTypeStr: ...
 
 
 @overload
-def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
-    ...
+def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType: ...
 
 
 def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None) -> FileObjType:
@@ -80,27 +80,23 @@ def get_fileobj(filename: str, mode: str = "r", compressed_formats: Optional[Lis
 @overload
 def get_fileobj_raw(
     filename: str, mode: Literal["r"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeStr]:
-    ...
+) -> Tuple[Optional[str], FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
     filename: str, mode: Literal["rb"], compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjTypeBytes]:
-    ...
+) -> Tuple[Optional[str], FileObjTypeBytes]: ...
 
 
 @overload
-def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]:
-    ...
+def get_fileobj_raw(filename: str) -> Tuple[Optional[str], FileObjTypeStr]: ...
 
 
 @overload
 def get_fileobj_raw(
     filename: str, mode: str = "r", compressed_formats: Optional[List[str]] = None
-) -> Tuple[Optional[str], FileObjType]:
-    ...
+) -> Tuple[Optional[str], FileObjType]: ...
 
 
 def get_fileobj_raw(

@@ -96,16 +96,13 @@ class ContainerProtocol(Protocol):
     """
 
     @property
-    def app_info(self) -> "AppInfo":
-        ...
+    def app_info(self) -> "AppInfo": ...
 
     @property
-    def tool_info(self) -> "ToolInfo":
-        ...
+    def tool_info(self) -> "ToolInfo": ...
 
     @property
-    def job_info(self) -> Optional["JobInfo"]:
-        ...
+    def job_info(self) -> Optional["JobInfo"]: ...
 
 
 class Container(metaclass=ABCMeta):

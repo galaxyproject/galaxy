@@ -1,6 +1,7 @@
 """
 Graph content classes.
 """
+
 import logging
 from typing import List
 

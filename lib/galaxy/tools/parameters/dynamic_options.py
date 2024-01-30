@@ -2,6 +2,7 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+
 import copy
 import logging
 import os

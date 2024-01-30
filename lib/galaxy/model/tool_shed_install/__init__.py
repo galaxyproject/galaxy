@@ -55,12 +55,10 @@ else:
 
 class HasToolBox(common_util.HasToolShedRegistry, Protocol):
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
-        ...
+    def tool_dependency_dir(self) -> Optional[str]: ...
 
     @property
-    def toolbox(self) -> AbstractToolBox:
-        ...
+    def toolbox(self) -> AbstractToolBox: ...
 
 
 class Base(metaclass=DeclarativeMeta):

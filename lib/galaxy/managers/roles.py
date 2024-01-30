@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Roles.
 """
+
 import logging
 from typing import List
 

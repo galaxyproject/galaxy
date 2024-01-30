@@ -3,6 +3,7 @@
 This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
+
 import abc
 import threading
 from typing import (
@@ -250,8 +251,7 @@ class HasDriver:
             element.send_keys(key)
 
     @abc.abstractmethod
-    def timeout_for(self, **kwds) -> float:
-        ...
+    def timeout_for(self, **kwds) -> float: ...
 
     def wait(self, timeout=UNSPECIFIED_TIMEOUT, **kwds):
         if timeout is UNSPECIFIED_TIMEOUT:
