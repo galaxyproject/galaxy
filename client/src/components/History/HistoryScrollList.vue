@@ -21,6 +21,7 @@ import { HistoriesFilters } from "./HistoriesFilters";
 import TextSummary from "../Common/TextSummary.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 type AdditionalOptions = "set-current" | "multi" | "center";
@@ -58,7 +59,7 @@ const validFilter = computed(() => props.filter && props.filter.length > 2);
 const allLoaded = computed(() => totalHistoryCount.value <= filtered.value.length);
 
 // check if we have scrolled to the top or bottom of the scrollable div
-const { arrived } = useAnimationFrameScroll(scrollableDiv);
+const { arrived, scrollTop } = useAnimationFrameScroll(scrollableDiv);
 const isScrollable = ref(false);
 useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.height >= clientSize.height + 1;
@@ -155,6 +156,10 @@ function historyClicked(history: HistorySummary) {
             openInMulti(history);
         }
     }
+}
+
+function scrollToTop() {
+    scrollableDiv.value?.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 const router = useRouter();
@@ -325,6 +330,7 @@ async function loadMore(noScroll = false) {
                     </div>
                 </BListGroup>
             </div>
+            <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
 
         <div :class="!isMultiviewPanel && 'd-flex flex-row mt-3'">
