@@ -10,8 +10,6 @@ import LoadingIndicator from "ui/loading-indicator";
 import _ from "underscore";
 import Utils from "utils/utils";
 
-import store from "../../store";
-
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
 $.ajaxSettings.traditional = true;
@@ -27,22 +25,6 @@ export default Backbone.View.extend({
         this.title = grid_config.title;
         this.active_tab = grid_config.active_tab;
         var self = this;
-
-        // Subscribe to changes in the store, currently just storing
-        // tag changes from the tagging components, but that will change
-        // when we rework the grid. This subscription ties this older grid
-        // code to the new vue components
-        store.watch(
-            (state) => state.gridSearch.searchTags,
-            (newTags) => {
-                const tagArray = Array.from(newTags);
-                self.grid.add_filter("tags", tagArray, false);
-                self.openAdvancedSearch();
-                self.render_filter_button("tags", tagArray);
-                self.go_page_one();
-                self.execute();
-            }
-        );
 
         if (grid_config.url_base && !grid_config.items) {
             LoadingIndicator.markViewAsLoading(this);
@@ -356,11 +338,6 @@ export default Backbone.View.extend({
     remove_filter_condition: function (name, value) {
         // Remove filter condition.
         this.grid.remove_filter(name, value);
-
-        // update vuex if the one criteria we're currently tracking changes
-        if (name == "tags") {
-            store.dispatch("removeSearchTag", { text: value });
-        }
 
         // Execute
         this.go_page_one();

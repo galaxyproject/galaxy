@@ -42,7 +42,5 @@ export function chart(options) {
     return new Client(options);
 }
 
-export { mountMakoTags } from "components/Tags";
-
 // Used in common.mako
 export { default as store } from "storemodern";
