@@ -4,6 +4,7 @@ It is an external library for the most part, but given sensitivity of escaping
 HTML content - best to test in insolation and verify the security of our
 dependencies.
 """
+
 from galaxy.managers.markdown_util import to_html
 
 

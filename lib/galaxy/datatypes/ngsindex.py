@@ -1,6 +1,7 @@
 """
 NGS indexes
 """
+
 import logging
 import os
 

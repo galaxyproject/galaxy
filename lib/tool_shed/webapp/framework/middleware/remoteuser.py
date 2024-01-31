@@ -1,6 +1,7 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
+
 import socket
 
 from galaxy.util import safe_str_cmp

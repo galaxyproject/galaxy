@@ -1,6 +1,7 @@
 """
 Abstract base class for cli job plugins.
 """
+
 from abc import (
     ABCMeta,
     abstractmethod,

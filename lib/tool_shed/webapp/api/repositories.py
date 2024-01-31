@@ -102,9 +102,9 @@ class RepositoriesController(BaseShedAPIController):
         # Update the repository registry.
         self.app.repository_registry.add_entry(repository)
         response_dict["status"] = "ok"
-        response_dict[
-            "message"
-        ] = f"Entries for repository {name} owned by {owner} have been added to the Tool Shed repository registry."
+        response_dict["message"] = (
+            f"Entries for repository {name} owned by {owner} have been added to the Tool Shed repository registry."
+        )
         return response_dict
 
     @web.legacy_expose_api_anonymous
@@ -317,9 +317,9 @@ class RepositoriesController(BaseShedAPIController):
         response_dict = {}
         if not trans.user_is_admin:
             response_dict["status"] = "error"
-            response_dict[
-                "message"
-            ] = "You are not authorized to remove entries from this Tool Shed's repository registry."
+            response_dict["message"] = (
+                "You are not authorized to remove entries from this Tool Shed's repository registry."
+            )
             return response_dict
         tool_shed_url = payload.get("tool_shed_url", "")
         if not tool_shed_url:
@@ -341,9 +341,9 @@ class RepositoriesController(BaseShedAPIController):
         # Update the repository registry.
         self.app.repository_registry.remove_entry(repository)
         response_dict["status"] = "ok"
-        response_dict[
-            "message"
-        ] = f"Entries for repository {name} owned by {owner} have been removed from the Tool Shed repository registry."
+        response_dict["message"] = (
+            f"Entries for repository {name} owned by {owner} have been removed from the Tool Shed repository registry."
+        )
         return response_dict
 
     @web.legacy_expose_api

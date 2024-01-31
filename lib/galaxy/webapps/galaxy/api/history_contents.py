@@ -1,6 +1,7 @@
 """
 API operations on the contents of a history.
 """
+
 import logging
 from typing import (
     Any,

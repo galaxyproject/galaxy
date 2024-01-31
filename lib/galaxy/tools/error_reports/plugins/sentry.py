@@ -1,4 +1,5 @@
 """The module describes the ``sentry`` error plugin."""
+
 import logging
 from typing import Dict
 

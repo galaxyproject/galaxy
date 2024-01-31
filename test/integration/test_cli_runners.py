@@ -1,4 +1,5 @@
 """Integration tests for the CLI shell plugins and runners."""
+
 import os
 import string
 import subprocess

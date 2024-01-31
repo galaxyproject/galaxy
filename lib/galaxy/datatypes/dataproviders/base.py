@@ -1,6 +1,7 @@
 """
 Base class(es) for all DataProviders.
 """
+
 # there's a blurry line between functionality here and functionality in datatypes module
 # attempting to keep parsing to a minimum here and focus on chopping/pagination/reformat(/filtering-maybe?)
 #   and using as much pre-computed info/metadata from the datatypes module as possible

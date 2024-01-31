@@ -1,4 +1,5 @@
 """Typed description of Galaxy's app object."""
+
 import abc
 from typing import (
     Any,
@@ -125,11 +126,9 @@ class MinimalManagerApp(MinimalApp):
 
     @property
     @abc.abstractmethod
-    def is_job_handler(self) -> bool:
-        ...
+    def is_job_handler(self) -> bool: ...
 
-    def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None:
-        ...
+    def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None: ...
 
 
 class StructuredApp(MinimalManagerApp):

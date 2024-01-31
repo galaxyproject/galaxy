@@ -1,6 +1,7 @@
 """
 Controller handles external tool related requests
 """
+
 import logging
 
 from markupsafe import escape

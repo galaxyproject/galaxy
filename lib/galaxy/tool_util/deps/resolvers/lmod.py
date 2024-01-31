@@ -6,6 +6,7 @@ LMOD official website: https://www.tacc.utexas.edu/research-development/tacc-pro
 LMOD @ Github: https://github.com/TACC/Lmod
 
 """
+
 import logging
 from io import StringIO
 from os import getenv

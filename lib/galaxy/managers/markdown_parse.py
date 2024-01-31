@@ -5,6 +5,7 @@ This file is meant to be relatively self contained and just used to "parse" and 
 Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in other
 projects (e.g. gxformat2).
 """
+
 import re
 from typing import (
     cast,

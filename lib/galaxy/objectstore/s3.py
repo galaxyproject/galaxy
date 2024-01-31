@@ -1,6 +1,7 @@
 """
 Object Store plugin for the Amazon Simple Storage Service (S3)
 """
+
 import logging
 import multiprocessing
 import os

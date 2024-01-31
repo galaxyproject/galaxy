@@ -267,9 +267,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict[
-                "message"
-            ] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            job_dict["message"] = (
+                f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            )
             return JobImportHistoryResponse(**job_dict)
 
         new_history = None

@@ -1,6 +1,7 @@
 """
 Universe configuration builder.
 """
+
 import configparser
 import logging
 import logging.config

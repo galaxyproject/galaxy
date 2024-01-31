@@ -1267,9 +1267,9 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["workflow_outputs"] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
-                upgrade_message_dict[
-                    "output_label_duplicate"
-                ] = f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                upgrade_message_dict["output_label_duplicate"] = (
+                    f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                )
             if upgrade_message_dict:
                 data["upgrade_messages"][step.order_index] = upgrade_message_dict
 

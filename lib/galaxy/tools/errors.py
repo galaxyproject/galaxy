@@ -1,6 +1,7 @@
 """
 Functionality for dealing with tool errors.
 """
+
 import string
 
 import markupsafe

@@ -1,6 +1,7 @@
 """
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
+
 import inspect
 from enum import Enum
 from string import Template

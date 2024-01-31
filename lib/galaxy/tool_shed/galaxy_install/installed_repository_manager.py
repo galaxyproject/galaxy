@@ -1,6 +1,7 @@
 """
 Class encapsulating the management of repositories installed into Galaxy from the Tool Shed.
 """
+
 import copy
 import logging
 import os
@@ -170,9 +171,9 @@ class InstalledRepositoryManager:
             )
             debug_msg += "to installed_repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
-            self.installed_repository_dependencies_of_installed_repositories[
-                repository_tup
-            ] = repository_dependency_tups
+            self.installed_repository_dependencies_of_installed_repositories[repository_tup] = (
+                repository_dependency_tups
+            )
         # Use the repository_dependency_tups to add entries to the reverse dictionary
         # self.installed_dependent_repositories_of_installed_repositories.
         for required_repository_tup in repository_dependency_tups:

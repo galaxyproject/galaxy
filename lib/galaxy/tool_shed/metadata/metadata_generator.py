@@ -68,8 +68,7 @@ class RepositoryProtocol(Protocol):
     name: str
     id: str
 
-    def repo_path(self, app) -> Optional[str]:
-        ...
+    def repo_path(self, app) -> Optional[str]: ...
 
 
 class BaseMetadataGenerator:

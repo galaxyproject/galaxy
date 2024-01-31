@@ -4,6 +4,7 @@ In general there are utilities available for Conda building and parsing that are
 and should be utilized when available but that are only available in conda channels and not in
 PyPI. This module serves as a PyPI capable interface to these utilities.
 """
+
 import os
 from collections.abc import Hashable
 

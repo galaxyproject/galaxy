@@ -1080,25 +1080,21 @@ ItemType = TypeVar("ItemType")
 
 
 @overload
-def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List:
-    ...
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
 
 
 @overload
-def listify(item: str, do_strip: bool = False) -> List[str]:
-    ...
+def listify(item: str, do_strip: bool = False) -> List[str]: ...
 
 
 @overload
-def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]:
-    ...
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]: ...
 
 
 # Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
 # because then that would also match Union types.
 @overload
-def listify(item: Any, do_strip: bool = False) -> List:
-    ...
+def listify(item: Any, do_strip: bool = False) -> List: ...
 
 
 def listify(item: Any, do_strip: bool = False) -> List:
@@ -1157,8 +1153,7 @@ def unicodify(  # type: ignore[misc]
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> None:
-    ...
+) -> None: ...
 
 
 @overload
@@ -1168,8 +1163,7 @@ def unicodify(
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> str:
-    ...
+) -> str: ...
 
 
 def unicodify(

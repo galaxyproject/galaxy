@@ -1,6 +1,7 @@
 """
 This module manages loading/etc of Galaxy interactive tours.
 """
+
 import logging
 import os
 from typing import (

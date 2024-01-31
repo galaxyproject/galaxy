@@ -1,6 +1,7 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
+
 import logging
 
 from galaxy.util import (

@@ -176,9 +176,9 @@ class DefaultToolAction(ToolAction):
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
                             if not new_data or new_data.datatype.matches_any(conversion_datatypes):
-                                input_datasets[
-                                    prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)
-                                ] = new_data
+                                input_datasets[prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)] = (
+                                    new_data
+                                )
                                 input_datasets.set_legacy_alias(
                                     new_key=prefixed_name[: -len(input.name)] + conversion_name + str(i + 1),
                                     old_key=prefix + conversion_name + str(i + 1),
@@ -221,9 +221,9 @@ class DefaultToolAction(ToolAction):
                     target_dict[input.name] = input_datasets[prefixed_name]
                     for conversion_name, conversion_data in conversions:
                         # allow explicit conversion to be stored in job_parameter table
-                        target_dict[
-                            conversion_name
-                        ] = conversion_data.id  # a more robust way to determine JSONable value is desired
+                        target_dict[conversion_name] = (
+                            conversion_data.id
+                        )  # a more robust way to determine JSONable value is desired
             elif isinstance(input, DataCollectionToolParameter):
                 if not value:
                     return

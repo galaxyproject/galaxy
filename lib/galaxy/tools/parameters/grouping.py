@@ -1,6 +1,7 @@
 """
 Constructs for grouping tool parameters
 """
+
 import io
 import logging
 import os

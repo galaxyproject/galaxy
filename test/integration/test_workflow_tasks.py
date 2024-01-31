@@ -3,6 +3,7 @@
 Someday when the API tests can safely assume the target Galaxy has tasks enabled, this should be moved
 into the API test suite.
 """
+
 import json
 import os
 from typing import (

@@ -1,6 +1,7 @@
 """
 Triple format classes
 """
+
 import logging
 import re
 

@@ -1278,8 +1278,7 @@ def _verify_extra_files_content(
 
 
 class TestConfig(Protocol):
-    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        ...
+    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]: ...
 
 
 class NullClientTestConfig(TestConfig):

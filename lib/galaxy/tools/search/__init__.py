@@ -24,6 +24,7 @@ Filters - various filters are available for processing content as the index is
     stemming -> stem; opened -> open; philosophy -> philosoph.
 
 """
+
 import logging
 import os
 import re

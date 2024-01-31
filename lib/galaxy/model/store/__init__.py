@@ -272,8 +272,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             self.import_history_encoded_id = None
 
     @abc.abstractmethod
-    def workflow_paths(self) -> Iterator[Tuple[str, str]]:
-        ...
+    def workflow_paths(self) -> Iterator[Tuple[str, str]]: ...
 
     @abc.abstractmethod
     def defines_new_history(self) -> bool:
@@ -292,8 +291,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         return []
 
     @abc.abstractmethod
-    def invocations_properties(self) -> List[Dict[str, Any]]:
-        ...
+    def invocations_properties(self) -> List[Dict[str, Any]]: ...
 
     @abc.abstractmethod
     def collections_properties(self) -> List[Dict[str, Any]]:
@@ -304,8 +302,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         """Return a list of jobs properties."""
 
     @abc.abstractmethod
-    def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
-        ...
+    def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]: ...
 
     @property
     @abc.abstractmethod
@@ -1459,8 +1456,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         _find_hda: Callable,
         _find_hdca: Callable,
         _find_dce: Callable,
-    ) -> Dict[str, Any]:
-        ...
+    ) -> Dict[str, Any]: ...
 
     @abc.abstractmethod
     def _connect_job_io(
@@ -1470,8 +1466,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         _find_hda: Callable,
         _find_hdca: Callable,
         _find_dce: Callable,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @property
     def file_source_root(self) -> str:
@@ -2396,8 +2391,7 @@ class WriteCrates:
 
     @property
     @abc.abstractmethod
-    def workflows_directory(self) -> str:
-        ...
+    def workflows_directory(self) -> str: ...
 
     def _generate_markdown_readme(self) -> str:
         markdown_parts: List[str] = []

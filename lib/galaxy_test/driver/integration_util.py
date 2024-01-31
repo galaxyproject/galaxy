@@ -4,6 +4,7 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
+
 import os
 import re
 from typing import (

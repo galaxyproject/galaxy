@@ -391,9 +391,9 @@ class WorkflowsAPIController(
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers[
-                "Content-Disposition"
-            ] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            trans.response.headers["Content-Disposition"] = (
+                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            )
             trans.response.set_content_type("application/galaxy-archive")
 
         if style == "format2" and download_format != "json-download":
@@ -1648,11 +1648,15 @@ class FastAPIInvocations:
         """
         step_jobs_summary = self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
         return [
-            InvocationStepJobsResponseStepModel(**summary)
-            if summary["model"] == "WorkflowInvocationStep"
-            else InvocationStepJobsResponseJobModel(**summary)
-            if summary["model"] == "Job"
-            else InvocationStepJobsResponseCollectionJobsModel(**summary)
+            (
+                InvocationStepJobsResponseStepModel(**summary)
+                if summary["model"] == "WorkflowInvocationStep"
+                else (
+                    InvocationStepJobsResponseJobModel(**summary)
+                    if summary["model"] == "Job"
+                    else InvocationStepJobsResponseCollectionJobsModel(**summary)
+                )
+            )
             for summary in step_jobs_summary
         ]
 

@@ -267,7 +267,6 @@ class SpecifiedDateListGrid(grids.Grid):
 
 
 class Jobs(BaseUIController, ReportQueryBuilder):
-
     """
     Class contains functions for querying data requested by user via the webapp. It exposes the functions and
     responds to requests with the filled .mako templates.

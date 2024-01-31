@@ -1,4 +1,5 @@
 """The module describes the ``cgroup`` job metrics plugin."""
+
 import decimal
 import logging
 import numbers

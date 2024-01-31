@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+
 import abc
 import base64
 import errno
@@ -4092,12 +4093,10 @@ class Dataset(Base, StorableObject, Serializable):
         return self.object_store.size(self)
 
     @overload
-    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int:
-        ...
+    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
 
     @overload
-    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str:
-        ...
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str: ...
 
     def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
@@ -6837,9 +6836,9 @@ class HistoryDatasetCollectionAssociation(
             copied_from_history_dataset_collection_association_chain.append(
                 serialization_options.get_identifier(id_encoder, src_hdca)
             )
-        rval[
-            "copied_from_history_dataset_collection_association_id_chain"
-        ] = copied_from_history_dataset_collection_association_chain
+        rval["copied_from_history_dataset_collection_association_id_chain"] = (
+            copied_from_history_dataset_collection_association_chain
+        )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
@@ -8655,9 +8654,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for output_assoc in self.output_dataset_collections:
                 label = output_assoc.workflow_output.label
                 if not label:
-                    label = (
-                        label
-                    ) = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
+                    label = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
 
                 output_collections[label] = {
                     "src": "hdca",
@@ -9034,9 +9031,11 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
                 outputs[name] = {
                     "src": "hda",
                     "id": output_assoc.dataset.id,
-                    "uuid": str(output_assoc.dataset.dataset.uuid)
-                    if output_assoc.dataset.dataset.uuid is not None
-                    else None,
+                    "uuid": (
+                        str(output_assoc.dataset.dataset.uuid)
+                        if output_assoc.dataset.dataset.uuid is not None
+                        else None
+                    ),
                 }
 
             output_collections = {}

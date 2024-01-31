@@ -1,6 +1,7 @@
 """
 API operations on Role objects.
 """
+
 import logging
 
 from fastapi import Body

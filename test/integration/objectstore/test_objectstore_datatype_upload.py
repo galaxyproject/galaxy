@@ -1,4 +1,5 @@
 """Tests objectstores by exercising the datatype upload integration tests."""
+
 import os
 import string
 import subprocess

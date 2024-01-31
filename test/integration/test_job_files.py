@@ -14,6 +14,7 @@ As a result this test is highly coupled with internals in a way most
 integration tests avoid - but @jmchilton's fear of not touching this
 API has gone too far.
 """
+
 import io
 import os
 import tempfile

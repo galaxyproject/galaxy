@@ -1379,8 +1379,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 class ItemOperation(Protocol):
     def __call__(
         self, item: HistoryItemModel, params: Optional[AnyBulkOperationParams], trans: ProvidesHistoryContext
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 class HistoryItemOperator:

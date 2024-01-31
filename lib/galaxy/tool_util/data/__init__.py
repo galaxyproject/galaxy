@@ -81,8 +81,7 @@ EntrySource = Optional[Union[dict, RepoInfo, "DataManager"]]
 
 
 class StoresConfigFilePaths(Protocol):
-    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]:
-        ...
+    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]: ...
 
 
 class ToolDataPathFiles:
@@ -892,8 +891,7 @@ tool_data_table_types_list: List[Type[ToolDataTable]] = [TabularToolDataTable]
 class HasExtraFiles(Protocol):
     extra_files_path: str
 
-    def extra_files_path_exists(self) -> bool:
-        ...
+    def extra_files_path_exists(self) -> bool: ...
 
 
 class DirectoryAsExtraFiles(HasExtraFiles):
@@ -907,8 +905,7 @@ class DirectoryAsExtraFiles(HasExtraFiles):
 class OutputDataset(HasExtraFiles, Protocol):
     ext: str
 
-    def get_file_name(self, sync_cache=True) -> str:
-        ...
+    def get_file_name(self, sync_cache=True) -> str: ...
 
 
 class ToolDataTableManager(Dictifiable):

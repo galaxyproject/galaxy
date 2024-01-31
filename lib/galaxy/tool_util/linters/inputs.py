@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool inputs."""
+
 import ast
 import re
 from typing import TYPE_CHECKING

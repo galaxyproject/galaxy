@@ -1,4 +1,5 @@
 """Integration tests for the Kubernetes runner."""
+
 # Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup,
 # also works on minikube
 import collections
@@ -345,12 +346,10 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         external_id = job.job_runner_external_id
 
         @overload
-        def get_kubectl_logs(allow_wait: Literal[False]) -> str:
-            ...
+        def get_kubectl_logs(allow_wait: Literal[False]) -> str: ...
 
         @overload
-        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]:
-            ...
+        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]: ...
 
         def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]:
             log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]

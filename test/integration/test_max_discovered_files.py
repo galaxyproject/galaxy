@@ -1,4 +1,5 @@
 """Integration tests for max_discoverd_files setting."""
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 

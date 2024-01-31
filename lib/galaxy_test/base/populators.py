@@ -37,6 +37,7 @@ API tests and Selenium tests routinely use requests directly and that is totally
 requests should just be filtered through the verb abstractions if that functionality
 is then added to populators to be shared across tests or across testing frameworks.
 """
+
 import base64
 import contextlib
 import json
@@ -3210,7 +3211,6 @@ class GiHttpMixin:
 
 
 class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
-
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
     def __init__(self, gi):
@@ -3222,7 +3222,6 @@ class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
 
 
 class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):
-
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
     def __init__(self, gi):
@@ -3237,7 +3236,6 @@ class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):
 
 
 class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
-
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, gi):

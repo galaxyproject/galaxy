@@ -3,6 +3,7 @@
 We don't have a lot of functional code in this schema module so this may belong
 somewhere else in another galaxy-data package.
 """
+
 import hashlib
 from typing import (
     Any,

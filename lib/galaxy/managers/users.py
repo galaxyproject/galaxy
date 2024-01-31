@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Users.
 """
+
 import hashlib
 import logging
 import random

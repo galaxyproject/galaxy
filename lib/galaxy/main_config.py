@@ -2,6 +2,7 @@
 
 This is for use by web framework code and scripts (e.g. scripts/galaxy_main.py).
 """
+
 import os
 from typing import (
     List,

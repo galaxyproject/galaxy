@@ -1,6 +1,7 @@
 """
 Contains functionality needed in every web interface
 """
+
 import logging
 from typing import (
     Any,

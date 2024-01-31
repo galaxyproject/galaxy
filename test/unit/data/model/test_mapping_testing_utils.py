@@ -1,6 +1,7 @@
 """
 This module contains tests for the utility functions in the test_mapping module.
 """
+
 import pytest
 from sqlalchemy import (
     Column,

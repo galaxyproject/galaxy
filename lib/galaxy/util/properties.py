@@ -2,6 +2,7 @@
 to determine application configuration. Some hard coded defaults for Galaxy but
 this should be reusable by tool shed and pulsar as well.
 """
+
 import os
 import os.path
 import sys

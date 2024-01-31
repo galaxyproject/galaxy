@@ -1,4 +1,5 @@
 """Video classes"""
+
 import json
 import subprocess
 import wave

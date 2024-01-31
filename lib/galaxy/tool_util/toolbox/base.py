@@ -1389,8 +1389,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
     @abc.abstractmethod
-    def _looks_like_a_tool(self, path: str) -> bool:
-        ...
+    def _looks_like_a_tool(self, path: str) -> bool: ...
 
 
 def _filter_for_panel(item, item_type, filters, context):
