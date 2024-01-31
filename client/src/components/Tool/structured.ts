@@ -319,7 +319,10 @@ function validateParameter(inputKey: string, inputValue: any, parameterModel: To
         }
     } else if (isGxConditional(parameterModel)) {
         const testParameter = parameterModel.test_parameter;
-        const testParameterOptional = testParameter.optional;
+        let testParameterEffectivelyOptional = testParameter.optional;
+        if (!testParameterEffectivelyOptional && "value" in testParameter && testParameter.value !== null) {
+            testParameterEffectivelyOptional = true;
+        }
         const whens = parameterModel.whens;
         const testParameterName = testParameter.name;
         const testParameterValue = inputValue[testParameterName];
@@ -335,8 +338,8 @@ function validateParameter(inputKey: string, inputValue: any, parameterModel: To
                 break;
             }
         }
-        if (!testParameterValueFoundInWhen && !testParameterOptional) {
-            results.push(`Non optional parameter ${testParameterName} was not found in inputs.`);
+        if (!testParameterValueFoundInWhen && !testParameterEffectivelyOptional) {
+            results.push(`Non optional conditional test parameter ${testParameterName} was not found in inputs.`);
         }
     }
     if (checkType && !checkType(inputValue)) {
@@ -375,6 +378,12 @@ function validateParameters(
         }
         const toolInput = parameterModelsByName[inputKey];
         if (toolInput && "optional" in toolInput && toolInput.optional === true) {
+            continue;
+        }
+        if (toolInput && "value" in toolInput && toolInput.value !== null) {
+            continue;
+        }
+        if (isGxConditional(parameterModel)) {
             continue;
         }
         results.push(`Non optional parameter ${inputKey} was not found in inputs.`);
