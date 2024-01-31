@@ -31,12 +31,13 @@ if [ $FOR_PULSAR -eq 0 ]; then
     pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
-# ensure ordered by dependency DAG
+# Ensure ordered by dependency DAG
 while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
-    if [ -z "$package_dir" ]; then
-        # Skip empty lines
-        continue
-    fi
+    # Ignore empty lines
+    [[ -z "$package_dir" ]] && continue
+    # Ignore lines beginning with `#`
+    [[ "$package_dir" =~ ^#.* ]] && continue
+
     printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
 
     cd "$package_dir"

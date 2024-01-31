@@ -8,12 +8,13 @@ set -ex
 # Change to packages directory.
 cd "$(dirname "$0")"
 
-# ensure ordered by dependency dag
+# Ensure ordered by dependency dag
 while read -r package_dir; do
-    if [ -z "$package_dir" ]; then
-        # Skip empty lines
-        continue
-    fi
+    # Ignore empty lines
+    [[ -z "$package_dir" ]] && continue
+    # Ignore lines beginning with `#`
+    [[ "$package_dir" =~ ^#.* ]] && continue
+
     printf "\n========= RELEASING PACKAGE %s =========\n\n" "$package_dir"
     
     cd "$package_dir"
