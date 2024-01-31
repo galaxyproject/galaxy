@@ -14,14 +14,16 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 library.add(faPen, faSave, faUndo);
 
 interface Props {
-    name: string;
-    tags: string[];
-    writeable: boolean;
+    name?: string;
+    tags?: string[];
+    writeable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    name: undefined,
+    tags: undefined,
     writeable: true,
     annotation: undefined,
     showAnnotation: true,
@@ -43,7 +45,7 @@ const localProps = ref<{ name: string; annotation: string | null; tags: string[]
 });
 
 const editButtonTitle = computed(() => {
-    if (isAnonymous) {
+    if (isAnonymous.value) {
         return l("Log in to Rename History");
     } else {
         if (props.writeable) {
