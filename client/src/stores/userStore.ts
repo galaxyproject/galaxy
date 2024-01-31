@@ -22,6 +22,7 @@ export interface User extends QuotaUsageResponse {
 }
 
 export interface AnonymousUser {
+    id: string;
     isAnonymous: true;
     is_admin?: false;
 }
