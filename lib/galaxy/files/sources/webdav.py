@@ -27,7 +27,7 @@ class WebDavFilesSource(PyFilesystem2FilesSource):
         if use_temp_files is None:
             # Default to True to avoid memory issues with large files.
             props["use_temp_files"] = True
-            props["temp_path"] = props.get("temp_path", tempfile.gettempdir())
+            props["temp_path"] = props.get("temp_path", tempfile.TemporaryDirectory(prefix="webdav_"))
         extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
         handle = WebDAVFS(**{**props, **extra_props})
         return handle
