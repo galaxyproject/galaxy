@@ -113,15 +113,15 @@ const queue = new UploadQueue({
 });
 
 /** Add files to queue */
-function addFiles(files) {
+function addFiles(files, immediate = false) {
     if (!isRunning.value) {
+        if (immediate || !props.multiple) {
+            eventReset();
+        }
         if (props.multiple) {
             queue.add(files);
-        } else {
-            eventReset();
-            if (files.length > 0) {
-                queue.add([files[0]]);
-            }
+        } else if (files.length > 0) {
+            queue.add([files[0]]);
         }
     }
 }
