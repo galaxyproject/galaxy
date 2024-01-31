@@ -156,10 +156,15 @@ class TestUsersApi(ApiTestCase):
             )
             self._assert_status_code_is_ok(run_response)
 
-            # Get the job state
             job_id = run_response.json()["outputs"][0]["id"]
+
+            # Wait a bit for the job to be ready
+            expected_job_states = ["new", "queued", "running"]
+            dataset_populator.wait_for_job(job_id, ok_states=expected_job_states)
+
+            # Get the job state
             job_response = self._get(f"jobs/{job_id}").json()
-            assert job_response["state"] in ["new", "queued", "running"], job_response
+            assert job_response["state"] in expected_job_states, job_response
 
             # Delete user will cancel all jobs
             self._delete(f"users/{user_id}", admin=True)
