@@ -166,13 +166,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def _stop_all_jobs_from_user(self, user):
         active_jobs = self._get_all_active_jobs_from_user(user)
-        message = "User deleted"
         session = self.session()
         for job in active_jobs:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            with transaction(session):
-                session.commit()
-            self.app.job_manager.stop(job, message)
+        with transaction(session):
+            session.commit()
 
     def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
         """Get all jobs that are not ready yet and belong to the given user."""
