@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCircle } from "@fortawesome/free-solid-svg-icons";
 import { BFormCheckbox } from "bootstrap-vue";
-import { defineEmits } from "vue";
 
 import { type UserNotification } from "@/api/notifications";
 
