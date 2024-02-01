@@ -144,6 +144,8 @@ class RoleManager(base.ModelManager[model.Role]):
         # Delete DatasetPermissionss
         for dp in role.dataset_actions:
             sa_session.delete(dp)
+        # Delete the role
+        sa_session.delete(role)
         with transaction(sa_session):
             sa_session.commit()
         return role
