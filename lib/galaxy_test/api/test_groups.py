@@ -72,10 +72,10 @@ class TestGroupsApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
 
     def test_update(self):
-        group = self.test_create_valid(group_name="group-test")
+        group = self.test_create_valid(group_name=f"group-test-{self.dataset_populator.get_random_name()}")
 
         group_id = group["id"]
-        updated_name = "group-test-updated"
+        updated_name = f"group-test-updated-{self.dataset_populator.get_random_name()}"
         update_payload = {
             "name": updated_name,
         }
