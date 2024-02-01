@@ -16,7 +16,6 @@ import "ui/editable-text";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
-import GridView from "mvc/grid/grid-view";
 import IconButton from "mvc/ui/icon-button";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
@@ -412,51 +411,7 @@ export class TracksterUIView extends Backbone.View {
         if (dbkey) {
             listTracksParams["f-dbkey"] = dbkey;
         }
-
-        Galaxy.modal.show({
-            title: "View Data in a New or Saved Visualization?",
-            // either have text in here or have to remove body and the header/footer margins
-            body: `<p><ul style='list-style: disc inside none'>You can add this dataset as:<li>a new track to one of your existing, saved Trackster sessions if they share the genome build: <b>${
-                dbkey || "Not available."
-            }</b></li><li>or create a new session with this dataset as the only track</li></ul></p>`,
-            buttons: {
-                Cancel: () => {
-                    window.top.location = `${getAppRoot()}visualizations/list`;
-                },
-                "View in saved visualization": () => {
-                    this.view_in_saved(dataset_params);
-                },
-                "View in new visualization": () => {
-                    this.view_new();
-                },
-            },
-        });
-    }
-
-    // view
-    view_in_saved(dataset_params) {
-        const Galaxy = getGalaxyInstance();
-        var tracks_grid = new GridView({
-            url_base: `${getAppRoot()}visualization/list_tracks`,
-            embedded: true,
-        });
-        Galaxy.modal.show({
-            title: _l("Add Data to Saved Visualization"),
-            body: tracks_grid.$el,
-            buttons: {
-                Cancel: () => {
-                    window.top.location = `${getAppRoot()}visualizations/list`;
-                },
-                "Add to visualization": () => {
-                    $(window.parent.document)
-                        .find("input[name=id]:checked")
-                        .each(() => {
-                            dataset_params.id = $(this).val();
-                            window.top.location = `${getAppRoot()}visualization/trackster?${$.param(dataset_params)}`;
-                        });
-                },
-            },
-        });
+        this.view_new();
     }
 
     // view
