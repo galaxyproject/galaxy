@@ -16,8 +16,10 @@ from sqlalchemy.orm import (
 
 from galaxy import model
 from galaxy.exceptions import (
+    Conflict,
     InconsistentDatabase,
     InternalServerError,
+    ObjectNotFound,
     RequestParameterInvalidException,
 )
 from galaxy.managers import base
@@ -59,12 +61,12 @@ class RoleManager(base.ModelManager[model.Role]):
         except sqlalchemy_exceptions.MultipleResultsFound:
             raise InconsistentDatabase("Multiple roles found with the same id.")
         except sqlalchemy_exceptions.NoResultFound:
-            raise RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise ObjectNotFound("No accessible role found with the id provided.")
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            raise RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise ObjectNotFound("No accessible role found with the id provided.")
 
         return role
 
@@ -84,7 +86,7 @@ class RoleManager(base.ModelManager[model.Role]):
 
         stmt = select(Role).where(Role.name == name).limit(1)
         if trans.sa_session.scalars(stmt).first():
-            raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
+            raise Conflict(f"A role with that name already exists [{name}]")
 
         role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
 

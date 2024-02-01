@@ -125,11 +125,11 @@ class TestRolesApi(ApiTestCase):
         response = self._get("roles/badroleid")
         assert_status_code_is(response, 400)
 
-        # Trying to access roles are errors - should probably be 403 not 400 though?
+        # Trying to access others roles raise (not found) error
         with self._different_user():
             different_user_role_id = self.dataset_populator.user_private_role_id()
         response = self._get(f"roles/{different_user_role_id}")
-        assert_status_code_is(response, 400)
+        assert_status_code_is(response, 404)
 
     @requires_admin
     def test_create_only_admin(self):
