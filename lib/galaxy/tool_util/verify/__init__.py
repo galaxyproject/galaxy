@@ -68,7 +68,7 @@ def verify(
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
-    if attributes is not None and assertions is not None:
+    if assertions is not None:
         try:
             verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
         except AssertionError as err:
