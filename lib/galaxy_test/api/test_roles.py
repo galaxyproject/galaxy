@@ -171,6 +171,27 @@ class TestRolesApi(ApiTestCase):
         purge_response = self._post(f"roles/{role_id}/purge", admin=True)
         self._assert_status_code_is_ok(purge_response)
 
+        # The role is deleted and purged, so it cannot be found
+        response = self._get(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is(response, 404)
+
+    @requires_admin
+    def test_purge_can_reuse_name(self):
+        role = self._create_role()
+        role_id = role["id"]
+        role_name = role["name"]
+
+        # Delete and purge the role
+        delete_response = self._delete(f"roles/{role_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"roles/{role_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # Create a new role with the same name as the deleted one is allowed
+        payload = self._build_valid_role_payload(role_name)
+        response = self._post("roles", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+
     def _create_role(self, name: Optional[str] = None, description: Optional[str] = None) -> Dict[str, Any]:
         payload = self._build_valid_role_payload(name=name, description=description)
         response = self._post("roles", payload, admin=True, json=True)
