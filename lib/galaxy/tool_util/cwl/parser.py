@@ -293,6 +293,7 @@ class ExpressionToolProxy(CommandLineToolProxy):
 
 class JobProxy:
     def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
+        assert RuntimeContext is not None, "cwltool is not installed, cannot run CWL jobs"
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
         self._output_dict = output_dict
