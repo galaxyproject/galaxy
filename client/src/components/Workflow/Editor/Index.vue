@@ -164,7 +164,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
@@ -182,7 +181,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import { fromSimple, toSimple } from "./modules/model";
+import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
@@ -538,21 +537,19 @@ export default {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         async doSaveAs() {
+            if (!this.saveAsName && !this.nameValidate()) {
+                return;
+            }
             const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
             const rename_annotation = this.saveAsAnnotation ?? "";
 
-            // This is an old web controller endpoint that wants form data posted...
-            const formData = new FormData();
-            formData.append("workflow_name", rename_name);
-            formData.append("workflow_annotation", rename_annotation);
-            formData.append("from_tool_form", true);
-            formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
-
             try {
-                const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
-                const newId = response.data;
+                const newSaveAsWf = { ...this, name: rename_name, annotation: rename_annotation };
+                const { id, name, number_of_steps } = await this.services.createWorkflow(newSaveAsWf);
+                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
                 this.hasChanges = false;
-                await this.routeToWorkflow(newId);
+                await this.routeToWorkflow(id);
+                Toast.success(message);
             } catch (e) {
                 const errorHeading = `Saving workflow as '${rename_name}' failed`;
                 this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
