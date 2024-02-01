@@ -156,7 +156,7 @@ class TestUsersApi(ApiTestCase):
             )
             self._assert_status_code_is_ok(run_response)
 
-            job_id = run_response.json()["outputs"][0]["id"]
+            job_id = run_response.json()["jobs"][0]["id"]
 
             # Wait a bit for the job to be ready
             expected_job_states = ["new", "queued", "running"]
