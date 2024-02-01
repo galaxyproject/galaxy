@@ -14,9 +14,12 @@ from sqlalchemy.orm import (
     Session,
 )
 
-import galaxy.exceptions
 from galaxy import model
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    InconsistentDatabase,
+    InternalServerError,
+    RequestParameterInvalidException,
+)
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
@@ -54,14 +57,14 @@ class RoleManager(base.ModelManager[model.Role]):
             stmt = select(self.model_class).where(self.model_class.id == role_id)
             role = self.session().execute(stmt).scalar_one()
         except sqlalchemy_exceptions.MultipleResultsFound:
-            raise galaxy.exceptions.InconsistentDatabase("Multiple roles found with the same id.")
+            raise InconsistentDatabase("Multiple roles found with the same id.")
         except sqlalchemy_exceptions.NoResultFound:
-            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise RequestParameterInvalidException("No accessible role found with the id provided.")
         except Exception as e:
-            raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
+            raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise RequestParameterInvalidException("No accessible role found with the id provided.")
 
         return role
 
@@ -118,9 +121,7 @@ class RoleManager(base.ModelManager[model.Role]):
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
         if not role.deleted:
-            raise galaxy.exceptions.RequestParameterInvalidException(
-                f"Role '{role.name}' has not been deleted, so it cannot be purged."
-            )
+            raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
             user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
@@ -146,7 +147,7 @@ class RoleManager(base.ModelManager[model.Role]):
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         if not role.deleted:
-            raise galaxy.exceptions.RequestParameterInvalidException(
+            raise RequestParameterInvalidException(
                 f"Role '{role.name}' has not been deleted, so it cannot be undeleted."
             )
         role.deleted = False
