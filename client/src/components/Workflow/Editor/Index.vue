@@ -178,6 +178,7 @@ import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { LastQueue } from "@/utils/promise-queue";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple, toSimple } from "./modules/model";
@@ -555,7 +556,15 @@ export default {
                 this.hasChanges = false;
                 await this.routeToWorkflow(newId);
             } catch (e) {
-                this.onWorkflowError("Saving workflow failed, please contact an administrator.");
+                if (create) {
+                    throw e;
+                }
+                const errorHeading = `Saving workflow as '${rename_name}' failed`;
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
+                    Ok: () => {
+                        this.hideModal();
+                    },
+                });
             }
         },
         onSaveAs() {
@@ -617,13 +626,15 @@ export default {
                     );
                 }
             } catch (e) {
-                this.onWorkflowError("Creating workflow failed"),
-                    e || "Please contact an administrator.",
+                this.onWorkflowError(
+                    "Creating workflow failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
                     {
                         Ok: () => {
                             this.hideModal();
                         },
-                    };
+                    }
+                );
             }
         },
         nameValidate() {
