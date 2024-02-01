@@ -130,6 +130,26 @@ class TestGroupsApi(ApiTestCase):
         purge_response = self._post(f"groups/{group_id}/purge", admin=True)
         self._assert_status_code_is_ok(purge_response)
 
+        # The group is deleted and purged, so it cannot be found
+        response = self._get(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is(response, 404)
+
+    def test_purge_can_reuse_name(self):
+        group = self.test_create_valid()
+        group_id = group["id"]
+        group_name = group["name"]
+
+        # Delete and purge the group
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"groups/{group_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # Create a new group with the same name as the deleted one is allowed
+        payload = self._build_valid_group_payload(group_name)
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+
     def _assert_valid_group(self, group, assert_id=None):
         self._assert_has_keys(group, "id", "name", "model_class", "url")
         if assert_id is not None:
