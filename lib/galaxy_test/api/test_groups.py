@@ -101,6 +101,35 @@ class TestGroupsApi(ApiTestCase):
         update_response = self._put(f"groups/{group_b_id}", data=update_payload, admin=True, json=True)
         self._assert_status_code_is(update_response, 409)
 
+    def test_delete(self):
+        group = self.test_create_valid()
+        group_id = group["id"]
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+
+    def test_delete_duplicating_name_raises_409(self):
+        group = self.test_create_valid()
+        group_id = group["id"]
+        group_name = group["name"]
+
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+
+        # Create a new group with the same name as the deleted one is not allowed
+        payload = self._build_valid_group_payload(group_name)
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 409)
+
+    def test_purge(self):
+        group = self.test_create_valid()
+        group_id = group["id"]
+
+        # Delete and purge the group
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"groups/{group_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
     def _assert_valid_group(self, group, assert_id=None):
         self._assert_has_keys(group, "id", "name", "model_class", "url")
         if assert_id is not None:
