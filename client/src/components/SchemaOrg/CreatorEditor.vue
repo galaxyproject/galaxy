@@ -52,6 +52,7 @@ export default {
     props: {
         creators: {
             type: Array,
+            default: () => [],
         },
     },
     data() {
@@ -61,8 +62,11 @@ export default {
         };
     },
     watch: {
-        creators() {
-            this.creatorsCurrent = this.creators;
+        creators: {
+            handler(newCreators) {
+                this.creatorsCurrent = newCreators;
+            },
+            immediate: true,
         },
     },
     methods: {
