@@ -880,13 +880,11 @@ class TabularToolDataField(Dictifiable):
 
 
 @overload
-def _expand_here_template(content: str, here: Optional[str]) -> str:
-    ...
+def _expand_here_template(content: str, here: Optional[str]) -> str: ...
 
 
 @overload
-def _expand_here_template(content: None, here: Optional[str]) -> None:
-    ...
+def _expand_here_template(content: None, here: Optional[str]) -> None: ...
 
 
 def _expand_here_template(content: Optional[str], here: Optional[str]) -> Optional[str]:

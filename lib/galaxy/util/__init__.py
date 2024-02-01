@@ -391,15 +391,14 @@ def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) ->
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem: Element, pretty: bool = False) -> str:
+def xml_to_string(elem: Optional[Element], pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
+    if elem is None:
+        return ""
     try:
-        if elem is not None:
-            xml_str = etree.tostring(elem, encoding="unicode")
-        else:
-            xml_str = ""
+        xml_str = etree.tostring(elem, encoding="unicode")
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, "text"):
