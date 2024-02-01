@@ -11,9 +11,13 @@ cd "$(dirname "$0")"
 # Ensure ordered by dependency dag
 while read -r package_dir; do
     # Ignore empty lines
-    [[ -z "$package_dir" ]] && continue
+    if [[ -z $package_dir ]]; then
+        continue
+    fi
     # Ignore lines beginning with `#`
-    [[ "$package_dir" =~ ^#.* ]] && continue
+    if  [[ $package_dir =~ ^#.* ]]; then
+        continue
+    fi
 
     printf "\n========= RELEASING PACKAGE %s =========\n\n" "$package_dir"
     

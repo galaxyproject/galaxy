@@ -25,6 +25,7 @@ TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+# shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
 pip install --upgrade pip setuptools wheel
 if [ $FOR_PULSAR -eq 0 ]; then
@@ -34,11 +35,15 @@ fi
 # Ensure ordered by dependency DAG
 while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
     # Ignore empty lines
-    [[ -z "$package_dir" ]] && continue
+    if [[ -z $package_dir ]]; then
+        continue
+    fi
     # Ignore lines beginning with `#`
-    [[ "$package_dir" =~ ^#.* ]] && continue
+    if  [[ $package_dir =~ ^#.* ]]; then
+        continue
+    fi
 
-    printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
+    printf "\n========= TESTING PACKAGE %s =========\n\n" "$package_dir"
 
     cd "$package_dir"
 
