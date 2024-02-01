@@ -140,7 +140,7 @@ def _get_bp_link(annotation_el):
     anchor = annotation_el.attrib.get("{http://galaxyproject.org/xml/1.0}best_practices", None)
     link = None
     if anchor:
-        link = "https://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
+        link = "https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#%s" % anchor
     return link
 
 
