@@ -46,8 +46,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Fix filesource file url support by `@nuwang <https://github.com/nuwang>`_ in `#15794 <https://github.com/galaxyproject/galaxy/pull/15794>`_
 * Fix unittest mocks to support us checking geturl()  by `@dannon <https://github.com/dannon>`_ in `#16726 <https://github.com/galaxyproject/galaxy/pull/16726>`_
@@ -92,9 +90,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix dropbox import to support newer versions by `@nuwang <https://github.com/nuwang>`_ in `#16239 <https://github.com/galaxyproject/galaxy/pull/16239>`_
 
 -------------------
