@@ -122,29 +122,30 @@ class RoleManager(base.ModelManager[model.Role]):
         # - DefaultHistoryPermissions where role_id == Role.id
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
+        sa_session = trans.sa_session
         if not role.deleted:
             raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
-            user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
+            user = sa_session.query(trans.app.model.User).get(ura.user_id)
             # Delete DefaultUserPermissions for associated users
             for dup in user.default_permissions:
                 if role == dup.role:
-                    trans.sa_session.delete(dup)
+                    sa_session.delete(dup)
             # Delete DefaultHistoryPermissions for associated users
             for history in user.histories:
                 for dhp in history.default_permissions:
                     if role == dhp.role:
-                        trans.sa_session.delete(dhp)
-            trans.sa_session.delete(ura)
+                        sa_session.delete(dhp)
+            sa_session.delete(ura)
         # Delete GroupRoleAssociations
         for gra in role.groups:
-            trans.sa_session.delete(gra)
+            sa_session.delete(gra)
         # Delete DatasetPermissionss
         for dp in role.dataset_actions:
-            trans.sa_session.delete(dp)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+            sa_session.delete(dp)
+        with transaction(sa_session):
+            sa_session.commit()
         return role
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
