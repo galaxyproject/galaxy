@@ -35,7 +35,7 @@ fi
 # Ensure ordered by dependency DAG
 while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
     # Ignore empty lines
-    if [[ -z $package_dir ]]; then
+    if [ -z "$package_dir" ]; then
         continue
     fi
     # Ignore lines beginning with `#`

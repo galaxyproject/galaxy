@@ -11,7 +11,7 @@ cd "$(dirname "$0")"
 # Ensure ordered by dependency dag
 while read -r package_dir; do
     # Ignore empty lines
-    if [[ -z $package_dir ]]; then
+    if [ -z "$package_dir" ]; then
         continue
     fi
     # Ignore lines beginning with `#`
