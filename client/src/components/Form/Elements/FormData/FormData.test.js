@@ -186,6 +186,61 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
     });
 
+    it("sorts mixed dces and hdas", async () => {
+        const sortOptions = {
+            hda: [
+                { id: "hda1", hid: 1, name: "hdaName1", src: "hda", tags: ["tag1"] },
+                { id: "hda2", hid: 2, name: "hdaName2", src: "hda", tags: ["tag1", "tag2"] },
+                { id: "hda3", hid: 3, name: "hdaName3", src: "hda", tags: ["tag2", "tag3"] },
+                { id: "hda4", hid: 4, name: "hdaName4", src: "hda" },
+            ],
+            dce: [
+                { id: "dce1", name: "dceName1", src: "dce", is_dataset: true },
+                { id: "dce2", name: "dceName2", src: "dce", is_dataset: true },
+                { id: "dce3", name: "dceName3", src: "dce", is_dataset: true },
+                { id: "dce4", name: "dceName4", src: "dce", is_dataset: true },
+            ],
+        };
+        const wrapper = createTarget({
+            //intermix hdas and dces in the selected options
+            value: {
+                values: [
+                    { id: "hda1", src: "hda" },
+                    { id: "dce4", src: "dce" },
+                    { id: "dce2", src: "dce" },
+                    { id: "hda2", src: "hda" },
+                    { id: "dce3", src: "dce" },
+                ],
+            },
+            multiple: true,
+            optional: true,
+            options: sortOptions,
+        });
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(5);
+        // when dces are mixed in their values are shown first and are
+        // ordered by id descending
+        expect(selectedValues.at(0).text()).toBe("dceName4 (as dataset)");
+        expect(selectedValues.at(1).text()).toBe("dceName3 (as dataset)");
+        expect(selectedValues.at(2).text()).toBe("dceName2 (as dataset)");
+        expect(selectedValues.at(3).text()).toBe("2: hdaName2");
+        expect(selectedValues.at(4).text()).toBe("1: hdaName1");
+        await selectedValues.at(0).trigger("click");
+        const value_sorted = {
+            batch: false,
+            product: false,
+            values: [
+                // when dces are mixed in, they are emitted first
+                // and are sorted by id descending
+                { id: "dce3", map_over_type: null, src: "dce" },
+                { id: "dce2", map_over_type: null, src: "dce" },
+                { id: "hda1", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+            ],
+        };
+        expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
+    });
+
     it("dataset collection as hda", async () => {
         const wrapper = createTarget({
             value: { values: [{ id: "dce1", src: "dce" }] },
