@@ -365,7 +365,7 @@ class Repository(Base, Dictifiable):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     private: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
-    email_alerts = Column(MutableJSONType, nullable=True)
+    email_alerts: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     times_downloaded: Mapped[Optional[int]] = mapped_column(Integer)
     deprecated: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     categories = relationship("RepositoryCategoryAssociation", back_populates="repository")

@@ -1244,7 +1244,7 @@ class DynamicTool(Base, Dictifiable, RepresentById):
     tool_directory: Mapped[Optional[str]] = mapped_column(Unicode(255))
     hidden: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
     active: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
-    value = Column(MutableJSONType)
+    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
 
     dict_collection_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
     dict_element_visible_keys = ("id", "tool_id", "tool_format", "tool_version", "uuid", "active", "hidden")
@@ -1336,8 +1336,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     copied_from_job_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     command_line: Mapped[Optional[str]] = mapped_column(TEXT)
-    dependencies = Column(MutableJSONType, nullable=True)
-    job_messages = Column(MutableJSONType, nullable=True)
+    dependencies: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
+    job_messages: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     param_filename: Mapped[Optional[str]] = mapped_column(String(1024))
     runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -1353,13 +1353,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     job_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     job_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
     destination_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    destination_params = Column(MutableJSONType, nullable=True)
+    destination_params: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     imported: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
     params: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    object_store_id_overrides = Column(JSONType)
+    object_store_id_overrides: Mapped[Optional[bytes]] = mapped_column(JSONType)
 
     user = relationship("User")
     galaxy_session = relationship("GalaxySession")
@@ -2108,7 +2108,7 @@ class Task(Base, JobLike, RepresentById):
     tool_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
     tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
     exit_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    job_messages = Column(MutableJSONType, nullable=True)
+    job_messages: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     traceback: Mapped[Optional[str]] = mapped_column(TEXT)
     job_id: Mapped[int] = mapped_column(Integer, ForeignKey("job.id"), index=True, nullable=False)
@@ -2526,7 +2526,7 @@ class PostJobAction(Base, RepresentById):
     )
     action_type: Mapped[str] = mapped_column(String(255), nullable=False)
     output_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    action_arguments = Column(MutableJSONType, nullable=True)
+    action_arguments: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     workflow_step = relationship(
         "WorkflowStep",
         back_populates="post_job_actions",
@@ -2728,7 +2728,7 @@ class StoreExportAssociation(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=True)
     object_type: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
     object_id: Mapped[Optional[int]] = mapped_column(Integer)
-    export_metadata = Column(JSONType)
+    export_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
 
 
 class JobContainerAssociation(Base, RepresentById):
@@ -2738,7 +2738,7 @@ class JobContainerAssociation(Base, RepresentById):
     job_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("job.id"), index=True)
     container_type: Mapped[Optional[str]] = mapped_column(TEXT)
     container_name: Mapped[Optional[str]] = mapped_column(TEXT)
-    container_info = Column(MutableJSONType, nullable=True)
+    container_info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     created_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
     modified_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     job = relationship("Job", back_populates="container")
@@ -2765,7 +2765,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     requires_domain: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
     requires_path_in_url: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     requires_path_in_header_named: Mapped[Optional[str]] = mapped_column(TEXT)
-    info = Column(MutableJSONType, nullable=True)
+    info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     configured: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     deleted: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     created_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
@@ -2900,7 +2900,7 @@ class Notification(Base, Dictifiable, RepresentById):
     )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
     # A bug in early 23.1 led to values being stored as json string, so we use this special type to process the result value twice.
     # content should always be a dict
-    content = Column(DoubleEncodedJsonType)
+    content: Mapped[Optional[bytes]] = mapped_column(DoubleEncodedJsonType)
 
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
@@ -4312,7 +4312,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    transform = Column(MutableJSONType)
+    transform: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     dataset = relationship("Dataset", back_populates="sources")
     hashes = relationship("DatasetSourceHash", back_populates="source")
     dict_collection_visible_keys = ["id", "source_uri", "extra_files_path", "transform"]
@@ -6017,7 +6017,7 @@ class ExtendedMetadata(Base, RepresentById):
     __tablename__ = "extended_metadata"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    data = Column(MutableJSONType)
+    data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     children = relationship("ExtendedMetadataIndex", back_populates="extended_metadata")
 
     def __init__(self, data):
@@ -7628,10 +7628,10 @@ class Workflow(Base, Dictifiable, RepresentById):
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     has_cycles: Mapped[Optional[bool]] = mapped_column(Boolean)
     has_errors: Mapped[Optional[bool]] = mapped_column(Boolean)
-    reports_config = Column(JSONType)
-    creator_metadata = Column(JSONType)
+    reports_config: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    creator_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
     license: Mapped[Optional[str]] = mapped_column(TEXT)
-    source_metadata = Column(JSONType)
+    source_metadata: Mapped[Optional[bytes]] = mapped_column(JSONType)
     uuid: Mapped[Optional[str]] = mapped_column(UUIDType, nullable=True)
 
     steps = relationship(
@@ -7813,12 +7813,12 @@ class WorkflowStep(Base, RepresentById):
     type: Mapped[Optional[str]] = mapped_column(String(64))
     tool_id: Mapped[Optional[str]] = mapped_column(TEXT)
     tool_version: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_inputs = Column(JSONType)
-    tool_errors = Column(JSONType)
-    position = Column(MutableJSONType)
-    config = Column(JSONType)
+    tool_inputs: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    tool_errors: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    config: Mapped[Optional[bytes]] = mapped_column(JSONType)
     order_index: Mapped[Optional[int]] = mapped_column(Integer)
-    when_expression = Column(JSONType)
+    when_expression: Mapped[Optional[bytes]] = mapped_column(JSONType)
     uuid: Mapped[Optional[str]] = mapped_column(UUIDType)
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))
     temp_input_connections = None
@@ -8124,9 +8124,9 @@ class WorkflowStepInput(Base, RepresentById):
     name: Mapped[Optional[str]] = mapped_column(TEXT)
     merge_type: Mapped[Optional[str]] = mapped_column(TEXT)
     scatter_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    value_from = Column(MutableJSONType)
+    value_from: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     value_from_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    default_value = Column(MutableJSONType)
+    default_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     default_value_set: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     runtime_value: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
 
@@ -8267,11 +8267,11 @@ class WorkflowComment(Base, RepresentById):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_index: Mapped[Optional[int]] = mapped_column(Integer)
     workflow_id: Mapped[int] = mapped_column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
-    position = Column(MutableJSONType)
-    size = Column(JSONType)
+    position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    size: Mapped[Optional[bytes]] = mapped_column(JSONType)
     type: Mapped[Optional[str]] = mapped_column(String(16))
     color: Mapped[Optional[str]] = mapped_column(String(16))
-    data = Column(JSONType)
+    data: Mapped[Optional[bytes]] = mapped_column(JSONType)
     parent_comment_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
 
     workflow = relationship(
@@ -9036,7 +9036,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     implicit_collection_jobs_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("implicit_collection_jobs.id"), index=True, nullable=True
     )
-    action = Column(MutableJSONType, nullable=True)
+    action: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
 
     workflow_step = relationship("WorkflowStep")
     job = relationship("Job", back_populates="workflow_invocation_step", uselist=False)
@@ -9271,7 +9271,7 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
         Integer, ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_step.id"))
-    value = Column(MutableJSONType)
+    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     workflow_step = relationship("WorkflowStep")
     workflow_invocation = relationship("WorkflowInvocation", back_populates="step_states")
 
@@ -9355,7 +9355,7 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
         Integer, ForeignKey("workflow_invocation.id"), index=True
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_step.id"))
-    parameter_value = Column(MutableJSONType)
+    parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
 
     workflow_step = relationship("WorkflowStep")
     workflow_invocation = relationship("WorkflowInvocation", back_populates="input_step_parameters")
@@ -9444,7 +9444,7 @@ class WorkflowInvocationOutputValue(Base, Dictifiable, Serializable):
     )
     workflow_step_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_step.id"))
     workflow_output_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_output.id"), index=True)
-    value = Column(MutableJSONType)
+    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
 
     workflow_invocation = relationship("WorkflowInvocation", back_populates="output_values")
 
@@ -9611,9 +9611,9 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     form_definition_current_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False
     )
-    fields = Column(MutableJSONType)
+    fields: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     type: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    layout = Column(MutableJSONType)
+    layout: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     form_definition_current = relationship(
         "FormDefinitionCurrent",
         back_populates="forms",
@@ -9703,7 +9703,7 @@ class FormValues(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, nullable=True)
     form_definition_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("form_definition.id"), index=True)
-    content = Column(MutableJSONType)
+    content: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     form_definition = relationship(
         "FormDefinition", primaryjoin=(lambda: FormValues.form_definition_id == FormDefinition.id)
     )
@@ -9931,7 +9931,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
     uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))
     provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))
-    extra_data: Mapped[Optional[str]] = mapped_column(MutableJSONType, nullable=True)
+    extra_data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     lifetime: Mapped[Optional[int]] = mapped_column(Integer)
     assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
     user = relationship("User", back_populates="social_auth")
@@ -10108,9 +10108,9 @@ class CloudAuthz(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
     provider: Mapped[Optional[str]] = mapped_column(String(255))
-    config = Column(MutableJSONType)
+    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     authn_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True)
-    tokens = Column(MutableJSONType)
+    tokens: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     last_update: Mapped[Optional[datetime]] = mapped_column(DateTime)
     last_activity: Mapped[Optional[datetime]] = mapped_column(DateTime)
     description: Mapped[Optional[str]] = mapped_column(TEXT)
@@ -10379,7 +10379,7 @@ class VisualizationRevision(Base, RepresentById):
     visualization_id: Mapped[int] = mapped_column(Integer, ForeignKey("visualization.id"), index=True, nullable=False)
     title: Mapped[Optional[str]] = mapped_column(TEXT)
     dbkey: Mapped[Optional[str]] = mapped_column(TEXT)
-    config = Column(MutableJSONType)
+    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     visualization = relationship(
         "Visualization",
         back_populates="revisions",
