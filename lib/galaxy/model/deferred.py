@@ -9,7 +9,10 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import (
+    object_session,
+    Session,
+)
 from sqlalchemy.orm.exc import DetachedInstanceError
 
 from galaxy.datatypes.sniff import (
@@ -74,7 +77,7 @@ class DatasetInstanceMaterializer:
         object_store_populator: Optional[ObjectStorePopulator] = None,
         transient_path_mapper: Optional[TransientPathMapper] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[scoped_session] = None,
+        sa_session: Optional[Session] = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -122,6 +125,7 @@ class DatasetInstanceMaterializer:
                 sa_session = self._sa_session
                 if sa_session is None:
                     sa_session = object_session(dataset_instance)
+                assert sa_session
                 sa_session.add(materialized_dataset)
                 with transaction(sa_session):
                     sa_session.commit()
@@ -152,6 +156,7 @@ class DatasetInstanceMaterializer:
             sa_session = self._sa_session
             if sa_session is None:
                 sa_session = object_session(dataset_instance)
+            assert sa_session
             sa_session.add(materialized_dataset_instance)
         materialized_dataset_instance.copy_from(
             dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
