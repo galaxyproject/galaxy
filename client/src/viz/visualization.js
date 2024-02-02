@@ -55,7 +55,7 @@ var select_datasets = (filters, success_fn) => {
                         dataType: "json",
                         data: {
                             data_type: "track_config",
-                            hda_ldda: "hda",
+                            hda_ldda: f.src === "ldda" ? "ldda" : "hda",
                         },
                     })
                 );
