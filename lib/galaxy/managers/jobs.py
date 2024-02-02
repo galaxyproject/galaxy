@@ -25,6 +25,7 @@ from sqlalchemy.orm import (
     Session,
 )
 from sqlalchemy.sql import select
+from typing_extensions import List
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -60,6 +61,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
+    JobMetric,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
@@ -850,7 +852,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     return rval
 
 
-def summarize_job_metrics(trans, job):
+def summarize_job_metrics(trans, job) -> List[JobMetric]:
     """Produce a dict-ified version of job metrics ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user

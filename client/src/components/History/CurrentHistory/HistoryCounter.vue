@@ -5,6 +5,7 @@ import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { fetcher } from "@/api/schema";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -45,16 +46,24 @@ const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
+const historyMetrics = ref<any>();
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
-onMounted(() => {
+onMounted(async () => {
     updateTime();
     // update every second
     setInterval(updateTime, 1000);
+
+    const historiesFetcher = fetcher.path("/api/histories/{history_id}/metrics").method("get").create();
+    historyMetrics.value = (await historiesFetcher({ history_id: props.history.id })).data;
 });
+
+function onClickCarbonEmissions() {
+    router.push({ name: "HistoryMetrics", params: { historyId: props.history.id } });
+}
 
 function onDashboard() {
     router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
@@ -115,18 +124,33 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <b-button
-            v-b-tooltip.hover
-            title="History Size"
-            variant="link"
-            size="sm"
-            class="rounded-0 text-decoration-none history-storage-overview-button"
-            :disabled="!showControls"
-            data-description="storage dashboard button"
-            @click="onDashboard">
-            <icon icon="database" />
-            <span>{{ niceHistorySize }}</span>
-        </b-button>
+        <div>
+            <b-button
+                v-b-tooltip.hover
+                title="History Size"
+                variant="link"
+                size="sm"
+                class="rounded-0 text-decoration-none history-storage-overview-button"
+                :disabled="!showControls"
+                data-description="storage dashboard button"
+                @click="onDashboard">
+                <icon icon="database" />
+                <span>{{ niceHistorySize }}</span>
+            </b-button>
+
+            <b-button
+                v-b-tooltip.hover
+                title="Carbon Emissions"
+                variant="link"
+                size="sm"
+                class="rounded-0 text-decoration-none history-storage-overview-button"
+                data-description="history carbon emissions"
+                @click="onClickCarbonEmissions">
+                <icon icon="cloud" />
+                <span>0 g</span>
+            </b-button>
+        </div>
+
         <b-button-group v-if="currentUser">
             <b-button
                 v-if="config && config.object_store_allows_id_selection"
@@ -138,12 +162,14 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 @click="showPreferredObjectStoreModal = true">
                 <icon icon="hdd" />
             </b-button>
+
             <PreferredStorePopover
                 v-if="config && config.object_store_allows_id_selection"
                 :history-id="history.id"
                 :history-preferred-object-store-id="historyPreferredObjectStoreId"
                 :user="currentUser">
             </PreferredStorePopover>
+
             <b-button-group>
                 <b-button
                     v-b-tooltip.hover
@@ -156,6 +182,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     <span class="fa fa-map-marker" />
                     <span>{{ numItemsActive }}</span>
                 </b-button>
+
                 <b-button
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
@@ -169,6 +196,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     <icon icon="trash" />
                     <span>{{ numItemsDeleted }}</span>
                 </b-button>
+
                 <b-button
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
@@ -182,6 +210,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     <icon icon="eye-slash" />
                     <span>{{ numItemsHidden }}</span>
                 </b-button>
+
                 <b-button
                     v-b-tooltip.hover
                     :title="reloadButtonTitle"
@@ -192,6 +221,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     <span :class="reloadButtonCls" />
                 </b-button>
             </b-button-group>
+
             <b-modal
                 v-model="showPreferredObjectStoreModal"
                 title="History Preferred Object Store"

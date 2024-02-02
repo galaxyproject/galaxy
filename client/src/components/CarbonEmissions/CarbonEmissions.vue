@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { GetComponentPropTypes } from "types/utilityTypes";
-import { computed, unref } from "vue";
+import { computed, ref, unref } from "vue";
 
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
@@ -14,32 +14,32 @@ import Heading from "@/components/Common/Heading.vue";
 library.add(faQuestionCircle);
 
 interface CarbonEmissionsProps {
-    estimatedServerInstance: {
-        name: string;
-        cpuInfo: {
-            modelName: string;
-            totalAvailableCores: number;
-            tdp: number;
-        };
-    };
     jobRuntimeInSeconds: number;
     coresAllocated: number;
     powerUsageEffectiveness: number;
     geographicalServerLocationName: string;
     memoryAllocatedInMebibyte?: number;
     carbonIntensity: number;
+    showHeader: boolean;
+    showCarbonEmissionsCalculationsLink: boolean;
 }
 
 const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
     memoryAllocatedInMebibyte: 0,
+    showHeader: false,
+    showCarbonEmissionsCalculationsLink: false,
 });
 
 const carbonEmissions = computed(() => {
+    if (!estimatedServerInstance.value) {
+        return;
+    }
+
     const memoryPowerUsed = carbonEmissionsConstants.memoryPowerUsage;
     const runtimeInHours = props.jobRuntimeInSeconds / (60 * 60); // Convert to hours
     const memoryAllocatedInGibibyte = props.memoryAllocatedInMebibyte / 1024; // Convert to gibibyte
 
-    const cpuInfo = props.estimatedServerInstance.cpuInfo;
+    const cpuInfo = estimatedServerInstance.value.cpuInfo;
     const tdpPerCore = cpuInfo.tdp / cpuInfo.totalAvailableCores;
     const normalizedTdpPerCore = tdpPerCore * props.coresAllocated;
 
@@ -193,6 +193,45 @@ const barChartData = computed(() => {
     return data;
 });
 
+const estimatedServerInstance = computed(() => {
+    const ec2 = unref(ec2Instances);
+    if (!ec2) {
+        return;
+    }
+
+    const memory = props.memoryAllocatedInMebibyte;
+    const adjustedMemory = memory ? memory / 1024 : 0;
+    const cores = props.coresAllocated;
+
+    const serverInstance = ec2.find((instance) => {
+        if (adjustedMemory === 0) {
+            // Exclude memory from search criteria
+            return instance.vCpuCount >= cores;
+        }
+
+        // Search by all criteria
+        return instance.mem >= adjustedMemory && instance.vCpuCount >= cores;
+    });
+
+    if (!serverInstance) {
+        return;
+    }
+
+    const cpu = serverInstance.cpu[0];
+    if (!cpu) {
+        return;
+    }
+
+    return {
+        name: serverInstance.name,
+        cpuInfo: {
+            modelName: cpu.cpuModel,
+            totalAvailableCores: cpu.coreCount,
+            tdp: cpu.tdp,
+        },
+    };
+});
+
 function prettyPrintValue({
     value,
     threshold,
@@ -266,11 +305,28 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
     const roundedValue = Math.round(adjustedEnergyNeeded);
     return `${roundedValue === 0 ? "< 1" : roundedValue} ${unitMagnitude}`;
 }
+
+const ec2Instances = ref<EC2[]>();
+import("@/components/JobMetrics/awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
+
+type EC2 = {
+    name: string;
+    mem: number;
+    price: number;
+    priceUnit: string;
+    vCpuCount: number;
+    cpu: {
+        cpuModel: string;
+        tdp: number;
+        coreCount: number;
+        source: string;
+    }[];
+};
 </script>
 
-<template v-if="carbonEmissions && carbonEmissionsComparisons">
-    <div class="mt-4">
-        <Heading h2 separator inline bold> Carbon Footprint </Heading>
+<template>
+    <div v-if="carbonEmissions && carbonEmissionsComparisons && estimatedServerInstance" class="mt-4">
+        <Heading v-if="props.showHeader" h2 separator inline bold> Carbon Footprint </Heading>
 
         <section class="carbon-emission-values my-4">
             <div class="emissions-grid">
@@ -366,6 +422,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                 </p>
 
                 <router-link
+                    v-if="props.showCarbonEmissionsCalculationsLink"
                     to="/carbon_emissions_calculations"
                     title="Learn about how we estimate carbon emissions"
                     class="align-self-start mt-2">
@@ -377,6 +434,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
             </div>
         </section>
     </div>
+    <div v-else>Carbon emissions could not be computed at this time.</div>
 </template>
 
 <style scoped>

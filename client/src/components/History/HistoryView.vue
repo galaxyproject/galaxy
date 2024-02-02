@@ -1,3 +1,123 @@
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
+
+import { CollectionEntry } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import CollectionPanel from "./CurrentCollection/CollectionPanel.vue";
+import HistoryPanel from "./CurrentHistory/HistoryPanel.vue";
+import CopyModal from "./Modals/CopyModal.vue";
+
+type TODO = any;
+
+const props = defineProps<{ id: string }>();
+
+const historyStore = useHistoryStore();
+
+historyStore.loadHistoryById(props.id);
+
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistory } = storeToRefs(useHistoryStore());
+const selectedCollections = ref<TODO[]>([]);
+const history = ref<TODO>();
+
+onMounted(async () => {
+    await historyStore.loadHistoryById(props.id);
+    const newHistoryValue = historyStore.getHistoryById(props.id);
+    if (newHistoryValue) {
+        history.value = newHistoryValue;
+    }
+});
+
+watch(
+    () => props.id,
+    (newValue) => {
+        const newHistoryValue = historyStore.getHistoryById(newValue);
+        if (newHistoryValue) {
+            history.value = newHistoryValue;
+        }
+    }
+);
+
+const userOwnsHistory = computed(() => {
+    if (!currentUser.value || !history.value) {
+        return false;
+    }
+
+    if (!("id" in currentUser.value)) {
+        return false;
+    }
+
+    return currentUser.value.id === history.value.user_id;
+});
+
+const isCurrentHistory = computed(() => {
+    return currentHistory.value?.id === history.value?.id;
+});
+
+const isSetAsCurrentDisabled = computed(() => {
+    return isCurrentHistory.value || history.value?.archived || history.value?.purged;
+});
+
+const setAsCurrentTitle = computed(() => {
+    if (isCurrentHistory.value) {
+        return "This history is already your current history.";
+    }
+
+    if (history.value?.archived) {
+        return "This history has been archived and cannot be set as your current history. Unarchive it first.";
+    }
+
+    if (history.value?.purged) {
+        return "This history has been purged and cannot be set as your current history.";
+    }
+
+    return "Switch to this history";
+});
+
+const canEditHistory = computed(() => {
+    return userOwnsHistory.value && !history.value?.archived && !history.value?.purged;
+});
+
+const showHistoryArchived = computed(() => {
+    return history.value?.archived && userOwnsHistory.value;
+});
+
+const showHistoryStateInfo = computed(() => {
+    return showHistoryArchived.value || history.value?.purged;
+});
+
+const historyStateInfoMessage = computed(() => {
+    if (showHistoryArchived.value && history.value?.purged) {
+        return "This history has been archived and purged.";
+    }
+
+    if (showHistoryArchived.value) {
+        return "This history has been archived.";
+    }
+
+    if (history.value?.purged) {
+        return "This history has been purged.";
+    }
+
+    return "";
+});
+
+const canImportHistory = computed(() => {
+    return !userOwnsHistory.value && !history.value?.purged;
+});
+
+const shouldDisplayCollectionPanel = computed(() => {
+    return selectedCollections.value.length && selectedCollections.value[0].history_id === props.id;
+});
+
+function onViewCollection(collection: CollectionEntry) {
+    selectedCollections.value = [...selectedCollections.value, collection];
+}
+</script>
+
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
         <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
@@ -12,7 +132,7 @@
                 :title="setAsCurrentTitle"
                 :disabled="isSetAsCurrentDisabled"
                 data-description="switch to history button"
-                @click="setCurrentHistory(history.id)">
+                @click="historyStore.setCurrentHistory(history.id)">
                 Switch to this history
             </b-button>
 
@@ -28,7 +148,7 @@
         </div>
 
         <CollectionPanel
-            v-if="selectedCollections.length && selectedCollections[0].history_id == id"
+            v-if="shouldDisplayCollectionPanel"
             :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
@@ -44,92 +164,3 @@
         <CopyModal id="copy-history-modal" :history="history" />
     </div>
 </template>
-
-<script>
-import { mapActions, mapState } from "pinia";
-
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-
-import CollectionPanel from "./CurrentCollection/CollectionPanel";
-import HistoryPanel from "./CurrentHistory/HistoryPanel";
-import CopyModal from "./Modals/CopyModal";
-
-export default {
-    components: {
-        HistoryPanel,
-        CollectionPanel,
-        CopyModal,
-    },
-    props: {
-        id: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            selectedCollections: [],
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        ...mapState(useHistoryStore, ["getHistoryById", "currentHistory"]),
-        history() {
-            return this.getHistoryById(this.id);
-        },
-        userOwnsHistory() {
-            return this.currentUser.id == this.history.user_id;
-        },
-        isCurrentHistory() {
-            return this.currentHistory?.id == this.history?.id;
-        },
-        isSetAsCurrentDisabled() {
-            return this.isCurrentHistory || this.history.archived || this.history.purged;
-        },
-        setAsCurrentTitle() {
-            if (this.isCurrentHistory) {
-                return "This history is already your current history.";
-            }
-            if (this.history.archived) {
-                return "This history has been archived and cannot be set as your current history. Unarchive it first.";
-            }
-            if (this.history.purged) {
-                return "This history has been purged and cannot be set as your current history.";
-            }
-            return "Switch to this history";
-        },
-        canEditHistory() {
-            return this.userOwnsHistory && !this.history.archived && !this.history.purged;
-        },
-        showHistoryArchived() {
-            return this.history.archived && this.userOwnsHistory;
-        },
-        showHistoryStateInfo() {
-            return this.showHistoryArchived || this.history.purged;
-        },
-        historyStateInfoMessage() {
-            if (this.showHistoryArchived && this.history.purged) {
-                return "This history has been archived and purged.";
-            } else if (this.showHistoryArchived) {
-                return "This history has been archived.";
-            } else if (this.history.purged) {
-                return "This history has been purged.";
-            }
-            return "";
-        },
-        canImportHistory() {
-            return !this.userOwnsHistory && !this.history.purged;
-        },
-    },
-    created() {
-        this.loadHistoryById(this.id);
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentHistory"]),
-        onViewCollection(collection) {
-            this.selectedCollections = [...this.selectedCollections, collection];
-        },
-    },
-};
-</script>

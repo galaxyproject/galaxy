@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import CarbonEmissionsCalculations from "components/CarbonEmissions/CarbonEmissionsCalculations";
 import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
@@ -12,6 +13,7 @@ import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
+import HistoryMetrics from "components/History/CurrentHistory/HistoryMetrics";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
@@ -21,7 +23,6 @@ import { HistoryExport } from "components/HistoryExport/index";
 import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
-import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
@@ -323,6 +324,12 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/:historyId/invocations",
                         component: HistoryInvocations,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/metrics",
+                        name: "HistoryMetrics",
+                        component: HistoryMetrics,
                         props: true,
                     },
                     {

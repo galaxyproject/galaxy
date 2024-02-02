@@ -537,6 +537,14 @@ export interface paths {
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
     };
+    "/api/histories/{history_id}/metrics": {
+        /** Returns the cumulative metrics for all jobs in a given history with ``history_id``. */
+        get: operations["history_api_histories__history_id__metrics_get"];
+    };
+    "/api/histories/{history_id}/emissions": {
+        /** Returns the cumulative metrics for all jobs in a given history with ``history_id``. */
+        get: operations["history_api_histories__history_id__emissions_get"];
+    };
     "/api/histories/{history_id}/archive": {
         /**
          * Archive a history.
@@ -6533,6 +6541,73 @@ export interface components {
              */
             url: string;
             [key: string]: unknown | undefined;
+        };
+        /**
+         * History Metrics
+         * @description The accumulated metrics of all jobs in a history.
+         */
+        HistoryMetrics: {
+            /**
+              Total Jobs Count
+              @description The total number of jobs in the history.
+            */
+            total_jobs_in_history: number;
+            /**
+              Total Runtime in Seconds
+              @description The total amount of compute runtime used by all jobs in the history.
+            */
+            total_runtime_in_seconds: number;
+            /**
+              Total Cores Allocated
+              @description The total numbers of cores allocated for all jobs in a history.
+            */
+            total_cores_allocated: number;
+            /**
+              Total Memory Allocated
+              @description The total amount of memory used and alloceated for all jobs in a history.
+            */
+            total_memory_allocated_in_mebibyte: number;
+        };
+        /**
+         * History Emissions
+         * @description The carbon emissions of a history.
+         */
+        HistoryEmissions: {
+            /**
+              NAME
+              @description DESC
+            */
+            cpu_carbon_emissions: number;
+
+            /**
+              NAME
+              @description DESC
+            */
+            memory_carbon_emissions: number;
+
+            /**
+              NAME
+              @description DESC
+            */
+            total_carbon_emissions: number;
+
+            /**
+              NAME
+              @description DESC
+            */
+            energy_needed_cpu: number;
+
+            /**
+              NAME
+              @description DESC
+            */
+            energy_needed_memory: number;
+
+            /**
+              NAME
+              @description DESC
+            */
+            total_energy_needed: number;
         };
         /**
          * Hyperlink
@@ -14397,6 +14472,58 @@ export interface operations {
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                         | components["schemas"]["HistoryMinimal"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_histories__history_id__metrics_get: {
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["HistoryMetrics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_histories__history_id__emissions_get: {
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["HistoryEmissions"];
                 };
             };
             /** @description Validation Error */

@@ -1019,3 +1019,27 @@ class FastAPIHistoryContents:
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval
+
+    @router.get(
+        "/api/histories/{history_id}/metrics",
+        summary="Returns the metrics for all jobs for a given history.",
+    )
+    def get_metrics(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """Get the cumulative metrics for all jobs in a history with ``history_id``."""
+        return self.service.get_metrics(trans, history_id)
+
+    @router.get(
+        "/api/histories/{history_id}/emissions",
+        summary="Returns the carbon emissions of a given history.",
+    )
+    def get_emissions(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """Get the carbon emissions data of a history with ``history_id``."""
+        return self.service.get_emissions(trans, history_id)

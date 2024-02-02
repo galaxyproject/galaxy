@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref, unref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
+import {
+    worldwideCarbonIntensity,
+    worldwidePowerUsageEffectiveness,
+} from "@/components/CarbonEmissions/carbonEmissionConstants";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
-import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
-
 import AwsEstimate from "./AwsEstimate.vue";
-import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
 
 const props = defineProps({
     datasetFilesize: {
@@ -136,49 +138,6 @@ const memoryAllocatedInMebibyte = computed(() => {
 
     return memoryUsage ? parseInt(memoryUsage) : undefined;
 });
-
-const estimatedServerInstance = computed(() => {
-    const cores = unref(coresAllocated);
-    if (!cores) {
-        return;
-    }
-
-    const memory = unref(memoryAllocatedInMebibyte);
-    const adjustedMemory = memory ? memory / 1024 : 0;
-
-    const ec2 = unref(ec2Instances);
-    if (!ec2) {
-        return;
-    }
-
-    const serverInstance = ec2.find((instance) => {
-        if (adjustedMemory === 0) {
-            // Exclude memory from search criteria
-            return instance.vCpuCount >= cores;
-        }
-
-        // Search by all criteria
-        return instance.mem >= adjustedMemory && instance.vCpuCount >= cores;
-    });
-
-    if (!serverInstance) {
-        return;
-    }
-
-    const cpu = serverInstance.cpu[0];
-    if (!cpu) {
-        return;
-    }
-
-    return {
-        name: serverInstance.name,
-        cpuInfo: {
-            modelName: cpu.cpuModel,
-            totalAvailableCores: cpu.coreCount,
-            tdp: cpu.tdp,
-        },
-    };
-});
 </script>
 
 <template>
@@ -209,13 +168,11 @@ const estimatedServerInstance = computed(() => {
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionsEstimates && jobRuntimeInSeconds && coresAllocated"
+            show-carbon-emissions-calculations-link
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"
-            :estimated-server-instance="estimatedServerInstance"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />

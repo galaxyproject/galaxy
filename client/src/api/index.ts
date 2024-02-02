@@ -18,6 +18,16 @@ export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 export type HistoryContentItemBase = components["schemas"]["EncodedHistoryContentItem"];
 
 /**
+ * Contains information about the aggregated metrics of all jobs in a history.
+ */
+export type HistoryMetrics = components["schemas"]["HistoryMetrics"];
+
+/**
+ * Contains information about the carbon emissions of a history.
+ */
+export type HistoryEmissions = components["schemas"]["HistoryEmissions"];
+
+/**
  * Contains summary information about a HistoryDatasetAssociation.
  */
 export type DatasetSummary = components["schemas"]["HDASummary"];

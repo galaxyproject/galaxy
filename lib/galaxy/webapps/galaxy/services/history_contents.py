@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import sqlalchemy as sa
 from typing import (
     Any,
     cast,
@@ -61,6 +62,8 @@ from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
+    Job,
+    JobMetricNumeric,
     LibraryDataset,
     User,
 )
@@ -855,6 +858,120 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         for file_path, archive_path in paths_and_files:
             archive.write(file_path, archive_path)
         return archive
+
+    def get_metrics(
+        self,
+        trans,
+        history_id: DecodedDatabaseIdField,
+    ):
+        """Get the cumulative metrics for all jobs in a given history with ``history_id``.
+
+        :param  history_id:     the encoded id of the history whose metrics are to be returned
+        """
+        history = self._get_history(trans, history_id)
+        decoded_job_ids: List[int] = [job.id for job in history.jobs]
+
+        total_runtime_in_seconds = trans.sa_session.query(
+            sa.func.sum(JobMetricNumeric.metric_value).label("total_runtime_in_seconds")
+        ).filter(JobMetricNumeric.job_id.in_(decoded_job_ids), JobMetricNumeric.metric_name == "runtime_seconds").scalar()
+
+        total_memory_allocated_in_mebibyte = trans.sa_session.query(
+            sa.func.sum(JobMetricNumeric.metric_value).label("total_memory_allocated_in_mebibyte")
+        ).filter(JobMetricNumeric.job_id.in_(decoded_job_ids), JobMetricNumeric.metric_name == "galaxy_memory_mb").scalar()
+
+        total_cores_allocated = trans.sa_session.query(
+            sa.func.sum(JobMetricNumeric.metric_value).label("total_cores_allocated")
+        ).filter(JobMetricNumeric.job_id.in_(decoded_job_ids), JobMetricNumeric.metric_name == "galaxy_slots").scalar()
+
+        return {
+            "total_jobs_in_history": len(decoded_job_ids),
+            "total_runtime_in_seconds": total_runtime_in_seconds,
+            "total_cores_allocated": total_cores_allocated,
+            "total_memory_allocated_in_mebibyte": total_memory_allocated_in_mebibyte,
+        }
+
+    def get_emissions(
+        self,
+        trans,
+        history_id: DecodedDatabaseIdField,
+    ):
+        """Get the carbon emissions of the history with ``history_id``.
+
+        :param  history_id:     the encoded id of the history whose carbon emissions should be returned
+        """
+        history = self._get_history(trans, history_id)
+        decoded_job_ids: List[int] = [job.id for job in history.jobs]
+
+        history_carbon_emissions: dict[str, float] = {
+            "cpu_carbon_emissions": 0,
+            "memory_carbon_emissions": 0,
+            "total_carbon_emissions": 0,
+            "energy_needed_cpu": 0,
+            "energy_needed_memory": 0,
+            "total_energy_needed": 0,
+        }
+
+        for job_id in decoded_job_ids:
+            job: Job = trans.sa_session.get(Job, job_id)
+            trans.sa_session.refresh(job)
+
+            job_carbon_emissions = self.__get_job_carbon_emissions(
+                self.__get_job_metric_value("galaxy_memory_mb", job.metrics),
+                self.__get_job_metric_value("runtime_seconds", job.metrics),
+                self.__get_job_metric_value("galaxy_slots", job.metrics),
+            )
+
+            history_carbon_emissions["cpu_carbon_emissions"] += job_carbon_emissions["cpu_carbon_emissions"]
+            history_carbon_emissions["memory_carbon_emissions"] += job_carbon_emissions["memory_carbon_emissions"]
+            history_carbon_emissions["total_carbon_emissions"] += job_carbon_emissions["total_carbon_emissions"]
+
+            history_carbon_emissions["energy_needed_cpu"] += job_carbon_emissions["energy_needed_cpu"]
+            history_carbon_emissions["energy_needed_memory"] += job_carbon_emissions["energy_needed_memory"]
+            history_carbon_emissions["total_energy_needed"] += job_carbon_emissions["total_energy_needed"]
+
+        return history_carbon_emissions
+
+    def __get_job_metric_value(self, key: str, metrics: List[JobMetricNumeric]) -> float:
+        for metric in metrics:
+            if metric.metric_name == key:
+                return float(metric.metric_value)
+        return 0
+
+    def __get_job_carbon_emissions(
+        self, memory_allocated_in_mebibyte: float, runtime_seconds: float, cores_allocated: float
+    ) -> dict[str, float]:
+        memory_power_usage = 0.3725
+        runtime_in_hours = runtime_seconds / (60 * 60)  # Convert to hours
+        memory_allocated_in_gibibyte = memory_allocated_in_mebibyte / 1024  # Convert to gibibyte
+
+        tdp_per_ore = 115 / 10
+        normalized_tdp_per_core = tdp_per_ore * cores_allocated
+
+        # Power needed in Watt
+        power_usage_effectiveness = 1.67
+        power_needed_cpu = power_usage_effectiveness * normalized_tdp_per_core
+        power_needed_memory = power_usage_effectiveness * memory_allocated_in_gibibyte * memory_power_usage
+        total_power_needed = power_needed_cpu + power_needed_memory
+
+        # Energy needed. Convert Watt to kWh
+        energy_needed_cpu = (runtime_in_hours * power_needed_cpu) / 1000
+        energy_needed_memory = (runtime_in_hours * power_needed_memory) / 1000
+        total_energy_needed = (runtime_in_hours * total_power_needed) / 1000
+
+        # Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
+        carbon_intensity = 475.0
+        cpu_carbon_emissions = energy_needed_cpu * carbon_intensity
+        memory_carbon_emissions = energy_needed_memory * carbon_intensity
+        total_carbon_emissions = total_energy_needed * carbon_intensity
+
+        return {
+            "cpu_carbon_emissions": cpu_carbon_emissions,
+            "memory_carbon_emissions": memory_carbon_emissions,
+            "total_carbon_emissions": total_carbon_emissions,
+            "energy_needed_cpu": energy_needed_cpu,
+            "energy_needed_memory": energy_needed_memory,
+            "total_energy_needed": total_energy_needed,
+        }
 
     def __delete_dataset(
         self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams
