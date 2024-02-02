@@ -228,6 +228,22 @@ class VisualizationController(
             return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
 
     # ------------------------- registry.
+    @web.expose
+    @web.require_login("use Galaxy visualizations", use_panels=True)
+    def render(self, trans, visualization_name, embedded=None, **kwargs):
+        """
+        Render the appropriate visualization template, parsing the `kwargs`
+        into appropriate variables and resources (such as ORM models)
+        based on this visualizations `param` data in visualizations_conf.xml.
+
+        URL: /visualization/show/{visualization_name}
+        """
+        plugin = self._get_plugin_from_registry(trans, visualization_name)
+        try:
+            return plugin.render(trans=trans, embedded=embedded, **kwargs)
+        except Exception as exception:
+            self._handle_plugin_error(trans, visualization_name, exception)
+
     def _get_plugin_from_registry(self, trans, visualization_name):
         """
         Get the named plugin from the registry.
