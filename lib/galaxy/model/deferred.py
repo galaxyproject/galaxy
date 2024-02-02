@@ -11,7 +11,6 @@ from typing import (
 
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.exc import DetachedInstanceError
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -278,7 +277,7 @@ def materializer_factory(
     transient_path_mapper: Optional[TransientPathMapper] = None,
     transient_directory: Optional[str] = None,
     file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[scoped_session] = None,
+    sa_session: Optional[Session] = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)
