@@ -1898,7 +1898,7 @@ class GTrack(Interval):
         return cols, headers
 
     def set_meta(self, dataset, **kwd):
-        with open(dataset.file_name) as input_file:
+        with open(dataset.get_file_name()) as input_file:
             hash_count_to_lines, num_data_lines = self._parse_file(input_file)
         self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
 
@@ -2005,7 +2005,7 @@ class GTrack(Interval):
                 f"and {dataset.metadata.data_lines} data lines "
                 f"of {dataset.metadata.columns} columns"
             )
-            dataset.peek = data.get_file_peek(dataset.file_name, skipchars=["#"], **kwd)
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), skipchars=["#"], **kwd)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
