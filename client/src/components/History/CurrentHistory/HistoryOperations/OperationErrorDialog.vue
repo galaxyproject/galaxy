@@ -1,3 +1,53 @@
+<script setup lang="ts">
+import { BModal } from "bootstrap-vue";
+import { computed, ref } from "vue";
+
+interface Props {
+    operationError: any;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits(["hide"]);
+
+const show = ref(() => props.operationError != null);
+
+const isPartialSuccess = computed(() => {
+    return props.operationError?.result?.success_count > 0;
+});
+const success_count = computed(() => {
+    return props.operationError?.result?.success_count || 0;
+});
+const error_count = computed(() => {
+    return props.operationError?.result?.errors.length || 0;
+});
+const reasons = computed(() => {
+    if (props.operationError && props.operationError.result) {
+        return [...new Set(props.operationError.result.errors.map((e: any) => e.error))];
+    }
+
+    const response_error = props.operationError?.errorMessage?.response?.data?.err_msg;
+
+    if (response_error) {
+        return [response_error];
+    }
+    return [];
+});
+const title = computed(() => {
+    return isPartialSuccess.value ? "Some items could not be processed" : "Something went wrong...";
+});
+const titleVariant = computed(() => {
+    return isPartialSuccess.value ? "warning" : "danger";
+});
+const errorMessage = computed(() => {
+    return props.operationError?.errorMessage?.message;
+});
+
+function onHide() {
+    emit("hide");
+}
+</script>
+
 <template>
     <BModal
         v-model="show"
@@ -25,56 +75,3 @@
         </div>
     </BModal>
 </template>
-
-<script>
-import { BModal } from "bootstrap-vue";
-
-export default {
-    components: {
-        BModal,
-    },
-    props: {
-        operationError: { type: Object, default: null },
-    },
-    data: function () {
-        return {
-            show: this.operationError != null,
-        };
-    },
-    computed: {
-        isPartialSuccess() {
-            return this.operationError?.result?.success_count > 0;
-        },
-        success_count() {
-            return this.operationError?.result?.success_count || 0;
-        },
-        error_count() {
-            return this.operationError?.result?.errors.length || 0;
-        },
-        reasons() {
-            if (this.operationError && this.operationError.result) {
-                return [...new Set(this.operationError.result.errors.map((e) => e.error))];
-            }
-            const response_error = this.operationError?.errorMessage?.response?.data?.err_msg;
-            if (response_error) {
-                return [response_error];
-            }
-            return [];
-        },
-        title() {
-            return this.isPartialSuccess ? "Some items could not be processed" : "Something went wrong...";
-        },
-        titleVariant() {
-            return this.isPartialSuccess ? "warning" : "danger";
-        },
-        errorMessage() {
-            return this.operationError?.errorMessage?.message;
-        },
-    },
-    methods: {
-        onHide() {
-            this.$emit("hide");
-        },
-    },
-};
-</script>
