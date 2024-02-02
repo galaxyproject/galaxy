@@ -104,7 +104,7 @@ def handle_library_params(
         template = session.get(FormDefinition, template_id)
         assert template
         for field in template.fields:
-            field_name = field["name"]
+            field_name = field["name"]  # type:ignore[index]
             if params.get(field_name, False):
                 field_value = util.restore_text(params.get(field_name, ""))
                 template_field_contents[field_name] = field_value

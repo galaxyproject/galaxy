@@ -174,12 +174,12 @@ class DatasetInstanceMaterializer:
 
     def _stream_source(self, target_source: DatasetSource, datatype) -> str:
         path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
-        transform = target_source.transform or []
+        transform = target_source.transform or []  # type:ignore[var-annotated]
         to_posix_lines = False
         spaces_to_tabs = False
         datatype_groom = False
         for transform_action in transform:
-            action = transform_action["action"]
+            action = transform_action["action"]  # type:ignore[index]
             if action == "to_posix_lines":
                 to_posix_lines = True
             elif action == "spaces_to_tabs":
