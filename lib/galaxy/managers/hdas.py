@@ -178,7 +178,7 @@ class HDAManager(
             True,  # attached...
             object_store=self.app.object_store,
             file_sources=self.app.file_sources,
-            sa_session=self.app.model.context,
+            sa_session=self.app.model.session(),
         )
         user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
