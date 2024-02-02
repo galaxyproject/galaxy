@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { getCurrentGalaxyHistory } from "@/utils/data";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
 import MarkdownVisualization from "./MarkdownVisualization.vue";
@@ -67,7 +68,7 @@ const jobShow = ref(false);
 const invocationShow = ref(false);
 const dataShow = ref(false);
 const dataCollectionShow = ref(false);
-const dataHistoryId = ref<string | null>(null as string | null);
+const { currentHistoryId } = storeToRefs(useHistoryStore());
 
 const selectedLabelTitle = computed(() => {
     const config: SelectTitles = selectorConfig[props.argumentType as SelectType] as SelectTitles;
@@ -136,19 +137,13 @@ function onOk(selectedLabel: string) {
         if (props.useLabels) {
             emit("onInsert", `${props.argumentName}(output="${selectedLabel}")`);
         } else {
-            getCurrentGalaxyHistory().then((historyId) => {
-                dataShow.value = true;
-                dataHistoryId.value = historyId;
-            });
+            dataShow.value = true;
         }
     } else if (props.argumentType == "history_dataset_collection_id") {
         if (props.useLabels) {
             emit("onInsert", `${props.argumentName}(output="${selectedLabel}")`);
         } else {
-            getCurrentGalaxyHistory().then((historyId) => {
-                dataCollectionShow.value = true;
-                dataHistoryId.value = historyId;
-            });
+            dataCollectionShow.value = true;
         }
     } else if (props.argumentType == "job_id") {
         if (props.useLabels) {
@@ -184,19 +179,13 @@ if (props.argumentType == "workflow_id") {
     if (props.useLabels) {
         selectedShow.value = true;
     } else {
-        getCurrentGalaxyHistory().then((historyId) => {
-            dataHistoryId.value = historyId;
-            dataShow.value = true;
-        });
+        dataShow.value = true;
     }
 } else if (props.argumentType == "history_dataset_collection_id") {
     if (props.useLabels) {
         selectedShow.value = true;
     } else {
-        getCurrentGalaxyHistory().then((historyId) => {
-            dataHistoryId.value = historyId;
-            dataCollectionShow.value = true;
-        });
+        dataCollectionShow.value = true;
     }
 } else if (props.argumentType == "invocation_id") {
     if (props.useLabels) {
@@ -211,10 +200,7 @@ if (props.argumentType == "workflow_id") {
         jobShow.value = true;
     }
 } else if (props.argumentType == "visualization_id") {
-    getCurrentGalaxyHistory().then((historyId) => {
-        dataHistoryId.value = historyId;
-        visualizationShow.value = true;
-    });
+    visualizationShow.value = true;
 }
 </script>
 
@@ -234,13 +220,13 @@ if (props.argumentType == "workflow_id") {
             :argument-payload="argumentPayload"
             :labels="labels"
             :use-labels="useLabels"
-            :history="dataHistoryId"
+            :history="currentHistoryId"
             @onOk="onVisualization"
             @onCancel="onCancel" />
-        <DataDialog v-else-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+        <DataDialog v-else-if="dataShow" :history="currentHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
             v-else-if="dataCollectionShow"
-            :history="dataHistoryId"
+            :history="currentHistoryId"
             format="id"
             @onOk="onDataCollection"
             @onCancel="onCancel" />
