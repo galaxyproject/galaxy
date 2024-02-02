@@ -6,12 +6,6 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPNotFound,
 )
-from sqlalchemy import (
-    false,
-    or_,
-    text,
-    true,
-)
 
 from galaxy import (
     model,
