@@ -27,15 +27,11 @@ from galaxy.model.item_attrs import (
 from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import (
     decode_dbkey,
     GenomeRegion,
 )
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
+from galaxy.web.framework.helpers import time_ago
 from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
@@ -46,130 +42,9 @@ from ..api import depends
 log = logging.getLogger(__name__)
 
 
-#
-# -- Grids --
-#
-class HistoryDatasetsSelectionGrid(grids.Grid):
-    class DbKeyColumn(grids.GridColumn):
-        def filter(self, trans, user, query, dbkey):
-            """Filter by dbkey through a raw SQL b/c metadata is a BLOB."""
-            dbkey_user, dbkey = decode_dbkey(dbkey)
-            dbkey = dbkey.replace("'", "\\'")
-            return query.filter(
-                or_(text(f'metadata like \'%"dbkey": ["{dbkey}"]%\'', f'metadata like \'%"dbkey": "{dbkey}"%\''))
-            )
-
-    class HistoryColumn(grids.GridColumn):
-        def get_value(self, trans, grid, hda):
-            return escape(hda.history.name)
-
-        def sort(self, trans, query, ascending, column_name=None):
-            """Sort query using this column."""
-            return grids.GridColumn.sort(self, trans, query, ascending, column_name="history_id")
-
-    available_tracks = None
-    title = "Add Datasets"
-    model_class = model.HistoryDatasetAssociation
-    default_filter = {"deleted": "False", "shared": "All"}
-    default_sort_key = "-hid"
-    columns = [
-        grids.GridColumn("Id", key="hid"),
-        grids.TextColumn("Name", key="name", model_class=model.HistoryDatasetAssociation),
-        grids.TextColumn("Type", key="extension", model_class=model.HistoryDatasetAssociation),
-        grids.TextColumn("history_id", key="history_id", model_class=model.HistoryDatasetAssociation, visible=False),
-        HistoryColumn("History", key="history", visible=True),
-        DbKeyColumn("Build", key="dbkey", model_class=model.HistoryDatasetAssociation, visible=True, sortable=False),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search name and filetype",
-            cols_to_filter=[columns[1], columns[2]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join(model.History.table).join(model.Dataset.table)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        if self.available_tracks is None:
-            self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
-        return (
-            query.filter(model.History.user == trans.user)
-            .filter(model.HistoryDatasetAssociation.extension.in_(self.available_tracks))
-            .filter(model.Dataset.state == model.Dataset.states.OK)
-            .filter(model.HistoryDatasetAssociation.deleted == false())
-            .filter(model.HistoryDatasetAssociation.visible == true())
-        )
-
-
-class LibraryDatasetsSelectionGrid(grids.Grid):
-    available_tracks = None
-    title = "Add Datasets"
-    model_class = model.LibraryDatasetDatasetAssociation
-    default_filter = {"deleted": "False"}
-    default_sort_key = "-id"
-    columns = [
-        grids.GridColumn("Id", key="id"),
-        grids.TextColumn("Name", key="name", model_class=model.LibraryDatasetDatasetAssociation),
-        grids.TextColumn("Type", key="extension", model_class=model.LibraryDatasetDatasetAssociation),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search name and filetype",
-            cols_to_filter=[columns[1], columns[2]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join(model.Dataset.table)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        if self.available_tracks is None:
-            self.available_tracks = trans.app.datatypes_registry.get_available_tracks()
-        return (
-            query.filter(model.LibraryDatasetDatasetAssociation.user == trans.user)
-            .filter(model.LibraryDatasetDatasetAssociation.extension.in_(self.available_tracks))
-            .filter(model.Dataset.state == model.Dataset.states.OK)
-            .filter(model.LibraryDatasetDatasetAssociation.deleted == false())
-            .filter(model.LibraryDatasetDatasetAssociation.visible == true())
-        )
-
-
-class TracksterSelectionGrid(grids.Grid):
-    title = "Insert into visualization"
-    model_class = model.Visualization
-    default_sort_key = "-update_time"
-    use_paging = False
-    show_item_checkboxes = True
-    columns = [
-        grids.TextColumn("Title", key="title", model_class=model.Visualization, filterable="standard"),
-        grids.TextColumn("Build", key="dbkey", model_class=model.Visualization),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return (
-            query.filter(self.model_class.user_id == trans.user.id)
-            .filter(self.model_class.deleted == false())
-            .filter(self.model_class.type == "trackster")
-        )
-
-
 class VisualizationController(
     BaseUIController, SharableMixin, UsesVisualizationMixin, UsesAnnotations, UsesItemRatings
 ):
-    _history_datasets_grid = HistoryDatasetsSelectionGrid()
-    _library_datasets_grid = LibraryDatasetsSelectionGrid()
-    _tracks_grid = TracksterSelectionGrid()
     hda_manager: HDAManager = depends(HDAManager)
     slug_builder: SlugBuilder = depends(SlugBuilder)
 
@@ -177,46 +52,8 @@ class VisualizationController(
         super().__init__(app)
 
     #
-    # -- Functions for listing visualizations. --
-    #
-
-    @web.expose
-    @web.json
-    @web.require_login("see all available libraries")
-    def list_libraries(self, trans, **kwargs):
-        """List all libraries that can be used for selecting datasets."""
-        return self._libraries_grid(trans, **kwargs)
-
-    @web.expose
-    @web.json
-    @web.require_login("see a history's datasets that can added to this visualization")
-    def list_history_datasets(self, trans, **kwargs):
-        """List a history's datasets that can be added to a visualization."""
-        kwargs["show_item_checkboxes"] = "True"
-        return self._history_datasets_grid(trans, **kwargs)
-
-    @web.expose
-    @web.json
-    @web.require_login("see a history's datasets that can added to this visualization")
-    def list_library_datasets(self, trans, **kwargs):
-        """List a library's datasets that can be added to a visualization."""
-        kwargs["show_item_checkboxes"] = "True"
-        return self._library_datasets_grid(trans, **kwargs)
-
-    @web.expose
-    @web.json
-    def list_tracks(self, trans, **kwargs):
-        return self._tracks_grid(trans, **kwargs)
-
-    #
     # -- Functions for operating on visualizations. --
     #
-
-    @web.expose
-    @web.require_login("use Galaxy visualizations", use_panels=True)
-    def index(self, trans, *args, **kwargs):
-        """Lists user's saved visualizations."""
-        return self.list(trans, *args, **kwargs)
 
     @web.expose
     @web.require_login()
@@ -401,22 +238,6 @@ class VisualizationController(
             return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
 
     # ------------------------- registry.
-    @web.expose
-    @web.require_login("use Galaxy visualizations", use_panels=True)
-    def render(self, trans, visualization_name, embedded=None, **kwargs):
-        """
-        Render the appropriate visualization template, parsing the `kwargs`
-        into appropriate variables and resources (such as ORM models)
-        based on this visualizations `param` data in visualizations_conf.xml.
-
-        URL: /visualization/show/{visualization_name}
-        """
-        plugin = self._get_plugin_from_registry(trans, visualization_name)
-        try:
-            return plugin.render(trans=trans, embedded=embedded, **kwargs)
-        except Exception as exception:
-            self._handle_plugin_error(trans, visualization_name, exception)
-
     def _get_plugin_from_registry(self, trans, visualization_name):
         """
         Get the named plugin from the registry.
@@ -547,6 +368,3 @@ class VisualizationController(
 
         # fill template
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
-
-    def get_item(self, trans, id):
-        return self.get_visualization(trans, id)
