@@ -389,29 +389,9 @@ export class TracksterUIView extends Backbone.View {
         // check if id is available
         if (window.galaxy_config.app.id) {
             this.view_existing();
-        } else if (query_string.get("dataset_id")) {
-            this.choose_existing_or_new();
         } else {
             this.view_new();
         }
-    }
-
-    choose_existing_or_new() {
-        const Galaxy = getGalaxyInstance();
-        var dbkey = query_string.get("dbkey");
-        var listTracksParams = {};
-
-        var dataset_params = {
-            dbkey: dbkey,
-            dataset_id: query_string.get("dataset_id"),
-            hda_ldda: query_string.get("hda_ldda"),
-            gene_region: query_string.get("gene_region"),
-        };
-
-        if (dbkey) {
-            listTracksParams["f-dbkey"] = dbkey;
-        }
-        this.view_new();
     }
 
     // view
