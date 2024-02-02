@@ -8,3 +8,4 @@ export const undeleteHistory = fetcher.path("/api/histories/deleted/{history_id}
 export const undeleteHistories = fetcher.path("/api/histories/batch/undelete").method("put").create();
 export const historiesQuery = fetcher.path("/api/histories/query").method("get").create();
 export const publishedHistoriesFetcher = fetcher.path("/api/histories/published").method("get").create();
+export const historyFetcher = fetcher.path("/api/histories/{history_id}").method("get").create();
