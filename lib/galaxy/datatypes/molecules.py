@@ -250,7 +250,7 @@ class AtomicStructFile(GenericMolFile):
         else:
             # enhanced metadata
             try:
-                ase_data = ase_io.read(dataset.get_file_name(), index=":", format=self.ase_format)
+                ase_data = ase_io.read(dataset.file_name, index=":", format=self.ase_format)
             except Exception as e:
                 log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
                 self.meta_error = True
@@ -287,7 +287,7 @@ class AtomicStructFile(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
             number_of_molecules = dataset.metadata.number_of_molecules
             file_ext_upper = self.file_ext.upper()
