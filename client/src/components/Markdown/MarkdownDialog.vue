@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { getAppRoot } from "@/onload/loadConfig";
+import { publishedHistoriesFetcher } from "@/api/histories";
+import { invocationsFetcher } from "@/api/invocations";
+import { jobsFetcher } from "@/api/jobs";
+import { workflowsFetcher } from "@/api/workflows";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import MarkdownSelector from "./MarkdownSelector.vue";
@@ -19,7 +21,7 @@ interface MarkdownDialogProps {
     argumentName?: string;
     argumentType?: string;
     argumentPayload?: object;
-    labels: string[];
+    labels?: string[];
     useLabels: boolean;
 }
 
@@ -55,11 +57,6 @@ const selectorConfig = {
     },
 };
 
-const jobsUrl = `${getAppRoot()}api/jobs`;
-const workflowsUrl = `${getAppRoot()}api/workflows`;
-const invocationsUrl = `${getAppRoot()}api/invocations`;
-const historiesUrl = `${getAppRoot()}api/histories?view=detailed&q=published&qv=True`;
-
 const selectedShow = ref(false);
 const visualizationShow = ref(false);
 const workflowShow = ref(false);
@@ -76,19 +73,19 @@ const selectedLabelTitle = computed(() => {
 });
 
 function getInvocations() {
-    return axios.get(invocationsUrl);
+    return invocationsFetcher({});
 }
 
 function getJobs() {
-    return axios.get(jobsUrl);
+    return jobsFetcher({});
 }
 
 function getWorkflows() {
-    return axios.get(workflowsUrl);
+    return workflowsFetcher({});
 }
 
 function getHistories() {
-    return axios.get(historiesUrl);
+    return publishedHistoriesFetcher({});
 }
 
 function onData(response: string) {
