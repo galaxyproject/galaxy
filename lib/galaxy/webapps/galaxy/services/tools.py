@@ -136,7 +136,7 @@ class ToolsService(ServiceBase):
             },
         }
         create_payload.update(files_payload)
-        return self.create(trans, create_payload)
+        return self._create(trans, create_payload)
 
     def execute(
         self,
@@ -156,9 +156,9 @@ class ToolsService(ServiceBase):
         create_payload = payload.model_dump(exclude_unset=True)
         if files:
             create_payload.update(self.create_temp_file_execute(trans, files))
-        return self.create(trans, create_payload)
+        return self._create(trans, create_payload)
 
-    def create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
+    def _create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
