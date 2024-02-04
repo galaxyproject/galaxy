@@ -153,7 +153,7 @@ class ToolsService(ServiceBase):
         if tool_id is None and tool_uuid is None:
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
 
-        create_payload = payload.model_dump()
+        create_payload = payload.model_dump(exclude_unset=True)
         if files:
             create_payload.update(self.create_temp_file_execute(trans, files))
         return self.create(trans, create_payload)
