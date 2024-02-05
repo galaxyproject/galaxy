@@ -1,20 +1,26 @@
-<script setup>
+<script setup lang="ts">
 import { useInfiniteScroll } from "@vueuse/core";
-import FilterMenu from "components/Common/FilterMenu";
-import Heading from "components/Common/Heading";
-import LoadingSpan from "components/LoadingSpan";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import ScrollToTopButton from "components/ToolsList/ScrollToTopButton";
-import UtcDate from "components/UtcDate";
-import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
-import Filtering, { compare, contains, equals, expandNameTag, toDate } from "utils/filtering";
+import { BAlert, BOverlay, BTable } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
+import type { HistoryDetailed, HistorySummary } from "@/api";
 import { updateTags } from "@/api/tags";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import Filtering, { compare, contains, equals, expandNameTag, toDate } from "@/utils/filtering";
 
 import { getPublishedHistories } from "./services";
 
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
+import UtcDate from "@/components/UtcDate.vue";
+
 const LIMIT = 50;
+
+type History = HistoryDetailed | HistorySummary;
 
 const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
@@ -43,16 +49,16 @@ const props = defineProps({
     },
 });
 
-const offset = ref({ "-update_time-true": 0 });
-const allHistories = ref([]);
-const results = ref([]);
+const offset = ref<{ [key: string]: number | null }>({ "-update_time-true": 0 });
+const allHistories = ref<History[]>([]);
+const results = ref<History[]>([]);
 const error = ref(null);
 const loading = ref(false);
 const sortDesc = ref(true);
 const filterText = ref("");
 const showAdvanced = ref(false);
 const sortBy = ref("update_time");
-const scrollableDiv = ref(null);
+const scrollableDiv = ref<HTMLElement | null>(null);
 const { scrollTop } = useAnimationFrameScroll(scrollableDiv);
 const loadedItemIds = ref(new Set());
 
@@ -70,21 +76,21 @@ const fields = computed(() => [
     { label: "Last Updated", key: "update_time", sortable: !loading.value },
 ]);
 
-const updateFilter = (newVal) => {
+const updateFilter = (newVal: string) => {
     filterText.value = newVal.trim();
 };
 
-const setFilter = (filter, tag) => {
+const setFilter = (filter: string, tag: string) => {
     updateFilter(filters.setFilterValue(filterText.value, filter, tag));
 };
 
-const onTagsUpdate = (newTags, row) => {
+const onTagsUpdate = (newTags: string[], row: any) => {
     row.item.tags = newTags;
     updateTags(row.item.id, "History", row.item.tags);
 };
 
 const scrollToTop = () => {
-    scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
+    scrollableDiv.value?.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 const sortAndFilterHistories = () => {
@@ -92,9 +98,9 @@ const sortAndFilterHistories = () => {
         const aVal = String(a[sortBy.value]).trim();
         const bVal = String(b[sortBy.value]).trim();
         if (!sortDesc.value) {
-            return aVal - bVal;
+            return Number(aVal) - Number(bVal);
         } else {
-            return bVal - aVal;
+            return Number(bVal) - Number(aVal);
         }
     });
 
@@ -112,7 +118,7 @@ const sortAndFilterHistories = () => {
     }
 };
 
-function getOffsetKey(sort_by, sort_desc) {
+function getOffsetKey(sort_by: string, sort_desc: boolean): string {
     return `${filters.getQueryString(filterText.value)}-${sort_by}-${sort_desc}`;
 }
 
@@ -136,19 +142,10 @@ async function load() {
         currentOffset = 0;
     }
 
-    await getPublishedHistories(
-        {
-            limit: LIMIT,
-            offset: currentOffset,
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            filterText: filterText.value,
-        },
-        filters
-    )
+    await getPublishedHistories(LIMIT, currentOffset, sortBy.value, sortDesc.value, filterText.value, filters)
         .then((data) => {
             // add all new incoming histories to allHistories
-            const newData = data.filter((item) => !loadedItemIds.value.has(item.id));
+            const newData = data.filter((item) => !loadedItemIds.value.has(item.id)) as History[];
             allHistories.value = [...allHistories.value, ...newData];
             newData.forEach((item) => loadedItemIds.value.add(item.id));
 
@@ -156,7 +153,7 @@ async function load() {
             sortAndFilterHistories();
 
             // ------ UPDATE OFFSET ------
-            if (results.value.length > currentOffset - 1 && data.length >= 50) {
+            if (results.value.length > Number(currentOffset) - 1 && data.length >= 50) {
                 const addToOffset = filterText.value ? 1 : 0;
                 offset.value[currOffsetKey] = results.value.length === 0 ? 0 : results.value.length + addToOffset;
             } else {
@@ -199,7 +196,7 @@ watch([filterText, sortBy, sortDesc], async () => {
     <section id="published-histories" class="d-flex flex-column position-relative overflow-hidden">
         <Heading h1>Published Histories</Heading>
 
-        <b-alert v-if="noItems" variant="info" show>No published histories found.</b-alert>
+        <BAlert v-if="noItems" variant="info" show>No published histories found.</BAlert>
 
         <div v-else>
             <FilterMenu
@@ -210,22 +207,22 @@ watch([filterText, sortBy, sortDesc], async () => {
                 :loading="loading"
                 :show-advanced.sync="showAdvanced" />
 
-            <b-alert v-if="noResults || error" :variant="error ? 'danger' : 'info'" show>
+            <BAlert v-if="noResults || error" :variant="error ? 'danger' : 'info'" show>
                 <div>
                     No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
                 </div>
                 <div v-if="error">
                     <i>{{ error }}</i>
                 </div>
-            </b-alert>
+            </BAlert>
 
-            <b-alert v-if="results.length === 0 && loading" variant="info" show>
+            <BAlert v-if="results.length === 0 && loading" variant="info" show>
                 <LoadingSpan message="Loading published histories" />
-            </b-alert>
+            </BAlert>
         </div>
 
         <div ref="scrollableDiv" class="overflow-auto">
-            <b-table
+            <BTable
                 v-if="results.length"
                 id="published-histories-table"
                 no-sort-reset
@@ -235,18 +232,20 @@ watch([filterText, sortBy, sortDesc], async () => {
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc">
                 <template v-slot:cell(name)="row">
-                    <router-link :to="`/published/history?id=${row.item.id}`">
+                    <RouterLink :to="`/published/history?id=${row.item.id}`">
                         {{ row.item.name }}
-                    </router-link>
+                    </RouterLink>
                 </template>
+
                 <template v-slot:cell(username)="row">
                     <a
                         href="#"
                         class="published-histories-username-link"
-                        @click="setFilter('user_eq', row.item.username)"
-                        >{{ row.item.username }}</a
-                    >
+                        @click="setFilter('user_eq', row.item.username)">
+                        {{ row.item.username }}
+                    </a>
                 </template>
+
                 <template v-slot:cell(tags)="row">
                     <StatelessTags
                         clickable
@@ -260,9 +259,12 @@ watch([filterText, sortBy, sortDesc], async () => {
                     <UtcDate v-if="data.value" :date="data.value" mode="elapsed" />
                     <span v-else> - </span>
                 </template>
-            </b-table>
+            </BTable>
+
             <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
-            <b-overlay :show="loading" opacity="0.5" />
+
+            <BOverlay :show="loading" opacity="0.5" />
+
             <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
     </section>
