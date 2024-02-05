@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
-import { type JobStateSummary } from "./JobStateSummary.js";
+import { type JobStateSummary } from "./JobStateSummary";
 
 import CollectionProgress from "./CollectionProgress.vue";
 
@@ -17,29 +17,25 @@ const props = withDefaults(defineProps<Props>(), {
     elementsDatatypes: undefined,
 });
 
-const labels = ref({
-    list: "list",
-    "list:paired": "list",
-    "list:list": "list",
-    paired: "pair",
-});
+const labels = new Map([
+    ["list", "list"],
+    ["list:paired", "list"],
+    ["list:list", "list"],
+    ["paired", "pair"],
+]);
 
 const collectionLabel = computed(() => {
-    return labels.value[props.collectionType] || "nested list";
+    return labels.get(props.collectionType) ?? "nested list";
 });
-
 const hasSingleElement = computed(() => {
     return props.elementCount === 1;
 });
-
 const isHomogeneous = computed(() => {
     return props.elementsDatatypes?.length === 1;
 });
-
 const homogeneousDatatype = computed(() => {
     return isHomogeneous.value ? ` ${props.elementsDatatypes?.[0]}` : "";
 });
-
 const pluralizedItem = computed(() => {
     if (props.collectionType === "list:list") {
         return pluralize("list");
@@ -47,8 +43,7 @@ const pluralizedItem = computed(() => {
     if (props.collectionType === "list:paired") {
         return pluralize("pair");
     }
-    if (!Object.keys(labels.value).includes(props.collectionType)) {
-        //Any other kind of nested collection
+    if (!labels.has(props.collectionType)) {
         return pluralize("dataset collection");
     }
     return pluralize("dataset");
