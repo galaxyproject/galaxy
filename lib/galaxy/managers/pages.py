@@ -12,6 +12,7 @@ from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
     Callable,
+    Optional,
     Tuple,
 )
 
@@ -610,7 +611,7 @@ def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id)
 
 def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
-    item_name = ""
+    item_name: Optional[str] = ""
     if item_class == "History":
         history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
