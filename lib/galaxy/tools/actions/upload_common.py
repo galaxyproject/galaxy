@@ -102,12 +102,12 @@ def handle_library_params(
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
         template = session.get(FormDefinition, template_id)
-        assert template
-        for field in template.fields:
-            field_name = field["name"]  # type:ignore[index]
-            if params.get(field_name, False):
-                field_value = util.restore_text(params.get(field_name, ""))
-                template_field_contents[field_name] = field_value
+        if template and template.fields:
+            for field in template.fields:
+                field_name = field["name"]  # type:ignore[index]
+                if params.get(field_name, False):
+                    field_value = util.restore_text(params.get(field_name, ""))
+                    template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
         role = session.get(Role, role_id)
