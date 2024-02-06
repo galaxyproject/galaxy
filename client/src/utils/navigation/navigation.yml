@@ -263,7 +263,7 @@ history_panel:
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_button: '.details .stateless-tags .toggle-button'
-      tag_area_input: '.details .stateless-tags .multiselect input'
+      tag_area_input: '.details .stateless-tags .headless-multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
       back_to_history: svg[data-description="back to history"]
 
@@ -280,7 +280,7 @@ history_panel:
     size: '.history-size'
     tag_area: '.details .stateless-tags'
     tag_area_button: '.details .stateless-tags .toggle-button'
-    tag_area_input: '.details .stateless-tags .multiselect input'
+    tag_area_input: '.details .stateless-tags .headless-multiselect input'
     tag_close_btn: '.tags-display .tag-delete-button'
     tags: '.tag span'
 
