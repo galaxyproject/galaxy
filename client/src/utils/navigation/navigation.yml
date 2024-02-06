@@ -276,7 +276,7 @@ history_panel:
       selector: 'name input'
       type: data-description
     contents: '.history-index .content-item'
-    empty_message: '.empty-message'
+    empty_message: '#empty-history-message'
     size: '.history-size'
     tag_area: '.details .stateless-tags'
     tag_area_button: '.details .stateless-tags .multiselect button'
@@ -381,7 +381,7 @@ multi_history_panel:
     current_label: '.details .name'
     switch_history: '.switch-to'
     current_history_check: '#history-column-${history_id} .details .name'
-    empty_message_check: '.empty-message'
+    empty_message_check: '#empty-history-message'
     switch_button: '#history-column-${history_id} .switch-to'
   history_dropdown_menu:
     selectors:

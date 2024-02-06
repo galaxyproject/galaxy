@@ -31,7 +31,7 @@ function clickDataLink() {
 
 <template>
     <BAlert show>
-        <h4 class="mb-1">
+        <h4 id="empty-history-message" class="mb-1">
             <FontAwesomeIcon :icon="faInfoCircle" />
             <span>{{ localize(message) }}</span>
         </h4>
