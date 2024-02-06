@@ -9,7 +9,10 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import exc as sqlalchemy_exceptions
+from sqlalchemy.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -56,9 +59,9 @@ class RoleManager(base.ModelManager[model.Role]):
         try:
             stmt = select(self.model_class).where(self.model_class.id == role_id)
             role = self.session().execute(stmt).scalar_one()
-        except sqlalchemy_exceptions.MultipleResultsFound:
+        except MultipleResultsFound:
             raise InconsistentDatabase("Multiple roles found with the same id.")
-        except sqlalchemy_exceptions.NoResultFound:
+        except NoResultFound:
             raise ObjectNotFound("No accessible role found with the id provided.")
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")

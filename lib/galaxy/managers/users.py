@@ -24,7 +24,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from galaxy import (
     exceptions,
