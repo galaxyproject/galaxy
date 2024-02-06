@@ -7,27 +7,12 @@
             @ok="onOk"
             @cancel="onCancel"
             @hidden="onCancel">
-            <div class="ml-2">
-                <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
-                <div v-if="hasLabels">
-                    <b-form-radio
-                        v-for="(label, index) in labels"
-                        :key="index"
-                        v-model="selectedValue"
-                        class="my-2"
-                        name="labels"
-                        :value="index">
-                        {{ label }}
-                    </b-form-radio>
-                </div>
-                <b-alert v-else show variant="info">
-                    No labels found. Please specify labels in the Workflow Editor.
-                </b-alert>
-                <p class="mt-3 text-muted">
-                    You may add new labels by selecting a step in the workflow editor and then editing the corresponding
-                    label field in the step form.
-                </p>
-            </div>
+            <LabelSelector
+                v-model="selectedValue"
+                class="ml-2"
+                :has-labels="hasLabels"
+                :label-title="labelTitle"
+                :labels="labels" />
         </b-modal>
     </span>
 </template>
@@ -36,9 +21,12 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
+import LabelSelector from "./LabelSelector";
+
 Vue.use(BootstrapVue);
 
 export default {
+    components: { LabelSelector },
     props: {
         labelTitle: {
             type: String,
@@ -55,7 +43,7 @@ export default {
     },
     data() {
         return {
-            selectedValue: 0,
+            selectedValue: undefined,
             modalShow: true,
         };
     },
@@ -69,7 +57,7 @@ export default {
     },
     methods: {
         onOk() {
-            this.$emit("onOk", this.labels[this.selectedValue]);
+            this.$emit("onOk", this.selectedValue);
         },
         onCancel() {
             this.$emit("onCancel");
