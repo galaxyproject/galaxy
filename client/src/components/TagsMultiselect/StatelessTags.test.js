@@ -34,6 +34,12 @@ useToast.mockReturnValue({
     warning: warningMock,
 });
 
+const selectors = {
+    multiselect: ".headless-multiselect",
+    options: ".headless-multiselect__option",
+    input: "fieldset input",
+};
+
 describe("StatelessTags", () => {
     it("shows tags", () => {
         const wrapper = mountWithProps({
@@ -70,10 +76,11 @@ describe("StatelessTags", () => {
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
 
-        const multiselect = wrapper.find(".multiselect");
+        const multiselect = wrapper.find(selectors.multiselect);
 
         await wrapper.vm.$nextTick();
-        const options = multiselect.findAll(".multiselect-option");
+        const options = multiselect.findAll(selectors.options);
+
         const visibleOptions = options.filter((option) => option.isVisible());
 
         expect(visibleOptions.length).toBe(autocompleteTags.length);
@@ -90,10 +97,10 @@ describe("StatelessTags", () => {
 
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
-        const multiselect = wrapper.find(".multiselect");
-        await multiselect.find("input").setValue("new_tag");
+        const multiselect = wrapper.find(selectors.multiselect);
+        await multiselect.find(selectors.input).setValue("new_tag");
         await wrapper.vm.$nextTick();
-        multiselect.find(".multiselect-option").trigger("click");
+        multiselect.find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
 
         expect(addLocalTagMock.mock.calls.length).toBe(1);
@@ -107,11 +114,11 @@ describe("StatelessTags", () => {
 
         wrapper.find(toggleButton).trigger("click");
         await wrapper.vm.$nextTick();
-        const multiselect = wrapper.find(".multiselect");
-        await multiselect.find("input").setValue(":illegal_tag");
+        const multiselect = wrapper.find(selectors.multiselect);
+        await multiselect.find(selectors.input).setValue(":illegal_tag");
         await wrapper.vm.$nextTick();
 
-        const option = multiselect.find(".multiselect-option");
+        const option = multiselect.find(selectors.options);
         expect(option.classes()).toContain("invalid");
 
         option.trigger("click");
