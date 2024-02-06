@@ -171,7 +171,7 @@ class VisualizationManager(sharable.SharableModelManager):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
 
 class VisualizationSerializer(sharable.SharableModelSerializer):

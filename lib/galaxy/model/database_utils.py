@@ -15,7 +15,7 @@ from sqlalchemy.engine.url import make_url
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.compiler import IdentifierPreparer
 from sqlalchemy.sql.expression import (
-    ClauseElement,
+    Executable,
     text,
 )
 
@@ -163,7 +163,7 @@ def supports_skip_locked(engine: Engine) -> bool:
     return _statement_executed_without_error(stmt, engine)
 
 
-def _statement_executed_without_error(statement: ClauseElement, engine: Engine) -> bool:
+def _statement_executed_without_error(statement: Executable, engine: Engine) -> bool:
     # Execute statement against database, then issue a rollback.
     try:
         with engine.connect() as conn, conn.begin() as trans:

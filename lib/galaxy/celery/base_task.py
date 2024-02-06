@@ -86,14 +86,13 @@ class GalaxyTaskBeforeStartUserRateLimitPostgres(GalaxyTaskBeforeStartUserRateLi
         .values(last_scheduled_time=text("greatest(last_scheduled_time + ':interval second', " ":now) "))
         .returning(CeleryUserRateLimit.last_scheduled_time)
     )
-
     _insert_stmt = (
         ps_insert(CeleryUserRateLimit)
         .values(user_id=bindparam("userid"), last_scheduled_time=bindparam("now"))
         .returning(CeleryUserRateLimit.last_scheduled_time)
     )
 
-    _upsert_stmt = _insert_stmt.on_conflict_do_update(
+    _upsert_stmt = _insert_stmt.on_conflict_do_update(  # type:ignore[attr-defined]
         index_elements=["user_id"], set_=dict(last_scheduled_time=bindparam("sched_time"))
     )
 

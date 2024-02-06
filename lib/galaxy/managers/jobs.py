@@ -188,7 +188,7 @@ class JobManager:
                     elif key == "runner":
                         stmt = stmt.where(text_column_filter(Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    columns = [Job.tool_id]
+                    columns: List = [Job.tool_id]
                     if user_details:
                         columns.append(User.email)
                     if is_admin:
@@ -847,7 +847,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
                 model.ImplicitCollectionJobsJobAssociation.table.join(model.Job)
             )
             statement = (
-                select(model.Job.state, func.count("*"))
+                select(model.Job.state, func.count())
                 .select_from(join)
                 .where(model.ImplicitCollectionJobs.id == jobs_source.id)
                 .group_by(model.Job.state)

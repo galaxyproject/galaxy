@@ -239,7 +239,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()

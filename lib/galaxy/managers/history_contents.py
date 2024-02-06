@@ -166,7 +166,7 @@ class HistoryContentsManager(base.SortableManager):
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
         statement: Select = (
-            select(sql.column("state"), func.count("*")).select_from(contents_subquery).group_by(sql.column("state"))
+            select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
         counts = self.app.model.session().execute(statement).fetchall()
         return dict(counts)

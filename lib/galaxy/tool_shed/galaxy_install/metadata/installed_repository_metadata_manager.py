@@ -131,7 +131,7 @@ class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
             original_metadata_dict = self.repository.metadata_
             self.generate_metadata_for_changeset_revision()
             if self.metadata_dict != original_metadata_dict:
-                self.repository.metadata_ = self.metadata_dict
+                self.repository.metadata_ = self.metadata_dict  # type:ignore[assignment]
                 self.update_in_shed_tool_config()
 
                 session = self.app.install_model.context

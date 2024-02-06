@@ -98,7 +98,7 @@ class GalaxyDataTestApp:
         self.object_store = objectstore.build_object_store_from_config(self.config)
         self.model = init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
-        self.tag_handler = GalaxyTagHandler(self.model.context)
+        self.tag_handler = GalaxyTagHandler(self.model.session)
         self.init_datatypes()
 
     def init_datatypes(self):

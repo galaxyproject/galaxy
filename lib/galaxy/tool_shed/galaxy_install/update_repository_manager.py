@@ -116,7 +116,7 @@ class UpdateRepositoryManager:
         if tool_shed_status_dict:
             repository.tool_shed_status = tool_shed_status_dict
         else:
-            repository.tool_shed_status = None
+            repository.tool_shed_status = None  # type:ignore[assignment]
         session = self.app.install_model.context
         session.add(repository)
         with transaction(session):
