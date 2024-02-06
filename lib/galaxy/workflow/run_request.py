@@ -385,9 +385,9 @@ def build_workflow_run_configs(
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "ld":
-                    ldda = trans.sa_session.get(
-                        LibraryDataset, trans.security.decode_id(input_id)
-                    ).library_dataset_dataset_association
+                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(input_id))
+                    assert library_dataset
+                    ldda = library_dataset.library_dataset_dataset_association
                     assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
