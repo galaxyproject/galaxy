@@ -6492,7 +6492,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 hda_attributes=("extension",),
                 return_entities=(HistoryDatasetAssociation, Dataset),
             )
-            tuples = object_session(self).execute(stmt)
+            tuples = object_session(self).execute(stmt)  # type:ignore[union-attr]
             # element_identifiers, extension, path
             for row in tuples:
                 result = [row[:-3], row.extension, row.Dataset.get_file_name()]
