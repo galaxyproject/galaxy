@@ -204,6 +204,7 @@ const bounds = useElementBounding(root);
                 :aria-label="props.placeholder"
                 role="searchbox"
                 aria-haspopup="listbox"
+                type="text"
                 :aria-invalid="props.validator(trimmedSearchValue)"
                 :aria-owns="`${props.id}-options`"
                 :aria-activedescendant="`${props.id}-options`"
