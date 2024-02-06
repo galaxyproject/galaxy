@@ -635,7 +635,9 @@ def get_tool_shed_repository_by_id(app, repository_id) -> ToolShedRepository:
 def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedRepository):
     tool_shed_url = tool_shed_registry.get_tool_shed_url(str(repository.tool_shed))
     assert tool_shed_url
-    params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
+    params: Dict[str, Any] = dict(
+        name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision
+    )
     pathspec = ["repository", "status_for_installed_repository"]
     try:
         encoded_tool_shed_status_dict = util.url_get(

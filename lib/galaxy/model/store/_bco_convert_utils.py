@@ -27,6 +27,7 @@ class SoftwarePrerequisiteTracker:
             return
 
         tool_version = step.tool_version
+        assert tool_id
         self._recorded_tools.add(tool_id)
         uri_safe_tool_id = urllib.parse.quote(tool_id)
         if "repos/" in tool_id:
