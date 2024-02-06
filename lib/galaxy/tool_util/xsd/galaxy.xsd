@@ -58,12 +58,16 @@ List of behavior changes associated with profile versions:
 ### 21.09
 
 - Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
-- Do not use Galaxy python environment for `data_source` and `data_source_async` tools.
+- Do not use Galaxy python environment for `data_source` tools.
 
 ### 23.0
 
 - Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string)
   are set to `None` for templating in Cheetah. Older tools receive the empty string `""` as the templated value.
+
+### 24.0
+
+- Do not use Galaxy python environment for `data_source_async` tools.
 
 ### Examples
 

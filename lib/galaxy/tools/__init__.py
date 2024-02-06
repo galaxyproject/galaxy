@@ -916,7 +916,10 @@ class Tool(Dictifiable):
         if self.tool_type == "manage_data" and self.profile < 18.09:
             return True
 
-        if self.tool_type in ["data_source", "data_source_async"] and self.profile < 21.09:
+        if self.tool_type == "data_source" and self.profile < 21.09:
+            return True
+
+        if self.tool_type == "data_source_async" and self.profile < 24.0:
             return True
 
         config = self.app.config
