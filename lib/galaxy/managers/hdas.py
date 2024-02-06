@@ -364,12 +364,13 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),
+                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )
         )
         result = self.hda_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -393,7 +394,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             .where(
                 and_(
                     model.HistoryDatasetAssociation.deleted == true(),
-                    model.HistoryDatasetAssociation.purged == false(),
+                    model.HistoryDatasetAssociation.purged == false(),  # type:ignore[arg-type]
                     model.History.user_id == user.id,
                 )
             )

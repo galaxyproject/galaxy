@@ -600,6 +600,7 @@ class WorkflowProgress:
                         workflow_output = model.WorkflowOutput(step, output_name=output_name)
                         step.workflow_outputs.append(workflow_output)
             for workflow_output in step.workflow_outputs:
+                assert workflow_output.output_name
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
                     invocation_step.workflow_invocation.add_message(
@@ -632,6 +633,7 @@ class WorkflowProgress:
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
+            assert step.order_index
             raise MessageException(f"Failed to find persisted subworkflow invocation for step [{step.order_index + 1}]")
         return subworkflow_invocation
 

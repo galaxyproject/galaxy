@@ -1376,7 +1376,7 @@ class InputParameterModule(WorkflowModule):
 
     def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
-            static_options = []
+            static_options = []  # type:ignore[var-annotated]
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
@@ -2421,6 +2421,7 @@ class WorkflowModuleFactory:
         Return module initialized from the WorkflowStep object `step`.
         """
         type = step.type
+        assert type
         return self.module_types[type].from_workflow_step(trans, step, **kwargs)
 
 
@@ -2509,13 +2510,13 @@ class WorkflowModuleInjector:
         If step_args is provided from a web form this is applied to generate
         'state' else it is just obtained from the database.
         """
-        step.upgrade_messages = {}
+        step.upgrade_messages = {}  # type: ignore[assignment]
 
         # Make connection information available on each step by input name.
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)
+        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)  # type: ignore[assignment]
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)

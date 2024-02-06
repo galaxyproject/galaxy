@@ -48,7 +48,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
     app: ToolShedApp
-    repository: Optional[Repository]
+    repository: Optional[Repository]  # type:ignore[assignment]
 
     # why is mypy making me re-annotate these things from the base class, it didn't
     # when they were in the same file

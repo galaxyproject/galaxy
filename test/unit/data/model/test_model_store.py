@@ -988,7 +988,7 @@ def _setup_collection_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_collection_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -1014,7 +1014,7 @@ def _setup_simple_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = {}
+    workflow_step_1.tool_inputs = {}  # type:ignore[assignment]
     sa_session.add(workflow_step_1)
     workflow = _workflow_from_steps(u, [workflow_step_1])
     workflow.license = "MIT"
