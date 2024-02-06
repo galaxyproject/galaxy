@@ -321,17 +321,19 @@ const bounds = useElementBounding(root);
     overflow-y: scroll;
 
     top: calc(var(--top) + var(--height));
-    left: var(--left);
+    left: calc(var(--left) + 4px);
 
-    width: var(--width);
-    height: min(300px, calc(100% - var(--top) - var(--height) - 12px));
+    width: calc(var(--width) - 4px);
+    max-height: min(300px, calc(100% - var(--top) - var(--height) - 12px));
 
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
 
     .headless-multiselect__option {
-        padding: 0.5rem;
+        padding: 0.4rem 0.5rem;
         display: inline-block;
         text-align: start;
         background-color: $white;
