@@ -1,3 +1,42 @@
+<script setup lang="ts">
+import BootstrapVue from "bootstrap-vue";
+import Vue, { computed, ref } from "vue";
+
+import LabelSelector from "./LabelSelector.vue";
+
+interface MarkdownSelectorProps {
+    labelTitle?: string;
+    labels: string[];
+    argumentName?: string;
+}
+
+const props = defineProps<MarkdownSelectorProps>();
+const selectedValue = ref<string | undefined>(undefined);
+const modalShow = ref(true);
+
+const title = computed(() => {
+    return `Insert '${props.argumentName}'`;
+});
+const hasLabels = computed(() => {
+    return props.labels && props.labels.length > 0;
+});
+
+const emit = defineEmits<{
+    (e: "onOk", value: string | undefined): void;
+    (e: "onCancel"): void;
+}>();
+
+Vue.use(BootstrapVue);
+
+function onOk() {
+    emit("onOk", selectedValue.value);
+}
+
+function onCancel() {
+    emit("onCancel");
+}
+</script>
+
 <template>
     <span>
         <b-modal
@@ -16,52 +55,3 @@
         </b-modal>
     </span>
 </template>
-
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-import LabelSelector from "./LabelSelector";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: { LabelSelector },
-    props: {
-        labelTitle: {
-            type: String,
-            default: "",
-        },
-        labels: {
-            type: Array,
-            default: null,
-        },
-        argumentName: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            selectedValue: undefined,
-            modalShow: true,
-        };
-    },
-    computed: {
-        title() {
-            return `Insert '${this.argumentName}'`;
-        },
-        hasLabels() {
-            return this.labels && this.labels.length > 0;
-        },
-    },
-    methods: {
-        onOk() {
-            this.$emit("onOk", this.selectedValue);
-        },
-        onCancel() {
-            this.$emit("onCancel");
-        },
-    },
-};
-</script>
