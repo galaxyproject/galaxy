@@ -217,6 +217,7 @@ class HDAManager(
             if history:
                 history.add_pending_items()
             session = object_session(copy)
+            assert session
             with transaction(session):
                 session.commit()
 
@@ -253,6 +254,7 @@ class HDAManager(
             user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
             # TODO: don't flush above if we're going to re-flush here
             session = object_session(user)
+            assert session
             with transaction(session):
                 session.commit()
 
