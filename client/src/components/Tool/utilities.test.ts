@@ -20,10 +20,17 @@ describe("copyLink", () => {
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining(toolId));
     });
 
-    it("should encode the tool id", () => {
+    it("should encode the tool id with spaces", () => {
         const toolId = "My Tool Id";
         copyLink(toolId);
         expect(writeText).toHaveBeenCalledTimes(1);
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining("My%20Tool%20Id"));
+    });
+
+    it("should not encode the character '+' in the tool id", () => {
+        const toolId = "My Tool Id+1";
+        copyLink(toolId);
+        expect(writeText).toHaveBeenCalledTimes(1);
+        expect(writeText).toHaveBeenCalledWith(expect.stringContaining("My%20Tool%20Id+1"));
     });
 });
