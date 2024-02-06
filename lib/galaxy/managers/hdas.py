@@ -201,7 +201,7 @@ class HDAManager(
         if not isinstance(item, model.HistoryDatasetAssociation):
             raise TypeError()
         hda = item
-        copy = hda.copy(parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush)
+        copy = hda.copy(parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush)  # type:ignore[attr-defined]
         if hide_copy:
             copy.visible = False
         if history:
