@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { WorkflowLabel } from "./labels";
+
 interface LabelSelectorProps {
     hasLabels: boolean;
-    labels: string[];
-    value?: string;
+    labels: WorkflowLabel[];
+    value?: WorkflowLabel;
     labelTitle: string;
 }
 
@@ -11,11 +13,11 @@ const props = withDefaults(defineProps<LabelSelectorProps>(), {
 });
 
 const emit = defineEmits<{
-    (e: "input", value: string | undefined): void;
+    (e: "input", value: WorkflowLabel | undefined): void;
 }>();
 
 function update(index: number) {
-    const label: string | undefined = props.labels[index] || undefined;
+    const label: WorkflowLabel | undefined = props.labels[index] || undefined;
     emit("input", label);
 }
 </script>
@@ -31,7 +33,7 @@ function update(index: number) {
                 name="labels"
                 :value="index"
                 @change="update">
-                {{ label }}
+                {{ label.label }}
             </b-form-radio>
         </div>
         <b-alert v-else show variant="info"> No labels found. Please specify labels in the Workflow Editor. </b-alert>

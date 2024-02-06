@@ -2,16 +2,18 @@
 import BootstrapVue from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 
+import { WorkflowLabel } from "./labels";
+
 import LabelSelector from "./LabelSelector.vue";
 
 interface MarkdownSelectorProps {
     labelTitle?: string;
-    labels: string[];
+    labels: WorkflowLabel[];
     argumentName?: string;
 }
 
 const props = defineProps<MarkdownSelectorProps>();
-const selectedValue = ref<string | undefined>(undefined);
+const selectedValue = ref<WorkflowLabel | undefined>(undefined);
 const modalShow = ref(true);
 
 const title = computed(() => {
@@ -22,7 +24,7 @@ const hasLabels = computed(() => {
 });
 
 const emit = defineEmits<{
-    (e: "onOk", value: string | undefined): void;
+    (e: "onOk", value: WorkflowLabel | undefined): void;
     (e: "onCancel"): void;
 }>();
 
