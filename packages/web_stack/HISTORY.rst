@@ -3,9 +3,9 @@ History
 
 .. to_doc
 
--------
-23.2rc1
--------
+---------
+23.2.dev0
+---------
 
 
 
@@ -67,9 +67,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Don't attempt to call a bool when using mem-self handler assignment. by `@natefoo <https://github.com/natefoo>`_ in `#16359 <https://github.com/galaxyproject/galaxy/pull/16359>`_
 
 -------------------

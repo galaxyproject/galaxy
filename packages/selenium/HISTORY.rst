@@ -3,9 +3,9 @@ History
 
 .. to_doc
 
--------
-23.2rc1
--------
+---------
+23.2.dev0
+---------
 
 
 
@@ -92,9 +92,6 @@ No recorded changes since last release
 Enhancements
 ============
 
-* 
-* 
-* 
 * Port selenium setup to non-deprecated selenium options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16215 <https://github.com/galaxyproject/galaxy/pull/16215>`_
 
 -------------------
@@ -106,14 +103,6 @@ Enhancements
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Add support for launching workflows via Tutorial Mode by `@hexylena <https://github.com/hexylena>`_ in `#15684 <https://github.com/galaxyproject/galaxy/pull/15684>`_
 
 -------------------

@@ -3,9 +3,9 @@ History
 
 .. to_doc
 
--------
-23.2rc1
--------
+---------
+23.2.dev0
+---------
 
 
 
@@ -46,7 +46,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
 * Skip change_datatype things if we're not actually changing the extension by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16931 <https://github.com/galaxyproject/galaxy/pull/16931>`_
 * Fix copying metadata to copied job outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17007 <https://github.com/galaxyproject/galaxy/pull/17007>`_
 * Update tar_to_directory dependency by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17009 <https://github.com/galaxyproject/galaxy/pull/17009>`_
@@ -70,8 +69,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
 * Fix bad auto-merge of dev. by `@jmchilton <https://github.com/jmchilton>`_ in `#15386 <https://github.com/galaxyproject/galaxy/pull/15386>`_
 * Merge conflicting db migration branches into one by `@jdavcs <https://github.com/jdavcs>`_ in `#15771 <https://github.com/galaxyproject/galaxy/pull/15771>`_
 * Enable ``strict_equality`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#15808 <https://github.com/galaxyproject/galaxy/pull/15808>`_
@@ -102,8 +99,6 @@ Bug fixes
 Enhancements
 ============
 
-* 
-* 
 * Empower Users to Select Storage Destination by `@jmchilton <https://github.com/jmchilton>`_ in `#14073 <https://github.com/galaxyproject/galaxy/pull/14073>`_
 * Add Storage Dashboard visualizations for histories by `@davelopez <https://github.com/davelopez>`_ in `#14820 <https://github.com/galaxyproject/galaxy/pull/14820>`_
 * Towards decoupling datatypes and model by `@jdavcs <https://github.com/jdavcs>`_ in `#15186 <https://github.com/galaxyproject/galaxy/pull/15186>`_
@@ -162,9 +157,6 @@ Other changes
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Don't fail invocation message without dependent_workflow_step_id by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16628 <https://github.com/galaxyproject/galaxy/pull/16628>`_
 
@@ -177,10 +169,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
 * Copy when_expression when copying workflow step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16377 <https://github.com/galaxyproject/galaxy/pull/16377>`_
 
 -------------------
@@ -210,11 +198,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Fix folder listing via file browser by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15950 <https://github.com/galaxyproject/galaxy/pull/15950>`_
 * Fix RO-crate invocation export with complex collections by `@davelopez <https://github.com/davelopez>`_ in `#15971 <https://github.com/galaxyproject/galaxy/pull/15971>`_

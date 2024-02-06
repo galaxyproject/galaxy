@@ -3,9 +3,9 @@ History
 
 .. to_doc
 
--------
-23.2rc1
--------
+---------
+23.2.dev0
+---------
 
 
 
@@ -67,9 +67,6 @@ Other changes
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Fixes for extra files handling and cached object stores  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16595 <https://github.com/galaxyproject/galaxy/pull/16595>`_
 

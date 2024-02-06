@@ -3,9 +3,9 @@ History
 
 .. to_doc
 
--------
-23.2rc1
--------
+---------
+23.2.dev0
+---------
 
 
 
@@ -60,8 +60,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
 * read job_conf directly from `config_dir` instead of computing it again from `config_file` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15596 <https://github.com/galaxyproject/galaxy/pull/15596>`_
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Fix filesource file url support by `@nuwang <https://github.com/nuwang>`_ in `#15794 <https://github.com/galaxyproject/galaxy/pull/15794>`_
@@ -117,8 +115,6 @@ Bug fixes
 Enhancements
 ============
 
-* 
-* 
 * Empower Users to Select Storage Destination by `@jmchilton <https://github.com/jmchilton>`_ in `#14073 <https://github.com/galaxyproject/galaxy/pull/14073>`_
 * External Login Flow: Redirect users if account already exists by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#15019 <https://github.com/galaxyproject/galaxy/pull/15019>`_
 * Add slack error reporting plugin by `@hexylena <https://github.com/hexylena>`_ in `#15025 <https://github.com/galaxyproject/galaxy/pull/15025>`_
@@ -204,9 +200,6 @@ Other changes
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix upload paramfile handling (for real user setups) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16504 <https://github.com/galaxyproject/galaxy/pull/16504>`_
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Make sure job_wrapper uses a consistent metadata strategy by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16569 <https://github.com/galaxyproject/galaxy/pull/16569>`_
@@ -220,9 +213,6 @@ Bug fixes
 Enhancements
 ============
 
-* 
-* 
-* 
 * Update pulsar client library to 0.15.5 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16701 <https://github.com/galaxyproject/galaxy/pull/16701>`_
 
 -------------------
@@ -234,10 +224,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
 * Skip installing npm/yarn if available, fix conditional dependency parsing, create virtualenv via conda when conda active by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16403 <https://github.com/galaxyproject/galaxy/pull/16403>`_
 * Fix test discovery in vscode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16413 <https://github.com/galaxyproject/galaxy/pull/16413>`_
 * Fixes for (gitlab) error reporting by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16424 <https://github.com/galaxyproject/galaxy/pull/16424>`_
@@ -251,11 +237,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
 * Fix default when statement evaluation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16332 <https://github.com/galaxyproject/galaxy/pull/16332>`_
 * Redact private role name and description when purging user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16349 <https://github.com/galaxyproject/galaxy/pull/16349>`_
 
@@ -268,31 +249,18 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
-* 
 * Bump galaxy-release-util version to 0.1.2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16241 <https://github.com/galaxyproject/galaxy/pull/16241>`_
 
 ============
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 =============
 Other changes
 =============
 
-* 
-* 
-* 
 * Forward port of slugify username received from oidc by `@nuwang <https://github.com/nuwang>`_ in `#16271 <https://github.com/galaxyproject/galaxy/pull/16271>`_
 
 -------------------
@@ -304,26 +272,12 @@ Other changes
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Fix ``Text File Busy`` errors at the source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16212 <https://github.com/galaxyproject/galaxy/pull/16212>`_
 
 ============
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Point release deps fixes and docs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16214 <https://github.com/galaxyproject/galaxy/pull/16214>`_
 * Use galaxy-release-util to upload python packages by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16240 <https://github.com/galaxyproject/galaxy/pull/16240>`_
 
@@ -336,14 +290,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Fix mixed outputs_to_working_directory pulsar destinations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15927 <https://github.com/galaxyproject/galaxy/pull/15927>`_
 * Update Gravity to 1.0.3 by `@natefoo <https://github.com/natefoo>`_ in `#15939 <https://github.com/galaxyproject/galaxy/pull/15939>`_
@@ -367,13 +313,6 @@ Bug fixes
 Other changes
 =============
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Startup fix when tool removed between reboot by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16175 <https://github.com/galaxyproject/galaxy/pull/16175>`_
 
 -------------------
