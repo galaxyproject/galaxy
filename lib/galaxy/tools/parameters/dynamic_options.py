@@ -748,6 +748,7 @@ class DynamicOptions:
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
+            options += self.get_user_options(trans.user)
         elif self.file_fields:
             options = list(self.file_fields)
         else:
@@ -755,6 +756,17 @@ class DynamicOptions:
         for filter in self.filters:
             options = filter.filter_options(options, trans, other_values)
         return options
+
+    def get_user_options(self, user: User):
+        # stored metadata are key: value pairs, turn into flat lists of correct order
+        fields = []
+        user_data_tables = user.get_user_data_tables(self.tool_data_table.name)
+        for data_table_entry in user_data_tables:
+            field_entry = []
+            for column_key in self.tool_data_table.columns.keys():
+                field_entry.append(data_table_entry[column_key])
+            fields.append(field_entry)
+        return fields
 
     def get_fields_by_value(self, value, trans, other_values):
         """

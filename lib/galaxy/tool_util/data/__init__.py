@@ -489,7 +489,7 @@ class TabularToolDataTable(ToolDataTable):
 
     # This method is used in tools, so need to keep its API stable
     def get_fields(self) -> List[List[str]]:
-        return self.data
+        return self.data.copy()
 
     def get_field(self, value):
         rval = None

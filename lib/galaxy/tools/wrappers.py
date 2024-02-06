@@ -220,7 +220,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         def __getattr__(self, name: str) -> Any:
             if name not in self._fields:
                 self._fields[name] = self._input.options.get_field_by_name_for_value(
-                    name, self._value, None, self._other_values
+                    # TODO: Replace trans here ...
+                    name,
+                    self._value,
+                    self._compute_environment.job_io.user_context.trans,
+                    self._other_values,
                 )
             values = map(str, self._fields[name])
             if name in PATH_ATTRIBUTES and self._compute_environment:

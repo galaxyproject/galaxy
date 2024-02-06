@@ -792,6 +792,33 @@ class User(Base, Dictifiable, RepresentById):
         self.active = False
         self.username = username
 
+    def get_user_data_tables(self, data_table: str):
+        session = object_session(self)
+        metadata_select = (
+            select(HistoryDatasetAssociation)
+            .join(Dataset)
+            .join(History)
+            .filter(
+                HistoryDatasetAssociation.deleted == false(),
+                HistoryDatasetAssociation.extension == "data_manager_json",
+                History.user_id == self.id,
+                Dataset.state == "ok",
+                HistoryDatasetAssociation._metadata.contains(data_table),
+            )
+            .order_by(HistoryDatasetAssociation.id)
+        )
+        bundle_hdas = session.execute(metadata_select).scalars().all()
+        by_dbkey = {}
+        for hda in bundle_hdas:
+            for table, values in hda._metadata["data_tables"].items():
+                for value in values:
+                    if dbkey := value.get("dbkey"):
+                        by_dbkey[dbkey] = value
+                    if path := value.get("path"):
+                        # obviously a hack, should probably pass around dataset or src id combinations
+                        value["path"] = os.path.join(hda.extra_files_path, path)
+        return list(by_dbkey.values())
+
     @property
     def extra_preferences(self):
         data = defaultdict(lambda: None)
