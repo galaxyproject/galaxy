@@ -202,8 +202,11 @@ class HDAManager(
             raise TypeError()
         hda = item
         copy = hda.copy(
-            parent_id=kwargs.get("parent_id"), copy_hid=False, copy_tags=hda.tags, flush=flush
-        )  # type:ignore[attr-defined]
+            parent_id=kwargs.get("parent_id"),
+            copy_hid=False,
+            copy_tags=hda.tags,  # type:ignore[attr-defined]
+            flush=flush,
+        )
         if hide_copy:
             copy.visible = False
         if history:
