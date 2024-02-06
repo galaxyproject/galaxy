@@ -243,8 +243,8 @@ class InteractiveToolManager:
             filters = []
             for state in Job.non_ready_states:
                 filters.append(Job.state == state)
-            stmt = stmt.where(or_(*filters)).subquery()
-            return stmt
+            stmt = stmt.where(or_(*filters))
+            return stmt.subquery()
 
         stmt = select(InteractiveToolEntryPoint).where(InteractiveToolEntryPoint.job_id.in_(build_subquery()))
         return trans.sa_session.scalars(stmt)

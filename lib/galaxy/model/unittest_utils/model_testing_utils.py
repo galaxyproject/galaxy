@@ -145,7 +145,7 @@ def drop_database(db_url, database):
         _drop_database(db_url, database)
     else:
         url = make_url(db_url)
-        os.remove(url.database)
+        os.remove(url.database)  # type:ignore[arg-type]
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
