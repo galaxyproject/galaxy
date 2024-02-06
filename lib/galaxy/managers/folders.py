@@ -20,11 +20,11 @@ from sqlalchemy import (
     or_,
     select,
 )
-from sqlalchemy.orm import aliased
-from sqlalchemy.orm.exc import (
+from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     model,
