@@ -326,7 +326,7 @@ watch(operationMessage, () => {
                             :title="rowData[fieldEntry.key]"
                             @execute="onOperation($event, rowData)" />
                         <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
-                        <GridDatasets v-else-if="fieldEntry.type == 'datasets'" :historyId="rowData[fieldEntry.key]" />
+                        <GridDatasets v-else-if="fieldEntry.type == 'datasets'" :history-id="rowData[fieldEntry.key]" />
                         <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                         <GridLink
                             v-else-if="fieldEntry.type == 'link'"

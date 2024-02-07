@@ -1,6 +1,7 @@
 /** This class renders the chart menu options. */
 import Backbone from "backbone";
-import Ui from "mvc/ui/ui-misc";
+
+import Ui from "./misc";
 
 export default Backbone.View.extend({
     initialize: function (app) {
