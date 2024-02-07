@@ -56,75 +56,6 @@ def format_bool(b):
         return ""
 
 
-class PageListGrid(grids.Grid):
-    # Custom column.
-    class URLColumn(grids.PublicURLColumn):
-        def get_value(self, trans, grid, item):
-            return url_for(
-                controller="page", action="display_by_username_and_slug", username=item.user.username, slug=item.slug
-            )
-
-    # Grid definition
-    use_panels = True
-    title = "Pages"
-    model_class = model.Page
-    default_filter = {"published": "All", "tags": "All", "title": "All", "sharing": "All"}
-    default_sort_key = "-update_time"
-    columns = [
-        grids.TextColumn(
-            "Title",
-            key="title",
-            attach_popup=True,
-            filterable="advanced",
-            link=(
-                lambda item: dict(action="display_by_username_and_slug", username=item.user.username, slug=item.slug)
-            ),
-        ),
-        URLColumn("Permalink"),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.PageAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.IndividualTagsColumn(
-            "Tags",
-            key="tags",
-            model_tag_association_class=model.PageTagAssociation,
-            filterable="advanced",
-            grid_name="PageListGrid",
-        ),
-        grids.SharingStatusColumn("Sharing", key="sharing", filterable="advanced", sortable=False),
-        grids.GridColumn("Created", key="create_time", format=time_ago),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[2]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    global_actions = [grids.GridAction("Add new page", dict(controller="", action="pages/create"))]
-    operations = [
-        grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(controller="", action="pages/editor")),
-        grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
-        grids.GridOperation(
-            "Share or Publish",
-            allow_multiple=False,
-            condition=(lambda item: not item.deleted),
-            url_args=dict(controller="", action="pages/sharing"),
-        ),
-        grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
-    ]
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter_by(user=trans.user, deleted=False)
-
-
 class PageAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
@@ -353,7 +284,6 @@ class VisualizationSelectionGrid(ItemSelectionGrid):
 
 # Adapted from the _BaseHTMLProcessor class of https://github.com/kurtmckee/feedparser
 class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
-    _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
     _history_selection_grid = HistorySelectionGrid()
     _workflow_selection_grid = WorkflowSelectionGrid()
@@ -369,29 +299,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
-
-    @web.expose
-    @web.json
-    @web.require_login()
-    def list(self, trans, *args, **kwargs):
-        """List user's pages."""
-        # Handle operation
-        if "operation" in kwargs and "id" in kwargs:
-            session = trans.sa_session
-            operation = kwargs["operation"].lower()
-            ids = util.listify(kwargs["id"])
-            for id in ids:
-                if operation == "delete":
-                    item = session.get(model.Page, self.decode_id(id))
-                    self.security_check(trans, item, check_ownership=True)
-                    item.deleted = True
-            with transaction(session):
-                session.commit()
-
-        # Build grid dictionary.
-        grid = self._page_list(trans, *args, **kwargs)
-        grid["shared_by_others"] = self._get_shared(trans)
-        return grid
 
     @web.expose
     @web.json
