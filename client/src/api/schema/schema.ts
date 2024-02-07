@@ -3824,6 +3824,11 @@ export interface components {
             /** @description Information about quota sources around dataset storage. */
             quota: components["schemas"]["ConcreteObjectStoreQuotaSourceDetails"];
             /**
+             * Relocatable
+             * @description Indicator of whether the objectstore for this dataset can be switched by this user.
+             */
+            relocatable: boolean;
+            /**
              * Shareable
              * @description Is this dataset shareable.
              */
