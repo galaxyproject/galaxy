@@ -406,7 +406,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # not implemented on nestedobjectstores yet.
             percent_used = None
         except FileNotFoundError:
-            # uninitalized directory (emtpy) disk object store can cause this...
+            # uninitialized directory (empty) disk object store can cause this...
             percent_used = None
 
         quota_source = dataset.quota_source_info
