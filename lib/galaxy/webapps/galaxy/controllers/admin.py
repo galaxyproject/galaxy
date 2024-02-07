@@ -281,7 +281,7 @@ class GroupListGrid(grids.GridData):
 
 
 class QuotaListGrid(grids.GridData):
-    class AmountColumn(grids.TextColumn):
+    class AmountColumn(grids.GridColumn):
         def get_value(self, trans, grid, quota):
             return quota.operation + quota.display_amount
 

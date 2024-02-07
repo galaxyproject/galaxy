@@ -129,52 +129,6 @@ class GridColumn:
         return query
 
 
-class TextColumn(GridColumn):
-    """Generic column that employs freetext and, hence, supports freetext, case-independent filtering."""
-
-    def filter(self, trans, user, query, column_filter):
-        """Modify query to filter using free text, case independence."""
-        if column_filter == "All":
-            pass
-        elif column_filter:
-            query = query.filter(self.get_filter(trans, user, column_filter))
-        return query
-
-    def get_filter(self, trans, user, column_filter):
-        """Returns a SQLAlchemy criterion derived from column_filter."""
-        if isinstance(column_filter, str):
-            return self.get_single_filter(user, column_filter)
-        elif isinstance(column_filter, list):
-            clause_list = []
-            for filter in column_filter:
-                clause_list.append(self.get_single_filter(user, filter))
-            return and_(*clause_list)
-
-    def get_single_filter(self, user, a_filter):
-        """
-        Returns a SQLAlchemy criterion derived for a single filter. Single filter
-        is the most basic filter--usually a string--and cannot be a list.
-        """
-        # Queries that include table joins cannot guarantee that table column names will be
-        # unique, so check to see if a_filter is of type <TableName>.<ColumnName>.
-        if self.key.find(".") > -1:
-            a_key = self.key.split(".")[1]
-        else:
-            a_key = self.key
-        model_class_key_field = getattr(self.model_class, a_key)
-        return func.lower(model_class_key_field).like(f"%{a_filter.lower()}%")
-
-    def sort(self, trans, query, ascending, column_name=None):
-        """Sort column using case-insensitive alphabetical sorting."""
-        if column_name is None:
-            column_name = self.key
-        if ascending:
-            query = query.order_by(func.lower(self.model_class.table.c.get(column_name)).asc())
-        else:
-            query = query.order_by(func.lower(self.model_class.table.c.get(column_name)).desc())
-        return query
-
-
 class GridData:
     """
     Specifies the content a grid (data table).
