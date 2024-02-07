@@ -1,22 +1,22 @@
 <script setup lang="ts">
 /**
- * This component does not control it's own open/closed state!
- * It expects it's parent component to do so.
+ * This component is only the select element of a multiselect.
+ * It does not display selected options.
  * It is a building block for building a custom Multiselect,
  * not a fully featured Multiselect alternative
  */
 
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useElementBounding } from "@vueuse/core";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 // @ts-ignore missing types
 import Vue2Teleport from "vue2-teleport";
 
 import { useUid } from "@/composables/utils/uid";
 
-library.add(faChevronUp);
+library.add(faCheck, faChevronUp, faPlus, faTags, faTimes);
 
 const props = withDefaults(
     defineProps<{
@@ -36,23 +36,38 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-    (e: "close"): void;
     (e: "input", selected: string[]): void;
     (e: "addOption", newOption: string): void;
 }>();
 
 const inputField = ref<HTMLInputElement | null>(null);
+const openButton = ref<HTMLButtonElement | null>(null);
 
-onMounted(async () => {
+const isOpen = ref(false);
+
+/** open popup and focus search field */
+async function open() {
+    isOpen.value = true;
     await nextTick();
     inputField.value?.focus();
-});
+}
+
+/** close popup and focus open button */
+async function close(refocus = true) {
+    isOpen.value = false;
+
+    if (refocus) {
+        await nextTick();
+        openButton.value?.focus();
+    }
+
+    searchValue.value = "";
+}
 
 const searchValue = ref("");
 const trimmedSearchValue = computed(() => searchValue.value.trim());
 const optionsAsSet = computed(() => new Set(props.options));
 const searchValueEmpty = computed(() => trimmedSearchValue.value === "");
-const searchValueInOptions = computed(() => optionsAsSet.value.has(trimmedSearchValue.value));
 const searchValueValid = computed(() => searchValueEmpty.value || props.validator(trimmedSearchValue.value));
 
 const filteredOptions = computed(() => {
@@ -64,13 +79,18 @@ const filteredOptions = computed(() => {
 });
 
 const trimmedOptions = computed(() => {
-    if (searchValueEmpty.value || searchValueInOptions.value) {
-        return filteredOptions.value.slice(0, props.maxShownOptions);
-    } else {
-        const trimmed = filteredOptions.value.slice(0, props.maxShownOptions - 1);
-        trimmed.unshift(trimmedSearchValue.value);
-        return trimmed;
+    const optionsSliced = filteredOptions.value.slice(0, props.maxShownOptions);
+
+    // remove search value to put it in front
+    const optionsSet = new Set(optionsSliced);
+    optionsSet.delete(trimmedSearchValue.value);
+    const optionsTrimmed = Array.from(optionsSet);
+
+    if (!searchValueEmpty.value) {
+        optionsTrimmed.unshift(trimmedSearchValue.value);
     }
+
+    return optionsTrimmed;
 });
 
 const highlightedOption = ref(0);
@@ -95,7 +115,7 @@ function onInputUp() {
 }
 
 function onInputDown() {
-    if (highlightedOption.value < trimmedOptions.value.length) {
+    if (highlightedOption.value < trimmedOptions.value.length - 1) {
         highlightedOption.value += 1;
     }
 
@@ -143,22 +163,19 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     } else if (event.key === "ArrowDown") {
         getOptionWithId(index + 1)?.focus();
     } else if (event.key === "Escape") {
-        emit("close");
+        close();
     }
 }
 
 function onBlur(e: FocusEvent) {
     const newTarget = e.relatedTarget;
 
+    // close without refocusing open button
     if (!(newTarget instanceof HTMLElement)) {
-        emit("close");
+        close(false);
     } else if (newTarget.getAttribute("data-parent-id") !== props.id) {
-        emit("close");
+        close(false);
     }
-}
-
-function onInputEscape() {
-    emit("close");
 }
 
 // emulate tab behavior, because options list is teleported to the app layer
@@ -201,7 +218,7 @@ const bounds = useElementBounding(root);
 
 <template>
     <div ref="root" class="headless-multiselect" @blur.capture="onBlur">
-        <fieldset>
+        <fieldset v-if="isOpen">
             <input
                 :id="`${props.id}-input`"
                 ref="inputField"
@@ -219,18 +236,22 @@ const bounds = useElementBounding(root);
                 @keydown.up="onInputUp"
                 @keydown.down="onInputDown"
                 @keydown.enter="onInputEnter"
-                @keydown.escape="onInputEscape" />
+                @keydown.escape="close(true)" />
             <button
                 ref="closeButton"
                 :data-parent-id="props.id"
                 title="close"
-                @click="emit('close')"
+                @click="close(true)"
                 @keydown.tab="onCloseButtonTab">
                 <FontAwesomeIcon icon="fa-chevron-up" />
             </button>
         </fieldset>
+        <button v-else ref="openButton" class="toggle-button" @click="open">
+            {{ props.placeholder }}
+            <FontAwesomeIcon icon="fa-tags" />
+        </button>
 
-        <Vue2Teleport to="#app">
+        <Vue2Teleport v-if="isOpen" to="#app">
             <div
                 :id="`${props.id}-options`"
                 aria-expanded="true"
@@ -267,16 +288,14 @@ const bounds = useElementBounding(root);
                     </span>
 
                     <span v-if="props.selected.includes(option)" class="headless-multiselect__info">
-                        <template v-if="trimmedSearchValue === option || highlightedOption === i">
+                        <template v-if="highlightedOption === i">
                             <FontAwesomeIcon
                                 class="headless-multiselect__needs-highlight"
                                 icon="fa-times"
                                 fixed-width />
                             <span class="sr-only">remove tag</span>
                         </template>
-                        <template v-else>
-                            <FontAwesomeIcon icon="fa-check" fixed-width />
-                        </template>
+                        <FontAwesomeIcon v-else icon="fa-check" fixed-width />
                     </span>
                     <span v-else class="headless-multiselect__info">
                         <FontAwesomeIcon class="headless-multiselect__needs-highlight" icon="fa-plus" fixed-width />
@@ -297,29 +316,43 @@ const bounds = useElementBounding(root);
         flex-direction: row;
         height: 1.75rem;
         align-items: center;
-    }
 
-    input {
-        text-decoration: none;
-        background: none;
-        border: none;
-        padding-left: 0.25rem;
-        flex-grow: 1;
-        margin: 0;
-        border: none;
-
-        &:focus,
-        &:focus-visible {
-            outline: none;
+        input {
+            text-decoration: none;
+            background: none;
             border: none;
+            padding-left: 0.25rem;
+            flex-grow: 1;
+            margin: 0;
+            border: none;
+
+            &:focus,
+            &:focus-visible {
+                outline: none;
+                border: none;
+            }
+        }
+
+        button {
+            background: none;
+            border: none;
+            padding: 0;
+            width: 2rem;
         }
     }
 
-    button {
+    .toggle-button {
+        font-size: $font-size-base;
+        color: $text-color;
+        text-decoration: none;
+        padding: 0 0.25rem;
         background: none;
+        cursor: text;
+        text-align: left;
+        margin: 0;
         border: none;
-        padding: 0;
-        width: 2rem;
+        width: 100%;
+        height: 1.75rem;
     }
 }
 
@@ -329,9 +362,9 @@ const bounds = useElementBounding(root);
     overflow-y: scroll;
 
     top: calc(var(--top) + var(--height));
-    left: calc(var(--left) + 4px);
+    left: var(--left);
 
-    width: calc(var(--width) - 4px);
+    width: var(--width);
     max-height: min(300px, calc(100% - var(--top) - var(--height) - 12px));
 
     display: flex;

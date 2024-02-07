@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import type { Ref } from "vue";
-import { computed, nextTick, ref } from "vue";
-import Multiselect from "vue-multiselect";
+import { computed, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
@@ -38,8 +33,6 @@ const emit = defineEmits<{
     (e: "tag-click", tag: string): void;
 }>();
 
-library.add(faTags, faCheck, faTimes, faPlus);
-
 const userTagsStore = useUserTagsStore();
 const { userTags } = storeToRefs(userTagsStore);
 const { warning } = useToast();
@@ -64,16 +57,6 @@ function onDelete(tag: string) {
     const index = tags.value.indexOf(tag);
     val.splice(index, 1);
     emit("input", val);
-}
-
-const editing = ref(false);
-
-const multiselectElement: Ref<Multiselect | null> = ref(null);
-
-async function openMultiselect() {
-    editing.value = true;
-    await nextTick();
-    multiselectElement.value?.activate();
 }
 
 const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
@@ -123,18 +106,12 @@ function onTagClicked(tag: string) {
             </div>
 
             <HeadlessMultiselect
-                v-if="editing"
                 :options="userTags"
                 :selected="tags"
                 :placeholder="props.placeholder"
                 :validator="isValid"
-                @close="editing = false"
                 @addOption="onAddTag"
                 @input="onInput" />
-            <button v-else class="toggle-button" @click="openMultiselect">
-                {{ props.placeholder }}
-                <FontAwesomeIcon icon="fa-tags" />
-            </button>
         </div>
 
         <div v-else>
@@ -180,8 +157,6 @@ function onTagClicked(tag: string) {
 </style>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
 .stateless-tags {
     .toggle-link {
         padding: 0;
@@ -191,20 +166,6 @@ function onTagClicked(tag: string) {
             background-color: transparent;
             border: none;
         }
-    }
-
-    .toggle-button {
-        font-size: $font-size-base;
-        color: $text-color;
-        text-decoration: none;
-        padding: 0 0.25rem;
-        background: none;
-        cursor: text;
-        text-align: left;
-        margin: 0;
-        border: none;
-        width: 100%;
-        height: 1.75rem;
     }
 }
 </style>
