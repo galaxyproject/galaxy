@@ -45,6 +45,7 @@ from galaxy.managers.history_contents import (
 )
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model.base import transaction
+from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -142,9 +143,11 @@ class DatasetStorageDetails(Model):
     shareable: bool = Field(
         description="Is this dataset shareable.",
     )
-    quota: dict = Field(description="Information about quota sources around dataset storage.")
-    badges: List[Dict[str, Any]] = Field(
-        description="A mapping of object store labels to badges describing object store properties."
+    quota: ConcreteObjectStoreQuotaSourceDetails = Field(
+        description="Information about quota sources around dataset storage."
+    )
+    badges: List[BadgeDict] = Field(
+        description="A list of badges describing object store properties for concrete object store dataset is stored in."
     )
 
 
@@ -413,8 +416,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         quota = ConcreteObjectStoreQuotaSourceDetails(
             source=quota_source.label,
             enabled=quota_source.use,
-        ).model_dump()  # TODO: could we bypass the dump?
-
+        )
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
