@@ -1,9 +1,4 @@
 import logging
-import math
-from json import (
-    dumps,
-    loads,
-)
 from typing import (
     Dict,
     List,
@@ -11,29 +6,10 @@ from typing import (
 )
 
 from markupsafe import escape
-from sqlalchemy.sql.expression import (
-    and_,
-    false,
-    func,
-    null,
-    or_,
-    true,
-)
 
-from galaxy.model.item_attrs import (
-    get_foreign_key,
-    UsesAnnotations,
-    UsesItemRatings,
-)
 from galaxy.util import (
-    restore_text,
-    sanitize_text,
     string_as_bool,
     unicodify,
-)
-from galaxy.web.framework import (
-    decorators,
-    url_for,
 )
 
 log = logging.getLogger(__name__)
@@ -90,30 +66,6 @@ class GridColumn:
             return escape(unicodify(value))
         else:
             return value
-
-    def get_link(self, trans, grid, item):
-        if self.link and self.link(item):
-            return self.link(item)
-        return None
-
-    def filter(self, trans, user, query, column_filter):
-        """Modify query to reflect the column filter."""
-        if column_filter == "All":
-            pass
-        if column_filter == "True":
-            query = query.filter_by(**{self.key: True})
-        elif column_filter == "False":
-            query = query.filter_by(**{self.key: False})
-        return query
-
-    def get_accepted_filters(self):
-        """Returns a list of accepted filters for this column."""
-        accepted_filters_vals = ["False", "True", "All"]
-        accepted_filters = []
-        for val in accepted_filters_vals:
-            args = {self.key: val}
-            accepted_filters.append(GridColumnFilter(val, args))
-        return accepted_filters
 
     def sort(self, trans, query, ascending, column_name=None):
         """Sort query using this column."""
