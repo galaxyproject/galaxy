@@ -81,7 +81,7 @@ class GridData:
         offset = kwargs.get("offset", 0)
 
         # Build initial query
-        query = self.build_initial_query(trans, **kwargs)
+        query = trans.sa_session.query(self.model_class)
         query = self.apply_query_filter(query, **kwargs)
 
         # Process sort arguments.
@@ -110,13 +110,3 @@ class GridData:
                 row_dict[column.key] = value
             grid_config["rows"].append(row_dict)
         return grid_config
-
-    # ---- Override these ----------------------------------------------------
-    def handle_operation(self, trans, operation, ids, **kwargs):
-        pass
-
-    def get_current_item(self, trans, **kwargs):
-        return None
-
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class)
