@@ -123,7 +123,7 @@ class FetchTools:
         summary="Execute tool with a given parameter payload",
         route_class_override=JsonApiRoute,
     )
-    def execute_json(
+    async def execute_json(
         self,
         payload: CreateToolBody,
         trans: ProvidesHistoryContext = DependsOnTrans,
