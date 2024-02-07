@@ -75,8 +75,7 @@ class ASync(BaseUIController):
                 if tool.input_translator:
                     tool.input_translator.translate(params)
                     tool_declared_params = {
-                        translator.galaxy_name
-                        for translator in tool.input_translator.param_trans_dict.values()
+                        translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
                     }
                     for param in params:
                         if param in tool_declared_params:
