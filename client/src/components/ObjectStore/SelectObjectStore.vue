@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-import { getSelectableObjectStores } from "@/api/objectStores";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
@@ -22,13 +22,13 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
     parentError: null,
 });
 
-const loading = ref(true);
-const error = ref(props.parentError);
 const popoverProps = {
     placement: "rightbottom",
     boundary: "window", // don't warp the popover to squeeze it into this modal
 };
-const objectStores = ref<Array<object>>([]);
+
+const store = useObjectStoreStore();
+const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 
 const loadingObjectStoreInfoMessage = ref("Loading object store information");
 const whyIsSelectionPreferredText = ref(`
@@ -39,28 +39,6 @@ this Galaxy instance - a different object store may be selected. After a dataset
 click on the info icon in the history panel to view information about where it is stored. If it
 is not stored in the correct place, contact your Galaxy administrator for more information.
 `);
-
-watch(
-    () => props.parentError,
-    () => {
-        error.value = props.parentError;
-    }
-);
-
-function handleError(e: unknown) {
-    const errorMessage = errorMessageAsString(e);
-    error.value = errorMessage;
-}
-
-onMounted(async () => {
-    try {
-        const data = await getSelectableObjectStores();
-        objectStores.value = data;
-        loading.value = false;
-    } catch (e) {
-        handleError(e);
-    }
-});
 
 function variant(objectStoreId: string) {
     if (props.selectedObjectStoreId == objectStoreId) {
@@ -74,6 +52,10 @@ const emit = defineEmits<{
     (e: "onSubmit", id: string | null): void;
 }>();
 
+const error = computed(() => {
+    return props.parentError || loadErrorMessage.value;
+});
+
 async function handleSubmit(preferredObjectStoreId: string) {
     emit("onSubmit", preferredObjectStoreId);
 }
@@ -81,7 +63,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
 
 <template>
     <div>
-        <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
+        <LoadingSpan v-if="isLoading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
@@ -98,7 +80,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
                         <b-button
-                            v-for="object_store in objectStores"
+                            v-for="object_store in selectableObjectStores"
                             :id="`preferred-object-store-button-${object_store.object_store_id}`"
                             :key="object_store.object_store_id"
                             :variant="variant(object_store.object_store_id)"
@@ -125,7 +107,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 <span v-localize>{{ defaultOptionDescription }}</span>
             </b-popover>
             <b-popover
-                v-for="object_store in objectStores"
+                v-for="object_store in selectableObjectStores"
                 :key="object_store.object_store_id"
                 :target="`preferred-object-store-button-${object_store.object_store_id}`"
                 triggers="hover"
