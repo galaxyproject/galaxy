@@ -80,13 +80,13 @@ from galaxy.tools.parameters.basic import (
     runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
-    workflow_building_modes,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import (
     listify,

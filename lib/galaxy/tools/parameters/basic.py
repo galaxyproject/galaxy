@@ -39,6 +39,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -64,12 +65,6 @@ if TYPE_CHECKING:
     from galaxy.security.idencoding import IdEncodingHelper
 
 log = logging.getLogger(__name__)
-
-
-class workflow_building_modes:
-    DISABLED = False
-    ENABLED = True
-    USE_HISTORY = 1
 
 
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r"\$\{.+?\}")

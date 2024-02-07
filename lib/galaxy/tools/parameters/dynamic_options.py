@@ -28,6 +28,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.tools.expressions import do_eval
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util import (
     Element,
     string_as_bool,
@@ -748,7 +749,8 @@ class DynamicOptions:
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
-            options += self.get_user_options(trans.user)
+            if trans.workflow_building_mode != workflow_building_modes.ENABLED:
+                options += self.get_user_options(trans.user)
         elif self.file_fields:
             options = list(self.file_fields)
         else:
