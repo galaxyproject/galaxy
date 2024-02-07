@@ -1259,8 +1259,8 @@ ON CONFLICT
         return None
 
     def count_stored_workflow_user_assocs(self, stored_workflow) -> int:
-        stmt = select(StoredWorkflowUserShareAssociation).filter_by(user=self, stored_workflow=stored_workflow)
-        stmt = select(func.count()).select_from(stmt)
+        sq = select(StoredWorkflowUserShareAssociation).filter_by(user=self, stored_workflow=stored_workflow).subquery()
+        stmt = select(func.count()).select_from(sq)
         session = object_session(self)
         return session.scalar(stmt)
 
