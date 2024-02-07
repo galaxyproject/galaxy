@@ -1417,8 +1417,12 @@ class HistoryItemOperator:
 
     def _delete(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
         if isinstance(item, HistoryDatasetCollectionAssociation):
-            return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
-        return self.hda_manager.delete(item, flush=self.flush)
+            self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
+        else:
+            self.hda_manager.delete(item, flush=self.flush)
+        # In the edge case where all selected items are already deleted we need to force an update
+        # otherwise the history will wait indefinitely for the items to be deleted
+        item.update()
 
     def _undelete(self, item: HistoryItemModel):
         if getattr(item, "purged", False):
