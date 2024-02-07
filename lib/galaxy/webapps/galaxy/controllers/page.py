@@ -56,59 +56,6 @@ def format_bool(b):
         return ""
 
 
-class PageAllPublishedGrid(grids.Grid):
-    # Grid definition
-    use_panels = True
-    title = "Published Pages"
-    model_class = model.Page
-    default_sort_key = "update_time"
-    default_filter = dict(title="All", username="All")
-    columns = [
-        grids.PublicURLColumn("Title", key="title", filterable="advanced"),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.PageAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
-        grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn(
-            "Community Tags",
-            key="tags",
-            model_tag_association_class=model.PageTagAssociation,
-            filterable="advanced",
-            grid_name="PageAllPublishedGrid",
-        ),
-        grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search title, annotation, owner, and tags",
-            cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        # See optimization description comments and TODO for tags in matching public histories query.
-        return (
-            trans.sa_session.query(self.model_class)
-            .join("user")
-            .filter(model.User.deleted == false())
-            .options(
-                joinedload(self.model_class.user).load_only(self.model_class.username),
-                joinedload(self.model_class.annotations),
-                undefer(self.model_class.average_rating),
-            )
-        )
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
-
-
 class ItemSelectionGrid(grids.Grid):
     """Base class for pages' item selection grids."""
 
@@ -284,7 +231,6 @@ class VisualizationSelectionGrid(ItemSelectionGrid):
 
 # Adapted from the _BaseHTMLProcessor class of https://github.com/kurtmckee/feedparser
 class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
-    _all_published_list = PageAllPublishedGrid()
     _history_selection_grid = HistorySelectionGrid()
     _workflow_selection_grid = WorkflowSelectionGrid()
     _datasets_selection_grid = HistoryDatasetAssociationSelectionGrid()
@@ -299,20 +245,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
-
-    @web.expose
-    @web.json
-    def list_published(self, trans, *args, **kwargs):
-        grid = self._all_published_list(trans, *args, **kwargs)
-        grid["shared_by_others"] = self._get_shared(trans)
-        return grid
-
-    def _get_shared(self, trans):
-        """Identify shared pages"""
-        shared_by_others = get_shared_pages(trans.sa_session, trans.get_user())
-        return [
-            {"username": p.page.user.username, "slug": p.page.slug, "title": p.page.title} for p in shared_by_others
-        ]
 
     @web.expose_api
     @web.require_login("create pages")
