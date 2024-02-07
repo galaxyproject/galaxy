@@ -241,6 +241,14 @@ function onOptionTab(event: KeyboardEvent, index: number) {
 const root = ref<HTMLDivElement | null>(null);
 /** used to position the pop-up */
 const bounds = useElementBounding(root);
+
+watch(
+    () => [props.options, props.selected],
+    async () => {
+        await nextTick();
+        bounds.update();
+    }
+);
 </script>
 
 <template>
