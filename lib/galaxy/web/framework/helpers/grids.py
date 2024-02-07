@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    Dict,
     List,
     Optional,
 )
@@ -23,16 +22,6 @@ class GridColumn:
         model_class=None,
         method=None,
         format=None,
-        link=None,
-        attach_popup=False,
-        visible=True,
-        nowrap=False,
-        # Valid values for filterable are ['standard', 'advanced', None]
-        filterable=None,
-        sortable=True,
-        label_id_prefix=None,
-        target=None,
-        delayed=False,
         escape=True,
     ):
         """Create a grid column."""
@@ -41,17 +30,7 @@ class GridColumn:
         self.model_class = model_class
         self.method = method
         self.format = format
-        self.link = link
-        self.target = target
-        self.nowrap = nowrap
-        self.attach_popup = attach_popup
-        self.visible = visible
-        self.filterable = filterable
-        self.delayed = delayed
         self.escape = escape
-        # Column must have a key to be sortable.
-        self.sortable = self.key is not None and sortable
-        self.label_id_prefix = label_id_prefix or ""
 
     def get_value(self, trans, grid, item):
         if self.method:
