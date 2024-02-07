@@ -775,11 +775,11 @@
     </datatype>
     <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true"/>
     <datatype extension="pqr" type="galaxy.datatypes.molecules:PQR" display_in_upload="true" />
-    <datatype extension="cell" type="galaxy.datatypes.molecules:Cell" display_in_upload="true"/>
-    <datatype extension="cif" type="galaxy.datatypes.molecules:CIF" display_in_upload="true"/>
+    <datatype extension="cell" type="galaxy.datatypes.molecules:Cell" display_in_upload="true" description="CASTEP input file contains geometry information, including cell parameters, atomic coordinates, and k-point coordinates and weights. The file consists of lines containing keywords and data blocks, and associated values"/>
+    <datatype extension="cif" type="galaxy.datatypes.molecules:CIF" display_in_upload="true" description="CIF or Crystallographic Information File is the standard format for storing crystallographic structural data" description_url="https://www.iucr.org/resources/cif"/>
     <datatype extension="xyz" type="galaxy.datatypes.molecules:XYZ" display_in_upload="true"/>
     <datatype extension="extxyz" type="galaxy.datatypes.molecules:ExtendedXYZ" display_in_upload="true"/>
-    <datatype extension="magres" type="galaxy.datatypes.molecules:Magres" display_in_upload="true"/>
+    <datatype extension="magres" type="galaxy.datatypes.molecules:Magres" display_in_upload="true" description="Ab initio Nuclear Magnetic Resonance file format providing a complete archival and data processing format for the results of first principles calculation of NMR parameters" description_url="https://www.ccpnc.ac.uk/docs/magres"/>
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true">
       <converter file="mdconvert.xml" target_datatype="xtc"/>
       <converter file="mdconvert.xml" target_datatype="dcd"/>
@@ -960,9 +960,9 @@
     <datatype extension="storm.check" type="galaxy.datatypes.text:StormCheck" display_in_upload="true"/>
     <datatype extension="ctl.result" type="galaxy.datatypes.text:CTLresult" display_in_upload="true"/>
     <!-- CASTEP types -->
-    <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
-    <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
-    <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
+    <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true" description="numerical output of a CASTEP job in ASCII format"/>
+    <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true" description="the param file contains all the input control parameters required to run a CASTEP job. Consists of lines containing keywords and associated values"/>
+    <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true" description="formatted electronic density file output by CASTEP containing value of electron density for a grid of points"/>
     <!-- ECOLOGY types -->
     <datatype extension="bil" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="ENVI file with band interleave by line (BIL) format"/>
     <datatype extension="hdr" type="galaxy.datatypes.data:Text" mimetype="text/plain" display_in_upload="true" subclass="true" description="ENVI metadata header file"/>
