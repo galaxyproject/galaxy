@@ -749,7 +749,7 @@ class DynamicOptions:
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
-            if trans.workflow_building_mode != workflow_building_modes.ENABLED:
+            if trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
                 options += self.get_user_options(trans.user)
         elif self.file_fields:
             options = list(self.file_fields)
@@ -762,13 +762,34 @@ class DynamicOptions:
     def get_user_options(self, user: User):
         # stored metadata are key: value pairs, turn into flat lists of correct order
         fields = []
-        user_data_tables = user.get_user_data_tables(self.tool_data_table.name)
-        for data_table_entry in user_data_tables:
+        hdas = user.get_user_data_tables(self.tool_data_table_name)
+        by_dbkey = {}
+        for hda in hdas:
+            by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
+        for data_table_entry in by_dbkey.values():
             field_entry = []
             for column_key in self.tool_data_table.columns.keys():
                 field_entry.append(data_table_entry[column_key])
             fields.append(field_entry)
         return fields
+
+    @staticmethod
+    def hda_to_table_entries(hda, table_name):
+        table_entries = {}
+        for value in hda._metadata["data_tables"][table_name]:
+            if dbkey := value.get("dbkey"):
+                table_entries[dbkey] = value
+            if path := value.get("path"):
+                # maybe a hack, should probably pass around dataset or src id combinations ?
+                value["path"] = os.path.join(hda.extra_files_path, path)
+                value["value"] = {"src": "hda", "id": hda.id}
+        return table_entries
+
+    def get_option_from_dataset(self, dataset):
+        # TODO: we may have to pass the name/id in case there are multiple entries produced by a single dm run
+        entries = self.hda_to_table_entries(dataset, self.tool_data_table_name)
+        assert len(entries) == 1, "Cannot pass tool data bundle with more than 1 data entry per table"
+        return next(iter(entries.values()))
 
     def get_fields_by_value(self, value, trans, other_values):
         """

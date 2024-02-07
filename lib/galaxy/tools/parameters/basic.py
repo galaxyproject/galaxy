@@ -975,7 +975,10 @@ class SelectToolParameter(ToolParameter):
         """
         determine the set of values of legal options
         """
-        return {v for _, v, _ in self.get_options(trans, other_values)}
+        return {
+            history_item_dict_to_python(v, trans.app, self.name) or v
+            for _, v, _ in self.get_options(trans, other_values)
+        }
 
     def get_legal_names(self, trans, other_values):
         """
@@ -1024,6 +1027,10 @@ class SelectToolParameter(ToolParameter):
             raise ParameterValueError(
                 "requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic
             )
+        # TODO: dataset security check ??
+        if dataset := history_item_dict_to_python(value, app=trans.app, name=self.name):
+            if dataset in legal_values:
+                return dataset
         if isinstance(value, list):
             if not self.multiple:
                 raise ParameterValueError(
@@ -1090,6 +1097,8 @@ class SelectToolParameter(ToolParameter):
         return value
 
     def to_json(self, value, app, use_security):
+        if isinstance(value, HistoryDatasetAssociation):
+            return history_item_to_json(value, app, use_security=use_security)
         return value
 
     def get_initial_value(self, trans, other_values):
