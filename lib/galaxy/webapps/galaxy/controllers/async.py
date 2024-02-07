@@ -71,11 +71,21 @@ class ASync(BaseUIController):
                 data.state = data.blurb = data.states.RUNNING
                 log.debug(f"executing tool {tool.id}")
                 trans.log_event(f"Async executing tool {tool.id}", tool_id=tool.id)
+                params_dict = {}
+                if tool.input_translator:
+                    tool.input_translator.translate(params)
+                    tool_declared_params = {
+                        translator.galaxy_name
+                        for translator in tool.input_translator.param_trans_dict.values()
+                    }
+                    for param in params:
+                        if param in tool_declared_params:
+                            params_dict[param] = params.get(param, None)
                 galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
-                galaxy_url = params.get("GALAXY_URL", galaxy_url)
                 params = dict(
                     URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
                 )
+                params.update(params_dict)
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
