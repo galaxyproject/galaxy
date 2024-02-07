@@ -164,6 +164,7 @@ testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
+Werkzeug = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
