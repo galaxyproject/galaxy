@@ -1,13 +1,7 @@
 import logging
 
 from dateutil.parser import isoparse
-from markupsafe import escape
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
-from sqlalchemy.orm import undefer
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
@@ -27,7 +21,6 @@ from galaxy.util import (
     listify,
     sanitize_text,
     string_as_bool,
-    unicodify,
 )
 from galaxy.web import (
     expose_api_anonymous,
@@ -35,11 +28,7 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    ERROR,
-    INFO,
     SharableMixin,
-    SUCCESS,
-    WARNING,
 )
 from ..api import depends
 

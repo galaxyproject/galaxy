@@ -3,12 +3,7 @@ from html.parser import HTMLParser
 
 from markupsafe import escape
 from sqlalchemy import desc
-from sqlalchemy.orm import (
-    joinedload,
-    lazyload,
-    undefer,
-)
-from sqlalchemy.sql import expression
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     model,
