@@ -16,7 +16,7 @@ import "ui/editable-text";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
-import IconButton from "mvc/ui/icon-button";
+import IconButton from "./icon-button";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import _l from "utils/localization";
