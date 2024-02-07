@@ -25,6 +25,7 @@ const props = withDefaults(
         maxShownOptions?: number;
         placeholder?: string;
         id?: string;
+        /** adjusts the visual appearance of the search value */
         validator?: (option: string) => boolean;
     }>(),
     {
@@ -36,13 +37,16 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
+    /** emitted when the selected options are changed */
     (e: "input", selected: string[]): void;
+    /** emitted when a new option is selected, which wasn't part of the options prop */
     (e: "addOption", newOption: string): void;
 }>();
 
 const inputField = ref<HTMLInputElement | null>(null);
 const openButton = ref<HTMLButtonElement | null>(null);
 
+/** controls the open state of the select popup */
 const isOpen = ref(false);
 
 /** open popup and focus search field */
@@ -64,12 +68,14 @@ async function close(refocus = true) {
     searchValue.value = "";
 }
 
+/** the text in the input field */
 const searchValue = ref("");
 const trimmedSearchValue = computed(() => searchValue.value.trim());
 const optionsAsSet = computed(() => new Set(props.options));
 const searchValueEmpty = computed(() => trimmedSearchValue.value === "");
 const searchValueValid = computed(() => searchValueEmpty.value || props.validator(trimmedSearchValue.value));
 
+/** options which partially match the search value */
 const filteredOptions = computed(() => {
     if (searchValueEmpty.value) {
         return props.options;
@@ -78,6 +84,7 @@ const filteredOptions = computed(() => {
     }
 });
 
+/** options trimmed to `maxShownOptions` and reordered so the search value appears first */
 const trimmedOptions = computed(() => {
     const optionsSliced = filteredOptions.value.slice(0, props.maxShownOptions);
 
@@ -93,6 +100,7 @@ const trimmedOptions = computed(() => {
     return optionsTrimmed;
 });
 
+/** the option which will be added when the `Enter` key is pressed */
 const highlightedOption = ref(0);
 
 watch(
@@ -106,6 +114,7 @@ function onOptionHover(index: number) {
     highlightedOption.value = index;
 }
 
+/** allows for selecting from the autocomplete list while focusing the input field */
 function onInputUp() {
     if (highlightedOption.value > 0) {
         highlightedOption.value -= 1;
@@ -114,6 +123,7 @@ function onInputUp() {
     getOptionWithId(highlightedOption.value)?.scrollIntoView({ block: "center" });
 }
 
+/** allows for selecting from the autocomplete list while focusing the input field */
 function onInputDown() {
     if (highlightedOption.value < trimmedOptions.value.length - 1) {
         highlightedOption.value += 1;
@@ -122,10 +132,16 @@ function onInputDown() {
     getOptionWithId(highlightedOption.value)?.scrollIntoView({ block: "center" });
 }
 
+/** finds the html element for the option with given id */
 function getOptionWithId(id: number) {
     return document.querySelector(`#${props.id}-option-${id}`) as HTMLButtonElement | null;
 }
 
+/**
+ * Emits an input event with the new selected options,
+ * or emits an addOption event, if the selected option
+ * was not part of the provided options
+ */
 function onOptionSelected(option: string) {
     if (!optionsAsSet.value.has(option)) {
         emit("addOption", option);
@@ -143,6 +159,7 @@ function onOptionSelected(option: string) {
     emit("input", Array.from(set));
 }
 
+/** handles the Enter key on the input element */
 function onInputEnter() {
     const option = trimmedOptions.value[highlightedOption.value];
 
@@ -152,7 +169,7 @@ function onInputEnter() {
     }
 }
 
-// allow for keyboard navigation
+/** handles keyboard navigation when the popup is focused */
 function onOptionKey(event: KeyboardEvent, index: number) {
     if (event.key === "ArrowUp") {
         if (index < 1) {
@@ -167,6 +184,11 @@ function onOptionKey(event: KeyboardEvent, index: number) {
     }
 }
 
+/**
+ * Closes popup when focus leaves this element
+ * Because this component uses a Teleport, uses a custom `data-parent-id` attribute
+ * to determine if the element is a child of this component
+ */
 function onBlur(e: FocusEvent) {
     const newTarget = e.relatedTarget;
 
@@ -178,7 +200,7 @@ function onBlur(e: FocusEvent) {
     }
 }
 
-// emulate tab behavior, because options list is teleported to the app layer
+/** emulates tab behavior, because options list is teleported to the app layer */
 function onCloseButtonTab(event: KeyboardEvent) {
     if (!event.shiftKey) {
         getOptionWithId(0)?.focus();
@@ -188,6 +210,7 @@ function onCloseButtonTab(event: KeyboardEvent) {
 
 const closeButton = ref<HTMLButtonElement | null>(null);
 
+/** finds and returns the next focusable element right after this component */
 function getNextFocusableElement() {
     if (!closeButton.value) {
         return;
@@ -200,8 +223,11 @@ function getNextFocusableElement() {
     return focusableElements.item(closeButtonIndex + 1) as HTMLElement | null;
 }
 
-// since our popup is teleported to the app layer, we need to emulate
-// tab behavior at the start and end of the list.
+/**
+ * Emulates continuous tab behavior.
+ * This is required because part of the component is teleported to the app layer,
+ * so this component is not continuous in the DOM
+ */
 function onOptionTab(event: KeyboardEvent, index: number) {
     if (index === 0 && event.shiftKey) {
         closeButton.value?.focus();
@@ -213,6 +239,7 @@ function onOptionTab(event: KeyboardEvent, index: number) {
 }
 
 const root = ref<HTMLDivElement | null>(null);
+/** used to position the pop-up */
 const bounds = useElementBounding(root);
 </script>
 
