@@ -142,6 +142,8 @@ function onOptionKey(event: KeyboardEvent, index: number) {
         }
     } else if (event.key === "ArrowDown") {
         getOptionWithId(index + 1)?.focus();
+    } else if (event.key === "Escape") {
+        emit("close");
     }
 }
 
@@ -153,6 +155,10 @@ function onBlur(e: FocusEvent) {
     } else if (newTarget.getAttribute("data-parent-id") !== props.id) {
         emit("close");
     }
+}
+
+function onInputEscape() {
+    emit("close");
 }
 
 // emulate tab behavior, because options list is teleported to the app layer
@@ -212,7 +218,8 @@ const bounds = useElementBounding(root);
                 :placeholder="props.placeholder"
                 @keydown.up="onInputUp"
                 @keydown.down="onInputDown"
-                @keydown.enter="onInputEnter" />
+                @keydown.enter="onInputEnter"
+                @keydown.escape="onInputEscape" />
             <button
                 ref="closeButton"
                 :data-parent-id="props.id"
