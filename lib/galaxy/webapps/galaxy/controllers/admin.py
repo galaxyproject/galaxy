@@ -245,7 +245,7 @@ class GroupListGrid(grids.GridData):
         grids.GridColumn("Name", key="name"),
         UsersColumn("Users", key="users"),
         RolesColumn("Roles", key="roles"),
-        grids.DeletedColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
         grids.GridColumn("Last Updated", key="update_time"),
     ]
 
