@@ -1914,45 +1914,22 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
-        def single_to_json(value):
-            src = None
-            if isinstance(value, dict) and "src" in value and "id" in value:
-                return value
-            elif isinstance(value, DatasetCollectionElement):
-                src = "dce"
-            elif isinstance(value, HistoryDatasetCollectionAssociation):
-                src = "hdca"
-            elif isinstance(value, LibraryDatasetDatasetAssociation):
-                src = "ldda"
-            elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
-                # hasattr 'id' fires a query on persistent objects after a flush so better
-                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
-                # nice to drop it.
-                src = "hda"
-            if src is not None:
-                object_id = cached_id(value)
-                return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
-                values = [single_to_json(v) for v in value]
+                values = [history_item_to_json(v, app, use_security) for v in value]
             else:
-                values = [single_to_json(value)]
+                values = [history_item_to_json(value, app, use_security)]
             return {"values": values}
         return None
 
     def to_python(self, value, app):
-        def single_to_python(value):
-            if isinstance(value, dict) and "src" in value:
-                if value["src"] not in ("hda", "dce", "ldda", "hdca"):
-                    raise ParameterValueError(f"Invalid value {value}", self.name)
-                return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
 
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             if hasattr(self, "multiple") and self.multiple is True:
-                return [single_to_python(v) for v in value["values"]]
+                return [history_item_dict_to_python(v, app, self.name) for v in value["values"]]
             elif len(value["values"]) > 0:
-                return single_to_python(value["values"][0])
+                return history_item_dict_to_python(value["values"][0], app, self.name)
 
         # Handle legacy string values potentially stored in databases
         none_values = [None, "", "None"]
@@ -2025,7 +2002,7 @@ class BaseDataToolParameter(ToolParameter):
                 raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
 
 
-def src_id_to_item(sa_session: "Session", value: Dict[str, Any], security: "IdEncodingHelper") -> Union[
+def src_id_to_item(sa_session: "Session", value: MutableMapping[str, Any], security: "IdEncodingHelper") -> Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -2805,3 +2782,30 @@ class ConnectedValue(RuntimeValue):
     """
     Wrapper to note a value that is not yet set, but will be inferred from a connection.
     """
+
+
+def history_item_dict_to_python(value, app, name):
+    if isinstance(value, MutableMapping) and "src" in value:
+        if value["src"] not in ("hda", "dce", "ldda", "hdca"):
+            raise ParameterValueError(f"Invalid value {value}", name)
+        return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
+
+
+def history_item_to_json(value, app, use_security):
+    src = None
+    if isinstance(value, MutableMapping) and "src" in value and "id" in value:
+        return value
+    elif isinstance(value, DatasetCollectionElement):
+        src = "dce"
+    elif isinstance(value, HistoryDatasetCollectionAssociation):
+        src = "hdca"
+    elif isinstance(value, LibraryDatasetDatasetAssociation):
+        src = "ldda"
+    elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
+        # hasattr 'id' fires a query on persistent objects after a flush so better
+        # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
+        # nice to drop it.
+        src = "hda"
+    if src is not None:
+        object_id = cached_id(value)
+        return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
