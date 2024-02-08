@@ -610,8 +610,9 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
+        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
-        genomes.GenomeFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
