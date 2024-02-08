@@ -4,9 +4,10 @@ import { computed, ref } from "vue";
 
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
+import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
+import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -20,11 +21,6 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
     selectedObjectStoreId: null,
     parentError: null,
 });
-
-const popoverProps = {
-    placement: "rightbottom",
-    boundary: "window", // don't warp the popover to squeeze it into this modal
-};
 
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
@@ -94,21 +90,16 @@ async function handleSubmit(preferredObjectStoreId: string) {
                     </p>
                 </b-col>
             </b-row>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
-                <template v-slot:title
-                    ><span v-localize>{{ defaultOptionTitle }}</span></template
-                >
+            <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
                 <span v-localize>{{ defaultOptionDescription }}</span>
-            </b-popover>
-            <b-popover
-                v-for="object_store in selectableObjectStores"
-                :key="object_store.object_store_id"
-                :target="`preferred-object-store-button-${object_store.object_store_id}`"
-                triggers="hover"
-                v-bind="popoverProps">
-                <template v-slot:title>{{ object_store.name }}</template>
-                <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
-            </b-popover>
+            </ObjectStoreSelectButtonPopover>
+            <ObjectStoreSelectButtonPopover
+                v-for="objectStore in selectableObjectStores"
+                :key="objectStore.object_store_id"
+                :target="`preferred-object-store-button-${objectStore.object_store_id}`"
+                :title="objectStore.name">
+                <DescribeObjectStore :what="forWhat" :storage-info="objectStore"> </DescribeObjectStore>
+            </ObjectStoreSelectButtonPopover>
         </div>
     </div>
 </template>
