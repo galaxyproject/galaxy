@@ -39,8 +39,6 @@ class ASync(BaseUIController):
             return trans.response.send_redirect("/index")
 
         params = Params(kwd, sanitize=False)
-        STATUS = params.STATUS
-        URL = params.URL
         data_id = params.data_id
 
         log.debug(f"async dataid -> {data_id}")
@@ -52,39 +50,49 @@ class ASync(BaseUIController):
         if not tool:
             return f"Tool with id {tool_id} not found"
 
-        #
-        # we have an incoming data_id
-        #
         if data_id:
-            if not URL:
-                return f"No URL parameter was submitted for data {data_id}"
+            #
+            # we have an incoming data_id
+            #
             data = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(data_id)
 
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
 
+            # map params from the tool's <request_param_translation> section;
+            # ignore any other params that may have been passed by the remote
+            # server with the exception of STATUS and URL;
+            # if name, info, dbkey and data_type are not handled via incoming params,
+            # use the metadata from the already existing dataset
+            params_dict = dict(
+                STATUS=params.STATUS, URL=params.URL, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
+            )
+            if tool.input_translator:
+                tool.input_translator.translate(params)
+                tool_declared_params = {
+                    translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
+                }
+                for param in params:
+                    if param in tool_declared_params:
+                        params_dict[param] = params.get(param, None)
+            params = params_dict
+
+            if not params.get("URL"):
+                return f"No URL parameter was submitted for data {data_id}"
+
+            STATUS = params.get("STATUS")
+
             if STATUS == "OK":
                 key = hmac_new(trans.app.config.tool_secret, "%d:%d" % (data.id, data.history_id))
                 if key != data_secret:
                     return f"You do not have permission to alter data {data_id}."
+                if not params.get("GALAXY_URL"):
+                    # provide a fallback for GALAXY_URL
+                    params["GALAXY_URL"] = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
                 # push the job into the queue
                 data.state = data.blurb = data.states.RUNNING
                 log.debug(f"executing tool {tool.id}")
                 trans.log_event(f"Async executing tool {tool.id}", tool_id=tool.id)
-                params_dict = {}
-                if tool.input_translator:
-                    tool.input_translator.translate(params)
-                    tool_declared_params = {
-                        translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
-                    }
-                    for param in params:
-                        if param in tool_declared_params:
-                            params_dict[param] = params.get(param, None)
-                galaxy_url = f"{trans.request.url_path}/async/{tool_id}/{data.id}/{key}"
-                params = dict(
-                    URL=URL, GALAXY_URL=galaxy_url, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
-                )
-                params.update(params_dict)
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
@@ -180,7 +188,7 @@ class ASync(BaseUIController):
                 params.update({"data_id": data.id})
 
                 # Use provided URL or fallback to tool action
-                url = URL or tool.action
+                url = params.URL or tool.action
                 # Does url already have query params?
                 if "?" in url:
                     url_join_char = "&"
