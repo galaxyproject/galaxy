@@ -804,6 +804,9 @@ class User(Base, Dictifiable, RepresentById):
                 HistoryDatasetAssociation.extension == "data_manager_json",
                 History.user_id == self.id,
                 Dataset.state == "ok",
+                # excludes data manager runs that actually populated tables.
+                # maybe track this formally by creating a different datatype for bundles ?
+                Dataset.total_size != Dataset.file_size,
                 HistoryDatasetAssociation._metadata.contains(data_table),
             )
             .order_by(HistoryDatasetAssociation.id)
