@@ -81,10 +81,11 @@ def __main__():
             ext = sniff.handle_uploaded_dataset_file(cur_filename, datatypes_registry, ext=data_dict["ext"])
         except Exception as e:
             sys.exit(str(e))
-        info = dict(type="dataset", dataset_id=data_dict["dataset_id"], ext=ext)
+
+        tool_provided_metadata = {out_data_name: {"ext": ext}}
 
         with open(params["job_config"]["TOOL_PROVIDED_JOB_METADATA_FILE"], "w") as json_file:
-            json.dump(info, json_file)
+            json.dump(tool_provided_metadata, json_file)
 
 
 if __name__ == "__main__":
