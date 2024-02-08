@@ -794,11 +794,12 @@ class User(Base, Dictifiable, RepresentById):
 
     def get_user_data_tables(self, data_table: str):
         session = object_session(self)
+        assert session
         metadata_select = (
             select(HistoryDatasetAssociation)
             .join(Dataset)
             .join(History)
-            .filter(
+            .where(
                 HistoryDatasetAssociation.deleted == false(),
                 HistoryDatasetAssociation.extension == "data_manager_json",
                 History.user_id == self.id,
