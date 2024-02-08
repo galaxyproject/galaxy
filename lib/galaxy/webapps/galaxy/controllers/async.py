@@ -58,6 +58,14 @@ class ASync(BaseUIController):
 
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
+            if data.state in data.dataset.terminal_states:
+                log.debug(
+                    f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely"
+                )
+                trans.log_event(
+                    f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely"
+                )
+                return f"Data {data_id} has finished processing before job could be completed"
 
             # map params from the tool's <request_param_translation> section;
             # ignore any other params that may have been passed by the remote
