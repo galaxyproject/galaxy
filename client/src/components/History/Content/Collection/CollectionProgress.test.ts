@@ -1,5 +1,6 @@
 import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 
 import { JobStateSummary } from "./JobStateSummary";
 
@@ -17,6 +18,8 @@ async function mountComponent(dsc: object) {
         localVue,
     });
 
+    await flushPromises();
+
     return wrapper;
 }
 
@@ -26,8 +29,6 @@ describe("CollectionProgress", () => {
 
         const wrapper = await mountComponent(dsc);
 
-        await wrapper.vm.$nextTick();
-
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
     });
 
@@ -35,8 +36,6 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 5, running: 3, failed: 1, ok: 1 }, populated_state: {} };
 
         const wrapper = await mountComponent(dsc);
-
-        await wrapper.vm.$nextTick();
 
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
         expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("1");
@@ -48,15 +47,12 @@ describe("CollectionProgress", () => {
 
         const wrapper = await mountComponent(dsc);
 
-        await wrapper.vm.$nextTick();
-
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("3");
 
         dsc["job_state_summary"]["ok"] = 2;
         dsc["job_state_summary"]["running"] = 1;
 
         await wrapper.setProps({ summary: new JobStateSummary(dsc) });
-        await wrapper.vm.$nextTick();
 
         expect(wrapper.find(".progress").find(".bg-warning").attributes("aria-valuenow")).toBe("1");
         expect(wrapper.find(".progress").find(".bg-success").attributes("aria-valuenow")).toBe("2");
@@ -66,8 +62,6 @@ describe("CollectionProgress", () => {
         const dsc = { job_state_summary: { all_jobs: 3, queued: 3 }, populated_state: {} };
 
         const wrapper = await mountComponent(dsc);
-
-        await wrapper.vm.$nextTick();
 
         expect(wrapper.find(".progress").find(".bg-secondary").attributes("aria-valuenow")).toBe("3");
     });
