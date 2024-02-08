@@ -59,12 +59,8 @@ class ASync(BaseUIController):
             if not data:
                 return f"Data {data_id} does not exist or has already been deleted"
             if data.state in data.dataset.terminal_states:
-                log.debug(
-                    f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely"
-                )
-                trans.log_event(
-                    f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely"
-                )
+                log.debug(f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely")
+                trans.log_event(f"Tool {tool.id}: execution stopped as data {data_id} has entered terminal state prematurely")
                 return f"Data {data_id} has finished processing before job could be completed"
 
             # map params from the tool's <request_param_translation> section;
@@ -73,7 +69,12 @@ class ASync(BaseUIController):
             # if name, info, dbkey and data_type are not handled via incoming params,
             # use the metadata from the already existing dataset
             params_dict = dict(
-                STATUS=params.STATUS, URL=params.URL, name=data.name, info=data.info, dbkey=data.dbkey, data_type=data.ext
+                STATUS=params.STATUS,
+                URL=params.URL,
+                name=data.name,
+                info=data.info,
+                dbkey=data.dbkey,
+                data_type=data.ext,
             )
             if tool.input_translator:
                 tool.input_translator.translate(params)
