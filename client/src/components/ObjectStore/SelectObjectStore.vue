@@ -6,8 +6,7 @@ import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
-import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
+import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -79,19 +78,14 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             @click="handleSubmit(null)"
                             ><i>{{ defaultOptionTitle | localize }}</i></b-button
                         >
-                        <b-button
-                            v-for="object_store in selectableObjectStores"
-                            :id="`preferred-object-store-button-${object_store.object_store_id}`"
-                            :key="object_store.object_store_id"
-                            :variant="variant(object_store.object_store_id)"
+                        <ObjectStoreSelectButton
+                            v-for="objectStore in selectableObjectStores"
+                            :id="`preferred-object-store-button-${objectStore.object_store_id}`"
+                            :key="objectStore.object_store_id"
+                            :object-store="objectStore"
+                            :variant="variant(objectStore.object_store_id)"
                             class="preferred-object-store-select-button"
-                            :data-object-store-id="object_store.object_store_id"
-                            @click="handleSubmit(object_store.object_store_id)"
-                            >{{ object_store.name }}
-                            <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
-                            <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
-                            </ProvidedQuotaSourceUsageBar>
-                        </b-button>
+                            @click="handleSubmit(objectStore.object_store_id)" />
                     </b-button-group>
                 </b-col>
                 <b-col cols="5">
