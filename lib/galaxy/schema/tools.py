@@ -88,6 +88,11 @@ class ExecuteToolPayload(Model):
         title="Send Email Notification",
         description="Flag indicating whether to send email notification",
     )
+    upload_type: Optional[str] = Field(
+        default=None,
+        title="Upload Type",
+        description="TODO",
+    )
     model_config = ConfigDict(extra="allow")
 
 
