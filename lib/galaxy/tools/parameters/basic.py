@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import typing
 import urllib.parse
 from collections.abc import MutableMapping
 from typing import (
@@ -1101,6 +1102,9 @@ class SelectToolParameter(ToolParameter):
             return history_item_to_json(value, app, use_security=use_security)
         return value
 
+    def to_python(self, value, app):
+        return history_item_dict_to_python(value, app, self.name) or super().to_python(value, app)
+
     def get_initial_value(self, trans, other_values):
         try:
             options = list(self.get_options(trans, other_values))
@@ -2011,7 +2015,9 @@ class BaseDataToolParameter(ToolParameter):
                 raise ValueError("At most %d datasets are required for %s" % (self.max, self.name))
 
 
-def src_id_to_item(sa_session: "Session", value: MutableMapping[str, Any], security: "IdEncodingHelper") -> Union[
+def src_id_to_item(
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
+) -> Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,

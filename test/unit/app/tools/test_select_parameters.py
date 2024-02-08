@@ -103,5 +103,5 @@ class MockToolDataTable:
         )
         self.missing_index_file = None
 
-    def get_fields(self, user, history):
+    def get_fields(self):
         return [["testname1", "testpath1"], ["testname2", "testpath2"]]
