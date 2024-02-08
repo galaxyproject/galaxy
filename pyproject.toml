@@ -163,6 +163,7 @@ testfixtures = "*"
 tuspy = "*"
 twill = ">=3.2.1"  # https://github.com/twill-tools/twill/issues/18
 watchdog = "*"
+Werkzeug = "*"
 
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"

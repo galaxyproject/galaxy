@@ -4,9 +4,8 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
-
 
 
 -------------------
@@ -41,8 +40,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
 * Ensure session is request-scoped for legacy endpoints by `@jdavcs <https://github.com/jdavcs>`_ in `#16207 <https://github.com/galaxyproject/galaxy/pull/16207>`_
 
 ============
@@ -103,9 +100,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Ensure history export contains all expected datasets by `@davelopez <https://github.com/davelopez>`_ in `#16013 <https://github.com/galaxyproject/galaxy/pull/16013>`_
 * Fix extended metadata file size handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16109 <https://github.com/galaxyproject/galaxy/pull/16109>`_
 
