@@ -21,7 +21,10 @@ from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy.exceptions import InsufficientPermissionsException
 from galaxy.model.base import transaction
-from galaxy.webapps.galaxy.api import as_form
+from galaxy.webapps.galaxy.api import (
+    as_form,
+    depend_on_either_json_or_form_data,
+)
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
     can_manage_repo,
@@ -62,7 +65,6 @@ from tool_shed_client.schema import (
 from . import (
     ChangesetRevisionPathParam,
     CommitMessageQueryParam,
-    depend_on_either_json_or_form_data,
     depends,
     DependsOnTrans,
     DownloadableQueryParam,
