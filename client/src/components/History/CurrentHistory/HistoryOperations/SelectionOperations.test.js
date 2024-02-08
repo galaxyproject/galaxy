@@ -84,18 +84,31 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(false);
             });
 
-            it("should display 'unhide' option only on hidden items", async () => {
+            it("should display 'unhide' option on hidden items", async () => {
                 const option = '[data-description="unhide option"]';
                 expect(wrapper.find(option).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "visible:false" });
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display 'delete' option only on non-deleted items", async () => {
+            it("should display 'unhide' option when hidden and visible items are mixed", async () => {
+                const option = '[data-description="unhide option"]';
+                expect(wrapper.find(option).exists()).toBe(false);
+                await wrapper.setProps({ filterText: "visible:any" });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'delete' option on non-deleted items", async () => {
                 const option = '[data-description="delete option"]';
                 expect(wrapper.find(option).exists()).toBe(true);
                 await wrapper.setProps({ filterText: "deleted:true" });
                 expect(wrapper.find(option).exists()).toBe(false);
+            });
+
+            it("should display 'delete' option when non-deleted and deleted items are mixed", async () => {
+                const option = '[data-description="delete option"]';
+                await wrapper.setProps({ filterText: "deleted:any" });
+                expect(wrapper.find(option).exists()).toBe(true);
             });
 
             it("should display 'permanently delete' option always", async () => {
@@ -105,11 +118,20 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
-            it("should display 'undelete' option only on deleted and non-purged items", async () => {
+            it("should display 'undelete' option on deleted and non-purged items", async () => {
                 const option = '[data-description="undelete option"]';
                 expect(wrapper.find(option).exists()).toBe(false);
                 await wrapper.setProps({
                     filterText: "deleted:true",
+                    contentSelection: getNonPurgedContentSelection(),
+                });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
+            it("should display 'undelete' option when non-purged items (deleted or not) are mixed", async () => {
+                const option = '[data-description="undelete option"]';
+                await wrapper.setProps({
+                    filterText: "deleted:any",
                     contentSelection: getNonPurgedContentSelection(),
                 });
                 expect(wrapper.find(option).exists()).toBe(true);
@@ -136,6 +158,17 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(option).exists()).toBe(true);
             });
 
+            it("should display 'undelete' option when is query selection mode and filtering by any deleted state", async () => {
+                const option = '[data-description="undelete option"]';
+                // In query selection mode we don't know if some items may not be purged, so we allow to undelete
+                await wrapper.setProps({
+                    filterText: "deleted:any",
+                    contentSelection: getPurgedContentSelection(),
+                    isQuerySelection: true,
+                });
+                expect(wrapper.find(option).exists()).toBe(true);
+            });
+
             it("should display collection building options only on visible and non-deleted items", async () => {
                 const buildListOption = '[data-description="build list"]';
                 const buildPairOption = '[data-description="build pair"]';
@@ -148,6 +181,14 @@ describe("History Selection Operations", () => {
                 expect(wrapper.find(buildPairOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
                 await wrapper.setProps({ filterText: "deleted:true" });
+                expect(wrapper.find(buildListOption).exists()).toBe(false);
+                expect(wrapper.find(buildPairOption).exists()).toBe(false);
+                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
+                await wrapper.setProps({ filterText: "visible:any" });
+                expect(wrapper.find(buildListOption).exists()).toBe(false);
+                expect(wrapper.find(buildPairOption).exists()).toBe(false);
+                expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
+                await wrapper.setProps({ filterText: "deleted:any" });
                 expect(wrapper.find(buildListOption).exists()).toBe(false);
                 expect(wrapper.find(buildPairOption).exists()).toBe(false);
                 expect(wrapper.find(buildListOfPairsOption).exists()).toBe(false);
