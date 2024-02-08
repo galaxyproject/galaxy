@@ -51,6 +51,7 @@ from . import (
     APIContentTypeRoute,
     as_form,
     BaseGalaxyAPIController,
+    depend_on_either_json_or_form_data,
     depends,
     DependsOnTrans,
     Router,
@@ -121,36 +122,13 @@ class FetchTools:
     @router.post(
         "/api/tools",
         summary="Execute tool with a given parameter payload",
-        route_class_override=JsonApiRoute,
     )
-    async def execute_json(
+    def execute(
         self,
-        payload: CreateToolBody,
+        payload: ExecuteToolPayload = depend_on_either_json_or_form_data(ExecuteToolPayload),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> ToolResponse:
         return self.service.execute(trans, payload)
-
-    @router.post(
-        "/api/tools",
-        summary="Execute tool with a given parameter payload",
-        route_class_override=FormDataApiRoute,
-    )
-    async def execute_form(
-        self,
-        request: Request,
-        payload: ExecuteToolPayload = Depends(CreateDataForm.as_form),
-        files: Optional[List[UploadFile]] = None,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> ToolResponse:
-        files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
-
-        # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
-        if not files2:
-            data = await request.form()
-            for value in data.values():
-                if isinstance(value, StarletteUploadFile):
-                    files2.append(value)
-        return self.service.execute(trans, payload, files2)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
