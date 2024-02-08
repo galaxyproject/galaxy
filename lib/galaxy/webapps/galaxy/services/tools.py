@@ -135,10 +135,10 @@ class ToolsService(ServiceBase):
             raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
         create_payload = payload.model_dump(exclude_unset=True)
 
-        # create temporary files from the uploaded files
+        # process files, when they come in as multipart file data
         files = {}
         for key in list(create_payload.keys()):
-            if key.startswith("files_") or key.startswith("__files_"):
+            if key.startswith("files_") and isinstance(create_payload[key], UploadFile):
                 files[key] = self.create_temp_file_execute(trans, create_payload.pop(key))
         create_payload.update(files)
         return self._create(trans, create_payload)
