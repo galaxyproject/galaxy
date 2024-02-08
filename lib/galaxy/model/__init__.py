@@ -11335,7 +11335,7 @@ mapper_registry.map_imperatively(
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
 
-Job.any_output_dataset_collection_instances_deleted = column_property(
+Job.any_output_dataset_collection_instances_deleted = column_property(  # type:ignore[assignment]
     exists(HistoryDatasetCollectionAssociation.id).where(
         and_(
             Job.id == JobToOutputDatasetCollectionAssociation.job_id,
@@ -11345,7 +11345,7 @@ Job.any_output_dataset_collection_instances_deleted = column_property(
     )
 )
 
-Job.any_output_dataset_deleted = column_property(
+Job.any_output_dataset_deleted = column_property(  # type:ignore[assignment]
     exists(HistoryDatasetAssociation.id).where(
         and_(
             Job.id == JobToOutputDatasetAssociation.job_id,
@@ -11355,44 +11355,44 @@ Job.any_output_dataset_deleted = column_property(
     )
 )
 
-History.average_rating = column_property(
+History.average_rating = column_property(  # type:ignore[assignment]
     select(func.avg(HistoryRatingAssociation.rating))
     .where(HistoryRatingAssociation.history_id == History.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-History.users_shared_with_count = column_property(
+History.users_shared_with_count = column_property(  # type:ignore[assignment]
     select(func.count(HistoryUserShareAssociation.id))
     .where(History.id == HistoryUserShareAssociation.history_id)
     .scalar_subquery(),
     deferred=True,
 )
 
-Page.average_rating = column_property(
+Page.average_rating = column_property(  # type:ignore[assignment]
     select(func.avg(PageRatingAssociation.rating)).where(PageRatingAssociation.page_id == Page.id).scalar_subquery(),
     deferred=True,
 )
 
-StoredWorkflow.average_rating = column_property(
+StoredWorkflow.average_rating = column_property(  # type:ignore[assignment]
     select(func.avg(StoredWorkflowRatingAssociation.rating))
     .where(StoredWorkflowRatingAssociation.stored_workflow_id == StoredWorkflow.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-Visualization.average_rating = column_property(
+Visualization.average_rating = column_property(  # type:ignore[assignment]
     select(func.avg(VisualizationRatingAssociation.rating))
     .where(VisualizationRatingAssociation.visualization_id == Visualization.id)
     .scalar_subquery(),
     deferred=True,
 )
 
-Workflow.step_count = column_property(
+Workflow.step_count = column_property(  # type:ignore[assignment]
     select(func.count(WorkflowStep.id)).where(Workflow.id == WorkflowStep.workflow_id).scalar_subquery(), deferred=True
 )
 
-WorkflowInvocationStep.subworkflow_invocation_id = column_property(
+WorkflowInvocationStep.subworkflow_invocation_id = column_property(  # type:ignore[assignment]
     select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
     .where(
         and_(
