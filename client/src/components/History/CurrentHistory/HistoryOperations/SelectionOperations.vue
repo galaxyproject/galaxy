@@ -25,7 +25,10 @@
                     data-description="undelete option">
                     <span v-localize>Undelete</span>
                 </b-dropdown-item>
-                <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
+                <b-dropdown-item
+                    v-if="!showStrictDeleted"
+                    v-b-modal:delete-selected-content
+                    data-description="delete option">
                     <span v-localize>Delete</span>
                 </b-dropdown-item>
                 <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
@@ -193,10 +196,14 @@ export default {
     computed: {
         /** @returns {Boolean} */
         showHidden() {
-            return HistoryFilters.checkFilter(this.filterText, "visible", false);
+            return !HistoryFilters.checkFilter(this.filterText, "visible", true);
         },
         /** @returns {Boolean} */
         showDeleted() {
+            return !HistoryFilters.checkFilter(this.filterText, "deleted", false);
+        },
+        /** @returns {Boolean} */
+        showStrictDeleted() {
             return HistoryFilters.checkFilter(this.filterText, "deleted", true);
         },
         /** @returns {Boolean} */
