@@ -802,7 +802,7 @@ class DatasetCollectionManager:
             raise RequestParameterInvalidException("History dataset collection association not found")
         # TODO: that sure looks like a bug, we can't check ownership using the history of the object we're checking ownership for ...
         history = getattr(trans, "history", collection_instance.history)
-        if check_ownership:
+        if check_ownership and collection_instance.history.published is False:
             self.history_manager.error_unless_owner(collection_instance.history, trans.user, current_history=history)
         if check_accessible:
             self.history_manager.error_unless_accessible(
