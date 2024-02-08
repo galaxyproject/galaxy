@@ -10,8 +10,8 @@ import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vu
 
 interface DatasetStorageProps {
     datasetId: string;
-    datasetType: "hda" | "ldda";
-    includeTitle: boolean;
+    datasetType?: "hda" | "ldda";
+    includeTitle?: boolean;
 }
 
 const props = withDefaults(defineProps<DatasetStorageProps>(), {
@@ -48,8 +48,8 @@ watch(
         const datasetId = props.datasetId;
         const datasetType = props.datasetType;
         try {
-            const { data } = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
-            storageInfo.value = data;
+            const response = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
+            storageInfo.value = response.data;
         } catch (error) {
             errorMessage.value = errorMessageAsString(error);
         }

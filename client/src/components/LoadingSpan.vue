@@ -6,6 +6,7 @@
 </template>
 <script>
 export default {
+    name: "LoadingSpan",
     props: {
         classes: {
             type: String,
