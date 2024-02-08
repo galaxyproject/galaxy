@@ -33,10 +33,10 @@ def __main__():
     with open(sys.argv[1]) as fh:
         params = json.load(fh)
 
-    out_data_name = params['output_data'][0]["out_data_name"]
+    out_data_name = params["output_data"][0]["out_data_name"]
 
-    URL = params['param_dict'].get("URL", None)  # using exactly URL indicates that only one dataset is being downloaded
-    URL_method = params['param_dict'].get("URL_method", "get")
+    URL = params["param_dict"].get("URL", None)  # using exactly URL indicates that only one dataset is being downloaded
+    URL_method = params["param_dict"].get("URL_method", "get")
 
     datatypes_registry = Registry()
     datatypes_registry.load_datatypes(
@@ -46,7 +46,7 @@ def __main__():
 
     for data_dict in params["output_data"]:
         cur_filename = data_dict["file_name"]
-        cur_URL = params['param_dict'].get("%s|%s|URL" % (GALAXY_PARAM_PREFIX, data_dict["out_data_name"]), URL)
+        cur_URL = params["param_dict"].get("%s|%s|URL" % (GALAXY_PARAM_PREFIX, data_dict["out_data_name"]), URL)
         if not cur_URL or urlparse(cur_URL).scheme not in ("http", "https", "ftp"):
             open(cur_filename, "w").write("")
             sys.exit("The remote data source application has not sent back a URL parameter in the request.")
