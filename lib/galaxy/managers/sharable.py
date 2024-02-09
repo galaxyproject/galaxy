@@ -18,7 +18,6 @@ from typing import (
     Optional,
     Set,
     Type,
-    TYPE_CHECKING,
 )
 
 from sqlalchemy import (
@@ -54,9 +53,6 @@ from galaxy.schema.schema import (
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
-
-if TYPE_CHECKING:
-    from sqlalchemy.orm import Query
 
 log = logging.getLogger(__name__)
 
@@ -101,9 +97,9 @@ class SharableModelManager(
         # ... effectively a good fit to have this here, but not semantically
         if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
-        return item.user == user
+        return item.user == user  # type:ignore[attr-defined]
 
-    def is_accessible(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_accessible(self, item, user: Optional[User], **kwargs: Any) -> bool:
         """
         If the item is importable, is owned by `user`, or (the valid) `user`
         is in 'users shared with' list for the item: return True.
@@ -183,7 +179,7 @@ class SharableModelManager(
         """
         # precondition: user has been validated
         # get or create
-        existing = self.get_share_assocs(item, user=user)
+        existing = self.get_share_assocs(item, user=user)  # type:ignore[dict-item]
         if existing:
             return existing.pop(0)
         return self._create_user_share_assoc(item, user, flush=flush)
