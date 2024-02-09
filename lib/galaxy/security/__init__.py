@@ -36,7 +36,7 @@ class RBACAgent:
         ),
         DATASET_ACCESS=Action(
             "access",
-            "Users having associated role can import this dataset into their history for analysis.",
+            "Users having all associated roles can import this dataset into their history for analysis.",
             "restrict",
         ),
         LIBRARY_ACCESS=Action(
