@@ -1,7 +1,10 @@
 import abc
-from dataclasses import dataclass, field
 import os
 import time
+from dataclasses import (
+    dataclass,
+    field,
+)
 from typing import (
     Any,
     ClassVar,
@@ -66,7 +69,7 @@ class FilesSourceOptions:
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: {})
+    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
