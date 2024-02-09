@@ -6373,8 +6373,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         dataset_permission_attributes = dataset_permission_attributes or ()
         return_entities = return_entities or ()
         dataset_collection = self
-        dc = alias(DatasetCollection)
-        dce = alias(DatasetCollectionElement)
+        dc = alias(DatasetCollection.__table__)
+        dce = alias(DatasetCollectionElement.__table__)
         depth_collection_type = dataset_collection.collection_type
         order_by_columns = [dce.c.element_index]
         nesting_level = 0
@@ -6395,8 +6395,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
         while ":" in depth_collection_type:
             nesting_level += 1
-            inner_dce = alias(DatasetCollectionElement)
-            inner_dc = alias(DatasetCollection)
+            inner_dce = alias(DatasetCollectionElement.__table__)
+            inner_dc = alias(DatasetCollection.__table__)
             order_by_columns.append(inner_dce.c.element_index)
             q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
             if collection_attributes:
