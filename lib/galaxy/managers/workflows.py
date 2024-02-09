@@ -222,7 +222,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             stmt = stmt.where(StoredWorkflow.importable == true())
                         elif q == "deleted":
                             stmt = stmt.where(StoredWorkflow.deleted == true())
-                            show_deleted = true
+                            show_deleted = True
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
