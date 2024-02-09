@@ -4555,6 +4555,23 @@ export interface components {
              */
             user_email?: string | null;
         };
+        /** EncodedJobParameterHistoryItem */
+        EncodedJobParameterHistoryItem: {
+            /** Hid */
+            hid?: number | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
+             */
+            src: components["schemas"]["DataItemSourceType"];
+        };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
@@ -7735,7 +7752,13 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value?: Record<string, never> | null;
+            value?:
+                | components["schemas"]["EncodedJobParameterHistoryItem"][]
+                | number
+                | number
+                | boolean
+                | string
+                | null;
         };
         /**
          * JobSourceType

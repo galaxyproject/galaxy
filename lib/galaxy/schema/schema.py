@@ -1965,6 +1965,11 @@ class EncodedDataItemSourceId(Model):
     )
 
 
+class EncodedJobParameterHistoryItem(EncodedDataItemSourceId):
+    hid: Optional[int] = None
+    name: str
+
+
 class DatasetJobInfo(DatasetSourceId):
     uuid: UuidField
 
