@@ -457,6 +457,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
+                    for dataset_association in dataset_instance.dataset.history_associations:
+                        if (
+                            dataset_association is not dataset_instance
+                            and dataset_association.extension == dataset_instance.extension
+                        ):
+                            dataset_association.metadata = dataset_instance.metadata
+                            dataset_association.blurb = dataset_instance.blurb
+                            dataset_association.peek = dataset_instance.peek
+                            dataset_association.info = dataset_instance.info
+                            dataset_association.tool_version = dataset_instance.tool_version
                 if job:
                     dataset_instance.dataset.job_id = job.id
 
@@ -2743,7 +2753,7 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
             out_file = out_file_name[: -len(".zip")]
         else:
             out_file = out_file_name
-        rval = shutil.make_archive(out_file, "zip", self.export_directory)
+        rval = shutil.make_archive(out_file, "fastzip", self.export_directory)
         if not self.file_source_uri:
             shutil.move(rval, self.out_file)
         else:

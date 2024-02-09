@@ -548,6 +548,9 @@ def send_file(start_response, trans, body):
         trans.response.headers["accept-ranges"] = "bytes"
         start = None
         end = None
+        if trans.request.method == "HEAD":
+            trans.response.headers["content-length"] = os.path.getsize(body.name)
+            body = b""
         if trans.request.range:
             start = int(trans.request.range.start)
             file_size = int(trans.response.headers["content-length"])
@@ -555,7 +558,8 @@ def send_file(start_response, trans, body):
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206
-        body = iterate_file(body, start, end)
+        if body:
+            body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 

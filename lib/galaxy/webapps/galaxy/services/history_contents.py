@@ -498,7 +498,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
         archive = hdcas.stream_dataset_collection(
-            dataset_collection_instance=dataset_collection_instance, upstream_mod_zip=trans.app.config.upstream_mod_zip
+            dataset_collection_instance=dataset_collection_instance,
+            upstream_mod_zip=trans.app.config.upstream_mod_zip,
+            upstream_gzip=trans.app.config.upstream_gzip,
         )
         return archive
 

@@ -28,6 +28,7 @@ from galaxy.managers.users import get_user_by_username
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
+from galaxy.util.tool_shed import encoding_util
 from galaxy.web.form_builder import (
     CheckboxField,
     SelectField,
@@ -44,7 +45,6 @@ from tool_shed.tools import (
 from tool_shed.util import (
     basic_util,
     common_util,
-    encoding_util,
     hg_util,
     metadata_util,
     readme_util,

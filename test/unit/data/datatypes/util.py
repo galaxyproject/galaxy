@@ -13,7 +13,7 @@ class MockDatasetDataset:
         self.purged = False
         self.file_name_ = file_name
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return self.file_name_
 
     def set_file_name(self, file_name):
@@ -23,7 +23,7 @@ class MockDatasetDataset:
 class MockMetadata:
     file_name_: Optional[str] = None
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return self.file_name_
 
     def set_file_name(self, file_name):
@@ -37,7 +37,7 @@ class MockDataset:
         self.dataset = None
         self.file_name_: Optional[str] = None
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return self.file_name_
 
     def set_file_name(self, file_name):

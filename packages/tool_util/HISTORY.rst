@@ -10,6 +10,42 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Separate collection and non-collection data element by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17236 <https://github.com/galaxyproject/galaxy/pull/17236>`_
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Change log level for duplicate data table entries to warning by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16988 <https://github.com/galaxyproject/galaxy/pull/16988>`_
+* Upgrade minimum conda to be compatible with latest conda-build by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17013 <https://github.com/galaxyproject/galaxy/pull/17013>`_
+* Fix duplicated tools in tool panel view section copying by `@jmchilton <https://github.com/jmchilton>`_ in `#17036 <https://github.com/galaxyproject/galaxy/pull/17036>`_
+
+============
+Enhancements
+============
+
+* Adds `biii` as supported xref reference type by `@kostrykin <https://github.com/kostrykin>`_ in `#16952 <https://github.com/galaxyproject/galaxy/pull/16952>`_
+
+-------------------
 23.1.1 (2023-10-23)
 -------------------
 
@@ -87,7 +123,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
 * Allow duplicate labels in linter if outputs contain filters  by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15933 <https://github.com/galaxyproject/galaxy/pull/15933>`_
 * Fix parsing tool metadata from bio.tools by `@kysrpex <https://github.com/kysrpex>`_ in `#16449 <https://github.com/galaxyproject/galaxy/pull/16449>`_
 * Linter: fix regex for profile version by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16480 <https://github.com/galaxyproject/galaxy/pull/16480>`_
@@ -108,8 +143,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
 * xsd: add missing `sep` attribute for `has_n_columns` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16262 <https://github.com/galaxyproject/galaxy/pull/16262>`_
 * Missing init prevents models.py being bundled into tool_util by `@nuwang <https://github.com/nuwang>`_ in `#16308 <https://github.com/galaxyproject/galaxy/pull/16308>`_
 
@@ -128,10 +161,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
 * Don't fail CWL tool parsing when Cheetah not installed by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16219 <https://github.com/galaxyproject/galaxy/pull/16219>`_
 * Allow skipping ``expect_num_outputs`` when ``expect_failure`` is set in tool test by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16237 <https://github.com/galaxyproject/galaxy/pull/16237>`_
 
@@ -144,11 +173,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
-* 
 * Fix assertion linting to not fail on byte suffixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15873 <https://github.com/galaxyproject/galaxy/pull/15873>`_
 * Fix ``get_test_from_anaconda()`` and ``base_image_for_targets()`` functions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16125 <https://github.com/galaxyproject/galaxy/pull/16125>`_
 * Fix test search for mulled container hashes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16170 <https://github.com/galaxyproject/galaxy/pull/16170>`_
@@ -157,10 +181,6 @@ Bug fixes
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
 * Allow setting auto_decompress property in staging interface by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16014 <https://github.com/galaxyproject/galaxy/pull/16014>`_
 
 -------------------

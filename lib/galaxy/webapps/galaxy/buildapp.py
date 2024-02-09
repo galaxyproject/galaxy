@@ -308,12 +308,6 @@ def postfork_setup():
 def populate_api_routes(webapp, app):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
-    _add_item_tags_controller(
-        webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
-    )
-
-    _add_item_tags_controller(webapp, name_prefix="history_", path_prefix="/api/histories/{history_id}")
-    _add_item_tags_controller(webapp, name_prefix="workflow_", path_prefix="/api/workflows/{workflow_id}")
     _add_item_annotation_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
@@ -340,7 +334,6 @@ def populate_api_routes(webapp, app):
         controller="page_revisions",
         parent_resources=dict(member_name="page", collection_name="pages"),
     )
-    webapp.mapper.resource("group", "groups", path_prefix="/api")
 
     webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
     webapp.mapper.connect(
@@ -367,8 +360,10 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
-    webapp.mapper.connect("/api/tool_panels", action="panel_views", controller="tools")
-    webapp.mapper.connect("/api/tool_panels/{view}", action="panel_view", controller="tools")
+    webapp.mapper.connect("/api/tool_panels", action="panel_views", controller="tools", conditions=dict(method=["GET"]))
+    webapp.mapper.connect(
+        "/api/tool_panels/{view}", action="panel_view", controller="tools", conditions=dict(method=["GET"])
+    )
 
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
@@ -920,70 +915,11 @@ def populate_api_routes(webapp, app):
         webapp, name_prefix="library_dataset_", path_prefix="/api/libraries/{library_id}/contents/{library_content_id}"
     )
 
-    webapp.mapper.resource("job", "jobs", path_prefix="/api")
-    webapp.mapper.connect(
-        "job_search", "/api/jobs/search", controller="jobs", action="search", conditions=dict(method=["POST"])
-    )
-    webapp.mapper.connect(
-        "job_inputs", "/api/jobs/{id}/inputs", controller="jobs", action="inputs", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
-        "job_outputs", "/api/jobs/{id}/outputs", controller="jobs", action="outputs", conditions=dict(method=["GET"])
-    )
     webapp.mapper.connect(
         "build_for_rerun",
         "/api/jobs/{id}/build_for_rerun",
         controller="jobs",
         action="build_for_rerun",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "resume", "/api/jobs/{id}/resume", controller="jobs", action="resume", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.connect(
-        "job_error", "/api/jobs/{id}/error", controller="jobs", action="error", conditions=dict(method=["POST"])
-    )
-    webapp.mapper.connect(
-        "common_problems",
-        "/api/jobs/{id}/common_problems",
-        controller="jobs",
-        action="common_problems",
-        conditions=dict(method=["GET"]),
-    )
-    # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
-    webapp.mapper.connect(
-        "destination_params",
-        "/api/jobs/{job_id}/destination_params",
-        controller="jobs",
-        action="destination_params",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "metrics",
-        "/api/jobs/{job_id}/metrics",
-        controller="jobs",
-        action="metrics",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "dataset_metrics",
-        "/api/datasets/{dataset_id}/metrics",
-        controller="jobs",
-        action="metrics",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "parameters_display",
-        "/api/jobs/{job_id}/parameters_display",
-        controller="jobs",
-        action="parameters_display",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "dataset_parameters_display",
-        "/api/datasets/{dataset_id}/parameters_display",
-        controller="jobs",
-        action="parameters_display",
         conditions=dict(method=["GET"]),
     )
 
@@ -995,6 +931,14 @@ def populate_api_routes(webapp, app):
         name_prefix="job_",
         path_prefix="/api/jobs/{job_id}",
         parent_resources=dict(member_name="job", collection_name="jobs"),
+    )
+
+    webapp.mapper.connect(
+        "index",
+        "/api/jobs/{job_id}/files",
+        controller="job_files",
+        action="index",
+        conditions=dict(method=["HEAD"]),
     )
 
     webapp.mapper.resource(
@@ -1104,48 +1048,6 @@ def populate_api_routes(webapp, app):
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
-
-
-def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
-    # Not just using map.resources because actions should be based on name not id
-    controller = f"{name_prefix}tags"
-    name = f"{name_prefix}tag"
-    path = f"{path_prefix}/tags"
-    map = webapp.mapper
-    # Allow view items' tags.
-    map.connect(name, path, controller=controller, action="index", conditions=dict(method=["GET"]))
-    # Allow remove tag from item
-    map.connect(
-        f"{name}_delete",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="delete",
-        conditions=dict(method=["DELETE"]),
-    )
-    # Allow create a new tag with from name
-    map.connect(
-        f"{name}_create",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-    # Allow update tag value
-    map.connect(
-        f"{name}_update",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="update",
-        conditions=dict(method=["PUT"]),
-    )
-    # Allow show tag by name
-    map.connect(
-        f"{name}_show",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="show",
-        conditions=dict(method=["GET"]),
-    )
 
 
 def _add_item_extended_metadata_controller(webapp, name_prefix, path_prefix, **kwd):

@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -6,9 +7,12 @@ import MountTarget from "./FormSelection.vue";
 const localVue = getLocalVue(true);
 
 function createTarget(propsData) {
+    const pinia = createTestingPinia();
+
     return mount(MountTarget, {
         localVue,
         propsData,
+        pinia,
     });
 }
 

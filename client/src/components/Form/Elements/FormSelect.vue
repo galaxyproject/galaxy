@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, onMounted, watch } from "vue";
+import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";
@@ -14,29 +14,61 @@ interface SelectOption {
     value: SelectValue;
 }
 
-const props = withDefaults(
-    defineProps<{
-        id?: string;
-        disabled?: boolean;
-        multiple?: boolean;
-        optional?: boolean;
-        options: Array<SelectOption>;
-        placeholder?: string;
-        value?: Array<SelectValue> | Record<string, unknown> | string | number;
-    }>(),
-    {
-        id: `form-select-${uid()}`,
-        disabled: false,
-        multiple: false,
-        optional: false,
-        placeholder: "Select value",
-        value: null,
-    }
-);
+const props = defineProps({
+    id: { type: String, default: `form-select-${uid()}` },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
+    multiple: {
+        type: Boolean,
+        default: false,
+    },
+    optional: {
+        type: Boolean,
+        default: false,
+    },
+    options: {
+        type: Array as PropType<Array<SelectOption>>,
+        required: true,
+    },
+    placeholder: {
+        type: String,
+        default: "Select Value",
+    },
+    value: {
+        type: String as PropType<SelectValue | SelectValue[]>,
+        default: null,
+    },
+});
 
 const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
+
+/**
+ * When there are more options than this, push selected options to the end
+ */
+const optionReorderThreshold = 8;
+
+const reorderedOptions = computed(() => {
+    if (props.options.length <= optionReorderThreshold) {
+        return props.options;
+    } else {
+        const selectedOptions: SelectOption[] = [];
+        const unselectedOptions: SelectOption[] = [];
+
+        props.options.forEach((option) => {
+            if (selectedValues.value.includes(option.value)) {
+                selectedOptions.push(option);
+            } else {
+                unselectedOptions.push(option);
+            }
+        });
+
+        return [...unselectedOptions, ...selectedOptions];
+    }
+});
 
 /**
  * Configure deselect label
@@ -133,7 +165,7 @@ onMounted(() => {
         :deselect-label="deselectLabel"
         label="label"
         :multiple="multiple"
-        :options="props.options"
+        :options="reorderedOptions"
         :placeholder="placeholder"
         :selected-label="selectedLabel"
         select-label="Click to select"

@@ -9,9 +9,10 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "components/Upload/utils";
+import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { eventHub } from "@/components/plugins/eventHub.js";
+import { useUploadStore } from "@/stores/uploadStore";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
 import CompositeBox from "./CompositeBox";
@@ -79,6 +80,8 @@ const listExtensions = ref([]);
 const listDbKeys = ref([]);
 const regular = ref(null);
 
+const { percentage, status } = storeToRefs(useUploadStore());
+
 const effectiveExtensions = computed(() => {
     if (props.formats === null || !datatypesMapperReady.value) {
         return listExtensions.value;
@@ -109,7 +112,7 @@ const showRegular = computed(() => !props.formats || hasRegularExtension);
 const showRules = computed(() => !props.formats || props.multiple);
 
 function immediateUpload(files) {
-    regular.value?.addFiles(files);
+    regular.value?.addFiles(files, true);
 }
 
 function toData(items, history_id, composite = false) {
@@ -133,12 +136,12 @@ async function loadMappers() {
     datatypesMapperReady.value = true;
 }
 
-function progress(percentage, status = null) {
-    if (percentage !== null) {
-        eventHub.$emit(`upload:percentage`, percentage);
+function progress(newPercentage, newStatus = null) {
+    if (newPercentage !== null) {
+        percentage.value = newPercentage;
     }
-    if (status !== null) {
-        eventHub.$emit(`upload:status`, status);
+    if (newStatus !== null) {
+        status.value = newStatus;
     }
 }
 

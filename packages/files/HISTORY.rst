@@ -10,6 +10,34 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Separate collection and non-collection data element by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17236 <https://github.com/galaxyproject/galaxy/pull/17236>`_
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Implement missing upload for S3 file sources by `@davelopez <https://github.com/davelopez>`_ in `#17100 <https://github.com/galaxyproject/galaxy/pull/17100>`_
+
+-------------------
 23.1.1 (2023-10-23)
 -------------------
 

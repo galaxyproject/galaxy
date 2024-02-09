@@ -143,3 +143,13 @@ export default {
     getUploadDatatypes,
     getUploadDbKeys,
 };
+
+export function setIframeEvents(elements, disableEvents) {
+    let element;
+    elements.forEach((e) => {
+        element = document.querySelector(`iframe#${e}`);
+        if (element) {
+            element.style.pointerEvents = disableEvents ? "none" : "auto";
+        }
+    });
+}

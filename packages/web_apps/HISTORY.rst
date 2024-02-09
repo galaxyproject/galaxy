@@ -10,6 +10,46 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Properly clear session on OIDC logout by `@guerler <https://github.com/guerler>`_ in `#17120 <https://github.com/galaxyproject/galaxy/pull/17120>`_
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add missing optional description field, fixes ephemeris data library example by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17116 <https://github.com/galaxyproject/galaxy/pull/17116>`_
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Provide error message instead of internal server error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16905 <https://github.com/galaxyproject/galaxy/pull/16905>`_
+* Fix input dates in notifications: consider timezone offset by `@davelopez <https://github.com/davelopez>`_ in `#17088 <https://github.com/galaxyproject/galaxy/pull/17088>`_
+
+============
+Enhancements
+============
+
+* Add HEAD route to job_files endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17072 <https://github.com/galaxyproject/galaxy/pull/17072>`_
+
+-------------------
 23.1.1 (2023-10-23)
 -------------------
 
@@ -107,7 +147,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
 * Fix active step display in workflow editor side panel by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16364 <https://github.com/galaxyproject/galaxy/pull/16364>`_
 
 -------------------
@@ -119,8 +158,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
 * Fix folder access for anonymous user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16330 <https://github.com/galaxyproject/galaxy/pull/16330>`_
 
 -------------------
@@ -132,9 +169,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
 
 ============
@@ -158,10 +192,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_
 * Fix dataype_change not updating HDCA update_time by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16099 <https://github.com/galaxyproject/galaxy/pull/16099>`_

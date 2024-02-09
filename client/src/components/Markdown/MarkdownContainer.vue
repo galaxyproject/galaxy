@@ -83,7 +83,10 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
                 <pre><code>{{ time }}</code></pre>
             </div>
             <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
-                <WorkflowImage :workflow-id="args.workflow_id" :size="args.size || 'lg'" />
+                <WorkflowImage
+                    :workflow-id="args.workflow_id"
+                    :size="args.size || 'lg'"
+                    :workflow-version="args.workflow_checkpoint || undefined" />
             </div>
             <div v-else-if="name == 'workflow_license'" class="workflow-license">
                 <WorkflowLicense :license-id="workflows[args.workflow_id]['license']" />
@@ -131,6 +134,7 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             <WorkflowDisplay
                 v-else-if="name == 'workflow_display'"
                 :workflow-id="args.workflow_id"
+                :workflow-version="args.workflow_checkpoint"
                 :workflows="workflows" />
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay

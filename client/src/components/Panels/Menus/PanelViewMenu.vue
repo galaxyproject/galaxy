@@ -1,15 +1,28 @@
 <template>
+    <b-button
+        v-if="showAdvanced"
+        variant="link"
+        class="w-100"
+        size="sm"
+        @click="$emit('update:show-advanced', !showAdvanced)">
+        <slot name="panel-view-selector"></slot><span class="sr-only">Close advanced tool search menu</span>
+    </b-button>
     <b-dropdown
+        v-else
         v-b-tooltip.hover.top.noninteractive
         right
-        title="Show panel options"
+        block
+        no-caret
+        :disabled="storeLoading"
+        :title="!storeLoading ? 'Show panel options' : 'Loading panel view'"
         variant="link"
+        toggle-class="text-decoration-none"
         role="menu"
         aria-label="View all tool panel configurations"
-        class="tool-panel-dropdown"
+        class="tool-panel-dropdown w-100"
         size="sm">
         <template v-slot:button-content>
-            <span class="sr-only">View all tool panel configurations</span>
+            <slot name="panel-view-selector"></slot><span class="sr-only">View all tool panel configurations</span>
         </template>
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
@@ -55,6 +68,14 @@ export default {
         currentPanelView: {
             type: String,
         },
+        showAdvanced: {
+            type: Boolean,
+            default: false,
+        },
+        storeLoading: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         defaultPanelView() {
@@ -96,3 +117,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+.tool-panel-dropdown .dropdown-menu {
+    overflow: auto;
+    max-height: 50vh;
+    min-width: 100%;
+}
+</style>

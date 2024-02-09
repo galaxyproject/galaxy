@@ -451,8 +451,6 @@ steps:
     def _index(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
-        print(params)
-        print(index_response.json())
         return index_response.json()
 
     def _index_ids(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:

@@ -7,11 +7,13 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
@@ -82,6 +84,7 @@ function onSetError(e) {
 }
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
@@ -99,6 +102,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
+
+const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
 </script>
 
 <template>
@@ -179,6 +184,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :name="props.options.name"
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
+
+            <ToolHelpForum v-if="showHelpForum" :tool-id="props.id" :tool-name="props.title" />
 
             <ToolFooter
                 :id="props.id"

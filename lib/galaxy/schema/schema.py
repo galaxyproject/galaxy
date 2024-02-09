@@ -257,8 +257,6 @@ FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 
 
 class Model(BaseModel):
-    """Base model definition with common configuration used by all derived models."""
-
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
@@ -473,6 +471,14 @@ class DCEType(str, Enum):  # TODO: suspiciously similar to HistoryContentType
 class DatasetSourceType(str, Enum):
     hda = "hda"
     ldda = "ldda"
+
+
+class DataItemSourceType(str, Enum):
+    hda = "hda"
+    ldda = "ldda"
+    hdca = "hdca"
+    dce = "dce"
+    dc = "dc"
 
 
 class ColletionSourceType(str, Enum):
@@ -1821,17 +1827,17 @@ class JobIdResponse(Model):
 
 
 class JobBaseModel(Model):
-    id: DecodedDatabaseIdField = EntityIdField
+    id: EncodedDatabaseIdField = EntityIdField
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="History ID",
+        description="The encoded ID of the history associated with this item.",
+    )
     model_class: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
     tool_id: str = Field(
         ...,
         title="Tool ID",
         description="Identifier of the tool that generated this job.",
-    )
-    history_id: Optional[DecodedDatabaseIdField] = Field(
-        None,
-        title="History ID",
-        description="The encoded ID of the history associated with this item.",
     )
     state: JobState = Field(
         ...,
@@ -1923,6 +1929,15 @@ class DatasetSourceId(DatasetSourceIdBase):
 
 class EncodedDatasetSourceId(DatasetSourceIdBase):
     id: EncodedDatabaseIdField = EntityIdField
+
+
+class EncodedDataItemSourceId(Model):
+    id: EncodedDatabaseIdField = EntityIdField
+    src: DataItemSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.",
+    )
 
 
 class DatasetJobInfo(DatasetSourceId):

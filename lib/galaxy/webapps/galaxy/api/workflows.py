@@ -475,6 +475,8 @@ class WorkflowsAPIController(
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
                 sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                if not sanitized_name:
+                    raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
@@ -907,7 +909,9 @@ class WorkflowsAPIController(
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
+        workflow_invocation = self.workflow_manager.request_invocation_cancellation(
+            trans, decoded_workflow_invocation_id
+        )
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api

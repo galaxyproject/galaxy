@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { useEventBus } from "@vueuse/core";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { eventHub } from "@/components/plugins/eventHub.js";
 import { useConfig } from "@/composables/config";
 import { type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
@@ -14,6 +14,8 @@ const emit = defineEmits<{
     (e: "onClick", tool: any, evt: Event): void;
     (e: "onOperation", tool: any, evt: Event): void;
 }>();
+
+const eventBus = useEventBus<string>("open-tool-section");
 
 const props = defineProps({
     category: {
@@ -132,11 +134,11 @@ watch(
 );
 
 onMounted(() => {
-    eventHub.$on("openToolSection", openToolSection);
+    eventBus.on(openToolSection);
 });
 
 onUnmounted(() => {
-    eventHub.$off("openToolSection", openToolSection);
+    eventBus.off(openToolSection);
 });
 
 function openToolSection(sectionId: string) {

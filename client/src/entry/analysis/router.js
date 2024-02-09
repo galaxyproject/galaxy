@@ -7,8 +7,10 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import visualizationsGrid from "components/Grid/configs/visualizations";
+import visualizationsPublishedGrid from "components/Grid/configs/visualizationsPublished";
 import GridHistory from "components/Grid/GridHistory";
-import GridShared from "components/Grid/GridShared";
+import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
@@ -68,6 +70,7 @@ import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
+import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -367,6 +370,12 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
+                        path: "storage/history/:historyId",
+                        name: "HistoryOverviewInAnalysis",
+                        component: HistoryStorageOverview,
+                        props: true,
+                    },
+                    {
                         path: "tours",
                         component: TourList,
                     },
@@ -454,13 +463,18 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "visualizations/:actionId",
-                        component: GridShared,
-                        props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "visualization",
-                            plural: "Visualizations",
-                        }),
+                        path: "visualizations/list",
+                        component: GridList,
+                        props: {
+                            config: visualizationsGrid,
+                        },
+                    },
+                    {
+                        path: "visualizations/list_published",
+                        component: GridList,
+                        props: {
+                            config: visualizationsPublishedGrid,
+                        },
                     },
                     {
                         path: "welcome/new",

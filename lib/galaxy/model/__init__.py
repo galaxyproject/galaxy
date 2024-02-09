@@ -19,6 +19,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from datetime import timedelta
 from enum import Enum
+from secrets import token_hex
 from string import Template
 from typing import (
     Any,
@@ -135,6 +136,7 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStore
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetState,
@@ -148,6 +150,7 @@ from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
     directory_hash_id,
     enum_values,
+    hex_to_lowercase_alphanum,
     listify,
     ready_name_for_url,
     unicodify,
@@ -1366,7 +1369,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     states = JobState
 
+    # states that are not expected to change, except through admin action or re-scheduling
     terminal_states = [states.OK, states.ERROR, states.DELETED]
+    # deleting state should not turn back into any of the non-ready states
+    finished_states = terminal_states + [states.DELETING]
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
@@ -1391,13 +1397,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     @property
     def finished(self):
-        states = self.states
-        return self.state in [
-            states.OK,
-            states.ERROR,
-            states.DELETING,
-            states.DELETED,
-        ]
+        return self.state in self.finished_states
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
@@ -1634,12 +1634,32 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             all_configured = ep.configured and all_configured
         return all_configured
 
-    def set_state(self, state):
+    def set_state(self, state: JobState) -> bool:
         """
-        Save state history
+        Save state history. Returns True if state has changed, else False.
         """
-        self.state = state
-        self.state_history.append(JobStateHistory(self))
+        if self.state == state:
+            # Nothing changed, no action needed
+            return False
+        session = object_session(self)
+        if session and self.id and state not in Job.finished_states:
+            # generate statement that will not revert DELETING or DELETED back to anything non-terminal
+            rval = session.execute(
+                update(Job.table)
+                .where(Job.id == self.id, ~Job.state.in_((Job.states.DELETING, Job.states.DELETED)))
+                .values(state=state)
+            )
+            if rval.rowcount == 1:
+                # Need to expire state since we just updated it, but ORM doesn't know about it.
+                session.expire(self, ["state"])
+                self.state_history.append(JobStateHistory(self))
+                return True
+            else:
+                return False
+        else:
+            self.state = state
+            self.state_history.append(JobStateHistory(self))
+            return True
 
     def get_param_values(self, app, ignore_errors=False):
         """
@@ -2516,8 +2536,8 @@ class FakeDatasetAssociation:
         self.dataset = dataset
         self.metadata = dict()
 
-    def get_file_name(self):
-        return self.dataset.get_file_name()
+    def get_file_name(self, sync_cache=True):
+        return self.dataset.get_file_name(sync_cache)
 
     def __eq__(self, other):
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
@@ -2666,17 +2686,21 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     protocol = Column(TEXT)
     entry_url = Column(TEXT)
     requires_domain = Column(Boolean, default=True)
+    requires_path_in_url = Column(Boolean, default=False)
+    requires_path_in_header_named = Column(TEXT)
     info = Column(MutableJSONType, nullable=True)
     configured = Column(Boolean, default=False)
     deleted = Column(Boolean, default=False)
     created_time = Column(DateTime, default=now)
     modified_time = Column(DateTime, default=now, onupdate=now)
+    label = Column(TEXT)
     job = relationship("Job", back_populates="interactivetool_entry_points", uselist=False)
 
     dict_collection_visible_keys = [
         "id",
         "job_id",
         "name",
+        "label",
         "active",
         "created_time",
         "modified_time",
@@ -2686,21 +2710,27 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         "id",
         "job_id",
         "name",
+        "label",
         "active",
         "created_time",
         "modified_time",
         "output_datasets_ids",
     ]
 
-    def __init__(self, requires_domain=True, configured=False, deleted=False, short_token=False, **kwd):
+    def __init__(
+        self,
+        requires_domain=True,
+        requires_path_in_url=False,
+        configured=False,
+        deleted=False,
+        **kwd,
+    ):
         super().__init__(**kwd)
         self.requires_domain = requires_domain
+        self.requires_path_in_url = requires_path_in_url
         self.configured = configured
         self.deleted = deleted
-        if short_token:
-            self.token = (self.token or uuid4().hex)[:10]
-        else:
-            self.token = self.token or uuid4().hex
+        self.token = self.token or hex_to_lowercase_alphanum(token_hex(8))
         self.info = self.info or {}
 
     @property
@@ -2709,6 +2739,10 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
             # FIXME: don't included queued?
             return not self.job.finished
         return False
+
+    @property
+    def class_id(self):
+        return "ep"
 
     @property
     def output_datasets_ids(self):
@@ -3926,14 +3960,14 @@ class Dataset(Base, StorableObject, Serializable):
         if not self.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
         if not self.external_filename:
             object_store = self._assert_object_store_set()
             if object_store.exists(self):
-                file_name = object_store.get_filename(self)
+                file_name = object_store.get_filename(self, sync_cache=sync_cache)
             else:
                 file_name = ""
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
@@ -4387,10 +4421,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     state = property(get_dataset_state, set_dataset_state)
 
-    def get_file_name(self) -> str:
+    def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
             return ""
-        return self.dataset.get_file_name()
+        return self.dataset.get_file_name(sync_cache=sync_cache)
 
     def set_file_name(self, filename: str):
         return self.dataset.set_file_name(filename)
@@ -4908,6 +4942,20 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
+
+    def __strict_check_before_flush__(self):
+        if self.extension != "len":
+            # TODO: Custom builds (with .len extension) do not get a history or a HID.
+            # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
+            # Everything else needs to have a hid and a history
+            if not self.history and not getattr(self, "history_id", None):
+                raise Exception(f"HistoryDatasetAssociation {self} without history detected, this is not valid")
+            elif not self.hid:
+                raise Exception(f"HistoryDatasetAssociation {self} without hid, this is not valid")
+            elif self.dataset.file_size is None and self.dataset.state not in self.dataset.no_data_states:
+                raise Exception(
+                    f"HistoryDatasetAssociation {self} in state {self.dataset.state} with null file size, this is not valid"
+                )
 
     @property
     def user(self):
@@ -6987,6 +7035,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
 
+    def __strict_check_before_flush__(self):
+        assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
+
     @property
     def element_type(self):
         if self.hda:
@@ -7324,6 +7375,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
             raise Exception("Version does not exist")
         return list(reversed(self.workflows))[version]
 
+    def version_of(self, workflow):
+        for version, workflow_instance in enumerate(reversed(self.workflows)):
+            if workflow_instance.id == workflow.id:
+                return version
+        raise KeyError("Failed to find a version of target workflow instance in stored workflow.")
+
     def show_in_tool_panel(self, user_id):
         sa_session = object_session(self)
         stmt = (
@@ -7517,6 +7574,10 @@ class Workflow(Base, Dictifiable, RepresentById):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
         return copied_workflow
+
+    @property
+    def version(self):
+        return self.stored_workflow.version_of(self)
 
     def log_str(self):
         extra = ""
@@ -8153,6 +8214,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         READY = "ready"  # Workflow ready for another iteration of scheduling.
         SCHEDULED = "scheduled"  # Workflow has been scheduled.
         CANCELLED = "cancelled"
+        CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration
         FAILED = "failed"
 
     non_terminal_states = [states.NEW, states.READY]
@@ -8197,12 +8259,72 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         states = WorkflowInvocation.states
         return self.state in [states.NEW, states.READY]
 
-    def cancel(self):
-        if not self.active:
-            return False
+    def set_state(self, state: "WorkflowInvocation.states"):
+        session = object_session(self)
+        priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
+        if session and self.id and state not in priority_states:
+            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            session.execute(
+                update(WorkflowInvocation.table)
+                .where(
+                    WorkflowInvocation.id == self.id,
+                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                )
+                .values(state=state)
+            )
         else:
-            self.state = WorkflowInvocation.states.CANCELLED
+            # Not bound to a session, or setting cancelling/cancelled
+            self.state = state
+
+    def cancel(self):
+        if self.state not in [WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED]:
+            # No use cancelling workflow again, for all others we may still want to be able to cancel
+            # remaining tool and workflow steps
+            self.state = WorkflowInvocation.states.CANCELLING
             return True
+        return False
+
+    def cancel_invocation_steps(self):
+        sa_session = object_session(self)
+        assert sa_session
+        job_subq = (
+            select(Job.id)
+            .join(WorkflowInvocationStep)
+            .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
+            .filter(~Job.state.in_(Job.finished_states))
+            .with_for_update()
+        )
+        sa_session.execute(update(Job.table).where(Job.id.in_(job_subq)).values({"state": Job.states.DELETING}))
+
+        job_collection_subq = (
+            select(Job.id)
+            .join(ImplicitCollectionJobsJobAssociation)
+            .join(ImplicitCollectionJobs)
+            .join(
+                WorkflowInvocationStep, WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id
+            )
+            .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
+            .filter(~Job.state.in_(Job.finished_states))
+            .with_for_update()
+            .subquery()
+        )
+
+        sa_session.execute(
+            update(Job.table)
+            .where(Job.table.c.id.in_(job_collection_subq.element))
+            .values({"state": Job.states.DELETING})
+        )
+
+        for invocation in self.subworkflow_invocations:
+            subworkflow_invocation = invocation.subworkflow_invocation
+            cancelled = subworkflow_invocation.cancel()
+            if cancelled:
+                subworkflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
+            sa_session.add(subworkflow_invocation)
+        sa_session.commit()
+
+    def mark_cancelled(self):
+        self.state = WorkflowInvocation.states.CANCELLED
 
     def fail(self):
         self.state = WorkflowInvocation.states.FAILED
@@ -8252,6 +8374,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
+                WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
         ]
         if scheduler is not None:
@@ -9168,7 +9291,7 @@ class MetadataFile(Base, StorableObject, Serializable):
             alt_name=os.path.basename(self.get_file_name()),
         )
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
@@ -9183,7 +9306,7 @@ class MetadataFile(Base, StorableObject, Serializable):
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(
-                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name
+                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=sync_cache
             )
             return path
         except AttributeError:
@@ -9784,7 +9907,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, HasTags, RepresentById):
+class Visualization(Base, HasTags, Dictifiable, RepresentById):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
@@ -9843,10 +9966,31 @@ class Visualization(Base, HasTags, RepresentById):
     # returns a list of users that visualization is shared with.
     users_shared_with_dot_users = association_proxy("users_shared_with", "user")
 
+    dict_element_visible_keys = [
+        "id",
+        "annotation",
+        "create_time",
+        "db_key",
+        "deleted",
+        "importable",
+        "published",
+        "tags",
+        "title",
+        "type",
+        "update_time",
+        "username",
+    ]
+
     def __init__(self, **kwd):
         super().__init__(**kwd)
         if self.latest_revision:
             self.revisions.append(self.latest_revision)
+
+    @property
+    def annotation(self):
+        if len(self.annotations) == 1:
+            return self.annotations[0].annotation
+        return None
 
     def copy(self, user=None, title=None):
         """
@@ -9868,6 +10012,15 @@ class Visualization(Base, HasTags, RepresentById):
         copy_revision = self.latest_revision.copy(visualization=copy_viz)
         copy_viz.latest_revision = copy_revision
         return copy_viz
+
+    def to_dict(self, view="element"):
+        rval = super().to_dict(view=view)
+        return rval
+
+    # username needed for slug generation
+    @property
+    def username(self):
+        return self.user.username
 
 
 class VisualizationRevision(Base, RepresentById):
@@ -10851,7 +11004,9 @@ User.preferences = association_proxy("_preferences", "value", creator=UserPrefer
 # See https://github.com/sqlalchemy/sqlalchemy/discussions/7638 for approach
 session_partition = select(
     GalaxySession,
-    func.row_number().over(order_by=GalaxySession.update_time, partition_by=GalaxySession.user_id).label("index"),
+    func.row_number()
+    .over(order_by=GalaxySession.update_time.desc(), partition_by=GalaxySession.user_id)
+    .label("index"),
 ).alias()
 partitioned_session = aliased(GalaxySession, session_partition)
 User.current_galaxy_session = relationship(

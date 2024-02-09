@@ -37,6 +37,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                 loadingNotifications.value = true;
                 await broadcastsStore.loadBroadcasts();
                 await loadNotifications();
+                updateUnreadCount();
             } else {
                 const data = await loadNotificationsStatus(lastNotificationUpdate.value);
                 totalUnreadCount.value = data.total_unread_count;
@@ -76,6 +77,10 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
     async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
         return updateBatchNotification({ notification_ids: [notification.id], changes });
+    }
+
+    function updateUnreadCount() {
+        totalUnreadCount.value = notifications.value.filter((n) => !n.seen_time).length;
     }
 
     return {

@@ -106,12 +106,12 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
-import { mapActions, mapState } from "pinia";
+import { mapActions, mapState, storeToRefs } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
-import { useConfig } from "@/composables/config";
+import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -150,7 +150,7 @@ export default {
         },
     },
     setup() {
-        const { config, isConfigLoaded } = useConfig(true);
+        const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
         return { config, isConfigLoaded };
     },
     data() {

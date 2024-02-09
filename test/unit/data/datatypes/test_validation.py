@@ -60,5 +60,5 @@ class MockDataset:
         self.file_name_ = file_name
         self.datatype = datatype
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return self.file_name_

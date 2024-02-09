@@ -10,14 +10,18 @@ cd "$(dirname "$0")"
 
 # ensure ordered by dependency dag
 while read -r package_dir; do
-    printf "\n========= RELEASING PACKAGE ${package_dir} =========\n\n"
-
+    if [ -z "$package_dir" ]; then
+        # Skip empty lines
+        continue
+    fi
+    printf "\n========= RELEASING PACKAGE %s =========\n\n" "$package_dir"
+    
     cd "$package_dir"
-
+    
     make clean
     make commit-version
     make dist
     make new-version
-
+    
     cd ..
 done < packages_by_dep_dag.txt

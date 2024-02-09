@@ -3,13 +3,16 @@ import { mount } from "@vue/test-utils";
 import { updateContentFields } from "components/History/model/queries";
 import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
 
 import ContentItem from "./ContentItem";
 
 jest.mock("components/History/model/queries");
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
 localVue.use(PiniaVuePlugin);
+const router = new VueRouter();
 
 // mock queries
 updateContentFields.mockImplementation(async () => {});
@@ -48,6 +51,7 @@ describe("ContentItem", () => {
                 },
             },
             pinia: createTestingPinia(),
+            router,
         });
     });
 

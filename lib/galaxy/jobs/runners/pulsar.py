@@ -50,6 +50,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
@@ -972,6 +973,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         galaxy_job_id = None
         remote_job_id = None
         try:
+            check_database_connection(self.sa_session)
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...

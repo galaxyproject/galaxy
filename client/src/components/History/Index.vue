@@ -1,5 +1,8 @@
 <template>
-    <div v-if="currentUser && currentHistory" id="current-history-panel" class="d-flex flex-column history-index">
+    <div
+        v-if="currentUser && currentHistory"
+        id="current-history-panel"
+        class="d-flex flex-column history-index overflow-auto">
         <HistoryPanel
             v-if="!breadcrumbs.length"
             :list-offset="listOffset"

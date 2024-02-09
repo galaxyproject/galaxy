@@ -60,7 +60,7 @@ class BaseModelTestCase(TestCase):
         for arg in args:
             session.add(arg)
             if flush:
-                session.flush()
+                session.commit()
         if kwargs.get("expunge", not flush):
             cls.expunge()
         return arg  # Return last or only arg.
@@ -691,6 +691,17 @@ class TestMappings(BaseModelTestCase):
         session = self.session()
         session.add(lf)
         session.flush()
+
+    def test_current_session(self):
+        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        galaxy_session = model.GalaxySession()
+        galaxy_session.user = user
+        self.persist(user, galaxy_session)
+        assert user.current_galaxy_session == galaxy_session
+        new_galaxy_session = model.GalaxySession()
+        user.galaxy_sessions.append(new_galaxy_session)
+        self.persist(user, new_galaxy_session)
+        assert user.current_galaxy_session == new_galaxy_session
 
     def test_flush_refreshes(self):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute

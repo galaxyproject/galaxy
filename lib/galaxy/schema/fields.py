@@ -1,13 +1,11 @@
 import re
+import typing
 
 from pydantic import Field
 from typing_extensions import get_args
 
-try:
+if typing.TYPE_CHECKING:
     from galaxy.security.idencoding import IdEncodingHelper
-except ImportError:
-    IdEncodingHelper = object  # type: ignore[assignment,misc]
-
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16
@@ -18,7 +16,7 @@ class BaseDatabaseIdField:
     Database ID validation.
     """
 
-    security: IdEncodingHelper
+    security: "IdEncodingHelper"
 
     @classmethod
     def __get_validators__(cls):

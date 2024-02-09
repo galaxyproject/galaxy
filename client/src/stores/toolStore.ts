@@ -6,9 +6,10 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, Ref, ref } from "vue";
 
-import { createWhooshQuery, filterTools } from "@/components/Panels/utilities";
+import { createWhooshQuery, filterTools, types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface Tool {
     model_class: string;
@@ -26,7 +27,7 @@ export interface Tool {
     link: string;
     min_width: number;
     target: string;
-    panel_section_id: string | null;
+    panel_section_id: string;
     panel_section_name: string | null;
     form_style: string;
     disabled?: boolean;
@@ -62,11 +63,22 @@ export interface FilterSettings {
     help?: string;
 }
 
+export interface PanelView {
+    id: string;
+    model_class: string;
+    name: string;
+    description: string;
+    view_type: keyof typeof types_to_icons;
+    searchable: boolean;
+}
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
+    const defaultPanelView: Ref<string> = ref("");
     const toolsById = ref<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const panel = ref<Record<string, Record<string, Tool | ToolSection>>>({});
+    const panelViews = ref<Record<string, PanelView>>({});
     const loading = ref(false);
 
     const getToolForId = computed(() => {
@@ -168,7 +180,24 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    // Directly related to the ToolPanel
+    async function fetchPanelViews() {
+        if (loading.value || (defaultPanelView.value && Object.keys(panelViews.value).length > 0)) {
+            return;
+        }
+        loading.value = true;
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
+            const { default_panel_view, views } = data;
+            defaultPanelView.value = default_panel_view;
+            panelViews.value = views;
+        } catch (e) {
+            rethrowSimple(e);
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    // Used to initialize the ToolPanel with the default panel view for this site.
     async function initCurrentPanelView(siteDefaultPanelView: string) {
         if (!loading.value && !isPanelPopulated.value) {
             loading.value = true;
@@ -194,14 +223,21 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setCurrentPanelView(panelView: string) {
         if (!loading.value) {
-            currentPanelView.value = panelView;
             if (panel.value[panelView]) {
+                currentPanelView.value = panelView;
                 return;
             }
             loading.value = true;
-            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-            savePanelView(panelView, data);
-            loading.value = false;
+            try {
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+                currentPanelView.value = panelView;
+                savePanelView(panelView, data);
+                loading.value = false;
+            } catch (e) {
+                const error = e as { response: { data: { err_msg: string } } };
+                console.error("Could not change panel view", error.response.data.err_msg ?? error.response);
+                loading.value = false;
+            }
         }
     }
 
@@ -232,7 +268,9 @@ export const useToolStore = defineStore("toolStore", () => {
     return {
         toolsById,
         panel,
+        panelViews,
         currentPanelView,
+        defaultPanelView,
         loading,
         getToolForId,
         getToolNameById,
@@ -242,6 +280,7 @@ export const useToolStore = defineStore("toolStore", () => {
         sectionDatalist,
         fetchToolForId,
         fetchTools,
+        fetchPanelViews,
         initCurrentPanelView,
         setCurrentPanelView,
         fetchPanel,

@@ -10,6 +10,24 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.1 (2023-10-23)
 -------------------
 
@@ -85,11 +103,6 @@ Enhancements
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
-* 
 * Add support for launching workflows via Tutorial Mode by `@hexylena <https://github.com/hexylena>`_ in `#15684 <https://github.com/galaxyproject/galaxy/pull/15684>`_
 
 -------------------

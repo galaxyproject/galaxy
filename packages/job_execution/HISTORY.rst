@@ -10,6 +10,31 @@ History
 
 
 -------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix library import from path linking files by `@davelopez <https://github.com/davelopez>`_ in `#16919 <https://github.com/galaxyproject/galaxy/pull/16919>`_
+* Don't store job in JobIO instance attributes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16965 <https://github.com/galaxyproject/galaxy/pull/16965>`_
+* Fix extra files collection if using ``store_by="id"`` and `outputs_to_working_directory` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17067 <https://github.com/galaxyproject/galaxy/pull/17067>`_
+
+-------------------
 23.1.1 (2023-10-23)
 -------------------
 

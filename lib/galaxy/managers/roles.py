@@ -8,7 +8,10 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import exc as sqlalchemy_exceptions
+from sqlalchemy.orm import (
+    exc as sqlalchemy_exceptions,
+    Session,
+)
 
 import galaxy.exceptions
 from galaxy import model
@@ -97,3 +100,8 @@ class RoleManager(base.ModelManager[model.Role]):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return role
+
+
+def get_roles_by_ids(session: Session, role_ids):
+    stmt = select(Role).where(Role.id.in_(role_ids))
+    return session.scalars(stmt).all()

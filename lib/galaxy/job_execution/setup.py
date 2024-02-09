@@ -276,7 +276,10 @@ class JobIO(Dictifiable):
             da_false_path = dataset_path_rewriter.rewrite_dataset_path(da.dataset, "output")
             mutable = da.dataset.dataset.external_filename is None
             dataset_path = DatasetPath(
-                da.dataset.dataset.id, da.dataset.get_file_name(), false_path=da_false_path, mutable=mutable
+                da.dataset.dataset.id,
+                da.dataset.get_file_name(sync_cache=False),
+                false_path=da_false_path,
+                mutable=mutable,
             )
             job_outputs.append(JobOutput(da.name, da.dataset, dataset_path))
 

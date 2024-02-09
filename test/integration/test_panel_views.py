@@ -1,6 +1,8 @@
 import os
+import time
 
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 
 THIS_DIR = os.path.dirname(__file__)
 PANEL_VIEWS_DIR_1 = os.path.join(THIS_DIR, "panel_views_1")
@@ -113,6 +115,50 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert section["id"] == "test"
         tools = section["tools"]
         assert len(tools) == 2, len(tools)
+
+    def test_only_latest_version_in_panel(self):
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_13"))
+        index.raise_for_status()
+        index_as_list = index.json()
+        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        assert len(sections) == 1
+        section = sections[0]
+        assert section["id"] == "test_section_multi"
+        tools = section["elems"]
+        assert len(tools) == 1, len(tools)
+        assert tools[0]["version"] == "0.2"
+
+
+class TestPanelViewsWithShedTools(integration_util.IntegrationTestCase, UsesShed):
+    framework_tool_and_types = True
+    allow_tool_conf_override = False
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["panel_views_dir"] = PANEL_VIEWS_DIR_1
+
+    def test_only_latest_version_in_panel_fastp(self):
+        FASTP_REPO = {"name": "fastp", "owner": "iuc", "tool_panel_section_id": "test_section_multi"}
+        OLD_CHANGESET = "1d8fe9bc4cb0"
+        NEW_CHANGESET = "dbf9c561ef29"
+        self.install_repository(**FASTP_REPO, changeset=OLD_CHANGESET)
+        self.install_repository(**FASTP_REPO, changeset=NEW_CHANGESET)
+
+        # give the toolbox a moment to reload after repo installation
+        time.sleep(5)
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_13"))
+        index.raise_for_status()
+        index_as_list = index.json()
+        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        assert len(sections) == 1
+        section = sections[0]
+        assert section["id"] == "test_section_multi"
+        tools = section["elems"]
+        assert len(tools) == 2, len(tools)
+        fastp = tools[0]
+        assert fastp["id"] == "toolshed.g2.bx.psu.edu/repos/iuc/fastp/fastp/0.20.1+galaxy0"
+        assert fastp["tool_shed_repository"]["changeset_revision"] == NEW_CHANGESET
 
 
 class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):

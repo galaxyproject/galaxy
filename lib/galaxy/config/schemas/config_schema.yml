@@ -1450,15 +1450,6 @@ mapping:
         desc: |
           Prefix to use in the formation of the subdomain or path for interactive tools
 
-      interactivetools_shorten_url:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Shorten the uuid portion of the subdomain or path for interactive tools.
-          Especially useful for avoiding the need for wildcard certificates by keeping
-          subdomain under 63 chars
-
       retry_interactivetool_metadata_internally:
         type: bool
         default: true
@@ -3138,7 +3129,24 @@ mapping:
         path_resolves_to: config_dir
         required: false
         desc: |
-          XML config file that contains the job metric collection configuration.
+          YAML or XML config file that contains the job metric collection configuration.
+
+      job_metrics:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a job_metrics_config_file, the definition of the
+          metrics to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a job_metrics_config_file is used.
+
+          The syntax, available instrumenters, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+
+          By default, the core plugin is enabled. Setting this option to false or an empty list disables metrics
+          entirely.
 
       expose_potentially_sensitive_job_metrics:
         type: bool
@@ -3929,3 +3937,19 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      help_forum_api_url:
+        type: str
+        required: false
+        default: https://help.galaxyproject.org/
+        per_host: true
+        desc: |
+          The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
+
+      enable_help_forum_tool_panel_integration:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.

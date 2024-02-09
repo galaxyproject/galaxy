@@ -1,4 +1,5 @@
 <script setup>
+import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
@@ -59,16 +60,9 @@ async function open(overrideOptions) {
     }
 }
 
-function setIframeEvents(disableEvents) {
-    const element = document.getElementById("galaxy_main");
-    if (element) {
-        element.style["pointer-events"] = disableEvents ? "none" : "auto";
-    }
-}
-
 watch(
     () => showModal.value,
-    (modalShown) => setIframeEvents(modalShown)
+    (modalShown) => setIframeEvents(["galaxy_main"], modalShown)
 );
 
 defineExpose({
@@ -92,7 +86,6 @@ defineExpose({
         <UploadContainer
             v-if="currentHistoryId"
             ref="content"
-            :key="showModal"
             :current-user-id="currentUser?.id"
             :current-history-id="currentHistoryId"
             v-bind="options"
@@ -107,6 +100,6 @@ defineExpose({
 
 .upload-dialog-body {
     height: 500px;
-    overflow: hidden;
+    overflow: initial;
 }
 </style>
