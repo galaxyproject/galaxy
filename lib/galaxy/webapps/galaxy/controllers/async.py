@@ -69,7 +69,8 @@ class ASync(BaseUIController):
             # ignore any other params that may have been passed by the remote
             # server with the exception of STATUS and URL;
             # if name, info, dbkey and data_type are not handled via incoming params,
-            # use the metadata from the already existing dataset
+            # use the metadata from the already existing dataset;
+            # preserve original params under nested dict
             params_dict = dict(
                 STATUS=params.STATUS,
                 URL=params.URL,
@@ -77,6 +78,7 @@ class ASync(BaseUIController):
                 info=data.info,
                 dbkey=data.dbkey,
                 data_type=data.ext,
+                incoming_request_params=params.__dict__.copy(),
             )
             if tool.input_translator:
                 tool.input_translator.translate(params)

@@ -55,7 +55,11 @@ def __main__():
             if URL_method == "get":
                 page = urlopen(cur_URL, timeout=DEFAULT_SOCKET_TIMEOUT)
             elif URL_method == "post":
-                page = urlopen(cur_URL, urlencode(params["param_dict"]).encode("utf-8"), timeout=DEFAULT_SOCKET_TIMEOUT)
+                page = urlopen(
+                    cur_URL,
+                    urlencode(params["param_dict"]["incoming_request_params"]).encode("utf-8"),
+                    timeout=DEFAULT_SOCKET_TIMEOUT
+                )
         except Exception as e:
             sys.exit("The remote data source application may be off line, please try again later. Error: %s" % str(e))
         if max_file_size:

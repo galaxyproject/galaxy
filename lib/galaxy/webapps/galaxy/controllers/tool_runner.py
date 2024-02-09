@@ -77,6 +77,9 @@ class ToolRunner(BaseUIController):
 
         # execute tool without displaying form (used for datasource tools)
         params = galaxy.util.Params(kwd, sanitize=False)
+        if tool.tool_type == "data_source":
+            # preserve original params sent by the remote server as extra dict
+            params.update({"incoming_request_params": params.__dict__.copy()})
         # do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate(params)
