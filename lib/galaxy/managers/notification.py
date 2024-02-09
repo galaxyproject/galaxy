@@ -304,7 +304,7 @@ class NotificationManager:
 
         expired_notifications_stmt = select(Notification.id).where(notification_has_expired)
         delete_stmt = delete(UserNotificationAssociation).where(
-            UserNotificationAssociation.notification_id.in_(expired_notifications_stmt.subquery())
+            UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
         result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
         deleted_associations_count = result.rowcount
