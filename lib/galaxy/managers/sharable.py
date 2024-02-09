@@ -28,7 +28,10 @@ from sqlalchemy import (
     true,
 )
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.managers import (
     annotatable,
     base,
@@ -91,7 +94,7 @@ class SharableModelManager(
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
-    def is_owner(self, item: "Query", user: Optional[User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[User], **kwargs: Any) -> bool:
         """
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
