@@ -58,7 +58,7 @@ def __main__():
                 page = urlopen(
                     cur_URL,
                     urlencode(params["param_dict"]["incoming_request_params"]).encode("utf-8"),
-                    timeout=DEFAULT_SOCKET_TIMEOUT
+                    timeout=DEFAULT_SOCKET_TIMEOUT,
                 )
         except Exception as e:
             sys.exit("The remote data source application may be off line, please try again later. Error: %s" % str(e))
