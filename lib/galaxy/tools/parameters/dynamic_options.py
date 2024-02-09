@@ -749,7 +749,7 @@ class DynamicOptions:
                     options += self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
-            if trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
+            if trans and trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
                 options += self.get_user_options(trans.user)
         elif self.file_fields:
             options = list(self.file_fields)
