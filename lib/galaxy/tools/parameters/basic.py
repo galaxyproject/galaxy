@@ -1028,10 +1028,6 @@ class SelectToolParameter(ToolParameter):
             raise ParameterValueError(
                 "requires a value, but no legal values defined", self.name, is_dynamic=self.is_dynamic
             )
-        # TODO: dataset security check ??
-        if dataset := history_item_dict_to_python(value, app=trans.app, name=self.name):
-            if dataset in legal_values:
-                return dataset
         if isinstance(value, list):
             if not self.multiple:
                 raise ParameterValueError(

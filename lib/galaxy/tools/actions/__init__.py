@@ -32,6 +32,7 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
+    SelectToolParameter,
 )
 from galaxy.tools.parameters.wrapped import (
     LegacyUnprefixedDict,
@@ -283,6 +284,8 @@ class DefaultToolAction(ToolAction):
                         value.child_collection = new_collection
                     else:
                         value.collection = new_collection
+            elif isinstance(input, SelectToolParameter) and isinstance(value, HistoryDatasetAssociation):
+                input_datasets[prefixed_name] = value
 
         tool.visit_inputs(param_values, visitor)
         return input_datasets, all_permissions
