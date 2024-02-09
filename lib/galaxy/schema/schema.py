@@ -1306,6 +1306,11 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Slug",
         description="Part of the URL to uniquely identify this History by link in a readable way.",
     )
+    username: Optional[str] = Field(
+        None,
+        title="Username",
+        description="Owner of the history",
+    )
     username_and_slug: Optional[str] = Field(
         None,
         title="Username and slug",

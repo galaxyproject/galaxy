@@ -36,7 +36,6 @@ from galaxy.schema import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
-    HistoryQueryResultList,
     HistorySortByEnum,
 )
 from galaxy.schema.schema import (
@@ -163,11 +162,20 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories",
-        summary="Returns histories for the current user.",
+        summary="Returns histories available to the current user.",
     )
     def index(
         self,
+        response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        show_own: bool = ShowOwnQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: HistorySortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: Optional[bool] = AllHistoriesQueryParam,
@@ -178,40 +186,24 @@ class FastAPIHistories:
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> List[AnyHistoryView]:
-        return self.service.index(
-            trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
-        )
-
-    @router.get(
-        "/api/histories/query",
-        summary="Returns histories available to the current user.",
-    )
-    def query(
-        self,
-        response: Response,
-        trans: ProvidesUserContext = DependsOnTrans,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        show_own: bool = ShowOwnQueryParam,
-        show_published: bool = ShowPublishedQueryParam,
-        show_shared: bool = ShowSharedQueryParam,
-        sort_by: HistorySortByEnum = SortByQueryParam,
-        sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
-    ) -> HistoryQueryResultList:
-        payload = HistoryIndexQueryPayload.construct(
-            show_own=show_own,
-            show_published=show_published,
-            show_shared=show_shared,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
-        )
-        entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
-        response.headers["total_matches"] = str(total_matches)
-        return entries
+        if search is None:
+            return self.service.index(
+                trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
+            )
+        else:
+            payload = HistoryIndexQueryPayload.construct(
+                show_own=show_own,
+                show_published=show_published,
+                show_shared=show_shared,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
+                limit=limit,
+                offset=offset,
+                search=search,
+            )
+            entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+            response.headers["total_matches"] = str(total_matches)
+            return entries
 
     @router.get(
         "/api/histories/count",

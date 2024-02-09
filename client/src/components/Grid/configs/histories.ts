@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistories, deleteHistory, historiesQuery, undeleteHistories, undeleteHistory } from "@/api/histories";
+import { deleteHistories, deleteHistory, historiesFetcher, undeleteHistories, undeleteHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -31,7 +31,7 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await historiesQuery({
+    const { data, headers } = await historiesFetcher({
         limit,
         offset,
         search,
