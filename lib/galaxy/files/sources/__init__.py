@@ -1,4 +1,5 @@
 import abc
+from dataclasses import dataclass, field
 import os
 import time
 from typing import (
@@ -52,6 +53,7 @@ class FilesSourceProperties(TypedDict):
     browsable: NotRequired[bool]
 
 
+@dataclass
 class FilesSourceOptions:
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
@@ -64,7 +66,7 @@ class FilesSourceOptions:
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties] = {}
+    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: {})
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
