@@ -69,9 +69,11 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
+import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -261,10 +263,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/permissions",
-                        component: FormGeneric,
+                        component: HistoryDatasetPermissions,
                         props: (route) => ({
-                            url: `/history/permissions?id=${route.query.id}`,
-                            redirect: "/histories/list",
+                            historyId: route.query.id,
                         }),
                     },
                     {
@@ -441,6 +442,14 @@ export function getRouter(Galaxy) {
                         path: "user/notifications/preferences",
                         component: NotificationsPreferences,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/permissions",
+                        component: UserDatasetPermissions,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            userId: Galaxy.user.id,
+                        }),
                     },
                     {
                         path: "user/:formId",
