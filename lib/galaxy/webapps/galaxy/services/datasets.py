@@ -32,7 +32,10 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.datasets import (
+    DatasetAssociationManager,
+    DatasetManager,
+)
 from galaxy.managers.hdas import (
     HDAManager,
     HDASerializer,
@@ -248,6 +251,13 @@ class ComputeDatasetHashPayload(Model):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class UpdateObjectStoreIdPayload(Model):
+    object_store_id: str = Field(
+        ...,
+        description="Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.",
+    )
+
+
 class DatasetErrorMessage(Model):
     dataset: EncodedDatasetSourceId = Field(
         description="The encoded ID of the dataset and its source.",
@@ -282,6 +292,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_contents_manager: HistoryContentsManager,
         history_contents_filters: HistoryContentsFilters,
         data_provider_registry: DataProviderRegistry,
+        dataset_manager: DatasetManager,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -292,6 +303,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.history_contents_manager = history_contents_manager
         self.history_contents_filters = history_contents_filters
         self.data_provider_registry = data_provider_registry
+        self.dataset_manager = dataset_manager
 
     @property
     def serializer_by_type(self) -> Dict[str, ModelSerializer]:
@@ -747,6 +759,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except Exception as e:
             raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
         return content, headers
+
+    def update_object_store_id(self, trans, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload):
+        hda = self.hda_manager.get_accessible(dataset_id, trans.user)
+        dataset = hda.dataset
+        self.dataset_manager.update_object_store_id(trans, dataset, payload.object_store_id)
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:

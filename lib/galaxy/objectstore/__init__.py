@@ -63,7 +63,7 @@ NO_SESSION_ERROR_MESSAGE = (
 DEFAULT_PRIVATE = False
 DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
-
+DEFAULT_DEVICE_ID = None
 log = logging.getLogger(__name__)
 
 
@@ -328,6 +328,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
     def get_quota_source_map(self):
         """Return QuotaSourceMap describing mapping of object store IDs to quota sources."""
 
+    @abc.abstractmethod
+    def get_device_source_map(self) -> "DeviceSourceMap":
+        """Return DeviceSourceMap describing mapping of object store IDs to device sources."""
+
 
 class BaseObjectStore(ObjectStore):
     store_by: str
@@ -490,6 +494,9 @@ class BaseObjectStore(ObjectStore):
         # I'd rather keep this abstract... but register_singleton wants it to be instantiable...
         raise NotImplementedError()
 
+    def get_device_source_map(self):
+        return DeviceSourceMap()
+
 
 class ConcreteObjectStore(BaseObjectStore):
     """Subclass of ObjectStore for stores that don't delegate (non-nested).
@@ -500,6 +507,7 @@ class ConcreteObjectStore(BaseObjectStore):
     """
 
     badges: List[StoredBadgeDict]
+    device_id: Optional[str] = None
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
@@ -527,6 +535,7 @@ class ConcreteObjectStore(BaseObjectStore):
         quota_config = config_dict.get("quota", {})
         self.quota_source = quota_config.get("source", DEFAULT_QUOTA_SOURCE)
         self.quota_enabled = quota_config.get("enabled", DEFAULT_QUOTA_ENABLED)
+        self.device_id = config_dict.get("device", None)
         self.badges = read_badges(config_dict)
 
     def to_dict(self):
@@ -540,6 +549,7 @@ class ConcreteObjectStore(BaseObjectStore):
             "enabled": self.quota_enabled,
         }
         rval["badges"] = self._get_concrete_store_badges(None)
+        rval["device"] = self.device_id
         return rval
 
     def to_model(self, object_store_id: str) -> "ConcreteObjectStoreModel":
@@ -550,6 +560,7 @@ class ConcreteObjectStore(BaseObjectStore):
             description=self.description,
             quota=QuotaModel(source=self.quota_source, enabled=self.quota_enabled),
             badges=self._get_concrete_store_badges(None),
+            device=self.device_id,
         )
 
     def _get_concrete_store_badges(self, obj) -> List[BadgeDict]:
@@ -585,6 +596,9 @@ class ConcreteObjectStore(BaseObjectStore):
             self.quota_enabled,
         )
         return quota_source_map
+
+    def get_device_source_map(self) -> "DeviceSourceMap":
+        return DeviceSourceMap(self.device_id)
 
 
 class DiskObjectStore(ConcreteObjectStore):
@@ -636,6 +650,8 @@ class DiskObjectStore(ConcreteObjectStore):
             name = config_xml.attrib.get("name", None)
             if name is not None:
                 config_dict["name"] = name
+            device = config_xml.attrib.get("device", None)
+            config_dict["device"] = device
             for e in config_xml:
                 if e.tag == "quota":
                     config_dict["quota"] = {
@@ -1033,7 +1049,7 @@ class DistributedObjectStore(NestedObjectStore):
         """
         super().__init__(config, config_dict)
         self._quota_source_map = None
-
+        self._device_source_map = None
         self.backends = {}
         self.weighted_backend_ids = []
         self.original_weighted_backend_ids = []
@@ -1205,6 +1221,13 @@ class DistributedObjectStore(NestedObjectStore):
             self._quota_source_map = quota_source_map
         return self._quota_source_map
 
+    def get_device_source_map(self) -> "DeviceSourceMap":
+        if self._device_source_map is None:
+            device_source_map = DeviceSourceMap()
+            self._merge_device_source_map(device_source_map, self)
+            self._device_source_map = device_source_map
+        return self._device_source_map
+
     @classmethod
     def _merge_quota_source_map(clz, quota_source_map, object_store):
         for backend_id, backend in object_store.backends.items():
@@ -1212,6 +1235,14 @@ class DistributedObjectStore(NestedObjectStore):
                 clz._merge_quota_source_map(quota_source_map, backend)
             else:
                 quota_source_map.backends[backend_id] = backend.get_quota_source_map()
+
+    @classmethod
+    def _merge_device_source_map(clz, device_source_map: "DeviceSourceMap", object_store):
+        for backend_id, backend in object_store.backends.items():
+            if isinstance(backend, DistributedObjectStore):
+                clz._merge_device_source_map(device_source_map, backend)
+            else:
+                device_source_map.backends[backend_id] = backend.get_device_source_map()
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
@@ -1361,6 +1392,7 @@ class ConcreteObjectStoreModel(BaseModel):
     description: Optional[str] = None
     quota: QuotaModel
     badges: List[BadgeDict]
+    device: Optional[str] = None
 
 
 def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
@@ -1501,6 +1533,21 @@ def config_to_dict(config):
 class QuotaSourceInfo(NamedTuple):
     label: Optional[str]
     use: bool
+
+
+class DeviceSourceMap:
+    def __init__(self, device_id=DEFAULT_DEVICE_ID):
+        self.default_device_id = device_id
+        self.backends = {}
+
+    def get_device_id(self, object_store_id: str) -> Optional[str]:
+        if object_store_id in self.backends:
+            device_map = self.backends.get(object_store_id)
+            if device_map:
+                print(device_map)
+                return device_map.get_device_id(object_store_id)
+
+        return self.default_device_id
 
 
 class QuotaSourceMap:
