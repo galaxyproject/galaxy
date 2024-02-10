@@ -9,6 +9,7 @@ import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/Provi
 interface ObjectStoreSelectButtonProps {
     objectStore: ConcreteObjectStoreModel;
     variant: string;
+    idPrefix: string;
 }
 
 defineProps<ObjectStoreSelectButtonProps>();
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 
 <template>
     <BButton
+        :id="`${idPrefix}-object-store-button-${objectStore.object_store_id}`"
         :variant="variant"
         :data-object-store-id="objectStore.object_store_id"
         @click="emit('click', objectStore.object_store_id)"
