@@ -1255,11 +1255,9 @@ class MinimalJobWrapper(HasResourceParameters):
             self.version_command_line,
             self.extra_filenames,
             self.environment_variables,
+            self.interactivetools,
         ) = tool_evaluator.build()
         job.command_line = self.command_line
-        if hasattr(self.app, "interactivetool_manager"):
-            self.interactivetools = tool_evaluator.populate_interactivetools()
-            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir  # noqa: B018
@@ -2623,6 +2621,7 @@ class TaskWrapper(JobWrapper):
                 self.version_command_line,
                 extra_filenames,
                 self.environment_variables,
+                *_,
             ) = tool_evaluator.build()
             self.extra_filenames.extend(extra_filenames)
 
