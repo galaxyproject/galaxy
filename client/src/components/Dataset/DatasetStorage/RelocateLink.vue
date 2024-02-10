@@ -6,7 +6,8 @@ import { ConcreteObjectStoreModel, DatasetStorageDetails } from "@/api";
 import { updateObjectStore } from "@/api/objectStores";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
-import RelocateModal from "./RelocateModal.vue";
+import RelocateDialog from "./RelocateDialog.vue";
+import SelectModal from "./SelectModal.vue";
 
 interface RelocateLinkProps {
     datasetStorageDetails: DatasetStorageDetails;
@@ -15,21 +16,7 @@ interface RelocateLinkProps {
 
 const props = defineProps<RelocateLinkProps>();
 
-const relocateModal = ref<InstanceType<typeof RelocateModal> | null>(null);
-
-function showRelocateDialog() {
-    // This should work - does it work in proper Vue 3 or something?
-    // https://vuejs.org/guide/typescript/composition-api.html#typing-component-template-refs
-    // @ts-ignore
-    relocateModal.value?.showModal();
-}
-
-function hideRelocateDialog() {
-    // This should work - does it work in proper Vue 3 or something?
-    // https://vuejs.org/guide/typescript/composition-api.html#typing-component-template-refs
-    // @ts-ignore
-    relocateModal.value?.hideModal();
-}
+const showModal = ref(false);
 
 const store = useObjectStoreStore();
 const { isLoaded, selectableObjectStores } = storeToRefs(store);
@@ -86,22 +73,23 @@ const emit = defineEmits<{
 async function relocate(objectStoreId: string) {
     try {
         await updateObjectStore(props.datasetId, objectStoreId);
-        hideRelocateDialog();
         emit("relocated");
     } catch (err) {
         console.log(err);
+    } finally {
+        showModal.value = false;
     }
 }
 </script>
 
 <template>
     <span class="storage-relocate-link">
-        <RelocateModal
-            v-if="currentObjectStore"
-            ref="relocateModal"
-            :from-object-store="currentObjectStore"
-            :target-object-stores="validTargets"
-            @relocate="relocate" />
-        <b-link v-if="relocatable" href="#" @click="showRelocateDialog">(relocate)</b-link>
+        <SelectModal v-if="currentObjectStore" v-model="showModal" title="Relocate Dataset Storage">
+            <RelocateDialog
+                :from-object-store="currentObjectStore"
+                :target-object-stores="validTargets"
+                @relocate="relocate" />
+        </SelectModal>
+        <b-link v-if="relocatable" href="#" @click="showModal = true">(relocate)</b-link>
     </span>
 </template>
