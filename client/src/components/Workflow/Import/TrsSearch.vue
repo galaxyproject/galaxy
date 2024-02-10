@@ -14,6 +14,13 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const props = defineProps({
+    search: {
+        type: String,
+        default: null,
+    },
+});
+
 type TrsSearchData = {
     id: string;
     name: string;
@@ -27,7 +34,7 @@ const fields = [
     { key: "organization", label: "Organization" },
 ];
 
-const query = ref("");
+const query = ref(props.search ?? "");
 const results: Ref<TrsSearchData[]> = ref([]);
 const trsServer = ref("");
 const loading = ref(false);
@@ -49,29 +56,37 @@ const searchHelp = computed(() => {
 
 const services = new Services();
 
+const router = useRouter();
+
 watch(query, async () => {
     if (query.value == "") {
         results.value = [];
     } else {
-        loading.value = true;
-
-        try {
-            const response = await axios.get(
-                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`)
-            );
-            results.value = response.data;
-        } catch (e) {
-            errorMessage.value = e as string;
-        }
-
-        loading.value = false;
+        await searchWorkflows();
     }
 });
 
-function onTrsSelection(selection: TrsSelection) {
+async function searchWorkflows() {
+    loading.value = true;
+
+    try {
+        const response = await axios.get(
+            withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`)
+        );
+        results.value = response.data;
+    } catch (e) {
+        errorMessage.value = e as string;
+    }
+
+    loading.value = false;
+}
+
+async function onTrsSelection(selection: TrsSelection) {
     trsSelection.value = selection;
     trsServer.value = selection.id;
-    query.value = "";
+    if (query.value) {
+        await searchWorkflows();
+    }
 }
 
 function onTrsSelectionError(message: string) {
@@ -95,8 +110,6 @@ function computeItems(items: TrsSearchData[]) {
         };
     });
 }
-
-const router = useRouter();
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
     if (!trsId || !toolIdToImport) {

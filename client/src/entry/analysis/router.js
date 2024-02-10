@@ -573,6 +573,9 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/trs_search",
                         component: TrsSearch,
+                        props: (route) => ({
+                            search: route.query.query,
+                        }),
                     },
                     {
                         path: "workflows/:storedWorkflowId/invocations",
