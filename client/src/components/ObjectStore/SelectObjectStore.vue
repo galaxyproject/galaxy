@@ -5,9 +5,9 @@ import { computed, ref } from "vue";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
+import ObjectStoreSelectButtonDescribePopover from "./ObjectStoreSelectButtonDescribePopover.vue";
 import ObjectStoreSelectButtonPopover from "./ObjectStoreSelectButtonPopover.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -76,8 +76,8 @@ async function handleSubmit(preferredObjectStoreId: string) {
                         >
                         <ObjectStoreSelectButton
                             v-for="objectStore in selectableObjectStores"
-                            :id="`preferred-object-store-button-${objectStore.object_store_id}`"
                             :key="objectStore.object_store_id"
+                            id-prefix="preferred"
                             :object-store="objectStore"
                             :variant="variant(objectStore.object_store_id)"
                             class="preferred-object-store-select-button"
@@ -93,13 +93,13 @@ async function handleSubmit(preferredObjectStoreId: string) {
             <ObjectStoreSelectButtonPopover target="no-preferred-object-store-button" :title="defaultOptionTitle">
                 <span v-localize>{{ defaultOptionDescription }}</span>
             </ObjectStoreSelectButtonPopover>
-            <ObjectStoreSelectButtonPopover
+            <ObjectStoreSelectButtonDescribePopover
                 v-for="objectStore in selectableObjectStores"
                 :key="objectStore.object_store_id"
-                :target="`preferred-object-store-button-${objectStore.object_store_id}`"
-                :title="objectStore.name">
-                <DescribeObjectStore :what="forWhat" :storage-info="objectStore"> </DescribeObjectStore>
-            </ObjectStoreSelectButtonPopover>
+                id-prefix="preferred"
+                :what="forWhat"
+                :object-store="objectStore">
+            </ObjectStoreSelectButtonDescribePopover>
         </div>
     </div>
 </template>
