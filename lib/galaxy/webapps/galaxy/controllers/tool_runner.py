@@ -75,7 +75,9 @@ class ToolRunner(BaseUIController):
         if tool.tool_type in ["default", "interactivetool"]:
             return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
 
-        # execute tool without displaying form (used for datasource tools)
+        # execute tool without displaying form
+        # (used for datasource tools, but note that data_source_async tools
+        # are handled separately by the async controller)
         params = galaxy.util.Params(kwd, sanitize=False)
         if tool.tool_type == "data_source":
             # preserve original params sent by the remote server as extra dict

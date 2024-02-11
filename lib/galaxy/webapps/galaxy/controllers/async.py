@@ -1,5 +1,5 @@
 """
-Upload class
+Controller to handle communication of tools of type data_source_async
 """
 
 import logging
@@ -134,9 +134,21 @@ class ASync(BaseUIController):
 
             return f"Data {data_id} with status {STATUS} received. OK"
         else:
-            #
             # no data_id must be parameter submission
             #
+            # create new dataset, put it into running state,
+            # send request for data to remote server and see if the response
+            # ends in ok;
+            # the request that's getting sent goes to the URL found in
+            # params.URL or, in its absence, to the one found as the value of
+            # the "action" attribute of the data source tool's "inputs" tag.
+            # Included in the request are the parameters:
+            # - data_id, which indicates to the remote server that Galaxy is
+            #   ready to accept data
+            # - GALAXY_URL, which takes the form:
+            #   {base_url}/async/{tool_id}/{data_id}/{data_secret}, and which
+            #   when used by the remote server to send a data download link,
+            #   will trigger the if branch above.
             GALAXY_TYPE = None
             if params.data_type:
                 GALAXY_TYPE = params.data_type
