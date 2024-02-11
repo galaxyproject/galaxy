@@ -245,7 +245,7 @@ class GroupListGrid(grids.GridData):
         grids.GridColumn("Name", key="name"),
         UsersColumn("Users", key="users"),
         RolesColumn("Roles", key="roles"),
-        grids.DeletedColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
         grids.GridColumn("Last Updated", key="update_time"),
     ]
 
@@ -281,7 +281,7 @@ class GroupListGrid(grids.GridData):
 
 
 class QuotaListGrid(grids.GridData):
-    class AmountColumn(grids.TextColumn):
+    class AmountColumn(grids.GridColumn):
         def get_value(self, trans, grid, quota):
             return quota.operation + quota.display_amount
 

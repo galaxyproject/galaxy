@@ -16,13 +16,14 @@ import "ui/editable-text";
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
-import IconButton from "mvc/ui/icon-button";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import _l from "utils/localization";
 import query_string from "utils/query-string-parsing";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
+
+import IconButton from "./icon-button";
 
 //import "static/style/jquery-ui/smoothness/jquery-ui.css";
 //import "static/style/library.css";

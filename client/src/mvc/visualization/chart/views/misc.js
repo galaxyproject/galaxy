@@ -3,9 +3,10 @@
  */
 import Backbone from "backbone";
 import $ from "jquery";
-import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
 import _ from "underscore";
+
+import Buttons from "./buttons";
 
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({
