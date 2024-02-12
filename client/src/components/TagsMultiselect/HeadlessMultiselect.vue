@@ -252,8 +252,8 @@ watch(
 </script>
 
 <template>
-    <div ref="root" class="headless-multiselect" @blur.capture="onBlur">
-        <fieldset v-if="isOpen">
+    <div ref="root" class="headless-multiselect">
+        <fieldset v-if="isOpen" @blur.capture="onBlur">
             <input
                 :id="`${props.id}-input`"
                 ref="inputField"
