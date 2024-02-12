@@ -107,7 +107,7 @@ class TestToolPanelManager(BaseToolBoxTestCase):
             # New GUID replaced old one in tool panel but both
             # appear in integrated tool panel.
             if previous_guid:
-                assert (f"tool_{previous_guid}") not in section.panel_items()
+                assert (f"tool_{previous_guid}") not in section.panel_items()  # type: ignore[unreachable]
             assert (f"tool_{guid}") in self.toolbox._integrated_tool_panel["tid1"].panel_items()
             previous_guid = guid
 

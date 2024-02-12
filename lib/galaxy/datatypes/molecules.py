@@ -5,6 +5,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from galaxy.datatypes import metadata
@@ -261,7 +262,7 @@ class SDF(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -344,7 +345,7 @@ class MOL2(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -430,7 +431,7 @@ class FPS(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.get_file_name(), invert=True)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by fingerprint records.
         """
@@ -554,7 +555,7 @@ class OBFS(Binary):
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
@@ -1631,7 +1632,7 @@ class CML(GenericXml):
         return True
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """

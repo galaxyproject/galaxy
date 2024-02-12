@@ -1110,7 +1110,7 @@ class Text(Data):
             dataset.blurb = "file purged from disk"
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by line.
         """

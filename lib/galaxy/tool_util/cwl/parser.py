@@ -293,6 +293,7 @@ class ExpressionToolProxy(CommandLineToolProxy):
 
 class JobProxy:
     def __init__(self, tool_proxy, input_dict, output_dict, job_directory):
+        assert RuntimeContext is not None, "cwltool is not installed, cannot run CWL jobs"
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
         self._output_dict = output_dict
@@ -327,12 +328,8 @@ class JobProxy:
                 beta_relaxed_fmt_check=beta_relaxed_fmt_check,
             )
 
-            args = []
+            args = [RuntimeContext(job_args)]
             kwargs: Dict[str, str] = {}
-            if RuntimeContext is not None:
-                args.append(RuntimeContext(job_args))
-            else:
-                kwargs = job_args
             self._cwl_job = next(self._tool_proxy._tool.job(self._input_dict, self._output_callback, *args, **kwargs))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 

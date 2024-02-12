@@ -789,7 +789,7 @@ class Tool(Dictifiable):
         # tool_data_table_conf.xml entries exist.
         self.input_params: List[ToolParameter] = []
         # Attributes of tools installed from Galaxy tool sheds.
-        self.tool_shed = None
+        self.tool_shed: Optional[str] = None
         self.repository_name = None
         self.repository_owner = None
         self.changeset_revision = None
@@ -1659,6 +1659,7 @@ class Tool(Dictifiable):
     def populate_tool_shed_info(self, tool_shed_repository):
         if tool_shed_repository:
             self.tool_shed = tool_shed_repository.tool_shed
+            assert self.tool_shed
             self.repository_name = tool_shed_repository.name
             self.repository_owner = tool_shed_repository.owner
             self.changeset_revision = tool_shed_repository.changeset_revision

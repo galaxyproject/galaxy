@@ -763,9 +763,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""
-        if tool_id is None:
-            # This is not a tool ID.
-            return False
         if "repos" not in tool_id:
             # This is not a shed tool.
             return False

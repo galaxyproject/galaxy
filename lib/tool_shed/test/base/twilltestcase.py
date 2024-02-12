@@ -16,6 +16,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 from urllib.parse import (
     quote_plus,
@@ -610,7 +611,9 @@ class ShedTwillTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     requires_galaxy: bool = False
-    _installation_client = None
+    _installation_client: Optional[
+        Union[StandaloneToolShedInstallationClient, GalaxyInteractorToolShedInstallationClient]
+    ] = None
     __browser: Optional[ShedBrowser] = None
 
     def setUp(self):
@@ -2095,7 +2098,6 @@ def _wait_for_installation(repository: galaxy_model.ToolShedRepository, refresh)
                 "Repository installation timed out, %d seconds elapsed, repository state is %s."
                 % (timeout_counter, repository.status)
             )
-            break
         time.sleep(1)
 
 

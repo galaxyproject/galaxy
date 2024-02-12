@@ -26,6 +26,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    overload,
     Set,
     Tuple,
     Type,
@@ -878,7 +879,15 @@ class TabularToolDataField(Dictifiable):
         return rval
 
 
-def _expand_here_template(content: str, here: Optional[str]) -> str:
+@overload
+def _expand_here_template(content: str, here: Optional[str]) -> str: ...
+
+
+@overload
+def _expand_here_template(content: None, here: Optional[str]) -> None: ...
+
+
+def _expand_here_template(content: Optional[str], here: Optional[str]) -> Optional[str]:
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
     return content
