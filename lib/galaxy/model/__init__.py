@@ -4222,7 +4222,7 @@ class Dataset(Base, StorableObject, Serializable):
             except OSError:
                 return 0
         assert self.object_store
-        return self.object_store.size(self)
+        return self.object_store.size(self)  # type:ignore[unreachable]
 
     @overload
     def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
