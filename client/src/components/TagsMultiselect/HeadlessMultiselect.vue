@@ -396,8 +396,9 @@ watch(
     z-index: 10000;
     overflow-y: scroll;
 
-    top: calc(var(--top) + var(--height));
-    left: var(--left);
+    top: 0;
+    left: 0;
+    transform: translate(var(--left), calc(var(--top) + var(--height)));
 
     width: var(--width);
     max-height: min(300px, calc(100% - var(--top) - var(--height) - 12px));
