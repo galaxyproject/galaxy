@@ -88,7 +88,7 @@ pebble = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2", extras = ["email"]}
+pydantic = {version = ">=2, !=2.6.0, !=2.6.1", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -168,7 +168,7 @@ Werkzeug = "*"
 [tool.poetry.group.typecheck.dependencies]
 mypy = "*"
 lxml-stubs = "*"
-pydantic = ">=2"  # for pydantic.mypy plugin
+pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
 types-bleach = "*"
 types-boto = "*"
 types-contextvars = "*"
