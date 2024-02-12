@@ -1390,7 +1390,7 @@ class InputParameterModule(WorkflowModule):
                 assert connection.input_step
                 module = connection.input_step.module
                 assert isinstance(module, (ToolModule, SubWorkflowModule))
-                if isinstance(module, ToolModule):
+                if isinstance(module, ToolModule):  # type:ignore[unreachable]
                     assert module.tool
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
@@ -2560,7 +2560,7 @@ class WorkflowModuleInjector:
 
     def compute_runtime_state(self, step: WorkflowStep, step_args=None):
         assert step.module, "module must be injected before computing runtime state"
-        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
+        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)  # type:ignore[unreachable]
         step.state = state
 
         # Fix any missing parameters
