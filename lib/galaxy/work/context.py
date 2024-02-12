@@ -4,6 +4,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 
 from typing_extensions import Literal
@@ -44,15 +45,15 @@ class WorkRequestContext(ProvidesHistoryContext):
         self.__user_current_roles: Optional[List[Role]] = None
         self.__history = history
         self._url_builder = url_builder
-        self._short_term_cache: Dict[str, Any] = {}
+        self._short_term_cache: Dict[Tuple[str, ...], Any] = {}
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
 
-    def set_cache_value(self, key: str, value: Any):
-        self._short_term_cache[key] = value
+    def set_cache_value(self, args: Tuple[str, ...], value: Any):
+        self._short_term_cache[args] = value
 
-    def get_cache_value(self, key: str, default: Any = None) -> Any:
-        return self._short_term_cache.get(key, default)
+    def get_cache_value(self, args: Tuple[str, ...], default: Any = None) -> Any:
+        return self._short_term_cache.get(args, default)
 
     @property
     def app(self):

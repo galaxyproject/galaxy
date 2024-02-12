@@ -4039,6 +4039,16 @@ of "type" specified for this expression block.
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="RequestMethodType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Select a request method, defaults to GET if unspecified</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GET" />
+      <xs:enumeration value="POST" />
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:complexType name="ParamSelectOption">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -4413,6 +4423,11 @@ used to generate dynamic options.
         <xs:documentation xml:lang="en">Determine options from data hosted at specified URL. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="request_method" type="RequestMethodType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Set the request method to use for options provided using from_url. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
@@ -4446,10 +4461,12 @@ used to generate dynamic options.
   </xs:complexType>
   <xs:group name="OptionsElement">
     <xs:choice>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
-      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
+      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_body" type="RequestBody" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_headers" type="RequestHeaders" minOccurs="0" maxOccurs="1" />
       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
@@ -4458,6 +4475,20 @@ used to generate dynamic options.
       <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="RequestBody">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="RequestHeaders">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
   <xs:complexType name="Column">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
