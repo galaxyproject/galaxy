@@ -199,17 +199,11 @@ export default {
     computed: {
         /** @returns {Boolean} */
         canUnhideSelection() {
-            return (
-                this.areAllSelectedHidden ||
-                (HistoryFilters.checkFilter(this.filterText, "visible", "any") && !this.areAllSelectedVisible)
-            );
+            return this.areAllSelectedHidden || (this.isAnyVisibilityAllowed && !this.areAllSelectedVisible);
         },
         /** @returns {Boolean} */
         canHideSelection() {
-            return (
-                this.areAllSelectedVisible ||
-                (HistoryFilters.checkFilter(this.filterText, "visible", "any") && !this.areAllSelectedHidden)
-            );
+            return this.areAllSelectedVisible || (this.isAnyVisibilityAllowed && !this.areAllSelectedHidden);
         },
         /** @returns {Boolean} */
         showDeleted() {
@@ -217,10 +211,7 @@ export default {
         },
         /** @returns {Boolean} */
         canDeleteSelection() {
-            return (
-                this.areAllSelectedActive ||
-                (HistoryFilters.checkFilter(this.filterText, "deleted", "any") && !this.areAllSelectedDeleted)
-            );
+            return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
         },
         /** @returns {Boolean} */
         canUndeleteSelection() {
@@ -288,6 +279,12 @@ export default {
                 }
             }
             return true;
+        },
+        isAnyVisibilityAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "visible", "any");
+        },
+        isAnyDeletedStateAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
         },
     },
     watch: {
