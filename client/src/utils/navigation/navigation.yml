@@ -234,10 +234,10 @@ history_panel:
   tag_editor:
     selectors:
       _: '${scope} .details .stateless-tags'
-      toggle: '${_} .toggle-button'
+      toggle: '${_} .toggle-link'
       display: '${_} .tag span'
       input: '${_} input'
-      tag_area: '${_} .multiselect__tags'
+      tag_area: '${_} .interactive-tags'
       tag_close_btn: '${_} .tag-delete-button'
 
   multi_operations:
