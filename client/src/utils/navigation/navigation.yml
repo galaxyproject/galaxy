@@ -237,7 +237,7 @@ history_panel:
       toggle: '${_} .toggle-link'
       display: '${_} .tag span'
       input: '${_} input'
-      tag_area: '${_} .multiselect__tags'
+      tag_area: '${_} .interactive-tags'
       tag_close_btn: '${_} .tag-delete-button'
 
   multi_operations:
@@ -262,8 +262,8 @@ history_panel:
       title_input: '.dataset-collection-panel .controls .title input'
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
-      tag_area_button: '.details .stateless-tags .multiselect button'
-      tag_area_input: '.details .stateless-tags .multiselect input'
+      tag_area_button: '.details .stateless-tags .toggle-button'
+      tag_area_input: '.details .stateless-tags .headless-multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
       back_to_history: svg[data-description="back to history"]
 
@@ -279,8 +279,8 @@ history_panel:
     empty_message: '.empty-message'
     size: '.history-size'
     tag_area: '.details .stateless-tags'
-    tag_area_button: '.details .stateless-tags .multiselect button'
-    tag_area_input: '.details .stateless-tags .multiselect input'
+    tag_area_button: '.details .stateless-tags .toggle-button'
+    tag_area_input: '.details .stateless-tags .headless-multiselect input'
     tag_close_btn: '.tags-display .tag-delete-button'
     tags: '.tag span'
 

@@ -42,7 +42,7 @@ function toggleHighlights() {
 <template>
     <div>
         <div v-if="result && !isLoading" class="dataset">
-            <div class="p-2 details not-loading">
+            <div class="details not-loading">
                 <div class="summary">
                     <div v-if="stateText" class="mb-1">{{ stateText }}</div>
                     <div v-else-if="result.misc_blurb" class="blurb">

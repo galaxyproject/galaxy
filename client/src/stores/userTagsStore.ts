@@ -23,5 +23,5 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
         localTags.value.push(tag);
     };
 
-    return { userTags, addLocalTag };
+    return { localTags, userTags, addLocalTag };
 });

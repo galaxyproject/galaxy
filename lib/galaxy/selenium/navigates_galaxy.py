@@ -1510,7 +1510,7 @@ class NavigatesGalaxy(HasDriver):
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area_selector = f"{parent_selector}.multiselect input[type='text']"
+                tag_area_selector = f"{parent_selector}.headless-multiselect input[type='text']"
                 tag_area = self.wait_for_selector_clickable(tag_area_selector)
                 tag_area.click()
 
