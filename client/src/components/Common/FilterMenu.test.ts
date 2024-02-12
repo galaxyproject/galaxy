@@ -1,9 +1,10 @@
-import { mount } from "@vue/test-utils";
-import { HistoryFilters } from "components/History/HistoryFilters";
-import { getLocalVue } from "tests/jest/helpers";
-import Filtering, { compare, contains, equals, toBool, toDate } from "utils/filtering";
+import { getLocalVue } from "@tests/jest/helpers";
+import { mount, Wrapper } from "@vue/test-utils";
 
-import FilterMenu from "./FilterMenu";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
+import Filtering, { compare, contains, equals, toBool, toDate } from "@/utils/filtering";
+
+import FilterMenu from "./FilterMenu.vue";
 
 const localVue = getLocalVue();
 const options = [
@@ -55,18 +56,19 @@ const validTestFilters = {
         type: Boolean,
         handler: equals("bool_is", "bool_is", toBool),
         menuItem: true,
-        boolType: "is",
+        boolType: "is" as const,
     },
     /** A valid filter, just not included in menu */
     not_included: { handler: contains("not_included"), menuItem: false },
 };
-const TestFilters = new Filtering(validTestFilters, false);
+
+const TestFilters = new Filtering(validTestFilters, undefined);
 
 describe("FilterMenu", () => {
-    let wrapper;
+    let wrapper: Wrapper<Vue>;
 
-    function setUpWrapper(name, placeholder, filterClass) {
-        wrapper = mount(FilterMenu, {
+    function setUpWrapper(name: string, placeholder: string, filterClass: Filtering<unknown>) {
+        wrapper = mount(FilterMenu as object, {
             propsData: {
                 name: name,
                 placeholder: placeholder,
@@ -87,12 +89,12 @@ describe("FilterMenu", () => {
         await searchButton.trigger("click");
     }
 
-    async function expectCorrectEmits(showAdvanced, filterText, filterClass) {
-        const filterEmit = wrapper.emitted()["update:filter-text"].length - 1;
-        const toggleEmit = wrapper.emitted()["update:show-advanced"].length - 1;
-        expect(wrapper.emitted()["update:show-advanced"][toggleEmit][0]).toEqual(showAdvanced);
-        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"][toggleEmit][0] });
-        const receivedText = wrapper.emitted()["update:filter-text"][filterEmit][0];
+    async function expectCorrectEmits(showAdvanced: boolean, filterText: string, filterClass: Filtering<unknown>) {
+        const filterEmit = (wrapper.emitted()["update:filter-text"]?.length ?? 0) - 1;
+        const toggleEmit = (wrapper.emitted()?.["update:show-advanced"]?.length ?? 0) - 1;
+        expect(wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0]).toEqual(showAdvanced);
+        await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"]?.[toggleEmit]?.[0] });
+        const receivedText = wrapper.emitted()["update:filter-text"]?.[filterEmit]?.[0];
         const receivedDict = filterClass.getQueryDict(receivedText);
         const parsedDict = filterClass.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
@@ -166,8 +168,8 @@ describe("FilterMenu", () => {
         const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAll(".btn-secondary");
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
-            expect(radioBtnGrp.at(i).text()).toBe(options[i].text);
-            expect(radioBtnGrp.at(i).props().value).toBe(options[i].value);
+            expect(radioBtnGrp.at(i).text()).toBe(options[i]?.text);
+            expect(radioBtnGrp.at(i).props().value).toBe(options[i]?.value);
             expect(radioBtnGrp.at(i).props().checked).toBe(null);
         }
         await radioBtnGrp.at(1).find("input").setChecked(); // click "Yes"

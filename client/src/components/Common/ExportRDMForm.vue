@@ -86,6 +86,7 @@ function clearInputs() {
 
         <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
             <BFormRadio id="radio-new" v-localize name="exportChoice" value="new"> Export to new record </BFormRadio>
+
             <BFormRadio id="radio-existing" v-localize name="exportChoice" value="existing">
                 Export to existing draft record
             </BFormRadio>
@@ -98,6 +99,7 @@ function clearInputs() {
                         <b>{{ newEntry.name }}</b>
                         <span v-localize> draft record has been created in the repository.</span>
                     </p>
+
                     <p v-if="newEntry.external_link">
                         You can preview the record in the repository, further edit its metadata and decide when to
                         publish it at
@@ -105,7 +107,9 @@ function clearInputs() {
                             <b>{{ newEntry.external_link }}</b>
                         </ExternalLink>
                     </p>
+
                     <p v-localize>Please use the button below to upload the exported {{ props.what }} to the record.</p>
+
                     <BButton
                         id="export-button-new-record"
                         v-localize
@@ -130,6 +134,7 @@ function clearInputs() {
                         :require-writable="true"
                         :filter-options="includeOnlyRDMCompatible" />
                 </BFormGroup>
+
                 <BFormGroup
                     id="fieldset-record-name"
                     label-for="record-name"
@@ -141,9 +146,11 @@ function clearInputs() {
                         :placeholder="recordNamePlaceholder"
                         required />
                 </BFormGroup>
+
                 <p v-localize>
                     You need to create the new record in a repository before exporting the {{ props.what }} to it.
                 </p>
+
                 <BButton
                     id="create-record-button"
                     v-localize
@@ -167,6 +174,7 @@ function clearInputs() {
                     :require-writable="true"
                     :filter-options="includeOnlyRDMCompatible" />
             </BFormGroup>
+
             <BButton
                 id="export-button-existing-record"
                 v-localize
