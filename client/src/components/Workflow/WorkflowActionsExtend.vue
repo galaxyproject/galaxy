@@ -20,6 +20,7 @@ import { copyWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "@/utils/redirect";
 
 library.add(faCaretDown, faCopy, faDownload, faFileExport, faShareAlt, farStar, faStar, faTrashRestore);
 
@@ -44,7 +45,7 @@ const { confirm } = useConfirmDialog();
 const { isAnonymous } = storeToRefs(useUserStore());
 
 const downloadUrl = computed(() => {
-    return `/api/workflows/${props.workflow.id}/download?format=json-download`;
+    return withPrefix(`/api/workflows/${props.workflow.id}/download?format=json-download`);
 });
 const shared = computed(() => {
     if (userStore.currentUser) {
