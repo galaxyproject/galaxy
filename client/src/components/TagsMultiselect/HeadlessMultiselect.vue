@@ -419,6 +419,8 @@ whenever(isOpen, async () => {
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
 
+    background-color: $white;
+
     .headless-multiselect__option {
         padding: 0.4rem 0.5rem;
         display: inline-block;
