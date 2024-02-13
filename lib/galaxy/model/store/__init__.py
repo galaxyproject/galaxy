@@ -2170,7 +2170,7 @@ class DirectoryModelExportStore(ModelExportStore):
         # Write collections' attributes (including datasets list) to file.
         stmt_hdca = (
             select(model.HistoryDatasetCollectionAssociation)
-            .where(model.HistoryDatasetCollectionAssociation.history == history)
+            .where(model.HistoryDatasetCollectionAssociation.history == history)  # type:ignore[arg-type]
             .where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
         )
         collections = sa_session.scalars(stmt_hdca)
