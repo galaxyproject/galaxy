@@ -101,7 +101,7 @@ const currentValue = computed({
                 return value;
             }
         }
-        if (!props.optional && formattedOptions.value.length > 0) {
+        if (!currentVariant.value?.multiple && !props.optional && formattedOptions.value.length > 0) {
             const firstEntry = formattedOptions.value && formattedOptions.value[0];
             if (firstEntry && firstEntry.value) {
                 value.push(firstEntry.value);
@@ -502,7 +502,7 @@ const noOptionsWarningMessage = computed(() => {
             v-model="currentValue"
             class="align-self-start"
             :multiple="currentVariant.multiple"
-            :optional="optional"
+            :optional="currentVariant.multiple || optional"
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>
