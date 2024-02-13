@@ -2,6 +2,7 @@
 interface Props {
     title: string;
     goToAllTitle?: string;
+    href?: string;
 }
 
 const props = defineProps<Props>();
@@ -30,6 +31,7 @@ const emit = defineEmits(["goToAll"]);
             class="activity-panel-footer"
             variant="primary"
             :data-description="`props.mainButtonText button`"
+            :to="props.href"
             @click="emit('goToAll')">
             {{ props.goToAllTitle }}
         </BButton>

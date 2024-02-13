@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -16,7 +15,6 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 library.add(faCheckDouble);
 
-const router = useRouter();
 const { confirm } = useConfirmDialog();
 
 const notificationsStore = useNotificationsStore();
@@ -38,14 +36,10 @@ async function onMarkAllAsRead() {
         });
     }
 }
-
-function goToAllNotifications() {
-    router.push("/user/notifications");
-}
 </script>
 
 <template>
-    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" @goToAll="goToAllNotifications">
+    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" href="/user/notifications">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
