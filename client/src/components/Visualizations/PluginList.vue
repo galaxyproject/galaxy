@@ -187,7 +187,7 @@ export default {
             color: $text-color;
         }
         .plugin-list-text {
-            word-wrap: break-word;
+            word-break: break-word;
         }
     }
     .plugin-list-item:hover {
