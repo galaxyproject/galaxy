@@ -50,7 +50,6 @@ function goToAllNotifications() {
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.bottom.hover
-                    :disabled="!unreadNotifications.length"
                     data-description="mark all as read"
                     size="sm"
                     variant="link"
