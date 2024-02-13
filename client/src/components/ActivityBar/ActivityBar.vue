@@ -11,11 +11,9 @@ import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
-import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
@@ -37,11 +35,6 @@ activityStore.sync();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
-
-// context menu references
-const contextMenuVisible = ref(false);
-const contextMenuX = ref(0);
-const contextMenuY = ref(0);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -114,20 +107,6 @@ function onDragOver(evt: MouseEvent) {
 function onToggleSidebar(toggle: string) {
     userStore.toggleSideBar(toggle);
 }
-
-/**
- * Positions and displays the context menu
- */
-function toggleContextMenu(evt: MouseEvent) {
-    if (evt && !contextMenuVisible.value) {
-        evt.preventDefault();
-        contextMenuVisible.value = true;
-        contextMenuX.value = evt.x;
-        contextMenuY.value = evt.y;
-    } else {
-        contextMenuVisible.value = false;
-    }
-}
 </script>
 
 <template>
@@ -135,7 +114,6 @@ function toggleContextMenu(evt: MouseEvent) {
         <div
             class="activity-bar d-flex flex-column no-highlight"
             data-description="activity bar"
-            @contextmenu="toggleContextMenu"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
@@ -222,10 +200,6 @@ function toggleContextMenu(evt: MouseEvent) {
         <FlexPanel v-else-if="isActiveSideBar('settings')" key="settings" side="left" :collapsible="false">
             <SettingsPanel />
         </FlexPanel>
-
-        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
-            <ActivitySettings />
-        </ContextMenu>
     </div>
 </template>
 

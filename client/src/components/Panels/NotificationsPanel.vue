@@ -68,7 +68,7 @@ async function onMarkAllAsRead() {
             No unread notifications to show.
         </BAlert>
 
-        <TransitionGroup name="notifications-box-list" tag="div">
+        <TransitionGroup class="notifications-box-list" name="notifications-box-list" tag="div">
             <div v-for="notification in unreadNotifications" :key="notification.id" class="notifications-box-card">
                 <NotificationCard :notification="notification" />
             </div>
@@ -81,6 +81,10 @@ async function onMarkAllAsRead() {
 
 .notifications-box-card {
     background-color: $body-bg;
+}
+
+.notifications-box-list {
+    overflow-y: scroll;
 }
 
 .notifications-box-list-enter-active {
