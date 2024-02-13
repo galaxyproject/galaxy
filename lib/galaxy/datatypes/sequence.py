@@ -717,7 +717,7 @@ class BaseFastq(Sequence):
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
             for line in in_file:
-                if line.startswith("@"):
+                if line.startswith("@") and data_lines % 4 == 0:
                     sequences += 1
                 data_lines += 1
             dataset.metadata.data_lines = data_lines
