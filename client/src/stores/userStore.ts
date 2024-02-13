@@ -22,7 +22,6 @@ export interface User extends QuotaUsageResponse {
 }
 
 export interface AnonymousUser {
-    id: string;
     isAnonymous: true;
     is_admin?: false;
 }
@@ -135,6 +134,10 @@ export const useUserStore = defineStore("userStore", () => {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
 
+    function isRegisteredUser(user: User | AnonymousUser | null): user is User {
+        return !user?.isAnonymous;
+    }
+
     return {
         currentUser,
         currentPreferences,
@@ -150,6 +153,7 @@ export const useUserStore = defineStore("userStore", () => {
         removeFavoriteTool,
         toggleActivityBar,
         toggleSideBar,
+        isRegisteredUser,
         $reset,
     };
 });
