@@ -397,7 +397,7 @@ function increment_minor() {
             [ "$RELEASE_TYPE" != 'rc' ] || {
                 log_error "Cannot create rc after release (current version: ${RELEASE_CURR}.0)";
                 exit 1; }
-            echo '1.dev0'
+            echo '0.dev0'
             ;;
         *)
             log_error "Don't know how to increment minor version: ${minor}"
