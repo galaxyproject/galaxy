@@ -715,24 +715,11 @@ class BaseFastq(Sequence):
             return
         data_lines = 0
         sequences = 0
-        seq_counter = 0  # blocks should be 4 lines long
         with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
             for line in in_file:
-                line = line.strip()
-                if line and line.startswith("#") and not data_lines:
-                    # We don't count comment lines for sequence data types
-                    continue
-                seq_counter += 1
+                if line.startswith("@"):
+                    sequences += 1
                 data_lines += 1
-                if line and line.startswith("@"):
-                    if seq_counter >= 4:
-                        # count previous block
-                        # blocks should be 4 lines long
-                        sequences += 1
-                        seq_counter = 1
-            if seq_counter >= 4:
-                # count final block
-                sequences += 1
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
