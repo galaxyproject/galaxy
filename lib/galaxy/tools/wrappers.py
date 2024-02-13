@@ -390,7 +390,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             if isinstance(dataset_instance, HasTags):
                 self.groups = {
                     tag.user_value.lower()
-                    for tag in dataset_instance.tags  # type:ignore[attr-defined]
+                    for tag in dataset_instance.tags  # type:ignore[unused-ignore, attr-defined]
                     if tag.user_tname == "group"
                 }
             else:
