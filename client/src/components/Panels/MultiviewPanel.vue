@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faColumns, faUndo } from "@fortawesome/free-solid-svg-icons";
+import { faColumns, faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -16,12 +16,13 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 const route = useRoute();
 const router = useRouter();
 
 // @ts-ignore bad library types
-library.add(faColumns, faUndo);
+library.add(faColumns, faPlus, faUndo);
 
 const filter = ref("");
 const showAdvanced = ref(false);
@@ -95,27 +96,23 @@ function userTitle(title: string) {
 </script>
 
 <template>
-    <div class="unified-panel" aria-labelledby="multiview-heading">
-        <div unselectable="on">
-            <div class="unified-panel-header-inner">
-                <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h2 v-localize class="m-1 h-sm">Select Histories</h2>
-                    <b-button-group>
-                        <b-button
-                            v-b-tooltip.bottom.hover
-                            data-description="create new history for multiview"
-                            size="sm"
-                            variant="link"
-                            :title="userTitle('Create new history and show in multiview')"
-                            :disabled="isAnonymous"
-                            @click="createAndPin">
-                            <Icon fixed-width icon="plus" />
-                        </b-button>
-                    </b-button-group>
-                </nav>
-            </div>
-        </div>
-        <div class="unified-panel-controls">
+    <ActivityPanel title="Select Histories">
+        <template v-slot:header-buttons>
+            <b-button-group>
+                <b-button
+                    v-b-tooltip.bottom.hover
+                    data-description="create new history for multiview"
+                    size="sm"
+                    variant="link"
+                    :title="userTitle('Create new history and show in multiview')"
+                    :disabled="isAnonymous"
+                    @click="createAndPin">
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                </b-button>
+            </b-button-group>
+        </template>
+
+        <template v-slot:header>
             <FilterMenu
                 class="mb-3"
                 name="Histories"
@@ -130,33 +127,35 @@ function userTitle(title: string) {
                     v-b-tooltip.hover.noninteractive.bottom
                     :aria-label="userTitle('Open History Multiview in center panel')"
                     :title="userTitle('Open History Multiview in center panel')"
-                    class="w-100 mb-2"
+                    class="w-100"
                     size="sm"
                     :disabled="isAnonymous"
                     @click="router.push('/histories/view_multiple')">
-                    <FontAwesomeIcon icon="columns" />
+                    <FontAwesomeIcon :icon="faColumns" class="mr-1" />
                     <span v-localize>Open History Multiview</span>
                 </b-button>
                 <b-button-group
                     v-else
                     v-b-tooltip.hover.noninteractive.bottom
-                    class="w-100 mb-2"
+                    class="w-100"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
                     <b-button size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">
                         <span class="position-relative">
-                            <FontAwesomeIcon v-if="pinnedHistoryCount" icon="undo" class="mr-1" />
+                            <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
                             <b>{{ pinRecentText }}</b>
                         </span>
                     </b-button>
                 </b-button-group>
             </section>
-        </div>
+        </template>
+
         <div v-if="isAnonymous">
             <b-badge class="alert-info w-100 mx-2">
                 Please <a :href="withPrefix('/login')">log in or register</a> to create multiple histories.
             </b-badge>
         </div>
+
         <HistoryList v-show="!showAdvanced" multiple :filter="filter" :loading.sync="loading" @setFilter="setFilter" />
-    </div>
+    </ActivityPanel>
 </template>
