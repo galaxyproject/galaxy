@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { type MetadataFiles } from "@/api";
 import { prependPath } from "@/utils/redirect";
 
 library.add(faSave);
@@ -13,9 +14,7 @@ interface Props {
     item: {
         id: string;
         extension: string;
-        meta_files: {
-            file_type: string;
-        }[];
+        meta_files: MetadataFiles;
     };
 }
 
