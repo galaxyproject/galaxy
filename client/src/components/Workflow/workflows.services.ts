@@ -41,7 +41,7 @@ export async function loadWorkflows({
 }
 
 export async function updateWorkflow(id: string, changes: object): Promise<Workflow> {
-    const { data } = await axios.put(`/api/workflows/${id}`, changes);
+    const { data } = await axios.put(withPrefix(`/api/workflows/${id}`), changes);
     return data;
 }
 
