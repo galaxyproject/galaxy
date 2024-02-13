@@ -74,6 +74,8 @@ from galaxy.schema.schema import (
     SharingStatus,
     WorkflowSortByEnum,
 )
+
+# from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -968,6 +970,15 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+# InvokeWorkflowBody = Annotated[
+#     InvokeWorkflowPayload,
+#     Body(
+#         default=...,
+#         title="Invoke workflow",
+#         description="The values to invoke a workflow.",
+#     ),
+# ]
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1123,6 +1134,25 @@ class FastAPIWorkflows:
     ):
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # @router.post(
+    #     "/api/workflows/{workflow_id}/invocations",
+    #     name="Invoke workflow.",
+    #     summary="Schedule the workflow specified by `workflow_id` to run.",
+    # )
+    # def invoke(
+    #     self,
+    #     workflow_id: StoredWorkflowIDPathParam,
+    #     payload: InvokeWorkflowBody,
+    #     trans: ProvidesHistoryContext = DependsOnTrans,
+    # ):
+    #     """
+    #     .. note:: This method takes the same arguments as
+    #         :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+
+    #     :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+    #     """
+    #     return self.service.invoke_workflow(trans, workflow_id, payload)
 
     @router.get(
         "/api/workflows/{workflow_id}/versions",
