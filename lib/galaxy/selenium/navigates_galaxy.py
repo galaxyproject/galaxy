@@ -1469,7 +1469,7 @@ class NavigatesGalaxy(HasDriver):
 
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_element = self.workflow_card_element(workflow_index=workflow_index)
-        workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags").click()
+        workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags .headless-multiselect .toggle-button").click()
 
     def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
         self.workflow_index_click_tag_display(workflow_index=workflow_index)
