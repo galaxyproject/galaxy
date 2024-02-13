@@ -116,7 +116,7 @@ function onQuery(newQuery: string) {
 }
 
 .activity-settings-content {
-    overflow-y: scroll;
+    overflow-y: auto;
 }
 
 .activity-settings-item {
