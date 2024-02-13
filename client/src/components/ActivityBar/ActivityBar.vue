@@ -18,6 +18,7 @@ import UploadItem from "./Items/UploadItem.vue";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
+import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 
@@ -203,11 +204,10 @@ function toggleContextMenu(evt: MouseEvent) {
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
-                    :is-active="isActiveRoute('/user')"
+                    :is-active="isActiveSideBar('settings')"
                     title="Settings"
                     tooltip="Edit preferences"
-                    to="/user"
-                    @click="onToggleSidebar()" />
+                    @click="onToggleSidebar('settings')" />
             </b-nav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
@@ -219,6 +219,10 @@ function toggleContextMenu(evt: MouseEvent) {
         <FlexPanel v-else-if="isActiveSideBar('notifications')" key="notifications" side="left" :collapsible="false">
             <NotificationsPanel />
         </FlexPanel>
+        <FlexPanel v-else-if="isActiveSideBar('settings')" key="settings" side="left" :collapsible="false">
+            <SettingsPanel />
+        </FlexPanel>
+
         <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
             <ActivitySettings />
         </ContextMenu>

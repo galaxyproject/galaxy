@@ -55,6 +55,7 @@ const emit = defineEmits(["goToAll"]);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            min-height: 2rem;
 
             .activity-panel-heading {
                 margin: 0;
@@ -72,6 +73,7 @@ const emit = defineEmits(["goToAll"]);
 
     .activity-panel-footer {
         margin-top: 0.5rem;
+        font-weight: bold;
     }
 }
 </style>
