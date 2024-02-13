@@ -37,7 +37,6 @@ describe("DatasetStorage.vue", () => {
     it("test loading...", async () => {
         mount();
         await wrapper.vm.$nextTick();
-        console.log(wrapper.html());
         expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
         expect(wrapper.findAll("describeobjectstore-stub").length).toBe(0);
     });
