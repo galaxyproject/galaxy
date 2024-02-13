@@ -1,21 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { type HDCADetailed } from "@/api";
 import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
 
 import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
 import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
-interface DSC {
-    name: string;
-    tags: string[];
-    element_count: number;
-    collection_type: string;
-    elements_datatypes: string[];
-}
-
 interface Props {
-    dsc: DSC;
+    dsc: HDCADetailed;
     writeable: boolean;
 }
 
