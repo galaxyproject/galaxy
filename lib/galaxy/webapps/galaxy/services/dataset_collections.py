@@ -248,7 +248,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
         hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
-            trans, "history", hdca_id, check_ownership=True
+            trans, "history", hdca_id
         )
 
         # check to make sure the dsc is part of the validated hdca
