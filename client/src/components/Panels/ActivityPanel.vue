@@ -43,7 +43,7 @@ const emit = defineEmits(["goToAll"]);
     height: 100%;
     display: flex;
     flex-flow: column;
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 1rem;
     background-color: $brand-light;
 
     .activity-panel-header {
@@ -55,7 +55,8 @@ const emit = defineEmits(["goToAll"]);
             justify-content: space-between;
 
             .activity-panel-heading {
-                margin: 0 !important;
+                margin: 0;
+                padding-left: 0.25rem;
             }
         }
     }
