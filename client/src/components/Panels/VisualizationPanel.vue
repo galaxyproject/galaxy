@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import PluginList from "@/components/Visualizations/PluginList.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import PluginList from "@/components/Visualizations/PluginList.vue";
 </script>
 
 <template>
