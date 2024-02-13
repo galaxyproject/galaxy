@@ -14,9 +14,12 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { type MetadataFiles } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
+
+import { type ItemUrls } from ".";
 
 import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
 
@@ -31,18 +34,11 @@ interface Props {
         rerunnable: boolean;
         purged: boolean;
         name: string;
-        meta_files: {
-            file_type: string;
-        }[];
+        meta_files: MetadataFiles;
     };
     writable: boolean;
     showHighlight: boolean;
-    itemUrls: {
-        reportError: string;
-        showDetails: string;
-        rerun: string;
-        visualize: string;
-    };
+    itemUrls: ItemUrls;
 }
 
 const props = withDefaults(defineProps<Props>(), {
