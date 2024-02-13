@@ -43,7 +43,7 @@ const saveVariant = computed(() => {
     return loading.value ? "info" : formValid.value ? "primary" : "secondary";
 });
 const userOwnsHistory = computed(() => {
-    return currentUser.value?.id == props.history?.user_id;
+    return userStore.isRegisteredUser(currentUser.value) && currentUser.value.id == props.history?.user_id;
 });
 const newNameValid = computed(() => {
     if (userOwnsHistory.value && name.value == props.history.name) {
