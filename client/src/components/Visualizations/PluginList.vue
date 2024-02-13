@@ -168,7 +168,7 @@ export default {
     height: 100%;
 
     .plugin-list-items {
-        overflow-y: scroll;
+        overflow-y: auto;
     }
 
     .plugin-list-item {
