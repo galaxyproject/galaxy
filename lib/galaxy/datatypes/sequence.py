@@ -349,6 +349,22 @@ class Fasta(Sequence):
     edam_format = "format_1929"
     file_ext = "fasta"
 
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Set the number of sequences and the number of data lines in a FASTA dataset.
+        """
+        data_lines = 0
+        sequences = 0
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
+            for line in fh:
+                if line.startswith(">"):
+                    sequences += 1
+                    data_lines += 1
+                else:
+                    data_lines += 1
+            dataset.metadata.data_lines = data_lines
+            dataset.metadata.sequences = sequences
+
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in fasta format
