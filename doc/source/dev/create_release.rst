@@ -4,6 +4,7 @@ Creating Galaxy Releases
 The "main" release process is an interactive checklist with instructions (see `Publication of Galaxy Release v 23.2 https://github.com/galaxyproject/galaxy/issues/16742>`_ for an example).
 This issue is generated via `make release-issue`.
 The final result of the release process are
+
 - a new branch (release_YY.N) from which point releases are created
 - a tag pointing at the first commit of the branch (vYY.N)
 
