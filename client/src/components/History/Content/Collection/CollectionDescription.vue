@@ -6,10 +6,10 @@ import { type JobStateSummary } from "./JobStateSummary";
 import CollectionProgress from "./CollectionProgress.vue";
 
 interface Props {
-    elementCount?: number;
+    elementCount?: unknown;
     elementsDatatypes?: string[];
     jobStateSummary: JobStateSummary;
-    collectionType: "list" | "list:paired" | "list:list" | "paired";
+    collectionType: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
