@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { type Ref, ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
@@ -56,6 +56,8 @@ function isActiveRoute(activityTo: string) {
 function isActiveSideBar(menuKey: string) {
     return userStore.toggledSideBar === menuKey;
 }
+
+const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
 
 /**
  * Evaluates the drop data and keeps track of the drop area
@@ -188,17 +190,11 @@ function onToggleSidebar(toggle: string) {
                     @click="onToggleSidebar('settings')" />
             </b-nav>
         </div>
-        <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
-            <ToolPanel />
-        </FlexPanel>
-        <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
-            <WorkflowPanel />
-        </FlexPanel>
-        <FlexPanel v-else-if="isActiveSideBar('notifications')" key="notifications" side="left" :collapsible="false">
-            <NotificationsPanel />
-        </FlexPanel>
-        <FlexPanel v-else-if="isActiveSideBar('settings')" key="settings" side="left" :collapsible="false">
-            <SettingsPanel />
+        <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
+            <ToolPanel v-if="isActiveSideBar('tools')" />
+            <WorkflowPanel v-else-if="isActiveSideBar('workflows')" />
+            <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <SettingsPanel v-else-if="isActiveSideBar('settings')" />
         </FlexPanel>
     </div>
 </template>
