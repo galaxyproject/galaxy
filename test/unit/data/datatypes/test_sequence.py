@@ -1,7 +1,9 @@
-from galaxy.datatypes.sequence import Fasta, FastqSanger, FastqSolexa
-from .util import (
-    get_dataset,
+from galaxy.datatypes.sequence import (
+    Fasta,
+    FastqSanger,
+    FastqSolexa,
 )
+from .util import get_dataset
 
 
 def test_fasta_set_meta():
