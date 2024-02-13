@@ -17,7 +17,7 @@ import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 library.add(faCog);
 
 interface Props {
-    history: any;
+    history: HistorySummary;
 }
 
 const props = defineProps<Props>();
@@ -60,8 +60,10 @@ async function runOperation(operation: () => Promise<HistorySummary>) {
             data-description="history action menu">
             <template v-slot:button-content>
                 <span class="sr-only">History actions</span>
+
                 <FontAwesomeIcon :icon="faCog" />
             </template>
+
             <BDropdownText id="history-op-all-content">
                 <span v-localize>With entire history...</span>
             </BDropdownText>
@@ -93,6 +95,7 @@ async function runOperation(operation: () => Promise<HistorySummary>) {
 
         <BModal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>Really permanently delete all deleted datasets?</p>
+
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
         </BModal>
     </section>
