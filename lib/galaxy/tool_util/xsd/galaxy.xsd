@@ -4361,6 +4361,62 @@ example below demonstrates (many more examples are present in the
 </param>
 ```
 
+### ``from_url``
+
+The following example demonstrates getting options from a third-party server
+with server side requests.
+
+```xml
+<param name="url_param_value" type="select">
+    <options from_url="https://usegalaxy.org/api/genomes">
+    </options>
+</param>
+```
+
+Here a GET request is made to [https://usegalaxy.org/api/genomes](https://usegalaxy.org/api/genomes), which returns
+an array of arrays, such as
+
+```json
+[
+    ["unspecified (?)", "?"],
+    ["A. ceylanicum Mar. 2014 (WS243/Acey_2013.11.30.genDNA/ancCey1) (ancCey1)", "ancCey1"],
+    ...
+]
+```
+Each inner array is a user-selectable option, where the first item in the inner array
+is the `name` of the option (as shown in the select field in the user interface), and
+the second option is the `value` that is passed on to the tool. An optional third
+element can be added to the inner array which corresponds to the `selected` state.
+If the third item is `true` then this particular option is pre-selected.
+
+A more complicated example is shown below, where a POST request is made with a templated
+request header and body. The upstream response is then also transformed using an ecma 5.1
+expression:
+
+```xml
+<param name="url_param_value_header_and_body" type="select">
+    <options from_url="https://postman-echo.com/post" request_method="POST">
+        <!-- Example for accessing user secrets via extra preferences -->
+        <request_headers type="json">
+            {"x-api-key": "${__user__.extra_preferences.fake_api_key if $__user__ else "anon"}"}
+        </request_headers>
+        <request_body type="json">
+            {"name": "value"}
+        </request_body>
+        <!-- https://postman-echo.com/post echos values sent to it, so here we list the response headers -->
+        <postprocess_expression type="ecma5.1"><![CDATA[${
+            return Object.keys(inputs.headers).map((header) => [header, header])
+        }]]]]><![CDATA[></postprocess_expression>
+    </options>
+</param>
+```
+
+The header and body templating mechanism can be used to access protected resources,
+and the `postprocess_expression` can be used to transform arbitrary JSON responses
+to arrays of `name` and `value`, or arrays of `name`, `value` and `selected`.
+
+For an example tool see [select_from_url.xml](https://github.com/galaxyproject/galaxy/tree/dev/test/functional/tools/select_from_url.xml).
+
 ### ``from_file``
 
 The following example is for Blast databases. In this example users maybe select
@@ -4425,7 +4481,7 @@ used to generate dynamic options.
     </xs:attribute>
     <xs:attribute name="request_method" type="RequestMethodType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Set the request method to use for options provided using from_url. </xs:documentation>
+        <xs:documentation xml:lang="en">Set the request method to use for options provided using 'from_url'. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
