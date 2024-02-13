@@ -2,12 +2,12 @@ Creating Galaxy Releases
 ========================
 
 The "main" release process is an interactive checklist with instructions (see `Publication of Galaxy Release v 23.2 https://github.com/galaxyproject/galaxy/issues/16742>`_ for an example).
-This issue is generated via `make release-issue` at the end of the process.
+This issue is generated via `make release-issue`.
 The final result of the release process are
 - a new branch (release_YY.N) from which point releases are created
 - a tag pointing at the first commit of the branch (vYY.N)
 
-Python packages are not uploaded by this process, but are instead created by creating a point release, where the first point release should be `vYY.N.0`.
+Python packages are not published by this process, but are instead published by creating point releases where the first point release should be `vYY.N.0`.
 
 Creating Galaxy Point Releases
 ==============================
