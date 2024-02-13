@@ -10,6 +10,7 @@ import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -150,7 +151,7 @@ function onToggleSidebar(toggle: string) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'workflows'].includes(activity.id)"
+                                v-else-if="['tools', 'workflows', 'visualizations'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -193,6 +194,7 @@ function onToggleSidebar(toggle: string) {
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
             <WorkflowPanel v-else-if="isActiveSideBar('workflows')" />
+            <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
         </FlexPanel>

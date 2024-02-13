@@ -67,7 +67,7 @@ export const Activities = [
         mutable: false,
         optional: true,
         title: "Visualize",
-        to: "/visualizations",
+        to: null,
         tooltip: "Visualize datasets",
         visible: true,
     },
