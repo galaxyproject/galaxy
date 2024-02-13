@@ -63,7 +63,7 @@ function onQuery(newQuery: string) {
         <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
         <div v-if="foundActivities" class="activity-settings-content">
             <div v-for="activity in filteredActivities" :key="activity.id">
-                <div class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
+                <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="w-100">
                             <FontAwesomeIcon
@@ -97,7 +97,7 @@ function onQuery(newQuery: string) {
                     <small v-localize>
                         {{ activity.description || "No description available" }}
                     </small>
-                </div>
+                </button>
             </div>
         </div>
         <div v-else class="activity-settings-content">
@@ -120,6 +120,12 @@ function onQuery(newQuery: string) {
 }
 
 .activity-settings-item {
+    background: none;
+    border: none;
+    text-align: left;
+    transition: none;
+    width: 100%;
+
     .icon-check {
         color: darken($brand-success, 15%);
     }
