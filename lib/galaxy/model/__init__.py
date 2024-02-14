@@ -4463,6 +4463,16 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     state = property(get_dataset_state, set_dataset_state)
 
+    def get_object_store_id(self):
+        return self.dataset.object_store_id
+
+    object_store_id = property(get_object_store_id)
+
+    def get_quota_source_label(self):
+        return self.dataset.quota_source_label
+
+    quota_source_label = property(get_quota_source_label)
+
     def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
             return ""

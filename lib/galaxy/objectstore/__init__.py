@@ -1589,16 +1589,20 @@ class QuotaSourceMap:
                 exclude_object_store_ids.append(backend_id)
         return exclude_object_store_ids
 
-    def get_id_to_source_pairs(self):
+    def get_id_to_source_pairs(self, include_default_quota_source=False):
         pairs = []
         for backend_id, backend_source_map in self.backends.items():
-            if backend_source_map.default_quota_source is not None and backend_source_map.default_quota_enabled:
+            if (
+                backend_source_map.default_quota_source is not None or include_default_quota_source
+            ) and backend_source_map.default_quota_enabled:
                 pairs.append((backend_id, backend_source_map.default_quota_source))
         return pairs
 
-    def ids_per_quota_source(self):
-        quota_sources: Dict[str, List[str]] = {}
-        for object_id, quota_source_label in self.get_id_to_source_pairs():
+    def ids_per_quota_source(self, include_default_quota_source=False):
+        quota_sources: Dict[Optional[str], List[str]] = {}
+        for object_id, quota_source_label in self.get_id_to_source_pairs(
+            include_default_quota_source=include_default_quota_source
+        ):
             if quota_source_label not in quota_sources:
                 quota_sources[quota_source_label] = []
             quota_sources[quota_source_label].append(object_id)
