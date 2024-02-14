@@ -5,9 +5,15 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Union,
 )
 
-from galaxy import web
+from fastapi import HTTPException
+
+from galaxy import (
+    util,
+    web,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
@@ -16,6 +22,8 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.model import StoredWorkflow
+from galaxy.model.base import transaction
+from galaxy.schema.invocation import WorkflowInvocationResponse
 from galaxy.schema.schema import (
     InvocationsStateCounts,
     WorkflowIndexQueryPayload,
@@ -23,6 +31,8 @@ from galaxy.schema.schema import (
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
+from galaxy.workflow.run import queue_invoke
+from galaxy.workflow.run_request import build_workflow_run_configs
 
 log = logging.getLogger(__name__)
 
@@ -105,75 +115,68 @@ class WorkflowsService(ServiceBase):
             return workflows, total_matches
         return rval, total_matches
 
-    # def invoke_workflow(self, trans, workflow_id, payload):
-    #     # Get workflow + accessibility check.
-    #     stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
-    #         trans, workflow_id, instance=payload.get("instance", False)
-    #     )
-    #     workflow = stored_workflow.latest_workflow
-    #     run_configs = build_workflow_run_configs(trans, workflow, payload)
-    #     is_batch = payload.get("batch")
-    #     if not is_batch and len(run_configs) != 1:
-    #         raise HTTPException(status_code=400, detail="Must specify 'batch' to use batch parameters.")
+    def invoke_workflow(
+        self, trans, workflow_id, payload
+    ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
+        # TODO - make use of pydantic model for payload
+        # Get workflow + accessibility check.
+        by_stored_id = not payload.get("instance", False)
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id)
+        workflow = stored_workflow.latest_workflow
+        run_configs = build_workflow_run_configs(trans, workflow, payload)
+        is_batch = payload.get("batch")
+        if not is_batch and len(run_configs) != 1:
+            raise HTTPException(status_code=400, detail="Must specify 'batch' to use batch parameters.")
 
-    #     require_exact_tool_versions = util.string_as_bool(payload.get("require_exact_tool_versions", "true"))
-    #     tools = self._workflow_contents_manager.get_all_tools(workflow)
-    #     missing_tools = [
-    #         tool
-    #         for tool in tools
-    #         if not self.app.toolbox.has_tool(
-    #             tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
-    #         )
-    #     ]
-    #     if missing_tools:
-    #         missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-    #         if require_exact_tool_versions:
-    #             missing_tools_message += ", ".join(
-    #                 [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-    #             )
-    #         else:
-    #             missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-    #         raise HTTPException(status_code=400, detail=missing_tools_message)
-    #     # if missing_tools:
-    #     #     missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-    #     #     if require_exact_tool_versions:
-    #     #         missing_tools_message += ", ".join(
-    #     #             [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-    #     #         )
-    #     #     else:
-    #     #         missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-    #     #     raise exceptions.MessageException(missing_tools_message)
+        require_exact_tool_versions = util.string_as_bool(payload.get("require_exact_tool_versions", "true"))
+        tools = self._workflow_contents_manager.get_all_tools(workflow)
+        missing_tools = [
+            tool
+            for tool in tools
+            if not trans.app.toolbox.has_tool(
+                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
+            )
+        ]
+        if missing_tools:
+            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
+            if require_exact_tool_versions:
+                missing_tools_message += ", ".join(
+                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
+                )
+            else:
+                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
+            raise HTTPException(status_code=400, detail=missing_tools_message)
+        # if missing_tools:
+        #     missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
+        #     if require_exact_tool_versions:
+        #         missing_tools_message += ", ".join(
+        #             [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
+        #         )
+        #     else:
+        #         missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
+        #     raise exceptions.MessageException(missing_tools_message)
 
-    #     invocations = []
-    #     for run_config in run_configs:
-    #         workflow_scheduler_id = payload.get("scheduler", None)
-    #         # TODO: workflow scheduler hints
-    #         work_request_params = dict(scheduler=workflow_scheduler_id)
-    #         workflow_invocation = queue_invoke(
-    #             trans=trans,
-    #             workflow=workflow,
-    #             workflow_run_config=run_config,
-    #             request_params=work_request_params,
-    #             flush=False,
-    #         )
-    #         invocations.append(workflow_invocation)
+        invocations = []
+        for run_config in run_configs:
+            workflow_scheduler_id = payload.get("scheduler", None)
+            # TODO: workflow scheduler hints
+            work_request_params = dict(scheduler=workflow_scheduler_id)
+            workflow_invocation = queue_invoke(
+                trans=trans,
+                workflow=workflow,
+                workflow_run_config=run_config,
+                request_params=work_request_params,
+                flush=False,
+            )
+            invocations.append(workflow_invocation)
 
-    #     with transaction(trans.sa_session):
-    #         trans.sa_session.commit()
-    #     encoded_invocations = []
-    #     for invocation in invocations:
-    #         as_dict = workflow_invocation.to_dict()
-    #         as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
-    #         as_dict["messages"] = [
-    #             InvocationMessageResponseModel.model_validate(message).model_dump(mode="json")
-    #             for message in invocation.messages
-    #         ]
-    #         encoded_invocations.append(as_dict)
-
-    #     if is_batch:
-    #         return encoded_invocations
-    #     else:
-    #         return encoded_invocations[0]
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        encoded_invocations = [WorkflowInvocationResponse(**invocation.to_dict()) for invocation in invocations]
+        if is_batch:
+            return encoded_invocations
+        else:
+            return encoded_invocations[0]
 
     def delete(self, trans, workflow_id):
         workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
