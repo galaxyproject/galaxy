@@ -1828,6 +1828,14 @@ export interface paths {
     "/api/workflows/{workflow_id}/invocations": {
         /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
+        /**
+         * Schedule the workflow specified by `workflow_id` to run.
+         * @description .. note:: This method takes the same arguments as
+         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+         *
+         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+         */
+        post: operations["Invoke_workflow__api_workflows__workflow_id__invocations_post"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
         /**
@@ -7367,6 +7375,104 @@ export interface components {
              * @description Whether to take action on the invocation step.
              */
             action: boolean;
+        };
+        /** InvokeWorkflowPayload */
+        InvokeWorkflowPayload: {
+            /**
+             * Allow Tool State Corrections
+             * @default false
+             */
+            allow_tool_state_corrections?: boolean | null;
+            /**
+             * Batch
+             * @description If true, the workflow is invoked as a batch.
+             * @default false
+             */
+            batch?: boolean | null;
+            /** Ds Map */
+            ds_map?: {
+                [key: string]: Record<string, never> | undefined;
+            } | null;
+            /** Effective Outputs */
+            effective_outputs?: boolean | null;
+            /**
+             * History
+             * @description The history to import the workflow into.
+             */
+            history?: string | null;
+            /**
+             * History ID
+             * @description The history to import the workflow into.
+             */
+            history_id?: string | null;
+            /**
+             * History Name
+             * @description The name of the history to import the workflow into.
+             */
+            history_name?: string | null;
+            /** Inputs */
+            inputs?: Record<string, never> | null;
+            /** Inputs By */
+            inputs_by?: string | null;
+            /**
+             * Is Instance
+             * @description If true, the workflow is invoked as an instance.
+             * @default false
+             */
+            instance?: boolean | null;
+            /**
+             * Legacy
+             * @default false
+             */
+            legacy?: boolean | null;
+            /**
+             * New History Name
+             * @description The name of the new history to import the workflow into.
+             */
+            new_history_name?: string | null;
+            /**
+             * No Add To History
+             * @default false
+             */
+            no_add_to_history?: boolean | null;
+            /** Parameters */
+            parameters?: Record<string, never> | null;
+            /**
+             * Parameters Normalized
+             * @default false
+             */
+            parameters_normalized?: boolean | null;
+            /** Preferred Intermediate Object Store Id */
+            preferred_intermediate_object_store_id?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /** Preferred Outputs Object Store Id */
+            preferred_outputs_object_store_id?: string | null;
+            /** Replacement Params */
+            replacement_params?: Record<string, never> | null;
+            /**
+             * Require Exact Tool Versions
+             * @description If true, exact tool versions are required for workflow invocation.
+             * @default false
+             */
+            require_exact_tool_versions?: boolean | null;
+            /** Resource Params */
+            resource_params?: Record<string, never> | null;
+            /**
+             * Scheduler
+             * @description Scheduler to use for workflow invocation.
+             */
+            scheduler?: string | null;
+            /** Step Parameters */
+            step_parameters?: Record<string, never> | null;
+            /**
+             * Use Cached Job
+             * @default false
+             */
+            use_cached_job?: boolean | null;
         };
         /**
          * ItemTagsCreatePayload
@@ -21739,6 +21845,45 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    Invoke_workflow__api_workflows__workflow_id__invocations_post: {
+        /**
+         * Schedule the workflow specified by `workflow_id` to run.
+         * @description .. note:: This method takes the same arguments as
+         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+         *
+         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            path: {
+                workflow_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvokeWorkflowPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["WorkflowInvocationResponse"]
+                        | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Validation Error */
