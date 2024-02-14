@@ -383,14 +383,6 @@ export type RepositoriesByOwnerQuery = {
     } | null
 }
 
-export type RepositoryCreationItemFragment = {
-    __typename?: "RelayRepository"
-    encodedId: string
-    name: string
-    createTime?: any | null
-    user: { __typename?: "SimpleUser"; username: string }
-} & { " $fragmentName"?: "RepositoryCreationItemFragment" }
-
 export type RepositoriesByCategoryQueryVariables = Exact<{
     categoryId?: InputMaybe<Scalars["String"]>
     cursor?: InputMaybe<Scalars["String"]>
@@ -433,32 +425,14 @@ export type RepositoryUpdateItemFragment = {
     user: { __typename?: "SimpleUser"; username: string }
 } & { " $fragmentName"?: "RepositoryUpdateItemFragment" }
 
-export const RepositoryCreationItemFragmentDoc = {
-    kind: "Document",
-    definitions: [
-        {
-            kind: "FragmentDefinition",
-            name: { kind: "Name", value: "RepositoryCreationItem" },
-            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
-            selectionSet: {
-                kind: "SelectionSet",
-                selections: [
-                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
-                    { kind: "Field", name: { kind: "Name", value: "name" } },
-                    {
-                        kind: "Field",
-                        name: { kind: "Name", value: "user" },
-                        selectionSet: {
-                            kind: "SelectionSet",
-                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
-                        },
-                    },
-                    { kind: "Field", name: { kind: "Name", value: "createTime" } },
-                ],
-            },
-        },
-    ],
-} as unknown as DocumentNode<RepositoryCreationItemFragment, unknown>
+export type RepositoryCreationItemFragment = {
+    __typename?: "RelayRepository"
+    encodedId: string
+    name: string
+    createTime?: any | null
+    user: { __typename?: "SimpleUser"; username: string }
+} & { " $fragmentName"?: "RepositoryCreationItemFragment" }
+
 export const RepositoryListItemFragmentFragmentDoc = {
     kind: "Document",
     definitions: [
@@ -515,6 +489,32 @@ export const RepositoryUpdateItemFragmentDoc = {
         },
     ],
 } as unknown as DocumentNode<RepositoryUpdateItemFragment, unknown>
+export const RepositoryCreationItemFragmentDoc = {
+    kind: "Document",
+    definitions: [
+        {
+            kind: "FragmentDefinition",
+            name: { kind: "Name", value: "RepositoryCreationItem" },
+            typeCondition: { kind: "NamedType", name: { kind: "Name", value: "RelayRepository" } },
+            selectionSet: {
+                kind: "SelectionSet",
+                selections: [
+                    { kind: "Field", name: { kind: "Name", value: "encodedId" } },
+                    { kind: "Field", name: { kind: "Name", value: "name" } },
+                    {
+                        kind: "Field",
+                        name: { kind: "Name", value: "user" },
+                        selectionSet: {
+                            kind: "SelectionSet",
+                            selections: [{ kind: "Field", name: { kind: "Name", value: "username" } }],
+                        },
+                    },
+                    { kind: "Field", name: { kind: "Name", value: "createTime" } },
+                ],
+            },
+        },
+    ],
+} as unknown as DocumentNode<RepositoryCreationItemFragment, unknown>
 export const RecentlyCreatedRepositoriesDocument = {
     kind: "Document",
     definitions: [
@@ -537,7 +537,7 @@ export const RecentlyCreatedRepositoriesDocument = {
                             {
                                 kind: "Argument",
                                 name: { kind: "Name", value: "sort" },
-                                value: { kind: "EnumValue", value: "UPDATE_TIME_DESC" },
+                                value: { kind: "EnumValue", value: "CREATE_TIME_DESC" },
                             },
                         ],
                         selectionSet: {

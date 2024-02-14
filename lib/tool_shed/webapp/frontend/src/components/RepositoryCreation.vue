@@ -1,20 +1,9 @@
 <script setup lang="ts">
 import UtcDate from "@/components/UtcDate.vue"
 
-import { graphql } from "@/gql"
 import { type FragmentType, useFragment } from "@/gql/fragment-masking"
 import { goToRepository } from "@/router"
-
-const CreateFragment = graphql(/* GraphQL */ `
-    fragment RepositoryCreationItem on RelayRepository {
-        encodedId
-        name
-        user {
-            username
-        }
-        createTime
-    }
-`)
+import { CreateFragment } from "@/gqlFragements"
 
 const props = defineProps<{
     creation: FragmentType<typeof CreateFragment>
