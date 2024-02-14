@@ -53,7 +53,6 @@ from galaxy.schema.invocation import (
     CreateInvocationFromStore,
     CreateInvocationsFromStorePayload,
     InvocationJobsResponse,
-    InvocationMessageResponseModel,
     InvocationReport,
     InvocationSerializationParams,
     InvocationStep,
@@ -74,6 +73,7 @@ from galaxy.schema.schema import (
     SharingStatus,
     WorkflowSortByEnum,
 )
+from galaxy.schema.workflows import InvokeWorkflowPayload
 
 # from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import StructuredApp
@@ -120,8 +120,6 @@ from galaxy.webapps.galaxy.services.workflows import (
 )
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
-from galaxy.workflow.run import queue_invoke
-from galaxy.workflow.run_request import build_workflow_run_configs
 
 log = logging.getLogger(__name__)
 
@@ -723,76 +721,6 @@ class WorkflowsAPIController(
         item["url"] = url_for("workflow", id=encoded_id)
         return item
 
-    @expose_api
-    def invoke(self, trans: GalaxyWebTransaction, workflow_id, payload, **kwd):
-        """
-        POST /api/workflows/{encoded_workflow_id}/invocations
-
-        Schedule the workflow specified by `workflow_id` to run.
-
-        .. note:: This method takes the same arguments as
-            :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-
-        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
-        """
-        # Get workflow + accessibility check.
-        stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, instance=kwd.get("instance", False))
-        workflow = stored_workflow.latest_workflow
-        run_configs = build_workflow_run_configs(trans, workflow, payload)
-        is_batch = payload.get("batch")
-        if not is_batch and len(run_configs) != 1:
-            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
-
-        require_exact_tool_versions = util.string_as_bool(payload.get("require_exact_tool_versions", "true"))
-        tools = self.workflow_contents_manager.get_all_tools(workflow)
-        missing_tools = [
-            tool
-            for tool in tools
-            if not self.app.toolbox.has_tool(
-                tool["tool_id"], tool_version=tool["tool_version"], exact=require_exact_tool_versions
-            )
-        ]
-        if missing_tools:
-            missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-            if require_exact_tool_versions:
-                missing_tools_message += ", ".join(
-                    [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-                )
-            else:
-                missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-            raise exceptions.MessageException(missing_tools_message)
-
-        invocations = []
-        for run_config in run_configs:
-            workflow_scheduler_id = payload.get("scheduler", None)
-            # TODO: workflow scheduler hints
-            work_request_params = dict(scheduler=workflow_scheduler_id)
-            workflow_invocation = queue_invoke(
-                trans=trans,
-                workflow=workflow,
-                workflow_run_config=run_config,
-                request_params=work_request_params,
-                flush=False,
-            )
-            invocations.append(workflow_invocation)
-
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        encoded_invocations = []
-        for invocation in invocations:
-            as_dict = workflow_invocation.to_dict()
-            as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
-            as_dict["messages"] = [
-                InvocationMessageResponseModel.model_validate(message).model_dump(mode="json")
-                for message in invocation.messages
-            ]
-            encoded_invocations.append(as_dict)
-
-        if is_batch:
-            return encoded_invocations
-        else:
-            return encoded_invocations[0]
-
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
@@ -970,14 +898,14 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
-# InvokeWorkflowBody = Annotated[
-#     InvokeWorkflowPayload,
-#     Body(
-#         default=...,
-#         title="Invoke workflow",
-#         description="The values to invoke a workflow.",
-#     ),
-# ]
+InvokeWorkflowBody = Annotated[
+    InvokeWorkflowPayload,
+    Body(
+        default=...,
+        title="Invoke workflow",
+        description="The values to invoke a workflow.",
+    ),
+]
 
 
 @router.cbv
@@ -1135,24 +1063,25 @@ class FastAPIWorkflows:
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    # @router.post(
-    #     "/api/workflows/{workflow_id}/invocations",
-    #     name="Invoke workflow.",
-    #     summary="Schedule the workflow specified by `workflow_id` to run.",
-    # )
-    # def invoke(
-    #     self,
-    #     workflow_id: StoredWorkflowIDPathParam,
-    #     payload: InvokeWorkflowBody,
-    #     trans: ProvidesHistoryContext = DependsOnTrans,
-    # ):
-    #     """
-    #     .. note:: This method takes the same arguments as
-    #         :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+    @router.post(
+        "/api/workflows/{workflow_id}/invocations",
+        name="Invoke workflow.",
+        summary="Schedule the workflow specified by `workflow_id` to run.",
+    )
+    def invoke(
+        self,
+        # workflow_id: StoredWorkflowIDPathParam,
+        payload: InvokeWorkflowBody,
+        workflow_id: str = Path(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
+        """
+        .. note:: This method takes the same arguments as
+            :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
 
-    #     :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
-    #     """
-    #     return self.service.invoke_workflow(trans, workflow_id, payload)
+        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+        """
+        return self.service.invoke_workflow(trans, workflow_id, payload.model_dump(exclude_unset=True))
 
     @router.get(
         "/api/workflows/{workflow_id}/versions",
