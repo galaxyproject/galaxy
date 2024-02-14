@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -16,7 +15,6 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 
 library.add(faCheckDouble);
 
-const router = useRouter();
 const { confirm } = useConfirmDialog();
 
 const notificationsStore = useNotificationsStore();
@@ -38,19 +36,14 @@ async function onMarkAllAsRead() {
         });
     }
 }
-
-function goToAllNotifications() {
-    router.push("/user/notifications");
-}
 </script>
 
 <template>
-    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" @goToAll="goToAllNotifications">
+    <ActivityPanel title="Unread Notifications" go-to-all-title="All notifications" href="/user/notifications">
         <template v-slot:header-buttons>
             <BButtonGroup>
                 <BButton
                     v-b-tooltip.bottom.hover
-                    :disabled="!unreadNotifications.length"
                     data-description="mark all as read"
                     size="sm"
                     variant="link"
@@ -75,7 +68,7 @@ function goToAllNotifications() {
             No unread notifications to show.
         </BAlert>
 
-        <TransitionGroup name="notifications-box-list" tag="div">
+        <TransitionGroup class="notifications-box-list" name="notifications-box-list" tag="div">
             <div v-for="notification in unreadNotifications" :key="notification.id" class="notifications-box-card">
                 <NotificationCard :notification="notification" />
             </div>
@@ -88,6 +81,10 @@ function goToAllNotifications() {
 
 .notifications-box-card {
     background-color: $body-bg;
+}
+
+.notifications-box-list {
+    overflow-y: scroll;
 }
 
 .notifications-box-list-enter-active {

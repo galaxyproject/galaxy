@@ -2,6 +2,7 @@
 interface Props {
     title: string;
     goToAllTitle?: string;
+    href?: string;
 }
 
 const props = defineProps<Props>();
@@ -30,6 +31,7 @@ const emit = defineEmits(["goToAll"]);
             class="activity-panel-footer"
             variant="primary"
             :data-description="`props.mainButtonText button`"
+            :to="props.href"
             @click="emit('goToAll')">
             {{ props.goToAllTitle }}
         </BButton>
@@ -43,7 +45,7 @@ const emit = defineEmits(["goToAll"]);
     height: 100%;
     display: flex;
     flex-flow: column;
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 1rem;
     background-color: $brand-light;
 
     .activity-panel-header {
@@ -53,22 +55,26 @@ const emit = defineEmits(["goToAll"]);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            min-height: 2rem;
 
             .activity-panel-heading {
-                margin: 0 !important;
+                margin: 0;
+                padding-left: 0.25rem;
             }
         }
     }
 
     .activity-panel-body {
+        display: flex;
+        flex-direction: column;
         flex-grow: 1;
-        height: 100%;
-        overflow-y: auto;
+        overflow-y: hidden;
         padding: 0.2rem 0.2rem;
     }
 
     .activity-panel-footer {
         margin-top: 0.5rem;
+        font-weight: bold;
     }
 }
 </style>
