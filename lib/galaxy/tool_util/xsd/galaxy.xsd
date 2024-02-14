@@ -3938,8 +3938,8 @@ Name | Description
 ``$__tool_data_path__`` | ``config/galaxy.ini``'s tool_data_path value
 ``$__root_dir__`` | Top-level Galaxy source directory made absolute via ``os.path.abspath()``
 ``$__datatypes_config__`` | ``config/galaxy.ini``'s datatypes_config value
-``$__user_id__`` | Email's numeric ID (id column of ``galaxy_user`` table in the database)
-``$__user_email__`` | User's email address
+``$__user_id__`` | Numeric ID of user (id column of ``galaxy_user`` table in the database)
+``$__user_email__`` | Email address of user
 ``$__app__`` | The ``galaxy.app.UniverseApplication`` instance, gives access to all other configuration file variables (e.g. $__app__.config.output_size_limit). Should be used as a last resort, may go away in future releases.
 ``$__target_datatype__`` | Only available in converter tools when run internally by Galaxy. Contains the target datatype of the conversion
 
@@ -4036,6 +4036,16 @@ of "type" specified for this expression block.
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="ecma5.1" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RequestMethodType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Select a request method, defaults to GET if unspecified</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="GET" />
+      <xs:enumeration value="POST" />
     </xs:restriction>
   </xs:simpleType>
 
@@ -4227,8 +4237,8 @@ For data parameters this tag can be used to restrict possible input datasets to 
 instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
 
 For select parameters this tag set dynamically creates a list of options whose
-values can be obtained from a predefined file stored locally or a dataset
-selected from the current history.
+values can be obtained from a predefined file stored locally, a dataset
+selected from the current history or data fetched from a URL.
 
 There are at least five basic ways to use this tag - four of these correspond to
 a ``from_XXX`` attribute on the ``options`` directive and the other is to
@@ -4237,6 +4247,7 @@ exclusively use ``filter``s to populate options.
 * ``from_data_table`` - The options for the select list are dynamically obtained
   from a file specified in the Galaxy configuration file
   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
+* `from_url` - Fetches a list of available options from a remote server.
 * ``from_dataset`` - The options for the select list are dynamically obtained
   from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
@@ -4350,6 +4361,62 @@ example below demonstrates (many more examples are present in the
 </param>
 ```
 
+### ``from_url``
+
+The following example demonstrates getting options from a third-party server
+with server side requests.
+
+```xml
+<param name="url_param_value" type="select">
+    <options from_url="https://usegalaxy.org/api/genomes">
+    </options>
+</param>
+```
+
+Here a GET request is made to [https://usegalaxy.org/api/genomes](https://usegalaxy.org/api/genomes), which returns
+an array of arrays, such as
+
+```json
+[
+    ["unspecified (?)", "?"],
+    ["A. ceylanicum Mar. 2014 (WS243/Acey_2013.11.30.genDNA/ancCey1) (ancCey1)", "ancCey1"],
+    ...
+]
+```
+Each inner array is a user-selectable option, where the first item in the inner array
+is the `name` of the option (as shown in the select field in the user interface), and
+the second option is the `value` that is passed on to the tool. An optional third
+element can be added to the inner array which corresponds to the `selected` state.
+If the third item is `true` then this particular option is pre-selected.
+
+A more complicated example is shown below, where a POST request is made with a templated
+request header and body. The upstream response is then also transformed using an ecma 5.1
+expression:
+
+```xml
+<param name="url_param_value_header_and_body" type="select">
+    <options from_url="https://postman-echo.com/post" request_method="POST">
+        <!-- Example for accessing user secrets via extra preferences -->
+        <request_headers type="json">
+            {"x-api-key": "${__user__.extra_preferences.fake_api_key if $__user__ else "anon"}"}
+        </request_headers>
+        <request_body type="json">
+            {"name": "value"}
+        </request_body>
+        <!-- https://postman-echo.com/post echos values sent to it, so here we list the response headers -->
+        <postprocess_expression type="ecma5.1"><![CDATA[${
+            return Object.keys(inputs.headers).map((header) => [header, header])
+        }]]]]><![CDATA[></postprocess_expression>
+    </options>
+</param>
+```
+
+The header and body templating mechanism can be used to access protected resources,
+and the `postprocess_expression` can be used to transform arbitrary JSON responses
+to arrays of `name` and `value`, or arrays of `name`, `value` and `selected`.
+
+For an example tool see [select_from_url.xml](https://github.com/galaxyproject/galaxy/tree/dev/test/functional/tools/select_from_url.xml).
+
 ### ``from_file``
 
 The following example is for Blast databases. In this example users maybe select
@@ -4390,7 +4457,7 @@ used to generate dynamic options.
 </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
@@ -4405,6 +4472,16 @@ used to generate dynamic options.
     <xs:attribute name="from_data_table" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Determine options from a data table. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_url" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Determine options from data hosted at specified URL. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="request_method" type="RequestMethodType">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Set the request method to use for options provided using 'from_url'. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
@@ -4440,9 +4517,12 @@ used to generate dynamic options.
   </xs:complexType>
   <xs:group name="OptionsElement">
     <xs:choice>
-      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
+      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_body" type="RequestBody" minOccurs="0" maxOccurs="1" />
+      <xs:element name="request_headers" type="RequestHeaders" minOccurs="0" maxOccurs="1" />
       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
@@ -4451,6 +4531,20 @@ used to generate dynamic options.
       <xs:element name="option" type="ParamDrillDownOption" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="RequestBody">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="RequestHeaders">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xs:string"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
   <xs:complexType name="Column">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
