@@ -247,7 +247,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
+        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id
         )
 

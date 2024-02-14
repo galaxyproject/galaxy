@@ -12,10 +12,10 @@
             <b-dropdown-text>
                 <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
+            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
+            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
             <b-dropdown-item
@@ -25,7 +25,7 @@
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
             <b-dropdown-item
-                v-if="!showStrictDeleted"
+                v-if="canDeleteSelection"
                 v-b-modal:delete-selected-content
                 data-description="delete option">
                 <span v-localize>Delete</span>
@@ -193,20 +193,28 @@ export default {
     },
     computed: {
         /** @returns {Boolean} */
-        showHidden() {
-            return !HistoryFilters.checkFilter(this.filterText, "visible", true);
+        canUnhideSelection() {
+            return this.areAllSelectedHidden || (this.isAnyVisibilityAllowed && !this.areAllSelectedVisible);
+        },
+        /** @returns {Boolean} */
+        canHideSelection() {
+            return this.areAllSelectedVisible || (this.isAnyVisibilityAllowed && !this.areAllSelectedHidden);
         },
         /** @returns {Boolean} */
         showDeleted() {
             return !HistoryFilters.checkFilter(this.filterText, "deleted", false);
         },
         /** @returns {Boolean} */
-        showStrictDeleted() {
-            return HistoryFilters.checkFilter(this.filterText, "deleted", true);
+        canDeleteSelection() {
+            return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canUndeleteSelection() {
+            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
         },
         /** @returns {Boolean} */
         showBuildOptions() {
-            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && this.areAllSelectedActive && !this.showDeleted;
         },
         /** @returns {Boolean} */
         showBuildOptionForAll() {
@@ -227,9 +235,6 @@ export default {
         noTagsSelected() {
             return this.selectedTags.length === 0;
         },
-        canUndeleteSelection() {
-            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
-        },
         areAllSelectedPurged() {
             for (const item of this.contentSelection.values()) {
                 if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
@@ -237,6 +242,44 @@ export default {
                 }
             }
             return true;
+        },
+        areAllSelectedVisible() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && !item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedHidden() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedActive() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedDeleted() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && !item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        isAnyVisibilityAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "visible", "any");
+        },
+        isAnyDeletedStateAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
         },
     },
     watch: {
