@@ -1,9 +1,25 @@
 <script setup lang="ts">
+import { type AxiosError } from "axios";
 import { BModal } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { type components } from "@/api/schema";
+
+type HistoryContentBulkOperationResult = components["schemas"]["HistoryContentBulkOperationResult"];
+
+interface OperationError {
+    errorMessage: AxiosError & {
+        response: {
+            data: {
+                err_msg: string;
+            };
+        };
+    };
+    result: HistoryContentBulkOperationResult;
+}
+
 interface Props {
-    operationError: any;
+    operationError: OperationError;
 }
 
 const props = defineProps<Props>();
@@ -63,10 +79,12 @@ function onHide() {
             >- items failed because of the following reasons:
         </p>
         <p v-else v-localize>The operation failed for the following reasons:</p>
+
         <div>
             <ul v-if="errorMessage">
                 <li>{{ errorMessage }}</li>
             </ul>
+
             <ul>
                 <li v-for="(reason, index) in reasons" :key="`error-${index}`">
                     {{ reason }}
