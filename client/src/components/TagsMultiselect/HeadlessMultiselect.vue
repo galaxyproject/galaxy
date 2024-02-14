@@ -41,6 +41,8 @@ const emit = defineEmits<{
     (e: "input", selected: string[]): void;
     /** emitted when a new option is selected, which wasn't part of the options prop */
     (e: "addOption", newOption: string): void;
+    /** emitted when a option is added */
+    (e: "selected", option: string): void;
 }>();
 
 const inputField = ref<HTMLInputElement | null>(null);
@@ -154,6 +156,7 @@ function onOptionSelected(option: string) {
         set.delete(option);
     } else {
         set.add(option);
+        emit("selected", option);
     }
 
     emit("input", Array.from(set));
