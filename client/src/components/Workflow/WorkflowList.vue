@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGlobe, faStar, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { filter } from "underscore";
@@ -20,7 +20,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
 
-library.add(faGlobe, faStar, faTrash, faUpload);
+library.add(faStar, faTrash);
 
 const helpHtml = `<div>
 <p>This input can be used to filter the workflows displayed.</p>
