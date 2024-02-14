@@ -1,13 +1,16 @@
+import json
 from typing import (
     Any,
     Dict,
     Optional,
 )
 
-from pydantic import Field
+from pydantic import (
+    Field,
+    field_validator,
+)
 
 from galaxy.schema.schema import (
-    HistoryID,
     Model,
     PreferredObjectStoreIdField,
 )
@@ -44,9 +47,20 @@ from galaxy.schema.schema import (
 #         description="Name of the workflow to create when extracting a workflow from history",
 #     )
 
+# TODO - add description to fields
+
 
 class GetTargetHistoryPayload(Model):
-    history_id: HistoryID
+    history: Optional[str] = Field(
+        None,
+        title="History",
+        description="The history to import the workflow into.",
+    )
+    history_id: Optional[str] = Field(
+        None,
+        title="History ID",
+        description="The history to import the workflow into.",
+    )
     history_name: Optional[str] = Field(
         None,
         title="History Name",
@@ -60,6 +74,26 @@ class GetTargetHistoryPayload(Model):
 
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
+    instance: Optional[bool] = Field(
+        False,
+        title="Is Instance",
+        description="If true, the workflow is invoked as an instance.",
+    )
+    scheduler: Optional[str] = Field(
+        None,
+        title="Scheduler",
+        description="Scheduler to use for workflow invocation.",
+    )
+    batch: Optional[bool] = Field(
+        False,
+        title="Batch",
+        description="If true, the workflow is invoked as a batch.",
+    )
+    require_exact_tool_versions: Optional[bool] = Field(
+        False,
+        title="Require Exact Tool Versions",
+        description="If true, exact tool versions are required for workflow invocation.",
+    )
     allow_tool_state_corrections: Optional[bool] = False
     use_cached_job: Optional[bool] = False
     step_parameters: Optional[Dict[str, Any]] = None
@@ -68,7 +102,15 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     # )
     parameters: Optional[Dict[str, Any]] = None
     inputs: Optional[Dict[str, Any]] = None
-    ds_map: Optional[Dict[str, Any]] = None
+
+    @field_validator("ds_map", mode="before", check_fields=False)
+    @classmethod
+    def inputs_string_to_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
+
+    ds_map: Optional[Dict[str, Dict[str, Any]]] = None
     no_add_to_history: Optional[bool] = False
     legacy: Optional[bool] = False
     parameters_normalized: Optional[bool] = False
