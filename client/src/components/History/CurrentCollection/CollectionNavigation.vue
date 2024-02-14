@@ -5,11 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { CollectionEntry } from "@/api";
+
 library.add(faAngleDoubleLeft, faAngleLeft);
 
 interface Props {
     historyName: string;
-    selectedCollections: object[];
+    selectedCollections: CollectionEntry[];
 }
 
 const props = defineProps<Props>();
@@ -20,8 +22,8 @@ const previousName = computed(() => {
     const length = props.selectedCollections.length;
 
     if (length > 1) {
-        const last = props.selectedCollections[length - 2] as { name: string; element_identifier: string };
-        return last?.name || last?.element_identifier;
+        const last = props.selectedCollections[length - 2];
+        return last?.name;
     }
 
     return null;
