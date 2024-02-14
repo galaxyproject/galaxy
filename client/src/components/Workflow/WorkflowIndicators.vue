@@ -79,7 +79,7 @@ function onViewUserPublished() {
 <template>
     <div>
         <BButton
-            v-if="workflow.published && !publishedView"
+            v-if="workflow.published"
             v-b-tooltip
             size="sm"
             class="workflow-published-icon inline-icon-button"
