@@ -183,10 +183,15 @@ types-requests = "*"
 types-six = "*"
 
 [tool.ruff]
+target-version = "py38"
+exclude = [
+  "lib/tool_shed/test/test_data/repos"
+]
+
+[tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
 # flake8-logging-format (G) and pyupgrade (UP)
 select = ["E", "F", "B", "G", "UP"]
-target-version = "py38"
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
@@ -194,17 +199,14 @@ target-version = "py38"
 # E501 is line length (delegated to black)
 # G* are TODOs
 ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
-exclude = [
-  "lib/tool_shed/test/test_data/repos"
-]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 # We are not selecting "I" rules in ruff yet because support for all the isort
 # options we need is not complete, but these are the one currently implemented.
 combine-as-imports = true
 relative-imports-order = "closest-to-furthest"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 # Don't check pyupgrade rules on tool scripts, which may use different Python versions
 "test/functional/tools/*" = ["UP"]
 "tools/*" = ["UP"]
