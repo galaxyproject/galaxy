@@ -5172,8 +5172,7 @@ outer_input:
         workflow = self.workflow_populator.load_workflow(name="test_for_run_cannot_access")
         workflow_request, _, workflow_id = self._setup_workflow_run(workflow)
         with self._different_user():
-            # run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
-            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
             self._assert_status_code_is(run_workflow_response, 403)
 
     def test_400_on_invalid_workflow_id(self):
@@ -5188,7 +5187,7 @@ outer_input:
         with self._different_user():
             other_history_id = self.dataset_populator.new_history()
         workflow_request["history"] = f"hist_id={other_history_id}"
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 403)
 
     def test_cannot_run_bootstrap_admin_workflow(self):
