@@ -686,6 +686,7 @@ class User(Base, Dictifiable, RepresentById):
     update_time = Column(DateTime, default=now, onupdate=now)
     email = Column(TrimmedString(255), index=True, nullable=False)
     username = Column(TrimmedString(255), index=True, unique=True)
+    orcid_id = Column(TrimmedString(255))
     password = Column(TrimmedString(255), nullable=False)
     last_password_change = Column(DateTime, default=now)
     external = Column(Boolean, default=False)
@@ -775,6 +776,7 @@ class User(Base, Dictifiable, RepresentById):
         "id",
         "email",
         "username",
+        "orcid_id",
         "total_disk_usage",
         "nice_total_disk_usage",
         "deleted",

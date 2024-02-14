@@ -139,6 +139,10 @@ def validate_publicname(trans, publicname, user=None):
     return ""
 
 
+def validate_orcid_id(orcid_id):
+    return ""
+
+
 def transform_publicname(publicname):
     """
     Transform publicname to respect the minimum and maximum string length, and
