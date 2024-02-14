@@ -5414,6 +5414,13 @@ on Human (hg18)``.
   </xs:group>
 
   <xs:complexType name="OutputCollectionDataElement">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<collection>`` tag set, and can be used to
+define the elements of a collection statically. See also [Planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#static-element-count).
+]]></xs:documentation>
+    </xs:annotation>
     <xs:sequence>
       <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
