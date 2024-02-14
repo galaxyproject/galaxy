@@ -260,7 +260,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     primary_data.set_meta()
             except Exception:
                 if primary_data.state == galaxy.model.HistoryDatasetAssociation.states.OK:
-                    primary_data.state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
+                    primary_data._state = galaxy.model.HistoryDatasetAssociation.states.FAILED_METADATA
                 log.exception("Exception occured while setting metdata")
 
             try:
