@@ -298,10 +298,7 @@ class ConditionalDependencies:
         return self.pkce_support
 
     def check_rucio_clients(self):
-        return sys.version_info >= (3, 19)
-
-
-#        return "rucio" in self.object_stores
+        return sys.version_info >= (3, 9)
 
 
 def optional(config_file=None):

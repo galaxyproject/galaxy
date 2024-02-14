@@ -12,6 +12,7 @@ OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS
 OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
 OBJECT_STORE_RUCIO_ACCOUNT = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCOUNT", "root")
 OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_USERNAME", "rucio")
+OBJECT_STORE_RUCIO_RSE_NAME = "TEST"
 OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCESS", "rucio")
 
 OBJECT_STORE_CONFIG = string.Template(
@@ -35,8 +36,8 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
 <object_store type="rucio">
     <rucio_auth account="${rucio_account}" host="http://${host}:${port}" username="${rucio_username}" password="${rucio_password}" type="userpass" />
     <rucio_connection host="http://${host}:${port}"/>
-    <rucio_upload_scheme rse="TEST" scheme="file" scope="galaxy"/>
-    <rucio_download_scheme rse="TEST" scheme="file"/>
+    <rucio_upload_scheme rse="${rucio_rse}" scheme="file" scope="galaxy"/>
+    <rucio_download_scheme rse="${rucio_rse}" scheme="file"/>
     <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
@@ -62,6 +63,28 @@ def start_minio(container_name):
     subprocess.check_call(minio_start_args)
 
 
+def wait_rucio_ready(container_name):
+    rucio_check_args = [
+        "docker",
+        "exec",
+        container_name,
+        "rucio",
+        "list-rses",
+    ]
+    timeout = 30
+    start_time = time.time()
+    while True:
+        try:
+            rse = subprocess.check_output(rucio_check_args).decode("utf-8").strip()
+            if rse == OBJECT_STORE_RUCIO_RSE_NAME:
+                return
+        except subprocess.CalledProcessError:
+            pass
+        if time.time() - start_time >= timeout:
+            raise TimeoutError(rse)
+        time.sleep(1)
+
+
 def start_rucio(container_name):
     rucio_start_args = [
         "docker",
@@ -75,7 +98,8 @@ def start_rucio(container_name):
         "code.ornl.gov:4567/ndip/public-docker/rucio:1.29.8",
     ]
     subprocess.check_call(rucio_start_args)
-    time.sleep(20)
+
+    wait_rucio_ready(container_name)
 
 
 def stop_docker(container_name):
@@ -203,6 +227,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                         "rucio_account": OBJECT_STORE_RUCIO_ACCOUNT,
                         "rucio_username": OBJECT_STORE_RUCIO_USERNAME,
                         "rucio_password": OBJECT_STORE_RUCIO_ACCESS,
+                        "rucio_rse": OBJECT_STORE_RUCIO_RSE_NAME,
                         "cache_updated_data": cls.updateCacheData(),
                     }
                 )
