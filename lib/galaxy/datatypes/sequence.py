@@ -357,7 +357,9 @@ class Fasta(Sequence):
         sequences = 0
         with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             for line in fh:
-                if line.startswith(">"):
+                if not line:
+                    continue
+                elif line[0] == ">":
                     sequences += 1
                     data_lines += 1
                 else:
