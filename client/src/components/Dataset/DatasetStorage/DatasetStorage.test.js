@@ -1,10 +1,12 @@
 import { shallowMount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/api/schema/__mocks__";
+
 import DatasetStorage from "./DatasetStorage";
+
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 
@@ -13,16 +15,11 @@ const TEST_STORAGE_API_RESPONSE_WITHOUT_ID = {
     private: false,
 };
 const TEST_DATASET_ID = "1";
-const TEST_STORAGE_URL = `/api/datasets/${TEST_DATASET_ID}/storage`;
+const STORAGE_FETCH_URL = "/api/datasets/{dataset_id}/storage";
 const TEST_ERROR_MESSAGE = "Opps all errors.";
 
 describe("DatasetStorage.vue", () => {
-    let axiosMock;
     let wrapper;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
 
     function mount() {
         wrapper = shallowMount(DatasetStorage, {
@@ -32,7 +29,7 @@ describe("DatasetStorage.vue", () => {
     }
 
     async function mountWithResponse(response) {
-        axiosMock.onGet(TEST_STORAGE_URL).reply(200, response);
+        mockFetcher.path(STORAGE_FETCH_URL).method("get").mock({ data: response });
         mount();
         await flushPromises();
     }
@@ -45,9 +42,12 @@ describe("DatasetStorage.vue", () => {
     });
 
     it("test error rendering...", async () => {
-        axiosMock.onGet(TEST_STORAGE_URL).reply(400, {
-            err_msg: TEST_ERROR_MESSAGE,
-        });
+        mockFetcher
+            .path(STORAGE_FETCH_URL)
+            .method("get")
+            .mock(() => {
+                throw Error(TEST_ERROR_MESSAGE);
+            });
         mount();
         await flushPromises();
         expect(wrapper.findAll(".error").length).toBe(1);
@@ -59,10 +59,5 @@ describe("DatasetStorage.vue", () => {
         await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
         expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
         expect(wrapper.findAll("describeobjectstore-stub").length).toBe(1);
-        expect(wrapper.vm.storageInfo.private).toEqual(false);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 });

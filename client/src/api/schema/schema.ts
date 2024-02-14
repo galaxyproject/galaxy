@@ -2925,6 +2925,19 @@ export interface components {
             private: boolean;
             quota: components["schemas"]["QuotaModel"];
         };
+        /** ConcreteObjectStoreQuotaSourceDetails */
+        ConcreteObjectStoreQuotaSourceDetails: {
+            /**
+             * Enabled
+             * @description Whether the object store tracks quota on the data (independent of Galaxy's configuration)
+             */
+            enabled: boolean;
+            /**
+             * Source
+             * @description The quota source label corresponding to the object store the dataset is stored in (or would be stored in)
+             */
+            source: string | null;
+        };
         /** ContentsObject */
         ContentsObject: {
             /**
@@ -3775,9 +3788,9 @@ export interface components {
         DatasetStorageDetails: {
             /**
              * Badges
-             * @description A mapping of object store labels to badges describing object store properties.
+             * @description A list of badges describing object store properties for concrete object store dataset is stored in.
              */
-            badges: Record<string, never>[];
+            badges: components["schemas"]["BadgeDict"][];
             /**
              * Dataset State
              * @description The model state of the supplied dataset instance.
@@ -3808,11 +3821,8 @@ export interface components {
              * @description The percentage indicating how full the store is.
              */
             percent_used: number | null;
-            /**
-             * Quota
-             * @description Information about quota sources around dataset storage.
-             */
-            quota: Record<string, never>;
+            /** @description Information about quota sources around dataset storage. */
+            quota: components["schemas"]["ConcreteObjectStoreQuotaSourceDetails"];
             /**
              * Shareable
              * @description Is this dataset shareable.

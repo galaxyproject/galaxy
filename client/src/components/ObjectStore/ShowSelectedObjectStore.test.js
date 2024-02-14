@@ -27,10 +27,6 @@ describe("ShowSelectedObjectStore", () => {
         wrapper = mount(ShowSelectedObjectStore, {
             propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
             localVue,
-            stubs: {
-                LoadingSpan: true,
-                DescribeObjectStore: true,
-            },
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();

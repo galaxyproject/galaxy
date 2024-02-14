@@ -28,6 +28,11 @@ export type DatasetSummary = components["schemas"]["HDASummary"];
 export type DatasetDetails = components["schemas"]["HDADetailed"];
 
 /**
+ * Contains storage (object store, quota, etc..) details for a dataset.
+ */
+export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails"];
+
+/**
  * Represents a HistoryDatasetAssociation with either summary or detailed information.
  */
 export type DatasetEntry = DatasetSummary | DatasetDetails;

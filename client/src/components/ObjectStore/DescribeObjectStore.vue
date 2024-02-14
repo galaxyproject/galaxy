@@ -26,6 +26,12 @@ defineExpose({
 });
 </script>
 
+<script lang="ts">
+export default {
+    name: "DescribeObjectStore",
+};
+</script>
+
 <template>
     <div>
         <div>
