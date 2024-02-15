@@ -58,11 +58,16 @@ List of behavior changes associated with profile versions:
 ### 21.09
 
 - Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
+- Do not use Galaxy Python virtual environment for `data_source` tools. `data_source` tools should explicitly use the `galaxy-util` package.
 
 ### 23.0
 
 - Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string)
   are set to `None` for templating in Cheetah. Older tools receive the empty string `""` as the templated value.
+
+### 24.0
+
+- Do not use Galaxy python environment for `data_source_async` tools.
 
 ### Examples
 
@@ -265,9 +270,11 @@ this tool is usable within a workflow (defaults to ``true`` for normal tools and
       </xs:attribute>
       <xs:attribute name="URL_method" type="URLmethodType">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Only used if ``tool_type`` attribute value
-is ``data_source`` or ``data_source_async`` - this attribute defines the HTTP request method to use when
-communicating with an external data source application (the default is ``get``).</xs:documentation>
+          <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Was only used if ``tool_type`` attribute value is ``data_source`` or ``data_source_async`` -
+this attribute defined the HTTP request method to use when communicating with an external data source application
+(default: ``get``).</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -1721,7 +1728,7 @@ useful for non-deterministic output.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's MD5 hash should match the value specified
-here. For large static files it may be inconvenient to upload the entiry file
+here. For large static files it may be inconvenient to upload the entire file
 and this can be used instead.
 
 ]]></xs:documentation>
@@ -1734,7 +1741,7 @@ and this can be used instead.
 If specified, the target output's checksum should match the value specified
 here. This value should have the form ``hash_type$hash_value``
 (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
-it may be inconvenient to upload the entiry file and this can be used instead.
+it may be inconvenient to upload the entire file and this can be used instead.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -2852,7 +2859,9 @@ tools will not need to specify any attributes on this tag itself.]]>
     </xs:attribute>
     <xs:attribute name="method" type="URLmethodType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="target" type="TargetType">
@@ -7251,6 +7260,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
+      <xs:enumeration value="data_source_async"/>
       <xs:enumeration value="manage_data"/>
       <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
