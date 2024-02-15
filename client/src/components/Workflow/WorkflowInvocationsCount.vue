@@ -2,13 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClock, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
-import { formatDistanceToNow, parseISO } from "date-fns";
 import { useRouter } from "vue-router/composables";
 
 import localize from "@/utils/localization";
-
-import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faClock, faSitemap);
 
@@ -27,57 +23,14 @@ function onInvocations() {
 
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
-        <BBadge
-            v-b-tooltip.hover
-            pill
-            :title="localize('View workflow invocations')"
-            class="outline-badge cursor-pointer list-view"
-            @click="onInvocations">
-            <FontAwesomeIcon :icon="faSitemap" />
-            <span v-if="workflow.run_count > 0">
-                workflow runs:
-                {{ workflow.run_count }}
-            </span>
-            <span v-else> workflow never run </span>
-        </BBadge>
-
         <BButton
             v-b-tooltip.hover
             :title="localize('View workflow invocations')"
-            class="inline-icon-button card-view"
+            class="inline-icon-button"
             variant="link"
             size="sm"
             @click="onInvocations">
             <FontAwesomeIcon :icon="faSitemap" fixed-width />
         </BButton>
-
-        <BBadge
-            v-if="workflow.last_run_time"
-            v-b-tooltip.hover
-            pill
-            :title="`Last run: ${formatDistanceToNow(parseISO(`${workflow.last_run_time}Z`), {
-                addSuffix: true,
-            })}. Click to view details.`"
-            class="outline-badge cursor-pointer card-view">
-            <FontAwesomeIcon :icon="faClock" />
-            last run:
-            <UtcDate :date="workflow.last_run_time" mode="elapsed" />
-        </BBadge>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "breakpoints.scss";
-
-@container (min-width: #{$breakpoint-md}) {
-    .card-view {
-        display: none;
-    }
-}
-
-@container (max-width: #{$breakpoint-md}) {
-    .list-view {
-        display: none;
-    }
-}
-</style>
