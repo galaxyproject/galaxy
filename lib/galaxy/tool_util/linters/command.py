@@ -3,6 +3,7 @@
 A command description describes how to build the command-line to execute
 from supplied inputs.
 """
+
 from typing import TYPE_CHECKING
 
 from galaxy.tool_util.lint import Linter

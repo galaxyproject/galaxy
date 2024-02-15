@@ -3,6 +3,7 @@
 Citations describe references that should be used when consumers
 of the tool publish results.
 """
+
 from typing import TYPE_CHECKING
 
 from galaxy.tool_util.lint import Linter

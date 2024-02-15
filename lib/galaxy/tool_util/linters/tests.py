@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool tests."""
+
 from typing import (
     Iterator,
     List,

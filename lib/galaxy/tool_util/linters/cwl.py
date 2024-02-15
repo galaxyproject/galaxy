@@ -1,4 +1,5 @@
 """Linter for CWL tools."""
+
 from typing import TYPE_CHECKING
 
 lint_tool_types = ["cwl"]

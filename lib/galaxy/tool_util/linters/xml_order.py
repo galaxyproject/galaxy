@@ -3,6 +3,7 @@
 For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
+
 from typing import TYPE_CHECKING
 
 from galaxy.tool_util.lint import Linter

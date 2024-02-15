@@ -1,4 +1,5 @@
 """This module contains a linting function for a tool's help."""
+
 from typing import (
     TYPE_CHECKING,
     Union,
