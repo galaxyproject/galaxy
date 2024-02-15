@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+
 import contextlib
 import logging
 import os
@@ -59,11 +60,24 @@ def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
         yield
 
 
+def check_database_connection(session):
+    """
+    In the event of a database disconnect, if there exists an active database
+    transaction, that transaction becomes invalidated. Accessing the database
+    will raise sqlalchemy.exc.PendingRollbackError. This handles this situation
+    by rolling back the invalidated transaction.
+    Ref: https://docs.sqlalchemy.org/en/14/errors.html#can-t-reconnect-until-invalid-transaction-is-rolled-back
+    """
+    if session and session.connection().invalidated:
+        log.error("Database transaction rolled back due to invalid state.")
+        session.rollback()
+
+
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False)
+        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False, future=True)
         versioned_session(self._SessionLocal)
         context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"

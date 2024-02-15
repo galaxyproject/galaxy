@@ -1,6 +1,7 @@
 """
 Modules used in building workflows
 """
+
 import json
 import logging
 import re
@@ -17,7 +18,6 @@ from typing import (
     Union,
 )
 
-from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -58,6 +58,7 @@ from galaxy.tools.execute import (
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -126,6 +127,8 @@ class ConditionalStepWhen(BooleanToolParameter):
 
 def to_cwl(value, hda_references, step):
     element_identifier = None
+    if isinstance(value, model.HistoryDatasetCollectionAssociation):
+        value = value.collection
     if isinstance(value, model.DatasetCollectionElement) and value.hda:
         element_identifier = value.element_identifier
         value = value.hda
@@ -155,14 +158,13 @@ def to_cwl(value, hda_references, step):
                 properties, value.dataset.created_from_basename or element_identifier or value.name
             )
             return properties
-    elif hasattr(value, "collection"):
-        collection = value.collection
-        if collection.collection_type == "list":
-            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in collection.dataset_elements]
+    elif isinstance(value, model.DatasetCollection):
+        if value.collection_type == "list":
+            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in value.dataset_elements]
         else:
             # Could be record or nested lists
             rval = {}
-            for element in collection.elements:
+            for element in value.elements:
                 rval[element.element_identifier] = to_cwl(
                     element.element_object, hda_references=hda_references, step=step
                 )
@@ -224,10 +226,6 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             as_cwl_value = do_eval(
                 when_expression,
                 step_state,
-                [{"class": "InlineJavascriptRequirement"}],
-                None,
-                None,
-                {},
             )
         except Exception:
             # Exception contains script and traceback, which could be helpful for debugging workflows,

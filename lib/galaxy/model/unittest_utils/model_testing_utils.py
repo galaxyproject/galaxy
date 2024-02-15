@@ -18,6 +18,7 @@ from sqlalchemy.engine import (
     make_url,
 )
 from sqlalchemy.sql.compiler import IdentifierPreparer
+from sqlalchemy.sql.expression import text
 
 from galaxy.model.database_utils import (
     create_database,
@@ -66,7 +67,7 @@ def drop_existing_database(url: DbUrl) -> Iterator[None]:
 @contextmanager
 def disposing_engine(url: DbUrl) -> Iterator[Engine]:
     """Context manager for engine that disposes of its connection pool on exit."""
-    engine = create_engine(url)
+    engine = create_engine(url, future=True)
     try:
         yield engine
     finally:
@@ -232,10 +233,10 @@ def _drop_postgres_database(url: DbUrl) -> None:
 
 
 def _drop_database(connection_url, database_name):
-    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
+    engine = create_engine(connection_url, isolation_level="AUTOCOMMIT", future=True)
     preparer = IdentifierPreparer(engine.dialect)
     database_name = preparer.quote(database_name)
-    stmt = f"DROP DATABASE IF EXISTS {database_name}"
+    stmt = text(f"DROP DATABASE IF EXISTS {database_name}")
     with engine.connect() as conn:
         conn.execute(stmt)
     engine.dispose()

@@ -23,7 +23,6 @@ import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
 import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
 import adminRolesGridConfig from "components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
-import Grid from "components/Grid/Grid";
 import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
@@ -168,13 +167,6 @@ export default [
                     gridConfig: adminUsersGridConfig,
                     gridMessage: route.query.message,
                 }),
-            },
-            {
-                path: "tool_versions",
-                component: Grid,
-                props: {
-                    urlBase: "admin/tool_versions_list",
-                },
             },
             // forms
             {

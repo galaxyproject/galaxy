@@ -7,8 +7,7 @@ scripts/scramble/lib
 scripts/scramble/archives
 
 # Python virtualenv
-.venv
-.venv3
+.venv*/
 
 # Python build artifacts
 build

@@ -1,4 +1,5 @@
 """The module defines the abstract interface for resolving container images for tool execution."""
+
 from abc import (
     ABCMeta,
     abstractmethod,

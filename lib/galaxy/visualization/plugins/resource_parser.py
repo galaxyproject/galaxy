@@ -2,6 +2,7 @@
 Deserialize Galaxy resources (hdas, ldas, datasets, genomes, etc.) from
 a dictionary of string data/ids (often from a query string).
 """
+
 import json
 import logging
 import weakref

@@ -4,10 +4,15 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+-------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 23.1.3 (2023-12-01)
@@ -86,8 +91,6 @@ No recorded changes since last release
 Enhancements
 ============
 
-* 
-* 
 * Port selenium setup to non-deprecated selenium options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16215 <https://github.com/galaxyproject/galaxy/pull/16215>`_
 
 -------------------
@@ -99,13 +102,6 @@ Enhancements
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Add support for launching workflows via Tutorial Mode by `@hexylena <https://github.com/hexylena>`_ in `#15684 <https://github.com/galaxyproject/galaxy/pull/15684>`_
 
 -------------------

@@ -105,7 +105,7 @@ class StaticToolPanelView(ToolPanelView):
                                 f"Failed to find matching section for (id, name) = ({section_def.id}, {section_def.name})"
                             )
                             continue
-                        section = closest_section.copy()
+                        section = closest_section.copy(merge_tools=True)
                         if section_def.id is not None:
                             section.id = section_def.id
                         if section_def.name is not None:

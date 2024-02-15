@@ -8,6 +8,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    RootModel,
 )
 from typing_extensions import Literal
 
@@ -22,8 +23,12 @@ class BaseComment(BaseModel):
 
 
 class TextCommentData(BaseModel):
-    bold: Optional[bool] = Field(description="If the Comments text is bold. Absent is interpreted as false")
-    italic: Optional[bool] = Field(description="If the Comments text is italic. Absent is interpreted as false")
+    bold: Optional[bool] = Field(
+        default=None, description="If the Comments text is bold. Absent is interpreted as false"
+    )
+    italic: Optional[bool] = Field(
+        default=None, description="If the Comments text is italic. Absent is interpreted as false"
+    )
     size: int = Field(..., description="Relative size (1 -> 100%) of the text compared to the default text sitz")
     text: str = Field(..., description="The plaintext text of this comment")
 
@@ -50,10 +55,10 @@ class FrameComment(BaseComment):
     type: Literal["frame"]
     data: FrameCommentData
     child_comments: Optional[List[int]] = Field(
-        description="A list of ids (see `id`) of all Comments which are encompassed by this Frame"
+        default=None, description="A list of ids (see `id`) of all Comments which are encompassed by this Frame"
     )
     child_steps: Optional[List[int]] = Field(
-        description="A list of ids of all Steps (see WorkflowStep.id) which are encompassed by this Frame"
+        default=None, description="A list of ids of all Steps (see WorkflowStep.id) which are encompassed by this Frame"
     )
 
 
@@ -70,5 +75,5 @@ class FreehandComment(BaseComment):
     data: FreehandCommentData
 
 
-class WorkflowCommentModel(BaseModel):
-    __root__: Union[TextComment, MarkdownComment, FrameComment, FreehandComment]
+class WorkflowCommentModel(RootModel):
+    root: Union[TextComment, MarkdownComment, FrameComment, FreehandComment] = Field(..., discriminator="type")

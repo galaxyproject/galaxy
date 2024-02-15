@@ -7,9 +7,10 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import historiesGridConfig from "components/Grid/configs/histories";
+import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
-import GridHistory from "components/Grid/GridHistory";
 import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
@@ -68,9 +69,11 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
+import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -260,10 +263,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/permissions",
-                        component: FormGeneric,
+                        component: HistoryDatasetPermissions,
                         props: (route) => ({
-                            url: `/history/permissions?id=${route.query.id}`,
-                            redirect: "/histories/list",
+                            historyId: route.query.id,
                         }),
                     },
                     {
@@ -292,9 +294,19 @@ export function getRouter(Galaxy) {
                         component: HistoryArchive,
                     },
                     {
-                        path: "histories/:actionId",
-                        component: GridHistory,
-                        props: true,
+                        path: "histories/list",
+                        component: GridList,
+                        props: {
+                            gridConfig: historiesGridConfig,
+                        },
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "histories/list_shared",
+                        component: GridList,
+                        props: {
+                            gridConfig: historiesSharedGridConfig,
+                        },
                         redirect: redirectAnon(),
                     },
                     {
@@ -430,6 +442,14 @@ export function getRouter(Galaxy) {
                         path: "user/notifications/preferences",
                         component: NotificationsPreferences,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/permissions",
+                        component: UserDatasetPermissions,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            userId: Galaxy.user.id,
+                        }),
                     },
                     {
                         path: "user/:formId",

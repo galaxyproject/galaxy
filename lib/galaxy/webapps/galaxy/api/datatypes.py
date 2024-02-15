@@ -1,6 +1,7 @@
 """
 API operations allowing clients to determine datatype supported by Galaxy.
 """
+
 import logging
 from typing import (
     cast,
@@ -60,6 +61,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes",
+        public=True,
         summary="Lists all available data types",
         response_description="List of data types",
     )
@@ -73,6 +75,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/mapping",
+        public=True,
         summary="Returns mappings for data types and their implementing classes",
         response_description="Dictionary to map data types with their classes",
     )
@@ -82,6 +85,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/types_and_mapping",
+        public=True,
         summary="Returns all the data types extensions and their mappings",
         response_description="Dictionary to map data types with their classes",
     )
@@ -100,6 +104,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/sniffers",
+        public=True,
         summary="Returns the list of all installed sniffers",
         response_description="List of datatype sniffers",
     )
@@ -109,6 +114,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/converters",
+        public=True,
         summary="Returns the list of all installed converters",
         response_description="List of all datatype converters",
     )
@@ -118,6 +124,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/edam_formats",
+        public=True,
         summary="Returns a dictionary/map of datatypes and EDAM formats",
         response_description="Dictionary/map of datatypes and EDAM formats",
     )
@@ -127,6 +134,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/edam_formats/detailed",
+        public=True,
         summary="Returns a dictionary of datatypes and EDAM format details",
         response_description="Dictionary of EDAM format details containing the EDAM iri, label, and definition",
         response_model=DatatypesEDAMDetailsDict,
@@ -138,6 +146,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/edam_data",
+        public=True,
         summary="Returns a dictionary/map of datatypes and EDAM data",
         response_description="Dictionary/map of datatypes and EDAM data",
     )
@@ -147,6 +156,7 @@ class FastAPIDatatypes:
 
     @router.get(
         "/api/datatypes/edam_data/detailed",
+        public=True,
         summary="Returns a dictionary of datatypes and EDAM data details",
         response_description="Dictionary of EDAM data details containing the EDAM iri, label, and definition",
         response_model=DatatypesEDAMDetailsDict,

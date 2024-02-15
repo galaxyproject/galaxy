@@ -10,6 +10,7 @@ potential history flavor would allow objects to be referenced by HID. This
 second idea is unimplemented, it is just an example of the general concept of
 context specific processing.
 """
+
 import abc
 import base64
 import codecs
@@ -46,6 +47,7 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.managers.licenses import LicensesManager
+from galaxy.model import Job
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
@@ -72,10 +74,10 @@ PATH_LABEL_PATTERN = re.compile(r"path=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 SIZE_PATTERN = re.compile(r"size=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)"
+    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([\d]+)"
 )
 ENCODED_ID_PATTERN = re.compile(
-    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([a-z0-9]+)"
+    r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|implicit_collection_jobs_id|invocation_id)=([a-z0-9]+)"
 )
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(r"```\s*galaxy\s*")
 GALAXY_FENCED_BLOCK = re.compile(r"^```\s*galaxy\s*(.*?)^```", re.MULTILINE ^ re.DOTALL)
@@ -137,6 +139,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_as_image(line, hda)
+            elif container == "history_dataset_as_table":
+                _check_object(object_id, line)
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_as_table(line, hda)
             elif container == "history_dataset_peek":
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -249,6 +255,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_dataset_as_image(self, line, hda):
+        pass
+
+    @abc.abstractmethod
+    def handle_dataset_as_table(self, line, hda):
         pass
 
     @abc.abstractmethod
@@ -411,6 +421,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_as_image(self, line, hda):
         pass
 
+    def handle_dataset_as_table(self, line, hda):
+        pass
+
     def handle_job_metrics(self, line, job):
         pass
 
@@ -538,6 +551,14 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         base64_image_data = base64.b64encode(image_data).decode("utf-8")
         return f"![{name}](data:image/{image_type};base64,{base64_image_data})"
 
+    def handle_dataset_as_table(self, line, hda):
+        # TODO: this form of the rendering doesn't do anything special with advanced
+        # options yet but could easily be modified in the future. show_column_headers,
+        # compact, title, and footer should be handled in here to bring the PDF and the
+        # web rendering closer.
+        rval = self.handle_dataset_embedded(line, hda)
+        return rval
+
     def handle_history_link(self, line, history):
         if history:
             content = literal_via_fence(history.name)
@@ -636,7 +657,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                 markdown += f"| {title} | {value} |\n"
         return (markdown, True)
 
-    def handle_job_parameters(self, line, job):
+    def handle_job_parameters(self, line, job: Job):
         markdown = """
 | Input Parameter | Value |
 |-----------------|-------|
@@ -910,9 +931,13 @@ history_dataset_collection_display(input={})
         elif step_match:
             target_match = step_match
             name = find_non_empty_group(target_match)
-            ref_object_type = "job"
             invocation_step = invocation.step_invocation_for_label(name)
-            ref_object = invocation_step and invocation_step.job
+            if invocation_step and invocation_step.job:
+                ref_object_type = "job"
+                ref_object = invocation_step.job
+            elif invocation_step and invocation_step.implicit_collection_jobs:
+                ref_object_type = "implicit_collection_jobs"
+                ref_object = invocation_step.implicit_collection_jobs
         else:
             target_match = None
             ref_object = None

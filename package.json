@@ -3,7 +3,6 @@
   "version": "23.1.0",
   "description": ".. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg    :alt: Galaxy Logo",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "stage": "cpy './node_modules/@galaxyproject/galaxy-client/dist/*' './static/dist'"
   },

@@ -2,6 +2,7 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+
 import json
 import logging
 from typing import (
@@ -186,7 +187,7 @@ class HistoryContentsManager(base.SortableManager):
             cast(func.sum(subquery.c.active), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted
@@ -609,8 +610,9 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
+        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
-        genomes.GenomeFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)

@@ -54,7 +54,6 @@
                     :collections="collections"
                     :histories="histories"
                     :invocations="invocations"
-                    :jobs="jobs"
                     :time="time"
                     :version="version"
                     :workflows="workflows" />
@@ -71,7 +70,6 @@ import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import { mapActions } from "pinia";
-import store from "store";
 import Vue from "vue";
 
 import { useWorkflowStore } from "@/stores/workflowStore";
@@ -97,7 +95,6 @@ Vue.use(BootstrapVue);
 library.add(faDownload, faEdit);
 
 export default {
-    store: store,
     components: {
         MarkdownContainer,
         FontAwesomeIcon,
@@ -134,7 +131,6 @@ export default {
             histories: {},
             collections: {},
             workflows: {},
-            jobs: {},
             invocations: {},
             loading: true,
             workflowID: "",
@@ -193,7 +189,6 @@ export default {
                 this.histories = config.histories || {};
                 this.collections = config.history_dataset_collections || {};
                 this.workflows = config.workflows || {};
-                this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
                 this.workflowID = Object.keys(this.markdownConfig.workflows)[0];

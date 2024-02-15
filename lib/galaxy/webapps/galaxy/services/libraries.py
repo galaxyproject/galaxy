@@ -75,7 +75,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         for library in query:
             library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
             libraries.append(LibrarySummary(**library_dict))
-        return LibrarySummaryList(__root__=libraries)
+        return LibrarySummaryList(root=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""
@@ -162,7 +162,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
         if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return LibraryCurrentPermissions.construct(**roles)
+            return LibraryCurrentPermissions.model_construct(**roles)
 
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
@@ -172,14 +172,13 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
             return_roles = []
             for role in roles:
-                role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
-            return LibraryAvailablePermissions.construct(
+                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+            return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
         else:
             raise exceptions.RequestParameterInvalidException(
-                "The value of 'scope' parameter is invalid. Alllowed values: current, available"
+                "The value of 'scope' parameter is invalid. Allowed values: current, available"
             )
 
     def set_permissions(
@@ -311,7 +310,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
                 'Allowed values are: "remove_restrictions", set_permissions"'
             )
         roles = self.library_manager.get_current_roles(trans, library)
-        return LibraryCurrentPermissions.construct(**roles)
+        return LibraryCurrentPermissions.model_construct(**roles)
 
     def set_permissions_old(self, trans, library, payload: Dict[str, Any]) -> LibraryLegacySummary:
         """

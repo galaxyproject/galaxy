@@ -284,10 +284,58 @@ class TestCalculateUsage(BaseModelTestCase):
         assert usages[1].quota_source_label == "alt_source"
         assert usages[1].total_disk_usage == 15
 
-    def _refresh_user_and_assert_disk_usage_is(self, usage):
+    def test_update_usage_from_labeled_to_unlabeled(self):
+        model = self.model
+        quota_agent = DatabaseQuotaAgent(model)
+        u = self.u
+
+        self._add_dataset(10)
+        alt_d = self._add_dataset(15, "alt_source_store")
+        self.model.session.flush()
+        assert quota_agent
+
+        quota_source_map = QuotaSourceMap(None, True)
+        alt_source = QuotaSourceMap("alt_source", True)
+        quota_source_map.backends["alt_source_store"] = alt_source
+
+        object_store = MockObjectStore(quota_source_map)
+        u.calculate_and_set_disk_usage(object_store)
+        self._refresh_user_and_assert_disk_usage_is(10)
+        quota_agent.relabel_quota_for_dataset(alt_d.dataset, "alt_source", None)
+        self._refresh_user_and_assert_disk_usage_is(25)
+        self._refresh_user_and_assert_disk_usage_is(0, "alt_source")
+
+    def test_update_usage_from_unlabeled_to_labeled(self):
+        model = self.model
+        quota_agent = DatabaseQuotaAgent(model)
+        u = self.u
+
+        d = self._add_dataset(10)
+        self._add_dataset(15, "alt_source_store")
+        self.model.session.flush()
+        assert quota_agent
+
+        quota_source_map = QuotaSourceMap(None, True)
+        alt_source = QuotaSourceMap("alt_source", True)
+        quota_source_map.backends["alt_source_store"] = alt_source
+
+        object_store = MockObjectStore(quota_source_map)
+        u.calculate_and_set_disk_usage(object_store)
+        self._refresh_user_and_assert_disk_usage_is(15, "alt_source")
+        quota_agent.relabel_quota_for_dataset(d.dataset, None, "alt_source")
+        self._refresh_user_and_assert_disk_usage_is(25, "alt_source")
+        self._refresh_user_and_assert_disk_usage_is(0, None)
+
+    def _refresh_user_and_assert_disk_usage_is(self, usage, label=None):
         u = self.u
         self.model.context.refresh(u)
-        assert u.disk_usage == usage
+        if label is None:
+            assert u.disk_usage == usage
+        else:
+            usages = u.dictify_usage()
+            for u in usages:
+                if u.quota_source_label == label:
+                    assert int(u.total_disk_usage) == int(usage)
 
 
 class TestQuota(BaseModelTestCase):

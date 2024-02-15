@@ -1,4 +1,5 @@
 """This module contains linting functions for general aspects of the tool."""
+
 import re
 from typing import (
     Tuple,

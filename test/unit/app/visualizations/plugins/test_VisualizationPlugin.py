@@ -1,6 +1,7 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
+
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.util import clean_multiline_string
 from galaxy.visualization.plugins import (

@@ -377,15 +377,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string(xml_str)
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        )
 
     def _replace_output_collectors_from_dict(self, output_dict):
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_output_dict(
-            output_dict
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_output_dict(output_dict)
         )
 
     def _append_job_json(self, object, output_path=None, line_type="new_primary_dataset"):

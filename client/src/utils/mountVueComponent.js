@@ -5,11 +5,6 @@
 import BootstrapVue from "bootstrap-vue";
 import { iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import Vue from "vue";
-import Vuex from "vuex";
-
-import store from "../store";
-
-Vue.use(Vuex);
 
 // Bootstrap components
 Vue.use(BootstrapVue);
@@ -25,7 +20,7 @@ Vue.use(iconPlugin);
 
 export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
-    return (propsData, el) => new component({ store, propsData, el });
+    return (propsData, el) => new component({ propsData, el });
 };
 
 export const replaceChildrenWithComponent = (el, ComponentDefinition, propsData = {}) => {

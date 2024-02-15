@@ -1,6 +1,7 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
+
 import logging
 import socket
 

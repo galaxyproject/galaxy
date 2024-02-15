@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { computed, type PropType, ref, watch } from "vue";
+import { BInputGroup } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
 import { ValidFilter } from "@/utils/filtering";
 
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-const props = defineProps({
-    name: { type: String, required: true },
-    filter: { type: Object as PropType<ValidFilter<any>>, required: true },
-    filters: { type: Object, required: true },
-    identifier: { type: String, required: true },
-});
+type FilterType = string | boolean | undefined;
+
+interface Props {
+    name: string;
+    identifier: any;
+    filter: ValidFilter<any>;
+    filters: {
+        [k: string]: FilterType;
+    };
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "change", name: string, value: string): void;
+    (e: "change", name: string, value: FilterType): void;
 }>();
 
 const propValue = computed(() => props.filters[props.name]);
@@ -22,13 +29,14 @@ const localValue = ref(propValue.value);
 
 watch(
     () => localValue.value,
-    (newFilter: string) => {
+    (newFilter) => {
         emit("change", props.name, newFilter);
     }
 );
+
 watch(
     () => propValue.value,
-    (newFilter: string) => {
+    (newFilter) => {
         localValue.value = newFilter;
     }
 );
@@ -37,11 +45,12 @@ watch(
 <template>
     <div>
         <small>Filter by {{ props.filter.placeholder }}:</small>
-        <b-input-group :id="`${identifier}-advanced-filter-${props.name}`">
+
+        <BInputGroup :id="`${identifier}-advanced-filter-${props.name}`">
             <StatelessTags
                 :value="localValue"
                 :placeholder="`any ${props.filter.placeholder}`"
                 @input="(tags) => (localValue = tags)" />
-        </b-input-group>
+        </BInputGroup>
     </div>
 </template>

@@ -2,6 +2,7 @@
 API operations for for querying and recording user metrics from some client
 (typically a user's browser).
 """
+
 # TODO: facade or adapter to fluentd
 
 import logging

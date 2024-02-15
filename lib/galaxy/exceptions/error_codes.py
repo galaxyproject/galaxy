@@ -2,6 +2,7 @@
 
 See the file error_codes.json for actual error code descriptions.
 """
+
 from json import loads
 from typing import Dict
 

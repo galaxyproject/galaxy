@@ -1,7 +1,8 @@
 import Backbone from "backbone";
 import $ from "jquery";
-import Ui from "mvc/ui/ui-misc";
 import Utils from "utils/utils";
+
+import Ui from "./misc";
 
 export var View = Backbone.View.extend({
     visible: false,

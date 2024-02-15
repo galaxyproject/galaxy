@@ -99,29 +99,33 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
-const queue = new UploadQueue({
-    announce: eventAnnounce,
-    chunkSize: props.chunkUploadSize,
-    complete: eventComplete,
-    error: eventError,
-    get: (index) => uploadItems.value[index],
-    historyId: historyId.value,
-    multiple: props.multiple,
-    progress: eventProgress,
-    success: eventSuccess,
-    warning: eventWarning,
-});
+const queue = computed(() => createUploadQueue());
+
+function createUploadQueue() {
+    return new UploadQueue({
+        announce: eventAnnounce,
+        chunkSize: props.chunkUploadSize,
+        complete: eventComplete,
+        error: eventError,
+        get: (index) => uploadItems.value[index],
+        historyId: historyId.value,
+        multiple: props.multiple,
+        progress: eventProgress,
+        success: eventSuccess,
+        warning: eventWarning,
+    });
+}
 
 /** Add files to queue */
-function addFiles(files) {
+function addFiles(files, immediate = false) {
     if (!isRunning.value) {
-        if (props.multiple) {
-            queue.add(files);
-        } else {
+        if (immediate || !props.multiple) {
             eventReset();
-            if (files.length > 0) {
-                queue.add([files[0]]);
-            }
+        }
+        if (props.multiple) {
+            queue.value.add(files);
+        } else if (files.length > 0) {
+            queue.value.add([files[0]]);
         }
     }
 }
@@ -165,7 +169,7 @@ function eventComplete() {
 
 /** Create a new file */
 function eventCreate() {
-    queue.add([{ name: DEFAULT_FILE_NAME, size: 0, mode: "new" }]);
+    queue.value.add([{ name: DEFAULT_FILE_NAME, size: 0, mode: "new" }]);
 }
 
 /** Error */
@@ -207,14 +211,14 @@ function eventRemove(index) {
         counterAnnounce.value--;
     }
     Vue.delete(uploadItems.value, index);
-    queue.remove(index);
+    queue.value.remove(index);
 }
 
 /** Show remote files dialog or FTP files */
 function eventRemoteFiles() {
     filesDialog(
         (items) => {
-            queue.add(
+            queue.value.add(
                 items.map((item) => {
                     const rval = {
                         mode: "url",
@@ -236,7 +240,7 @@ function eventReset() {
         counterAnnounce.value = 0;
         counterSuccess.value = 0;
         counterError.value = 0;
-        queue.reset();
+        queue.value.reset();
         uploadItems.value = {};
         extension.value = props.defaultExtension;
         dbKey.value = props.defaultDbKey;
@@ -269,7 +273,7 @@ function eventStart() {
         });
         emit("progress", 0, "success");
         counterRunning.value = counterAnnounce.value;
-        queue.start();
+        queue.value.start();
     }
 }
 
@@ -278,7 +282,7 @@ function eventStop() {
     if (isRunning.value) {
         emit("progress", null, "info");
         queueStopping.value = true;
-        queue.stop();
+        queue.value.stop();
     }
 }
 

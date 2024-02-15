@@ -2,9 +2,14 @@
     <div class="d-flex" :data-step="workflowStep.id">
         <div class="ui-portlet-section" style="width: 100%">
             <div class="portlet-header portlet-title portlet-operations cursor-pointer" @click="toggleStep">
-                <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
+                <span :id="`step-icon-${workflowStep.id}`">
+                    <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStepType" />
+                </span>
+                <ToolLinkPopover :target="`step-icon-${workflowStep.id}`" v-bind="toolProps(workflowStep.id)" />
                 <span class="portlet-title-text">
-                    <u class="step-title">{{ stepLabel }}</u>
+                    <u class="step-title">
+                        <WorkflowStepTitle v-bind="titleProps(workflowStep.id)" />
+                    </u>
                 </span>
                 <FontAwesomeIcon class="float-right" :icon="expanded ? 'fa-chevron-up' : 'fa-chevron-down'" />
             </div>
@@ -61,7 +66,7 @@
                                             <li
                                                 v-for="stepInput in Object.values(workflowStep.input_steps)"
                                                 :key="stepInput.source_step">
-                                                {{ labelForWorkflowStep(stepInput.source_step) }}
+                                                <WorkflowStepTitle v-bind="titleProps(stepInput.source_step)" />
                                             </li>
                                         </ul>
                                     </div>
@@ -91,14 +96,15 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import LoadingSpan from "components/LoadingSpan";
 import { InvocationStepProvider } from "components/providers";
-import WorkflowIcons from "components/Workflow/icons";
+import ToolLinkPopover from "components/Tool/ToolLinkPopover";
 import { mapActions, mapState } from "pinia";
 import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
-import { mapActions as vuexMapActions, mapGetters } from "vuex";
 
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
+import WorkflowStepIcon from "./WorkflowStepIcon";
+import WorkflowStepTitle from "./WorkflowStepTitle";
 
 library.add(faChevronUp, faChevronDown);
 
@@ -110,6 +116,9 @@ export default {
         ParameterStep,
         InvocationStepProvider,
         GenericHistoryItem,
+        ToolLinkPopover,
+        WorkflowStepIcon,
+        WorkflowStepTitle,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
     },
     props: {
@@ -126,7 +135,6 @@ export default {
     computed: {
         ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
         ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
-        ...mapGetters(["getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
         },
@@ -142,21 +150,10 @@ export default {
         isDataStep() {
             return ["data_input", "data_collection_input"].includes(this.workflowStepType);
         },
-        stepIcon() {
-            return WorkflowIcons[this.workflowStepType];
-        },
-        stepLabel() {
-            return this.labelForWorkflowStep(this.workflowStep.id);
-        },
-    },
-    created() {
-        this.fetchTool();
-        this.fetchSubworkflow();
     },
     methods: {
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
         ...mapActions(useToolStore, ["fetchToolForId"]),
-        ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                 this.fetchToolForId(this.workflowStep.tool_id);
@@ -170,31 +167,24 @@ export default {
         toggleStep() {
             this.expanded = !this.expanded;
         },
-        labelForWorkflowStep(stepIndex) {
+        toolProps(stepIndex) {
+            const workflowStep = this.workflow.steps[stepIndex];
+            return {
+                toolId: workflowStep.tool_id,
+                toolVersion: workflowStep.tool_version,
+            };
+        },
+        titleProps(stepIndex) {
             const invocationStep = this.invocation.steps[stepIndex];
             const workflowStep = this.workflow.steps[stepIndex];
-            const oneBasedStepIndex = stepIndex + 1;
-            if (invocationStep && invocationStep.workflow_step_label) {
-                return `Step ${oneBasedStepIndex}: ${invocationStep.workflow_step_label}`;
-            }
-            const workflowStepType = workflowStep.type;
-            switch (workflowStepType) {
-                case "tool":
-                    return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
-                case "subworkflow": {
-                    const subworkflow = this.getStoredWorkflowByInstanceId(workflowStep.workflow_id);
-                    const label = subworkflow ? subworkflow.name : "Subworkflow";
-                    return `Step ${oneBasedStepIndex}: ${label}`;
-                }
-                case "parameter_input":
-                    return `Step ${oneBasedStepIndex}: Parameter input`;
-                case "data_input":
-                    return `Step ${oneBasedStepIndex}: Data input`;
-                case "data_collection_input":
-                    return `Step ${oneBasedStepIndex}: Data collection input`;
-                default:
-                    return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
-            }
+            const rval = {
+                stepIndex: stepIndex,
+                stepLabel: invocationStep && invocationStep.workflow_step_label,
+                stepType: workflowStep.type,
+                stepToolId: workflowStep.tool_id,
+                stepSubworkflowId: workflowStep.workflow_id,
+            };
+            return rval;
         },
     },
 };

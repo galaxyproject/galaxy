@@ -63,7 +63,7 @@ from typing import (
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import (
-    etree,
+    Element,
     submodules,
 )
 
@@ -145,7 +145,7 @@ class LintMessage:
 
 
 class XMLLintMessageLine(LintMessage):
-    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[etree.Element] = None):
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
         super().__init__(level, message, linter)
         self.line = None
         if node is not None:
@@ -161,7 +161,7 @@ class XMLLintMessageLine(LintMessage):
 
 
 class XMLLintMessageXPath(LintMessage):
-    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[etree.Element] = None):
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
         super().__init__(level, message, linter)
         self.xpath = None
         if node is not None:

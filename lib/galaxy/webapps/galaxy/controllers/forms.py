@@ -33,15 +33,15 @@ VALID_FIELDNAME_RE = re.compile(r"^[a-zA-Z0-9\_]+$")
 
 class FormsGrid(grids.GridData):
     # Custom column types
-    class NameColumn(grids.TextColumn):
+    class NameColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.name
 
-    class DescriptionColumn(grids.TextColumn):
+    class DescriptionColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.desc
 
-    class TypeColumn(grids.TextColumn):
+    class TypeColumn(grids.GridColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.type
 

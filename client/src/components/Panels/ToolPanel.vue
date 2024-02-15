@@ -139,6 +139,7 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     v-if="panelViews && Object.keys(panelViews).length > 1"
                     :panel-views="panelViews"
                     :current-panel-view="currentPanelView"
+                    :show-advanced.sync="showAdvanced"
                     :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>

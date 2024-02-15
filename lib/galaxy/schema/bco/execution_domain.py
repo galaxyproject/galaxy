@@ -15,29 +15,28 @@ from typing import (
 from pydantic import (
     AnyUrl,
     BaseModel,
+    ConfigDict,
     EmailStr,
-    Extra,
     Field,
+    RootModel,
 )
 
 
 class ExternalDataEndpoint(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     name: str = Field(
-        ..., description="Description of the service that is accessed", example=["HIVE", "access to e-utils"]
+        ..., description="Description of the service that is accessed", examples=["HIVE", "access to e-utils"]
     )
     url: str = Field(
         ...,
         description="The endpoint to be accessed.",
-        example=["https://hive.biochemistry.gwu.edu/dna.cgi?cmd=login"],
+        examples=["https://hive.biochemistry.gwu.edu/dna.cgi?cmd=login"],
     )
 
 
 class Uri(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     filename: Optional[str] = None
     uri: AnyUrl
@@ -45,12 +44,12 @@ class Uri(BaseModel):
         None, description="Time stamp of when the request for this data was submitted"
     )
     sha1_checksum: Optional[str] = Field(
-        None, description="output of hash function that produces a message digest", regex="[A-Za-z0-9]+"
+        None, description="output of hash function that produces a message digest", pattern="[A-Za-z0-9]+"
     )
 
 
-class ObjectId(BaseModel):
-    __root__: str = Field(
+class ObjectId(RootModel):
+    root: str = Field(
         ...,
         description="A unique identifier that should be applied to each IEEE-2791 Object instance, generated and assigned by a IEEE-2791 database engine. IDs should never be reused",
     )
@@ -73,17 +72,16 @@ class ContributionEnum(Enum):
 
 
 class Contributor(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
+    name: str = Field(..., description="Name of contributor", examples=["Charles Darwin"])
     affiliation: Optional[str] = Field(
-        None, description="Organization the particular contributor is affiliated with", example=["HMS Beagle"]
+        None, description="Organization the particular contributor is affiliated with", examples=["HMS Beagle"]
     )
     email: Optional[EmailStr] = Field(
         None,
         description="electronic means for identification and communication purposes",
-        example=["name@example.edu"],
+        examples=["name@example.edu"],
     )
     contribution: List[ContributionEnum] = Field(
         ..., description="type of contribution determined according to PAV ontology"
@@ -91,29 +89,26 @@ class Contributor(BaseModel):
     orcid: Optional[AnyUrl] = Field(
         None,
         description="Field to record author information. ORCID identifiers allow for the author to curate their information after submission. ORCID identifiers must be valid and must have the prefix ‘https://orcid.org/’",
-        example=["http://orcid.org/0000-0002-1825-0097"],
+        examples=["http://orcid.org/0000-0002-1825-0097"],
     )
 
 
 class ScriptItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     uri: Optional[Uri] = None
 
 
 class SoftwarePrerequisite(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., description="Names of software prerequisites", example=["HIVE-hexagon"])
-    version: str = Field(..., description="Versions of the software prerequisites", example=["babajanian.1"])
+    name: str = Field(..., description="Names of software prerequisites", examples=["HIVE-hexagon"])
+    version: str = Field(..., description="Versions of the software prerequisites", examples=["babajanian.1"])
     uri: Uri
 
 
 class ExecutionDomain(BaseModel):
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     script: List[ScriptItem] = Field(
         ...,
@@ -122,7 +117,7 @@ class ExecutionDomain(BaseModel):
     script_driver: str = Field(
         ...,
         description="Indication of the kind of executable that can be launched in order to perform a sequence of commands described in the script in order to run the pipelin",
-        example=["hive", "cwl-runner", "shell"],
+        examples=["hive", "cwl-runner", "shell"],
     )
     software_prerequisites: List[SoftwarePrerequisite] = Field(
         ...,

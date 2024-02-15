@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool outputs."""
+
 from typing import TYPE_CHECKING
 
 from packaging.version import Version

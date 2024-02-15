@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Library Folders.
 """
+
 import logging
 from dataclasses import dataclass
 from typing import (
@@ -49,7 +50,6 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
 
@@ -186,10 +186,6 @@ class FolderManager:
 
         """
         folder_dict = folder.to_dict(view="element")
-        folder_dict = trans.security.encode_all_ids(folder_dict, True)
-        folder_dict["id"] = f"F{folder_dict['id']}"
-        if folder_dict["parent_id"] is not None:
-            folder_dict["parent_id"] = f"F{folder_dict['parent_id']}"
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
@@ -547,11 +543,11 @@ class FolderManager:
         The path items are tuples with the name and id of each folder for breadcrumb building purposes.
         """
         current_folder = folder
-        path_to_root = [(LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name)]
+        path_to_root = [(current_folder.id, current_folder.name)]
         while current_folder.parent_id is not None:
             parent_folder = sa_session.get(LibraryFolder, current_folder.parent_id)
             current_folder = parent_folder
-            path_to_root.insert(0, (LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name))
+            path_to_root.insert(0, (current_folder.id, current_folder.name))
         return path_to_root
 
 

@@ -11,18 +11,20 @@ import Vue, { computed, ref } from "vue";
 import type { DatasetSummary, HDCASummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
-import { LastQueue } from "@/utils/promise-queue";
+import { LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
-type HistoryItem = DatasetSummary | HDCASummary;
+export type HistoryItem = DatasetSummary | HDCASummary;
 
 const limit = 100;
-const queue = new LastQueue();
+
+type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItem[] };
+const queue = new LastQueue<typeof urlData>();
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     const items = ref<Record<string, HistoryItem[]>>({});
     const itemKey = ref("hid");
-    const totalMatchesCount = ref(undefined);
+    const totalMatchesCount = ref<number | undefined>(undefined);
     const lastCheckedTime = ref(new Date());
     const lastUpdateTime = ref(new Date());
     const relatedItems = ref<Record<string, boolean>>({});
@@ -58,9 +60,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
         const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
         return await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId).then((data) => {
-            const stats = data.stats;
+            const stats = (data as ExpectedReturn).stats;
             totalMatchesCount.value = stats.total_matches;
-            const payload = data.contents;
+            const payload = (data as ExpectedReturn).contents;
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             saveHistoryItems(historyId, payload, relatedHid);
         });

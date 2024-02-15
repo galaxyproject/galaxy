@@ -86,7 +86,6 @@ defineExpose({
         <UploadContainer
             v-if="currentHistoryId"
             ref="content"
-            :key="showModal"
             :current-user-id="currentUser?.id"
             :current-history-id="currentHistoryId"
             v-bind="options"
@@ -101,6 +100,6 @@ defineExpose({
 
 .upload-dialog-body {
     height: 500px;
-    overflow: hidden;
+    overflow: initial;
 }
 </style>

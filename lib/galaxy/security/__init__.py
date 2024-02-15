@@ -2,6 +2,7 @@
 Galaxy Security
 
 """
+
 from typing import (
     List,
     Optional,
@@ -36,7 +37,7 @@ class RBACAgent:
         ),
         DATASET_ACCESS=Action(
             "access",
-            "Users having associated role can import this dataset into their history for analysis.",
+            "Users having all associated roles can import this dataset into their history for analysis.",
             "restrict",
         ),
         LIBRARY_ACCESS=Action(
@@ -86,6 +87,9 @@ class RBACAgent:
         raise Exception("Unimplemented Method")
 
     def can_modify_library_item(self, roles, item):
+        raise Exception("Unimplemented Method")
+
+    def can_change_object_store_id(self, user, dataset):
         raise Exception("Unimplemented Method")
 
     def can_manage_library_item(self, roles, item):

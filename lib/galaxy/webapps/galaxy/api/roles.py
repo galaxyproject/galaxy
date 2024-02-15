@@ -1,13 +1,17 @@
 """
 API operations on Role objects.
 """
+
 import logging
 
 from fastapi import Body
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    Security,
+)
 from galaxy.schema.schema import (
     RoleDefinitionModel,
     RoleListResponse,
@@ -30,7 +34,7 @@ router = Router(tags=["roles"])
 
 def role_to_model(role):
     item = role.to_dict(view="element")
-    role_id = DecodedDatabaseIdField.encode(role.id)
+    role_id = Security.security.encode_id(role.id)
     item["url"] = url_for("role", id=role_id)
     return RoleModelResponse(**item)
 
@@ -42,7 +46,7 @@ class FastAPIRoles:
     @router.get("/api/roles")
     def index(self, trans: ProvidesUserContext = DependsOnTrans) -> RoleListResponse:
         roles = self.role_manager.list_displayable_roles(trans)
-        return RoleListResponse(__root__=[role_to_model(r) for r in roles])
+        return RoleListResponse(root=[role_to_model(r) for r in roles])
 
     @router.get("/api/roles/{id}")
     def show(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:

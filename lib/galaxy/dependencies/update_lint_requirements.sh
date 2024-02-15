@@ -3,9 +3,8 @@
 set -e
 
 # This script updates the pinned requirements for linting.
-# The lint requirements are split from the other ones due to incompatible
-# dependencies: flake8 requires importlib-metadata 4.2, while the Galaxy's core
-# dependencies depend on importlib-metadata 4.13.
+# The lint requirements are split from the other ones since they often have
+# incompatible dependencies.
 
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 

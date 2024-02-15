@@ -4,6 +4,7 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
+
 import json
 import logging
 from typing import Optional
@@ -15,6 +16,7 @@ from fastapi import (
     Response,
     status,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -104,9 +106,10 @@ SortDescQueryParam: bool = Query(
     description="Sort in descending order?",
 )
 
-VisualizationIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Visualization ID", description="The encoded database identifier of the Visualization."
-)
+VisualizationIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Visualization ID", description="The encoded database identifier of the Visualization."),
+]
 
 
 @router.cbv
@@ -132,7 +135,7 @@ class FastAPIVisualizations:
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
     ) -> VisualizationSummaryList:
-        payload = VisualizationIndexQueryPayload.construct(
+        payload = VisualizationIndexQueryPayload.model_construct(
             deleted=deleted,
             user_id=user_id,
             show_published=show_published,
@@ -154,8 +157,8 @@ class FastAPIVisualizations:
     )
     def sharing(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -166,8 +169,8 @@ class FastAPIVisualizations:
     )
     def enable_link_access(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -178,8 +181,8 @@ class FastAPIVisualizations:
     )
     def disable_link_access(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -190,8 +193,8 @@ class FastAPIVisualizations:
     )
     def publish(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -202,8 +205,8 @@ class FastAPIVisualizations:
     )
     def unpublish(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -214,8 +217,8 @@ class FastAPIVisualizations:
     )
     def share_with_users(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -228,8 +231,8 @@ class FastAPIVisualizations:
     )
     def set_slug(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
@@ -363,7 +366,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             "id",
-            "model_class"
+            "model_class",
             # TODO: fill out when we create to_dict, get_dict, whatevs
         )
         # TODO: importable

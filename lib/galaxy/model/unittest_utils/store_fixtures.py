@@ -1,4 +1,5 @@
 """Fixtures for populating model stores."""
+
 from typing import (
     Any,
     Dict,

@@ -5,6 +5,7 @@ and it has dependencies from across the app. This mock application and config is
 more appropriate for testing galaxy-data functionality and will be included with
 galaxy-data.
 """
+
 import os
 import shutil
 import tempfile
@@ -56,6 +57,7 @@ class GalaxyDataTestConfig(Bunch):
 
         # objectstore config values...
         self.object_store_config_file = ""
+        self.object_store_config = None
         self.object_store = "disk"
         self.object_store_check_old_style = False
         self.object_store_cache_path = "/tmp/cache"

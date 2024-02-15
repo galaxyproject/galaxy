@@ -1,11 +1,10 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { defineStore } from "pinia";
 import type { UnwrapRef } from "vue";
-import Vue, { reactive } from "vue";
+import { computed, reactive, ref, set } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 
-import { useScopePointerStore } from "./scopePointerStore";
+import { defineScopedStore } from "./scopedStore";
 
 export interface InputTerminalPosition {
     endX: number;
@@ -24,82 +23,97 @@ export interface XYPosition {
     y: number;
 }
 
-interface State {
-    inputTerminals: { [index: number]: { [index: string]: InputTerminalPosition } };
-    outputTerminals: { [index: number]: { [index: string]: OutputTerminalPosition } };
-    draggingPosition: TerminalPosition | null;
-    draggingTerminal: OutputTerminals | null;
-    activeNodeId: number | null;
-    scale: number;
-    stepPosition: { [index: number]: UnwrapRef<UseElementBoundingReturn> };
-    stepLoadingState: { [index: number]: { loading?: boolean; error?: string } };
-}
+type InputTerminalPositions = { [index: number]: { [index: string]: InputTerminalPosition } };
+type OutputTerminalPositions = { [index: number]: { [index: string]: OutputTerminalPosition } };
+type StepPosition = { [index: number]: UnwrapRef<UseElementBoundingReturn> };
+type StepLoadingState = { [index: number]: { loading?: boolean; error?: string } };
 
-export const useWorkflowStateStore = (workflowId: string) => {
-    const { scope } = useScopePointerStore();
+export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () => {
+    const inputTerminals = ref<InputTerminalPositions>({});
+    const outputTerminals = ref<OutputTerminalPositions>({});
+    const draggingPosition = ref<TerminalPosition | null>(null);
+    const draggingTerminal = ref<OutputTerminals | null>(null);
+    const activeNodeId = ref<number | null>(null);
+    const scale = ref(1);
+    const stepPosition = ref<StepPosition>({});
+    const stepLoadingState = ref<StepLoadingState>({});
 
-    return defineStore(`workflowStateStore${scope(workflowId)}`, {
-        state: (): State => ({
-            inputTerminals: {},
-            outputTerminals: {},
-            draggingPosition: null,
-            draggingTerminal: null,
-            activeNodeId: null,
-            scale: 1,
-            stepPosition: {},
-            stepLoadingState: {},
-        }),
-        getters: {
-            getInputTerminalPosition(state: State) {
-                return (stepId: number, inputName: string) => {
-                    return state.inputTerminals[stepId]?.[inputName] as InputTerminalPosition | undefined;
-                };
-            },
-            getOutputTerminalPosition(state: State) {
-                return (stepId: number, outputName: string) => {
-                    return state.outputTerminals[stepId]?.[outputName] as OutputTerminalPosition | undefined;
-                };
-            },
-            getStepLoadingState(state: State) {
-                return (stepId: number) => state.stepLoadingState[stepId];
-            },
-        },
-        actions: {
-            setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
-                if (!this.inputTerminals[stepId]) {
-                    Vue.set(this.inputTerminals, stepId, {});
-                }
+    function $reset() {
+        inputTerminals.value = {};
+        outputTerminals.value = {};
+        draggingPosition.value = null;
+        draggingTerminal.value = null;
+        activeNodeId.value = null;
+        scale.value = 1;
+        stepPosition.value = {};
+        stepLoadingState.value = {};
+    }
 
-                Vue.set(this.inputTerminals[stepId]!, inputName, position);
-            },
-            setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
-                if (!this.outputTerminals[stepId]) {
-                    Vue.set(this.outputTerminals, stepId, reactive({}));
-                }
+    const getInputTerminalPosition = computed(
+        () => (stepId: number, inputName: string) => inputTerminals.value[stepId]?.[inputName]
+    );
 
-                Vue.set(this.outputTerminals[stepId]!, outputName, position);
-            },
-            deleteInputTerminalPosition(stepId: number, inputName: string) {
-                delete this.inputTerminals[stepId]?.[inputName];
-            },
-            deleteOutputTerminalPosition(stepId: number, outputName: string) {
-                delete this.outputTerminals[stepId]?.[outputName];
-            },
-            setActiveNode(nodeId: number | null) {
-                this.activeNodeId = nodeId;
-            },
-            setScale(scale: number) {
-                this.scale = scale;
-            },
-            setStepPosition(stepId: number, position: UnwrapRef<UseElementBoundingReturn>) {
-                Vue.set(this.stepPosition, stepId, position);
-            },
-            deleteStepPosition(stepId: number) {
-                delete this.stepPosition[stepId];
-            },
-            setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
-                Vue.set(this.stepLoadingState, stepId, { loading, error });
-            },
-        },
-    })();
-};
+    const getOutputTerminalPosition = computed(
+        () => (stepId: number, outputName: string) => outputTerminals.value[stepId]?.[outputName]
+    );
+
+    const getStepLoadingState = computed(() => (stepId: number) => stepLoadingState.value[stepId]);
+
+    function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
+        if (!inputTerminals.value[stepId]) {
+            set(inputTerminals.value, stepId, {});
+        }
+
+        set(inputTerminals.value[stepId]!, inputName, position);
+    }
+
+    function setOutputTerminalPosition(stepId: number, outputName: string, position: OutputTerminalPosition) {
+        if (!outputTerminals.value[stepId]) {
+            set(outputTerminals.value, stepId, reactive({}));
+        }
+
+        set(outputTerminals.value[stepId]!, outputName, position);
+    }
+
+    function deleteInputTerminalPosition(stepId: number, inputName: string) {
+        delete inputTerminals.value[stepId]?.[inputName];
+    }
+
+    function deleteOutputTerminalPosition(stepId: number, outputName: string) {
+        delete outputTerminals.value[stepId]?.[outputName];
+    }
+
+    function setStepPosition(stepId: number, position: UnwrapRef<UseElementBoundingReturn>) {
+        set(stepPosition.value, stepId, position);
+    }
+
+    function deleteStepPosition(stepId: number) {
+        delete stepPosition.value[stepId];
+    }
+
+    function setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
+        set(stepLoadingState.value, stepId, { loading, error });
+    }
+
+    return {
+        inputTerminals,
+        outputTerminals,
+        draggingPosition,
+        draggingTerminal,
+        activeNodeId,
+        scale,
+        stepPosition,
+        stepLoadingState,
+        $reset,
+        getInputTerminalPosition,
+        getOutputTerminalPosition,
+        getStepLoadingState,
+        setInputTerminalPosition,
+        setOutputTerminalPosition,
+        deleteInputTerminalPosition,
+        deleteOutputTerminalPosition,
+        deleteStepPosition,
+        setStepPosition,
+        setLoadingState,
+    };
+});

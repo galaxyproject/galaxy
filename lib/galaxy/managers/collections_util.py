@@ -144,8 +144,12 @@ def dictify_dataset_collection_instance(
         else:
             element_func = dictify_element_reference
         dict_value["elements"] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+        icj = dataset_collection_instance.implicit_collection_jobs
+        if icj:
+            dict_value["implicit_collection_jobs_id"] = icj.id
+        else:
+            dict_value["implicit_collection_jobs_id"] = None
 
-    security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 

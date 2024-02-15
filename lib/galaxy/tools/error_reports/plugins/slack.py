@@ -1,4 +1,5 @@
 """The module describes the ``slack`` error plugin plugin."""
+
 import logging
 import uuid
 from typing import (

@@ -11,6 +11,8 @@ if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser.interface import ToolSource
 
+from typing import Optional
+
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
@@ -63,9 +65,8 @@ class XMLOrder(Linter):
             tag_ordering = DATASOURCE_TAG_ORDER
         else:
             tag_ordering = TAG_ORDER
-
         last_tag = None
-        last_key = None
+        last_key: Optional[int] = None
         for elem in tool_root:
             tag = elem.tag
             if tag not in tag_ordering:

@@ -5,6 +5,7 @@ Revises: e0561d5fc8c7
 Create Date: 2023-10-08 12:11:02.024669
 
 """
+
 import sqlalchemy as sa
 
 from galaxy.model.migrations.util import alter_column

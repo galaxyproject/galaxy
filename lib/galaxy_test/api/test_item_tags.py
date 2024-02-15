@@ -8,10 +8,10 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
-from galaxy_test.driver import integration_util
+from ._framework import ApiTestCase
 
 
-class TestItemTagsApi(integration_util.IntegrationTestCase):
+class TestItemTagsApi(ApiTestCase):
     dataset_populator: DatasetPopulator
 
     @classmethod

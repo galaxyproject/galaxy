@@ -204,7 +204,7 @@ class NotificationManager:
 
     def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
         stmt = (
-            select(self.broadcast_notification_columns)
+            select(*self.broadcast_notification_columns)
             .select_from(Notification)
             .where(
                 and_(
@@ -323,7 +323,7 @@ class NotificationManager:
             payload.source,
             payload.category,
             payload.variant,
-            payload.content.dict(),
+            payload.content.model_dump(),
         )
         notification.publication_time = payload.publication_time
         notification.expiration_time = payload.expiration_time
@@ -333,7 +333,7 @@ class NotificationManager:
         self, user: User, since: Optional[datetime] = None, active_only: Optional[bool] = True
     ):
         stmt = (
-            select(self.user_notification_columns)
+            select(*self.user_notification_columns)
             .select_from(Notification)
             .join(
                 UserNotificationAssociation,
@@ -356,7 +356,7 @@ class NotificationManager:
 
     def _broadcasted_notifications_query(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
         stmt = (
-            select(self.broadcast_notification_columns)
+            select(*self.broadcast_notification_columns)
             .select_from(Notification)
             .where(Notification.category == MandatoryNotificationCategory.broadcast)
         )

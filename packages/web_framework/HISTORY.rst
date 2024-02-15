@@ -4,10 +4,15 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+-------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
 
 -------------------
 23.1.3 (2023-12-01)
@@ -41,7 +46,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Ensure session is request-scoped for legacy endpoints by `@jdavcs <https://github.com/jdavcs>`_ in `#16207 <https://github.com/galaxyproject/galaxy/pull/16207>`_
 
@@ -49,7 +53,6 @@ Bug fixes
 Enhancements
 ============
 
-* 
 * Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#15435 <https://github.com/galaxyproject/galaxy/pull/15435>`_
 * Don't error on missing parameters or unused parameters in UI controllers by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16246 <https://github.com/galaxyproject/galaxy/pull/16246>`_
 
@@ -62,8 +65,6 @@ Enhancements
 Bug fixes
 =========
 
-* 
-* 
 * Don't read request body into memory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16585 <https://github.com/galaxyproject/galaxy/pull/16585>`_
 
 -------------------
@@ -75,9 +76,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Media player fix issue 16415 by `@bdwheele <https://github.com/bdwheele>`_ in `#16443 <https://github.com/galaxyproject/galaxy/pull/16443>`_
 * Fix static file serving for ``robots.txt`` and ``favicon.ico`` when using per_host settings by `@mira-miracoli <https://github.com/mira-miracoli>`_ in `#16459 <https://github.com/galaxyproject/galaxy/pull/16459>`_
 
@@ -108,10 +106,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
-* 
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_
 
 -------------------

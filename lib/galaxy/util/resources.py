@@ -1,21 +1,19 @@
 """Provide a consistent interface into and utilities for importlib file resources.
 """
+
 import sys
 
-if sys.version_info >= (3, 12):
-    from importlib.resources import (
-        Anchor,
-        as_file,
-        files,
-    )
-    from importlib.resources.abc import Traversable
-elif sys.version_info >= (3, 9):
-    from importlib.abc import Traversable
+if sys.version_info >= (3, 9):
     from importlib.resources import (
         as_file,
         files,
         Package as Anchor,
     )
+
+    if sys.version_info >= (3, 12):
+        from importlib.resources.abc import Traversable
+    else:
+        from importlib.abc import Traversable
 else:
     from importlib_resources import (
         as_file,

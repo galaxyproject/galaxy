@@ -975,13 +975,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     self.install_matched_repository_grid.operations = operations
                     return self.install_matched_repository_grid(trans, **kwd)
                 else:
-                    kwd[
-                        "message"
-                    ] = "tool id: <b>{}</b><br/>tool name: <b>{}</b><br/>tool version: <b>{}</b><br/>exact matches only: <b>{}</b>".format(
-                        basic_util.stringify(tool_ids),
-                        escape(basic_util.stringify(tool_names)),
-                        escape(basic_util.stringify(tool_versions)),
-                        exact_matches_checked,
+                    kwd["message"] = (
+                        "tool id: <b>{}</b><br/>tool name: <b>{}</b><br/>tool version: <b>{}</b><br/>exact matches only: <b>{}</b>".format(
+                            basic_util.stringify(tool_ids),
+                            escape(basic_util.stringify(tool_names)),
+                            escape(basic_util.stringify(tool_versions)),
+                            exact_matches_checked,
+                        )
                     )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid(trans, **kwd)
@@ -1032,9 +1032,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         has_repository_dependencies_only_if_compiling_contained_td,
                     ) = repository_util.get_repository_dependency_types(repository_dependencies)
                     has_galaxy_utilities_dict["has_repository_dependencies"] = has_repository_dependencies
-                    has_galaxy_utilities_dict[
-                        "has_repository_dependencies_only_if_compiling_contained_td"
-                    ] = has_repository_dependencies_only_if_compiling_contained_td
+                    has_galaxy_utilities_dict["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                        has_repository_dependencies_only_if_compiling_contained_td
+                    )
                     if "workflows" in metadata:
                         has_galaxy_utilities_dict["includes_workflows"] = True
             return has_galaxy_utilities_dict
@@ -1127,9 +1127,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 update_dict["includes_tool_dependencies"] = includes_tool_dependencies
                 update_dict["includes_workflows"] = includes_workflows
                 update_dict["has_repository_dependencies"] = has_repository_dependencies
-                update_dict[
-                    "has_repository_dependencies_only_if_compiling_contained_td"
-                ] = has_repository_dependencies_only_if_compiling_contained_td
+                update_dict["has_repository_dependencies_only_if_compiling_contained_td"] = (
+                    has_repository_dependencies_only_if_compiling_contained_td
+                )
                 update_dict["changeset_revision"] = str(latest_changeset_revision)
         update_dict["ctx_rev"] = str(update_to_ctx.rev())
         return encoding_util.tool_shed_encode(update_dict)

@@ -1,4 +1,5 @@
 """Safely write file to temporary file and then move file into place."""
+
 # Copied from https://stackoverflow.com/a/12007885.
 import os
 import tempfile

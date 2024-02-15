@@ -337,7 +337,7 @@ const gridConfig: GridConfig = {
     plural: "Users",
     sortBy: "email",
     sortDesc: true,
-    sortKeys: ["active", "create_time", "disk_usage", "email", "external", "last_login", "status", "username"],
+    sortKeys: ["active", "create_time", "disk_usage", "email", "external", "last_login", "username"],
     title: "Users",
 };
 

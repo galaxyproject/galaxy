@@ -7,6 +7,7 @@ Created on January. 05, 2018
 @githuborganization: C3BI
 Phylip datatype sniffer
 """
+
 from typing import TYPE_CHECKING
 
 from galaxy import util

@@ -1,6 +1,7 @@
 """
 Contains implementations of the authentication logic.
 """
+
 import logging
 
 from galaxy.auth.util import (

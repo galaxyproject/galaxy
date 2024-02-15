@@ -1,16 +1,13 @@
 import os
-import sys
 from typing import (
     List,
     NamedTuple,
 )
 
-galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir + "/" + os.path.pardir))
-sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
-
 import pytest
 
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
 
@@ -29,7 +26,8 @@ def get_skiplist():
 
 def get_cases() -> List[ToolTest]:
     atc = ApiTestCase()
-    atc.setUpClass()
+    atc._test_driver = GalaxyTestDriver()
+    atc._test_driver.setup()
     atc.setUp()
     test_summary = atc.galaxy_interactor.get_tests_summary()
     test_cases = []
@@ -37,8 +35,7 @@ def get_cases() -> List[ToolTest]:
         for tool_version, tool_dict in summary_dict.items():
             for index in range(tool_dict["count"]):
                 test_cases.append(ToolTest(tool_id, tool_version, index))
-    atc.tearDown()
-    atc.tearDownClass()
+    atc._test_driver.stop_servers()
     return test_cases
 
 

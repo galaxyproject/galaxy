@@ -11,6 +11,7 @@ subsequent row values are all numeric ! Will fail if any non numeric (eg '+' or 
 ross lazarus for rgenetics
 august 20 2007
 """
+
 import logging
 import os
 import re

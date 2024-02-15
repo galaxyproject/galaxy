@@ -38,15 +38,16 @@ function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfigu
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
-            class="ui-link font-weight-bold">
+            class="ui-link font-weight-bold text-nowrap">
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="font-weight-bold">{{ title }}</span>
         </button>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
                 <button
-                    v-if="operation && operation.condition && hasCondition(operation.condition)"
+                    v-if="operation && (!operation.condition || hasCondition(operation.condition))"
                     class="dropdown-item"
+                    :data-description="`grid operation ${operation.title.toLowerCase()}`"
                     @click.prevent="emit('execute', operation)">
                     <icon :icon="operation.icon" />
                     <span v-localize>{{ operation.title }}</span>

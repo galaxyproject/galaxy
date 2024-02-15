@@ -11,18 +11,17 @@ from galaxy import (
     model,
 )
 from galaxy.managers import hdas
+from galaxy.managers.base import security_check
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
     view_show_job,
 )
+from galaxy.model import Job
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import JobAssociation
-from galaxy.schema.schema import (
-    EncodedDatasetSourceId,
-    JobIndexQueryPayload,
-)
+from galaxy.schema.schema import JobIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -67,32 +66,41 @@ class JobsService(ServiceBase):
         trans: ProvidesUserContext,
         payload: JobIndexPayload,
     ):
-        security = trans.security
         is_admin = trans.user_is_admin
         view = payload.view
         if view == JobIndexViewEnum.admin_job_list:
             payload.user_details = True
         user_details = payload.user_details
         decoded_user_id = payload.user_id
-
         if not is_admin:
-            self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user.id)
+            self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user and trans.user.id)
 
+        check_security_of_jobs = (
+            payload.invocation_id is not None
+            or payload.implicit_collection_jobs_id is not None
+            or payload.history_id is not None
+        )
         jobs = self.job_manager.index_query(trans, payload)
         out = []
         for job in jobs.yield_per(model.YIELD_PER_ROWS):
+            # TODO: optimize if this crucial
+            if check_security_of_jobs and not security_check(trans, job.history, check_accessible=True):
+                raise exceptions.ItemAccessibilityException("Cannot access the request job objects.")
             job_dict = job.to_dict(view, system_details=is_admin)
-            j = security.encode_all_ids(job_dict, True)
             if view == JobIndexViewEnum.admin_job_list:
-                j["decoded_job_id"] = job.id
+                job_dict["decoded_job_id"] = job.id
             if user_details:
-                j["user_email"] = job.get_user_email()
-            out.append(j)
+                job_dict["user_email"] = job.get_user_email()
+            out.append(job_dict)
 
         return out
 
     def _check_nonadmin_access(
-        self, view: str, user_details: bool, decoded_user_id: Optional[DecodedDatabaseIdField], trans_user_id: int
+        self,
+        view: str,
+        user_details: bool,
+        decoded_user_id: Optional[DecodedDatabaseIdField],
+        trans_user_id: Optional[int],
     ):
         """Verify admin-only resources are not being accessed."""
         if view == JobIndexViewEnum.admin_job_list:
@@ -108,7 +116,7 @@ class JobsService(ServiceBase):
         job_id: Optional[int] = None,
         dataset_id: Optional[int] = None,
         hda_ldda: str = "hda",
-    ):
+    ) -> Job:
         if job_id is not None:
             return self.job_manager.get_accessible_job(trans, decoded_job_id=job_id)
         elif dataset_id is not None:
@@ -117,6 +125,8 @@ class JobsService(ServiceBase):
                 dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
+            if not dataset_instance.creating_job:
+                raise ValueError("No job found for dataset id")
             return dataset_instance.creating_job
         else:
             # Raise an exception if neither job_id nor dataset_id is provided
@@ -132,7 +142,7 @@ class JobsService(ServiceBase):
         dataset_dict = None
         if dataset := job_dataset_association.dataset:
             if isinstance(dataset, model.HistoryDatasetAssociation):
-                dataset_dict = EncodedDatasetSourceId(src="hda", id=dataset.id)
+                dataset_dict = {"src": "hda", "id": dataset.id}
             else:
-                dataset_dict = EncodedDatasetSourceId(src="ldda", id=dataset.id)
+                dataset_dict = {"src": "ldda", "id": dataset.id}
         return JobAssociation(name=job_dataset_association.name, dataset=dataset_dict)

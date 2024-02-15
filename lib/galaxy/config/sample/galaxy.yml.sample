@@ -1025,6 +1025,16 @@ galaxy:
   # <config_dir>.
   #object_store_config_file: object_store_conf.xml
 
+  # Rather than specifying an object_store_config_file, the object store
+  # configuration can be embedded into Galaxy's config with this option.
+  # This option has no effect if the file specified by
+  # object_store_config_file exists. Otherwise, if this option is set,
+  # it overrides any other objectstore settings.
+  # The syntax, available instrumenters, and documentation of their
+  # options is explained in detail in the object store sample
+  # configuration file, `object_store_conf.sample.yml`
+  #object_store_config: null
+
   # Specify where cache monitoring is driven for caching object stores
   # such as S3, Azure, and iRODS. This option has no affect on disk
   # object stores. For production instances, the cache should be
@@ -2179,6 +2189,15 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
+  # Sets the prefix for OIDC scopes specific to this Galaxy instance.
+  # If an API call is made against this Galaxy instance using an OIDC bearer token,
+  # any scopes must be prefixed with this value e.g. https://galaxyproject.org/api.
+  # More concretely, to request all permissions that the user has, the scope
+  # would have to be specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+  # Currently, only * is recognised as a valid scope, and future iterations may
+  # provide more fine-grained scopes.
+  #oidc_scope_prefix: https://galaxyproject.org/api
+
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
@@ -2325,11 +2344,21 @@ galaxy:
   # with Galaxy there you can enable this option.
   #enable_tool_source_display: false
 
-  # XML config file that contains the job metric collection
+  # YAML or XML config file that contains the job metric collection
   # configuration.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #job_metrics_config_file: job_metrics_conf.xml
+
+  # Rather than specifying a job_metrics_config_file, the definition of
+  # the metrics to enable can be embedded into Galaxy's config with this
+  # option. This has no effect if a job_metrics_config_file is used.
+  # The syntax, available instrumenters, and documentation of their
+  # options is explained in detail in the documentation:
+  # https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+  # By default, the core plugin is enabled. Setting this option to false
+  # or an empty list disables metrics entirely.
+  #job_metrics: null
 
   # This option allows users to see the job metrics (except for
   # environment variables).

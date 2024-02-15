@@ -56,12 +56,12 @@ class BaseModelTestCase(TestCase):
     @classmethod
     def persist(cls, *args, **kwargs):
         session = cls.session()
-        flush = kwargs.get("flush", True)
+        commit = kwargs.get("commit", True)
         for arg in args:
             session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get("expunge", not flush):
+            if commit:
+                session.commit()
+        if kwargs.get("expunge", not commit):
             cls.expunge()
         return arg  # Return last or only arg.
 
@@ -255,7 +255,7 @@ class TestMappings(BaseModelTestCase):
             model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i)
             for i in range(elements)
         ]
-        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        self.persist(u, h1, d1, c1, *dces, commit=False, expunge=False)
         self.model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
@@ -721,6 +721,17 @@ class TestMappings(BaseModelTestCase):
         session = self.session()
         session.add(lf)
         session.flush()
+
+    def test_current_session(self):
+        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        galaxy_session = model.GalaxySession()
+        galaxy_session.user = user
+        self.persist(user, galaxy_session)
+        assert user.current_galaxy_session == galaxy_session
+        new_galaxy_session = model.GalaxySession()
+        user.galaxy_sessions.append(new_galaxy_session)
+        self.persist(user, new_galaxy_session)
+        assert user.current_galaxy_session == new_galaxy_session
 
     def test_flush_refreshes(self):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute

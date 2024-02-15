@@ -2,6 +2,7 @@
 Actions to be run at job completion (or output hda creation, as in the case of
 immediate_actions listed below.
 """
+
 import datetime
 
 from markupsafe import escape

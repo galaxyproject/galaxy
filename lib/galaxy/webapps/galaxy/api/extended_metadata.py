@@ -1,6 +1,7 @@
 """
 API operations on annotations.
 """
+
 import logging
 from typing import (
     Generic,
@@ -33,8 +34,7 @@ class BaseExtendedMetadataController(
 ):
     exmeta_item_id: str
 
-    def _get_item_from_id(self, trans, idstr, check_writable=True) -> Optional[T]:
-        ...
+    def _get_item_from_id(self, trans, idstr, check_writable=True) -> Optional[T]: ...
 
     @web.expose_api
     def index(self, trans, **kwd):

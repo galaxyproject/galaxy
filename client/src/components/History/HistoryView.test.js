@@ -8,6 +8,7 @@ import { getHistoryByIdFromServer, setCurrentHistoryOnServer } from "stores/serv
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
+import ContentItem from "./Content/ContentItem";
 import HistoryView from "./HistoryView";
 
 const localVue = getLocalVue();
@@ -65,10 +66,6 @@ async function createWrapper(localVue, currentUserId, history) {
     const wrapper = mount(HistoryView, {
         propsData: { id: history.id },
         localVue,
-        stubs: {
-            icon: { template: "<div></div>" },
-            ContentItem: true,
-        },
         provide: {
             store: {
                 dispatch: jest.fn,
@@ -121,12 +118,12 @@ describe("History center panel View", () => {
         expectCorrectLayout(wrapper);
 
         // make sure all history items show up
-        const historyItems = wrapper.findAll("contentitem-stub");
+        const historyItems = wrapper.findAllComponents(ContentItem);
         expect(historyItems.length).toBe(10);
         for (let i = 0; i < historyItems.length; i++) {
             const hid = historyItems.length - i;
-            expect(historyItems.at(i).attributes("id")).toBe(`${hid}`);
-            expect(historyItems.at(i).attributes("name")).toBe(`Dataset ${hid}`);
+            expect(historyItems.at(i).props("id")).toBe(hid);
+            expect(historyItems.at(i).props("name")).toBe(`Dataset ${hid}`);
         }
     });
 

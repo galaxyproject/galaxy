@@ -1,4 +1,5 @@
 """Interface layer for pykube library shared between Galaxy and Pulsar."""
+
 import logging
 import os
 import re
@@ -31,7 +32,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_SERVICE_API_VERSION = "v1"
-DEFAULT_INGRESS_API_VERSION = "extensions/v1beta1"
+DEFAULT_INGRESS_API_VERSION = "networking.k8s.io/v1"
 DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = (
     "Galaxy instance [%s] is either too long "

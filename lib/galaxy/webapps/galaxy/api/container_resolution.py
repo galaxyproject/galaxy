@@ -1,6 +1,7 @@
 """
 API operations allowing clients to manage container resolution.
 """
+
 import logging
 
 import requests

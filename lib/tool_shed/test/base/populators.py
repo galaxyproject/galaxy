@@ -130,7 +130,7 @@ class ToolShedPopulator:
             response = self.upload_revision_raw(repository_id, repo_tar, commit_message)
             if assert_ok:
                 api_asserts.assert_status_code_is_ok(response)
-                assert RepositoryUpdate(__root__=response.json()).is_ok
+                assert RepositoryUpdate(root=response.json()).is_ok
         return repository_id
 
     def setup_test_data_repo(
@@ -187,7 +187,7 @@ class ToolShedPopulator:
             changeset_revision=revision_metadata.changeset_revision,
         )
         revisions_response = self._api_interactor.get(
-            "repositories/get_repository_revision_install_info", params=request.dict()
+            "repositories/get_repository_revision_install_info", params=request.model_dump()
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
@@ -208,7 +208,7 @@ class ToolShedPopulator:
         files = {"file": path.open("rb")}
         repository_id = self._repository_id(repository)
         response = self._api_interactor.post(
-            f"repositories/{repository_id}/changeset_revision", params=body.dict(), files=files
+            f"repositories/{repository_id}/changeset_revision", params=body.model_dump(), files=files
         )
         return response
 
@@ -229,20 +229,20 @@ class ToolShedPopulator:
                 assert_msg = f"Updating repository [{repository}] with path [{path}] and commit_message {commit_message} failed to update repository contents, no changes found. Response: [{response_json}]"
                 raise AssertionError(assert_msg)
             api_asserts.assert_status_code_is_ok(response)
-        return RepositoryUpdate(__root__=response.json())
+        return RepositoryUpdate(root=response.json())
 
-    def new_repository(self, category_id, prefix=DEFAULT_PREFIX) -> Repository:
+    def new_repository(self, category_ids: Union[List[str], str], prefix: str = DEFAULT_PREFIX) -> Repository:
         name = random_name(prefix=prefix)
         synopsis = random_name(prefix=prefix)
         request = CreateRepositoryRequest(
             name=name,
             synopsis=synopsis,
-            category_ids=category_id,
+            category_ids=category_ids,
         )
         return self.create_repository(request)
 
     def create_repository(self, request: CreateRepositoryRequest) -> Repository:
-        response = self._api_interactor.post("repositories", json=request.dict(by_alias=True))
+        response = self._api_interactor.post("repositories", json=request.model_dump(by_alias=True))
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 
@@ -257,7 +257,7 @@ class ToolShedPopulator:
         category_name = name or random_name(prefix=prefix)
         category_description = description or "testcreaterepo"
         request = CreateCategoryRequest(name=category_name, description=category_description)
-        response = self._admin_api_interactor.post("categories", json=request.dict())
+        response = self._admin_api_interactor.post("categories", json=request.model_dump())
         response.raise_for_status()
         return Category(**response.json())
 
@@ -282,17 +282,22 @@ class ToolShedPopulator:
         response.raise_for_status()
         return RepositoriesByCategory(**response.json())
 
+    def assert_category_has_n_repositories(self, category_id: str, n: int):
+        category_repos = self.repositories_by_category(category_id)
+        assert category_repos.repository_count == n
+        assert len(category_repos.repositories) == n
+
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
         revisions_response = self._api_interactor.get(
-            "repositories/get_ordered_installable_revisions", params=request.dict()
+            "repositories/get_ordered_installable_revisions", params=request.model_dump()
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
-        return OrderedInstallableRevisions(__root__=revisions_response.json())
+        return OrderedInstallableRevisions(root=revisions_response.json())
 
     def assert_has_n_installable_revisions(self, repository: Repository, n: int):
         revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
-        actual_n = len(revisions.__root__)
+        actual_n = len(revisions.root)
         assert actual_n == n, f"Expected {n} repository revisions, found {actual_n} for {repository}"
 
     def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
@@ -302,12 +307,12 @@ class ToolShedPopulator:
             deleted=deleted,
         )
         index = self.repository_index(request)
-        return index.__root__[0] if index.__root__ else None
+        return index.root[0] if index.root else None
 
     def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
-        repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))
+        repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
-        return RepositoryIndexResponse(__root__=repository_response.json())
+        return RepositoryIndexResponse(root=repository_response.json())
 
     def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
         repository_id = self._repository_id(repository)
@@ -368,12 +373,14 @@ class ToolShedPopulator:
             f"repositories/{repository_id}/metadata?downloadable_only={downloadable_only}"
         )
         api_asserts.assert_status_code_is_ok(metadata_response)
-        return RepositoryMetadata(__root__=metadata_response.json())
+        return RepositoryMetadata(root=metadata_response.json())
 
     def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
         request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
-        reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
+        reset_response = self._api_interactor.post(
+            "repositories/reset_metadata_on_repository", json=request.model_dump()
+        )
         api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
 
@@ -386,7 +393,7 @@ class ToolShedPopulator:
         return self.tool_search(ToolSearchRequest(q=query))
 
     def tool_search(self, search_request: ToolSearchRequest) -> ToolSearchResults:
-        search_response = self._api_interactor.get("tools", params=search_request.dict())
+        search_response = self._api_interactor.get("tools", params=search_request.model_dump())
         api_asserts.assert_status_code_is_ok(search_response)
         return ToolSearchResults(**search_response.json())
 
@@ -410,7 +417,7 @@ class ToolShedPopulator:
         return self.repo_search(RepositorySearchRequest(q=query))
 
     def repo_search(self, repo_search_request: RepositorySearchRequest) -> RepositorySearchResults:
-        search_response = self._api_interactor.get("repositories", params=repo_search_request.dict())
+        search_response = self._api_interactor.get("repositories", params=repo_search_request.model_dump())
         api_asserts.assert_status_code_is_ok(search_response)
         return RepositorySearchResults(**search_response.json())
 

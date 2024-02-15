@@ -189,7 +189,6 @@ class FastAPIRepositories:
         # fails 1020 if we try to use the model - I guess repository dependencies
         # are getting lost
         return as_dict
-        # return _hack_fastapi_4428(as_dict)
 
     @router.get(
         "/api_internal/repositories/{encoded_repository_id}/metadata",
@@ -201,10 +200,10 @@ class FastAPIRepositories:
         self,
         encoded_repository_id: str = RepositoryIdPathParam,
         downloadable_only: bool = DownloadableQueryParam,
-    ) -> dict:
+    ) -> RepositoryMetadata:
         recursive = True
         as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
-        return _hack_fastapi_4428(as_dict)
+        return RepositoryMetadata(root=as_dict)
 
     @router.get(
         "/api/repositories/get_ordered_installable_revisions",
@@ -482,7 +481,7 @@ class FastAPIRepositories:
                     filename,
                     commit_message or revision_request.commit_message or "Uploaded",
                 )
-                return RepositoryUpdate(__root__=ValidRepostiroyUpdateMessage(message=message))
+                return RepositoryUpdate(root=ValidRepostiroyUpdateMessage(message=message))
             finally:
                 if os.path.exists(filename):
                     os.remove(filename)
@@ -506,9 +505,3 @@ class FastAPIRepositories:
     ) -> dict:
         repository = get_repository_in_tool_shed(self.app, encoded_repository_id)
         return readmes(self.app, repository, changeset_revision)
-
-
-def _hack_fastapi_4428(as_dict) -> dict:
-    # https://github.com/tiangolo/fastapi/pull/4428#issuecomment-1145429263
-    # after pydantic2 swap to really returning the object
-    return RepositoryMetadata(__root__=as_dict).dict()["__root__"]

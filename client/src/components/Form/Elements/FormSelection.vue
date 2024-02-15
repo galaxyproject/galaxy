@@ -96,14 +96,12 @@ watch(
     { immediate: true }
 );
 
-const displayMany = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && useMany.value
+const showSelectPreference = computed(
+    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio"
 );
 
-const showManyButton = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && !useMany.value
-);
-
+const displayMany = computed(() => showSelectPreference.value && useMany.value);
+const showManyButton = computed(() => showSelectPreference.value && !useMany.value);
 const showMultiButton = computed(() => displayMany.value);
 </script>
 
@@ -114,7 +112,7 @@ const showMultiButton = computed(() => displayMany.value);
         <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
         <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
 
-        <div class="d-flex">
+        <div v-if="showSelectPreference" class="d-flex">
             <button v-if="showManyButton" class="ui-link ml-1" @click="useMany = true">switch to column select</button>
             <button v-else-if="showMultiButton" class="ui-link ml-1" @click="useMany = false">
                 switch to simple select

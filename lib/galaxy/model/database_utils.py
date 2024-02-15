@@ -45,7 +45,7 @@ def create_database(db_url, database=None, encoding="utf8", template=None):
 
 @contextmanager
 def sqlalchemy_engine(url):
-    engine = create_engine(url)
+    engine = create_engine(url, future=True)
     try:
         yield engine
     finally:
@@ -88,7 +88,7 @@ class PosgresDatabaseManager(DatabaseManager):
             preparer = IdentifierPreparer(engine.dialect)
             template = template or "template1"
             database, template = preparer.quote(self.database), preparer.quote(template)
-            stmt = f"CREATE DATABASE {database} ENCODING '{encoding}' TEMPLATE {template}"
+            stmt = text(f"CREATE DATABASE {database} ENCODING '{encoding}' TEMPLATE {template}")
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
                 conn.execute(stmt)
 
@@ -131,7 +131,7 @@ class MySQLDatabaseManager(DatabaseManager):
         with sqlalchemy_engine(self.url) as engine:
             preparer = IdentifierPreparer(engine.dialect)
             database = preparer.quote(self.database)
-            stmt = f"CREATE DATABASE {database} CHARACTER SET = '{encoding}'"
+            stmt = text(f"CREATE DATABASE {database} CHARACTER SET = '{encoding}'")
             with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
                 conn.execute(stmt)
 

@@ -29,7 +29,8 @@ def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None):
         return send_file(start_response, trans, fh)
 
     app = FastAPI()
-    app.mount("/test/send_file", WSGIMiddleware(wsgi_application))
+    # https://github.com/abersheeran/a2wsgi/issues/44
+    app.mount("/test/send_file", WSGIMiddleware(wsgi_application))  # type: ignore[arg-type]
     return app
 
 

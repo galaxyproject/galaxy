@@ -6,6 +6,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import Optional
 from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
@@ -189,7 +190,7 @@ class TestCustosAuthnz(TestCase):
         class Query:
             external_user_id = None
             provider = None
-            custos_authnz_token = None
+            custos_authnz_token: Optional[CustosAuthnzToken] = None
 
             def filter_by(self, email=None, external_user_id=None, provider=None, username=None):
                 self.external_user_id = external_user_id

@@ -4,10 +4,8 @@ from graphene_sqlalchemy import (
     SQLAlchemyConnectionField,
     SQLAlchemyObjectType,
 )
-from graphene_sqlalchemy.converter import (
-    convert_sqlalchemy_hybrid_property_type,
-    convert_sqlalchemy_type,
-)
+from graphene_sqlalchemy.converter import convert_sqlalchemy_type
+from graphene_sqlalchemy.utils import column_type_eq
 from graphql import GraphQLResolveInfo
 from sqlalchemy.orm import scoped_session
 from typing_extensions import TypedDict
@@ -67,12 +65,12 @@ class InfoDict(TypedDict):
 
 
 # Map these Galaxy-ism to Graphene for cleaner interfaces.
-@convert_sqlalchemy_type.register(TrimmedString)
+@convert_sqlalchemy_type.register(column_type_eq(TrimmedString))
 def convert_sqlalchemy_type_trimmed_string(*args, **kwd):
     return graphene.String
 
 
-@convert_sqlalchemy_hybrid_property_type.register(lambda t: t == TrimmedString)
+@convert_sqlalchemy_type.register(column_type_eq(lambda t: t == TrimmedString))
 def convert_sqlalchemy_hybrid_property_type_trimmed_string(arg):
     return graphene.String
 

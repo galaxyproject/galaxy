@@ -5,6 +5,7 @@ Revises: b855b714e8b8
 Create Date: 2023-05-17 15:08:28.467938
 
 """
+
 import sqlalchemy as sa
 
 from galaxy.model.migrations.util import (

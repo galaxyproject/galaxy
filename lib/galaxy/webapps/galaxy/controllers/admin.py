@@ -15,7 +15,6 @@ from galaxy import (
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers.quotas import QuotaManager
-from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
@@ -246,7 +245,7 @@ class GroupListGrid(grids.GridData):
         grids.GridColumn("Name", key="name"),
         UsersColumn("Users", key="users"),
         RolesColumn("Roles", key="roles"),
-        grids.DeletedColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
         grids.GridColumn("Last Updated", key="update_time"),
     ]
 
@@ -282,7 +281,7 @@ class GroupListGrid(grids.GridData):
 
 
 class QuotaListGrid(grids.GridData):
-    class AmountColumn(grids.TextColumn):
+    class AmountColumn(grids.GridColumn):
         def get_value(self, trans, grid, quota):
             return quota.operation + quota.display_amount
 
@@ -355,52 +354,6 @@ class QuotaListGrid(grids.GridData):
         return query
 
 
-class ToolVersionListGrid(grids.Grid):
-    class ToolIdColumn(grids.TextColumn):
-        def get_value(self, trans, grid, tool_version):
-            toolbox = trans.app.toolbox
-            if toolbox.has_tool(tool_version.tool_id, exact=True):
-                link = url_for(controller="tool_runner", tool_id=tool_version.tool_id)
-                link_str = f'<a target="_blank" href="{link}">'
-                return f'<div class="count-box state-color-ok">{link_str}{tool_version.tool_id}</a></div>'
-            return tool_version.tool_id
-
-    class ToolVersionsColumn(grids.TextColumn):
-        def get_value(self, trans, grid, tool_version):
-            tool_ids_str = ""
-            toolbox = trans.app.toolbox
-            if tool := toolbox._tools_by_id.get(tool_version.tool_id):
-                for tool_id in tool.lineage.tool_ids:
-                    if toolbox.has_tool(tool_id, exact=True):
-                        link = url_for(controller="tool_runner", tool_id=tool_id)
-                        link_str = f'<a target="_blank" href="{link}">'
-                        tool_ids_str += f'<div class="count-box state-color-ok">{link_str}{tool_id}</a></div><br/>'
-                    else:
-                        tool_ids_str += f"{tool_version.tool_id}<br/>"
-            else:
-                tool_ids_str += f"{tool_version.tool_id}<br/>"
-            return tool_ids_str
-
-    # Grid definition
-    title = "Tool versions"
-    model_class = install_model.ToolVersion
-    default_sort_key = "tool_id"
-    columns = [
-        ToolIdColumn("Tool id", key="tool_id", attach_popup=False),
-        ToolVersionsColumn("Version lineage by tool id (parent/child ordered)"),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search tool id", cols_to_filter=[columns[0]], key="free-text-search", visible=False, filterable="standard"
-        )
-    )
-    num_rows_per_page = 50
-    use_paging = True
-
-    def build_initial_query(self, trans, **kwd):
-        return trans.install_model.context.query(self.model_class)
-
-
 # TODO: Convert admin UI to use the API and drop this.
 class DatatypesEntryT(TypedDict):
     status: str
@@ -414,7 +367,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
-    tool_version_list_grid = ToolVersionListGrid()
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
@@ -687,11 +639,6 @@ class AdminGalaxy(controller.JSAppLauncher):
         return trans.response.send_redirect(
             web.url_for(controller="admin", action="users", message="Invalid user selected", status="error")
         )
-
-    @web.legacy_expose_api
-    @web.require_admin
-    def tool_versions_list(self, trans, **kwd):
-        return self.tool_version_list_grid(trans, **kwd)
 
     @web.expose
     @web.json

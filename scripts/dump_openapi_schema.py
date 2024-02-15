@@ -6,10 +6,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 import click
 import yaml
-from pydantic.networks import (
-    AnyUrl,
-    url_regex,
-)
+from pydantic.networks import AnyUrl
 
 from galaxy.webapps.galaxy.fast_app import get_openapi_schema
 
@@ -23,7 +20,6 @@ class YamlDumper(yaml.SafeDumper):
 
 
 YamlDumper.add_representer(AnyUrl, _any_url_representer)
-YamlDumper.add_implicit_resolver("!anyurl", url_regex(), None)
 
 
 @click.command("Write openapi schema to path")

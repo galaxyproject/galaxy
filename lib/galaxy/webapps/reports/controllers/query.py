@@ -1,5 +1,6 @@
 """ Mixin to help build advanced queries for reports interface.
 """
+
 import sqlalchemy as sa
 
 

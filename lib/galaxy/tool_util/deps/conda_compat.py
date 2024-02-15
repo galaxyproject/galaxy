@@ -4,8 +4,8 @@ In general there are utilities available for Conda building and parsing that are
 and should be utilized when available but that are only available in conda channels and not in
 PyPI. This module serves as a PyPI capable interface to these utilities.
 """
+
 import os
-from collections.abc import Hashable
 
 import yaml
 
@@ -30,10 +30,6 @@ class _Memoized:
         self.cache = {}
 
     def __call__(self, *args):
-        if not isinstance(args, Hashable):
-            # uncacheable. a list, for instance.
-            # better to not cache than blow up.
-            return self.func(*args)
         if args in self.cache:
             return self.cache[args]
         else:

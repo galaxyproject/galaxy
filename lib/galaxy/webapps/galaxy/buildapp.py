@@ -1,6 +1,7 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
+
 import atexit
 import logging
 import sys
@@ -327,6 +328,21 @@ def populate_api_routes(webapp, app):
     )
     webapp.mapper.connect("/api/upload/resumable_upload", controller="uploads", action="hooks")
     webapp.mapper.connect("/api/upload/hooks", controller="uploads", action="hooks", conditions=dict(method=["POST"]))
+
+    webapp.mapper.connect(
+        "/api/job_files/resumable_upload/{session_id}",
+        controller="job_files",
+        action="tus_patch",
+        conditions=dict(method=["PATCH"]),
+    )
+    # user facing upload has this endpoint enabled but the middleware completely masks it and the controller
+    # is not used. Probably it isn't needed there but I am keeping the doc here until we remove both
+    # routes.
+    # webapp.mapper.connect("/api/job_files/resumable_upload", controller="job_files", action="tus_post")
+    webapp.mapper.connect(
+        "/api/job_files/tus_hooks", controller="job_files", action="tus_hooks", conditions=dict(method=["POST"])
+    )
+
     webapp.mapper.resource(
         "revision",
         "revisions",
@@ -673,22 +689,6 @@ def populate_api_routes(webapp, app):
     #     conditions=dict(method=["POST"]),
     # )
 
-    webapp.mapper.connect(
-        "list_invocations",
-        "/api/invocations",
-        controller="workflows",
-        action="index_invocations",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "create_invovactions_from_store",
-        "/api/invocations/from_store",
-        controller="workflows",
-        action="create_invocations_from_store",
-        conditions=dict(method=["POST"]),
-    )
-
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
     invoke_names = {
@@ -698,57 +698,12 @@ def populate_api_routes(webapp, app):
     for noun, suffix in invoke_names.items():
         name = f"{noun}{suffix}"
         webapp.mapper.connect(
-            f"list_workflow_{name}",
-            "/api/workflows/{workflow_id}/%s" % noun,
-            controller="workflows",
-            action="index_invocations",
-            conditions=dict(method=["GET"]),
-        )
-        webapp.mapper.connect(
             f"workflow_{name}",
             "/api/workflows/{workflow_id}/%s" % noun,
             controller="workflows",
             action="invoke",
             conditions=dict(method=["POST"]),
         )
-
-    def connect_invocation_endpoint(endpoint_name, endpoint_suffix, action, conditions=None):
-        # /api/invocations/<invocation_id>
-        # /api/workflows/<workflow_id>/invocations/<invocation_id>
-        # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
-        conditions = conditions or dict(method=["GET"])
-        webapp.mapper.connect(
-            f"workflow_invocation_{endpoint_name}",
-            f"/api/workflows/{{workflow_id}}/invocations/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-        webapp.mapper.connect(
-            f"workflow_usage_{endpoint_name}",
-            f"/api/workflows/{{workflow_id}}/usage/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-        webapp.mapper.connect(
-            f"invocation_{endpoint_name}",
-            f"/api/invocations/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-
-    connect_invocation_endpoint("show", "", action="show_invocation")
-    connect_invocation_endpoint("show_report", "/report", action="show_invocation_report")
-    connect_invocation_endpoint("show_report_pdf", "/report.pdf", action="show_invocation_report_pdf")
-    connect_invocation_endpoint("jobs_summary", "/jobs_summary", action="invocation_jobs_summary")
-    connect_invocation_endpoint("step_jobs_summary", "/step_jobs_summary", action="invocation_step_jobs_summary")
-    connect_invocation_endpoint("cancel", "", action="cancel_invocation", conditions=dict(method=["DELETE"]))
-    connect_invocation_endpoint("show_step", "/steps/{step_id}", action="invocation_step")
-    connect_invocation_endpoint(
-        "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
-    )
 
     # ================================
     # ===== USERS API =====
@@ -1138,6 +1093,19 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         kwargs={
             "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/upload/resumable_upload"),
             "tmp_dir": application_stack.config.tus_upload_store or application_stack.config.new_file_path,
+            "max_size": application_stack.config.maximum_upload_file_size,
+        },
+    )
+    # TUS upload middleware for job files....
+    app = wrap_if_allowed(
+        app,
+        stack,
+        TusMiddleware,
+        kwargs={
+            "upload_path": urljoin(f"{application_stack.config.galaxy_url_prefix}/", "api/job_files/resumable_upload"),
+            "tmp_dir": application_stack.config.tus_upload_store_job_files
+            or application_stack.config.tus_upload_store
+            or application_stack.config.new_file_path,
             "max_size": application_stack.config.maximum_upload_file_size,
         },
     )

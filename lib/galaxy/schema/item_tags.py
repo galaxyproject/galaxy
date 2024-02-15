@@ -5,7 +5,7 @@ from typing import (
 
 from pydantic import (
     Field,
-    Required,
+    RootModel,
 )
 
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -16,15 +16,15 @@ class ItemTagsResponse(Model):
     """Response schema for showing an item tag."""
 
     model_class: str = Field(
-        Required,
+        ...,
         title="model class",
     )
     id: EncodedDatabaseIdField = Field(
-        Required,
+        ...,
         title="item tag ID",
     )
     user_tname: str = Field(
-        Required,
+        ...,
         title="name of the item tag",
     )
     user_value: Optional[str] = Field(
@@ -33,10 +33,10 @@ class ItemTagsResponse(Model):
     )
 
 
-class ItemTagsListResponse(Model):
+class ItemTagsListResponse(RootModel):
     """Response schema for listing item tags."""
 
-    __root__: List[ItemTagsResponse]
+    root: List[ItemTagsResponse]
 
 
 class ItemTagsCreatePayload(Model):

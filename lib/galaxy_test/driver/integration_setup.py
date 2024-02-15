@@ -1,6 +1,7 @@
 """
 Test classes that should be shared between test scenarios.
 """
+
 import os
 import shutil
 from tempfile import mkdtemp

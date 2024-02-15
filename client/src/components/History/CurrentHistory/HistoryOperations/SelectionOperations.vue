@@ -12,10 +12,10 @@
             <b-dropdown-text>
                 <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
             </b-dropdown-text>
-            <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
+            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
                 <span v-localize>Unhide</span>
             </b-dropdown-item>
-            <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
+            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
                 <span v-localize>Hide</span>
             </b-dropdown-item>
             <b-dropdown-item
@@ -24,7 +24,10 @@
                 data-description="undelete option">
                 <span v-localize>Undelete</span>
             </b-dropdown-item>
-            <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
+            <b-dropdown-item
+                v-if="canDeleteSelection"
+                v-b-modal:delete-selected-content
+                data-description="delete option">
                 <span v-localize>Delete</span>
             </b-dropdown-item>
             <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
@@ -91,6 +94,7 @@
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
             title-tag="h2"
+            body-class="modal-with-selector"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
             <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
@@ -99,7 +103,6 @@
                     :loading="loadingDbKeys"
                     :items="dbkeys"
                     :current-item-id="selectedDbKey"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
             </DbKeyProvider>
         </b-modal>
@@ -107,6 +110,7 @@
             id="change-datatype-of-selected-content"
             title="Change data type?"
             title-tag="h2"
+            body-class="modal-with-selector"
             :ok-disabled="selectedDatatype == null"
             @ok="changeDatatypeOfSelected">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
@@ -116,7 +120,6 @@
                     :loading="loadingDatatypes"
                     :items="datatypes"
                     :current-item-id="selectedDatatype"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -190,16 +193,28 @@ export default {
     },
     computed: {
         /** @returns {Boolean} */
-        showHidden() {
-            return HistoryFilters.checkFilter(this.filterText, "visible", false);
+        canUnhideSelection() {
+            return this.areAllSelectedHidden || (this.isAnyVisibilityAllowed && !this.areAllSelectedVisible);
+        },
+        /** @returns {Boolean} */
+        canHideSelection() {
+            return this.areAllSelectedVisible || (this.isAnyVisibilityAllowed && !this.areAllSelectedHidden);
         },
         /** @returns {Boolean} */
         showDeleted() {
-            return HistoryFilters.checkFilter(this.filterText, "deleted", true);
+            return !HistoryFilters.checkFilter(this.filterText, "deleted", false);
+        },
+        /** @returns {Boolean} */
+        canDeleteSelection() {
+            return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canUndeleteSelection() {
+            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
         },
         /** @returns {Boolean} */
         showBuildOptions() {
-            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && this.areAllSelectedActive && !this.showDeleted;
         },
         /** @returns {Boolean} */
         showBuildOptionForAll() {
@@ -220,9 +235,6 @@ export default {
         noTagsSelected() {
             return this.selectedTags.length === 0;
         },
-        canUndeleteSelection() {
-            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
-        },
         areAllSelectedPurged() {
             for (const item of this.contentSelection.values()) {
                 if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
@@ -230,6 +242,44 @@ export default {
                 }
             }
             return true;
+        },
+        areAllSelectedVisible() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && !item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedHidden() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedActive() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedDeleted() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && !item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        isAnyVisibilityAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "visible", "any");
+        },
+        isAnyDeletedStateAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
         },
     },
     watch: {
@@ -347,3 +397,9 @@ export default {
     },
 };
 </script>
+
+<style>
+.modal-with-selector {
+    overflow: initial;
+}
+</style>

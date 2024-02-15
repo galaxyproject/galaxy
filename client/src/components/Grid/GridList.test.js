@@ -129,15 +129,15 @@ describe("GridList", () => {
         expect(wrapper.find("[data-description='grid cell 0-1'] > button").text()).toBe("link-1");
         expect(wrapper.find("[data-description='grid cell 1-1'] > button").text()).toBe("link-2");
         const firstHeader = wrapper.find("[data-description='grid header 0']");
-        expect(firstHeader.find("a").text()).toBe("id");
-        await firstHeader.find("[data-description='grid sort asc']").trigger("click");
+        expect(firstHeader.find("button").text()).toBe("id");
+        await firstHeader.find("[data-description='grid sort desc']").trigger("click");
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
         expect(testGrid.getData.mock.calls[1]).toEqual([0, 25, "", "id", false]);
-        expect(firstHeader.find("[data-description='grid sort asc']").exists()).toBeFalsy();
-        expect(firstHeader.find("[data-description='grid sort desc']").exists()).toBeTruthy();
+        expect(firstHeader.find("[data-description='grid sort desc']").exists()).toBeFalsy();
+        expect(firstHeader.find("[data-description='grid sort asc']").exists()).toBeTruthy();
         const secondHeader = wrapper.find("[data-description='grid header 1']");
-        expect(secondHeader.find("[data-description='grid sort asc']").exists()).toBeFalsy();
         expect(secondHeader.find("[data-description='grid sort desc']").exists()).toBeFalsy();
+        expect(secondHeader.find("[data-description='grid sort asc']").exists()).toBeFalsy();
     });
 
     it("header rendering", async () => {

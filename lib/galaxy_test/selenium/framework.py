@@ -779,7 +779,6 @@ class SeleniumSessionGetPostMixin:
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
-
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -791,7 +790,6 @@ class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.Ba
 
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
-
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -807,7 +805,6 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
 class SeleniumSessionWorkflowPopulator(
     SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface
 ):
-
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):

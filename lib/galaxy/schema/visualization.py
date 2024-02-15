@@ -5,8 +5,9 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
+    RootModel,
 )
 from typing_extensions import Literal
 
@@ -91,13 +92,11 @@ class VisualizationSummary(Model):
     )
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-
-    class Config:
-        extra = Extra.allow  # Allow any other extra fields
+    model_config = ConfigDict(extra="allow")
 
 
-class VisualizationSummaryList(Model):
-    __root__: List[VisualizationSummary] = Field(
+class VisualizationSummaryList(RootModel):
+    root: List[VisualizationSummary] = Field(
         default=[],
         title="List with detailed information of Visualizations.",
     )

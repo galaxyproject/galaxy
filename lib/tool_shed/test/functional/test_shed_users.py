@@ -38,7 +38,7 @@ class TestShedUsersApi(ShedApiTestCase):
             "username": username,
         }
         request = CreateUserRequest(**body)
-        response = post(url, json=request.dict(), headers=headers)
+        response = post(url, json=request.model_dump(), headers=headers)
         api_asserts.assert_status_code_is_ok(response)
         self._verify_username_password(email, password)
         user = User(**response.json())

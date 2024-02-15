@@ -3,10 +3,16 @@ from functools import wraps
 from inspect import getfullargspec
 from json import loads
 from traceback import format_exc
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 import paste.httpexceptions
-from pydantic import BaseModel
-from pydantic.error_wrappers import ValidationError
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 
 from galaxy.exceptions import (
     error_codes,
@@ -21,6 +27,9 @@ from galaxy.util import (
 )
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
+
+if TYPE_CHECKING:
+    from fastapi.exceptions import RequestValidationError
 
 log = logging.getLogger(__name__)
 
@@ -373,7 +382,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     if isinstance(rval, BaseModel):
-        json = rval.json(**dumps_kwargs)
+        json = rval.model_dump_json(indent=4)
     else:
         json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
@@ -381,18 +390,27 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e: ValidationError) -> MessageException:
+def validation_error_to_message_exception(e: Union[ValidationError, "RequestValidationError"]) -> MessageException:
     invalid_found = False
     missing_found = False
+    messages = []
+    clean_validation_errors = []
     for error in e.errors():
-        if error["type"] == "value_error.missing" or error["type"] == "type_error.none.not_allowed":
+        messages.append(f"{error['msg']} in {error['loc']}")
+        if error["type"] == "missing" or error["type"] == "type_error.none.not_allowed":
             missing_found = True
         elif error["type"].startswith("type_error"):
             invalid_found = True
+        # ctx contains data that can't be serialized, like exception instances
+        error.pop("ctx", None)
+        try:
+            clean_validation_errors.append(safe_dumps(error))
+        except TypeError:
+            pass
     if missing_found and not invalid_found:
-        return RequestParameterMissingException(str(e), validation_errors=loads(e.json()))
+        return RequestParameterMissingException("\n".join(messages), validation_errors=clean_validation_errors)
     else:
-        return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
+        return RequestParameterInvalidException("\n".join(messages), validation_errors=clean_validation_errors)
 
 
 def __api_error_dict(trans, **kwds):

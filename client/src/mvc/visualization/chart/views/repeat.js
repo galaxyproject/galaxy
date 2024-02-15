@@ -1,11 +1,11 @@
 /** This class creates a ui component which enables the dynamic creation of portlets */
 import Backbone from "backbone";
 import $ from "jquery";
-import Ui from "mvc/ui/ui-misc";
 import _ from "underscore";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 
+import Ui from "./misc";
 import Portlet from "./portlet";
 
 export var View = Backbone.View.extend({

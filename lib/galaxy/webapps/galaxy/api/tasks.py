@@ -1,6 +1,7 @@
 """
 API Controller providing experimental access to Celery Task State.
 """
+
 import logging
 from uuid import UUID
 
@@ -24,6 +25,7 @@ class FastAPITasks:
 
     @router.get(
         "/api/tasks/{task_id}/state",
+        public=True,
         summary="Determine state of task ID",
         response_description="String indicating task state.",
     )

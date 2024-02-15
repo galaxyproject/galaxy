@@ -59,11 +59,11 @@ function onQuery(newQuery: string) {
 </script>
 
 <template>
-    <div class="activity-settings rounded p-3 no-highlight">
-        <DelayedInput class="mb-3" :delay="100" placeholder="Search activities" @change="onQuery" />
-        <div v-if="foundActivities" class="activity-settings-content overflow-auto">
+    <div class="activity-settings rounded no-highlight">
+        <DelayedInput :delay="100" placeholder="Search activities" @change="onQuery" />
+        <div v-if="foundActivities" class="activity-settings-content">
             <div v-for="activity in filteredActivities" :key="activity.id">
-                <div class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
+                <button class="activity-settings-item p-2 cursor-pointer" @click="onClick(activity)">
                     <div class="d-flex justify-content-between align-items-start">
                         <span class="w-100">
                             <FontAwesomeIcon
@@ -97,7 +97,7 @@ function onQuery(newQuery: string) {
                     <small v-localize>
                         {{ activity.description || "No description available" }}
                     </small>
-                </div>
+                </button>
             </div>
         </div>
         <div v-else class="activity-settings-content">
@@ -110,14 +110,22 @@ function onQuery(newQuery: string) {
 @import "theme/blue.scss";
 
 .activity-settings {
-    width: 20rem;
+    overflow-y: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .activity-settings-content {
-    height: 20rem;
+    overflow-y: auto;
 }
 
 .activity-settings-item {
+    background: none;
+    border: none;
+    text-align: left;
+    transition: none;
+    width: 100%;
+
     .icon-check {
         color: darken($brand-success, 15%);
     }

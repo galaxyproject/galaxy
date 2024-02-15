@@ -35,7 +35,7 @@ class DataManagers(DataManagersInterface):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
-        self.tool_path = None
+        self.tool_path: Optional[str] = None
         self.__reload_count = reload_count or 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify(self.filename):
@@ -143,13 +143,13 @@ class DataManager:
 
     tool: Optional[Tool]
 
-    def __init__(self, data_managers: DataManagers, elem: Element = None, tool_path: Optional[str] = None):
+    def __init__(self, data_managers: DataManagers, elem: Optional[Element] = None, tool_path: Optional[str] = None):
         self.data_managers = data_managers
-        self.declared_id = None
-        self.name = None
-        self.description = None
+        self.declared_id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.description: Optional[str] = None
         self.version = self.DEFAULT_VERSION
-        self.guid = None
+        self.guid: Optional[str] = None
         self.tool = None
         self.tool_shed_repository_info: Optional[RepoInfo] = None
         self.undeclared_tables = False
@@ -269,4 +269,4 @@ class DataManager:
     # data manager manual integration test provides coverage
     def get_tool_shed_repository_info_dict(self) -> Optional[dict]:
         repo_info = self.repo_info
-        return repo_info.dict() if repo_info else None
+        return repo_info.model_dump(mode="json") if repo_info else None
