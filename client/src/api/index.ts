@@ -118,3 +118,8 @@ export function isCollectionElement(element: DCESummary): element is DCECollecti
 export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
     return "peek" in entry;
 }
+
+/**
+ * Contains dataset metadata information.
+ */
+export type MetadataFiles = components["schemas"]["MetadataFile"][];

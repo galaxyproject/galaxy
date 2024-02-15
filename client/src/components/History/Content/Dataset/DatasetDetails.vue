@@ -5,19 +5,17 @@ import { computed } from "vue";
 import { STATES } from "@/components/History/Content/model/states";
 import { useDatasetStore } from "@/stores/datasetStore";
 
+import { type ItemUrls } from ".";
+
 import DatasetActions from "./DatasetActions.vue";
 
 const datasetStore = useDatasetStore();
-
-type ItemUrlsMap = {
-    [key: string]: string;
-};
 
 interface Props {
     id: string;
     writable?: boolean;
     showHighlight?: boolean;
-    itemUrls: ItemUrlsMap;
+    itemUrls: ItemUrls;
 }
 
 const props = withDefaults(defineProps<Props>(), {

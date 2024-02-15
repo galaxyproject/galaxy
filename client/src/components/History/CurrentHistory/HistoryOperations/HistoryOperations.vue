@@ -1,8 +1,39 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import type { HistorySummary } from "@/api";
+
+import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
+
+library.add(faCheckSquare, faCompress);
+
+interface Props {
+    history: HistorySummary;
+    hasMatches: boolean;
+    expandedCount: number;
+    showSelection: boolean;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits(["update:show-selection", "collapse-all", "update:operation-running"]);
+
+function toggleSelection() {
+    emit("update:show-selection", !props.showSelection);
+}
+
+function onUpdateOperationStatus(updateTime: number) {
+    emit("update:operation-running", updateTime);
+}
+</script>
+
 <template>
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
-            <b-button-group>
-                <b-button
+            <BButtonGroup>
+                <BButton
                     title="Select Items"
                     class="show-history-content-selectors-btn rounded-0"
                     size="sm"
@@ -10,21 +41,24 @@
                     :disabled="!hasMatches"
                     :pressed="showSelection"
                     @click="toggleSelection">
-                    <Icon icon="check-square" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon :icon="faCheckSquare" fixed-width />
+                </BButton>
+
+                <BButton
                     title="Collapse Items"
                     class="rounded-0"
                     size="sm"
                     variant="link"
                     :disabled="!expandedCount"
                     @click="$emit('collapse-all')">
-                    <Icon icon="compress" />
-                </b-button>
-            </b-button-group>
-            <b-button-group v-show="showSelection">
+                    <FontAwesomeIcon :icon="faCompress" fixed-width />
+                </BButton>
+            </BButtonGroup>
+
+            <BButtonGroup v-show="showSelection">
                 <slot name="selection-operations" />
-            </b-button-group>
+            </BButtonGroup>
+
             <DefaultOperations
                 v-show="!showSelection"
                 :history="history"
@@ -32,30 +66,6 @@
         </nav>
     </section>
 </template>
-
-<script>
-import DefaultOperations from "./DefaultOperations";
-
-export default {
-    components: {
-        DefaultOperations,
-    },
-    props: {
-        history: { type: Object, required: true },
-        showSelection: { type: Boolean, required: true },
-        hasMatches: { type: Boolean, required: true },
-        expandedCount: { type: Number, default: 0 },
-    },
-    methods: {
-        toggleSelection() {
-            this.$emit("update:show-selection", !this.showSelection);
-        },
-        onUpdateOperationStatus(updateTime) {
-            this.$emit("update:operation-running", updateTime);
-        },
-    },
-};
-</script>
 
 <style lang="scss">
 // remove borders around buttons in menu

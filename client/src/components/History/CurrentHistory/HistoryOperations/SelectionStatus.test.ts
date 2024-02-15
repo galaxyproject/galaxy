@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { shallowMount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -17,10 +17,21 @@ const SOMETHING_SELECTED = {
     selectionSize: 1,
 };
 
-async function mountHistorySelectionStatusWith(props) {
-    const wrapper = shallowMount(HistorySelectionStatus, { propsData: props }, localVue);
+async function mountHistorySelectionStatusWith(props: Record<string, any>) {
+    const wrapper = shallowMount(HistorySelectionStatus as object, {
+        propsData: props,
+        localVue,
+    });
+
     await flushPromises();
+
     return wrapper;
+}
+
+async function expectWrapperButtonToEmitEvent(wrapper: Wrapper<Vue>, buttonSelector: string, expectedEvent: string) {
+    expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
+    await wrapper.find(buttonSelector).trigger("click");
+    expect(wrapper.emitted()).toHaveProperty(expectedEvent);
 }
 
 describe("History SelectionStatus", () => {
@@ -54,9 +65,3 @@ describe("History SelectionStatus", () => {
         });
     });
 });
-
-async function expectWrapperButtonToEmitEvent(wrapper, buttonSelector, expectedEvent) {
-    expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
-    await wrapper.find(buttonSelector).trigger("click");
-    expect(wrapper.emitted()).toHaveProperty(expectedEvent);
-}

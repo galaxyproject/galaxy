@@ -4,7 +4,7 @@ import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { ROOT_COMPONENT } from "@/utils/navigation";
+import { ROOT_COMPONENT } from "@/utils/navigation/schema";
 
 import { setupSelectableMock } from "../../ObjectStore/mockServices";
 
@@ -21,18 +21,21 @@ const TEST_HISTORY = {
     preferred_object_store_id: null,
 };
 
-function mountComponent() {
-    const wrapper = mount(SelectPreferredStore, {
+async function mountComponent() {
+    const wrapper = mount(SelectPreferredStore as object, {
         propsData: { userPreferredObjectStoreId: null, history: TEST_HISTORY },
         localVue,
     });
+
+    await flushPromises();
+
     return wrapper;
 }
 
 const PREFERENCES = ROOT_COMPONENT.preferences;
 
 describe("SelectPreferredStore.vue", () => {
-    let axiosMock;
+    let axiosMock: MockAdapter;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
@@ -43,8 +46,7 @@ describe("SelectPreferredStore.vue", () => {
     });
 
     it("updates object store to default on selection null", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
+        const wrapper = await mountComponent();
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
@@ -59,12 +61,11 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
         const emitted = wrapper.emitted();
-        expect(emitted["updated"][0][0]).toEqual(null);
+        expect(emitted["updated"]?.[0]?.[0]).toEqual(null);
     });
 
     it("updates object store to on non-null selection", async () => {
-        const wrapper = mountComponent();
-        await flushPromises();
+        const wrapper = await mountComponent();
         const els = wrapper.findAll(PREFERENCES.object_store_selection.option_buttons.selector);
         expect(els.length).toBe(3);
         const galaxyDefaultOption = wrapper.find(
@@ -82,6 +83,6 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
         const emitted = wrapper.emitted();
-        expect(emitted["updated"][0][0]).toEqual("object_store_2");
+        expect(emitted["updated"]?.[0]?.[0]).toEqual("object_store_2");
     });
 });
