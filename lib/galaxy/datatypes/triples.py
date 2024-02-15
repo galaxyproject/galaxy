@@ -212,7 +212,7 @@ class Sbol(data.Text, Triples):
     The SBOL data format
     """
 
-    MetadataElement(name="version", readonly=True)
+    MetadataElement(name="version", default="", readonly=True, visible=True, optional=True)
     edam_format = "format_3725"
     file_ext = "sbol"
 
@@ -220,7 +220,7 @@ class Sbol(data.Text, Triples):
         file_prefix = FilePrefix(filename=dataset.get_file_name())
         match = file_prefix.search(SBOL_PATTERN)
         if match and match.group(1):
-            setattr(dataset.metadata, "version", match.group(1))
+            dataset.metadata.version = match.group(1)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # http://sbols.org/v2#
@@ -232,7 +232,10 @@ class Sbol(data.Text, Triples):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            dataset.blurb = "SBOL data"
+            msg = "SBOL data"
+            if dataset.metadata.version != "":
+                msg += " v" + dataset.metadata.version
+            dataset.blurb = msg
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
