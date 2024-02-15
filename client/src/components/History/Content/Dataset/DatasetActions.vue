@@ -14,7 +14,7 @@ import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { type MetadataFiles } from "@/api";
+import { type DatasetDetails } from "@/api";
 import { copy as sendToClipboard } from "@/utils/clipboard";
 import localize from "@/utils/localization";
 import { absPath, prependPath } from "@/utils/redirect";
@@ -26,16 +26,7 @@ import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownloa
 library.add(faBug, faChartBar, faInfoCircle, faLink, faQuestion, faRedo, faSitemap);
 
 interface Props {
-    item: {
-        id: string;
-        extension: string;
-        state: string;
-        creating_job: string;
-        rerunnable: boolean;
-        purged: boolean;
-        name: string;
-        meta_files: MetadataFiles;
-    };
+    item: DatasetDetails;
     writable: boolean;
     showHighlight: boolean;
     itemUrls: ItemUrls;
@@ -57,15 +48,10 @@ const showError = computed(() => {
     return props.item.state == "error" || props.item.state == "failed_metadata";
 });
 const showInfo = computed(() => {
-    return props.item.state != "noPermission";
+    return props.item.accessible;
 });
 const showRerun = computed(() => {
-    return (
-        props.item.rerunnable &&
-        props.item.creating_job &&
-        props.item.state != "upload" &&
-        props.item.state != "noPermission"
-    );
+    return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
 });
 const showVisualizations = computed(() => {
     // TODO: Check hasViz, if visualizations are activated in the config
