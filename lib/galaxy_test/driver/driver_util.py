@@ -15,6 +15,8 @@ import threading
 import time
 from pathlib import Path
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
@@ -32,7 +34,6 @@ from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
 )
-from galaxy.tools import ToolBox
 from galaxy.util import (
     asbool,
     download_to_file,
@@ -538,7 +539,7 @@ def uvicorn_serve(app, port, host=None):
     return server, port, t
 
 
-def cleanup_directory(tempdir):
+def cleanup_directory(tempdir: str) -> None:
     """Clean up temporary files used by test unless GALAXY_TEST_NO_CLEANUP is set.
 
     Also respect TOOL_SHED_TEST_NO_CLEANUP for legacy reasons.
@@ -552,24 +553,6 @@ def cleanup_directory(tempdir):
             shutil.rmtree(tempdir)
     except Exception:
         pass
-
-
-def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
-    """Modify Galaxy app's toolbox for migrated or installed tool tests."""
-    if testing_installed_tools:
-        # TODO: Do this without modifying app - that is a pretty violation
-        # of Galaxy's abstraction - we shouldn't require app at all let alone
-        # be modifying it.
-
-        tool_configs = app.config.tool_configs
-        # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
-        # and reload the app's toolbox.
-        relative_migrated_tool_panel_config = os.path.join(app.config.root, MIGRATED_TOOL_PANEL_CONFIG)
-        if relative_migrated_tool_panel_config in tool_configs:
-            tool_configs.remove(relative_migrated_tool_panel_config)
-        for installed_tool_panel_config in INSTALLED_TOOL_PANEL_CONFIGS:
-            tool_configs.append(installed_tool_panel_config)
-        app.toolbox = ToolBox(tool_configs, app.config.tool_path, app)
 
 
 def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
@@ -667,7 +650,7 @@ class ServerWrapper:
     def app(self):
         raise NotImplementedError("Test can be run against target - requires a Galaxy app object.")
 
-    def stop(self):
+    def stop(self) -> None:
         raise NotImplementedError()
 
 
@@ -834,22 +817,19 @@ class TestDriver:
 
     def __init__(self):
         """Setup tracked resources."""
-        self.server_wrappers = []
-        self.temp_directories = []
+        self.server_wrappers: List[ServerWrapper] = []
+        self.temp_directories: List[str] = []
 
-    def setup(self, config_object=None):
+    def setup(self, config_object=None) -> None:
         """Called before tests are built."""
 
-    def build_tests(self):
-        """After environment is setup, setup tests."""
-
-    def tear_down(self):
+    def tear_down(self) -> None:
         """Cleanup resources tracked by this object."""
         self.stop_servers()
         for temp_directory in self.temp_directories:
             cleanup_directory(temp_directory)
 
-    def stop_servers(self):
+    def stop_servers(self) -> None:
         for server_wrapper in self.server_wrappers:
             server_wrapper.stop()
         for th in threading.enumerate():
@@ -872,10 +852,9 @@ class TestDriver:
 class GalaxyTestDriver(TestDriver):
     """Instantial a Galaxy-style TestDriver for testing Galaxy."""
 
-    server_wrappers: List[ServerWrapper]
     testing_shed_tools = False
 
-    def _configure(self, config_object=None):
+    def _configure(self, config_object=None) -> None:
         """Setup various variables used to launch a Galaxy server."""
         config_object = self._ensure_config_object(config_object)
         self.external_galaxy = os.environ.get("GALAXY_TEST_EXTERNAL", None)
@@ -913,18 +892,19 @@ class GalaxyTestDriver(TestDriver):
         self._configure(config_object)
         self._register_and_run_servers(config_object)
 
-    def get_logs(self):
-        if self.server_wrappers:
-            server_wrapper = self.server_wrappers[0]
-            return server_wrapper.get_logs()
+    def get_logs(self) -> Optional[str]:
+        if not self.server_wrappers:
+            return None
+        server_wrapper = self.server_wrappers[0]
+        return server_wrapper.get_logs()
 
-    def restart(self, config_object=None, handle_config=None):
+    def restart(self, config_object=None, handle_config=None) -> None:
         self.stop_servers()
         self._register_and_run_servers(config_object, handle_config=handle_config)
 
-    def _register_and_run_servers(self, config_object=None, handle_config=None):
+    def _register_and_run_servers(self, config_object=None, handle_config=None) -> None:
         config_object = self._ensure_config_object(config_object)
-        self.app = None
+        self.app: Optional[GalaxyUniverseApplication] = None
 
         if self.external_galaxy is None:
             if self._saved_galaxy_config is not None:
@@ -978,7 +958,7 @@ class GalaxyTestDriver(TestDriver):
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
-    def build_galaxy_app(self, galaxy_config):
+    def build_galaxy_app(self, galaxy_config) -> GalaxyUniverseApplication:
         self.app = build_galaxy_app(galaxy_config)
         return self.app
 
@@ -987,38 +967,12 @@ class GalaxyTestDriver(TestDriver):
             config_object = self
         return config_object
 
-    def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
-        setup_shed_tools_for_test(self.app, self.galaxy_test_tmp_dir, testing_migrated_tools, testing_installed_tools)
-
-    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
-        if self.app is None:
-            return
-
-        if testing_shed_tools is None:
-            testing_shed_tools = getattr(self, "testing_shed_tools", False)
-
-        # We must make sure that functional.test_toolbox is always imported after
-        # database_contexts.galaxy_content is set (which occurs in this method above).
-        # If functional.test_toolbox is imported before database_contexts.galaxy_content
-        # is set, sa_session will be None in all methods that use it.
-        import functional.test_toolbox
-
-        functional.test_toolbox.toolbox = self.app.toolbox
-        # When testing data managers, do not test toolbox.
-        test_classes = functional.test_toolbox.build_tests(
-            app=self.app,
-            testing_shed_tools=testing_shed_tools,
-            master_api_key=get_admin_api_key(),
-            user_api_key=get_user_api_key(),
-        )
-        if return_test_classes:
-            return test_classes
-        return functional.test_toolbox
-
-    def run_tool_test(self, tool_id, index=0, resource_parameters=None, **kwd):
+    def run_tool_test(
+        self, tool_id: str, index: int = 0, resource_parameters: Optional[Dict[str, Any]] = None, **kwd
+    ) -> None:
         if resource_parameters is None:
             resource_parameters = {}
-        host, port, url = target_url_parts()
+        _, _, url = target_url_parts()
         galaxy_interactor_kwds = {
             "galaxy_url": url,
             "master_api_key": get_admin_api_key(),

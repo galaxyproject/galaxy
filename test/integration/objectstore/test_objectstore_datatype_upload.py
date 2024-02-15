@@ -8,6 +8,7 @@ from typing import Optional
 
 import pytest
 
+from galaxy.objectstore.irods import IRODSObjectStore
 from galaxy_test.driver import integration_util
 from ..test_datatype_upload import (
     TEST_CASES,
@@ -224,6 +225,7 @@ def test_upload_datatype_irods_idle_connections(
 
     # Get Irods object store's connection pool
     assert idle_connection_irods_instance._test_driver.app
+    assert isinstance(idle_connection_irods_instance._test_driver.app.object_store, IRODSObjectStore)
     connection_pool = idle_connection_irods_instance._test_driver.app.object_store.session.pool
 
     # Verify the connection pool has 0 active and 1 idle connections
