@@ -3033,7 +3033,7 @@ class SetMetadataTool(Tool):
                 dataset.state = param_dict.get("__ORIGINAL_DATASET_STATE__")
             else:
                 # Revert dataset.state to fall back to dataset.dataset.state
-                dataset.set_metadata_succces_state()
+                dataset.set_metadata_success_state()
             # Need to reset the peek, which may rely on metadata
             # TODO: move this into metadata setting, setting the peek requires dataset access,
             # and large chunks of the dataset may be read here.
