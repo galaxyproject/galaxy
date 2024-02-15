@@ -226,11 +226,11 @@ class TestParameterValidation(BaseParameterTestCase):
         ok_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=1, extension="interval", create_dataset=True, sa_session=sa_session)
         )
-        ok_hda.set_dataset_state(Dataset.states.OK)
+        ok_hda.state = Dataset.states.OK
         notok_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=2, extension="interval", create_dataset=True, sa_session=sa_session)
         )
-        notok_hda.set_dataset_state(Dataset.states.EMPTY)
+        notok_hda.state = Dataset.states.EMPTY
 
         p = self._parameter_for(
             xml="""
@@ -349,7 +349,7 @@ class TestParameterValidation(BaseParameterTestCase):
                 dataset=Dataset(external_filename=get_test_fname("1.bed")),
             )
         )
-        hda.set_dataset_state(Dataset.states.OK)
+        hda.state = Dataset.states.OK
         hda.set_meta()
         hda.metadata.strandCol = hda.metadata.spec["strandCol"].no_value
 
@@ -409,12 +409,12 @@ class TestParameterValidation(BaseParameterTestCase):
         has_dbkey_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=1, extension="interval", create_dataset=True, sa_session=sa_session)
         )
-        has_dbkey_hda.set_dataset_state(Dataset.states.OK)
+        has_dbkey_hda.state = Dataset.states.OK
         has_dbkey_hda.metadata.dbkey = "hg19"
         has_no_dbkey_hda = hist.add_dataset(
             HistoryDatasetAssociation(id=2, extension="interval", create_dataset=True, sa_session=sa_session)
         )
-        has_no_dbkey_hda.set_dataset_state(Dataset.states.OK)
+        has_no_dbkey_hda.state = Dataset.states.OK
 
         p = self._parameter_for(
             xml="""
