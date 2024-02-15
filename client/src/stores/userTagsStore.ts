@@ -24,7 +24,7 @@ class UserTagStoreDatabase extends Dexie {
     }
 }
 
-const maxDbEntriesPerUser = 500;
+const maxDbEntriesPerUser = 10000;
 
 function normalizeTag(tag: string) {
     return tag.replace(/^name:/, "#");
@@ -58,7 +58,7 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
 
     /** removes the x oldest tags from the database */
     async function removeOldestEntries(count: number) {
-        const oldestTags = tags.value.filter((o) => o.id !== undefined).splice(0, count);
+        const oldestTags = tags.value.splice(0, count);
         await db.tags.bulkDelete(oldestTags.map((o) => o.id!));
     }
 
