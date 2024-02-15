@@ -88,7 +88,9 @@ const filteredOptions = computed(() => {
 
 /** options trimmed to `maxShownOptions` and reordered so the search value appears first */
 const trimmedOptions = computed(() => {
-    const optionsSliced = filteredOptions.value.slice(0, props.maxShownOptions);
+    const optionsSliced = filteredOptions.value
+        .slice(0, props.maxShownOptions)
+        .map((tag) => tag.replace(/^name:/, "#"));
 
     // remove search value to put it in front
     const optionsSet = new Set(optionsSliced);
