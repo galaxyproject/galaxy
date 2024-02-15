@@ -55,6 +55,7 @@
     "d3v3": "npm:d3@3",
     "date-fns": "^2.30.0",
     "decode-uri-component": "^0.2.1",
+    "dexie": "^3.2.5",
     "dom-to-image": "^2.6.0",
     "dompurify": "^3.0.6",
     "dumpmeta-webpack-plugin": "^0.2.0",

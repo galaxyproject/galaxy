@@ -41,6 +41,8 @@ const emit = defineEmits<{
     (e: "input", selected: string[]): void;
     /** emitted when a new option is selected, which wasn't part of the options prop */
     (e: "addOption", newOption: string): void;
+    /** emitted when a option is added */
+    (e: "selected", option: string): void;
 }>();
 
 const inputField = ref<HTMLInputElement | null>(null);
@@ -86,7 +88,9 @@ const filteredOptions = computed(() => {
 
 /** options trimmed to `maxShownOptions` and reordered so the search value appears first */
 const trimmedOptions = computed(() => {
-    const optionsSliced = filteredOptions.value.slice(0, props.maxShownOptions);
+    const optionsSliced = filteredOptions.value
+        .slice(0, props.maxShownOptions)
+        .map((tag) => tag.replace(/^name:/, "#"));
 
     // remove search value to put it in front
     const optionsSet = new Set(optionsSliced);
@@ -154,6 +158,7 @@ function onOptionSelected(option: string) {
         set.delete(option);
     } else {
         set.add(option);
+        emit("selected", option);
     }
 
     emit("input", Array.from(set));
