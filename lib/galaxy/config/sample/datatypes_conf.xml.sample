@@ -1127,12 +1127,12 @@
     <sniffer type="galaxy.datatypes.proteomics:Wiff"/>
     <sniffer type="galaxy.datatypes.proteomics:PEFF"/>
     <sniffer type="galaxy.datatypes.molecules:CML"/>
+    <sniffer type="galaxy.datatypes.triples:Sbol"/>
     <sniffer type="galaxy.datatypes.xml:GenericXml"/>
     <sniffer type="galaxy.datatypes.triples:HDT"/>
     <sniffer type="galaxy.datatypes.triples:Turtle"/>
     <sniffer type="galaxy.datatypes.triples:NTriples"/>
     <sniffer type="galaxy.datatypes.triples:Jsonld"/>
-    <sniffer type="galaxy.datatypes.triples:Sbol"/>
     <sniffer type="galaxy.datatypes.sequence:Maf"/>
     <sniffer type="galaxy.datatypes.sequence:Lav"/>
     <sniffer type="galaxy.datatypes.sequence:MemePsp"/>
