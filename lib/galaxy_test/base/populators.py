@@ -1821,7 +1821,7 @@ class BaseWorkflowPopulator(BasePopulator):
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"
-        invocation_response = self._post(url, data=request)
+        invocation_response = self._post(url, data=request, json=True)
         if assert_ok:
             invocation_response.raise_for_status()
         return invocation_response

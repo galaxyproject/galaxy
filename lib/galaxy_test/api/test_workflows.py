@@ -6633,7 +6633,7 @@ steps:
                 history=f"hist_id={history_id}", parameters=dumps(dict(validation_repeat={"r2_0|text": ""}))
             )
             url = f"workflows/{workflow_id}/invocations"
-            invocation_response = self._post(url, data=workflow_request)
+            invocation_response = self._post(url, data=workflow_request, json=True)
             # Take a valid stat and make it invalid, assert workflow won't run.
             self._assert_status_code_is(invocation_response, 400)
 
