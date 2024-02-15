@@ -25,7 +25,7 @@ class XSD(Linter):
         xmlschema = etree.parse(TOOL_XSD)
         xsd = etree.XMLSchema(xmlschema)
         if not xsd.validate(tool_xml):
-            for error in xsd.error_log:
+            for error in xsd.error_log:  # type: ignore[attr-defined] # https://github.com/lxml/lxml-stubs/pull/100
                 # the validation error contains the path which allows
                 # us to lookup the node that is reported in the lint context
                 node = tool_xml.xpath(error.path)
