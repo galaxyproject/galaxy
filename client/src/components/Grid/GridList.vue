@@ -15,6 +15,7 @@ import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -235,35 +236,35 @@ watch(operationMessage, () => {
     <div :id="gridConfig.id" class="d-flex flex-column overflow-auto">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
-        <div class="grid-header d-flex justify-content-between pb-2">
-            <div>
-                <h1 class="m-0" data-description="grid title">
-                    {{ gridConfig.title }}
-                </h1>
-                <FilterMenu
-                    class="py-2"
-                    :name="gridConfig.plural"
-                    :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
-                    :filter-class="gridConfig.filtering"
-                    :filter-text.sync="filterText"
-                    :loading="loading"
-                    :show-advanced.sync="showAdvanced"
-                    @on-backend-filter="onSearch" />
-                <hr v-if="showAdvanced" />
+        <div class="grid-header d-flex justify-content-between pb-2 flex-column">
+            <div class="d-flex">
+                <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
+                    <span v-localize>{{ gridConfig.title }}</span>
+                </Heading>
+                <div class="d-flex justify-content-between">
+                    <BButton
+                        v-for="(action, actionIndex) in gridConfig.actions"
+                        :key="actionIndex"
+                        class="m-1"
+                        size="sm"
+                        variant="primary"
+                        :data-description="`grid action ${action.title.toLowerCase()}`"
+                        @click="action.handler()">
+                        <Icon :icon="action.icon" class="mr-1" />
+                        <span v-localize>{{ action.title }}</span>
+                    </BButton>
+                </div>
             </div>
-            <div v-if="!showAdvanced" class="py-3">
-                <BButton
-                    v-for="(action, actionIndex) in gridConfig.actions"
-                    :key="actionIndex"
-                    class="m-1"
-                    size="sm"
-                    variant="primary"
-                    :data-description="`grid action ${action.title.toLowerCase()}`"
-                    @click="action.handler()">
-                    <Icon :icon="action.icon" class="mr-1" />
-                    <span v-localize>{{ action.title }}</span>
-                </BButton>
-            </div>
+            <FilterMenu
+                class="py-2"
+                :name="gridConfig.plural"
+                :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
+                :filter-class="gridConfig.filtering"
+                :filter-text.sync="filterText"
+                :loading="loading"
+                :show-advanced.sync="showAdvanced"
+                @on-backend-filter="onSearch" />
+            <hr v-if="showAdvanced" />
         </div>
         <LoadingSpan v-if="loading" />
         <BAlert v-else-if="!isAvailable" variant="info" show>

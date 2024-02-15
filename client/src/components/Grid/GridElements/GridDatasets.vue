@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { onMounted, type Ref, ref } from "vue";
+import { onMounted, type Ref, ref, watch } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
 import { rethrowSimple } from "@/utils/simple-error";
@@ -28,6 +28,7 @@ interface HistoryStats {
 const historyStats: Ref<HistoryStats | null> = ref(null);
 
 async function getCounts() {
+    historyStats.value = null;
     if (props.historyId) {
         try {
             const { data } = await axios.get(
@@ -43,6 +44,11 @@ async function getCounts() {
 onMounted(() => {
     getCounts();
 });
+
+watch(
+    () => props.historyId,
+    () => getCounts()
+);
 </script>
 
 <template>

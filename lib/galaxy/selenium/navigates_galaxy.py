@@ -564,9 +564,11 @@ class NavigatesGalaxy(HasDriver):
 
     def select_grid_cell(self, grid_name, item_name, column_index=3):
         cell = None
-        grid = self.wait_for_selector(grid_name)
+        grid = self.wait_for_selector(f"{grid_name} table")
         for row in grid.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
+            print(td[0].text)
+            print(td[1].text)
             if item_name in [td[0].text, td[1].text]:
                 cell = td[column_index]
                 break
@@ -1733,10 +1735,10 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector(search_selector)
 
     @retry_during_transitions
-    def histories_get_history_names(self):
+    def histories_get_history_names(self, selector="#histories-grid"):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
-        grid = self.wait_for_selector("#histories-grid")
+        grid = self.wait_for_selector(selector)
         for row in grid.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
             name = td[1].text if td[0].text == "" else td[0].text
