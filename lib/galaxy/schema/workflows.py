@@ -96,27 +96,36 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     )
     allow_tool_state_corrections: Optional[bool] = False
     use_cached_job: Optional[bool] = False
-    step_parameters: Optional[Dict[str, Any]] = None
+
     # input_step_parameters: Dict[str, InvocationInputParameter] = Field(
     #     default=..., title="Input step parameters", description="Input step parameters of the workflow invocation."
     # )
-    parameters: Optional[Dict[str, Any]] = None
-    inputs: Optional[Dict[str, Any]] = None
-
-    @field_validator("ds_map", mode="before", check_fields=False)
+    @field_validator(
+        "parameters",
+        "inputs",
+        "ds_map",
+        "resource_params",
+        "replacement_params",
+        "step_parameters",
+        mode="before",
+        check_fields=False,
+    )
     @classmethod
     def inputs_string_to_json(cls, v):
         if isinstance(v, str):
             return json.loads(v)
         return v
 
+    parameters: Optional[Dict[str, Any]] = None
+    inputs: Optional[Dict[str, Any]] = None
     ds_map: Optional[Dict[str, Dict[str, Any]]] = None
+    resource_params: Optional[Dict[str, Any]] = None
+    replacement_params: Optional[Dict[str, Any]] = None
+    step_parameters: Optional[Dict[str, Any]] = None
     no_add_to_history: Optional[bool] = False
     legacy: Optional[bool] = False
     parameters_normalized: Optional[bool] = False
     inputs_by: Optional[str] = None
-    resource_params: Optional[Dict[str, Any]] = None
-    replacement_params: Optional[Dict[str, Any]] = None
     effective_outputs: Optional[bool] = None
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
     preferred_intermediate_object_store_id: Optional[str] = None
