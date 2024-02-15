@@ -1,11 +1,16 @@
 <tool id="column_param" name="Column Param" version="1.0.0">
     <command><![CDATA[
-cut -f '$col' '$input1' > '$output1' &&
+cut
+    -f '$col'
+    #if $input1.is_of_type('csv')
+        -d','
+    #end if 
+    '$input1' > '$output1' &&
 echo "col $col" > '$output2' &&
 echo "col_names $col_names" >> '$output2'
     ]]></command>
     <inputs>
-        <param name="input1" type="data" format="tabular" label="Input 1" />
+        <param name="input1" type="data" format="tabular,csv" label="Input 1" />
         <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
         <param name="col_names" type="data_column" data_ref="input1" use_header_names="true" label="Column to Use" />
     </inputs>
@@ -37,6 +42,23 @@ echo "col_names $col_names" >> '$output2'
             <output name="output1">
                 <assert_contents>
                     <has_line line="chr1" />
+                </assert_contents>
+            </output>
+            <output name="output2">
+                <assert_contents>
+                    <has_line line="col 1" />
+                    <has_line line="col_names 1" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- test csv input -->
+        <test>
+            <param name="input1" value="1.csv" ftype="csv"/>
+            <param name="col" value="1" />
+            <param name="col_names" value="c1: Transaction_date" />
+            <output name="output1">
+                <assert_contents>
+                    <has_line line="1/2/09 6:17" />
                 </assert_contents>
             </output>
             <output name="output2">
