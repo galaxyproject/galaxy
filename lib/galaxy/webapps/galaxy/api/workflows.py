@@ -135,7 +135,6 @@ class WorkflowsAPIController(
     ConsumesModelStores,
 ):
     service: WorkflowsService = depends(WorkflowsService)
-    invocations_service: InvocationsService = depends(InvocationsService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
