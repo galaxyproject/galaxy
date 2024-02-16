@@ -3,6 +3,7 @@
 import ast
 import re
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from galaxy.util import string_as_bool
 from ._util import (
