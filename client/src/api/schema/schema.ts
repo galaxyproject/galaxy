@@ -1835,7 +1835,7 @@ export interface paths {
          *
          * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
          */
-        post: operations["Invoke_workflow__api_workflows__workflow_id__invocations_post"];
+        post: operations["Invoke_workflow_api_workflows__workflow_id__invocations_post"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
         /**
@@ -1948,6 +1948,15 @@ export interface paths {
          * @deprecated
          */
         get: operations["index_invocations_api_workflows__workflow_id__usage_get"];
+        /**
+         * Schedule the workflow specified by `workflow_id` to run.
+         * @deprecated
+         * @description .. note:: This method takes the same arguments as
+         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+         *
+         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+         */
+        post: operations["Invoke_workflow_api_workflows__workflow_id__usage_post"];
     };
     "/api/workflows/{workflow_id}/usage/{invocation_id}": {
         /**
@@ -21894,7 +21903,7 @@ export interface operations {
             };
         };
     };
-    Invoke_workflow__api_workflows__workflow_id__invocations_post: {
+    Invoke_workflow_api_workflows__workflow_id__invocations_post: {
         /**
          * Schedule the workflow specified by `workflow_id` to run.
          * @description .. note:: This method takes the same arguments as
@@ -22591,6 +22600,46 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["WorkflowInvocationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    Invoke_workflow_api_workflows__workflow_id__usage_post: {
+        /**
+         * Schedule the workflow specified by `workflow_id` to run.
+         * @deprecated
+         * @description .. note:: This method takes the same arguments as
+         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
+         *
+         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            path: {
+                workflow_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvokeWorkflowPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["WorkflowInvocationResponse"]
+                        | components["schemas"]["WorkflowInvocationResponse"][];
                 };
             };
             /** @description Validation Error */
