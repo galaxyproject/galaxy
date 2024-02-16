@@ -1514,14 +1514,29 @@ def test_inputs_filter_incorrect(lint_ctx):
     run_lint(lint_ctx, inputs.lint_inputs, tool_source)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert "Select parameter [select_param] 'regexp' filter specifies unnecessary attribute 'multiple'" in lint_ctx.warn_messages
+    assert (
+        "Select parameter [select_param] 'regexp' filter specifies unnecessary attribute 'multiple'"
+        in lint_ctx.warn_messages
+    )
     assert len(lint_ctx.warn_messages) == 1
     assert "Select parameter [select_param] contains filter without type." in lint_ctx.error_messages
     assert "Select parameter [select_param] contains filter with unknown type 'typo'." in lint_ctx.error_messages
-    assert "Select parameter [select_param] 'static_value' filter misses required attribute 'column'" in lint_ctx.error_messages
-    assert "Select parameter [select_param] 'remove_value'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)" in lint_ctx.error_messages
-    assert "Select parameter [select_param] 'data_meta'' filter attribute 'ref' refers to non existing parameter 'input'" in lint_ctx.error_messages
-    assert "Select parameter [select_param] 'regexp'' filter 'value' is not a valid regular expression (nothing to repeat at position 1)'" in lint_ctx.error_messages
+    assert (
+        "Select parameter [select_param] 'static_value' filter misses required attribute 'column'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'remove_value'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'data_meta'' filter attribute 'ref' refers to non existing parameter 'input'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Select parameter [select_param] 'regexp'' filter 'value' is not a valid regular expression (nothing to repeat at position 1)'"
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.error_messages) == 6
 
 

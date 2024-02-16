@@ -27,7 +27,7 @@ FILTER_TYPES = [
     "add_value",
     "remove_value",
     "sort_by",
-    "data_table"
+    "data_table",
 ]
 
 FILTER_REQUIRED_ATTRIBUTES = {
@@ -314,27 +314,59 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
                     # check for required attributes for filter (remove_value needs a bit more logic here)
                     for attrib in FILTER_REQUIRED_ATTRIBUTES[ftype]:
                         if attrib not in f.attrib:
-                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}' filter misses required attribute '{attrib}'", node=f)
+                            lint_ctx.error(
+                                f"Select parameter [{param_name}] '{ftype}' filter misses required attribute '{attrib}'",
+                                node=f,
+                            )
                     if ftype == "remove_value":
-                        if not (("value" in f.attrib and "ref" not in f.attrib and "meta_ref" not in f.attrib and "key" not in f.attrib)
-                                or ("value" not in f.attrib and "ref" in f.attrib and "meta_ref" not in f.attrib and "key" not in f.attrib)
-                                or ("value" not in f.attrib and "ref" not in f.attrib and "meta_ref" in f.attrib and "key" in f.attrib)):
-                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)", node=f)
+                        if not (
+                            (
+                                "value" in f.attrib
+                                and "ref" not in f.attrib
+                                and "meta_ref" not in f.attrib
+                                and "key" not in f.attrib
+                            )
+                            or (
+                                "value" not in f.attrib
+                                and "ref" in f.attrib
+                                and "meta_ref" not in f.attrib
+                                and "key" not in f.attrib
+                            )
+                            or (
+                                "value" not in f.attrib
+                                and "ref" not in f.attrib
+                                and "meta_ref" in f.attrib
+                                and "key" in f.attrib
+                            )
+                        ):
+                            lint_ctx.error(
+                                f"Select parameter [{param_name}] '{ftype}'' filter needs either the 'value'; 'ref'; or 'meta' and 'key' attribute(s)",
+                                node=f,
+                            )
                     # check for allowed filter attributes (only warning because others are ignored)
                     for attrib in f.attrib:
                         if attrib not in FILTER_ALLOWED_ATTRIBUTES[ftype]:
-                            lint_ctx.warn(f"Select parameter [{param_name}] '{ftype}' filter specifies unnecessary attribute '{attrib}'", node=f)
+                            lint_ctx.warn(
+                                f"Select parameter [{param_name}] '{ftype}' filter specifies unnecessary attribute '{attrib}'",
+                                node=f,
+                            )
                     # check for references to other inputs
                     # TODO: currently ref and metaref seem only to work for top level params,
                     # once this is fixed the linter needs to be extended, e.g. `f.attrib[ref_attrib].split('|')[-1]`
                     for ref_attrib in ["meta_ref", "ref"]:
                         if ref_attrib in f.attrib and f.attrib[ref_attrib] not in param_names:
-                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter attribute '{ref_attrib}' refers to non existing parameter '{f.attrib[ref_attrib]}'", node=f)
+                            lint_ctx.error(
+                                f"Select parameter [{param_name}] '{ftype}'' filter attribute '{ref_attrib}' refers to non existing parameter '{f.attrib[ref_attrib]}'",
+                                node=f,
+                            )
                     if ftype == "regexp" and "value" in f.attrib:
                         try:
                             re.compile(f.attrib["value"])
                         except re.error as re_error:
-                            lint_ctx.error(f"Select parameter [{param_name}] '{ftype}'' filter 'value' is not a valid regular expression ({re_error})'", node=f)
+                            lint_ctx.error(
+                                f"Select parameter [{param_name}] '{ftype}'' filter 'value' is not a valid regular expression ({re_error})'",
+                                node=f,
+                            )
 
                 from_file = options[0].get("from_file", None)
                 from_parameter = options[0].get("from_parameter", None)

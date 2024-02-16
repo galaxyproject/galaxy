@@ -555,6 +555,7 @@ class DataTableFilter(Filter):
                 Discard columns matching value (False)
 
     """
+
     def __init__(self, d_option, elem):
         Filter.__init__(self, d_option, elem)
         self.table_name = elem.get("table_name", None)
@@ -564,17 +565,21 @@ class DataTableFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
         self.data_table_column = elem.get("data_table_column", None)
         assert self.data_table_column is not None, "Required 'data_table_column' attribute missing from filter"
-        self.keep = string_as_bool(elem.get("keep", 'True'))
+        self.keep = string_as_bool(elem.get("keep", "True"))
 
     def filter_options(self, options, trans, other_values):
         # get column from data table, by index or column name
         entries = None
         try:
-            entries = set([f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()])
+            entries = set(
+                [f[int(self.data_table_column)] for f in trans.app.tool_data_tables[self.table_name].get_fields()]
+            )
         except TypeError:
             pass
         try:
-            entries = set([f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()])
+            entries = set(
+                [f[self.data_table_column] for f in trans.app.tool_data_tables[self.table_name].get_named_fields_list()]
+            )
         except KeyError:
             pass
         if entries is None:
