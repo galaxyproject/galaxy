@@ -49,7 +49,7 @@ SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
 TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data")
 
 
-class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstance):
+class BaseUploadContentConfigurationIntegrationInstance(integration_util.IntegrationInstance):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
@@ -91,7 +91,7 @@ def _ensure_directory(path: str) -> None:
         os.makedirs(path)
 
 
-class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationInstance, TestCase):
+class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationIntegrationInstance, TestCase):
     pass
 
 
