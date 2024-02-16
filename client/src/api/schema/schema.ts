@@ -7379,97 +7379,136 @@ export interface components {
         /** InvokeWorkflowPayload */
         InvokeWorkflowPayload: {
             /**
-             * Allow Tool State Corrections
+             * Allow tool state corrections
+             * @description TODO
              * @default false
              */
             allow_tool_state_corrections?: boolean | null;
             /**
              * Batch
-             * @description If true, the workflow is invoked as a batch.
+             * @description TODO
              * @default false
              */
             batch?: boolean | null;
-            /** Ds Map */
+            /**
+             * Dataset Map
+             * @description TODO
+             * @default {}
+             */
             ds_map?: {
                 [key: string]: Record<string, never> | undefined;
             } | null;
-            /** Effective Outputs */
+            /**
+             * Effective Outputs
+             * @description TODO
+             */
             effective_outputs?: boolean | null;
             /**
              * History
-             * @description The history to import the workflow into.
+             * @description TODO
              */
             history?: string | null;
             /**
              * History ID
-             * @description The history to import the workflow into.
+             * @description TODO
              */
             history_id?: string | null;
             /**
              * History Name
-             * @description The name of the history to import the workflow into.
+             * @description TODO
              */
             history_name?: string | null;
-            /** Inputs */
+            /**
+             * Inputs
+             * @description TODO
+             */
             inputs?: Record<string, never> | null;
-            /** Inputs By */
+            /**
+             * Inputs By
+             * @description TODO
+             */
             inputs_by?: string | null;
             /**
-             * Is Instance
-             * @description If true, the workflow is invoked as an instance.
+             * Is instance
+             * @description TODO
              * @default false
              */
             instance?: boolean | null;
             /**
              * Legacy
+             * @description TODO
              * @default false
              */
             legacy?: boolean | null;
             /**
              * New History Name
-             * @description The name of the new history to import the workflow into.
+             * @description TODO
              */
             new_history_name?: string | null;
             /**
-             * No Add To History
+             * No Add to History
+             * @description TODO
              * @default false
              */
             no_add_to_history?: boolean | null;
-            /** Parameters */
+            /**
+             * Parameters
+             * @description TODO
+             * @default {}
+             */
             parameters?: Record<string, never> | null;
             /**
              * Parameters Normalized
+             * @description TODO
              * @default false
              */
             parameters_normalized?: boolean | null;
-            /** Preferred Intermediate Object Store Id */
+            /**
+             * Preferred Intermediate Object Store ID
+             * @description TODO
+             */
             preferred_intermediate_object_store_id?: string | null;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
              */
             preferred_object_store_id?: string | null;
-            /** Preferred Outputs Object Store Id */
+            /**
+             * Preferred Outputs Object Store ID
+             * @description TODO
+             */
             preferred_outputs_object_store_id?: string | null;
-            /** Replacement Params */
+            /**
+             * Replacement Parameters
+             * @description TODO
+             * @default {}
+             */
             replacement_params?: Record<string, never> | null;
             /**
              * Require Exact Tool Versions
-             * @description If true, exact tool versions are required for workflow invocation.
-             * @default false
+             * @description TODO
+             * @default true
              */
             require_exact_tool_versions?: boolean | null;
-            /** Resource Params */
+            /**
+             * Resource Parameters
+             * @description TODO
+             * @default {}
+             */
             resource_params?: Record<string, never> | null;
             /**
              * Scheduler
-             * @description Scheduler to use for workflow invocation.
+             * @description TODO
              */
             scheduler?: string | null;
-            /** Step Parameters */
+            /**
+             * Step Parameters
+             * @description TODO
+             */
             step_parameters?: Record<string, never> | null;
             /**
-             * Use Cached Job
+             * Use cached job
+             * @description TODO
              * @default false
              */
             use_cached_job?: boolean | null;
