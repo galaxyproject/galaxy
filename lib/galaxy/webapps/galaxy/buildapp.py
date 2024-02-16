@@ -691,7 +691,6 @@ def populate_api_routes(webapp, app):
     # )
 
     invoke_names = {
-        "invocations": "",
         "usage": "_deprecated",
     }
     for noun, suffix in invoke_names.items():
