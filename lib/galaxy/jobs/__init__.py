@@ -1769,7 +1769,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if not metadata_set_successfully:
                 if self.tool.tool_type == "expression":
-                    dataset.set_metadata_succces_state()
+                    dataset.set_metadata_success_state()
                 elif retry_internally:
                     # If Galaxy was expected to sniff type and didn't - do so.
                     if dataset.ext == "_sniff_":

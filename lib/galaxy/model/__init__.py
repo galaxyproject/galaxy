@@ -4409,13 +4409,13 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
                 self._state = state
             else:
-                self.set_metadata_succces_state()
+                self.set_metadata_success_state()
                 sa_session = object_session(self)
                 if sa_session:
                     sa_session.add(self.dataset)
                 self.dataset.state = state
 
-    def set_metadata_succces_state(self):
+    def set_metadata_success_state(self):
         self._state = None
 
     def get_file_name(self, sync_cache=True) -> str:
