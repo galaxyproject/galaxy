@@ -4,24 +4,12 @@ import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { Citation } from ".";
+
 library.add(faExternalLinkAlt);
 
 interface Props {
-    citation: {
-        cite: {
-            data: {
-                URL: string;
-            }[];
-            format: (
-                format: string,
-                options: {
-                    format: string;
-                    template: string;
-                    lang: string;
-                }
-            ) => string;
-        };
-    };
+    citation: Citation;
     outputFormat?: string;
     prefix?: string;
 }
