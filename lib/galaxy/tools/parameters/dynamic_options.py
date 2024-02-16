@@ -762,15 +762,16 @@ class DynamicOptions:
     def get_user_options(self, user: User):
         # stored metadata are key: value pairs, turn into flat lists of correct order
         fields = []
-        hdas = user.get_user_data_tables(self.tool_data_table_name)
-        by_dbkey = {}
-        for hda in hdas:
-            by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
-        for data_table_entry in by_dbkey.values():
-            field_entry = []
-            for column_key in self.tool_data_table.columns.keys():
-                field_entry.append(data_table_entry[column_key])
-            fields.append(field_entry)
+        if self.tool_data_table_name:
+            hdas = user.get_user_data_tables(self.tool_data_table_name)
+            by_dbkey = {}
+            for hda in hdas:
+                by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
+            for data_table_entry in by_dbkey.values():
+                field_entry = []
+                for column_key in self.tool_data_table.columns.keys():
+                    field_entry.append(data_table_entry[column_key])
+                fields.append(field_entry)
         return fields
 
     @staticmethod
