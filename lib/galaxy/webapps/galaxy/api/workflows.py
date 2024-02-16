@@ -1081,7 +1081,7 @@ class FastAPIWorkflows:
 
         :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
         """
-        return self.service.invoke_workflow(trans, workflow_id, payload.model_dump(exclude_unset=True))
+        return self.service.invoke_workflow(trans, workflow_id, payload)
 
     @router.get(
         "/api/workflows/{workflow_id}/versions",
