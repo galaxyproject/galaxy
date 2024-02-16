@@ -22,8 +22,9 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.resources import files
 from .custos_authnz import (
-    CustosAuthnz,
+    CustosAuthFactory,
     KEYCLOAK_BACKENDS,
 )
 from .psa_authnz import (
@@ -34,12 +35,14 @@ from .psa_authnz import (
     Strategy,
 )
 
+OIDC_BACKEND_SCHEMA = files("galaxy.authnz.xsd") / "oidc_backends_config.xsd"
+
 log = logging.getLogger(__name__)
 
 # Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
 DEFAULT_OIDC_IDP_ICONS = {
     "google": "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
-    "elixir": "https://elixir-europe.org/sites/default/files/images/login-button-orange.png",
+    "elixir": "https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png",
     "okta": "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
 }
 
@@ -67,7 +70,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "Setter":
@@ -79,7 +82,7 @@ class AuthnzManager:
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
                     log.error(
                         "Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
-                        " found these attributes: `{}`; skipping this node.".format(child.attrib)
+                        f" found these attributes: `{child.attrib}`; skipping this node."
                     )
                     continue
                 try:
@@ -105,12 +108,12 @@ class AuthnzManager:
         self.oidc_backends_config = {}
         self.oidc_backends_implementation = {}
         try:
-            tree = parse_xml(config_file)
+            tree = parse_xml(config_file, schemafname=OIDC_BACKEND_SCHEMA)
             root = tree.getroot()
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "provider":
@@ -161,8 +164,15 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("extra_scopes") is not None:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
+        if config_xml.find("tenant_id") is not None:
+            rtv["tenant_id"] = config_xml.find("tenant_id").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
+        if config_xml.find("accepted_audiences") is not None:
+            rtv["accepted_audiences"] = config_xml.find("accepted_audiences").text
+        # this is a EGI Check-in specific config
+        if config_xml.find("checkin_env") is not None:
+            rtv["checkin_env"] = config_xml.find("checkin_env").text
 
         return rtv
 
@@ -190,6 +200,8 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
+        if config_xml.find("accepted_audiences") is not None:
+            rtv["accepted_audiences"] = config_xml.find("accepted_audiences").text
         return rtv
 
     def get_allowed_idps(self):
@@ -208,7 +220,7 @@ class AuthnzManager:
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
-            identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
+            identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
                 if provider in KEYCLOAK_BACKENDS:
                     return (
@@ -238,11 +250,11 @@ class AuthnzManager:
             return False, msg, None
 
     @staticmethod
-    def _get_identity_provider_class(implementation):
+    def _get_identity_provider_factory(implementation):
         if implementation == "psa":
             return PSAAuthnz
         elif implementation == "custos":
-            return CustosAuthnz
+            return CustosAuthFactory.GetCustosBasedAuthProvider
         else:
             return None
 
@@ -317,6 +329,31 @@ class AuthnzManager:
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
+    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
+        try:
+            success, message, backend = self._get_authnz_backend(auth.provider)
+            if success is False:
+                msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
+                log.error(msg)
+                return False
+            refreshed = backend.refresh(trans, auth)
+            if refreshed:
+                log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
+            return True
+        except Exception as e:
+            msg = f"An error occurred when refreshing user token: {e}"
+            log.error(msg)
+            return False
+
+    def refresh_expiring_oidc_tokens(self, trans, user=None):
+        user = trans.user or user
+        if not isinstance(user, model.User):
+            return
+        for auth in user.custos_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+        for auth in user.social_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+
     def authenticate(self, provider, trans, idphint=None):
         """
         :type provider: string
@@ -376,6 +413,54 @@ class AuthnzManager:
             msg = f"An error occurred when creating a user with `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
             return False, msg, (None, None)
+
+    def _assert_jwt_contains_scopes(self, user, jwt, required_scopes):
+        if not jwt:
+            raise exceptions.AuthenticationFailed(
+                err_msg=f"User: {user.username} does not have the required scopes: [{required_scopes}]"
+            )
+        scopes = jwt.get("scope") or ""
+        if not set(required_scopes).issubset(scopes.split(" ")):
+            raise exceptions.AuthenticationFailed(
+                err_msg=f"User: {user.username} has JWT with scopes: [{scopes}] but not required scopes: [{required_scopes}]"
+            )
+
+    def _validate_permissions(self, user, jwt):
+        required_scopes = [f"{self.app.config.oidc_scope_prefix}:*"]
+        self._assert_jwt_contains_scopes(user, jwt, required_scopes)
+
+    def _match_access_token_to_user_in_provider(self, sa_session, provider, access_token):
+        try:
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                msg = f"An error occurred when obtaining user by token with provider `{provider}`: {message}"
+                log.error(msg)
+                return None
+            user, jwt = None, None
+            try:
+                user, jwt = backend.decode_user_access_token(sa_session, access_token)
+            except Exception:
+                log.exception("Could not decode access token")
+                raise exceptions.AuthenticationFailed(err_msg="Invalid access token or an unexpected error occurred.")
+            if user and jwt:
+                self._validate_permissions(user, jwt)
+                return user
+            elif not user and jwt:
+                # jwt was decoded, but no user could be matched
+                raise exceptions.AuthenticationFailed(
+                    err_msg="Cannot locate user by access token. The user should log into Galaxy at least once with this OIDC provider."
+                )
+            # Both jwt and user are empty, which means that this provider can't process this access token
+            return None
+        except NotImplementedError:
+            return None
+
+    def match_access_token_to_user(self, sa_session, access_token):
+        for provider in self.oidc_backends_config:
+            user = self._match_access_token_to_user_in_provider(sa_session, provider, access_token)
+            if user:
+                return user
+        return None
 
     def logout(self, provider, trans, post_user_logout_href=None):
         """

@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 emboss_repository_name = "emboss_0050"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -36,6 +34,8 @@ running_standalone = False
 class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
     """Verify that the code correctly handles circular dependencies down to n levels."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -56,16 +56,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_column_repository(self):
@@ -80,16 +74,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_create_emboss_datatypes_repository(self):
@@ -108,16 +96,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_create_filtering_repository(self):
@@ -132,16 +114,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0030_create_freebayes_repository(self):
@@ -156,16 +132,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="freebayes/freebayes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "freebayes/freebayes.tar",
                 commit_message="Uploaded freebayes tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0035_create_bismark_repository(self):
@@ -180,17 +150,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="bismark/bismark.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.user_populator().setup_bismark_repo(repository, end=1)
 
     def test_0040_create_and_upload_dependency_definitions(self):
         """Set up the dependency structure."""
@@ -307,7 +267,8 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         strings_displayed = [
             f"{freebayes_repository.name} depends on {', '.join(repo.name for repo in freebayes_dependencies)}."
         ]
-        self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
+        if not self.is_v2:
+            self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
 
     def test_0050_verify_tool_dependencies(self):
         """Check that freebayes and emboss display tool dependencies."""
@@ -315,17 +276,17 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             freebayes_repository_name, common.test_user_1_name
         )
         emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-        self.display_manage_repository_page(
-            freebayes_repository,
-            strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],
-        )
-        self.display_manage_repository_page(
-            emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
-        )
+        if not self.is_v2:
+            self.display_manage_repository_page(
+                freebayes_repository,
+                strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],
+            )
+            self.display_manage_repository_page(
+                emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
+            )
 
     def test_0055_install_column_repository(self):
         """Install column_maker with repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             column_repository_name,
             common.test_user_1_name,
@@ -381,16 +342,13 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0065_deactivate_bismark_repository(self):
         """Deactivate bismark and verify things are okay."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
+        repository = self._get_installed_repository_by_name_owner(bismark_repository_name, common.test_user_1_name)
         self.deactivate_repository(repository)
         # Now we have emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed.
         installed_repositories = [
             (column_repository_name, common.test_user_1_name),
             (emboss_repository_name, common.test_user_1_name),
             (convert_repository_name, common.test_user_1_name),
-            (bismark_repository_name, common.test_user_1_name),
         ]
         strings_displayed = ["emboss_0050", "column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["bismark", "filtering_0050", "freebayes_0050"]
@@ -400,12 +358,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0070_uninstall_emboss_repository(self):
         """Uninstall the emboss_5 repository."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        self.uninstall_repository(repository)
+        repository = self._get_installed_repository_by_name_owner(emboss_repository_name, common.test_user_1_name)
+        self._uninstall_repository(repository)
         self._assert_has_no_installed_repos_with_names(repository.name)
-        self.test_db_util.ga_refresh(repository)
+        self._refresh_tool_shed_repository(repository)
         self.check_galaxy_repository_tool_panel_section(repository, "emboss_5_0050")
         # Now we have bismark, column_maker, and convert_chars installed, filtering and freebayes never installed,
         # and emboss uninstalled.

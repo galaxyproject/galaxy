@@ -1,14 +1,15 @@
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import Deferred from "utils/deferred";
+import Backbone from "backbone";
+import $ from "jquery";
 import Modal from "mvc/ui/ui-modal";
-import Ui from "mvc/ui/ui-misc";
-import Chart from "mvc/visualization/chart/components/model";
-import Editor from "mvc/visualization/chart/views/editor";
-import Viewer from "mvc/visualization/chart/views/viewer";
-import Menu from "mvc/visualization/chart/views/menu";
+import { getAppRoot } from "onload/loadConfig";
+import Deferred from "utils/deferred";
+
+import Chart from "./components/model";
+import Editor from "./views/editor";
+import Menu from "./views/menu";
+import Ui from "./views/misc";
+import Viewer from "./views/viewer";
 
 /** Get boolean as string */
 function asBoolean(value) {

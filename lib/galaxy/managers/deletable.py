@@ -8,6 +8,7 @@ models have some backing/supporting resources that can be removed as well
 the supporting resources as well. These models also have the boolean
 attribute 'purged'.
 """
+
 from typing import (
     Any,
     Dict,
@@ -32,8 +33,7 @@ class DeletableManagerMixin:
     removed by an admin/script.
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
-        ...
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
 
     def delete(self, item, flush=True, **kwargs):
         """
@@ -91,8 +91,7 @@ class PurgableManagerMixin(DeletableManagerMixin):
     file).
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
-        ...
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
 
     def purge(self, item, flush=True, **kwargs):
         """

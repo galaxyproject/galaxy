@@ -79,6 +79,7 @@
     <tool file="filters/bed_to_bigbed.xml" />
   </section>
   <section id="filter" name="Filter and Sort">
+    <tool file="stats/filtering_1_1_0.xml" />
     <tool file="stats/filtering.xml" />
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
@@ -130,13 +131,17 @@
   <section id="interactivetools" name="Interactive tools">
     <tool file="interactive/interactivetool_askomics.xml" />
     <tool file="interactive/interactivetool_bam_iobio.xml" />
-    <tool file="interactive/interactivetool_cellxgene.xml" />
+    <tool file="interactive/interactivetool_cellxgene_0.16.2.xml" />
+    <tool file="interactive/interactivetool_cellxgene_1.1.1.xml" />
     <tool file="interactive/interactivetool_ethercalc.xml" />
+    <tool file="interactive/interactivetool_guacamole_desktop.xml" />
     <tool file="interactive/interactivetool_hicbrowser.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook_1.0.0.xml" />
     <tool file="interactive/interactivetool_jupyter_notebook.xml" />
     <tool file="interactive/interactivetool_neo4j.xml" />
+    <tool file="interactive/interactivetool_openrefine.xml" />
     <tool file="interactive/interactivetool_phinch.xml" />
+    <tool file="interactive/interactivetool_rstudio.xml" />
   </section>
   -->
 </toolbox>

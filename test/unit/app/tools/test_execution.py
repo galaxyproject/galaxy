@@ -1,13 +1,16 @@
 """ Test Tool execution and state handling logic.
 """
+
 from collections import OrderedDict
 from typing import cast
 
 import webob.exc
+from sqlalchemy import select
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
@@ -131,7 +134,9 @@ class TestToolExecution(TestCase, tools_support.UsesTools):
         self.trans.sa_session.add(hda)
         add_object_to_object_session(self.history, hda)
         self.history.datasets.append(hda)
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
         return hda
 
     def __add_collection_dataset(self, id, collection_type="paired", *hdas):
@@ -195,13 +200,14 @@ class MockTrans:
         self.user = None
         self.history._active_datasets_and_roles = [
             hda
-            for hda in self.app.model.context.query(galaxy.model.HistoryDatasetAssociation).all()
+            for hda in self.app.model.session.scalars(select(galaxy.model.HistoryDatasetAssociation)).all()
             if hda.active and hda.history == history
         ]
         self.workflow_building_mode = False
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
         self.url_builder = None
+        self.galaxy_session = None
 
     def get_history(self, **kwargs):
         return self.history

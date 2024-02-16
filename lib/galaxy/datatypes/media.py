@@ -1,4 +1,5 @@
 """Video classes"""
+
 import json
 import subprocess
 import wave
@@ -73,7 +74,7 @@ class Audio(Binary):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
-            metadata, streams = ffprobe(dataset.file_name)
+            metadata, streams = ffprobe(dataset.get_file_name())
 
             dataset.metadata.duration = metadata["duration"]
             dataset.metadata.audio_codecs = [
@@ -159,7 +160,7 @@ class Video(Binary):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
-            metadata, streams = ffprobe(dataset.file_name)
+            metadata, streams = ffprobe(dataset.get_file_name())
             (w, h, fps) = self._get_resolution(streams)
             dataset.metadata.resolution_w = w
             dataset.metadata.resolution_h = h
@@ -281,7 +282,7 @@ class Wav(Audio):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents."""
         try:
-            with wave.open(dataset.dataset.file_name, "rb") as fd:
+            with wave.open(dataset.dataset.get_file_name(), "rb") as fd:
                 dataset.metadata.rate = fd.getframerate()
                 dataset.metadata.nframes = fd.getnframes()
                 dataset.metadata.sampwidth = fd.getsampwidth()

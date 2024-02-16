@@ -1,17 +1,16 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
-
 import {
-    faUserLock,
-    faChartLine,
-    faBan,
-    faCircleNotch,
-    faPlug,
-    faTachometerAlt,
     faArchive,
-    faRecycle,
-    faKey,
-    faShieldAlt,
+    faBan,
+    faChartLine,
+    faCircleNotch,
     faCloud,
+    faKey,
+    faPlug,
+    faRecycle,
+    faShieldAlt,
+    faTachometerAlt,
+    faUserLock,
 } from "@fortawesome/free-solid-svg-icons";
 
 library.add(

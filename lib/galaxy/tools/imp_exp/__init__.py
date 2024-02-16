@@ -2,9 +2,13 @@ import getpass
 import logging
 import os
 import shutil
+from typing import Optional
+
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.schema.tasks import SetupHistoryExportJob
 from galaxy.util.path import external_chown
 
@@ -47,7 +51,8 @@ class JobImportHistoryArchiveWrapper:
         # Import history.
         #
 
-        jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
+        stmt = select(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).limit(1)
+        jiha = self.sa_session.scalars(stmt).first()
         if not jiha:
             return None
         user = jiha.job.user
@@ -63,12 +68,16 @@ class JobImportHistoryArchiveWrapper:
                     "history import archive directory",
                 )
             model_store = store.get_import_model_store_for_directory(
-                archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session()
+                archive_dir,
+                app=self.app,
+                user=user,
+                tag_handler=self.app.tag_handler.create_tag_handler_session(jiha.job.galaxy_session),
             )
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
                 jiha.history = new_history
-                self.sa_session.flush()
+                with transaction(self.sa_session):
+                    self.sa_session.commit()
                 model_store.perform_import(new_history, job=job, new_history=True)
                 # Cleanup.
                 if os.path.exists(archive_dir):
@@ -76,7 +85,8 @@ class JobImportHistoryArchiveWrapper:
 
         except Exception as e:
             jiha.job.tool_stderr += f"Error cleaning up history import job: {e}"
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
             raise
 
         return new_history
@@ -93,7 +103,15 @@ class JobExportHistoryArchiveWrapper:
         self.job_id = job_id
         self.sa_session = self.app.model.context
 
-    def setup_job(self, history, store_directory, include_hidden=False, include_deleted=False, compressed=True):
+    def setup_job(
+        self,
+        history,
+        store_directory,
+        include_hidden=False,
+        include_deleted=False,
+        compressed=True,
+        user: Optional[model.User] = None,
+    ):
         """
         Perform setup for job to export a history into an archive.
         """
@@ -112,6 +130,6 @@ class JobExportHistoryArchiveWrapper:
         )
         if app.config.enable_celery_tasks:
             # symlink files on export, on worker files will tarred up in a dereferenced manner.
-            export_history.delay(request=request)
+            export_history.delay(request=request, task_user_id=getattr(user, "id", None))
         else:
             export_history(request=request)

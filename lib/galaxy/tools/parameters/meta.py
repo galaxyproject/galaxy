@@ -12,9 +12,9 @@ from typing import (
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
+from galaxy.model import HistoryDatasetCollectionAssociation
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
@@ -265,7 +265,7 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
             encoded_hdc_id = incoming_val
             subcollection_type = None
     hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
+    hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)

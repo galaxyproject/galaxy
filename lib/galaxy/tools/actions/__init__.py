@@ -18,9 +18,12 @@ from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    HistoryDatasetAssociation,
+    Job,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
 from galaxy.objectstore import ObjectStorePopulator
@@ -39,6 +42,7 @@ from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
+    from galaxy.tool_util.parser.output_objects import ToolOutput
 
 log = logging.getLogger(__name__)
 
@@ -172,9 +176,9 @@ class DefaultToolAction(ToolAction):
                         for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
                             new_data = process_dataset(input_datasets[prefixed_name + str(i + 1)], conversion_datatypes)
                             if not new_data or new_data.datatype.matches_any(conversion_datatypes):
-                                input_datasets[
-                                    prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)
-                                ] = new_data
+                                input_datasets[prefixed_name[: -len(input.name)] + conversion_name + str(i + 1)] = (
+                                    new_data
+                                )
                                 input_datasets.set_legacy_alias(
                                     new_key=prefixed_name[: -len(input.name)] + conversion_name + str(i + 1),
                                     old_key=prefix + conversion_name + str(i + 1),
@@ -217,9 +221,9 @@ class DefaultToolAction(ToolAction):
                     target_dict[input.name] = input_datasets[prefixed_name]
                     for conversion_name, conversion_data in conversions:
                         # allow explicit conversion to be stored in job_parameter table
-                        target_dict[
-                            conversion_name
-                        ] = conversion_data.id  # a more robust way to determine JSONable value is desired
+                        target_dict[conversion_name] = (
+                            conversion_data.id
+                        )  # a more robust way to determine JSONable value is desired
             elif isinstance(input, DataCollectionToolParameter):
                 if not value:
                     return
@@ -456,7 +460,7 @@ class DefaultToolAction(ToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data: Dict[str, "DatasetInstance"] = {}
+        out_data: Dict[str, DatasetInstance] = {}
         input_collections = LegacyUnprefixedDict({k: v[0][0] for k, v in inp_dataset_collections.items()})
         input_collections._legacy_mapping = inp_dataset_collections._legacy_mapping
         output_collections = OutputCollections(
@@ -480,7 +484,7 @@ class DefaultToolAction(ToolAction):
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
-                data = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(dataid)
+                data = trans.sa_session.get(HistoryDatasetAssociation, dataid)
                 assert data is not None
                 out_data[name] = data
             else:
@@ -662,13 +666,18 @@ class DefaultToolAction(ToolAction):
             job.state = job.states.SKIPPED
             for output_collection in output_collections.out_collections.values():
                 output_collection.mark_as_populated()
+            for hdca in output_collections.out_collection_instances.values():
+                hdca.visible = False
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 object_store_populator.set_object_store_id(data)
                 data.extension = "expression.json"
                 data.state = "ok"
-                with open(data.dataset.file_name, "w") as out:
+                data.blurb = "skipped"
+                data.visible = False
+                with open(data.dataset.get_file_name(), "w") as out:
                     out.write(json.dumps(None))
+                data.set_total_size()
         job.preferred_object_store_id = preferred_object_store_id
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
@@ -687,7 +696,8 @@ class DefaultToolAction(ToolAction):
             session = trans.sa_session()
             try:
                 session.expire_on_commit = False
-                session.flush()
+                with transaction(session):
+                    session.commit()
             finally:
                 session.expire_on_commit = True
             self._remap_job_on_rerun(
@@ -717,13 +727,15 @@ class DefaultToolAction(ToolAction):
             job.set_state(app.model.Job.states.OK)
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
                 job_flush_timer = ExecutionTimer()
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
 
         return job, out_data, history
@@ -737,7 +749,7 @@ class DefaultToolAction(ToolAction):
         input datasets to be those of the job that is being rerun.
         """
         try:
-            old_job = trans.sa_session.query(trans.app.model.Job).get(rerun_remap_job_id)
+            old_job = trans.sa_session.get(Job, rerun_remap_job_id)
             assert old_job is not None, f"({rerun_remap_job_id}/{current_job.id}): Old job id is invalid"
             assert (
                 old_job.tool_id == current_job.tool_id
@@ -746,7 +758,7 @@ class DefaultToolAction(ToolAction):
                 assert (
                     old_job.user_id == trans.user.id
                 ), f"({old_job.id}/{current_job.id}): Old user id ({old_job.user_id}) does not match rerun user id ({trans.user.id})"
-            elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
+            elif trans.user is None and isinstance(galaxy_session, trans.model.GalaxySession):
                 assert (
                     old_job.session_id == galaxy_session.id
                 ), f"({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})"
@@ -836,10 +848,11 @@ class DefaultToolAction(ToolAction):
         if hasattr(trans, "get_galaxy_session"):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
-            if type(galaxy_session) == trans.model.GalaxySession:
+            if isinstance(galaxy_session, trans.model.GalaxySession):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
+            job.user = trans.user
         if history:
             job.history_id = model.cached_id(history)
         job.tool_id = tool.id
@@ -969,7 +982,7 @@ class OutputCollections:
         hdca_tags,
     ):
         self.trans = trans
-        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
+        self.tag_handler = trans.tag_handler
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
@@ -1123,7 +1136,7 @@ def get_ext_or_implicit_ext(hda):
 
 
 def determine_output_format(
-    output,
+    output: "ToolOutput",
     parameter_context,
     input_datasets,
     input_dataset_collections,
@@ -1136,7 +1149,6 @@ def determine_output_format(
     wrappers, a map of the input datasets (name => HDA), and the last input
     extensions in the tool form.
 
-    TODO: Don't deal with XML here - move this logic into ToolOutput.
     TODO: Make the input extension used deterministic instead of random.
     """
     # the type should match the input
@@ -1198,47 +1210,40 @@ def determine_output_format(
                 log.debug("Exception while trying to determine format_source: %s", e)
 
     # process change_format tags
-    if output.change_format is not None:
-        new_format_set = False
-        for change_elem in output.change_format:
-            for when_elem in change_elem.findall("when"):
-                check = when_elem.get("input", None)
-                if check is not None:
-                    try:
-                        if "$" not in check:
-                            # allow a simple name or more complex specifications
-                            check = "${%s}" % check
-                        if fill_template(
-                            check, context=parameter_context, python_template_version=python_template_version
-                        ) == when_elem.get("value", None):
-                            ext = when_elem.get("format", ext)
-                    except Exception:
-                        # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                        continue
-                else:
-                    check = when_elem.get("input_dataset", None)
-                    if check is not None:
-                        check = input_datasets.get(check, None)
-                        # At this point check is a HistoryDatasetAssociation object.
-                        check_format = when_elem.get("format", ext)
-                        check_value = when_elem.get("value", None)
-                        check_attribute = when_elem.get("attribute", None)
-                        if check is not None and check_value is not None and check_attribute is not None:
-                            # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
-                            if hasattr(check, check_attribute):
-                                if str(getattr(check, check_attribute)) == str(check_value):
-                                    ext = check_format
-                                    new_format_set = True
-                                    break
-                            # See if the attribute to be checked belongs to the metadata associated with the
-                            # HistoryDatasetAssociation object.
-                            if check.metadata is not None:
-                                metadata_value = check.metadata.get(check_attribute, None)
-                                if metadata_value is not None:
-                                    if str(metadata_value) == str(check_value):
-                                        ext = check_format
-                                        new_format_set = True
-                                        break
-            if new_format_set:
-                break
+    if output.change_format:
+        for change_format_model in output.change_format:
+            input_check = change_format_model.get("input")
+            if input_check is not None:
+                try:
+                    if (
+                        fill_template(
+                            input_check, context=parameter_context, python_template_version=python_template_version
+                        )
+                        == change_format_model["value"]
+                    ):
+                        if change_format_model["format"]:
+                            return change_format_model["format"]
+                except Exception:
+                    # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                    continue
+            else:
+                input_dataset_check = change_format_model.get("input_dataset")
+                if input_dataset_check is not None:
+                    dataset = input_datasets.get(input_dataset_check)
+                    # At this point check is a HistoryDatasetAssociation object.
+                    check_format = change_format_model["format"] or ext
+                    check_value = change_format_model["value"]
+                    check_attribute = change_format_model["check_attribute"]
+                    if dataset is not None and check_value is not None and check_attribute is not None:
+                        # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
+                        if hasattr(dataset, check_attribute):
+                            if str(getattr(dataset, check_attribute)) == str(check_value):
+                                return check_format
+                        # See if the attribute to be checked belongs to the metadata associated with the
+                        # HistoryDatasetAssociation object.
+                        if dataset.metadata is not None:
+                            metadata_value = dataset.metadata.get(check_attribute)
+                            if metadata_value is not None:
+                                if str(metadata_value) == str(check_value):
+                                    return check_format
     return ext

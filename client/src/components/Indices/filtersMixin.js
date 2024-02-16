@@ -43,8 +43,8 @@ export default {
         appendTagFilter(tag, text) {
             this.appendFilter(`${tag}:'${text}'`);
         },
-        appendFilter(text) {
-            const initialFilter = this.filter;
+        appendFilter(text, replace = false) {
+            const initialFilter = replace ? "" : this.filter;
             if (initialFilter.length === 0) {
                 this.filter = text;
             } else if (initialFilter.indexOf(text) < 0) {

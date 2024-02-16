@@ -24,6 +24,7 @@ from galaxy.util import (
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
 )
 from .s3 import parse_config_xml
@@ -65,8 +66,8 @@ class CloudConfigMixin:
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
             },
-            "enable_cache_monitor": False,
         }
 
 
@@ -87,7 +88,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -103,6 +104,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         self._initialize()
 
@@ -121,11 +123,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             self.use_axel = False
 
     def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -291,6 +290,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         # extra_dir should never be constructed from provided data but just
@@ -326,6 +326,10 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -384,12 +388,12 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self.bucket.objects.get(rel_path)
             # Test if cache is large enough to hold the new file
-            if self.cache_size > 0 and key.size > self.cache_size:
+            if not self.cache_target.fits_in_cache(key.size):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     key.size,
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             if self.use_axel:
@@ -619,12 +623,15 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
         rel_path = self._construct_path(obj, **kwargs)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -633,8 +640,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
@@ -661,7 +668,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)

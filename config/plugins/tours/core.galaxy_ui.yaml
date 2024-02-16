@@ -39,12 +39,12 @@ steps:
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "#btn-start"
+      component: upload.start_button
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
     - title: "Close upload/download manager"
-      element: "#btn-close"
+      component: upload.close_button
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       postclick: true
 
@@ -116,26 +116,6 @@ steps:
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
-
-    - title: "Panel collapse"
-      element: "#left-collapse"
-      intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side."
-      postclick: true
-
-    - title: "Panel expand"
-      element: "#left-expand"
-      intro: "Click on the expansion icon to restore the panel."
-      postclick: true
-
-    - title: "Panel collapse"
-      element: "#right-collapse"
-      intro: "Clicking the panel arrow on the right hand side, collapses the history."
-      postclick: true
-
-    - title: "Panel expand"
-      element: "#right-expand"
-      intro: "Click on the expansion icon to restore the panel."
-      postclick: true
 
     - title: "Top panel"
       element: "#masthead"

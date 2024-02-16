@@ -235,8 +235,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched executing Job in GoDocker"""
-        # This function is called by fail_job() where
-        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # This function is called by fail_job()
         # No Return data expected
         job_id = job_wrapper.job_id
         log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")

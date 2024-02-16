@@ -34,7 +34,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="version", readonly=True)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        metadata = _get_metadata_from_archive(dataset.file_name)
+        metadata = _get_metadata_from_archive(dataset.get_file_name())
         for key, value in metadata.items():
             if value:
                 setattr(dataset.metadata, key, value)
@@ -123,7 +123,7 @@ class QIIME2Metadata(Tabular):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 line = None
                 for line, _ in zip(dataset_fh, range(self._search_lines)):
                     if line.startswith(self._TYPES_DIRECTIVE):

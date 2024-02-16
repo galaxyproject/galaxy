@@ -1,6 +1,6 @@
-import $ from "jquery";
 import * as d3 from "d3v3";
 import { event as currentEvent } from "d3v3";
+import $ from "jquery";
 
 function date_by_subtracting_days(date, days) {
     return new Date(

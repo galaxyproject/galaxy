@@ -1,7 +1,7 @@
 <script setup>
+import FromFileOrUrl from "./Import/FromFileOrUrl";
 import TrsImport from "./Import/TrsImport";
 import TrsSearch from "./Import/TrsSearch";
-import FromFileOrUrl from "./Import/FromFileOrUrl";
 </script>
 
 <template>

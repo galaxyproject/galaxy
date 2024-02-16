@@ -12,7 +12,7 @@
         </b-alert>
 
         <div v-if="initializing">
-            <loading-span message="Loading server configuration." />
+            <LoadingSpan message="Loading server configuration." />
         </div>
         <div v-else-if="waitingOnJob">
             <LoadingSpan message="Waiting on history import job, this may take a while." />
@@ -33,15 +33,15 @@
                         stacked>
                         <b-form-radio value="externalUrl">
                             Export URL from another Galaxy instance
-                            <font-awesome-icon icon="external-link-alt" />
+                            <FontAwesomeIcon icon="external-link-alt" />
                         </b-form-radio>
                         <b-form-radio value="upload">
                             Upload local file from your computer
-                            <font-awesome-icon icon="upload" />
+                            <FontAwesomeIcon icon="upload" />
                         </b-form-radio>
                         <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
                             Select a remote file (e.g. Galaxy's FTP)
-                            <font-awesome-icon icon="folder-open" />
+                            <FontAwesomeIcon icon="folder-open" />
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
@@ -63,7 +63,7 @@
                 </b-form-group>
                 <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
-                    <files-input ref="filesInput" v-model="sourceRemoteFilesUri" />
+                    <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
 
                 <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
@@ -75,22 +75,24 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faFolderOpen, faUpload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import FilesInput from "components/FilesDialog/FilesInput.vue";
-import { waitOnJob } from "components/JobStates/wait";
-import { errorMessageAsString } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
-import JobError from "components/JobInformation/JobError";
-import { Services } from "components/FilesDialog/services";
-import { ref, watch } from "vue";
+import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import JobError from "components/JobInformation/JobError";
+import { waitOnJob } from "components/JobStates/wait";
+import LoadingSpan from "components/LoadingSpan";
+import { getAppRoot } from "onload/loadConfig";
+import { errorMessageAsString } from "utils/simple-error";
+import Vue, { ref, watch } from "vue";
+
+import { getFileSources } from "@/api/remoteFiles";
+
 import ExternalLink from "./ExternalLink";
+
+import FilesInput from "components/FilesDialog/FilesInput.vue";
 
 library.add(faFolderOpen);
 library.add(faUpload);
@@ -124,7 +126,7 @@ export default {
             initializing: true,
             importType: "externalUrl",
             sourceFile: null,
-            sourceRemoteFilesUri: null,
+            sourceRemoteFilesUri: "",
             errorMessage: null,
             waitingOnJob: false,
             complete: false,
@@ -161,7 +163,7 @@ export default {
     },
     methods: {
         async initialize() {
-            const fileSources = await new Services().getFileSources();
+            const fileSources = await getFileSources();
             this.hasFileSources = fileSources.length > 0;
             this.initializing = false;
         },

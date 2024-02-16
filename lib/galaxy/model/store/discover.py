@@ -5,6 +5,7 @@ imports, etc... High-level utilities in this file can be used during
 job output discovery or for persisting Galaxy model objects
 corresponding to files in other contexts.
 """
+
 import abc
 import logging
 import os
@@ -26,7 +27,10 @@ from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections import builder
 from galaxy.model.tags import GalaxySessionlessTagHandler
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files,
+)
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer,
@@ -59,6 +63,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     job_working_directory: str  # TODO: rename
     max_discovered_files = float("inf")
     discovered_file_count: int
+
+    def get_job(self) -> Optional[galaxy.model.Job]:
+        return getattr(self, "job", None)
 
     def create_dataset(
         self,
@@ -141,7 +148,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
                 self.add_library_dataset_to_folder(library_folder, ld)
                 primary_data = ldda
-        primary_data.raw_set_dataset_state(final_job_state)
+        primary_data.state = final_job_state
         if final_job_state == galaxy.model.Job.states.ERROR and not self.get_implicit_collection_jobs_association_id():
             primary_data.visible = True
 
@@ -161,7 +168,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            job = getattr(self, "job", None)
+            job = self.get_job()
             self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
@@ -261,6 +268,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 primary_data.set_peek()
             except Exception:
                 log.exception("Exception occured while setting dataset peek")
+
+            primary_data.set_total_size()
 
     def populate_collection_elements(
         self,
@@ -404,7 +413,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             if extra_file:
-                persist_extra_files(self.object_store, extra_files, dataset)
+                persist_extra_files(self.object_store, extra_file, dataset)
                 dataset.set_size()
             else:
                 dataset.set_size(no_extra_files=True)
@@ -573,7 +582,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        return GalaxySessionlessTagHandler(self.sa_session)
+        return GalaxySessionlessTagHandler(self.sa_session, galaxy_session=None)
 
     @property
     def sa_session(self):
@@ -660,26 +669,6 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     def get_implicit_collection_jobs_association_id(self):
         """No-op, no job context."""
-
-
-def persist_extra_files(object_store, src_extra_files_path, primary_data):
-    if src_extra_files_path and os.path.exists(src_extra_files_path):
-        primary_data.dataset.create_extra_files_path()
-        target_extra_files_path = primary_data.extra_files_path
-        for root, _dirs, files in os.walk(src_extra_files_path):
-            extra_dir = os.path.join(
-                target_extra_files_path, root.replace(src_extra_files_path, "", 1).lstrip(os.path.sep)
-            )
-            extra_dir = os.path.normpath(extra_dir)
-            for f in files:
-                object_store.update_from_file(
-                    primary_data.dataset,
-                    extra_dir=extra_dir,
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
 
 
 def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):
@@ -825,7 +814,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     sa_session = (
                         model_persistence_context.sa_session or model_persistence_context.import_store.sa_session
                     )
-                    primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+                    primary_dataset = sa_session.get(galaxy.model.HistoryDatasetAssociation, hda_id)
 
                 sources = fields_match.sources
                 hashes = fields_match.hashes
@@ -1016,8 +1005,7 @@ class JsonCollectedDatasetMatch:
     def designation(self):
         # If collecting nested collection, grab identifier_0,
         # identifier_1, etc... and join on : to build designation.
-        element_identifiers = self.raw_element_identifiers
-        if element_identifiers:
+        if element_identifiers := self.raw_element_identifiers:
             return ":".join(element_identifiers)
         elif "designation" in self.as_dict:
             return self.as_dict.get("designation")

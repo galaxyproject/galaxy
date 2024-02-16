@@ -1,0 +1,44 @@
+name: Test Galaxy packages for Pulsar
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.7']  # don't upgrade, see https://github.com/galaxyproject/galaxy/pull/16649
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Install Apptainer's singularity
+        uses: eWaterCycle/setup-apptainer@v2
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Install tox
+        run: pip install tox
+      - name: Run tests
+        run: tox -e test_galaxy_packages_for_pulsar
+        working-directory: 'galaxy root'

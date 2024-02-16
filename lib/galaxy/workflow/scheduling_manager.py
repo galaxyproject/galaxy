@@ -4,7 +4,8 @@ from functools import partial
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
-from galaxy.jobs.handler import ItemGrabber
+from galaxy.jobs.handler import InvocationGrabber
+from galaxy.model.base import transaction
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -78,16 +79,17 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info(
                 "(%s) Handler unassigned at startup, resubmitting workflow invocation for assignment", invocation_id
             )
-            workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
+            workflow_invocation = sa_session.get(model.WorkflowInvocation, invocation_id)
             self._assign_handler(workflow_invocation)
 
     def _handle_setup_msg(self, workflow_invocation_id=None):
         sa_session = self.app.model.context
-        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
+        workflow_invocation = sa_session.get(model.WorkflowInvocation, workflow_invocation_id)
         if workflow_invocation.handler is None:
             workflow_invocation.handler = self.app.config.server_name
             sa_session.add(workflow_invocation)
-            sa_session.flush()
+            with transaction(sa_session):
+                sa_session.commit()
         else:
             log.warning(
                 "(%s) Handler '%s' received setup message for workflow invocation but handler '%s' is"
@@ -111,7 +113,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         workflow_invocation.handler = self.app.config.server_name
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
     def _message_callback(self, workflow_invocation):
         return WorkflowSchedulingMessage(task="setup", workflow_invocation_id=workflow_invocation.id)
@@ -152,7 +155,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             raise exception
 
     def queue(self, workflow_invocation, request_params, flush=True):
-        workflow_invocation.state = model.WorkflowInvocation.states.NEW
+        workflow_invocation.set_state(model.WorkflowInvocation.states.NEW)
         workflow_invocation.scheduler = request_params.get("scheduler", None) or self.default_scheduler_id
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
@@ -282,13 +285,12 @@ class WorkflowRequestMonitor(Monitors):
         self.invocation_grabber = None
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
             self.workflow_scheduling_manager.handler_assignment_methods
         )
         if handler_assignment_method:
-            self.invocation_grabber = ItemGrabber(
+            self.invocation_grabber = InvocationGrabber(
                 app=app,
-                grab_type="WorkflowInvocation",
                 handler_assignment_method=handler_assignment_method,
                 max_grab=self.workflow_scheduling_manager.handler_max_grab,
                 self_handler_tags=self_handler_tags,
@@ -325,10 +327,16 @@ class WorkflowRequestMonitor(Monitors):
                 return
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
-        with self.app.model.context() as session, session.begin():
+        with self.app.model.context() as session:
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
 
             try:
+                if workflow_invocation.state == workflow_invocation.states.CANCELLING:
+                    workflow_invocation.cancel_invocation_steps()
+                    workflow_invocation.mark_cancelled()
+                    session.commit()
+                    return False
+
                 if not workflow_invocation or not workflow_invocation.active:
                     return False
 

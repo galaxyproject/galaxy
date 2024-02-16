@@ -2,6 +2,7 @@ import json
 from typing import (
     Any,
     Dict,
+    List,
 )
 
 import pytest
@@ -114,6 +115,41 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         return key_value_pairs
 
     @selenium_test
+    def test_repeat_reordering(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: List[str]):
+            for index, input in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                parameter_value = parameter_input.wait_for_value()
+                assert parameter_value == input
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        assert_input_order(["Text A", "Text B", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text B", "Text A", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_2").wait_for_and_click()
+        assert_input_order(["Text B", "Text C", "Text A"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text C", "Text B", "Text A"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        assert_input_order(["Text C", "Text B", "Text A"])
+
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = list(map(lambda d: d.text, self._get_dataset_tool_parameters(1)))
+
+        assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
+
+    @selenium_test
     def test_rerun(self):
         self._run_environment_test_tool()
         self.history_panel_wait_for_hid_ok(1)
@@ -159,7 +195,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         )
         assert error_col.text == "parameter 'col': an invalid option ('3') was selected (valid options: 1)"
         # validate errors when inputs are missing
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
@@ -187,15 +223,16 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
         history_id = self.current_history_id()
         # upload a nested collection
-        collection_id = self.dataset_collection_populator.create_list_of_list_in_history(
+        self.dataset_collection_populator.create_list_of_list_in_history(
             history_id,
             collection_type="list:list",
             wait=True,
         ).json()["id"]
         self.tool_open("identifier_multiple")
-        self.components.tool_form.parameter_batch_dataset_collection(parameter="input1").wait_for_and_click()
+        self.components.tool_form.parameter_data_input_collection(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.data_option_value(item_id=collection_id).wait_for_and_click()
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1")
+        self.select_set_value(select_field, "list:list")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(7)
@@ -205,7 +242,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.hda_click_primary_action_button(1, "rerun")
         self.sleep_for(self.wait_types.UX_RENDER)
-        assert self.driver.find_element(By.CSS_SELECTOR, "option:checked").text == "Selected: test0"
         self.tool_form_execute()
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
@@ -247,8 +283,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         @retry_assertion_during_transitions
         def assert_citations_visible():
             references = self.components.tool_form.reference.all()
-            references_rendered = len(references)
-            if references_rendered != citation_count:
+            if (references_rendered := len(references)) != citation_count:
                 citations_api = self.api_get("tools/bibtex/citations")
                 current_citation_count = len(citations_api)
                 message = f"Expected {citation_count} references to be rendered, {references_rendered} actually rendered. Currently the API yields {current_citation_count} references"
@@ -261,13 +296,17 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
+        tds = self._get_dataset_tool_parameters(hid)
+        assert tds
+        assert any(expected_value in td.text for td in tds)
+
+    def _get_dataset_tool_parameters(self, hid):
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
-        assert tds
-        assert any(expected_value in td.text for td in tds)
+        return tds
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()
@@ -334,7 +373,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_data_type("Collections")
         self.components.upload.rule_source_content.wait_for_and_send_keys(
             """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2

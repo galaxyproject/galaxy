@@ -77,7 +77,7 @@ export interface GenericInvocationFailureCollectionFailedEncodedDatabaseIdField 
     /**
      * HistoryDatasetCollectionAssociation ID that relates to failure.
      */
-    hdca_id?: string;
+    hdca_id: string;
     /**
      * Workflow step id of step that caused failure.
      */
@@ -92,7 +92,7 @@ export interface GenericInvocationFailureCollectionFailedInt {
     /**
      * HistoryDatasetCollectionAssociation ID that relates to failure.
      */
-    hdca_id?: number;
+    hdca_id: number;
     /**
      * Workflow step id of step that caused failure.
      */
@@ -159,7 +159,7 @@ export interface GenericInvocationFailureJobFailedEncodedDatabaseIdField {
     /**
      * Job ID that relates to failure.
      */
-    job_id?: string;
+    job_id: string;
     /**
      * Workflow step id of step that caused failure.
      */
@@ -174,7 +174,7 @@ export interface GenericInvocationFailureJobFailedInt {
     /**
      * Job ID that relates to failure.
      */
-    job_id?: number;
+    job_id: number;
     /**
      * Workflow step id of step that caused failure.
      */
@@ -232,6 +232,10 @@ export interface GenericInvocationUnexpectedFailureEncodedDatabaseIdField {
      * May contains details to help troubleshoot this problem.
      */
     details?: string;
+    /**
+     * Workflow step id of step that failed.
+     */
+    workflow_step_id?: number;
 }
 export interface GenericInvocationUnexpectedFailureInt {
     reason: "unexpected_failure";
@@ -239,4 +243,8 @@ export interface GenericInvocationUnexpectedFailureInt {
      * May contains details to help troubleshoot this problem.
      */
     details?: string;
+    /**
+     * Workflow step id of step that failed.
+     */
+    workflow_step_id?: number;
 }

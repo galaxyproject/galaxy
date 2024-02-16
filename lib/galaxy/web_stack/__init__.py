@@ -43,8 +43,9 @@ class ApplicationStack:
         return {}
 
     @classmethod
-    def register_postfork_function(cls, f, *args, **kwargs):
-        f(*args, **kwargs)
+    def register_postfork_function(cls, f, *args, post_fork_only=False, **kwargs):
+        if not post_fork_only:
+            f(*args, **kwargs)
 
     def __init__(self, app=None, config=None):
         self.app = app
@@ -191,7 +192,7 @@ class GunicornApplicationStack(ApplicationStack):
     late_postfork_thread: threading.Thread
 
     @classmethod
-    def register_postfork_function(cls, f, *args, **kwargs):
+    def register_postfork_function(cls, f, *args, post_fork_only=False, **kwargs):
         # do_post_fork determines if we need to run postfork functions
         if cls.do_post_fork:
             # if so, we call ApplicationStack.late_postfork once after forking ...
@@ -199,7 +200,7 @@ class GunicornApplicationStack(ApplicationStack):
                 os.register_at_fork(after_in_child=cls.late_postfork)
             # ... and store everything we need to run in ApplicationStack.postfork_functions
             cls.postfork_functions.append(lambda: f(*args, **kwargs))
-        else:
+        elif not post_fork_only:
             f(*args, **kwargs)
 
     @classmethod
@@ -300,8 +301,8 @@ def application_stack_log_formatter():
     return logging.Formatter(fmt=application_stack_class().log_format)
 
 
-def register_postfork_function(f, *args, **kwargs):
-    application_stack_class().register_postfork_function(f, *args, **kwargs)
+def register_postfork_function(f, *args, post_fork_only=False, **kwargs):
+    application_stack_class().register_postfork_function(f, *args, post_fork_only=post_fork_only**kwargs)
 
 
 def get_app_kwds(config_section, app_name=None):

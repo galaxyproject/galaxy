@@ -27,7 +27,7 @@
                             >Invocation ID: <code>{{ row.item.id }}</code></b
                         >
                     </small>
-                    <workflow-invocation-state :invocation-id="row.item.id" @invocation-cancelled="refresh" />
+                    <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </b-card>
             </template>
             <template v-slot:cell(expand)="data">
@@ -45,9 +45,12 @@
                     @click.stop="swapRowDetails(data)" />
             </template>
             <template v-slot:cell(workflow_id)="data">
-                <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)" class="truncate">
+                <div
+                    v-b-tooltip.hover.top
+                    :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
+                    class="truncate">
                     <b-link href="#" @click.stop="swapRowDetails(data)">
-                        <b>{{ getWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
                     </b-link>
                 </div>
             </template>
@@ -57,7 +60,7 @@
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
                     <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        {{ getHistoryNameById(data.item.history_id) }}
                     </b-link>
                 </div>
             </template>
@@ -83,16 +86,18 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
-import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
-import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
-import { useWorkflowStore } from "stores/workflowStore";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
+import { mapActions, mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useWorkflowStore } from "@/stores/workflowStore";
+
 import paginationMixin from "./paginationMixin";
+
+import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 export default {
     components: {
@@ -134,9 +139,9 @@ export default {
     },
     computed: {
         ...mapState(useWorkflowStore, [
-            "getWorkflowNameByInstanceId",
-            "getWorkflowByInstanceId",
+            "getStoredWorkflowByInstanceId",
             "getStoredWorkflowIdByInstanceId",
+            "getStoredWorkflowNameByInstanceId",
         ]),
         ...mapState(useHistoryStore, ["getHistoryById", "getHistoryNameById"]),
         title() {
@@ -178,21 +183,18 @@ export default {
             if (invocations) {
                 const historyIds = new Set();
                 const workflowIds = new Set();
-                invocations.map((invocation) => {
+                invocations.forEach((invocation) => {
                     historyIds.add(invocation.history_id);
                     workflowIds.add(invocation.workflow_id);
                 });
                 historyIds.forEach((history_id) => this.getHistoryById(history_id) || this.loadHistoryById(history_id));
-                workflowIds.forEach(
-                    (workflow_id) =>
-                        this.getWorkflowByInstanceId(workflow_id) || this.fetchWorkflowForInstanceId(workflow_id)
-                );
+                workflowIds.forEach((workflow_id) => this.fetchWorkflowForInstanceIdCached(workflow_id));
             }
         },
     },
     methods: {
         ...mapActions(useHistoryStore, ["loadHistoryById"]),
-        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceIdCached"]),
         async provider(ctx) {
             ctx.root = this.root;
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };

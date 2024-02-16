@@ -1,12 +1,15 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/api/schema/__mocks__";
+
 import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import flushPromises from "flush-promises";
-import { mockFetcher } from "@/schema/__mocks__";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue(true);
 const TEST_OBJECT_ID = "os123";
@@ -24,10 +27,6 @@ describe("ShowSelectedObjectStore", () => {
         wrapper = mount(ShowSelectedObjectStore, {
             propsData: { preferredObjectStoreId: TEST_OBJECT_ID, forWhat: "Data goes into..." },
             localVue,
-            stubs: {
-                LoadingSpan: true,
-                DescribeObjectStore: true,
-            },
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();

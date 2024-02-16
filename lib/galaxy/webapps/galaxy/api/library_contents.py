@@ -1,13 +1,9 @@
 """
 API operations on the contents of a data library.
 """
+
 import logging
 from typing import Optional
-
-from sqlalchemy.orm.exc import (
-    MultipleResultsFound,
-    NoResultFound,
-)
 
 from galaxy import (
     exceptions,
@@ -25,9 +21,12 @@ from galaxy.managers.collections_util import (
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
+    Library,
     LibraryDataset,
+    LibraryFolder,
     tags,
 )
+from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
@@ -100,19 +99,9 @@ class LibraryContentsController(
                     rval.append(ld)
             return rval
 
-        decoded_library_id = self.decode_id(library_id)
-        try:
-            library = (
-                trans.sa_session.query(trans.app.model.Library)
-                .filter(trans.app.model.Library.table.c.id == decoded_library_id)
-                .one()
-            )
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase("Multiple libraries found with the same id.")
-        except NoResultFound:
+        library = trans.sa_session.get(Library, self.decode_id(library_id))
+        if not library:
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
-        except Exception as e:
-            raise exceptions.InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
@@ -182,7 +171,7 @@ class LibraryContentsController(
             rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
 
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-            rval["tags"] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
+            rval["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
@@ -317,12 +306,14 @@ class LibraryContentsController(
                     trans.sa_session.add(ex_meta)
                     v.extended_metadata = ex_meta
                     trans.sa_session.add(v)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     for path, value in self._scan_json_block(ex_meta_payload):
                         meta_i = ExtendedMetadataIndex(ex_meta, path, value)
                         trans.sa_session.add(meta_i)
-                    trans.sa_session.flush()
-                if type(v) == trans.app.model.LibraryDatasetDatasetAssociation:
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
+                if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id(v.id)
                 if create_type == "folder":
@@ -342,10 +333,9 @@ class LibraryContentsController(
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        roles = kwd.get("roles", "")
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder_id)
+        folder = trans.sa_session.get(LibraryFolder, folder_id)
         self._check_access(trans, is_admin, folder, current_user_roles)
         self._check_add(trans, is_admin, folder, current_user_roles)
         library = folder.parent_library
@@ -354,7 +344,7 @@ class LibraryContentsController(
         error = False
         if upload_option == "upload_paths":
             validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
-        elif roles:
+        elif roles := kwd.get("roles", ""):
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
             vars = dict(DATASET_ACCESS_in=roles)
@@ -368,9 +358,9 @@ class LibraryContentsController(
                 trans, folder_id=folder.id, replace_dataset=replace_dataset, **kwd
             )
             if created_outputs_dict:
-                if type(created_outputs_dict) == str:
+                if isinstance(created_outputs_dict, str):
                     return 400, created_outputs_dict
-                elif type(created_outputs_dict) == tuple:
+                elif isinstance(created_outputs_dict, tuple):
                     return created_outputs_dict[0], created_outputs_dict[1]
                 return 200, created_outputs_dict
             else:
@@ -432,7 +422,8 @@ class LibraryContentsController(
                 metadata_safe=True,
             )
             trans.sa_session.add(assoc)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
@@ -482,7 +473,8 @@ class LibraryContentsController(
             if purge:
                 ld.purged = True
                 trans.sa_session.add(ld)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
                 # TODO: had to change this up a bit from Dataset.user_can_purge
                 dataset = ld.library_dataset_dataset_association.dataset
@@ -497,9 +489,11 @@ class LibraryContentsController(
                     except Exception:
                         pass
                     # flush now to preserve deleted state in case of later interruption
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 rval["purged"] = True
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             rval["deleted"] = True
 
         except exceptions.httpexceptions.HTTPInternalServerError:

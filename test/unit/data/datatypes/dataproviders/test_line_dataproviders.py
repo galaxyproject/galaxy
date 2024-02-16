@@ -2,6 +2,7 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
+
 import logging
 from typing import Type
 

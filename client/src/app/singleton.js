@@ -3,8 +3,9 @@
  */
 
 import config from "config";
-import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
+
+import { GalaxyApp } from "./galaxy";
 
 export function setGalaxyInstance(factory) {
     if (!config.testBuild === true) {

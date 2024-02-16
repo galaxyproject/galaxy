@@ -9,9 +9,13 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 
 class StaticToolBoxViewTypeEnum(str, Enum):
@@ -38,41 +42,35 @@ Exclusions = Union[
     ExcludeToolRegex,
     ExcludeTypes,
 ]
-OptionalExclusionList = Optional[List[Exclusions]]
+OptionalExclusionList = Annotated[Optional[List[Exclusions]], Field(None)]
 
 
 class Tool(BaseModel):
     content_type: Literal["tool"] = Field("tool", alias="type")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class Label(BaseModel):
     content_type: Literal["label"] = Field(alias="type", default="label")
-    id: Optional[str]
+    id: Optional[str] = None
     text: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class LabelShortcut(BaseModel):
-    content_type = "simple_label"
+    content_type: Literal["simple_label"] = "simple_label"
     label: str
 
 
 class Workflow(BaseModel):
     content_type: Literal["workflow"] = Field(alias="type", default="workflow")
     id: str
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ItemsFrom(BaseModel):
-    content_type = "items_from"
+    content_type: Literal["items_from"] = "items_from"
     items_from: str
     excludes: OptionalExclusionList
 
@@ -120,25 +118,23 @@ class HasItems:
 
 class Section(BaseModel, HasItems):
     content_type: Literal["section"] = Field(alias="type")
-    id: Optional[str]
-    name: Optional[str]
-    items: Optional[List[SectionContent]]
+    id: Optional[str] = None
+    name: Optional[str] = None
+    items: Optional[List[SectionContent]] = None
     excludes: OptionalExclusionList
-
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class SectionAlias(BaseModel):
-    content_type = "section_alias"
+    content_type: Literal["section_alias"] = "section_alias"
     section: str
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 class SectionAliases(BaseModel):
-    content_type = "section_aliases"
+    content_type: Literal["section_aliases"] = "section_aliases"
     sections: List[str]
-    excludes: OptionalExclusionList
+    excludes: OptionalExclusionList = None
 
 
 RootContent = Union[
@@ -165,14 +161,13 @@ ExpandedRootContent = Union[
 class StaticToolBoxView(BaseModel, HasItems):
     id: str
     name: str
-    description: Optional[str]
+    description: Optional[str] = None
     view_type: StaticToolBoxViewTypeEnum = Field(alias="type")
-    items: Optional[List[RootContent]]  # if empty, use integrated tool panel
+    items: Optional[List[RootContent]] = None  # if empty, use integrated tool panel
     excludes: OptionalExclusionList
 
     @staticmethod
     def from_dict(as_dict):
         return StaticToolBoxView(**as_dict)
 
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)

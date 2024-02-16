@@ -4,7 +4,7 @@
         <div v-for="attribute in displayedAttributes" :key="attribute.key" role="group" class="form-group">
             <label :for="attribute.key">{{ attribute.label }}</label>
             <span v-b-tooltip.hover title="Hide Attribute"
-                ><font-awesome-icon icon="eye-slash" @click="onHide(attribute.key)"
+                ><FontAwesomeIcon icon="eye-slash" @click="onHide(attribute.key)"
             /></span>
             <b-form-input
                 :id="attribute.key"
@@ -22,6 +22,12 @@
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import ThingFormMixin from "./ThingFormMixin";
+
 const ATTRIBUTES_INFO = [
     { key: "name", label: "Name", placeholder: "name" },
     { key: "url", label: "URL", placeholder: "URL", type: "url" },
@@ -34,11 +40,6 @@ const ATTRIBUTES_INFO = [
     { key: "alternateName", label: "Alternate Name", placeholder: "alternate name" },
 ];
 const ATTRIBUTES = ATTRIBUTES_INFO.map((a) => a.key);
-
-import ThingFormMixin from "./ThingFormMixin";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEyeSlash, faLink } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faEyeSlash, faLink);
 

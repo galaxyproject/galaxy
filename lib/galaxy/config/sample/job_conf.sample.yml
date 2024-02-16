@@ -550,6 +550,13 @@ execution:
       # 'command: <command>' to execute a command on the node and use its output
       #container_monitor_get_ip_method: null
 
+      # Container resolvers can be defined per execution environment using
+      # either a yaml file
+      #container_resolvers_config_file: null
+      
+      # Alternatively the yaml can be defined inline using 
+      #container_resolvers:
+
     singularity_local:
       runner: local
       # Enable Singularity execution of tools with the follow property.
@@ -564,7 +571,7 @@ execution:
       # This doesn't work in Singularity because if any parent directory is mounted as ro
       # none of its children will be rw. So the job directory will be mounted rw for
       # Singularity.
-      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not
       # be set and may be removed in the future.
@@ -792,7 +799,7 @@ execution:
       function: map_tool_to_destination
       rules_module: tpv.rules
       tpv_config_files:
-        - https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml
+        - https://gxy.io/tpv/db.yml
         # - config/tpv_rules_local.yml
 
     docker_dispatch:

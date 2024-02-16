@@ -45,15 +45,17 @@ def test_file_source_drs_http():
         content_type="application/json",
     )
 
+    test_url = "drs://drs.example.org/314159"
+
     def check_specific_header(request, **kwargs):
         assert request.full_url == "https://my.respository.org/myfile.txt"
         assert request.headers["Authorization"] == "Basic Z2E0Z2g6ZHJz"
         response: Any = io.StringIO("hello drs world")
         response.headers = {}
+        response.geturl = lambda: test_url
         return response
 
     with mock.patch.object(urllib.request, "urlopen", new=check_specific_header):
-        test_url = "drs://drs.example.org/314159"
         user_context = user_context_fixture()
         file_sources = configured_file_sources(FILE_SOURCES_CONF)
         file_source_pair = file_sources.get_file_source_path(test_url)

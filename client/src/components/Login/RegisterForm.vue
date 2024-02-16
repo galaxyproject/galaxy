@@ -3,7 +3,8 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="!!registrationWarningMessage" variant="info">
-                    {{ registrationWarningMessage }}
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-html="registrationWarningMessage" />
                 </b-alert>
                 <b-alert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
@@ -19,7 +20,7 @@
                                 <b-card-body>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
-                                    <external-login :login_page="false" />
+                                    <ExternalLogin :login_page="false" />
                                 </b-card-body>
                             </b-collapse>
                         </span>
@@ -64,19 +65,18 @@
                                         dashes ('.', '_', '-').
                                     </b-form-text>
                                 </b-form-group>
-                                <b-form-group
-                                    v-if="mailingJoinAddr && serverMailConfigured"
-                                    :label="labelSubscribe"
-                                    label-for="register-form-subscribe">
-                                    <input
+                                <b-form-group v-if="mailingJoinAddr && serverMailConfigured">
+                                    <b-form-checkbox
                                         id="register-form-subscribe"
                                         v-model="subscribe"
                                         name="subscribe"
-                                        type="checkbox" />
+                                        type="checkbox">
+                                        {{ labelSubscribe }}
+                                    </b-form-checkbox>
                                 </b-form-group>
-                                <b-button v-localize name="create" type="submit" :disabled="disableCreate"
-                                    >Create</b-button
-                                >
+                                <b-button v-localize name="create" type="submit" :disabled="disableCreate">
+                                    Create
+                                </b-button>
                             </b-card-body>
                         </b-collapse>
                         <b-card-footer v-if="showLoginLink">
@@ -93,19 +93,20 @@
                     </b-card>
                 </b-form>
             </div>
-            <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrl" aspect="1by1" />
+            <div v-if="termsUrl" class="col position-relative embed-container">
+                <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
+                <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
             </div>
         </div>
     </div>
 </template>
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 
@@ -204,3 +205,26 @@ export default {
     },
 };
 </script>
+<style scoped>
+.embed-container {
+    position: relative;
+}
+
+.scroll-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.terms-iframe {
+    width: 100%;
+    height: 90vh;
+    border: none;
+    overflow-y: auto;
+}
+</style>

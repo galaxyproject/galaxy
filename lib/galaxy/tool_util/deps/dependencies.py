@@ -122,13 +122,12 @@ class DependenciesDescription:
         return dict(
             requirements=[r.to_dict() for r in self.requirements],
             installed_tool_dependencies=[
-                DependenciesDescription._toolshed_install_dependency_to_dict(d)
-                for d in self.installed_tool_dependencies
+                self._toolshed_install_dependency_to_dict(d) for d in self.installed_tool_dependencies
             ],
         )
 
-    @staticmethod
-    def from_dict(as_dict):
+    @classmethod
+    def from_dict(cls, as_dict):
         if as_dict is None:
             return None
 
@@ -136,11 +135,9 @@ class DependenciesDescription:
         requirements = ToolRequirements.from_list(requirements_dicts)
         installed_tool_dependencies_dicts = as_dict.get("installed_tool_dependencies", [])
         installed_tool_dependencies = list(
-            map(DependenciesDescription._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
+            map(cls._toolshed_install_dependency_from_dict, installed_tool_dependencies_dicts)
         )
-        return DependenciesDescription(
-            requirements=requirements, installed_tool_dependencies=installed_tool_dependencies
-        )
+        return cls(requirements=requirements, installed_tool_dependencies=installed_tool_dependencies)
 
     @staticmethod
     def _toolshed_install_dependency_from_dict(as_dict):

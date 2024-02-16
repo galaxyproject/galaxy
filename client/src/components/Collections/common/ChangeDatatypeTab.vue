@@ -9,7 +9,7 @@
             </div>
         </div>
         <b>{{ l("New Type") }}: </b>
-        <multiselect
+        <Multiselect
             v-if="hasSelectedDatatype"
             v-model="selectedDatatype"
             class="datatype-dropdown"
@@ -20,7 +20,7 @@
             :searchable="true"
             :allow-empty="false">
             {{ selectedDatatype.text }}
-        </multiselect>
+        </Multiselect>
     </div>
 </template>
 <script>

@@ -29,6 +29,7 @@ from galaxy.util.path import safe_relpath
 from . import ConcreteObjectStore
 from .caching import (
     CacheTarget,
+    enable_cache_monitor,
     InProcessCacheMonitor,
     parse_caching_config_dict_from_xml,
 )
@@ -98,7 +99,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
         cache_dict = config_dict.get("cache") or {}
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")
@@ -108,6 +109,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         self._initialize()
 
@@ -117,11 +119,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         self._configure_connection()
 
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            self.cache_monitor = InProcessCacheMonitor(self.cache_target, 30)
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -138,6 +137,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 "cache": {
                     "size": self.cache_size,
                     "path": self.staging_path,
+                    "cache_updated_data": self.cache_updated_data,
                 },
             }
         )
@@ -166,6 +166,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         # extra_dir should never be constructed from provided data but just
@@ -203,6 +204,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
 
         return rel_path
 
@@ -268,12 +272,12 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
+            if not self.cache_target.fits_in_cache(self._get_size_in_azure(rel_path)):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     self._get_size_in_azure(rel_path),
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             else:
@@ -499,12 +503,15 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -513,8 +520,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
@@ -540,7 +547,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)

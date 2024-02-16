@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
+import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem.vue";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
-import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+
+import type { HistorySummary } from "@/api";
+import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
+
+import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
+import MultipleViewItem from "./MultipleViewItem.vue";
 
 const historyStore = useHistoryStore();
 
 const props = withDefaults(
     defineProps<{
         histories: HistorySummary[];
+        selectedHistories: { id: string }[];
         filter?: string;
     }>(),
     {
@@ -31,52 +38,75 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
-const selectedHistories = computed(() => historyStore.pinnedHistories);
-
-if (!selectedHistories.value.length ?? props.histories.length > 0) {
-    historyStore.pinHistory(props.histories[0]!.id);
-}
-
-function addHistoriesToList(histories: HistorySummary[]) {
-    histories.forEach((history) => {
-        const historyExists = selectedHistories.value.find((h) => h.id === history.id);
-        if (!historyExists) {
-            historyStore.pinHistory(history.id);
+const showDropZone = ref(false);
+const historyPickerText = computed(() =>
+    showDropZone.value ? localize("Create new history with this item") : localize("Select histories")
+);
+const processingDrop = ref(false);
+async function onDrop(evt: any) {
+    if (processingDrop.value) {
+        showDropZone.value = false;
+        return;
+    }
+    processingDrop.value = true;
+    showDropZone.value = false;
+    let data: any;
+    try {
+        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+    } catch (error) {
+        // this was not a valid object for this dropzone, ignore
+    }
+    if (data) {
+        await historyStore.createNewHistory();
+        const currentHistoryId = historyStore.currentHistoryId;
+        const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+        if (currentHistoryId) {
+            await copyDataset(data.id, currentHistoryId, data.history_content_type, dataSource)
+                .then(() => {
+                    if (data.history_content_type === "dataset") {
+                        Toast.info(localize("Dataset copied to new history"));
+                    } else {
+                        Toast.info(localize("Collection copied to new history"));
+                    }
+                    historyStore.loadHistoryById(currentHistoryId);
+                })
+                .catch((error) => {
+                    Toast.error(error);
+                });
+            historyStore.pinHistory(currentHistoryId);
         }
-    });
+        processingDrop.value = false;
+    }
 }
 </script>
 
 <template>
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
-            <virtual-list
-                v-if="selectedHistories.length"
-                :estimate-size="selectedHistories.length"
+            <VirtualList
+                v-if="props.selectedHistories.length"
+                :estimate-size="props.selectedHistories.length"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
-                :data-sources="selectedHistories"
+                :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
                 :extra-props="{ filter }"
                 :item-style="{ width: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
-            </virtual-list>
+            </VirtualList>
 
             <div
-                v-b-modal.select-histories-modal
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap">
-                Select histories
+                class="history-picker text-primary d-flex m-3 align-items-center text-nowrap"
+                @click.stop="$emit('update:show-modal', true)"
+                @drop.prevent="onDrop"
+                @dragenter.prevent="showDropZone = true"
+                @dragover.prevent
+                @dragleave.prevent="showDropZone = false">
+                {{ historyPickerText }}
+                <HistoryDropZone v-if="showDropZone" style="left: 0" />
             </div>
-
-            <SelectorModal
-                id="select-histories-modal"
-                :multiple="true"
-                :histories="histories"
-                :additional-options="['center', 'set-current']"
-                title="Select histories"
-                @selectHistories="addHistoriesToList" />
         </div>
     </div>
 </template>
@@ -85,6 +115,10 @@ function addHistoriesToList(histories: HistorySummary[]) {
 .list-container {
     .history-picker {
         border: dotted lightgray;
+        cursor: pointer;
+        width: 15rem;
+        position: relative;
+        justify-content: center;
     }
 
     position: relative;

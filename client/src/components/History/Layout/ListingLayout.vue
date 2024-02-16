@@ -1,10 +1,10 @@
 <template>
     <div class="listing-layout">
-        <virtual-list
+        <VirtualList
             ref="listing"
             class="listing"
             role="list"
-            data-key="id"
+            :data-key="dataKey"
             :offset="offset"
             :data-sources="items"
             :data-component="{}"
@@ -17,14 +17,14 @@
             <template v-slot:footer>
                 <LoadingSpan v-if="loading" class="m-2" message="Loading" />
             </template>
-        </virtual-list>
+        </VirtualList>
     </div>
 </template>
 <script>
-import VirtualList from "vue-virtual-scroll-list";
-import LoadingSpan from "components/LoadingSpan";
 import { useElementBounding } from "@vueuse/core";
+import LoadingSpan from "components/LoadingSpan";
 import { computed, ref } from "vue";
+import VirtualList from "vue-virtual-scroll-list";
 
 export default {
     components: {
@@ -32,6 +32,7 @@ export default {
         VirtualList,
     },
     props: {
+        dataKey: { type: String, default: "id" },
         offset: { type: Number, default: 0 },
         loading: { type: Boolean, default: false },
         items: { type: Array, default: null },

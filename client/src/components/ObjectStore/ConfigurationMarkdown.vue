@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
+
 import { markup } from "./configurationMarkdown";
+
 interface Props {
     markdown: string;
     admin: boolean; // was the configuration specified by an admin

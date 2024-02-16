@@ -1,4 +1,9 @@
 """This module contains a linting functions for tool outputs."""
+
+from typing import TYPE_CHECKING
+
+from packaging.version import Version
+
 from galaxy.util import (
     etree,
     string_as_bool,
@@ -6,9 +11,18 @@ from galaxy.util import (
 from ._util import is_valid_cheetah_placeholder
 from ..parser.output_collection_def import NAMED_PATTERNS
 
+if TYPE_CHECKING:
+    from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser import ToolSource
 
-def lint_output(tool_xml, lint_ctx):
+
+def lint_output(tool_source: "ToolSource", lint_ctx: "LintContext"):
     """Check output elements, ensure there is at least one and check attributes."""
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    if tool_xml is None:
+        return
+    profile = tool_source.parse_profile()
+
     outputs = tool_xml.findall("./outputs")
     # determine node to report for general problems with outputs
     tool_node = tool_xml.find("./outputs")
@@ -45,11 +59,18 @@ def lint_output(tool_xml, lint_ctx):
 
         label = output.attrib.get("label", "${tool.name} on ${on_string}")
         if label in labels:
-            lint_ctx.error(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
+            filter_node = output.find(".//filter")
+            if filter_node is not None:
+                lint_ctx.warn(
+                    f"Tool output [{name}] uses duplicated label '{label}', double check if filters imply disjoint cases",
+                    node=output,
+                )
+            else:
+                lint_ctx.warn(f"Tool output [{name}] uses duplicated label '{label}'", node=output)
         labels.add(label)
 
         format_set = False
-        if __check_format(output, lint_ctx):
+        if __check_format(output, lint_ctx, profile):
             format_set = True
         if output.tag == "data":
             if "auto_format" in output.attrib and output.attrib["auto_format"]:
@@ -63,7 +84,7 @@ def lint_output(tool_xml, lint_ctx):
         for sub in output:
             if __check_pattern(sub):
                 format_set = True
-            elif __check_format(sub, lint_ctx, allow_ext=True):
+            elif __check_format(sub, lint_ctx, profile, allow_ext=True):
                 format_set = True
 
         if not format_set:
@@ -76,7 +97,7 @@ def lint_output(tool_xml, lint_ctx):
     lint_ctx.info(f"{num_outputs} outputs found.", node=outputs[0])
 
 
-def __check_format(node, lint_ctx, allow_ext=False):
+def __check_format(node, lint_ctx, profile: str, allow_ext=False):
     """
     check if format/ext/format_source attribute is set in a given node
     issue a warning if the value is input
@@ -98,10 +119,12 @@ def __check_format(node, lint_ctx, allow_ext=False):
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.error(
-            f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.",
-            node=node,
-        )
+        message = f"Using format='input' on {node.tag} is deprecated. Use the format_source attribute."
+        if Version(str(profile)) <= Version("16.01"):
+            lint_ctx.warn(message, node=node)
+        else:
+            lint_ctx.error(message, node=node)
+
     return fmt is not None
 
 

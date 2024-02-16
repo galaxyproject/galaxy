@@ -1,6 +1,6 @@
 <template>
     <span>
-        <b-button
+        <BButton
             id="workflow-create"
             v-b-tooltip.hover
             aria-haspopup="true"
@@ -8,10 +8,10 @@
             :disabled="isAnonymous"
             class="m-1"
             @click="navigateToCreate">
-            <font-awesome-icon icon="plus" />
+            <FontAwesomeIcon icon="plus" />
             {{ "Create" | localize }}
-        </b-button>
-        <b-button
+        </BButton>
+        <BButton
             id="workflow-import"
             v-b-tooltip.hover
             aria-haspopup="true"
@@ -19,20 +19,21 @@
             :disabled="isAnonymous"
             class="m-1"
             @click="navigateToImport">
-            <font-awesome-icon icon="upload" />
+            <FontAwesomeIcon icon="upload" />
             {{ "Import" | localize }}
-        </b-button>
+        </BButton>
     </span>
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { mapState } from "pinia";
+
 import { useUserStore } from "@/stores/userStore";
 
-import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
 library.add(faPlus, faUpload);
 
 export default {
@@ -53,7 +54,7 @@ export default {
     },
     methods: {
         navigateToCreate: function () {
-            this.$router.push("/workflows/create");
+            this.$router.push("/workflows/edit");
         },
         navigateToImport: function () {
             this.$router.push("/workflows/import");

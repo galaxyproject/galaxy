@@ -4,9 +4,13 @@ $headers
 
 _galaxy_setup_environment() {
     local _use_framework_galaxy="$1"
-    _GALAXY_JOB_DIR="$working_directory"
-    _GALAXY_JOB_HOME_DIR="$home_directory"
-    _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
+
+    if [ -z "$_GALAXY_JOB_TMP_DIR" ]; then
+        _GALAXY_JOB_DIR="$working_directory"
+        _GALAXY_JOB_HOME_DIR="$home_directory"
+        _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
+    fi
+
     $env_setup_commands
     if [ "$GALAXY_LIB" != "None" -a "$_use_framework_galaxy" = "True" ]; then
         if [ -n "$PYTHONPATH" ]; then
@@ -35,6 +39,24 @@ GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
 export _GALAXY_JOB_HOME_DIR
 export _GALAXY_JOB_TMP_DIR
+
+TEMP="${TEMP:-$TMP}"
+TMPDIR="${TMPDIR:-$TMP}"
+
+TMP="${TMP:-$TEMP}"
+TMPDIR="${TMPDIR:-$TEMP}"
+
+TMP="${TMP:-$TMPDIR}"
+TEMP="${TEMP:-$TMPDIR}"
+
+TMP="${TMP:-$_GALAXY_JOB_TMP_DIR}"
+TEMP="${TEMP:-$_GALAXY_JOB_TMP_DIR}"
+TMPDIR="${TMPDIR:-$_GALAXY_JOB_TMP_DIR}"
+
+export TMP
+export TEMP
+export TMPDIR
+
 GALAXY_PYTHON=`command -v python`
 cd $working_directory
 $memory_statement

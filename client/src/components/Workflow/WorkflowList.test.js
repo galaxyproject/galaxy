@@ -1,22 +1,24 @@
-import Workflows from "../Workflow/WorkflowList";
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { useUserTags } from "composables/user";
-import { computed } from "vue";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "tests/jest/helpers";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
-import { parseISO, formatDistanceToNow } from "date-fns";
 import { PiniaVuePlugin } from "pinia";
-import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, wait } from "tests/jest/helpers";
+import { computed } from "vue";
+
+import { useUserTagsStore } from "@/stores/userTagsStore";
+
 import Tag from "../TagsMultiselect/Tag";
+import Workflows from "../Workflow/WorkflowList";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
 const autocompleteTags = ["#named_user_tags", "abc", "my_tag"];
-jest.mock("composables/user");
-useUserTags.mockReturnValue({
+jest.mock("@/stores/userTagsStore");
+useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
     addLocalTag: jest.fn(),
 });
@@ -51,6 +53,8 @@ const defaultApiParams = {
     sort_desc: true,
 };
 
+const debounceDelay = 500; // in ms - see FilterMenu.props.debounceDelay
+
 describe("WorkflowList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -71,6 +75,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
         });
 
@@ -89,6 +96,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });
@@ -99,6 +109,10 @@ describe("WorkflowList.vue", () => {
     });
 
     describe(" with single workflow", () => {
+        function findSearchBar(wrapper) {
+            return wrapper.find("[data-description='filter text input']");
+        }
+
         beforeEach(async () => {
             axiosMock
                 .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
@@ -110,6 +124,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });
@@ -132,7 +149,7 @@ describe("WorkflowList.vue", () => {
             expect(columns.at(2).text()).toBe(
                 formatDistanceToNow(parseISO(`${mockWorkflowsData[0].update_time}Z`), { addSuffix: true })
             );
-            expect(row.find(".fa-globe").exists()).toBe(true);
+            expect(row.find(".sharing-indicator-published").exists()).toBe(true);
 
             // test expand summary button for longer annotations
             const annotationHead = sampleLongAnnotation.substr(0, 75);
@@ -151,14 +168,14 @@ describe("WorkflowList.vue", () => {
         });
 
         it("starts with an empty filter", async () => {
-            expect(wrapper.find("#workflow-search").element.value).toBe("");
+            expect(findSearchBar(wrapper).element.value).toBe("");
         });
 
         it("fetched filtered results when search filter is used", async () => {
-            await wrapper.find("#workflow-search").setValue("mytext");
-            flushPromises();
-            expect(wrapper.find("#workflow-search").element.value).toBe("mytext");
-            expect(wrapper.vm.filter).toBe("mytext");
+            await findSearchBar(wrapper).setValue("mytext");
+            expect(findSearchBar(wrapper).element.value).toBe("mytext");
+            await wait(debounceDelay);
+            expect(wrapper.vm.filterText).toBe("mytext");
         });
 
         it("update filter when a tag is clicked", async () => {
@@ -166,7 +183,7 @@ describe("WorkflowList.vue", () => {
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagmoo'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagmoo'");
         });
 
         it("update filter when a tag is clicked only happens on first click", async () => {
@@ -176,15 +193,15 @@ describe("WorkflowList.vue", () => {
             tags[0].trigger("click");
             tags[0].trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagmoo'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagmoo'");
         });
 
         it("update filter when published icon is clicked", async () => {
             const rows = wrapper.findAll("tbody > tr").wrappers;
             const row = rows[0];
-            row.find(".fa-globe").trigger("click");
+            row.find(".sharing-indicator-published").trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("is:published");
+            expect(wrapper.vm.filterText).toBe("is:published");
         });
 
         it("update filter when shared with me icon is clicked", async () => {
@@ -192,7 +209,7 @@ describe("WorkflowList.vue", () => {
             const row = rows[0];
             row.find(".fa-share-alt").trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("is:shared_with_me");
+            expect(wrapper.vm.filterText).toBe("is:shared_with_me");
         });
     });
 
@@ -216,6 +233,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });

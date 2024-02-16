@@ -38,4 +38,4 @@ class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]
-        assert label0.text.strip() == "ANALYSIS"
+        assert label0.text.strip().startswith("ANALYSIS")

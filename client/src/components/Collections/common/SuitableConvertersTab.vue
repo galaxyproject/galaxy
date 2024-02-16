@@ -12,7 +12,7 @@
             </div>
         </div>
         <b>{{ l("Converter Tool: ") }}</b>
-        <multiselect
+        <Multiselect
             v-model="selectedConverter"
             deselect-label="Can't remove this value"
             track-by="name"
@@ -20,12 +20,13 @@
             :options="suitableConverters"
             :searchable="true"
             :allow-empty="true">
-        </multiselect>
+        </Multiselect>
     </div>
 </template>
 
 <script>
 import Multiselect from "vue-multiselect";
+
 export default {
     components: { Multiselect },
     props: {

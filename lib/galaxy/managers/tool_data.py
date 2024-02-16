@@ -13,7 +13,10 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
-from galaxy.tool_util.data import BundleProcessingOptions
+from galaxy.tool_util.data import (
+    BundleProcessingOptions,
+    ToolDataTableManager,
+)
 from galaxy.tool_util.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
@@ -23,7 +26,6 @@ from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
     ToolDataTable,
-    ToolDataTableManager,
 )
 
 
@@ -47,12 +49,12 @@ class ToolDataManager:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view="element")
-        return ToolDataDetails.construct(**element_view)
+        return ToolDataDetails.model_construct(**element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
         """Get information about a partiular field in a tool data table"""
         field = self._data_table_field(table_name, field_name)
-        return ToolDataField.construct(**field.to_dict())
+        return ToolDataField.model_construct(**field.to_dict())
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
@@ -113,7 +115,7 @@ class ToolDataImportManager:
         self.file_sources = app.file_sources
         self.tool_data_tables = app.tool_data_tables
 
-    def import_data_bundle_by_uri(self, config, uri: str):
+    def import_data_bundle_by_uri(self, config, uri: str, tool_data_file_path=None):
         # an admin-only task - so allow file:// uris
         if uri.startswith("file://"):
             target = uri[len("file://") :]
@@ -126,17 +128,19 @@ class ToolDataImportManager:
             what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
             data_manager_path=config.galaxy_data_manager_data_path,
             target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
         )
         self.tool_data_tables.import_bundle(
             target,
             options,
         )
 
-    def import_data_bundle_by_dataset(self, config, dataset: DatasetInstance):
+    def import_data_bundle_by_dataset(self, config, dataset: DatasetInstance, tool_data_file_path=None):
         options = BundleProcessingOptions(
             what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
             data_manager_path=config.galaxy_data_manager_data_path,
             target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
         )
         self.tool_data_tables.import_bundle(
             dataset.extra_files_path,

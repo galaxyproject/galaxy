@@ -17,6 +17,7 @@
             :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"
             :show-welcome-with-login="config.show_welcome_with_login"
+            :show-reset-link="config.enable_account_interface"
             :terms-url="config.terms_url"
             :welcome-url="config.welcome_url" />
     </div>
@@ -24,8 +25,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import LoginIndex from "components/Login/LoginIndex";
 import ChangePassword from "components/Login/ChangePassword";
+import LoginIndex from "components/Login/LoginIndex";
 
 export default {
     components: {

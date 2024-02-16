@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from "vue";
-import svc from "./model/service";
 import { getGalaxyInstance } from "app";
-import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import UtcDate from "components/UtcDate";
+import { ref } from "vue";
+
+import svc from "./model/service";
 
 defineProps({
     item: {
@@ -54,10 +55,7 @@ const deleteKey = () => {
 
                     <b-input-group-append>
                         <b-input-group-text>
-                            <copy-to-clipboard
-                                message="Key was copied to clipboard"
-                                :text="item.key"
-                                title="Copy key" />
+                            <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
                         </b-input-group-text>
                         <b-button title="Delete api key" @click="toggleDeleteModal">
                             <icon icon="trash" />

@@ -1,10 +1,14 @@
 from typing import (
     Any,
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
-from sqlalchemy import func
+from sqlalchemy import (
+    func,
+    text,
+)
 
 from galaxy import model as m
 from galaxy.exceptions import (
@@ -24,10 +28,10 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: m.User, chrom_info: bool) -> List[List[str]]:
+    def get_dbkeys(self, user: Optional[m.User], chrom_info: bool) -> List[List[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
 
-    def is_registered_dbkey(self, dbkey: str, user: m.User) -> bool:
+    def is_registered_dbkey(self, dbkey: str, user: Optional[m.User]) -> bool:
         dbkeys = self.get_dbkeys(user, chrom_info=False)
         for _, key in dbkeys:
             if dbkey == key:
@@ -75,6 +79,7 @@ class GenomesManager:
 
 class GenomeFilterMixin:
     orm_filter_parsers: "OrmFilterParsersType"
+    database_connection: str
     valid_ops = ("eq", "contains", "has")
 
     def create_genome_filter(self, attr, op, val):
@@ -86,15 +91,21 @@ class GenomeFilterMixin:
             # Doesn't filter genome_build for collections
             if model_class.__name__ == "HistoryDatasetCollectionAssociation":
                 return False
-            column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            # TODO: should use is_postgres(self.database_connection) in 23.2
+            if self.database_connection.startswith("postgres"):
+                column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
+            else:
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
             lower_val = val.lower()  # Ignore case
+            # dbkey can either be "hg38" or '["hg38"]', so we need to check both
             if op == "eq":
-                cond = func.lower(column) == lower_val
+                cond = func.lower(column) == lower_val or func.lower(column) == f'["{lower_val}"]'
             else:
                 cond = func.lower(column).contains(lower_val, autoescape=True)
             return cond
 
         return _create_genome_filter
 
-    def _add_parsers(self):
+    def _add_parsers(self, database_connection: str):
+        self.database_connection = database_connection
         self.orm_filter_parsers.update({"genome_build": self.create_genome_filter})

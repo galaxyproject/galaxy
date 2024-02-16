@@ -1,4 +1,5 @@
 """Integration tests for the CLI shell plugins and runners."""
+
 import os
 import string
 import subprocess
@@ -43,7 +44,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image="agaveapi
         "--rm",
         "--privileged",  # for torque
         "-v",
-        "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
+        f"{jobs_directory}:{jobs_directory}",
         "-v",
         f"{ssh_keys.public_key_file}:/home/testuser/.ssh/authorized_keys",
         "--ulimit",

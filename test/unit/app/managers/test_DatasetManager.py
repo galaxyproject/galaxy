@@ -1,13 +1,16 @@
 """
 """
+
 from unittest import mock
 
 import sqlalchemy
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers.base import SkipAttribute
 from galaxy.managers.datasets import (
     DatasetManager,
@@ -32,14 +35,14 @@ class TestDatasetManager(BaseTestCase):
         self.log("should be able to create a new Dataset")
         dataset1 = self.dataset_manager.create()
         assert isinstance(dataset1, model.Dataset)
-        assert dataset1 == self.trans.sa_session.query(model.Dataset).get(dataset1.id)
+        assert dataset1 == self.trans.sa_session.get(model.Dataset, dataset1.id)
 
     def test_base(self):
         dataset1 = self.dataset_manager.create()
         dataset2 = self.dataset_manager.create()
 
         self.log("should be able to query")
-        datasets = self.trans.sa_session.query(model.Dataset).all()
+        datasets = self.trans.sa_session.scalars(select(model.Dataset)).all()
         assert self.dataset_manager.list() == datasets
         assert self.dataset_manager.one(filters=(model.Dataset.id == dataset1.id)) == dataset1
         assert self.dataset_manager.by_id(dataset1.id) == dataset1
@@ -187,24 +190,7 @@ class TestDatasetManager(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# class TestDatasetRBACPermissions(BaseTestCase):
-#     def set_up_managers(self):
-#         super().set_up_managers()
-#         self.dataset_manager = DatasetManager(self.app)
-#
-#     def test_manage( self ):
-#         self.log("should be able to create a new Dataset")
-#         dataset1 = self.dataset_manager.create()
-#         assert isinstance(dataset1, model.Dataset)
-#         assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
-
-
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", mock_url_builder)
 class TestDatasetSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()

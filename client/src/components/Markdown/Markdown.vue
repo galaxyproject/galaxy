@@ -1,16 +1,16 @@
 <template>
     <div class="markdown-wrapper">
-        <loading-span v-if="loading" />
+        <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
-                <sts-download-button
+                <StsDownloadButton
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     size="sm"
                     title="Generate PDF">
-                </sts-download-button>
+                </StsDownloadButton>
                 <b-button
                     v-if="!readOnly"
                     v-b-tooltip.hover
@@ -20,13 +20,16 @@
                     title="Edit Markdown"
                     @click="$emit('onEdit')">
                     Edit
-                    <font-awesome-icon icon="edit" />
+                    <FontAwesomeIcon icon="edit" />
                 </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h2>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -43,7 +46,7 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <markdown-container
+                <MarkdownContainer
                     v-else
                     :name="obj.name"
                     :args="obj.args"
@@ -51,7 +54,6 @@
                     :collections="collections"
                     :histories="histories"
                     :invocations="invocations"
-                    :jobs="jobs"
                     :time="time"
                     :version="version"
                     :workflows="workflows" />
@@ -61,18 +63,20 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import store from "store";
-import MarkdownIt from "markdown-it";
-import markdownItRegexp from "markdown-it-regexp";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
+import { mapActions } from "pinia";
+import Vue from "vue";
 
+import { useWorkflowStore } from "@/stores/workflowStore";
+
+import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
-import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -91,7 +95,6 @@ Vue.use(BootstrapVue);
 library.add(faDownload, faEdit);
 
 export default {
-    store: store,
     components: {
         MarkdownContainer,
         FontAwesomeIcon,
@@ -128,9 +131,9 @@ export default {
             histories: {},
             collections: {},
             workflows: {},
-            jobs: {},
             invocations: {},
             loading: true,
+            workflowID: "",
         };
     },
     computed: {
@@ -138,8 +141,13 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            const generateTime = this.markdownConfig.generate_time;
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -147,9 +155,14 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
+        },
+        workflowVersions() {
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
         },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
@@ -162,21 +175,23 @@ export default {
     },
     created() {
         this.initConfig();
+        this.fetchWorkflowForInstanceId(this.workflowID);
     },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
-                const markdown = config.content || config.markdown;
+                const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
                 this.histories = config.histories || {};
                 this.collections = config.history_dataset_collections || {};
                 this.workflows = config.workflows || {};
-                this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
         },
         splitMarkdown(markdown) {

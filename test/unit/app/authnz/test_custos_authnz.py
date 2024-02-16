@@ -6,6 +6,7 @@ from datetime import (
     datetime,
     timedelta,
 )
+from typing import Optional
 from unittest import SkipTest
 from urllib.parse import (
     parse_qs,
@@ -56,7 +57,7 @@ class TestCustosAuthnz(TestCase):
                 self._get_credential_url(): {"iam_client_secret": "TESTSECRET"},
             }
         )
-        self.custos_authnz = custos_authnz.CustosAuthnz(
+        self.custos_authnz = custos_authnz.CustosAuthFactory.GetCustosBasedAuthProvider(
             "Custos",
             {"VERIFY_SSL": True},
             {
@@ -97,6 +98,7 @@ class TestCustosAuthnz(TestCase):
         self.trans.app.config.enable_oidc = True
         self.trans.app.config.oidc = []
         self.trans.app.auth_manager.authenticators = []
+        self.trans.app.config.fixed_delegated_auth = False
 
     @property
     def test_id_token(self):
@@ -188,7 +190,7 @@ class TestCustosAuthnz(TestCase):
         class Query:
             external_user_id = None
             provider = None
-            custos_authnz_token = None
+            custos_authnz_token: Optional[CustosAuthnzToken] = None
 
             def filter_by(self, email=None, external_user_id=None, provider=None, username=None):
                 self.external_user_id = external_user_id
@@ -207,7 +209,7 @@ class TestCustosAuthnz(TestCase):
 
         class Session:
             items = []
-            flush_called = False
+            commit_called = False
             _query = Query()
             deleted = []
 
@@ -217,8 +219,8 @@ class TestCustosAuthnz(TestCase):
             def delete(self, item):
                 self.deleted.append(item)
 
-            def flush(self):
-                self.flush_called = True
+            def commit(self):
+                self.commit_called = True
 
             def query(self, cls):
                 return self._query
@@ -246,15 +248,15 @@ class TestCustosAuthnz(TestCase):
         os.environ.pop("OAUTHLIB_INSECURE_TRANSPORT", None)
 
     def test_parse_config(self):
-        assert self.custos_authnz.config["verify_ssl"]
-        assert self.custos_authnz.config["client_id"] == "test-client-id"
-        assert self.custos_authnz.config["client_secret"] == "test-client-secret"
-        assert self.custos_authnz.config["redirect_uri"] == "https://test-redirect-uri"
-        assert self.custos_authnz.config["authorization_endpoint"] == "https://test-auth-endpoint"
-        assert self.custos_authnz.config["token_endpoint"] == "https://test-token-endpoint"
-        assert self.custos_authnz.config["userinfo_endpoint"] == "https://test-userinfo-endpoint"
-        assert self.custos_authnz.config["label"] == "test-identity-provider"
-        assert self.custos_authnz.config["require_create_confirmation"] is False
+        assert self.custos_authnz.config.verify_ssl
+        assert self.custos_authnz.config.client_id == "test-client-id"
+        assert self.custos_authnz.config.client_secret == "test-client-secret"
+        assert self.custos_authnz.config.redirect_uri == "https://test-redirect-uri"
+        assert self.custos_authnz.config.authorization_endpoint == "https://test-auth-endpoint"
+        assert self.custos_authnz.config.token_endpoint == "https://test-token-endpoint"
+        assert self.custos_authnz.config.userinfo_endpoint == "https://test-userinfo-endpoint"
+        assert self.custos_authnz.config.label == "test-identity-provider"
+        assert self.custos_authnz.config.require_create_confirmation is False
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
@@ -278,7 +280,7 @@ class TestCustosAuthnz(TestCase):
         except ImportError:
             raise SkipTest("pkce library is not available")
         """Verify that authenticate() sets a code verifier cookie."""
-        self.custos_authnz.config["pkce_support"] = True
+        self.custos_authnz.config.pkce_support = True
         authorization_url = self.custos_authnz.authenticate(self.trans)
         parsed = urlparse(authorization_url)
         code_challenge_in_url = parse_qs(parsed.query)["code_challenge"][0]
@@ -295,7 +297,7 @@ class TestCustosAuthnz(TestCase):
 
     def test_authenticate_sets_env_var_when_localhost_redirect(self):
         """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
-        self.custos_authnz = custos_authnz.CustosAuthnz(
+        self.custos_authnz = custos_authnz.CustosAuthFactory.GetCustosBasedAuthProvider(
             "Custos",
             {"VERIFY_SSL": True},
             {
@@ -312,7 +314,7 @@ class TestCustosAuthnz(TestCase):
         assert os.environ["OAUTHLIB_INSECURE_TRANSPORT"] == "1"
 
     def test_authenticate_does_not_set_env_var_when_https_redirect(self):
-        assert self.custos_authnz.config["redirect_uri"].startswith("https:")
+        assert self.custos_authnz.config.redirect_uri.startswith("https:")
         assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
         self.custos_authnz.authenticate(self.trans)
         assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
@@ -329,7 +331,7 @@ class TestCustosAuthnz(TestCase):
         existing_custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config["provider"],
+            provider=self.custos_authnz.config.provider,
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -340,7 +342,7 @@ class TestCustosAuthnz(TestCase):
         self.trans.sa_session._query.custos_authnz_token = existing_custos_authnz_token
         assert (
             self.trans.sa_session.query(CustosAuthnzToken)
-            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config.provider)
             .one_or_none()
             is not None
         )
@@ -380,7 +382,7 @@ class TestCustosAuthnz(TestCase):
         assert not self._get_userinfo_called
 
     def test_callback_user_not_created_when_does_not_exists(self):
-        self.custos_authnz = custos_authnz.CustosAuthnz(
+        self.custos_authnz = custos_authnz.CustosAuthFactory.GetCustosBasedAuthProvider(
             "Keycloak",
             {"VERIFY_SSL": True},
             {
@@ -399,7 +401,7 @@ class TestCustosAuthnz(TestCase):
 
         assert (
             self.trans.sa_session.query(CustosAuthnzToken)
-            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config.provider)
             .one_or_none()
             is None
         )
@@ -415,7 +417,7 @@ class TestCustosAuthnz(TestCase):
     def test_create_user(self):
         assert (
             self.trans.sa_session.query(CustosAuthnzToken)
-            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config.provider)
             .one_or_none()
             is None
         )
@@ -468,8 +470,8 @@ class TestCustosAuthnz(TestCase):
             expected_refresh_expiration_time - added_custos_authnz_token.refresh_expiration_time
         )
         assert refresh_expiration_timedelta.total_seconds() < 1
-        assert self.custos_authnz.config["provider"] == added_custos_authnz_token.provider
-        assert self.trans.sa_session.flush_called
+        assert self.custos_authnz.config.provider == added_custos_authnz_token.provider
+        assert self.trans.sa_session.commit_called
 
     def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_custos_authnz_token_exists(self):
         """
@@ -482,7 +484,7 @@ class TestCustosAuthnz(TestCase):
 
         assert (
             self.trans.sa_session.query(CustosAuthnzToken)
-            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config.provider)
             .one_or_none()
             is None
         )
@@ -499,7 +501,7 @@ class TestCustosAuthnz(TestCase):
         assert isinstance(added_custos_authnz_token, CustosAuthnzToken)
         assert user is added_custos_authnz_token.user
         assert user is self.trans.user
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
 
     def test_callback_galaxy_user_not_created_when_custos_authnz_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
@@ -512,7 +514,7 @@ class TestCustosAuthnz(TestCase):
         existing_custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config["provider"],
+            provider=self.custos_authnz.config.provider,
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -524,7 +526,7 @@ class TestCustosAuthnz(TestCase):
 
         assert (
             self.trans.sa_session.query(CustosAuthnzToken)
-            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config["provider"])
+            .filter_by(external_user_id=self.test_user_id, provider=self.custos_authnz.config.provider)
             .one_or_none()
             is not None
         )
@@ -536,7 +538,7 @@ class TestCustosAuthnz(TestCase):
         assert self._get_userinfo_called
         # Make sure query was called with correct parameters
         assert self.test_user_id == self.trans.sa_session._query.external_user_id
-        assert self.custos_authnz.config["provider"] == self.trans.sa_session._query.provider
+        assert self.custos_authnz.config.provider == self.trans.sa_session._query.provider
         assert 1 == len(self.trans.sa_session.items), "Session has updated CustosAuthnzToken"
         session_custos_authnz_token = self.trans.sa_session.items[0]
         assert isinstance(session_custos_authnz_token, CustosAuthnzToken)
@@ -560,7 +562,7 @@ class TestCustosAuthnz(TestCase):
         )
         assert refresh_expiration_timedelta.total_seconds() < 1
         assert old_refresh_expiration_time != session_custos_authnz_token.refresh_expiration_time
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
 
     def test_galaxy_oidc_login_when_account_matching_oidc_email_exists(self):
         """
@@ -615,7 +617,7 @@ class TestCustosAuthnz(TestCase):
         custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
-            provider=self.custos_authnz.config["provider"],
+            provider=self.custos_authnz.config.provider,
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,
@@ -632,7 +634,7 @@ class TestCustosAuthnz(TestCase):
         assert 1 == len(self.trans.sa_session.deleted)
         deleted_token = self.trans.sa_session.deleted[0]
         assert custos_authnz_token is deleted_token
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
         assert success
         assert "" == message
         assert "/" == redirect_uri
@@ -641,7 +643,7 @@ class TestCustosAuthnz(TestCase):
         self.trans.user = User()
         success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
         assert 0 == len(self.trans.sa_session.deleted)
-        assert not self.trans.sa_session.flush_called
+        assert not self.trans.sa_session.commit_called
         assert not success
         assert "" != message
         assert redirect_uri is None
@@ -651,7 +653,7 @@ class TestCustosAuthnz(TestCase):
         custos_authnz_token1 = CustosAuthnzToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "1",
-            provider=self.custos_authnz.config["provider"],
+            provider=self.custos_authnz.config.provider,
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,
@@ -661,7 +663,7 @@ class TestCustosAuthnz(TestCase):
         custos_authnz_token2 = CustosAuthnzToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "2",
-            provider=self.custos_authnz.config["provider"],
+            provider=self.custos_authnz.config.provider,
             access_token=self.test_access_token,
             id_token=self.test_id_token,
             refresh_token=self.test_refresh_token,
@@ -673,7 +675,7 @@ class TestCustosAuthnz(TestCase):
         success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
 
         assert 0 == len(self.trans.sa_session.deleted)
-        assert not self.trans.sa_session.flush_called
+        assert not self.trans.sa_session.commit_called
         assert not success
         assert "" != message
         assert redirect_uri is None

@@ -9,9 +9,9 @@
                 variant="link"
                 size="sm"
                 @click="copyBibtex">
-                <font-awesome-icon icon="copy" />
+                <FontAwesomeIcon icon="copy" />
             </b-button>
-            <Citation
+            <CitationItem
                 v-for="(citation, index) in citations"
                 :key="index"
                 class="formatted-reference"
@@ -25,7 +25,7 @@
                 title="Learn more about Galaxy Requirements"
                 href="https://galaxyproject.org/tools/requirements/"
                 target="_blank">
-                See details <font-awesome-icon icon="external-link-alt" />
+                See details <FontAwesomeIcon icon="external-link-alt" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
@@ -43,13 +43,13 @@
                 <template v-if="xref.reftype == 'bio.tools'">
                     bio.tools: {{ xref.value }} (<a :href="`https://bio.tools/${xref.value}`" target="_blank"
                         >bio.tools
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-b-tooltip.hover
                             title="Visit bio.tools reference"
                             icon="external-link-alt" /> </a
                     >) (<a :href="`https://openebench.bsc.es/tool/${xref.value}`" target="_blank"
                         >OpenEBench
-                        <font-awesome-icon
+                        <FontAwesomeIcon
                             v-b-tooltip.hover
                             title="Visit OpenEBench reference"
                             icon="external-link-alt" /> </a
@@ -72,21 +72,21 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
-
+import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getCitations } from "components/Citation/services";
-import Citation from "components/Citation/Citation";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
+import CitationItem from "components/Citation/CitationItem.vue";
+
+library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
+
 export default {
     components: {
-        Citation,
+        CitationItem,
         License,
         Creators,
         FontAwesomeIcon,

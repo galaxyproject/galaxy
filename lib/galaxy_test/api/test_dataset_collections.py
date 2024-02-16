@@ -418,6 +418,18 @@ class TestDatasetCollectionsApi(ApiTestCase):
             contents_response = self._get(contents_url)
             self._assert_status_code_is(contents_response, 403)
 
+    @requires_new_user
+    def test_published_collection_contents_accessible(self, history_id):
+        # request contents on an hdca that is in a published history
+        hdca, contents_url = self._create_collection_contents_pair(history_id)
+        with self._different_user():
+            contents_response = self._get(contents_url)
+            self._assert_status_code_is(contents_response, 403)
+        self.dataset_populator.make_public(history_id)
+        with self._different_user():
+            contents_response = self._get(contents_url)
+            self._assert_status_code_is(contents_response, 200)
+
     def test_collection_contents_invalid_collection(self, history_id):
         # request an invalid collection from a valid hdca, should get 404
         hdca, contents_url = self._create_collection_contents_pair(history_id)

@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <delayed-input class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
+            <DelayedInput class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
             <b-table
                 id="dataset-table"
                 striped
@@ -28,7 +28,7 @@
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
             </b-table>
-            <loading-span v-if="loading" message="Loading datasets" />
+            <LoadingSpan v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
                 No matching entries found for: <span class="font-weight-bold">{{ query }}</span
                 >.
@@ -38,16 +38,19 @@
     </div>
 </template>
 <script>
-import { mapActions } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
-import { copyDataset, getDatasets, updateTags } from "./services";
-import DatasetName from "./DatasetName";
-import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
-import UtcDate from "components/UtcDate";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LoadingSpan from "components/LoadingSpan";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import UtcDate from "components/UtcDate";
+import { mapActions } from "pinia";
+
+import { copyDataset, getDatasets } from "@/api/datasets";
+import { updateTags } from "@/api/tags";
+import { useHistoryStore } from "@/stores/historyStore";
+
+import DatasetHistory from "./DatasetHistory";
+import DatasetName from "./DatasetName";
 
 export default {
     components: {
@@ -114,11 +117,10 @@ export default {
         },
     },
     created() {
-        this.loadHistories();
         this.load();
     },
     methods: {
-        ...mapActions(useHistoryStore, ["loadHistories", "applyFilters"]),
+        ...mapActions(useHistoryStore, ["applyFilters"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({

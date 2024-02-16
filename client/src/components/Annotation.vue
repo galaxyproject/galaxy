@@ -1,5 +1,5 @@
 <template>
-    <click-to-edit
+    <ClickToEdit
         ref="annotationInput"
         v-slot="{ toggleEdit, placeholder, stateValidator }"
         v-b-tooltip.hover="{ boundary: 'viewport', placement: tooltipPlacement }"
@@ -8,7 +8,7 @@
         :value="annotation"
         :title="'Edit annotation...' | localize"
         :placeholder="'Edit annotation...' | localize">
-        <debounced-input v-slot="inputScope" v-model="annotation" :delay="1000">
+        <DebouncedInput v-slot="inputScope" v-model="annotation" :delay="1000">
             <b-form-textarea
                 size="sm"
                 tabindex="-1"
@@ -19,13 +19,13 @@
                 :state="stateValidator(inputScope.value, annotation)"
                 @input="inputScope.input"
                 @blur="toggleEdit(false)"></b-form-textarea>
-        </debounced-input>
-    </click-to-edit>
+        </DebouncedInput>
+    </ClickToEdit>
 </template>
 
 <script>
-import DebouncedInput from "./DebouncedInput";
 import ClickToEdit from "./ClickToEdit";
+import DebouncedInput from "./DebouncedInput";
 
 export default {
     components: {

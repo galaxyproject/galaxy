@@ -1,4 +1,5 @@
 """The module describes the ``meminfo`` job metrics plugin."""
+
 import re
 
 from galaxy import util

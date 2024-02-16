@@ -1,10 +1,9 @@
 import logging
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +27,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        self.login(email=common.admin_email, username=common.admin_username)
+        self.login(email=common.admin_email, username=common.admin_username, explicit_logout=True)
 
     def test_0005_create_bwa_package_repository(self):
         """Create and populate package_bwa_0_5_9_0100."""
@@ -43,21 +42,12 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            repository,
-            filename="bwa/complex/tool_dependencies.xml",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded tool_dependencies.xml.",
-            strings_displayed=["This repository currently contains a single file named <b>tool_dependencies.xml</b>"],
-            strings_not_displayed=[],
-        )
-        # Visit the manage repository page for package_bwa_0_5_9_0100.
-        self.display_manage_repository_page(
-            repository, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
-        )
+        self.add_file_to_repository(repository, "bwa/complex/tool_dependencies.xml")
+        if not self.is_v2:
+            # Visit the manage repository page for package_bwa_0_5_9_0100.
+            self.display_manage_repository_page(
+                repository, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
+            )
 
     def test_0010_create_bwa_base_repository(self):
         """Create and populate bwa_base_0100."""
@@ -73,16 +63,10 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         # Populate the repository named bwa_base_repository_0100 with a bwa_base tool archive.
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="bwa/complex/bwa_base.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "bwa/complex/bwa_base.tar",
             commit_message="Uploaded bwa_base.tar with tool wrapper XML, but without tool dependency XML.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_generate_complex_repository_dependency_invalid_shed_url(self):
@@ -199,10 +183,12 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
             version="0.5.9",
         )
         self.check_repository_dependency(base_repository, depends_on_repository=tool_repository)
-        self.display_manage_repository_page(
-            base_repository, strings_displayed=["bwa", "0.5.9", "package", changeset_revision]
-        )
+        if not self.is_v2:
+            self.display_manage_repository_page(
+                base_repository, strings_displayed=["bwa", "0.5.9", "package", changeset_revision]
+            )
 
+    @skip_if_api_v2
     def test_0040_generate_tool_dependency(self):
         """Generate and upload a new tool_dependencies.xml file that specifies an arbitrary file on the filesystem, and verify that bwa_base depends on the new changeset revision."""
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
@@ -217,17 +203,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
         open(xml_filename, "w").write(
             open(old_tool_dependency).read().replace("__PATH__", self.get_filename("bwa/complex"))
         )
-        self.upload_file(
-            tool_repository,
-            filename=xml_filename,
-            filepath=new_tool_dependency_path,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded new tool_dependencies.xml.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(tool_repository, xml_filename, "tool_dependencies.xml")
         # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
         repository_tip = self.get_repository_tip(tool_repository)
         strings_displayed = ["bwa", "0.5.9", "package"]

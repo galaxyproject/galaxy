@@ -1,25 +1,30 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
+
 import type { DataValuePoint } from "./Charts";
-import { ref, onMounted } from "vue";
-import BarChart from "./Charts/BarChart.vue";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
-import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, undeleteHistoryById, purgeHistoryById } from "./service";
+import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, purgeHistoryById, undeleteHistoryById } from "./service";
+
+import BarChart from "./Charts/BarChart.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
 import Heading from "@/components/Common/Heading.vue";
-import { useRouter } from "vue-router/composables";
-import { useToast } from "@/composables/toast";
-import { useConfirmDialog } from "@/composables/confirmDialog";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const historyStore = useHistoryStore();
 const router = useRouter();
 const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
 
 const historiesSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenHistoriesBySizeData = ref<DataValuePoint[] | null>(null);
-const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
+const activeVsArchivedVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
 const isLoading = ref(true);
 const numberOfHistoriesToDisplayOptions = [10, 20, 50];
 const numberOfHistoriesToDisplay = ref(numberOfHistoriesToDisplayOptions[0]);
@@ -36,7 +41,7 @@ onMounted(async () => {
 function buildGraphsData() {
     const allHistoriesSizeSummary = Array.from(historiesSizeSummaryMap.values());
     topTenHistoriesBySizeData.value = buildTopHistoriesBySizeData(allHistoriesSizeSummary);
-    activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allHistoriesSizeSummary);
+    activeVsArchivedVsDeletedTotalSizeData.value = buildActiveVsArchivedVsDeletedTotalSizeData(allHistoriesSizeSummary);
 }
 
 function buildTopHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
@@ -50,9 +55,12 @@ function buildTopHistoriesBySizeData(historiesSizeSummary: ItemSizeSummary[]): D
     }));
 }
 
-function buildActiveVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
+function buildActiveVsArchivedVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
     const activeHistoriesSize = historiesSizeSummary
-        .filter((history) => !history.deleted)
+        .filter((history) => !history.deleted && !history.archived)
+        .reduce((total, history) => total + history.size, 0);
+    const archivedHistoriesSize = historiesSizeSummary
+        .filter((history) => history.archived)
         .reduce((total, history) => total + history.size, 0);
     const deletedHistoriesSize = historiesSizeSummary
         .filter((history) => history.deleted)
@@ -62,6 +70,11 @@ function buildActiveVsDeletedTotalSizeData(historiesSizeSummary: ItemSizeSummary
             id: "active",
             label: "Active",
             value: activeHistoriesSize,
+        },
+        {
+            id: "archived",
+            label: "Archived",
+            value: archivedHistoriesSize,
         },
         {
             id: "deleted",
@@ -77,6 +90,19 @@ function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
         return historiesSizeSummary?.deleted || dataPoint.id === "deleted";
     }
     return false;
+}
+
+function isArchivedDataPoint(dataPoint: DataValuePoint): boolean {
+    if (dataPoint) {
+        const historiesSizeSummary = historiesSizeSummaryMap.get(dataPoint.id);
+        return historiesSizeSummary?.archived || false;
+    }
+    return false;
+}
+
+async function onSetCurrentHistory(historyId: string) {
+    await historyStore.setCurrentHistory(historyId);
+    router.push({ path: "/" });
 }
 
 function onViewHistory(historyId: string) {
@@ -167,31 +193,40 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                     </b-form-select>
                 </template>
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)"
+                        :is-archived="isArchivedDataPoint(data)" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"
                         item-type="history"
                         :is-recoverable="isRecoverableDataPoint(data)"
+                        :is-archived="isArchivedDataPoint(data)"
+                        @set-current-history="onSetCurrentHistory"
                         @view-item="onViewHistory"
                         @undelete-item="onUndeleteHistory"
                         @permanently-delete-item="onPermanentlyDeleteHistory" />
                 </template>
             </BarChart>
             <BarChart
-                v-if="activeVsDeletedTotalSizeData"
-                :title="localize('Active vs Deleted Total Size')"
+                v-if="activeVsArchivedVsDeletedTotalSizeData"
+                :title="localize('Active vs Archived vs Deleted Total Size')"
                 :description="
                     localize(
-                        'This graph shows the total size of your histories, split between active and deleted histories.'
+                        'This graph shows the total size taken by your histories, split between active, archived and deleted histories.'
                     )
                 "
-                :data="activeVsDeletedTotalSizeData"
+                :data="activeVsArchivedVsDeletedTotalSizeData"
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
             </BarChart>
         </div>

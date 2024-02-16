@@ -1,19 +1,8 @@
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import Vuex from "vuex";
+
 import invocationData from "../Workflow/test/json/invocation.json";
-
-const invocationJobsSummaryById = {
-    id: "d9833097445452b0",
-    model: "WorkflowInvocation",
-    states: {},
-    populated_state: "ok",
-};
-
-const mockComputed = {
-    getInvocationJobsSummaryById: () => () => invocationJobsSummaryById,
-};
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary";
 
 const localVue = getLocalVue();
 
@@ -29,7 +18,6 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
         };
         wrapper = shallowMount(WorkflowInvocationSummary, {
             propsData,
-            computed: mockComputed,
             localVue,
         });
     });
@@ -48,16 +36,8 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
     let wrapper;
     let propsData;
     let store;
-    let actions;
 
     beforeEach(async () => {
-        actions = {
-            fetchInvocationForId: jest.fn(),
-            fetchInvocationJobsSummaryForId: jest.fn(),
-        };
-        store = new Vuex.Store({
-            actions,
-        });
         propsData = {
             invocation: invocationData,
             invocationAndJobTerminal: false,
@@ -66,7 +46,6 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
         wrapper = shallowMount(WorkflowInvocationSummary, {
             store,
             propsData,
-            computed: mockComputed,
             localVue,
         });
     });

@@ -1,36 +1,35 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { PropType } from "vue";
+import { computed } from "vue";
 
-let element = "h1";
-let sizeClass = "h-lg";
+interface Props {
+    h1?: boolean;
+    h2?: boolean;
+    h3?: boolean;
+    h4?: boolean;
+    h5?: boolean;
+    h6?: boolean;
+    bold?: boolean;
+    separator?: boolean;
+    inline?: boolean;
+    size?: "xl" | "lg" | "md" | "sm" | "text";
+    icon?: string | [string, string];
+}
 
-const props = defineProps({
-    h1: Boolean,
-    h2: Boolean,
-    h3: Boolean,
-    h4: Boolean,
-    h5: Boolean,
-    h6: Boolean,
-    bold: Boolean,
-    separator: Boolean,
-    inline: Boolean,
-    size: String as PropType<"xl" | "lg" | "md" | "sm" | "text">,
-    icon: String,
+const props = defineProps<Props>();
+
+const sizeClass = computed(() => {
+    return `h-${props.size ?? "lg"}`;
 });
 
-// apply heading element
-for (const key of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
-    if (props[key as keyof typeof props.size]) {
-        element = key;
-        break;
+const element = computed(() => {
+    for (const key of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
+        if (props[key as keyof typeof props]) {
+            return key;
+        }
     }
-}
-
-// apply size class
-if (props.size) {
-    sizeClass = "h-" + props.size;
-}
+    return "h1";
+});
 </script>
 
 <template>

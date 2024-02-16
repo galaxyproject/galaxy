@@ -9,7 +9,8 @@ from galaxy.util import galaxy_directory
 @pytest.fixture
 def dataset():
     class MockDataset:
-        file_name = os.path.join(galaxy_directory(), "test-data/1.ct")
+        def get_file_name(self, sync_cache=True):
+            return os.path.join(galaxy_directory(), "test-data/1.ct")
 
     return MockDataset()
 

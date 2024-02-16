@@ -1,6 +1,8 @@
 import _l from "utils/localization";
 import Vue from "vue";
+
 import { collectionCreatorModalSetup } from "./common/modal";
+
 import PairedListCollectionCreator from "./PairedListCollectionCreator.vue";
 
 function pairedListCollectionCreatorModal(elements, options) {
@@ -27,7 +29,6 @@ function pairedListCollectionCreatorModal(elements, options) {
  */
 function createPairedListCollection(contents, defaultHideSourceItems) {
     const elements = contents.toJSON();
-    var copyElements;
     const promise = pairedListCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function (elements, name, hideSourceItems) {
@@ -48,8 +49,7 @@ function createPairedListCollection(contents, defaultHideSourceItems) {
                     },
                 ],
             }));
-            copyElements = !hideSourceItems;
-            return contents.createHDCA(elements, "list:paired", name, hideSourceItems, copyElements);
+            return contents.createHDCA(elements, "list:paired", name, hideSourceItems);
         },
     });
     return promise;

@@ -1,25 +1,35 @@
 import logging
 import os
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 from typing import (
     Any,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Set,
 )
 
 from galaxy import exceptions
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
 from galaxy.util import plugin_config
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
-FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
-FileSourceScore = namedtuple("FileSourceScore", ["file_source", "score"])
+
+class FileSourcePath(NamedTuple):
+    file_source: BaseFilesSource
+    path: str
+
+
+class FileSourceScore(NamedTuple):
+    file_source: BaseFilesSource
+    score: int
 
 
 class NoMatchingFileSource(Exception):
@@ -159,10 +169,16 @@ class ConfiguredFileSources:
         for_serialization: bool = False,
         user_context: Optional["FileSourceDictifiable"] = None,
         browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
     ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
+                continue
+            if include_kind and file_source.plugin_kind not in include_kind:
+                continue
+            if exclude_kind and file_source.plugin_kind in exclude_kind:
                 continue
             if browsable_only and not file_source.get_browsable():
                 continue
@@ -215,13 +231,16 @@ class ConfiguredFileSourcesConfig:
     def __init__(
         self,
         symlink_allowlist=None,
+        fetch_url_allowlist=None,
         library_import_dir=None,
         user_library_import_dir=None,
         ftp_upload_dir=None,
         ftp_upload_purge=True,
     ):
         symlink_allowlist = symlink_allowlist or []
+        fetch_url_allowlist = fetch_url_allowlist or []
         self.symlink_allowlist = symlink_allowlist
+        self.fetch_url_allowlist = fetch_url_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
         self.ftp_upload_dir = ftp_upload_dir
@@ -232,16 +251,18 @@ class ConfiguredFileSourcesConfig:
         # Formalize what we read in from config to create a more clear interface
         # for this component.
         kwds = {}
-        kwds["symlink_allowlist"] = getattr(config, "user_library_import_symlink_allowlist", [])
-        kwds["library_import_dir"] = getattr(config, "library_import_dir", None)
-        kwds["user_library_import_dir"] = getattr(config, "user_library_import_dir", None)
-        kwds["ftp_upload_dir"] = getattr(config, "ftp_upload_dir", None)
-        kwds["ftp_upload_purge"] = getattr(config, "ftp_upload_purge", True)
+        kwds["symlink_allowlist"] = config.user_library_import_symlink_allowlist
+        kwds["fetch_url_allowlist"] = [str(ip) for ip in config.fetch_url_allowlist_ips]
+        kwds["library_import_dir"] = config.library_import_dir
+        kwds["user_library_import_dir"] = config.user_library_import_dir
+        kwds["ftp_upload_dir"] = config.ftp_upload_dir
+        kwds["ftp_upload_purge"] = config.ftp_upload_purge
         return ConfiguredFileSourcesConfig(**kwds)
 
     def to_dict(self):
         return {
             "symlink_allowlist": self.symlink_allowlist,
+            "fetch_url_allowlist": self.fetch_url_allowlist,
             "library_import_dir": self.library_import_dir,
             "user_library_import_dir": self.user_library_import_dir,
             "ftp_upload_dir": self.ftp_upload_dir,
@@ -252,6 +273,7 @@ class ConfiguredFileSourcesConfig:
     def from_dict(as_dict):
         return ConfiguredFileSourcesConfig(
             symlink_allowlist=as_dict["symlink_allowlist"],
+            fetch_url_allowlist=parse_allowlist_ips(as_dict["fetch_url_allowlist"]),
             library_import_dir=as_dict["library_import_dir"],
             user_library_import_dir=as_dict["user_library_import_dir"],
             ftp_upload_dir=as_dict["ftp_upload_dir"],

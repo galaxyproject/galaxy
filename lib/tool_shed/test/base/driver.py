@@ -43,6 +43,14 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
     def setup(self):
         """Entry point for test driver script."""
+        self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
+        if not self.external_shed:
+            self._setup_local()
+        else:
+            # Going to also need to set TOOL_SHED_TEST_HOST.
+            assert os.environ["TOOL_SHED_TEST_HOST"]
+
+    def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
@@ -72,11 +80,11 @@ class ToolShedTestDriver(driver_util.TestDriver):
             os.environ["GALAXY_TEST_TOOL_DATA_PATH"] = tool_data_path
         galaxy_db_path = driver_util.database_files_path(tool_shed_test_tmp_dir)
         shed_file_path = os.path.join(shed_db_path, "files")
-        hgweb_config_file_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
+        whoosh_index_dir = os.path.join(shed_db_path, "toolshed_whoosh_indexes")
+        hgweb_config_dir = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         new_repos_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_shed_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
         galaxy_migrated_tool_path = tempfile.mkdtemp(dir=tool_shed_test_tmp_dir)
-        hgweb_config_dir = hgweb_config_file_path
         os.environ["TEST_HG_WEB_CONFIG_DIR"] = hgweb_config_dir
         print("Directory location for hgweb.config:", hgweb_config_dir)
         toolshed_database_conf = driver_util.database_conf(shed_db_path, prefix="TOOL_SHED")
@@ -95,8 +103,8 @@ class ToolShedTestDriver(driver_util.TestDriver):
             shed_tool_data_table_config=shed_tool_data_table_conf_file,
             smtp_server="smtp.dummy.string.tld",
             email_from="functional@localhost",
-            tool_parse_help=False,
             use_heartbeat=False,
+            whoosh_index_dir=whoosh_index_dir,
         )
         kwargs.update(toolshed_database_conf)
         # Generate the tool_data_table_conf.xml file.

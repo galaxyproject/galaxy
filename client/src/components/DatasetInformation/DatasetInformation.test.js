@@ -1,12 +1,12 @@
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount } from "@vue/test-utils";
+import { format, parseISO } from "date-fns";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
 import DatasetInformation from "./DatasetInformation";
 import datasetResponse from "./testData/datasetResponse";
-import flushPromises from "flush-promises";
-import { parseISO } from "date-fns";
-import { formatInTimeZone } from "date-fns-tz";
 
 const HDA_ID = "FOO_HDA_ID";
 
@@ -67,7 +67,7 @@ describe("DatasetInformation/DatasetInformation", () => {
     it("Date should be formatted", async () => {
         const date = datasetInfoTable.find(".utc-time").text();
         const parsedDate = parseISO(`${datasetResponse.create_time}Z`);
-        const formattedDate = `${formatInTimeZone(parsedDate, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
+        const formattedDate = format(parsedDate, "eeee MMM do H:mm:ss yyyy zz");
         expect(date).toBe(formattedDate);
     });
 

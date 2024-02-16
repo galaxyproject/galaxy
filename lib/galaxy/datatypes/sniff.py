@@ -91,8 +91,7 @@ class ConvertResult(NamedTuple):
 class ConvertFunction(Protocol):
     def __call__(
         self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
-    ) -> ConvertResult:
-        ...
+    ) -> ConvertResult: ...
 
 
 def convert_newlines(

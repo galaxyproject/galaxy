@@ -25,6 +25,18 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         json_response = index_response.json()
         assert len(json_response) > 0
 
+    def test_index_returns_encoded_ids(self):
+        quota = self._create_quota_with_name("test-index-encoded-quota")
+        created_quota_id = quota["id"]
+        index_response = self._get("quotas")
+        index_response.raise_for_status()
+        json_response = index_response.json()
+        assert len(json_response) > 0
+        quota_ids = [quota["id"] for quota in json_response]
+        for quota_id in quota_ids:
+            assert isinstance(quota_id, str)
+        assert created_quota_id in quota_ids
+
     def test_index_deleted(self):
         quota = self._create_quota_with_name("test-index-deleted-quota")
         quota_id = quota["id"]

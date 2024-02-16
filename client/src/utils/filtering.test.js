@@ -14,9 +14,7 @@ const sampleFilters = [
         validFilters: {
             deleted: true,
         },
-        validSettings: {
-            "deleted:": true,
-        },
+        validText: "deleted:true visible:any",
     },
     {
         filters: {
@@ -30,11 +28,7 @@ const sampleFilters = [
             related: 10,
             hid_gt: 5,
         },
-        validSettings: {
-            "deleted:": "any",
-            "related:": 10,
-            "hid>": 5,
-        },
+        validText: "deleted:any related:10 hid>5 visible:any",
     },
 ];
 
@@ -95,7 +89,7 @@ describe("filtering", () => {
     test("parse get valid filters and settings", () => {
         sampleFilters.forEach((sample) => {
             expect(HistoryFilters.getValidFilters(sample.filters)).toEqual(sample.validFilters);
-            expect(HistoryFilters.getValidFilterSettings(sample.filters)).toEqual(sample.validSettings);
+            expect(HistoryFilters.getFilterText(sample.filters)).toEqual(sample.validText);
         });
     });
     test("parse filter text as entries", () => {
@@ -160,7 +154,7 @@ describe("filtering", () => {
             "deleted:any visible:true"
         );
         expect(HistoryFilters.applyFiltersToText({ deleted: "any" }, "deleted:any visible:true", true)).toEqual(
-            "visible:true"
+            "visible:true deleted:any"
         );
     });
     test("set a single valid filter to existing filterText", () => {
@@ -204,23 +198,23 @@ describe("filtering", () => {
             expect(HistoryFilters.testFilters(filters, { ...item, deleted: "nottrue" })).toBe(true);
         });
     });
-    test("Parsing & sync of filter settings", () => {
-        // Expected parsed settings
-        const parsedFilterSettings = {
-            "name:": "name of item",
-            "hid>": "10",
-            "hid<": "100",
-            "create_time>": "2021-01-01",
-            "update_time<": "2022-01-01",
-            "state:": "success",
-            "extension:": "ext",
-            "tag:": "first",
-            "deleted:": "false",
-            "visible:": "true",
+    test("Parsing & sync of filters", () => {
+        // Expected parsed filters
+        const parsedFilters = {
+            name: "name of item",
+            hid_gt: "10",
+            hid_lt: "100",
+            create_time_gt: "2021-01-01",
+            update_time_lt: "2022-01-01",
+            state: "success",
+            extension: "ext",
+            tag: "first",
+            deleted: "false",
+            visible: "true",
         };
-        // iterate through filterTexts and compare with parsedFilterSettings
+        // iterate through filterTexts and compare with parsedFilters
         filterTexts.forEach((filterText) => {
-            expect(HistoryFilters.toAlias(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilterSettings);
+            expect(Object.fromEntries(HistoryFilters.getFiltersForText(filterText))).toEqual(parsedFilters);
         });
     });
     test("named tag (hash) conversion", () => {

@@ -1,6 +1,7 @@
 """
 Class encapsulating the management of repositories installed into Galaxy from the Tool Shed.
 """
+
 import copy
 import logging
 import os
@@ -15,11 +16,12 @@ from typing import (
 )
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import (
     ToolDependency,
     ToolShedRepository,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -43,14 +45,14 @@ RepositoryTupleT = Tuple[str, str, str, str]
 
 
 class InstalledRepositoryManager:
-    app: MinimalManagerApp
+    app: InstallationTarget
     _tool_paths: List[str]
     installed_repository_dicts: List[Dict[str, Any]]
     repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
     installed_repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
     installed_dependent_repositories_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: InstallationTarget):
         """
         Among other things, keep in in-memory sets of tuples defining installed repositories and tool dependencies along with
         the relationships between each of them.  This will allow for quick discovery of those repositories or components that
@@ -144,7 +146,8 @@ class InstalledRepositoryManager:
                     repository_tools_tups,
                 )
         self.context.add(repository)
-        self.context.flush()
+        with transaction(self.context):
+            self.context.commit()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
@@ -168,9 +171,9 @@ class InstalledRepositoryManager:
             )
             debug_msg += "to installed_repository_dependencies_of_installed_repositories."
             log.debug(debug_msg)
-            self.installed_repository_dependencies_of_installed_repositories[
-                repository_tup
-            ] = repository_dependency_tups
+            self.installed_repository_dependencies_of_installed_repositories[repository_tup] = (
+                repository_dependency_tups
+            )
         # Use the repository_dependency_tups to add entries to the reverse dictionary
         # self.installed_dependent_repositories_of_installed_repositories.
         for required_repository_tup in repository_dependency_tups:
@@ -699,7 +702,8 @@ class InstalledRepositoryManager:
         else:
             repository.status = ToolShedRepository.installation_status.DEACTIVATED
         self.context.add(repository)
-        self.context.flush()
+        with transaction(self.context):
+            self.context.commit()
         return errors
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
@@ -887,7 +891,8 @@ class InstalledRepositoryManager:
                     tool_dependency.status = ToolDependency.installation_status.UNINSTALLED
                     tool_dependency.error_message = None
                     context.add(tool_dependency)
-                    context.flush()
+                    with transaction(context):
+                        context.commit()
                     new_tool_dependency = tool_dependency
                 else:
                     # We have no new tool dependency definition based on a matching dependency name, so remove
@@ -899,5 +904,6 @@ class InstalledRepositoryManager:
                         tool_dependency.name,
                     )
                     context.delete(tool_dependency)
-                    context.flush()
+                    with transaction(context):
+                        context.commit()
         return new_tool_dependency

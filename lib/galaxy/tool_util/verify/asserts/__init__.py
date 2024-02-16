@@ -4,8 +4,10 @@ from inspect import (
     getfullargspec,
     getmembers,
 )
+from tempfile import NamedTemporaryFile
 
 from galaxy.util import unicodify
+from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
@@ -30,9 +32,15 @@ for assertion_module_name in assertion_module_names:
             assertion_functions[member] = value
 
 
-def verify_assertions(data: bytes, assertion_description_list):
+def verify_assertions(data: bytes, assertion_description_list, decompress: bool = False):
     """This function takes a list of assertions and a string to check
     these assertions against."""
+    if decompress:
+        with NamedTemporaryFile() as tmpfh:
+            tmpfh.write(data)
+            tmpfh.flush()
+            with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+                data = fh.read()
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 

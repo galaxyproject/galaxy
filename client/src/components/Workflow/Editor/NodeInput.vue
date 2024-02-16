@@ -1,21 +1,247 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronCircleRight, faMinusSquare } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useDebounce, type UseElementBoundingReturn } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import {
+    computed,
+    type ComputedRef,
+    inject,
+    onBeforeUnmount,
+    type PropType,
+    type Ref,
+    ref,
+    toRefs,
+    watch,
+    watchEffect,
+} from "vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import {
+    ConnectionAcceptable,
+    type InputTerminals,
+    type OutputCollectionTerminal,
+    terminalFactory,
+} from "@/components/Workflow/Editor/modules/terminals";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
+import type { InputTerminalSource } from "@/stores/workflowStepStore";
+
+import { useRelativePosition } from "./composables/relativePosition";
+import { useTerminal } from "./composables/useTerminal";
+
+library.add(faChevronCircleRight, faMinusSquare);
+
+const props = defineProps({
+    input: {
+        type: Object as PropType<InputTerminalSource>,
+        required: true,
+    },
+    stepId: {
+        type: Number,
+        required: true,
+    },
+    datatypesMapper: {
+        type: DatatypesMapperModel,
+        required: true,
+    },
+    stepPosition: {
+        type: Object,
+        required: true,
+    },
+    rootOffset: {
+        type: Object as PropType<UseElementBoundingReturn>,
+        required: true,
+    },
+    scale: {
+        type: Number,
+        required: true,
+    },
+    scroll: {
+        type: Object,
+        required: true,
+    },
+    parentNode: {
+        type: HTMLElement,
+        default: null,
+    },
+    readonly: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+onBeforeUnmount(() => {
+    stateStore.deleteInputTerminalPosition(props.stepId, props.input.name);
+});
+
+const { stepId, input, datatypesMapper } = toRefs(props);
+
+const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
+const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, datatypesMapper) as {
+    terminal: Ref<InputTerminals>;
+    isMappedOver: ComputedRef<boolean>;
+};
+
+const dropTarget = ref<HTMLDivElement | null>(null);
+const position = useRelativePosition(
+    dropTarget,
+    computed(() => props.parentNode)
+);
+
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
+const hasTerminals = ref(false);
+watchEffect(() => {
+    hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
+});
+
+const connections = computed(() => {
+    return connectionStore.getConnectionsForTerminal(id.value);
+});
+
+const invalidConnectionReasons = computed(() =>
+    connections.value
+        .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
+        .filter((reason) => reason)
+);
+
+const { draggingTerminal } = storeToRefs(stateStore);
+
+const canAccept = computed(() => {
+    if (draggingTerminal.value) {
+        return terminal.value.canAccept(draggingTerminal.value);
+    } else {
+        const firstReason = invalidConnectionReasons.value[0];
+        if (firstReason) {
+            return new ConnectionAcceptable(false, firstReason);
+        }
+    }
+    return null;
+});
+const acceptsInput = computed(() => {
+    if (canAccept.value?.canAccept) {
+        return true;
+    } else {
+        return false;
+    }
+});
+
+const endX = computed(
+    () => position.value.offsetLeft + props.stepPosition.left + (dropTarget.value?.offsetWidth ?? 2) / 2
+);
+const endY = computed(
+    () => position.value.offsetTop + props.stepPosition.top + (dropTarget.value?.offsetHeight ?? 2) / 2
+);
+
+watch([endX, endY], ([x, y]) => {
+    stateStore.setInputTerminalPosition(props.stepId, props.input.name, { endX: x, endY: y });
+});
+
+const isDragging = inject("isDragging");
+const reason = computed(() => canAccept.value?.reason ?? undefined);
+const label = computed(() => props.input.label || props.input.name);
+const hasConnections = computed(() => connections.value.length > 0);
+const rowClass = computed(() => {
+    const classes = ["form-row", "dataRow", "input-data-row"];
+    if (props.input?.valid === false) {
+        classes.push("form-row-error");
+    }
+    return classes;
+});
+
+const showTooltip = ref(false);
+
+function dragEnter(event: DragEvent) {
+    if (reason.value) {
+        showTooltip.value = true;
+    }
+    event.preventDefault();
+}
+
+function dragLeave(_event: DragEvent) {
+    showTooltip.value = false;
+}
+
+function onRemove() {
+    const connections = connectionStore.getConnectionsForTerminal(id.value);
+    connections.forEach((connection) => terminal.value.disconnect(connection));
+}
+
+function onDrop(event: DragEvent) {
+    if (!event.dataTransfer) {
+        return;
+    }
+
+    const stepOut = JSON.parse(event.dataTransfer.getData("text/plain"));
+    const droppedTerminal = terminalFactory(
+        stepOut.stepId,
+        stepOut.output,
+        props.datatypesMapper,
+        connectionStore,
+        stepStore
+    ) as OutputCollectionTerminal;
+
+    showTooltip.value = false;
+
+    if (terminal.value.canAccept(droppedTerminal).canAccept) {
+        terminal.value.connect(droppedTerminal);
+    }
+}
+
+const draggedOver = ref(false);
+const draggedOverDebounced = useDebounce(draggedOver, 50);
+
+function nodeDragOver() {
+    draggedOver.value = true && Boolean(draggingTerminal.value);
+}
+
+function nodeDragOut() {
+    draggedOver.value = false;
+}
+
+watch(
+    () => draggingTerminal.value,
+    () => {
+        if (!draggingTerminal.value) {
+            draggedOver.value = false;
+        }
+    }
+);
+</script>
+
 <template>
-    <div :class="rowClass" @mouseleave="leave" @mouseenter="enter" @focusin="enter" @focusout="leave">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <div class="node-input" :class="rowClass" @drop.prevent="onDrop" @dragover="nodeDragOver" @dragleave="nodeDragOut">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             :id="id"
+            ref="dropTarget"
+            class="input-terminal prevent-zoom"
+            :class="{
+                'input-active': isDragging,
+                'can-accept': acceptsInput,
+                'can-not-accept': !acceptsInput,
+                'mapped-over': isMultiple,
+                'is-dragging': Boolean(draggingTerminal),
+                'is-dragover': draggedOverDebounced,
+            }"
             :input-name="input.name"
-            :class="terminalClass"
-            @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <div :id="iconId" ref="el" v-b-tooltip.manual class="icon" :title="reason" />
+            <b-tooltip v-if="reason" :target="id" :show="showTooltip">
+                {{ reason }}
+            </b-tooltip>
+            <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />
         </div>
-        <div
-            v-if="showRemove"
+        <button
+            v-if="hasConnections && !readonly"
             v-b-tooltip.hover
             :title="reason"
-            class="delete-terminal"
-            @click="onRemove"
-            @keyup.delete="onRemove" />
+            class="delete-terminal-button"
+            @click="onRemove">
+            <FontAwesomeIcon class="delete-button-icon" icon="fa-minus-square" />
+        </button>
         {{ label }}
         <span
             v-if="!input.optional && !hasTerminals"
@@ -27,210 +253,91 @@
     </div>
 </template>
 
-<script>
-import { useConnectionStore, getConnectionId } from "@/stores/workflowConnectionStore";
-import { computed, inject, ref, toRefs, watchEffect, watch } from "vue";
-import { storeToRefs } from "pinia";
-import { useTerminal } from "./composables/useTerminal";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
-import { useRelativePosition } from "./composables/relativePosition";
-
-export default {
-    props: {
-        input: {
-            type: Object,
-            required: true,
-        },
-        stepId: {
-            type: Number,
-            required: true,
-        },
-        datatypesMapper: {
-            type: DatatypesMapperModel,
-            required: true,
-        },
-        stepPosition: {
-            type: Object,
-            required: true,
-        },
-        rootOffset: {
-            // type UseElementBoundingReturn from "@vueuse/core";
-            type: Object,
-            required: true,
-        },
-        scale: {
-            type: Number,
-            required: true,
-        },
-        scroll: {
-            type: Object,
-            required: true,
-        },
-        parentNode: {
-            type: HTMLElement,
-            default: null,
-        },
-    },
-    setup(props) {
-        const el = ref(null);
-        const { stepId, input, datatypesMapper } = toRefs(props);
-        const position = useRelativePosition(
-            el,
-            computed(() => props.parentNode)
-        );
-        const isDragging = inject("isDragging");
-        const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
-        const iconId = computed(() => `${id.value}-icon`);
-        const connectionStore = useConnectionStore();
-        const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, datatypesMapper);
-        const hasTerminals = ref(false);
-
-        watchEffect(() => {
-            hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
-        });
-
-        const rowClass = computed(() => {
-            const classes = ["form-row", "dataRow", "input-data-row"];
-            if (props.input?.valid === false) {
-                classes.push("form-row-error");
-            }
-            return classes;
-        });
-
-        const stateStore = useWorkflowStateStore();
-        const { draggingTerminal } = storeToRefs(stateStore);
-
-        const terminalIsHovered = ref(false);
-        const connections = computed(() => {
-            return connectionStore.getConnectionsForTerminal(id.value);
-        });
-        const invalidConnectionReasons = computed(() =>
-            connections.value
-                .map((connection) => connectionStore.invalidConnections[getConnectionId(connection)])
-                .filter((reason) => reason)
-        );
-
-        const canAccept = computed(() => {
-            if (draggingTerminal.value) {
-                return terminal.value.canAccept(draggingTerminal.value);
-            } else if (invalidConnectionReasons.value.length) {
-                return new ConnectionAcceptable(false, invalidConnectionReasons.value[0]);
-            }
-            return null;
-        });
-
-        const showRemove = computed(() => {
-            if (invalidConnectionReasons.value.length > 0) {
-                return true;
-            } else {
-                return terminalIsHovered.value && connections.value.length > 0;
-            }
-        });
-
-        const endX = computed(
-            () => position.value.offsetLeft + props.stepPosition.left + (el.value?.offsetWidth ?? 2) / 2
-        );
-        const endY = computed(
-            () => position.value.offsetTop + props.stepPosition.top + (el.value?.offsetHeight ?? 2) / 2
-        );
-
-        watch([endX, endY], ([x, y]) => {
-            stateStore.setInputTerminalPosition(props.stepId, props.input.name, { endX: x, endY: y });
-        });
-
-        return {
-            el,
-            isDragging,
-            connectionStore,
-            id,
-            iconId,
-            rowClass,
-            canAccept,
-            hasTerminals,
-            terminal,
-            stateStore,
-            isMultiple,
-            showRemove,
-            terminalIsHovered,
-        };
-    },
-    computed: {
-        terminalArgs() {
-            return { stepId: this.stepId, name: this.input.name, connectorType: "input" };
-        },
-        label() {
-            return this.input.label || this.input.name;
-        },
-        reason() {
-            const reason = this.canAccept?.reason;
-            return reason;
-        },
-        terminalClass() {
-            const classes = ["terminal", "input-terminal", "prevent-zoom"];
-            if (this.isDragging) {
-                classes.push("input-terminal-active");
-                if (this.canAccept?.canAccept) {
-                    classes.push("can-accept");
-                } else {
-                    classes.push("cannot-accept");
-                }
-            }
-            if (this.isMultiple) {
-                classes.push("multiple");
-            }
-            return classes;
-        },
-    },
-    beforeDestroy() {
-        this.stateStore.deleteInputTerminalPosition({
-            stepId: this.stepId,
-            inputName: this.input.name,
-        });
-    },
-    methods: {
-        dragEnter(event) {
-            if (this.reason) {
-                this.$root.$emit("bv::show::tooltip", this.iconId);
-            }
-            event.preventDefault();
-        },
-        dragLeave(event) {
-            this.$root.$emit("bv::hide::tooltip", this.iconId);
-        },
-        onRemove() {
-            const connections = this.connectionStore.getConnectionsForTerminal(this.id);
-            connections.forEach((connection) => this.terminal.disconnect(connection));
-            this.terminalIsHovered = false;
-        },
-        enter() {
-            this.terminalIsHovered = true;
-        },
-        leave() {
-            this.terminalIsHovered = false;
-        },
-        onDrop(e) {
-            const stepOut = JSON.parse(e.dataTransfer.getData("text/plain"));
-            const droppedTerminal = terminalFactory(stepOut.stepId, stepOut.output, this.datatypesMapper);
-            this.$root.$emit("bv::hide::tooltip", this.iconId);
-            if (this.terminal.canAccept(droppedTerminal).canAccept) {
-                this.terminal.connect(droppedTerminal);
-            }
-        },
-    },
-};
-</script>
-
-<style lang="scss" scoped>
+<style lang="scss">
 @import "theme/blue.scss";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "nodeTerminalStyle.scss";
 
-.input-required {
-    margin-top: $margin-v * 0.25;
-    margin-bottom: $margin-v * 0.25;
-    color: $brand-danger;
-    font-weight: 300;
-    cursor: default;
+.node-input {
+    position: relative;
+
+    .input-required {
+        margin-top: $margin-v * 0.25;
+        margin-bottom: $margin-v * 0.25;
+        color: $brand-danger;
+        font-weight: 300;
+        cursor: default;
+    }
+}
+
+.input-terminal {
+    @include node-terminal-style(left);
+
+    &.input-active {
+        &.can-accept {
+            color: $brand-success;
+        }
+
+        &.can-not-accept {
+            color: $brand-warning;
+        }
+
+        // expand size on drag
+        &.is-dragging {
+            --offset-extra: 10px;
+        }
+
+        &.mapped-over.is-dragging {
+            --offset-extra: 5px;
+        }
+
+        &.is-dragover.can-accept::after {
+            outline: solid 3px $brand-primary;
+        }
+    }
+}
+
+.delete-terminal-button {
+    position: absolute;
+    left: calc(-0.65rem - 5px);
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 0;
+    height: 0;
+    padding: 0;
+    transition: none;
+    border: none;
+    background-color: $brand-danger;
+    color: $white;
+
+    .delete-button-icon {
+        display: none;
+        width: 14px;
+        height: 14px;
+    }
+
+    &:hover,
+    &:focus-visible,
+    &:focus {
+        background-color: $brand-danger;
+        color: $white;
+    }
+
+    &:focus-visible,
+    &:focus {
+        box-shadow: 0 0 0 0.2rem $brand-primary;
+    }
+
+    .node-input:hover &,
+    .node-input:focus-within &,
+    .node-input.form-row-error & {
+        width: 24px;
+        height: 24px;
+
+        .delete-button-icon {
+            display: unset;
+        }
+    }
 }
 </style>

@@ -26,6 +26,10 @@ def test_default_configuration():
         "task": "galaxy.cleanup_short_term_storage",
         "schedule": galaxy_conf.short_term_storage_cleanup_interval,
     }
+    assert conf.beat_schedule["cleanup-expired-notifications"] == {
+        "task": "galaxy.cleanup_expired_notifications",
+        "schedule": galaxy_conf.expired_notifications_cleanup_interval,
+    }
 
 
 def test_galaxycelery_trim_module_name():

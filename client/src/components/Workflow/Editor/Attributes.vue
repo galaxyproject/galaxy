@@ -6,9 +6,13 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
+            <b-input
+                id="workflow-name"
+                v-model="nameCurrent"
+                :state="!nameCurrent ? false : null"
+                @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
-        <div id="workflow-version-area" class="mt-2">
+        <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
             <b-form-select v-model="versionCurrent" @change="onVersion">
                 <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
@@ -52,13 +56,14 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { format, parseISO } from "date-fns";
-import { Services } from "components/Workflow/services";
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import { Services } from "components/Workflow/services";
+import { format, parseISO } from "date-fns";
+import Vue from "vue";
+
 import { UntypedParameters } from "./modules/parameters";
 
 Vue.use(BootstrapVue);
@@ -92,7 +97,7 @@ export default {
             default: "",
         },
         creator: {
-            type: Object,
+            type: Array,
             default: null,
         },
         version: {
@@ -183,7 +188,7 @@ export default {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
-            this.$emit("input", this.tagsCurrent);
+            this.$emit("onTags", this.tagsCurrent);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
@@ -199,9 +204,11 @@ export default {
             this.messageVariant = "danger";
         },
         onAttributes(data) {
-            this.services.updateWorkflow(this.id, data).catch((error) => {
-                this.onError(error);
-            });
+            if (!this.id.includes("workflow-editor")) {
+                this.services.updateWorkflow(this.id, data).catch((error) => {
+                    this.onError(error);
+                });
+            }
         },
     },
 };

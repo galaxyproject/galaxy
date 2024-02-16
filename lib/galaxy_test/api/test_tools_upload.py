@@ -6,6 +6,7 @@ import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import (
     skip_if_github_down,
     skip_if_site_down,
@@ -909,7 +910,7 @@ class TestToolsUpload(ApiTestCase):
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqcssanger")
         assert "validated_state" in metadata
-        assert metadata["validated_state"] == "unknown"
+        assert metadata["validated_state"] == UNKNOWN
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
@@ -920,7 +921,7 @@ class TestToolsUpload(ApiTestCase):
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqsanger")
         assert "validated_state" in metadata
-        assert metadata["validated_state"] == "unknown"
+        assert metadata["validated_state"] == UNKNOWN
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
@@ -989,7 +990,8 @@ class TestToolsUpload(ApiTestCase):
             # Upload a file to a tus server.
             uploader = my_client.uploader(path, metadata=metadata)
             uploader.upload()
-            return uploader.url.rsplit("/", 1)[1]
+            assert uploader.url
+            return uploader.url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
         with self.dataset_populator.test_history() as history_id:
             session_id = upload_file(

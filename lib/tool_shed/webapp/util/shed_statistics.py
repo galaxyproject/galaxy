@@ -3,6 +3,10 @@ from time import (
     strftime,
 )
 
+from sqlalchemy import select
+
+from tool_shed.webapp.model import Repository
+
 
 class ShedCounter:
     def __init__(self, model):
@@ -38,7 +42,7 @@ class ShedCounter:
         self.unique_valid_tools = 0
         self.workflows = 0
         unique_user_ids = []
-        for repository in self.sa_session.query(self.model.Repository):
+        for repository in self.sa_session.scalars(select(Repository)):
             self.repositories += 1
             self.total_clones += repository.times_downloaded
             is_deleted = repository.deleted

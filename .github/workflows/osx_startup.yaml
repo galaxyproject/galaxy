@@ -12,13 +12,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  build-client:
+    uses: ./.github/workflows/build_client.yaml
   test:
     name: Startup test
     runs-on: macos-latest
+    needs: build-client
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.11']
+        python-version: ['3.8', '3.12']
     defaults:
       run:
         shell: bash -l {0}
@@ -46,15 +49,15 @@ jobs:
         with:
           path: .tox
           key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-osx
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18.12.1'
-          cache: 'yarn'
-          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Install miniconda  # use this job to test using Python from a conda environment
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: ''
+      - name: Restore client cache
+        uses: actions/cache@v3
+        with:
+          key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
+          path: 'galaxy root/static'
       - name: Install tox
         run: pip install tox
       - name: Run tests

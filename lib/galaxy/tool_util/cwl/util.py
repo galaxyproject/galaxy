@@ -2,6 +2,7 @@
 
 Used to share code between the Galaxy test framework
 and other Galaxy CWL clients (e.g. Planemo)."""
+
 import abc
 import hashlib
 import io

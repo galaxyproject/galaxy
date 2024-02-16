@@ -1,11 +1,9 @@
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { userLogout } from "utils/logout";
-import { useUserStore } from "@/stores/userStore";
 
 export function fetchMenu(options = {}) {
     const Galaxy = getGalaxyInstance();
-    const userStore = useUserStore();
     const menu = [];
     //
     // Analyze data tab.
@@ -168,7 +166,7 @@ export function fetchMenu(options = {}) {
         if (options.allow_user_creation) {
             userTab = {
                 id: "user",
-                title: _l("Login or Register"),
+                title: _l("Log in or Register"),
                 cls: "loggedout-only",
                 url: "/login",
                 tooltip: _l("Log in or register a new account"),
@@ -203,12 +201,6 @@ export function fetchMenu(options = {}) {
                     title: _l("Preferences"),
                     url: "/user",
                 },
-                {
-                    title: _l("Show/Hide Activity Bar"),
-                    onclick: () => {
-                        userStore.toggleActivityBar();
-                    },
-                },
                 { divider: true },
                 {
                     title: _l("Datasets"),
@@ -222,6 +214,10 @@ export function fetchMenu(options = {}) {
                     title: _l("Histories shared with me"),
                     url: "/histories/list_shared",
                     hidden: Galaxy.config.single_user,
+                },
+                {
+                    title: _l("Archived Histories"),
+                    url: "/histories/archived",
                 },
                 {
                     title: _l("Pages"),
@@ -243,6 +239,12 @@ export function fetchMenu(options = {}) {
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
+            });
+        }
+        if (Galaxy.config.enable_notification_system) {
+            userTab.menu.push({
+                title: _l("Notifications"),
+                url: "/user/notifications",
             });
         }
         userTab.menu.push({ divider: true });

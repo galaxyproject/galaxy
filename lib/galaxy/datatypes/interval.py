@@ -1,6 +1,7 @@
 """
 Interval datatypes
 """
+
 import logging
 import sys
 import tempfile
@@ -135,7 +136,7 @@ class Interval(Tabular):
         if dataset.has_data():
             empty_line_count = 0
             num_check_lines = 100  # only check up to this many non empty lines
-            with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
                 for i, line in enumerate(in_fh):
                     line = line.rstrip("\r\n")
                     if line:
@@ -229,7 +230,7 @@ class Interval(Tabular):
             start = sys.maxsize
             end = 0
             max_col = max(chrom_col, start_col, end_col)
-            with compression_utils.get_fileobj(dataset.file_name) as fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
                 for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                     # Skip comment lines
                     if not line.startswith("#"):
@@ -280,7 +281,7 @@ class Interval(Tabular):
             )
             c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
             if t >= 0:  # strand column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     strand = "+"
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
@@ -290,14 +291,14 @@ class Interval(Tabular):
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
                     fh.write("%s\n" % "\t".join(tmp))
             elif n >= 0:  # name column (should) exists
-                for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
+                for i, elems in enumerate(compression_utils.file_iter(dataset.get_file_name())):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
                         name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
                     fh.write("%s\n" % "\t".join(tmp))
             else:
-                for elems in compression_utils.file_iter(dataset.file_name):
+                for elems in compression_utils.file_iter(dataset.get_file_name()):
                     tmp = [elems[c], elems[s], elems[e]]
                     fh.write("%s\n" % "\t".join(tmp))
             return compression_utils.get_fileobj(fh.name, mode="rb")
@@ -368,7 +369,7 @@ class Interval(Tabular):
             dataset.metadata.strandCol,
         )
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
-        with compression_utils.get_fileobj(dataset.file_name, "r") as infile:
+        with compression_utils.get_fileobj(dataset.get_file_name(), "r") as infile:
             reader = GenomicIntervalReader(infile, chrom_col=c, start_col=s, end_col=e, strand_col=t)
 
             while True:
@@ -445,7 +446,7 @@ class BedGraph(Interval):
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
     def get_estimated_display_viewport(
         self,
@@ -512,7 +513,7 @@ class Bed(Interval):
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
-            for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
+            for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
                     elems = line.split("\t")
@@ -531,7 +532,7 @@ class Bed(Interval):
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
-        for line in open(dataset.file_name):
+        for line in open(dataset.get_file_name()):
             line = line.strip()
             if line == "" or line.startswith("#"):
                 continue
@@ -567,7 +568,7 @@ class Bed(Interval):
             break
 
         try:
-            return open(dataset.file_name, "rb")
+            return open(dataset.get_file_name(), "rb")
         except Exception:
             return "This item contains no content"
 
@@ -839,7 +840,7 @@ class Gff(Tabular, _RemoteCallMixin):
         # not found in the first N lines will not have metadata.
         num_lines = 200
         attribute_types = {}
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):
                 if line and not line.startswith("#"):
                     elems = line.split("\t")
@@ -874,7 +875,7 @@ class Gff(Tabular, _RemoteCallMixin):
         self.set_attribute_metadata(dataset)
 
         i = 0
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -906,7 +907,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 seqid = None
                 start = sys.maxsize
                 stop = 0
-                with compression_utils.get_fileobj(dataset.file_name) as fh:
+                with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith("##sequence-region"):  # ##sequence-region IV 6000000 6030000
@@ -1092,7 +1093,7 @@ class Gff3(Gff):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
         i = 0
-        with compression_utils.get_fileobj(dataset.file_name) as in_fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_fh:
             for i, line in enumerate(in_fh):  # noqa: B007
                 line = line.rstrip("\r\n")
                 if line and not line.startswith("#"):
@@ -1317,7 +1318,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 end = 0
                 span = 1
                 step = None
-                with open(dataset.file_name) as fh:
+                with open(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         try:
                             if line.startswith("browser"):
@@ -1404,7 +1405,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         max_data_lines = None
         i = 0
-        for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
+        for i, line in enumerate(open(dataset.get_file_name())):  # noqa: B007
             line = line.rstrip("\r\n")
             if line and not line.startswith("#"):
                 elems = line.split("\t")
@@ -1505,7 +1506,7 @@ class CustomTrack(Tabular):
         span = 1
         if self.displayable(dataset):
             try:
-                with open(dataset.file_name) as fh:
+                with open(dataset.get_file_name()) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
                         if not line.startswith("#"):
                             try:
@@ -1822,8 +1823,8 @@ class IntervalTabix(Interval):
         try:
             # tabix_index columns are 0-based while in the command line it is 1-based
             pysam.tabix_index(
-                dataset.file_name,
-                index=index_file.file_name,
+                dataset.get_file_name(),
+                index=index_file.get_file_name(),
                 seq_col=dataset.metadata.chromCol - 1,
                 start_col=dataset.metadata.startCol - 1,
                 end_col=dataset.metadata.endCol - 1,

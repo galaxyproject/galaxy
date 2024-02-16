@@ -7,6 +7,7 @@ from typing import (
 
 from typing_extensions import Unpack
 
+from galaxy.files.sources import PluginKind
 from .posix import (
     PosixFilesSource,
     PosixFilesSourceProperties,
@@ -15,6 +16,7 @@ from .posix import (
 
 class UserFtpFilesSource(PosixFilesSource):
     plugin_type = "gxftp"
+    plugin_kind = PluginKind.stock
 
     def __init__(self, **kwd: Unpack[PosixFilesSourceProperties]):
         posix_kwds: PosixFilesSourceProperties = dict(
@@ -39,6 +41,7 @@ class UserFtpFilesSource(PosixFilesSource):
 
 class LibraryImportFilesSource(PosixFilesSource):
     plugin_type = "gximport"
+    plugin_kind = PluginKind.stock
 
     def __init__(self, **kwd: Unpack[PosixFilesSourceProperties]):
         posix_kwds: PosixFilesSourceProperties = dict(
@@ -59,6 +62,7 @@ class LibraryImportFilesSource(PosixFilesSource):
 
 class UserLibraryImportFilesSource(PosixFilesSource):
     plugin_type = "gxuserimport"
+    plugin_kind = PluginKind.stock
 
     def __init__(self, **kwd: Unpack[PosixFilesSourceProperties]):
         posix_kwds: PosixFilesSourceProperties = dict(

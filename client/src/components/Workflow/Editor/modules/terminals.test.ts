@@ -1,38 +1,54 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
-import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
-import {
-    terminalFactory,
-    InputCollectionTerminal,
-    InputTerminal,
-    InputParameterTerminal,
-    OutputCollectionTerminal,
-    OutputTerminal,
-    OutputParameterTerminal,
-    producesAcceptableDatatype,
-    InvalidOutputTerminal,
-} from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
+import { DataOutput, Step, Steps, type TerminalSource, useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { advancedSteps, simpleSteps } from "../test_fixtures";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
-import { simpleSteps, advancedSteps } from "../test_fixtures";
+import {
+    InputCollectionTerminal,
+    InputParameterTerminal,
+    InputTerminal,
+    InvalidOutputTerminal,
+    OutputCollectionTerminal,
+    OutputParameterTerminal,
+    OutputTerminal,
+    producesAcceptableDatatype,
+    terminalFactory,
+} from "./terminals";
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
+
+    const connectionStore = useConnectionStore("mock-workflow");
+    const stepStore = useWorkflowStepStore("mock-workflow");
+
     Object.values(advancedSteps).map((step) => {
         const stepLabel = step.label;
         if (stepLabel) {
             terminals[stepLabel] = {};
             step.inputs?.map((input) => {
-                terminals[stepLabel]![input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                terminals[stepLabel]![input.name] = terminalFactory(
+                    step.id,
+                    input,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
             step.outputs?.map((output) => {
-                terminals[stepLabel]![output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                terminals[stepLabel]![output.name] = terminalFactory(
+                    step.id,
+                    output,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
         }
     });
@@ -42,12 +58,16 @@ function setupAdvanced() {
 function rebuildTerminal<T extends ReturnType<typeof terminalFactory>>(terminal: T): T {
     let terminalSource: TerminalSource;
     const step = terminal.stepStore.getStep(terminal.stepId);
+
+    const connectionStore = useConnectionStore("mock-workflow");
+    const stepStore = useWorkflowStepStore("mock-workflow");
+
     if (terminal.terminalType === "input") {
         terminalSource = step!.inputs.find((input) => input.name == terminal.name)!;
     } else {
         terminalSource = step!.outputs.find((output) => output.name == terminal.name)!;
     }
-    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper) as T;
+    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper, connectionStore, stepStore) as T;
 }
 
 describe("terminalFactory", () => {
@@ -83,7 +103,10 @@ describe("terminalFactory", () => {
         expect(terminals["filter_failed"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
     it("throws error on invalid terminalSource", () => {
-        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
+        const connectionStore = useConnectionStore("mock-workflow");
+        const stepStore = useWorkflowStepStore("mock-workflow");
+
+        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper, connectionStore, stepStore);
         expect(invalidFactory).toThrow();
     });
 });
@@ -95,8 +118,8 @@ describe("canAccept", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         terminals = setupAdvanced();
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
+        connectionStore = useConnectionStore("mock-workflow");
         Object.values(JSON.parse(JSON.stringify(advancedSteps)) as Steps).map((step) => {
             stepStore.addStep(step);
         });
@@ -542,18 +565,30 @@ describe("Input terminal", () => {
     let terminals: { [index: number]: { [index: string]: ReturnType<typeof terminalFactory> } };
     beforeEach(() => {
         setActivePinia(createPinia());
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
+        connectionStore = useConnectionStore("mock-workflow");
         terminals = {};
         Object.values(simpleSteps).map((step) => {
             stepStore.addStep(step);
             terminals[step.id] = {};
             const stepTerminals = terminals[step.id]!;
             step.inputs?.map((input) => {
-                stepTerminals[input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                stepTerminals[input.name] = terminalFactory(
+                    step.id,
+                    input,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
             step.outputs?.map((output) => {
-                stepTerminals[output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                stepTerminals[output.name] = terminalFactory(
+                    step.id,
+                    output,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
         });
     });

@@ -17,7 +17,7 @@
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
             <output name="output1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip" decompress="true">
                 <assert_contents>
-                    <has_size value="717" delta="10"/>
+                    <has_size value="1182"/>
                 </assert_contents>
             </output>
         </test>

@@ -68,8 +68,7 @@ def find_element_by_sizzle(driver, sizzle_selector: str):
 
     :param sizzle_selector: The sizzle selector to use when finding element.
     """
-    elements = driver.find_elements_by_sizzle(sizzle_selector)
-    if elements:
+    if elements := driver.find_elements_by_sizzle(sizzle_selector):
         return elements[0]
     else:
         raise NoSuchElementException(f"Unable to locate element by Sizzle: {sizzle_selector}")

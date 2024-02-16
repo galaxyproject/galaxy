@@ -1,18 +1,16 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <b-button
-            v-if="!loading && canDownload(config)"
-            v-b-tooltip.hover.bottom
-            :title="title"
-            :variant="variant"
-            :size="size"
-            role="button"
-            @click="onDownload(config)">
-            Generate
-            <font-awesome-icon v-if="waiting" icon="spinner" spin />
-            <font-awesome-icon v-else icon="download" />
-        </b-button>
-    </config-provider>
+    <BButton
+        v-if="isConfigLoaded && canDownload(config)"
+        v-b-tooltip.hover.bottom
+        :title="title"
+        :variant="variant"
+        :size="size"
+        role="button"
+        @click="onDownload(config)">
+        Generate
+        <FontAwesomeIcon v-if="waiting" icon="spinner" spin />
+        <FontAwesomeIcon v-else icon="download" />
+    </BButton>
 </template>
 
 <script>
@@ -20,19 +18,20 @@
     A Bootstrap Button with logic for interfacing with Galaxy's short term storage
     component (STS).
 */
-import { getAppRoot } from "onload/loadConfig";
-import { BButton } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faSpinner } from "@fortawesome/free-solid-svg-icons";
-library.add(faDownload, faSpinner);
-import ConfigProvider from "components/providers/ConfigProvider";
-import { Toast } from "composables/toast";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BButton } from "bootstrap-vue";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
 import { withPrefix } from "utils/redirect";
+
+import { useConfig } from "@/composables/config";
+
+library.add(faDownload, faSpinner);
 export default {
     components: {
-        ConfigProvider,
         FontAwesomeIcon,
         BButton,
     },
@@ -63,6 +62,10 @@ export default {
             type: String,
             default: "md",
         },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data() {
         return {

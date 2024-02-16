@@ -1,10 +1,12 @@
 <script setup>
-import { useCurrentTheme } from "@/composables/user";
+import { computed, ref, watch } from "vue";
+
 import { useConfig } from "@/composables/config";
-import { computed, watch, ref } from "vue";
+import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
+
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const show = ref(false);
 const currentValue = computed({
@@ -21,7 +23,7 @@ function getLogo(themeDetails) {
 }
 
 watch(
-    () => isLoaded.value,
+    () => isConfigLoaded.value,
     () => {
         const themes = Object.keys(config.value.themes);
         show.value = themes?.length > 1 ?? false;
@@ -33,7 +35,7 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="overflow-auto">
+    <b-card :show="show" class="mr-3 overflow-auto">
         <b-form-radio-group v-model="currentValue">
             <b-form-radio
                 v-for="(themeDetails, theme, index) in config.themes"

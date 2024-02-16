@@ -95,6 +95,11 @@
         "message": "Only real users can make this request."
     },
     {
+        "name": "TOOL_INPUTS_NOT_OK",
+        "code": 400017,
+        "message": "Tool inputs not in required OK state."
+    },
+    {
         "name": "USER_AUTHENTICATION_FAILED",
         "code": 401001,
         "message": "Authentication failed, invalid credentials supplied."

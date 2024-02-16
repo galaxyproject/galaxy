@@ -139,7 +139,7 @@ class TestToolEvaluator(TestCase, UsesApp):
         self.tool.config_files.append(("conf1", None, "$thresh"))
         self.tool._command_line = "prog1 $conf1"
         self._set_compute_environment()
-        command_line, _, extra_filenames, _ = self.evaluator.build()
+        command_line, _, extra_filenames, *_ = self.evaluator.build()
         assert len(extra_filenames) == 1
         config_filename = extra_filenames[0]
         config_basename = os.path.basename(config_filename)

@@ -4,6 +4,8 @@ For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
 
+from typing import Optional
+
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
 TAG_ORDER = [
@@ -54,7 +56,7 @@ def lint_xml_order(tool_xml, lint_ctx):
         tag_ordering = TAG_ORDER
 
     last_tag = None
-    last_key = None
+    last_key: Optional[int] = None
     for elem in tool_root:
         tag = elem.tag
         if tag in tag_ordering:

@@ -1,20 +1,25 @@
 <template>
-    <draggable-wrapper
+    <DraggableWrapper
         :id="idString"
         ref="el"
+        class="workflow-node card"
         :scale="scale"
         :root-offset="rootOffset"
         :name="name"
         :node-label="title"
         :class="classes"
         :style="style"
+        :disabled="readonly"
         @move="onMoveTo"
         @pan-by="onPanBy">
-        <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
+        <div
+            class="node-header unselectable clearfix card-header py-1 px-2"
+            @click="makeActive"
+            @keyup.enter="makeActive">
             <b-button-group class="float-right">
-                <loading-span v-if="isLoading" spinner-only />
+                <LoadingSpan v-if="isLoading" spinner-only />
                 <b-button
-                    v-if="canClone"
+                    v-if="canClone && !readonly"
                     v-b-tooltip.hover
                     class="node-clone py-0"
                     variant="primary"
@@ -25,6 +30,7 @@
                     <i class="fa fa-files-o" />
                 </b-button>
                 <b-button
+                    v-if="!readonly"
                     v-b-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
@@ -35,7 +41,7 @@
                     <i class="fa fa-times" />
                 </b-button>
                 <b-button
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
                     variant="primary"
@@ -44,7 +50,7 @@
                     <i class="fa fa-arrow-right" />
                 </b-button>
                 <b-popover
-                    v-if="isEnabled"
+                    v-if="isEnabled && !readonly"
                     :target="popoverId"
                     triggers="hover"
                     placement="bottom"
@@ -60,7 +66,7 @@
             </b-button-group>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
-                <font-awesome-icon icon="fa-code-branch" />
+                <FontAwesomeIcon icon="fa-code-branch" />
             </span>
             <span
                 v-b-tooltip.hover
@@ -69,11 +75,16 @@
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
+        <b-alert
+            v-if="!!errors"
+            variant="danger"
+            show
+            class="node-error m-0 rounded-0 rounded-bottom"
+            @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
-            <node-input
+        <div v-else class="node-body card-body p-0 mx-2" @click="makeActive" @keyup.enter="makeActive">
+            <NodeInput
                 v-for="(input, index) in inputs"
                 :key="`in-${index}-${input.name}`"
                 :input="input"
@@ -84,9 +95,10 @@
                 :scroll="scroll"
                 :scale="scale"
                 :parent-node="elHtml"
+                :readonly="readonly"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
-            <node-output
+            <NodeOutput
                 v-for="(output, index) in outputs"
                 :key="`out-${index}-${output.name}`"
                 :output="output"
@@ -100,36 +112,38 @@
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
                 :parent-node="elHtml"
+                :readonly="readonly"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
         </div>
-    </draggable-wrapper>
+    </DraggableWrapper>
 </template>
 
-<script lang="ts" setup>
-import type { PropType, Ref } from "vue";
-import Vue, { reactive } from "vue";
-import BootstrapVue from "bootstrap-vue";
-import WorkflowIcons from "@/components/Workflow/icons";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import { getGalaxyInstance } from "@/app";
-import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
-import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
-import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
-import { computed, ref } from "vue";
-import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
-import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
+import BootstrapVue from "bootstrap-vue";
+import type { PropType, Ref } from "vue";
+import Vue, { computed, reactive, ref } from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+
 import type { OutputTerminals } from "./modules/terminals";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
 
@@ -150,6 +164,7 @@ const props = defineProps({
     scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
+    readonly: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -178,9 +193,7 @@ const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLEle
 
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-const connectionStore = useConnectionStore();
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
     elHtml,
@@ -198,7 +211,6 @@ const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // get
 const isActive = computed(() => props.id === props.activeNodeId);
 const classes = computed(() => {
     return {
-        "workflow-node": true,
         "node-on-scroll-to": scrolledTo.value,
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
@@ -276,3 +288,48 @@ function makeActive() {
     emit("onActivate", props.id);
 }
 </script>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-node {
+    position: absolute;
+    z-index: 100;
+    width: $workflow-node-width;
+    border: solid $brand-primary 1px;
+
+    &.node-highlight {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 2px $brand-primary;
+    }
+
+    &.node-on-scroll-to {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 4px $brand-primary;
+        transition: box-shadow 0.5s ease-in-out;
+    }
+
+    &.node-active {
+        z-index: 1001;
+        border: solid $white 1px;
+        box-shadow: 0 0 0 3px $brand-primary;
+    }
+
+    .node-header {
+        cursor: move;
+        background: $brand-primary;
+        color: $white;
+    }
+
+    .node-body {
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted $brand-primary 1px;
+            margin: 0 5px;
+        }
+    }
+}
+</style>

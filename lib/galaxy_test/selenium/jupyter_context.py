@@ -4,6 +4,7 @@ This provides an environment separate from test cases that can leaverage
 both Selenium for testing Galaxy with a browser and API populators for filling
 in fixture data rapidly in the target Galaxy.
 """
+
 from typing import Optional
 
 from galaxy.selenium.context import init as base_init

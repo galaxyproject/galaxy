@@ -1,7 +1,8 @@
 import axios from "axios";
 import { defineStore } from "pinia";
-import { prependPath } from "@/utils/redirect";
 import Vue, { computed, ref } from "vue";
+
+import { prependPath } from "@/utils/redirect";
 
 interface JobMetric {
     title: string;

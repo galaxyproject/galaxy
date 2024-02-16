@@ -15,6 +15,7 @@ class BaseParameterTestCase(TestCase, UsesApp):
             app=self.app,
             tool_type="default",
             valid_input_states=model.Dataset.valid_input_states,
+            profile=23.0,
         )
 
     def _parameter_for(self, **kwds):

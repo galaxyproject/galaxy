@@ -1,5 +1,6 @@
-Edit this template to customise the "account activation" HTML email your
-users will receive.
+Use this template to customise the "account activation" HTML email your
+users will receive. Copy the file to
+{{ templates_dir }}/mail/activation-email.html and modify as required.
 
 If you are adding URLs into this, remember that only absolute URLS (with
 a domain name) make sense in email! They can be served from any stable
@@ -26,10 +27,6 @@ Template begins here >>>>>>
   <head>
     <meta charset="utf-8">
     <title>Galaxy account activation</title>
-
-    <!-- Load custom font from Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   </head>
   <body style="font-family: 'Roboto', sans-serif;">
@@ -73,7 +70,7 @@ Template begins here >>>>>>
         {% endif %}
         <li>
           Find out more about the Galaxy Project at
-          <a href="galaxyproject.org">galaxyproject.org</a>.
+          <a href="https://galaxyproject.org">galaxyproject.org</a>.
         </li>
       </ul>
     </p>

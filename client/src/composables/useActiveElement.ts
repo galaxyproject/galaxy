@@ -1,12 +1,8 @@
 // https://github.com/vueuse/vueuse/blob/main/packages/core/_configurable.ts
-import { computedWithControl } from "@vueuse/shared";
-import { isClient } from "@vueuse/shared";
-import { useEventListener } from "@vueuse/core";
-import { unrefElement } from "@vueuse/core";
-
+import type { ConfigurableWindow, MaybeElementRef, UseFocusWithinReturn } from "@vueuse/core";
+import { unrefElement, useEventListener } from "@vueuse/core";
+import { computedWithControl, isClient } from "@vueuse/shared";
 import { computed } from "vue";
-
-import type { MaybeElementRef, UseFocusWithinReturn, ConfigurableWindow } from "@vueuse/core";
 
 const defaultWindow = isClient ? window : undefined;
 

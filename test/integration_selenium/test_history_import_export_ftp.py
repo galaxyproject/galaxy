@@ -26,7 +26,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestC
         return cls.temp_config_dir("ftp")
 
     def create_user_ftp_dir(self):
-        email = self.get_logged_in_user()["email"]
+        email = self.get_user_email()
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
 
@@ -71,6 +71,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         gx_selenium_context.components.histories.import_button.wait_for_and_click()
         history_import = gx_selenium_context.components.history_import
         history_import.radio_button_remote_files.wait_for_and_click()
+        history_import.open_files_dialog.wait_for_and_click()
         files_dialog.ftp_label.wait_for_and_click()
         files_dialog.row(uri="gxftp://my_export.tar.gz").wait_for_and_click()
 
@@ -114,6 +115,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         history_export_tasks.toggle_options_link.wait_for_and_click()
 
         # Export to FTP file source
+        history_export_tasks.file_source_tab.wait_for_present()
         history_export_tasks.file_source_tab.wait_for_and_click()
         self._export_to_ftp_with_filename("my_export.tar.gz")
 

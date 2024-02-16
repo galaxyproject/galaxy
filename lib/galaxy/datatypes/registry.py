@@ -11,9 +11,11 @@ from string import Template
 from typing import (
     cast,
     Dict,
+    Iterable,
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -38,6 +40,9 @@ from . import (
     xml,
 )
 from .display_applications.application import DisplayApplication
+
+if TYPE_CHECKING:
+    from galaxy.datatypes.data import Data
 
 
 class ConfigurationError(Exception):
@@ -250,6 +255,14 @@ class Registry:
                         datatype_class.is_subclass = make_subclass
                         description = elem.get("description", None)
                         description_url = elem.get("description_url", None)
+
+                        # process as a list, in the future handle grabbing extensions here
+                        upload_warning_els = elem.findall("upload_warning")
+                        upload_warning_template = None
+                        for upload_warning_el in upload_warning_els:
+                            if upload_warning_template is not None:
+                                raise NotImplementedError("Multiple upload_warnings not implemented")
+                            upload_warning_template = Template(upload_warning_el.text)
                         datatype_instance = datatype_class()
                         self.datatypes_by_extension[extension] = datatype_instance
                         if mimetype is None:
@@ -303,6 +316,7 @@ class Registry:
                             "extension": extension,
                             "description": description,
                             "description_url": description_url,
+                            "upload_warning": upload_warning(upload_warning_template),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
@@ -342,9 +356,9 @@ class Registry:
                             compressed_datatype_instance = compressed_datatype_class()
                             self.datatypes_by_extension[compressed_extension] = compressed_datatype_instance
                             for suffix in infer_from_suffixes:
-                                self.datatypes_by_suffix_inferences[
-                                    f"{suffix}.{auto_compressed_type}"
-                                ] = compressed_datatype_instance
+                                self.datatypes_by_suffix_inferences[f"{suffix}.{auto_compressed_type}"] = (
+                                    compressed_datatype_instance
+                                )
                             if display_in_upload and compressed_extension not in self.upload_file_formats:
                                 self.upload_file_formats.append(compressed_extension)
                             self.datatype_info_dicts.append(
@@ -353,6 +367,7 @@ class Registry:
                                     "extension": compressed_extension,
                                     "description": description,
                                     "description_url": description_url,
+                                    "upload_warning": upload_warning(upload_warning_template, auto_compressed_type),
                                 }
                             )
                             if auto_compressed_type == "gz":
@@ -473,8 +488,7 @@ class Registry:
         distributed config) or contained within an installed Tool Shed repository.
         """
         sniffer_elem_classes = [e.attrib["type"] for e in self.sniffer_elems]
-        sniffers = root.find("sniffers")
-        if sniffers is not None:
+        if (sniffers := root.find("sniffers")) is not None:
             for elem in sniffers.findall("sniffer"):
                 # Keep a status of the process steps to enable stopping the process of handling the sniffer if necessary.
                 ok = True
@@ -585,18 +599,19 @@ class Registry:
             self.log.warning(f"unknown mimetype in data factory {str(ext)}")
         return mimetype
 
-    def get_datatype_by_extension(self, ext):
+    def get_datatype_by_extension(self, ext) -> Optional["Data"]:
         """Returns a datatype object based on an extension"""
         return self.datatypes_by_extension.get(ext, None)
 
     def change_datatype(self, data, ext):
-        data.extension = ext
-        # call init_meta and copy metadata from itself.  The datatype
-        # being converted *to* will handle any metadata copying and
-        # initialization.
-        if data.has_data():
-            data.set_size()
-            data.init_meta(copy_from=data)
+        if data.extension != ext:
+            data.extension = ext
+            # call init_meta and copy metadata from itself.  The datatype
+            # being converted *to* will handle any metadata copying and
+            # initialization.
+            if data.has_data():
+                data.set_size()
+                data.init_meta(copy_from=data)
         return data
 
     def load_datatype_converters(self, toolbox, use_cached=False):
@@ -832,7 +847,10 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(
-        self, dataset_or_ext: Union[str, DatasetProtocol], accepted_formats: List[str], converter_safe: bool = True
+        self,
+        dataset_or_ext: Union[str, DatasetProtocol],
+        accepted_formats: Iterable[Union[str, "Data"]],
+        converter_safe: bool = True,
     ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
@@ -846,8 +864,21 @@ class Registry:
             ext = dataset_or_ext
             dataset = None
 
-        datatype_by_extension = self.get_datatype_by_extension(ext)
-        if datatype_by_extension and datatype_by_extension.matches_any(accepted_formats):
+        accepted_datatypes: List["Data"] = []
+        for accepted_format in accepted_formats:
+            if isinstance(accepted_format, str):
+                accepted_datatype = self.get_datatype_by_extension(accepted_format)
+                if accepted_datatype is None:
+                    self.log.warning(
+                        f"Datatype class not found for extension '{accepted_format}', which is used as target for conversion from datatype '{ext}'"
+                    )
+                else:
+                    accepted_datatypes.append(accepted_datatype)
+            else:
+                accepted_datatypes.append(accepted_format)
+
+        datatype = self.get_datatype_by_extension(ext)
+        if datatype and datatype.matches_any(accepted_datatypes):
             return True, None, None
 
         for convert_ext in self.get_converters_by_datatype(ext):
@@ -856,7 +887,7 @@ class Registry:
                 self.log.warning(
                     f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{ext}'"
                 )
-            elif convert_ext_datatype.matches_any(accepted_formats):
+            elif convert_ext_datatype.matches_any(accepted_datatypes):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
                     ret_data = converted_dataset
@@ -963,6 +994,13 @@ class Registry:
         for unpicklable in unpickleable_attributes:
             state[unpicklable] = []
         return state
+
+
+def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+    if template is None:
+        return None
+    template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}
+    return template.safe_substitute(template_args)
 
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):

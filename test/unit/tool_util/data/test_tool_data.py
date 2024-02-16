@@ -20,7 +20,7 @@ def test_to_dict(tdt_manager):
 
 def test_index(tdt_manager):
     index = tdt_manager.index()
-    assert len(index.__root__) >= 1
+    assert len(index.root) >= 1
     entry = index.find_entry("testalpha")
     assert entry
     entry = index.find_entry("testomega")

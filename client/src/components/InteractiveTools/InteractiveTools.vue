@@ -34,7 +34,7 @@
                     target="_blank"
                     :name="row.item.name"
                     >{{ row.item.name }}
-                    <font-awesome-icon icon="external-link-alt" />
+                    <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </template>
             <template v-slot:cell(job_info)="row">
@@ -65,14 +65,15 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services";
-import UtcDate from "components/UtcDate";
-import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "../../stores/entryPointStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import { mapActions, mapState } from "pinia";
+
+import { useEntryPointStore } from "../../stores/entryPointStore";
+import { Services } from "./services";
 
 library.add(faExternalLinkAlt);
 
@@ -133,9 +134,8 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints", "removeEntryPoint"]),
+        ...mapActions(useEntryPointStore, ["removeEntryPoint"]),
         load() {
-            this.ensurePollingEntryPoints();
             this.filter = "";
         },
         filtered: function (items) {

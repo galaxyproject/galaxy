@@ -1,8 +1,8 @@
 import logging
 
 from sqlalchemy import (
-    and_,
     false,
+    select,
     true,
 )
 
@@ -105,16 +105,7 @@ def search_repository_metadata(app, exact_matches_checked, tool_ids="", tool_nam
     match_tuples = []
     ok = True
     if tool_ids or tool_names or tool_versions:
-        for repository_metadata in (
-            sa_session.query(app.model.RepositoryMetadata)
-            .filter(app.model.RepositoryMetadata.table.c.includes_tools == true())
-            .join(app.model.Repository)
-            .filter(
-                and_(
-                    app.model.Repository.table.c.deleted == false(), app.model.Repository.table.c.deprecated == false()
-                )
-            )
-        ):
+        for repository_metadata in get_metadata(sa_session, app.model.RepositoryMetadata, app.model.Repository):
             metadata = repository_metadata.metadata
             if metadata:
                 tools = metadata.get("tools", [])
@@ -221,3 +212,14 @@ def search_repository_metadata(app, exact_matches_checked, tool_ids="", tool_nam
                         else:
                             ok = False
     return ok, match_tuples
+
+
+def get_metadata(session, repository_metadata_model, repository_model):
+    stmt = (
+        select(repository_metadata_model)
+        .where(repository_metadata_model.includes_tools == true())
+        .join(repository_model)
+        .where(repository_model.deleted == false())
+        .where(repository_model.deprecated == false())
+    )
+    return session.scalars(stmt)

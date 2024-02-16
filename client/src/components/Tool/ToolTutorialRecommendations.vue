@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import Heading from "@/components/Common/Heading.vue";
-import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
-import ExternalLink from "@/components/ExternalLink.vue";
-import { BCollapse, BButton } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
-import { useUid } from "@/composables/utils/uid";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BCollapse } from "bootstrap-vue";
 import slugify from "slugify";
 import { computed } from "vue";
+
+import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
+import { useUid } from "@/composables/utils/uid";
+
+import Heading from "@/components/Common/Heading.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 
 const props = defineProps<{
     name: string;

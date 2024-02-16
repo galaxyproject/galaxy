@@ -5,6 +5,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from galaxy.datatypes import metadata
@@ -75,7 +76,7 @@ class GenericMolFile(Text):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_molecules} molecules"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -258,10 +259,10 @@ class SDF(GenericMolFile):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -270,7 +271,7 @@ class SDF(GenericMolFile):
 
         if len(input_datasets) > 1:
             raise Exception("SD-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -341,10 +342,10 @@ class MOL2(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -353,7 +354,7 @@ class MOL2(GenericMolFile):
 
         if len(input_datasets) > 1:
             raise Exception("MOL2-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -427,10 +428,10 @@ class FPS(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.file_name, invert=True)
+        dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.get_file_name(), invert=True)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by fingerprint records.
         """
@@ -439,7 +440,7 @@ class FPS(GenericMolFile):
 
         if len(input_datasets) > 1:
             raise Exception("FPS-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -554,7 +555,7 @@ class OBFS(Binary):
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
@@ -568,7 +569,7 @@ class DRF(GenericMolFile):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines('"ligand id"', dataset.file_name, invert=True)
+        dataset.metadata.number_of_molecules = count_special_lines('"ligand id"', dataset.get_file_name(), invert=True)
 
 
 class PHAR(GenericMolFile):
@@ -580,7 +581,7 @@ class PHAR(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "pharmacophore"
         else:
             dataset.peek = "file does not exist"
@@ -637,7 +638,7 @@ class PDB(GenericMolFile):
         """
         try:
             chain_ids = set()
-            with open(dataset.file_name) as fh:
+            with open(dataset.get_file_name()) as fh:
                 for line in fh:
                     if line.startswith("ATOM  ") or line.startswith("HETATM"):
                         if line[21] != " ":
@@ -649,10 +650,10 @@ class PDB(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
-            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            atom_numbers = count_special_lines("^ATOM", dataset.get_file_name())
+            hetatm_numbers = count_special_lines("^HETATM", dataset.get_file_name())
             chain_ids = ",".join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else "None"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {chain_ids}"
         else:
             dataset.peek = "file does not exist"
@@ -702,9 +703,9 @@ class PDBQT(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            root_numbers = count_special_lines("^ROOT", dataset.file_name)
-            branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
-            dataset.peek = get_file_peek(dataset.file_name)
+            root_numbers = count_special_lines("^ROOT", dataset.get_file_name())
+            branch_numbers = count_special_lines("^BRANCH", dataset.get_file_name())
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = f"{root_numbers} roots and {branch_numbers} branches"
         else:
             dataset.peek = "file does not exist"
@@ -792,7 +793,7 @@ class PQR(GenericMolFile):
         try:
             prog = self.get_matcher()
             chain_ids = set()
-            with open(dataset.file_name) as fh:
+            with open(dataset.get_file_name()) as fh:
                 for line in fh:
                     if line.startswith("REMARK"):
                         continue
@@ -806,10 +807,10 @@ class PQR(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
-            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            atom_numbers = count_special_lines("^ATOM", dataset.get_file_name())
+            hetatm_numbers = count_special_lines("^HETATM", dataset.get_file_name())
             chain_ids = ",".join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else "None"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = f"{atom_numbers} atoms and {hetatm_numbers} HET-atoms\nchain_ids: {chain_ids}"
         else:
             dataset.peek = "file does not exist"
@@ -893,7 +894,7 @@ class Cell(GenericMolFile):
         else:
             # enhanced metadata
             try:
-                ase_data = ase_io.read(dataset.file_name, format="castep-cell")
+                ase_data = ase_io.read(dataset.get_file_name(), format="castep-cell")
             except Exception as e:
                 log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
                 self.meta_error = True
@@ -924,7 +925,7 @@ class Cell(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = self.get_dataset_info(dataset.metadata)
             structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"CASTEP CELL file containing {dataset.metadata.number_of_molecules} {structure_string}"
@@ -1054,7 +1055,7 @@ class CIF(GenericMolFile):
         else:
             # enhanced metadata
             try:
-                ase_data = ase_io.read(dataset.file_name, index=":", format="cif")
+                ase_data = ase_io.read(dataset.get_file_name(), index=":", format="cif")
             except Exception as e:
                 log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
                 self.meta_error = True
@@ -1091,7 +1092,7 @@ class CIF(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = self.get_dataset_info(dataset.metadata)
             structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"CIF file containing {dataset.metadata.number_of_molecules} {structure_string}"
@@ -1252,7 +1253,7 @@ class XYZ(GenericMolFile):
             # enhanced metadata
             try:
                 # ASE recommend always parsing as extended xyz
-                ase_data = ase_io.read(dataset.file_name, index=":", format="extxyz")
+                ase_data = ase_io.read(dataset.get_file_name(), index=":", format="extxyz")
             except Exception as e:
                 log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
                 self.meta_error = True
@@ -1289,7 +1290,7 @@ class XYZ(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = self.get_dataset_info(dataset.metadata)
             structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
             dataset.blurb = f"XYZ file containing {dataset.metadata.number_of_molecules} {structure_string}"
@@ -1452,7 +1453,7 @@ class grd(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "grids for docking"
         else:
             dataset.peek = "file does not exist"
@@ -1506,7 +1507,7 @@ class InChI(Tabular):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_molecules} molecules"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -1571,7 +1572,7 @@ class SMILES(Tabular):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_molecules} molecules"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -1599,7 +1600,7 @@ class CML(GenericXml):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines(r"^\s*<molecule", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(r"^\s*<molecule", dataset.get_file_name())
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -1607,7 +1608,7 @@ class CML(GenericXml):
                 dataset.blurb = "1 molecule"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_molecules} molecules"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -1631,7 +1632,7 @@ class CML(GenericXml):
         return True
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -1640,7 +1641,7 @@ class CML(GenericXml):
 
         if len(input_datasets) > 1:
             raise Exception("CML-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -1761,7 +1762,7 @@ class GRO(GenericMolFile):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             atom_number = int(dataset.peek.split("\n")[1])
             dataset.blurb = f"{atom_number} atoms"
         else:

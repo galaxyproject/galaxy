@@ -13,18 +13,18 @@ ldap3==2.9.1
 python-pam
 galaxycloudrunner
 pkce
-total-perspective-vortex<3
+total-perspective-vortex>=2.3.2,<3
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
-fs.dropboxfs  # type: dropbox
+fs.dropboxfs>=1.0  # type: dropbox
 fs.sshfs  # type: ssh
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
 # fs-gcsfs doesn't pin google-cloud-storage, and old versions log noisy exceptions and break test discovery
 google-cloud-storage>=2.8.0  # type: googlecloudstorage
-fs-onedatafs # type: onedata
+fs.onedatarestfs # type: onedata
 fs-basespace # type: basespace
 
 # Vault backend
@@ -35,7 +35,7 @@ custos-sdk
 chronos-python==1.2.1
 
 # Kubernetes job runner
-pykube==0.15.0
+pykube-ng==21.3.0
 
 # Synnefo / Pithos+ object store client
 kamaki

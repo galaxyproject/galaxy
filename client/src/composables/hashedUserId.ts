@@ -1,6 +1,8 @@
-import { computed, ref, watch } from "vue";
-import { useCurrentUser } from "./user";
 import { useLocalStorage } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import { computed, type Ref, ref, watch } from "vue";
+
+import { GenericUser, useUserStore } from "@/stores/userStore";
 
 async function hash32(value: string): Promise<string> {
     const valueUtf8 = new TextEncoder().encode(value);
@@ -29,8 +31,15 @@ let unhashedId: string | null = null;
 /**
  * One way hashed ID of the current User
  */
-export function useHashedUserId() {
-    const { currentUser } = useCurrentUser(true);
+export function useHashedUserId(user?: Ref<GenericUser | null>) {
+    let currentUser: Ref<GenericUser | null>;
+
+    if (user) {
+        currentUser = user;
+    } else {
+        const { currentUser: currentUserRef } = storeToRefs(useUserStore());
+        currentUser = currentUserRef;
+    }
 
     // salt the local store, to make a user untraceable by id across different clients
     const localStorageSalt = useLocalStorage("local-storage-salt", createSalt());
@@ -38,7 +47,7 @@ export function useHashedUserId() {
     watch(
         () => currentUser.value,
         () => {
-            if (currentUser.value && currentUser.value.id !== "") {
+            if (currentUser.value && !currentUser.value.isAnonymous) {
                 hashUserId(currentUser.value.id + localStorageSalt.value);
             }
         },

@@ -5,7 +5,7 @@
             {{ containerDescription.identifier }}
             <span v-if="!compact">
                 <i>{{ description }}</i>
-                <display-raw :object="containerDescription" />
+                <DisplayRaw :object="containerDescription" />
             </span>
         </span>
         <span v-else>

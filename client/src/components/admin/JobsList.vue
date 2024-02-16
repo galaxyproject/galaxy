@@ -96,16 +96,17 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import JobsTable from "components/admin/JobsTable";
-import JobLock from "./JobLock";
-import JOB_STATES_MODEL from "utils/job-states-model";
-import { commonJobFields } from "./JobFields";
-import { errorMessageAsString } from "utils/simple-error";
-import { jobsProvider } from "components/providers/JobProvider";
 import Heading from "components/Common/Heading";
 import filtersMixin from "components/Indices/filtersMixin";
+import { jobsProvider } from "components/providers/JobProvider";
+import { getAppRoot } from "onload/loadConfig";
+import JOB_STATES_MODEL from "utils/job-states-model";
+import { errorMessageAsString } from "utils/simple-error";
+
+import { commonJobFields } from "./JobFields";
+import JobLock from "./JobLock";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;

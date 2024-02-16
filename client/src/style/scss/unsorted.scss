@@ -384,16 +384,6 @@ div.debug {
 .grid .current {
     background-color: lighten($brand-success, 20%);
 }
-
-// Pulled out of grid base
-.count-box {
-    min-width: 1.1em;
-    padding: 5px;
-    border-width: 1px;
-    border-style: solid;
-    text-align: center;
-    display: inline-block;
-}
 .text-filter-val {
     border: solid 1px #aaaaaa;
     padding: 1px 2px 1px 3px;
@@ -640,18 +630,6 @@ div.permissionContainer {
     background-repeat: no-repeat;
     background-position: 0px 0px;
     padding: 0;
-}
-
-.fa-icon-button {
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-    &:hover {
-        color: $brand-info;
-    }
 }
 
 .editable-text {
@@ -944,7 +922,6 @@ div.toolSectionTitle {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed,
 body.reports {
     margin: 0;
     padding: 0;

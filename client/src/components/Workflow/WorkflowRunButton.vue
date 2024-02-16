@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <BButton
         v-b-tooltip.hover.bottom
         :title="title | localize"
         :data-workflow-run="id"
@@ -8,8 +8,7 @@
 </template>
 
 <script>
-import { BButton } from "bootstrap-vue";
-import { VBTooltip } from "bootstrap-vue";
+import { BButton, VBTooltip } from "bootstrap-vue";
 
 export default {
     components: {
@@ -35,7 +34,7 @@ export default {
     },
     methods: {
         executeWorkflow() {
-            window.location.assign(`${this.root}workflows/run?id=${this.id}`);
+            this.$router.push(`/workflows/run?id=${this.id}`);
         },
     },
 };

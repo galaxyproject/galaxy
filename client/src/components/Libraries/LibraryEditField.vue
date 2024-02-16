@@ -35,12 +35,12 @@
 </template>
 
 <script>
-import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import BootstrapVue from "bootstrap-vue";
+import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
+import { sanitize } from "dompurify";
+import linkifyHtml from "linkify-html";
 import Vue from "vue";
 
-import linkifyHtml from "linkify-html";
-import { sanitize } from "dompurify";
 Vue.use(BootstrapVue);
 
 export default {

@@ -7,6 +7,7 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
+from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
@@ -376,15 +377,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string(xml_str)
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        )
 
     def _replace_output_collectors_from_dict(self, output_dict):
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_output_dict(
-            output_dict
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_output_dict(output_dict)
         )
 
     def _append_job_json(self, object, output_path=None, line_type="new_primary_dataset"):
@@ -436,13 +435,18 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self.app.model.context.add(history)
         for hda in hdas:
             history.add_dataset(hda, set_hid=False)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return history
 
 
 class MockObjectStore:
     def __init__(self):
         self.created_datasets = {}
+
+    def get_store_by(self, obj, **kwargs):
+        return "uuid"
 
     def update_from_file(self, dataset, file_name, create):
         if create:
@@ -455,7 +459,7 @@ class MockObjectStore:
     def exists(self, *args, **kwargs):
         return True
 
-    def get_filename(self, dataset):
+    def get_filename(self, dataset, **kwargs):
         return self.created_datasets[dataset]
 
 

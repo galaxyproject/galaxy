@@ -4,15 +4,19 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
+
 import json
 import logging
+from typing import Optional
 
 from fastapi import (
     Body,
     Path,
+    Query,
     Response,
     status,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -20,6 +24,7 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -27,6 +32,11 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+)
+from galaxy.schema.visualization import (
+    VisualizationIndexQueryPayload,
+    VisualizationSortByEnum,
+    VisualizationSummaryList,
 )
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.web import expose_api
@@ -36,7 +46,13 @@ from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
+)
+from galaxy.webapps.galaxy.api.common import (
+    LimitQueryParam,
+    OffsetQueryParam,
 )
 from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
@@ -44,9 +60,56 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["visualizations"])
 
-VisualizationIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Visualization ID", description="The encoded database identifier of the Visualization."
+DeletedQueryParam: bool = Query(
+    default=False, title="Display deleted", description="Whether to include deleted visualizations in the result."
 )
+
+UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Encoded user ID to restrict query to, must be own id if not an admin user",
+)
+
+query_tags = [
+    IndexQueryTag("title", "The visualization's title."),
+    IndexQueryTag("slug", "The visualization's slug.", "s"),
+    IndexQueryTag("tag", "The visualization's tags.", "t"),
+    IndexQueryTag("user", "The visualization's owner's username.", "u"),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Visualization",
+    tags=query_tags,
+    free_text_fields=["title", "slug", "tag", "type"],
+)
+
+SharingQueryParam: bool = Query(
+    default=False, title="Provide sharing status", description="Whether to provide sharing details in the result."
+)
+
+ShowOwnQueryParam: bool = Query(default=True, title="Show visualizations owned by user.", description="")
+
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published visualizations.", description="")
+
+ShowSharedQueryParam: bool = Query(
+    default=False, title="Include visualizations shared with authenticated user.", description=""
+)
+
+SortByQueryParam: VisualizationSortByEnum = Query(
+    default="update_time",
+    title="Sort attribute",
+    description="Sort visualization index by this specified attribute on the visualization model",
+)
+
+SortDescQueryParam: bool = Query(
+    default=True,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
+
+VisualizationIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Visualization ID", description="The encoded database identifier of the Visualization."),
+]
 
 
 @router.cbv
@@ -54,13 +117,48 @@ class FastAPIVisualizations:
     service: VisualizationsService = depends(VisualizationsService)
 
     @router.get(
+        "/api/visualizations",
+        summary="Returns visualizations for the current user.",
+    )
+    async def index(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        deleted: bool = DeletedQueryParam,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        show_own: bool = ShowOwnQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: VisualizationSortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
+    ) -> VisualizationSummaryList:
+        payload = VisualizationIndexQueryPayload.model_construct(
+            deleted=deleted,
+            user_id=user_id,
+            show_published=show_published,
+            show_own=show_own,
+            show_shared=show_shared,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        entries, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
+
+    @router.get(
         "/api/visualizations/{id}/sharing",
-        summary="Get the current sharing status of the given Page.",
+        summary="Get the current sharing status of the given Visualization.",
     )
     def sharing(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -71,8 +169,8 @@ class FastAPIVisualizations:
     )
     def enable_link_access(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -83,8 +181,8 @@ class FastAPIVisualizations:
     )
     def disable_link_access(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -95,8 +193,8 @@ class FastAPIVisualizations:
     )
     def publish(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -107,8 +205,8 @@ class FastAPIVisualizations:
     )
     def unpublish(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -119,8 +217,8 @@ class FastAPIVisualizations:
     )
     def share_with_users(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -133,8 +231,8 @@ class FastAPIVisualizations:
     )
     def set_slug(
         self,
+        id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = VisualizationIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
@@ -148,32 +246,6 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
     """
 
     service: VisualizationsService = depends(VisualizationsService)
-
-    @expose_api
-    def index(self, trans: GalaxyWebTransaction, **kwargs):
-        """
-        GET /api/visualizations:
-        """
-        rval = []
-        user = trans.user
-
-        # TODO: search for: title, made by user, creation time range, type (vis name), dbkey, etc.
-        # TODO: limit, offset, order_by
-        # TODO: deleted
-
-        # this is the default search - user's vis, vis shared with user, published vis
-        visualizations = self.get_visualizations_by_user(trans, user)
-        visualizations += self.get_visualizations_shared_with_user(trans, user)
-        visualizations += self.get_published_visualizations(trans, exclude_user=user)
-        # TODO: the admin case - everything
-
-        for visualization in visualizations:
-            item = self.get_visualization_summary_dict(visualization)
-            item = trans.security.encode_dict_ids(item)
-            item["url"] = web.url_for("visualization", id=item["id"])
-            rval.append(item)
-
-        return rval
 
     @expose_api
     def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):
@@ -246,12 +318,11 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         PUT /api/visualizations/{encoded_visualization_id}
         """
         rval = None
-
         payload = self._validate_and_parse_payload(payload)
 
-        # there's a differentiation here between updating the visualiztion and creating a new revision
-        #   that needs to be handled clearly here
-        # or alternately, using a different controller like PUT /api/visualizations/{id}/r/{id}
+        # there's a differentiation here between updating the visualization and creating a new revision
+        # that needs to be handled clearly here or alternately, using a different controller
+        # like e.g. PUT /api/visualizations/{id}/r/{id}
 
         # TODO: consider allowing direct alteration of revisions title (without a new revision)
         #   only create a new revsion on a different config
@@ -260,6 +331,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         visualization = self.get_visualization(trans, id, check_ownership=True)
         title = payload.get("title", visualization.latest_revision.title)
         dbkey = payload.get("dbkey", visualization.latest_revision.dbkey)
+        deleted = payload.get("deleted", visualization.deleted)
         config = payload.get("config", visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
@@ -273,7 +345,9 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
 
         # allow updating vis title
         visualization.title = title
-        trans.sa_session.flush()
+        visualization.deleted = deleted
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         return rval
 
@@ -292,10 +366,9 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
         valid_but_uneditable_keys = (
             "id",
-            "model_class"
+            "model_class",
             # TODO: fill out when we create to_dict, get_dict, whatevs
         )
-        # TODO: deleted
         # TODO: importable
         ValidationError = exceptions.RequestParameterInvalidException
 
@@ -309,11 +382,13 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             elif key == "config":
                 if not isinstance(val, dict):
                     raise ValidationError(f"{key} must be a dictionary: {str(type(val))}")
-
             elif key == "annotation":
                 if not isinstance(val, str):
                     raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
                 val = util.sanitize_html.sanitize_html(val)
+            elif key == "deleted":
+                if not isinstance(val, bool):
+                    raise ValidationError(f"{key} must be a bool: {str(type(val))}")
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)

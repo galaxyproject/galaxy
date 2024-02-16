@@ -47,7 +47,7 @@
                         Start here:
                         <b>
                             <a
-                                href="https://training.galaxyproject.org/training-material/faqs/galaxy/#troubleshooting-errors"
+                                href="https://training.galaxyproject.org/training-material/faqs/galaxy/analysis_troubleshooting.html"
                                 target="_blank">
                                 My job ended with an error. What can I do?
                             </a>
@@ -58,9 +58,9 @@
                         v-for="(resultMessage, index) in resultMessages"
                         :key="index"
                         :variant="resultMessage[1]"
-                        show
-                        >{{ resultMessage[0] }}</b-alert
-                    >
+                        show>
+                        <span v-html="renderMarkdown(resultMessage[0])"></span>
+                    </b-alert>
                     <div v-if="showForm" id="fieldsAndButton">
                         <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
                         <span v-if="!!currentUser?.email">{{ currentUser?.email }}</span>
@@ -75,7 +75,7 @@
                             variant="primary"
                             class="mt-3"
                             @click="submit(dataset, jobDetails.user_email)">
-                            <font-awesome-icon icon="bug" class="mr-1" />Report
+                            <FontAwesomeIcon icon="bug" class="mr-1" />Report
                         </b-button>
                     </div>
                 </div>
@@ -85,15 +85,18 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import DatasetErrorDetails from "./DatasetErrorDetails";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBug } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBug } from "@fortawesome/free-solid-svg-icons";
+import { mapState } from "pinia";
+
+import { useMarkdown } from "@/composables/markdown";
+import { useUserStore } from "@/stores/userStore";
+
+import DatasetErrorDetails from "./DatasetErrorDetails";
 import { sendErrorReport } from "./services";
 
 library.add(faBug);
@@ -112,6 +115,10 @@ export default {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+        return { renderMarkdown };
     },
     data() {
         return {

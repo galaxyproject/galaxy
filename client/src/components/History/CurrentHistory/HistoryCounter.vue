@@ -1,25 +1,29 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BButtonGroup, BModal } from "bootstrap-vue";
+import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
-import { useUserStore } from "@/stores/userStore";
-import { formatDistanceToNowStrict } from "date-fns";
-import { toRef, ref, computed, onMounted } from "vue";
-import { useDetailedHistory } from "./usesDetailedHistory.js";
-import { useConfig } from "@/composables/config";
+import { computed, onMounted, ref, toRef } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import type { HistorySummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+
+import { useDetailedHistory } from "./usesDetailedHistory";
+
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 
-import { useRouter } from "vue-router/composables";
-
-interface HistoryBase {
-    id: string;
-    preferred_object_store_id: string;
-}
+library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
 const props = withDefaults(
     defineProps<{
-        history: HistoryBase;
+        history: HistorySummary;
         isWatching?: boolean;
         lastChecked: Date;
         filterText?: string;
@@ -33,12 +37,14 @@ const props = withDefaults(
     }
 );
 
+const emit = defineEmits(["update:filter-text", "reloadContents"]);
+
 const router = useRouter();
 const { config } = useConfig();
 const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
 
-const reloadButtonCls = ref("fa fa-sync");
+const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
@@ -46,16 +52,8 @@ const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_i
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
-const emit = defineEmits(["update:filter-text", "reloadContents"]);
-
-onMounted(() => {
-    updateTime();
-    // update every second
-    setInterval(updateTime, 1000);
-});
-
 function onDashboard() {
-    router.push({ name: "HistoryOverview", params: { historyId: props.history.id } });
+    router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
 }
 
 function setFilter(filter: string) {
@@ -96,36 +94,44 @@ function updateTime() {
 
 async function reloadContents() {
     emit("reloadContents");
-    reloadButtonCls.value = "fa fa-sync fa-spin";
+    reloadButtonLoading.value = true;
     setTimeout(() => {
-        reloadButtonCls.value = "fa fa-sync";
+        reloadButtonLoading.value = false;
     }, 1000);
 }
 
-function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
+function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
     showPreferredObjectStoreModal.value = false;
     // ideally this would be pushed back to the history object somehow
     // and tracked there... but for now this is only component using
     // this information.
     historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
+
+onMounted(() => {
+    updateTime();
+    // update every second
+    setInterval(updateTime, 1000);
+});
 </script>
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <b-button
+        <BButton
             v-b-tooltip.hover
             title="History Size"
             variant="link"
             size="sm"
-            class="rounded-0 text-decoration-none"
+            class="rounded-0 text-decoration-none history-storage-overview-button"
             :disabled="!showControls"
+            data-description="storage dashboard button"
             @click="onDashboard">
-            <icon icon="database" />
+            <FontAwesomeIcon :icon="faDatabase" />
             <span>{{ niceHistorySize }}</span>
-        </b-button>
-        <b-button-group v-if="currentUser">
-            <b-button
+        </BButton>
+
+        <BButtonGroup v-if="currentUser">
+            <BButton
                 v-if="config && config.object_store_allows_id_selection"
                 :id="`history-storage-${history.id}`"
                 title="Manage Preferred History Storage"
@@ -133,26 +139,30 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="showPreferredObjectStoreModal = true">
-                <icon icon="hdd" />
-            </b-button>
+                <FontAwesomeIcon :icon="faHdd" />
+            </BButton>
+
             <PreferredStorePopover
                 v-if="config && config.object_store_allows_id_selection"
                 :history-id="history.id"
                 :history-preferred-object-store-id="historyPreferredObjectStoreId"
                 :user="currentUser">
             </PreferredStorePopover>
-            <b-button-group>
-                <b-button
+
+            <BButtonGroup>
+                <BButton
                     v-b-tooltip.hover
                     title="Show active"
                     variant="link"
                     size="sm"
                     class="rounded-0 text-decoration-none"
+                    data-description="show active items button"
                     @click="setFilter('')">
-                    <span class="fa fa-map-marker" />
+                    <FontAwesomeIcon :icon="faMapMarker" />
                     <span>{{ numItemsActive }}</span>
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
                     title="Include deleted"
@@ -160,11 +170,13 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     size="sm"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('deleted') !== false"
+                    data-description="include deleted items button"
                     @click="setFilter('deleted')">
-                    <icon icon="trash" />
+                    <FontAwesomeIcon :icon="faTrash" />
                     <span>{{ numItemsDeleted }}</span>
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
                     title="Include hidden"
@@ -172,21 +184,24 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     size="sm"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('visible') !== true"
+                    data-description="include hidden items button"
                     @click="setFilter('visible')">
-                    <icon icon="eye-slash" />
+                    <FontAwesomeIcon :icon="faEyeSlash" />
                     <span>{{ numItemsHidden }}</span>
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     v-b-tooltip.hover
                     :title="reloadButtonTitle"
                     :variant="reloadButtonVariant"
                     size="sm"
                     class="rounded-0 text-decoration-none history-refresh-button"
                     @click="reloadContents()">
-                    <span :class="reloadButtonCls" />
-                </b-button>
-            </b-button-group>
-            <b-modal
+                    <FontAwesomeIcon :icon="faSync" :spin="reloadButtonLoading" />
+                </BButton>
+            </BButtonGroup>
+
+            <BModal
                 v-model="showPreferredObjectStoreModal"
                 title="History Preferred Object Store"
                 modal-class="history-preferred-object-store-modal"
@@ -197,7 +212,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     :user-preferred-object-store-id="currentUser.preferred_object_store_id"
                     :history="history"
                     @updated="onUpdatePreferredObjectStoreId" />
-            </b-modal>
-        </b-button-group>
+            </BModal>
+        </BButtonGroup>
     </div>
 </template>

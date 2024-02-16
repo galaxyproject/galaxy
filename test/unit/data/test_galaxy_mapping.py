@@ -15,6 +15,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -53,18 +54,14 @@ class BaseModelTestCase(TestCase):
         assert cls.model.engine is not None
 
     @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
     def persist(cls, *args, **kwargs):
         session = cls.session()
-        flush = kwargs.get("flush", True)
+        commit = kwargs.get("commit", True)
         for arg in args:
             session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get("expunge", not flush):
+            if commit:
+                session.commit()
+        if kwargs.get("expunge", not commit):
             cls.expunge()
         return arg  # Return last or only arg.
 
@@ -89,7 +86,7 @@ class TestMappings(BaseModelTestCase):
             rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_rating = self.query(rating_class).all()[0]
+            stored_rating = self.model.session.scalars(select(rating_class)).all()[0]
             assert stored_rating.rating == rating
             assert stored_rating.user.email == user_email
 
@@ -258,7 +255,7 @@ class TestMappings(BaseModelTestCase):
             model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i)
             for i in range(elements)
         ]
-        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        self.persist(u, h1, d1, c1, *dces, commit=False, expunge=False)
         self.model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
@@ -328,12 +325,12 @@ class TestMappings(BaseModelTestCase):
 
         self.persist(u, h1, d1, d2, c1, hc1, dce1, dce2)
 
-        loaded_dataset_collection = (
-            self.query(model.HistoryDatasetCollectionAssociation)
+        stmt = (
+            select(model.HistoryDatasetCollectionAssociation)
             .filter(model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1")
-            .first()
-            .collection
+            .limit(1)
         )
+        loaded_dataset_collection = self.model.session.scalars(stmt).first().collection
         assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
@@ -358,6 +355,22 @@ class TestMappings(BaseModelTestCase):
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
         # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
+
+    def test_dataset_action_tuples(self):
+        u = model.User(email="foo", password="foo")
+        h1 = model.History(user=u)
+        hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        r1 = model.Role()
+        dp1 = model.DatasetPermissions(action="action1", dataset=hda1.dataset, role=r1)
+        dp2 = model.DatasetPermissions(action=None, dataset=hda1.dataset, role=r1)
+        dp3 = model.DatasetPermissions(action="action3", dataset=hda1.dataset, role=r1)
+        c1 = model.DatasetCollection(collection_type="type1")
+        dce1 = model.DatasetCollectionElement(collection=c1, element=hda1)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=hda2)
+        self.model.session.add_all([u, h1, hda1, hda2, r1, dp1, dp2, dp3, c1, dce1, dce2])
+        self.model.session.flush()
+        assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
 
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")
@@ -395,18 +408,31 @@ class TestMappings(BaseModelTestCase):
         )
         self.model.session.add_all([d1, d2, c1, dce1, dce2, c2, dce3, c3, c4, dce4])
         self.model.session.flush()
-        q = c2._get_nested_collection_attributes(
+
+        stmt = c2._build_nested_collection_attributes_stmt(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
-        assert [(r._fields) for r in q] == [
+        result = self.model.session.execute(stmt).all()
+        assert [(r._fields) for r in result] == [
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
-        assert q.all() == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
-        assert q.all() == [d1, d2]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
-        assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
+
+        stmt = c2._build_nested_collection_attributes_stmt(return_entities=(model.HistoryDatasetAssociation,))
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1,), (d2,)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            return_entities=(model.HistoryDatasetAssociation, model.Dataset)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1, d1.dataset), (d2, d2.dataset)]
         # Assert properties that use _get_nested_collection_attributes return correct content
         assert c2.dataset_instances == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
@@ -425,13 +451,14 @@ class TestMappings(BaseModelTestCase):
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         assert c3.dataset_states_and_extensions_summary == (set(), set())
-        q = c4._get_nested_collection_attributes(element_attributes=("element_identifier",))
-        assert q.all() == [("outer_list", "inner_list", "forward"), ("outer_list", "inner_list", "reverse")]
-        assert c4.dataset_elements == [dce1, dce2]
-        assert c4.element_identifiers_extensions_and_paths == [
-            (("outer_list", "inner_list", "forward"), "bam", "mock_dataset_14.dat"),
-            (("outer_list", "inner_list", "reverse"), "txt", "mock_dataset_14.dat"),
+
+        stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
+        result = self.model.session.execute(stmt).all()
+        assert result == [
+            ("outer_list", "inner_list", "forward"),
+            ("outer_list", "inner_list", "reverse"),
         ]
+        assert c4.dataset_elements == [dce1, dce2]
 
     def test_dataset_dbkeys_and_extensions_summary(self):
         u = model.User(email="mary2@example.com", password="password")
@@ -501,11 +528,11 @@ class TestMappings(BaseModelTestCase):
         u.adjust_total_disk_usage(1, None)
         u_id = u.id
         self.expunge()
-        user_reload = self.model.session.query(model.User).get(u_id)
+        user_reload = self.model.session.get(model.User, u_id)
         assert user_reload.disk_usage == 1
 
     def test_basic(self):
-        original_user_count = len(self.model.session.query(model.User).all())
+        original_user_count = len(self.model.session.scalars(select(model.User)).all())
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
@@ -519,14 +546,14 @@ class TestMappings(BaseModelTestCase):
         self.persist(d1)
 
         # Check
-        users = self.model.session.query(model.User).all()
+        users = self.model.session.scalars(select(model.User)).all()
         assert len(users) == original_user_count + 1
         user = [user for user in users if user.email == "james@foo.bar.baz"][0]
         assert user.email == "james@foo.bar.baz"
         assert user.password == "password"
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
-        hists = self.model.session.query(model.History).all()
+        hists = self.model.session.scalars(select(model.History)).all()
         hist0 = [history for history in hists if history.id == h1.id][0]
         hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
@@ -540,7 +567,7 @@ class TestMappings(BaseModelTestCase):
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
-        hists = self.model.session.query(model.History).all()
+        hists = self.model.session.scalars(select(model.History)).all()
         hist0 = [history for history in hists if history.name == "History 1"][0]
         hist1 = [history for history in hists if history.name == "History 2b"][0]
         assert hist0.name == "History 1"
@@ -559,7 +586,9 @@ class TestMappings(BaseModelTestCase):
         job = model.Job()
         dataset.job = job
         self.persist(job, dataset)
-        loaded_dataset = self.model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        loaded_dataset = self.model.session.execute(
+            select(model.Dataset).filter(model.Dataset.id == dataset.id)
+        ).scalar_one()
         assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
@@ -570,7 +599,7 @@ class TestMappings(BaseModelTestCase):
 
         self.persist(u, job)
 
-        loaded_job = self.model.session.query(model.Job).filter(model.Job.user == u).first()
+        loaded_job = self.model.session.scalars(select(model.Job).filter(model.Job.user == u).limit(1)).first()
         assert loaded_job.tool_id == "cat1"
 
     def test_job_metrics(self):
@@ -601,7 +630,7 @@ class TestMappings(BaseModelTestCase):
         job.user = u
         self.persist(u, job, task)
 
-        loaded_task = self.model.session.query(model.Task).filter(model.Task.job == job).first()
+        loaded_task = self.model.session.scalars(select(model.Task).filter(model.Task.job == job).limit(1)).first()
         assert loaded_task.prepare_input_files_cmd == "split.sh"
 
     def test_history_contents(self):
@@ -619,9 +648,9 @@ class TestMappings(BaseModelTestCase):
         self.session().flush()
 
         def contents_iter_names(**kwds):
-            history = (
-                self.model.context.query(model.History).filter(model.History.name == "HistoryContentsHistory1").first()
-            )
+            history = self.model.session.scalars(
+                select(model.History).filter(model.History.name == "HistoryContentsHistory1").limit(1)
+            ).first()
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
         assert contents_iter_names() == ["1", "2", "3", "4"]
@@ -644,12 +673,8 @@ class TestMappings(BaseModelTestCase):
         h2 = model.History(name="HistoryAuditHistory", user=u)
 
         def get_audit_table_entries(history):
-            return (
-                self.session()
-                .query(model.HistoryAudit.table)
-                .filter(model.HistoryAudit.table.c.history_id == history.id)
-                .all()
-            )
+            stmt = select(model.HistoryAudit.table).filter(model.HistoryAudit.table.c.history_id == history.id)
+            return self.session().execute(stmt).all()
 
         def get_latest_entry(entries):
             # key ensures result is correct if new columns are added
@@ -661,7 +686,11 @@ class TestMappings(BaseModelTestCase):
 
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
-        self.session().flush()
+
+        session = self.session()
+
+        with transaction(session):
+            session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
@@ -672,7 +701,13 @@ class TestMappings(BaseModelTestCase):
         h1_latest = get_latest_entry(h1_audits)
         h2_latest = get_latest_entry(h2_audits)
 
-        model.HistoryAudit.prune(self.session())
+        # In galaxy, HistoryAudit.prune() executes in the context of a separate thread, where it
+        # starts and commits a new transaction, closing a scoped session on exit. Thus, here we
+        # should end the current transaction (via rollback) and add the History objects to a new
+        # session, as the previous one will be closed.
+        session.rollback()
+        model.HistoryAudit.prune(session)
+        session.add_all([h1, h2])
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
@@ -686,6 +721,17 @@ class TestMappings(BaseModelTestCase):
         session = self.session()
         session.add(lf)
         session.flush()
+
+    def test_current_session(self):
+        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        galaxy_session = model.GalaxySession()
+        galaxy_session.user = user
+        self.persist(user, galaxy_session)
+        assert user.current_galaxy_session == galaxy_session
+        new_galaxy_session = model.GalaxySession()
+        user.galaxy_sessions.append(new_galaxy_session)
+        self.persist(user, new_galaxy_session)
+        assert user.current_galaxy_session == new_galaxy_session
 
     def test_flush_refreshes(self):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute
@@ -702,7 +748,7 @@ class TestMappings(BaseModelTestCase):
 
         self.expunge()
         session = self.session()
-        galaxy_model_object = self.query(model.GalaxySession).get(galaxy_session_id)
+        galaxy_model_object = self.model.session.get(model.GalaxySession, galaxy_session_id)
         expected_id = galaxy_model_object.id
 
         # id loaded as part of the object query, could be any non-deferred attribute.
@@ -715,6 +761,8 @@ class TestMappings(BaseModelTestCase):
         # However, flushing anything non-empty - even unrelated object will invalidate
         # the session ID.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Fetch the ID loads the value from the database
@@ -723,6 +771,8 @@ class TestMappings(BaseModelTestCase):
 
         # Using cached_id instead does not exhibit this behavior.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert expected_id == galaxy.model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
@@ -749,6 +799,8 @@ class TestMappings(BaseModelTestCase):
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
         session.flush()
+        if session().in_transaction():
+            session.commit()
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
@@ -824,7 +876,7 @@ class TestMappings(BaseModelTestCase):
         history_id = h1.id
         self.expunge()
 
-        loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
+        loaded_invocation = self.model.session.get(model.WorkflowInvocation, workflow_invocation.id)
         assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
@@ -842,7 +894,7 @@ class TestMappings(BaseModelTestCase):
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
 
-        loaded_workflow = self.query(model.Workflow).get(workflow_id)
+        loaded_workflow = self.model.session.get(model.Workflow, workflow_id)
         assert len(loaded_workflow.steps[0].annotations) == 1
         copied_workflow = loaded_workflow.copy(user=user)
         annotations = copied_workflow.steps[0].annotations
@@ -1084,8 +1136,7 @@ class TestMappings(BaseModelTestCase):
 
     def _set_permissions(self, security_agent, dataset, permissions):
         # TODO: refactor set_all_dataset_permissions to actually throw an exception :|
-        error = security_agent.set_all_dataset_permissions(dataset, permissions)
-        if error:
+        if error := security_agent.set_all_dataset_permissions(dataset, permissions):
             raise Exception(error)
 
     def new_hda(self, history, **kwds):
@@ -1146,6 +1197,9 @@ class MockObjectStore:
         return True
 
     def get_filename(self, *args, **kwds):
+        return "mock_dataset_14.dat"
+
+    def construct_path(self, *args, **kwds):
         return "mock_dataset_14.dat"
 
     def get_store_by(self, *args, **kwds):

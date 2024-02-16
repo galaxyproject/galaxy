@@ -83,7 +83,7 @@ class GenericMicroarrayFile(data.Text):
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
             else:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, {dataset.metadata.block_count} blocks, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -122,7 +122,7 @@ class Gal(GenericMicroarrayFile):
         Set metadata for Gal file.
         """
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        headers = get_headers(dataset.file_name, sep="\t", count=5)
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]
         dataset.metadata.number_of_optional_header_records = int(headers[1][0])
@@ -164,7 +164,7 @@ class Gpr(GenericMicroarrayFile):
         Set metadata for Gpr file.
         """
         super().set_meta(dataset, overwrite=overwrite, **kwd)
-        headers = get_headers(dataset.file_name, sep="\t", count=5)
+        headers = get_headers(dataset.get_file_name(), sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]
         dataset.metadata.number_of_optional_header_records = int(headers[1][0])

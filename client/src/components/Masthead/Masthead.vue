@@ -1,16 +1,26 @@
 <script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
-import MastheadItem from "./MastheadItem";
-import { loadWebhookMenuItems } from "./_webhooks";
-import QuotaMeter from "./QuotaMeter";
-import { withPrefix } from "utils/redirect";
-import { getActiveTab } from "./utilities";
-import { watch, ref, reactive } from "vue";
-import { onMounted, onBeforeMount } from "vue";
-import { useRoute } from "vue-router/composables";
+import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { withPrefix } from "utils/redirect";
+import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+
+import { loadWebhookMenuItems } from "./_webhooks";
+import MastheadItem from "./MastheadItem";
+import QuotaMeter from "./QuotaMeter";
+import { getActiveTab } from "./utilities";
+
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+
+const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
 
 const route = useRoute();
+const { config, isConfigLoaded } = useConfig();
+
 const emit = defineEmits(["open-url"]);
 
 const props = defineProps({
@@ -79,7 +89,7 @@ watch(
 /* lifecyle */
 onBeforeMount(() => {
     entryPointStore = useEntryPointStore();
-    entryPointStore.ensurePollingEntryPoints();
+    entryPointStore.startWatchingEntryPoints();
     entryPointStore.$subscribe((mutation, state) => {
         updateVisibility(state.entryPoints.length > 0);
     });
@@ -91,9 +101,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
-        <b-navbar-nav>
-            <b-navbar-brand
+    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <BNavbarNav>
+            <BNavbarBrand
                 v-b-tooltip.hover
                 class="ml-2 mr-2"
                 title="Home"
@@ -101,36 +111,41 @@ onMounted(() => {
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
-            </b-navbar-brand>
+            </BNavbarBrand>
             <span v-if="brand" class="navbar-text px-2">
                 {{ brand }}
             </span>
-        </b-navbar-nav>
-        <b-navbar-nav>
-            <masthead-item
+        </BNavbarNav>
+        <BNavbarNav>
+            <MastheadItem
                 v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item
+            <MastheadItem
                 v-show="itsMenu.hidden !== true"
                 :key="`its-tab`"
                 :tab="itsMenu"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item
+            <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
                 :key="`extension-tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-        </b-navbar-nav>
-        <quota-meter />
-    </b-navbar>
+            <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <BNavItem
+                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system && !showActivityBar"
+                id="notifications-bell">
+                <NotificationsBell tooltip-placement="bottom" />
+            </BNavItem>
+        </BNavbarNav>
+        <QuotaMeter />
+    </BNavbar>
 </template>
 
 <style scoped lang="scss">

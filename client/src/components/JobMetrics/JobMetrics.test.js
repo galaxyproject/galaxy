@@ -1,9 +1,10 @@
 import { createTestingPinia } from "@pinia/testing";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
-import JobMetrics from "./JobMetrics";
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
+import JobMetrics from "./JobMetrics";
 
 // Ignore all axios calls, data is mocked locally -- just say "OKAY!"
 jest.mock("axios", () => ({

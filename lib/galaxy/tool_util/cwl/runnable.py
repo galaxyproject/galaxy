@@ -1,4 +1,5 @@
 """Lighter-weight variant of Planemo runnable outputs."""
+
 from galaxy.tool_util.parser import get_tool_source
 from .parser import workflow_proxy
 from .util import guess_artifact_type

@@ -1,27 +1,30 @@
 <template>
     <div>
         <b-link
+            aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             :data-workflow-dropdown="workflow.id"
-            aria-expanded="false">
+            draggable
+            @dragstart="onDragStart"
+            @dragend="onDragEnd">
             <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
+            <span
+                v-if="sourceType.includes('trs')"
+                v-b-tooltip.hover
+                aria-haspopup="true"
+                :title="getWorkflowTooltip(sourceType, workflow)">
+                <Icon fixed-width icon="check" class="mr-1 workflow-trs-icon" />
+            </span>
+            <span
+                v-if="sourceType == 'url'"
+                v-b-tooltip.hover
+                aria-haspopup="true"
+                :title="getWorkflowTooltip(sourceType, workflow)">
+                <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
+            </span>
         </b-link>
-        <span
-            v-if="sourceType.includes('trs')"
-            v-b-tooltip.hover
-            aria-haspopup="true"
-            :title="getWorkflowTooltip(sourceType, workflow)">
-            <Icon fixed-width icon="check" class="mr-1 workflow-trs-icon" />
-        </span>
-        <span
-            v-if="sourceType == 'url'"
-            v-b-tooltip.hover
-            aria-haspopup="true"
-            :title="getWorkflowTooltip(sourceType, workflow)">
-            <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
-        </span>
         <p v-if="workflow.description" class="workflow-dropdown-description">
             <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
         </p>
@@ -89,14 +92,16 @@
     </div>
 </template>
 <script>
-import { Services } from "./services";
-import { withPrefix } from "utils/redirect";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faEdit, faSignature, faTimes } from "@fortawesome/free-solid-svg-icons";
 import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "utils/redirect";
 
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { useUserStore } from "@/stores/userStore";
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
+
+import { Services } from "./services";
 
 library.add(faCaretDown);
 library.add(faSignature);
@@ -215,6 +220,12 @@ export default {
                 .catch((error) => {
                     this.$emit("onError", error);
                 });
+        },
+        onDragStart: function (evt) {
+            setDrag(evt, this.workflow);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onRename: function () {
             const id = this.workflow.id;

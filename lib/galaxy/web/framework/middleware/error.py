@@ -37,7 +37,6 @@ NoDefault = _NoDefault()
 
 
 class ErrorMiddleware:
-
     """
     Error handling middleware
 
@@ -223,7 +222,6 @@ class ResponseStartChecker:
 
 
 class CatchingIter:
-
     """
     A wrapper around the application iterator that will catch
     exceptions raised by the a generator, or by the close method, and
@@ -286,7 +284,6 @@ class CatchingIter:
 
 
 class Supplement:
-
     """
     This is a supplement used to display standard WSGI information in
     the traceback.
@@ -467,7 +464,7 @@ def send_report(rep, exc_data, html=True):
 
 
 def error_template(head_html, exception, extra):
-    return """
+    return f"""
     <!DOCTYPE HTML>
     <html>
     <head>
@@ -476,7 +473,7 @@ def error_template(head_html, exception, extra):
     .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    {}
+    {head_html}
     </head>
     <body>
     <div class="content">
@@ -484,16 +481,14 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>{}</p>
+    <p>{exception}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    {}
+    {extra}
     </div>
     </body>
-    </html>""".format(
-        head_html, exception, extra
-    )
+    </html>"""
 
 
 def make_error_middleware(app, global_conf, **kw):

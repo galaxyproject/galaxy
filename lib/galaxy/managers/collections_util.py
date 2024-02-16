@@ -144,8 +144,12 @@ def dictify_dataset_collection_instance(
         else:
             element_func = dictify_element_reference
         dict_value["elements"] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+        icj = dataset_collection_instance.implicit_collection_jobs
+        if icj:
+            dict_value["implicit_collection_jobs_id"] = icj.id
+        else:
+            dict_value["implicit_collection_jobs_id"] = None
 
-    security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 
@@ -156,8 +160,7 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
     are clicked.
     """
     dictified = element.to_dict(view="element")
-    element_object = element.element_object
-    if element_object is not None:
+    if (element_object := element.element_object) is not None:
         object_details = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,

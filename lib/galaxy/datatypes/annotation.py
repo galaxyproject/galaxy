@@ -23,7 +23,7 @@ class SnapHmm(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "SNAP HMM model"
         else:
             dataset.peek = "file does not exist"

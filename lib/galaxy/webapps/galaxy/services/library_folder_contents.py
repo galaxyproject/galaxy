@@ -171,7 +171,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             type="file",
             create_time=library_dataset.create_time.isoformat(),
             update_time=ldda.update_time.isoformat(),
-            can_manage=is_admin or (trans.user and security_agent.can_manage_dataset(current_user_roles, dataset)),
+            can_manage=is_admin or bool(trans.user and security_agent.can_manage_dataset(current_user_roles, dataset)),
             deleted=library_dataset.deleted,
             file_ext=library_dataset_dict["file_ext"],
             date_uploaded=library_dataset_dict["date_uploaded"],
@@ -183,7 +183,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             file_size=util.nice_size(raw_size),
             raw_size=raw_size,
             ldda_id=ldda.id,
-            tags=tag_manager.get_tags_str(ldda.tags),
+            tags=tag_manager.get_tags_list(ldda.tags),
             message=ldda.message or ldda.info,
         )
         return dataset_item

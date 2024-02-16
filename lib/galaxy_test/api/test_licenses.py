@@ -1,3 +1,4 @@
+from galaxy.util import UNKNOWN
 from ._framework import ApiTestCase
 
 
@@ -13,7 +14,7 @@ class TestLicensesApi(ApiTestCase):
         self._assert_matches_license_id(licenseId, response.json())
 
     def test_404_on_unknown_license(self):
-        licenseId = "unknown"
+        licenseId = UNKNOWN
         response = self._get(f"licenses/{licenseId}")
         self._assert_status_code_is(response, 404)
 

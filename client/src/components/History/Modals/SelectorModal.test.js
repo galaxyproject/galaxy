@@ -1,10 +1,13 @@
-import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import SelectorModal from "./SelectorModal";
-import { getLocalVue } from "tests/jest/helpers";
-import { useHistoryStore } from "stores/historyStore";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { BListGroupItem } from "bootstrap-vue";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { useHistoryStore } from "stores/historyStore";
+import { getLocalVue } from "tests/jest/helpers";
+
+import SelectorModal from "./SelectorModal";
 
 const localVue = getLocalVue();
 
@@ -19,14 +22,14 @@ const getFakeHistorySummaries = (num, selectedIndex = 0) => {
     result[selectedIndex].id = CURRENT_HISTORY_ID;
     return result;
 };
-const PROPS_WITH_10_HISTORIES = {
+const PROPS_FOR_MODAL = {
     currentHistoryId: CURRENT_HISTORY_ID,
-    histories: getFakeHistorySummaries(10),
-    perPage: 3,
+    histories: [],
     static: true, // Force the modal visible for testing
+    showModal: true,
 };
-const PROPS_WITH_10_HISTORY_MULTIPLE_SELECT = {
-    ...PROPS_WITH_10_HISTORIES,
+const PROPS_FOR_MODAL_MULTIPLE_SELECT = {
+    ...PROPS_FOR_MODAL,
     multiple: true,
 };
 
@@ -34,6 +37,18 @@ const CURRENT_HISTORY_INDICATION_TEXT = "(Current)";
 
 describe("History SelectorModal.vue", () => {
     let wrapper;
+    let axiosMock;
+    let historyStore;
+    const allHistories = getFakeHistorySummaries(15);
+
+    function getUpdatedAxiosMock() {
+        const offset = historyStore.historiesOffset;
+        axiosMock
+            .onGet(`/api/histories?view=summary&order=update_time&offset=${offset}&limit=10`)
+            .reply(200, allHistories.slice(offset, offset + 10));
+
+        axiosMock.onGet(`/api/histories/count`).reply(200, 15);
+    }
 
     async function mountWith(props) {
         const pinia = createPinia();
@@ -42,35 +57,47 @@ describe("History SelectorModal.vue", () => {
             localVue,
             pinia,
         });
-        const historyStore = useHistoryStore();
-        historyStore.setHistories(props.histories);
+        historyStore = useHistoryStore();
+        axiosMock = new MockAdapter(axios);
+        getUpdatedAxiosMock();
+        await historyStore.loadHistories();
+        await wrapper.setProps({
+            histories: historyStore.histories,
+        });
         historyStore.setCurrentHistoryId(props.currentHistoryId);
 
         await flushPromises();
     }
 
     it("should indicate the currently selected history", async () => {
-        await mountWith(PROPS_WITH_10_HISTORIES);
+        await mountWith(PROPS_FOR_MODAL);
 
         const currentHistoryRow = wrapper.find(`[data-pk="${CURRENT_HISTORY_ID}"]`);
         expect(currentHistoryRow.html()).toContain(CURRENT_HISTORY_INDICATION_TEXT);
+        axiosMock.restore();
     });
 
     it("paginates the histories", async () => {
-        await mountWith(PROPS_WITH_10_HISTORIES);
+        await mountWith(PROPS_FOR_MODAL);
 
-        const displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
-        expect(displayedRows.length).toBe(3);
+        let displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        expect(displayedRows.length).toBe(10);
+        expect(wrapper.find(".load-more-hist-button").exists()).toBe(true);
 
-        // filter out all page buttons. e.g [1] [2] [3] etc...
-        const pages = wrapper
-            .findAll(".pagination > .page-item")
-            .wrappers.filter((item) => item.text().match(/[0-9]+/));
-        expect(pages.length).toBe(4);
+        getUpdatedAxiosMock();
+        await historyStore.loadHistories();
+        await wrapper.setProps({
+            histories: historyStore.histories,
+        });
+
+        displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
+        expect(displayedRows.length).toBe(15);
+        expect(wrapper.find(".load-more-hist-button").exists()).toBe(false);
+        axiosMock.restore();
     });
 
     it("emits selectHistory with the correct history ID when a row is clicked", async () => {
-        await mountWith(PROPS_WITH_10_HISTORIES);
+        await mountWith(PROPS_FOR_MODAL);
 
         expect(wrapper.emitted()["selectHistory"]).toBeUndefined();
 
@@ -80,11 +107,12 @@ describe("History SelectorModal.vue", () => {
 
         expect(wrapper.emitted()["selectHistory"]).toBeDefined();
         expect(wrapper.emitted()["selectHistory"][0][0].id).toBe(targetHistoryId);
+        axiosMock.restore();
     });
 
     describe("Multi-selection Mode", () => {
         it("should select multiple histories", async () => {
-            await mountWith(PROPS_WITH_10_HISTORY_MULTIPLE_SELECT);
+            await mountWith(PROPS_FOR_MODAL_MULTIPLE_SELECT);
 
             expect(wrapper.emitted()["selectHistories"]).toBeUndefined();
 
@@ -104,6 +132,7 @@ describe("History SelectorModal.vue", () => {
             await button.trigger("click");
 
             expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
+            axiosMock.restore();
         });
     });
 });

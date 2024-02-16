@@ -343,6 +343,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """Returns default download path"""
         return DEFAULT_DOWNLOAD_PATH
 
+    @property
+    def anonymous_galaxy_interactor(self):
+        api_key = self.get_api_key(force=False)
+        interactor = self._get_interactor(api_key=api_key, allow_anonymous=True)
+        return interactor
+
     def api_interactor_for_logged_in_user(self):
         api_key = self.get_api_key(force=True)
         interactor = self._get_interactor(api_key=api_key)
@@ -581,8 +587,7 @@ EXAMPLE_WORKFLOW_URL_1 = (
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
-        actual_count = len(self.workflow_index_table_elements())
-        if actual_count != n:
+        if (actual_count := len(self.workflow_index_table_elements())) != n:
             message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
             raise AssertionError(message)
 
@@ -774,7 +779,6 @@ class SeleniumSessionGetPostMixin:
 
 
 class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetPopulator):
-
     """Implementation of BaseDatasetPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -786,7 +790,6 @@ class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.Ba
 
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
-
     """Implementation of BaseDatasetCollectionPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):
@@ -802,7 +805,6 @@ class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, pop
 class SeleniumSessionWorkflowPopulator(
     SeleniumSessionGetPostMixin, populators.BaseWorkflowPopulator, ImporterGalaxyInterface
 ):
-
     """Implementation of BaseWorkflowPopulator backed by bioblend."""
 
     def __init__(self, selenium_context: GalaxySeleniumContext):

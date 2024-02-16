@@ -11,6 +11,7 @@ rabbitmq installed via Homebrew, and if a fixed port is set for the test.
    GALAXY_TEST_PORT=9234 pytest test/integration/test_coexecution.py
 
 """
+
 import os
 import platform
 import random

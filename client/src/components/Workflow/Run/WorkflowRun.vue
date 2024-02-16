@@ -6,9 +6,9 @@
         </b-alert>
         <span v-else>
             <b-alert v-if="loading" variant="info" show>
-                <loading-span message="Loading workflow run data" />
+                <LoadingSpan message="Loading workflow run data" />
             </b-alert>
-            <workflow-run-success v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
+            <WorkflowRunSuccess v-else-if="!!invocations" :invocations="invocations" :workflow-name="workflowName" />
             <div v-else class="ui-form-composite">
                 <div class="ui-form-composite-messages mb-4">
                     <b-alert v-if="hasUpgradeMessages" variant="warning" show>
@@ -26,7 +26,7 @@
                         Workflow submission failed: {{ submissionError }}
                     </b-alert>
                 </div>
-                <workflow-run-form-simple
+                <WorkflowRunFormSimple
                     v-if="simpleForm"
                     :model="model"
                     :target-history="simpleFormTargetHistory"
@@ -34,7 +34,7 @@
                     @submissionSuccess="handleInvocations"
                     @submissionError="handleSubmissionError"
                     @showAdvanced="showAdvanced" />
-                <workflow-run-form
+                <WorkflowRunForm
                     v-else
                     :model="model"
                     @submissionSuccess="handleInvocations"
@@ -45,16 +45,18 @@
 </template>
 
 <script>
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { mapState } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-import { getRunData } from "./services";
 import LoadingSpan from "components/LoadingSpan";
-import WorkflowRunSuccess from "./WorkflowRunSuccess";
+import { mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { errorMessageAsString } from "utils/simple-error";
+
+import { useHistoryStore } from "@/stores/historyStore";
+
+import { WorkflowRunModel } from "./model";
+import { getRunData } from "./services";
 import WorkflowRunForm from "./WorkflowRunForm";
 import WorkflowRunFormSimple from "./WorkflowRunFormSimple";
-import { WorkflowRunModel } from "./model";
-import { errorMessageAsString } from "utils/simple-error";
+import WorkflowRunSuccess from "./WorkflowRunSuccess";
 
 export default {
     components: {
@@ -95,10 +97,10 @@ export default {
         };
     },
     computed: {
-        ...mapState(useHistoryStore, ["currentHistoryId"]),
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         historyStatusKey() {
-            return `${this.currentHistoryId}_${this.getLastUpdateTime}`;
+            return `${this.currentHistoryId}_${this.lastUpdateTime}`;
         },
     },
     watch: {
@@ -114,6 +116,10 @@ export default {
     methods: {
         handleInvocations(invocations) {
             this.invocations = invocations;
+            // make sure any new histories are added to historyStore
+            this.invocations.forEach((invocation) => {
+                this.getHistoryById(invocation.history_id);
+            });
         },
         handleSubmissionError(error) {
             this.submissionError = errorMessageAsString(error);

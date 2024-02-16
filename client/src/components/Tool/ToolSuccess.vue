@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router/composables";
+
 import { useConfig } from "@/composables/config";
 import { useJobStore } from "@/stores/jobStore";
-import { useRouter } from "vue-router/composables";
-import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
+
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolSuccessMessage from "./ToolSuccessMessage.vue";
 import Webhook from "@/components/Common/Webhook.vue";
+import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
 const { config } = useConfig(true);
 const jobStore = useJobStore();

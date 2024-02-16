@@ -5,8 +5,8 @@
 
 import axios, { type AxiosError, type AxiosResponse } from "axios";
 
-import { getAppRoot } from "@/onload/loadConfig";
 import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload/loadConfig";
 import _l from "@/utils/localization";
 
 /** Object with any internal structure. More specific key than built-in Object type */
@@ -355,6 +355,88 @@ export function wait(milliseconds: number) {
     });
 }
 
+/**
+ * Merges two arrays of objects with unique id values into a single array.
+ * If an object with the same id exists in both arrays, the object from the
+ * newList will overwrite the object from the oldList. The merged array will
+ * be sorted by the sortKey in the sortDirection.
+ * @param oldList The original array of objects.
+ * @param newList The array of objects to merge into the original array.
+ * @param sortKey If provided, the merged array will be sorted by this key.
+ * @param sortDirection If sortKey is provided, the merged array will be sorted in this direction.
+ * @returns An array of merged objects.
+ */
+export function mergeObjectListsById<T extends { id: string; [key: string]: any }>(
+    oldList: T[],
+    newList: T[],
+    sortKey: string | null = null,
+    sortDirection: "asc" | "desc" = "desc"
+): T[] {
+    const idToObjMap: { [key: string]: T } = oldList.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {});
+
+    newList.forEach((obj) => {
+        idToObjMap[obj.id] = obj;
+    });
+
+    const mergedList = Object.values(idToObjMap);
+
+    if (sortKey) {
+        mergedList.sort((a, b) => (a[sortKey] < b[sortKey] ? -1 : 1) * (sortDirection === "asc" ? 1 : -1));
+    }
+
+    return mergedList;
+}
+
+export function parseBool(value: string): boolean {
+    return value.toLowerCase() === "true";
+}
+
+type MatchObject<T extends string | number | symbol, R> = {
+    [_Case in T]: () => R;
+};
+
+/**
+ * Alternative to `switch` statement.
+ * Unlike `switch` it is exhaustive and allows for returning a value.
+ *
+ * @param key A key with the type of a Union of possible keys
+ * @param matcher An object with a key for every possible match and a function as value, which will be ran if a match occurs
+ * @returns The ran functions return value
+ *
+ * @example
+ * ```ts
+ * type literal = "a" | "b";
+ * const thing = "a" as literal;
+ *
+ * const result = match(thing, {
+ *   a: () => 1,
+ *   b: () => 2,
+ * });
+ *
+ * result === 1;
+ * ```
+ */
+export function match<T extends string | number | symbol, R>(key: T, matcher: MatchObject<T, R>): R {
+    return matcher[key]();
+}
+
+/**
+ * Checks whether or not an object contains all supplied keys.
+ *
+ * @param object Object to check
+ * @param keys Array of all keys to check for
+ * @returns if all keys were found
+ */
+export function hasKeys(object: unknown, keys: string[]) {
+    if (typeof object === "object" && object !== null) {
+        let valid = true;
+        keys.forEach((key) => (valid = valid && key in object));
+        return valid;
+    } else {
+        return false;
+    }
+}
+
 export default {
     cssLoadFile,
     get,
@@ -372,4 +454,5 @@ export default {
     setWindowTitle,
     waitForElementToBePresent,
     wait,
+    mergeObjectListsById,
 };

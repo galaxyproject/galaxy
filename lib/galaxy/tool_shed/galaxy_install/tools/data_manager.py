@@ -7,9 +7,12 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.util import (
     Element,
     etree,
@@ -21,9 +24,6 @@ from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
 
-if TYPE_CHECKING:
-    from galaxy.tools.data_manager.manager import DataManager
-
 log = logging.getLogger(__name__)
 
 SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
@@ -33,9 +33,10 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 
 class DataManagerHandler:
+    app: InstallationTarget
     root: Optional[Element] = None
 
-    def __init__(self, app):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     @property
@@ -51,8 +52,7 @@ class DataManagerHandler:
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        data_managers_path = self.data_managers_path
-        if data_managers_path:
+        if data_managers_path := self.data_managers_path:
             root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
@@ -73,8 +73,8 @@ class DataManagerHandler:
         relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ) -> List["DataManager"]:
-        rval: List["DataManager"] = []
+    ) -> List["DataManagerInterface"]:
+        rval: List["DataManagerInterface"] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -111,8 +111,8 @@ class DataManagerHandler:
                     data_manager_id = elem.get("id", None)
                     if data_manager_id is None:
                         log.error(
-                            "A data manager was defined that does not have an id and will not be installed:\n%s"
-                            % xml_to_string(elem)
+                            "A data manager was defined that does not have an id and will not be installed:\n%s",
+                            xml_to_string(elem),
                         )
                         continue
                     data_manager_dict = (
@@ -170,7 +170,7 @@ class DataManagerHandler:
                     )
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is etree.Comment:
+                elif elem.tag is etree.Comment:  # type: ignore[comparison-overlap]
                     pass
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")

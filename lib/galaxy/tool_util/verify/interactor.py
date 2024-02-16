@@ -42,6 +42,10 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionOutputDef,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import (
+    memory_bound_hexdigest,
+    parse_checksum_hash,
+)
 from . import verify
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -179,7 +183,7 @@ class GalaxyInteractorApi:
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
         self.cookies = None
         self.master_api_key = kwds["master_api_key"]
-        self.api_key = self.__get_user_key(
+        self.api_key = self._get_user_key(
             kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user")
         )
         if kwds.get("user_api_key_is_admin_key", False):
@@ -204,7 +208,9 @@ class GalaxyInteractorApi:
     def supports_test_data_download(self):
         return self.target_galaxy_version >= Version("19.01")
 
-    def __get_user_key(self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None) -> str:
+    def _get_user_key(
+        self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None
+    ) -> Optional[str]:
         if not test_user:
             test_user = "test@bx.psu.edu"
         if user_key:
@@ -313,7 +319,7 @@ class GalaxyInteractorApi:
 
     def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
         fetcher = self.__dataset_fetcher(history_id)
-        test_data_downloader = self.__test_data_downloader(tool_id, tool_version)
+        test_data_downloader = self.__test_data_downloader(tool_id, tool_version, attributes)
         verify_hid(
             outfile,
             hda_id=hda_id,
@@ -453,9 +459,7 @@ class GalaxyInteractorApi:
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
-            response = self._get(
-                f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}", admin=True
-            )
+            response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
                     result = response.content
@@ -476,10 +480,7 @@ class GalaxyInteractorApi:
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
 
         if result is None and (local_path is None or not os.path.exists(local_path)):
-            for test_data_directory in self.test_data_directories:
-                local_path = os.path.join(test_data_directory, filename)
-                if os.path.exists(local_path):
-                    break
+            local_path = self._find_in_test_data_directories(filename)
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
@@ -500,6 +501,14 @@ class GalaxyInteractorApi:
                 raise AssertionError(f"Test input file ({filename}) cannot be found.")
 
         return result
+
+    def _find_in_test_data_directories(self, filename: str) -> Optional[str]:
+        local_path = None
+        for test_data_directory in self.test_data_directories:
+            local_path = os.path.join(test_data_directory, filename)
+            if os.path.exists(local_path):
+                break
+        return local_path
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
@@ -549,7 +558,14 @@ class GalaxyInteractorApi:
                 )
             name = test_data["name"]
         else:
-            name = os.path.basename(fname)
+            file_name = None
+            file_name_exists = False
+            location = self._ensure_valid_location_in(test_data)
+            if fname:
+                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                file_name_exists = os.path.exists(f"{file_name}")
+            upload_from_location = not file_name_exists and location is not None
+            name = os.path.basename(location if upload_from_location else fname)
             tool_input.update(
                 {
                     "files_0|NAME": name,
@@ -557,7 +573,9 @@ class GalaxyInteractorApi:
                 }
             )
             files = {}
-            if force_path_paste:
+            if upload_from_location:
+                tool_input.update({"files_0|url_paste": location})
+            elif force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
@@ -581,6 +599,13 @@ class GalaxyInteractorApi:
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+
+    def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
+        location: Optional[str] = test_data.get("location")
+        has_valid_location = location and util.is_url(location)
+        if location and not has_valid_location:
+            raise ValueError(f"Invalid `location` URL: `{location}`")
+        return location
 
     def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -820,14 +845,50 @@ class GalaxyInteractorApi:
                 password=password,
                 username=username,
             )
-            test_user = self._post("users", data, key=admin_key).json()
+            test_user = self._post("users", data, key=admin_key, json=True).json()
         return test_user
 
-    def __test_data_downloader(self, tool_id, tool_version=None):
-        def test_data_download(filename, mode="file"):
+    def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
+        location = None
+        checksum = attributes.get("checksum") if attributes else None
+
+        def test_data_download_from_galaxy(filename, mode="file"):
             return self.test_data_download(tool_id, filename, mode=mode, tool_version=tool_version)
 
-        return test_data_download
+        def test_data_download_from_location(filename: str):
+            # try to find the file in the test data directories first
+            local_path = self._find_in_test_data_directories(filename)
+            if local_path and os.path.exists(local_path):
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # if not found, try to download it from the location to the test data directory
+            # to be reused in subsequent tests
+            if local_path:
+                util.download_to_file(location, local_path)
+                self._verify_checksum(local_path, checksum)
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # otherwise, download it to a temporary file
+            with tempfile.NamedTemporaryFile() as file_handle:
+                util.download_to_file(location, file_handle.name)
+                self._verify_checksum(file_handle.name, checksum)
+                return file_handle.file.read()
+
+        if attributes:
+            location = self._ensure_valid_location_in(attributes)
+            if location:
+                return test_data_download_from_location
+        return test_data_download_from_galaxy
+
+    def _verify_checksum(self, file_path: str, checksum: Optional[str] = None):
+        if checksum is None:
+            return
+        hash_function, expected_hash_value = parse_checksum_hash(checksum)
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        if calculated_hash_value != expected_hash_value:
+            raise AssertionError(
+                f"Failed to verify checksum with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
+            )
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
@@ -898,14 +959,21 @@ class GalaxyInteractorApi:
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
         return requests.put(url, **kwd)
 
-    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+    def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False, allow_redirects=True):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwargs: Dict[str, Any] = {}
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
-        return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
+        return requests.get(
+            url,
+            params=data,
+            headers=headers,
+            timeout=util.DEFAULT_SOCKET_TIMEOUT,
+            allow_redirects=allow_redirects,
+            **kwargs,
+        )
 
     def _head(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
@@ -1210,8 +1278,7 @@ def _verify_extra_files_content(
 
 
 class TestConfig(Protocol):
-    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        ...
+    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]: ...
 
 
 class NullClientTestConfig(TestConfig):
@@ -1587,6 +1654,29 @@ class JobOutputsError(AssertionError):
         self.output_exceptions = output_exceptions
 
 
+class ToolTestDescriptionDict(TypedDict):
+    name: str
+    inputs: Any
+    outputs: Any
+    output_collections: List[Dict[str, Any]]
+    stdout: Optional[AssertionList]
+    stderr: Optional[AssertionList]
+    expect_exit_code: Optional[int]
+    expect_failure: bool
+    expect_test_failure: bool
+    num_outputs: Optional[int]
+    command_line: Optional[AssertionList]
+    command_version: Optional[AssertionList]
+    required_files: List[Any]
+    required_data_tables: List[Any]
+    required_loc_files: List[str]
+    error: bool
+    tool_id: str
+    tool_version: Optional[str]
+    test_index: int
+    exception: Optional[str]
+
+
 class ToolTestDescription:
     """
     Encapsulates information about a tool test, and allows creation of a
@@ -1594,12 +1684,26 @@ class ToolTestDescription:
     doing dynamic tests in this way allows better integration)
     """
 
+    name: str
+    num_outputs: Optional[int]
+    stdout: Optional[AssertionList]
+    stderr: Optional[AssertionList]
+    command_line: Optional[AssertionList]
+    command_version: Optional[AssertionList]
+    required_files: List[Any]
+    required_data_tables: List[Any]
+    required_loc_files: List[str]
+    expect_exit_code: Optional[int]
+    expect_failure: bool
+    expect_test_failure: bool
+    exception: Optional[str]
+
     def __init__(self, processed_test_dict: ToolTestDict):
         assert (
             "test_index" in processed_test_dict
         ), "Invalid processed test description, must have a 'test_index' for naming, etc.."
         test_index = processed_test_dict["test_index"]
-        name = processed_test_dict.get("name", f"Test-{test_index + 1}")
+        name = cast(str, processed_test_dict.get("name", f"Test-{test_index + 1}"))
         error_in_test_definition = processed_test_dict["error"]
         if not error_in_test_definition:
             processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
@@ -1618,9 +1722,9 @@ class ToolTestDescription:
         self.tool_version = processed_test_dict.get("tool_version")
         self.name = name
         self.maxseconds = maxseconds
-        self.required_files = processed_test_dict.get("required_files", [])
-        self.required_data_tables = processed_test_dict.get("required_data_tables", [])
-        self.required_loc_files = processed_test_dict.get("required_loc_files", [])
+        self.required_files = cast(List[Any], processed_test_dict.get("required_files", []))
+        self.required_data_tables = cast(List[Any], processed_test_dict.get("required_data_tables", []))
+        self.required_loc_files = cast(List[str], processed_test_dict.get("required_loc_files", []))
 
         inputs = processed_test_dict.get("inputs", {})
         loaded_inputs = {}
@@ -1632,19 +1736,19 @@ class ToolTestDescription:
 
         self.inputs = loaded_inputs
         self.outputs = processed_test_dict.get("outputs", [])
-        self.num_outputs = processed_test_dict.get("num_outputs", None)
+        self.num_outputs = cast(Optional[int], processed_test_dict.get("num_outputs", None))
 
         self.error = processed_test_dict.get("error", False)
-        self.exception = processed_test_dict.get("exception", None)
+        self.exception = cast(Optional[str], processed_test_dict.get("exception", None))
 
         self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
-        self.command_line = processed_test_dict.get("command_line", None)
-        self.command_version = processed_test_dict.get("command_version", None)
-        self.stdout = processed_test_dict.get("stdout", None)
-        self.stderr = processed_test_dict.get("stderr", None)
-        self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)
-        self.expect_failure = processed_test_dict.get("expect_failure", False)
-        self.expect_test_failure = processed_test_dict.get("expect_test_failure", False)
+        self.command_line = cast(Optional[AssertionList], processed_test_dict.get("command_line", None))
+        self.command_version = cast(Optional[AssertionList], processed_test_dict.get("command_version", None))
+        self.stdout = cast(Optional[AssertionList], processed_test_dict.get("stdout", None))
+        self.stderr = cast(Optional[AssertionList], processed_test_dict.get("stderr", None))
+        self.expect_exit_code = cast(Optional[int], processed_test_dict.get("expect_exit_code", None))
+        self.expect_failure = cast(bool, processed_test_dict.get("expect_failure", False))
+        self.expect_test_failure = cast(bool, processed_test_dict.get("expect_test_failure", False))
 
     def test_data(self):
         """
@@ -1652,7 +1756,7 @@ class ToolTestDescription:
         """
         return test_data_iter(self.required_files)
 
-    def to_dict(self):
+    def to_dict(self) -> ToolTestDescriptionDict:
         inputs_dict = {}
         for key, value in self.inputs.items():
             if hasattr(value, "to_dict"):
@@ -1693,7 +1797,6 @@ def test_data_iter(required_files):
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
             location=extra.get("location", None),
-            md5=extra.get("md5", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 

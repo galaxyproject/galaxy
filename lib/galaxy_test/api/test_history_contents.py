@@ -495,7 +495,7 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(
-            history_id, type="dataset_collection", direct_upload=False
+            history_id, type="dataset_collection", direct_upload=False, copy_elements=False
         )
 
         payload["hide_source_items"] = True
@@ -503,9 +503,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self.__check_create_collection_response(dataset_collection_response)
 
         contents_response = self._get(f"histories/{history_id}/contents")
-        datasets = [
-            d for d in contents_response.json() if d["history_content_type"] == "dataset" and d["hid"] in [1, 2]
-        ]
+        datasets = [d for d in contents_response.json() if d["history_content_type"] == "dataset"]
         # Assert two datasets in source were hidden.
         assert len(datasets) == 2
         assert not datasets[0]["visible"]
@@ -553,7 +551,7 @@ class TestHistoryContentsApi(ApiTestCase):
         assert len(contents) == 1
         new_forward, _ = self.__get_paired_response_elements(history_id, contents[0])
         self._assert_has_keys(new_forward, "history_id")
-        assert new_forward["history_id"] == history_id
+        assert new_forward["history_id"] == second_history_id
 
     def test_hdca_copy_with_new_dbkey(self, history_id):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()
@@ -1025,6 +1023,41 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                 assert item["deleted"] is True
                 if item["history_content_type"] == "dataset":
                     self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
+
+    def test_deleting_collection_should_delete_contents(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_expected_datasets = 2
+            # Create collection and datasets
+            collection_ids = self._create_collection_in_history(history_id, num_collections=1)
+            original_collection_id = collection_ids[0]
+            # Check datasets are hidden and not deleted
+            history_contents = self._get_history_contents(history_id)
+            datasets = list(filter(lambda item: item["history_content_type"] == "dataset", history_contents))
+            assert len(datasets) == num_expected_datasets
+            for dataset in datasets:
+                assert dataset["deleted"] is False
+                assert dataset["visible"] is False
+
+            # Delete the collection
+            payload = {
+                "operation": "delete",
+                "items": [
+                    {
+                        "id": original_collection_id,
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, 1)
+
+            # We expect the original collection and the datasets to be deleted
+            num_expected_history_contents = num_expected_datasets + 1
+
+            history_contents = self._get_history_contents(history_id)
+            assert len(history_contents) == num_expected_history_contents
+            for item in history_contents:
+                assert item["deleted"] is True
 
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):

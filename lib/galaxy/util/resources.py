@@ -1,24 +1,36 @@
 """Provide a consistent interface into and utilities for importlib file resources.
 """
-try:
-    from importlib.abc import Traversable  # type: ignore[attr-defined]
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
-    from importlib_resources.abc import Traversable  # type: ignore[no-redef]
+
+import sys
+
+if sys.version_info >= (3, 9):
+    from importlib.resources import (
+        as_file,
+        files,
+        Package as Anchor,
+    )
+
+    if sys.version_info >= (3, 12):
+        from importlib.resources.abc import Traversable
+    else:
+        from importlib.abc import Traversable
+else:
+    from importlib_resources import (
+        as_file,
+        files,
+        Package as Anchor,
+    )
+    from importlib_resources.abc import Traversable
 
 
-def resource_path(package_or_requirement, resource_name):
+def resource_path(package_or_requirement: Anchor, resource_name: str) -> Traversable:
     """
-    Return specified resource as a string.
-
-    Replacement function for pkg_resources.resource_string, but returns unicode string instead of bytestring.
+    Return specified resource as a Traversable.
     """
     return files(package_or_requirement).joinpath(resource_name)
 
 
-def resource_string(package_or_requirement, resource_name) -> str:
+def resource_string(package_or_requirement: Anchor, resource_name: str) -> str:
     """
     Return specified resource as a string.
 
@@ -28,6 +40,7 @@ def resource_string(package_or_requirement, resource_name) -> str:
 
 
 __all__ = (
+    "as_file",
     "files",
     "resource_string",
     "resource_path",

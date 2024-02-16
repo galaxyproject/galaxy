@@ -79,6 +79,11 @@ export default {
                             title: "Local Data",
                             route: "/admin/data_manager",
                         },
+                        {
+                            id: "admin-link-notifications",
+                            title: "Notifications and Broadcasts",
+                            route: "/admin/notifications",
+                        },
                     ],
                 },
                 {
@@ -135,11 +140,6 @@ export default {
                             id: "admin-link-manage-dependencies",
                             title: "Manage Dependencies",
                             route: "/admin/toolbox_dependencies",
-                        },
-                        {
-                            id: "admin-link-tool-versions",
-                            title: "View Lineage",
-                            route: "/admin/tool_versions",
                         },
                         {
                             id: "admin-link-error-stack",

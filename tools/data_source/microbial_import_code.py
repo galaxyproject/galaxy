@@ -159,7 +159,7 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             app.model.context.add(history)
             app.model.context.flush()
             try:
-                copyfile(filepath, newdata.file_name)
+                copyfile(filepath, newdata.get_file_name())
                 newdata.info = newdata.name
                 newdata.state = newdata.states.OK
             except Exception:

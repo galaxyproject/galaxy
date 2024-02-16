@@ -6,7 +6,10 @@ from typing import (
 from uuid import uuid4
 
 from galaxy_test.base.decorators import requires_new_history
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    skip_without_tool,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -38,6 +41,78 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         self._assert_monitoring_and_cleanup_for_discarded_resource(
             "datasets", test_datasets, dataset_ids, delete_resource_uri=f"histories/{history_id}/contents"
         )
+
+    @requires_new_history
+    @skip_without_tool("cat_data_and_sleep")
+    def test_discarded_datasets_with_null_size_are_sorted_correctly(self):
+        history_id = self.dataset_populator.new_history(f"History for discarded datasets {uuid4()}")
+        test_datasets = [
+            StoredItemDataForTests(name=f"TestDataset01_{uuid4()}", size=10),
+            StoredItemDataForTests(name=f"TestDataset02_{uuid4()}", size=50),
+        ]
+        dataset_ids = self._create_datasets_in_history_with(history_id, test_datasets)
+
+        # Run a tool on the first dataset and delete the output before completing the job
+        # so it has a null size in the database
+        inputs = {
+            "input1": {"src": "hda", "id": dataset_ids[0]},
+            "sleep_time": 10,
+        }
+        run_response = self.dataset_populator.run_tool_raw(
+            "cat_data_and_sleep",
+            inputs,
+            history_id,
+        )
+        null_size_dataset = run_response.json()["outputs"][0]
+        self.dataset_populator.delete_dataset(history_id, null_size_dataset["id"], stop_job=True)
+        # delete the other datasets too
+        for dataset_id in dataset_ids:
+            self.dataset_populator.delete_dataset(history_id, dataset_id)
+
+        # Check the dataset size sorting is correct [0, 10, 50]
+        item_names_forward_order = [null_size_dataset["name"], test_datasets[0].name, test_datasets[1].name]
+        item_names_reverse_order = list(reversed(item_names_forward_order))
+        expected_order_by_map = {
+            "size-asc": item_names_forward_order,
+            "size-dsc": item_names_reverse_order,
+        }
+        for order_by, expected_ordered_names in expected_order_by_map.items():
+            self._assert_order_is_expected("storage/datasets/discarded", order_by, expected_ordered_names)
+
+    @requires_new_history
+    def test_archived_histories_monitoring_and_cleanup(self):
+        test_histories = self._build_test_items(resource_name="History")
+        history_ids = self._create_histories_with(test_histories)
+        expected_total_items = len(test_histories)
+        expected_total_size = sum([item.size for item in test_histories])
+
+        # Archive the histories
+        for history_id in history_ids:
+            self.dataset_populator.archive_history(history_id)
+
+        # All the `test_histories` should be in the summary
+        summary_response = self._get("storage/histories/archived/summary")
+        self._assert_status_code_is_ok(summary_response)
+        summary = summary_response.json()
+        assert summary["total_items"] == expected_total_items
+        assert summary["total_size"] == expected_total_size
+
+        # Check listing all the archived items
+        paginated_items_response = self._get("storage/histories/archived")
+        self._assert_status_code_is_ok(paginated_items_response)
+        paginated_items = paginated_items_response.json()
+        assert len(paginated_items) == expected_total_items
+        assert sum([item["size"] for item in paginated_items]) == expected_total_size
+
+        # Cleanup the archived histories
+        payload = {"item_ids": history_ids}
+        cleanup_response = self._delete("storage/histories", data=payload, json=True)
+        self._assert_status_code_is_ok(cleanup_response)
+        cleanup_result = cleanup_response.json()
+        assert cleanup_result["total_item_count"] == expected_total_items
+        assert cleanup_result["success_item_count"] == expected_total_items
+        assert cleanup_result["total_free_bytes"] == expected_total_size
+        assert not cleanup_result["errors"]
 
     def _build_test_items(self, resource_name: str):
         return [
@@ -129,7 +204,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
             history_ids.append(history_id)
             # Create a dataset with content equal to the expected size of the history
             if history_data.size:
-                self.dataset_populator.new_dataset(history_id, content=f"{'0'*(history_data.size-1)}\n")
+                self.dataset_populator.new_dataset(history_id, content=f"{'0' * (history_data.size - 1)}\n")
         if wait_for_histories:
             for history_id in history_ids:
                 self.dataset_populator.wait_for_history(history_id)
@@ -141,7 +216,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         dataset_ids = []
         for dataset_data in test_datasets:
             dataset = self.dataset_populator.new_dataset(
-                history_id, name=dataset_data.name, content=f"{'0'*(dataset_data.size-1)}\n"
+                history_id, name=dataset_data.name, content=f"{'0' * (dataset_data.size - 1)}\n"
             )
             dataset_ids.append(dataset["id"])
         if wait_for_history:

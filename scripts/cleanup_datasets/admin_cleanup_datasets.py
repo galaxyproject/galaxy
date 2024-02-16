@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Mark datasets as deleted that are older than specified cutoff
-and (optionaly) with a tool_id that matches the specified search
+and (optionally) with a tool_id that matches the specified search
 string.
 
 This script is useful for administrators to cleanup after users who
@@ -64,6 +64,7 @@ from cleanup_datasets import CleanupDatasetsApplication  # noqa: I100
 import galaxy.config
 import galaxy.model.mapping
 import galaxy.util
+from galaxy.model.base import transaction
 from galaxy.util.script import (
     app_properties_from_args,
     populate_config_args,
@@ -120,10 +121,10 @@ def main():
         default=False,
     )
     parser.add_argument(
-        "--smtp", default=None, help="SMTP Server to use to send email. " "Default: [read from galaxy ini file]"
+        "--smtp", default=None, help="SMTP Server to use to send email. " "Default: [read from galaxy config file]"
     )
     parser.add_argument(
-        "--fromaddr", default=None, help="From address to use to send email. " "Default: [read from galaxy ini file]"
+        "--fromaddr", default=None, help="From address to use to send email. " "Default: [read from galaxy config file]"
     )
     populate_config_args(parser)
 
@@ -201,14 +202,18 @@ def administrative_delete_datasets(
     # Get HDAs older than cutoff time (ignore tool_id at this point)
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
-    hda_ids_query = sa.select(
-        (app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted),
-        whereclause=and_(
-            app.model.Dataset.__table__.c.deleted == false(),
-            app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
-            app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
-        ),
-        from_obj=[sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__)],
+    hda_ids_query = (
+        sa.select(
+            app.model.HistoryDatasetAssociation.__table__.c.id, app.model.HistoryDatasetAssociation.__table__.c.deleted
+        )
+        .where(
+            and_(
+                app.model.Dataset.__table__.c.deleted == false(),
+                app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                app.model.HistoryDatasetAssociation.__table__.c.deleted == false(),
+            )
+        )
+        .select_from(sa.outerjoin(app.model.Dataset.__table__, app.model.HistoryDatasetAssociation.__table__))
     )
 
     # Add all datasets associated with Histories to our list
@@ -229,16 +234,19 @@ def administrative_delete_datasets(
 
     # Process each of the Dataset objects
     for hda_id in hda_ids:
-        user_query = sa.select(
-            [app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__],
-            whereclause=and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id),
-            from_obj=[
+        user_query = (
+            sa.select(
+                app.model.HistoryDatasetAssociation.__table__, app.model.History.__table__, app.model.User.__table__
+            )
+            .where(and_(app.model.HistoryDatasetAssociation.__table__.c.id == hda_id))
+            .select_from(
                 sa.join(app.model.User.__table__, app.model.History.__table__).join(
                     app.model.HistoryDatasetAssociation.__table__
                 )
-            ],
-            use_labels=True,
+            )
+            .set_label_style()
         )
+
         for result in app.sa_session.execute(user_query):
             user_notifications[result[app.model.User.__table__.c.email]].append(
                 (
@@ -255,7 +263,9 @@ def administrative_delete_datasets(
                     hda.deleted = True
                     app.sa_session.add(hda)
                     print("Marked HistoryDatasetAssociation id %d as " "deleted" % hda.id)
-                app.sa_session.flush()
+                session = app.sa_session()
+                with transaction(session):
+                    session.commit()
 
     emailtemplate = Template(filename=template_file)
     for email, dataset_list in user_notifications.items():

@@ -19,7 +19,6 @@ from typing import (
     Union,
 )
 
-from galaxy import exceptions
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -301,7 +300,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             compute_environment: Optional["ComputeEnvironment"] = None,
         ) -> None:
             self.dataset = dataset
-            self.metadata: "MetadataCollection" = dataset.metadata
+            self.metadata: MetadataCollection = dataset.metadata
             self.compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:
@@ -469,40 +468,21 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None:
             return self.false_path
         else:
-            return str(self.unsanitized.file_name)
+            return str(self.unsanitized.get_file_name())
+
+    @property
+    def file_name(self) -> str:
+        return str(self)
 
     def __getattr__(self, key: Any) -> Any:
-        if self.false_path is not None and key == "file_name":
-            # Path to dataset was rewritten for this job.
-            return self.false_path
-        elif key == "extra_files_path":
+        if key in ("extra_files_path", "files_path"):
+            if not self.compute_environment:
+                # Only happens in WrappedParameters context, refactor!
+                return self.unsanitized.extra_files_path
             if self.__io_type == "input":
-                path_rewrite = self.compute_environment and self.compute_environment.input_extra_files_rewrite(
-                    self.unsanitized
-                )
+                return self.compute_environment.input_extra_files_rewrite(self.unsanitized)
             else:
-                path_rewrite = self.compute_environment and self.compute_environment.output_extra_files_rewrite(
-                    self.unsanitized
-                )
-            if path_rewrite:
-                return path_rewrite
-            else:
-                try:
-                    # Assume it is an output and that this wrapper
-                    # will be set with correct "files_path" for this
-                    # job.
-                    return self.files_path
-                except AttributeError:
-                    # Otherwise, we have an input - delegate to model and
-                    # object store to find the static location of this
-                    # directory.
-                    try:
-                        return self.unsanitized.extra_files_path
-                    except exceptions.ObjectNotFound:
-                        # NestedObjectstore raises an error here
-                        # instead of just returning a non-existent
-                        # path like DiskObjectStore.
-                        raise
+                return self.compute_environment.output_extra_files_rewrite(self.unsanitized)
         elif key == "serialize":
             return self.serialize
         else:
@@ -813,9 +793,8 @@ class ElementIdentifierMapper:
             self.identifier_key_dict = {}
 
     def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
-        identifier_key = self.identifier_key_dict.get(dataset_value, None)
         element_identifier = None
-        if identifier_key:
+        if identifier_key := self.identifier_key_dict.get(dataset_value, None):
             element_identifier = input_values.get(identifier_key, None)
 
         return element_identifier

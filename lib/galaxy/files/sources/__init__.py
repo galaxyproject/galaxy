@@ -1,6 +1,11 @@
 import abc
 import os
 import time
+from dataclasses import (
+    dataclass,
+    field,
+)
+from enum import Enum
 from typing import (
     Any,
     ClassVar,
@@ -10,6 +15,7 @@ from typing import (
 )
 
 from typing_extensions import (
+    Literal,
     NotRequired,
     TypedDict,
 )
@@ -29,6 +35,40 @@ DEFAULT_WRITABLE = False
 
 if TYPE_CHECKING:
     from galaxy.files import ConfiguredFileSourcesConfig
+
+
+class PluginKind(str, Enum):
+    """Enum to distinguish between different kinds or categories of plugins."""
+
+    rfs = "rfs"
+    """Remote File System
+
+    A remote file system is a file source that is backed by a remote file system
+    that is accessible via a URI. Examples include FTP, SFTP, S3, etc.
+    """
+
+    drs = "drs"
+    """Data Repository Service
+
+    A data repository service is a file source that is backed by a remote data
+    repository service implementing the (DRS) API which provides a generic interface
+    to data repositories so data consumers, including workflow systems,
+    can access data in a single, standard way regardless of where it's stored and how it's managed.
+    """
+
+    rdm = "rdm"
+    """Research Data Management
+
+    A research data management file source is a file source that is backed by a remote
+    research data management system that can provide DOIs. Examples include InvenioRDM, Zenodo, etc.
+    """
+
+    stock = "stock"
+    """Stock Plugin
+
+    A stock plugin is a file source that is shipped with Galaxy and covers common
+    use cases. Examples include the UserFTP, LibraryImport, UserLibraryImport, etc.
+    """
 
 
 class FilesSourceProperties(TypedDict):
@@ -52,14 +92,55 @@ class FilesSourceProperties(TypedDict):
     browsable: NotRequired[bool]
 
 
+@dataclass
 class FilesSourceOptions:
-    """Options to control behaviour of filesource operations, such as realize_to and write_from"""
+    """Options to control behavior of file source operations, such as realize_to, write_from and list."""
+
+    # Indicates access to the FS operation with intent to write.
+    # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
+    # so those should be skipped while browsing with writeable=True.
+    writeable: Optional[bool] = False
 
     # Property overrides for values initially configured through the constructor. For example
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties]
+    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
+
+
+class EntryData(TypedDict):
+    """Provides data to create a new entry in a file source."""
+
+    name: str
+    # May contain additional properties depending on the file source
+
+
+class Entry(TypedDict):
+    """Represents the result of creating a new entry in a file source."""
+
+    name: str
+    uri: str
+    # May contain additional properties depending on the file source
+    external_link: NotRequired[str]
+
+
+class RemoteEntry(TypedDict):
+    name: str
+    uri: str
+    path: str
+
+
+TDirectoryClass = TypedDict("TDirectoryClass", {"class": Literal["Directory"]})
+TFileClass = TypedDict("TFileClass", {"class": Literal["File"]})
+
+
+class RemoteDirectory(RemoteEntry, TDirectoryClass):
+    pass
+
+
+class RemoteFile(RemoteEntry, TFileClass):
+    size: int
+    ctime: str
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
@@ -193,6 +274,7 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
 class BaseFilesSource(FilesSource):
     plugin_type: ClassVar[str]
+    plugin_kind: ClassVar[PluginKind] = PluginKind.rfs  # Remote File Source by default, override in subclasses
 
     def get_browsable(self) -> bool:
         # Check whether the list method has been overridden
@@ -293,9 +375,25 @@ class BaseFilesSource(FilesSource):
     def _list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
 
+    def create_entry(
+        self, entry_data: EntryData, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ) -> Entry:
+        self._ensure_writeable()
+        self._check_user_access(user_context)
+        return self._create_entry(entry_data, user_context, opts)
+
+    def _create_entry(
+        self, entry_data: EntryData, user_context=None, opts: Optional[FilesSourceOptions] = None
+    ) -> Entry:
+        """Create a new entry (directory) in the file source.
+
+        The file source must be writeable.
+        This function can be overridden by subclasses to provide a way of creating entries in the file source.
+        """
+        raise NotImplementedError()
+
     def write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        if not self.get_writable():
-            raise Exception("Cannot write to a non-writable file source.")
+        self._ensure_writeable()
         self._check_user_access(user_context)
         self._write_from(target_path, native_path, user_context=user_context, opts=opts)
 
@@ -310,6 +408,10 @@ class BaseFilesSource(FilesSource):
     @abc.abstractmethod
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         pass
+
+    def _ensure_writeable(self):
+        if not self.get_writable():
+            raise Exception("Cannot write to a non-writable file source.")
 
     def _check_user_access(self, user_context):
         """Raises an exception if the given user doesn't have the rights to access this file source.

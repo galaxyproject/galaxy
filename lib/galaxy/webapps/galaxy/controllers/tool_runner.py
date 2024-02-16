@@ -1,6 +1,7 @@
 """
 Controller handles external tool related requests
 """
+
 import logging
 
 from markupsafe import escape
@@ -74,8 +75,13 @@ class ToolRunner(BaseUIController):
         if tool.tool_type in ["default", "interactivetool"]:
             return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
 
-        # execute tool without displaying form (used for datasource tools)
+        # execute tool without displaying form
+        # (used for datasource tools, but note that data_source_async tools
+        # are handled separately by the async controller)
         params = galaxy.util.Params(kwd, sanitize=False)
+        if tool.tool_type == "data_source":
+            # preserve original params sent by the remote server as extra dict
+            params.update({"incoming_request_params": params.__dict__.copy()})
         # do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate(params)

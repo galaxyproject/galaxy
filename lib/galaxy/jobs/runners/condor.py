@@ -10,6 +10,7 @@ greater reuse of the DRM specific hooks you'll need to write. Ideally this plugi
 have been written to target that framework, but we don't have the bandwidth to rewrite
 it at this time.
 """
+
 import logging
 import os
 import subprocess
@@ -76,8 +77,7 @@ class CondorJobRunner(AsynchronousJobRunner):
                 # HTCondor needs the image as 'docker_image'
                 query_params.update({"docker_image": container.container_id})
 
-        galaxy_slots = query_params.get("request_cpus", None)
-        if galaxy_slots:
+        if galaxy_slots := query_params.get("request_cpus", None):
             galaxy_slots_statement = f'GALAXY_SLOTS="{galaxy_slots}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
         else:
             galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'

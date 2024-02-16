@@ -5,7 +5,7 @@ import os
 from galaxy_test.driver import integration_util
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.xml")
+EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.yml")
 
 
 class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
@@ -36,6 +36,7 @@ test_tools = integration_util.integration_tool_runner(
         "tool_provided_metadata_9",
         "simple_constructs_y",
         "composite_output",
+        "composite_output_tests",
         "detect_errors",
     ]
 )

@@ -153,8 +153,8 @@ REQUIREMENT_B["version"] = "4.7"
 
 def test_tool_requirement_equality():
     a = ToolRequirement.from_dict(REQUIREMENT_A)
-    assert a == ToolRequirement(**REQUIREMENT_A)
-    b = ToolRequirement(**REQUIREMENT_B)
+    assert a == ToolRequirement(**REQUIREMENT_A)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/10008
+    b = ToolRequirement(**REQUIREMENT_B)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/10008
     assert a != b
 
 

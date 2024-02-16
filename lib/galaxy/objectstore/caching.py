@@ -1,5 +1,6 @@
 """
 """
+
 import logging
 import os
 import threading
@@ -12,7 +13,10 @@ from typing import (
 
 from typing_extensions import NamedTuple
 
-from galaxy.util import nice_size
+from galaxy.util import (
+    nice_size,
+    string_as_bool,
+)
 from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
@@ -28,6 +32,25 @@ class CacheTarget(NamedTuple):
     path: str
     size: int  # cache size in gigabytes
     limit: float  # cache limit as a percent
+
+    def fits_in_cache(self, bytes: int) -> bool:
+        # if we don't have a positive cache size - interpret it as an unbounded
+        # object store
+        if not (self.size > 0):
+            return True
+
+        if bytes > (self.size * ONE_GIGA_BYTE * self.limit):
+            return False
+        return True
+
+    @property
+    def log_description(self) -> str:
+        return f"{self.limit} percent of {self.size} gigabytes"
+
+
+def check_caches(targets: List[CacheTarget]):
+    for target in targets:
+        check_cache(target)
 
 
 def check_cache(cache_target: CacheTarget):
@@ -103,16 +126,48 @@ def parse_caching_config_dict_from_xml(config_xml):
     if len(cache_els) > 0:
         c_xml = config_xml.findall("cache")[0]
         cache_size = float(c_xml.get("size", -1))
-
         staging_path = c_xml.get("path", None)
+        monitor = c_xml.get("monitor", "auto")
+        cache_updated_data = string_as_bool(c_xml.get("cache_updated_data", "True"))
 
         cache_dict = {
             "size": cache_size,
             "path": staging_path,
+            "monitor": monitor,
+            "cache_updated_data": cache_updated_data,
         }
     else:
         cache_dict = {}
     return cache_dict
+
+
+def configured_cache_size(config, config_dict) -> int:
+    cache_config_dict = config_dict.get("cache") or {}
+    cache_size = cache_config_dict.get("size") or config.object_store_cache_size
+    if cache_size != -1:
+        # Convert admin-set GBs to bytes internally for quick comparison
+        cache_size = cache_size * ONE_GIGA_BYTE
+    return cache_size
+
+
+def enable_cache_monitor(config, config_dict) -> Tuple[bool, int]:
+    cache_config_dict = config_dict.get("cache") or {}
+    default_interval = getattr(config, "object_store_cache_monitor_interval", 600)
+    interval = cache_config_dict.get("monitor_interval") or default_interval
+
+    disable_process_management = getattr(config, "disable_process_management", None)
+    if disable_process_management is True:
+        return False, interval
+
+    if config_dict.get("enable_cache_monitor", False) is False:
+        return False, interval
+
+    default_cache_driver = getattr(config, "object_store_cache_monitor_driver", "auto")
+    monitor = cache_config_dict.get("monitor", default_cache_driver)
+    if monitor == "auto":
+        monitor = "celery" if getattr(config, "enable_celery_tasks", False) else "inprocess"
+
+    return monitor == "inprocess", interval
 
 
 class InProcessCacheMonitor:

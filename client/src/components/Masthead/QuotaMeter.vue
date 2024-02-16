@@ -1,12 +1,24 @@
 <template>
     <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link v-b-tooltip.hover.left to="/storage" :disabled="isAnonymous" class="ml-auto" :title="title">
+            <b-link
+                v-b-tooltip.hover.left
+                to="/storage"
+                :disabled="isAnonymous"
+                class="ml-auto"
+                :title="title"
+                data-description="storage dashboard link">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
         </div>
         <div v-else class="quota-meter d-flex align-items-center">
-            <b-link v-b-tooltip.hover.left class="quota-progress" :disabled="isAnonymous" to="/storage" :title="title">
+            <b-link
+                v-b-tooltip.hover.left
+                class="quota-progress"
+                :disabled="isAnonymous"
+                to="/storage"
+                :title="title"
+                data-description="storage dashboard link">
                 <b-progress :max="100">
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
@@ -19,8 +31,9 @@
 <script>
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
+
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
-import { mapGetters } from "vuex";
 
 export default {
     name: "QuotaMeter",
@@ -30,7 +43,7 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("config", ["config"]),
+        ...mapState(useConfigStore, ["config"]),
         ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;

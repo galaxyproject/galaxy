@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "bismark_0070"
 repository_description = "Galaxy's bismark wrapper"
@@ -30,30 +28,9 @@ class TestBismarkRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            repository,
-            filename="bismark/bismark.tar",
-            filepath=None,
-            valid_tools_only=False,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded bismark tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
-        self.display_manage_repository_page(repository, strings_displayed=["Invalid tools"])
-        invalid_revision = self.get_repository_tip(repository)
-        self.upload_file(
-            repository,
-            filename="bismark/bismark_methylation_extractor.xml",
-            filepath=None,
-            valid_tools_only=False,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded an updated tool xml.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.user_populator().setup_bismark_repo(repository)
+        invalid_revision = self.get_repository_first_revision(repository)
+        self.display_manage_repository_page(repository, strings_displayed=[self.invalid_tools_labels])
         valid_revision = self.get_repository_tip(repository)
         tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3"
         tool_metadata_strings_displayed = [

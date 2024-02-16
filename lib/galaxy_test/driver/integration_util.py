@@ -4,6 +4,7 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
+
 import os
 import re
 from typing import (
@@ -12,7 +13,6 @@ from typing import (
     Optional,
     Type,
     TYPE_CHECKING,
-    TypeVar,
 )
 from unittest import (
     skip,
@@ -24,8 +24,11 @@ import pytest
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import safe_makedirs
-from galaxy.util.commands import which
 from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import (
+    _identity,
+    skip_unless_executable,
+)
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
@@ -41,10 +44,6 @@ AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
-
-
-def _identity(func):
-    return func
 
 
 def skip_if_jenkins(cls):
@@ -64,12 +63,6 @@ def skip_unless_postgres():
     if POSTGRES_CONFIGURED:
         return _identity
     return pytest.mark.skip("GALAXY_TEST_DBURI does not point to postgres database, required for this test.")
-
-
-def skip_unless_executable(executable):
-    if which(executable):
-        return _identity
-    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
 def skip_unless_docker():
@@ -137,8 +130,7 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         cls._app_available = False
 
     def tearDown(self):
-        logs = self._test_driver.get_logs()
-        if logs:
+        if logs := self._test_driver.get_logs():
             print(logs)
         return super().tearDown()
 
@@ -205,16 +197,16 @@ class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-IntegrationInstanceObject = TypeVar("IntegrationInstanceObject", bound=IntegrationInstance)
-
-
-def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
-    def _instance() -> Iterator[IntegrationInstanceObject]:
+def integration_module_instance(clazz: Type[IntegrationInstance]):
+    def _instance() -> Iterator[IntegrationInstance]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()
-        yield instance
-        instance.tearDownClass()
+        try:
+            yield instance
+        finally:
+            instance.tearDown()
+            instance.tearDownClass()
 
     return pytest.fixture(scope="module")(_instance)
 

@@ -1,6 +1,6 @@
-import { onMounted, onUnmounted, onUpdated, ref, unref, watch } from "vue";
-import type { Ref } from "vue";
 import { createPopper } from "@popperjs/core";
+import type { Ref } from "vue";
+import { onMounted, onUnmounted, onUpdated, ref, unref, watch } from "vue";
 
 export type MaybeRef<T> = T | Ref<T>;
 
@@ -33,6 +33,7 @@ export function usePopperjs(
                 trigger: MaybeRef<Trigger | undefined>;
                 delayOnMouseover: MaybeRef<number | undefined>;
                 delayOnMouseout: MaybeRef<number | undefined>;
+                disabled: MaybeRef<boolean | undefined>;
                 forceShow: MaybeRef<boolean | undefined>;
             }
     >
@@ -134,6 +135,17 @@ export function usePopperjs(
         }
     );
 
+    watch(
+        () => unref(options?.disabled),
+        () => {
+            if (unref(options?.disabled)) {
+                doOff();
+            } else {
+                doOn();
+            }
+        }
+    );
+
     const timer = ref<any>();
     const doMouseover = () => {
         if (unref(options?.delayOnMouseover) === 0) {
@@ -177,6 +189,8 @@ export function usePopperjs(
                 on(popperRef.value!, "mouseover", doMouseover);
                 on(referenceRef.value!, "mouseout", doMouseout);
                 on(popperRef.value!, "mouseout", doMouseout);
+                on(referenceRef.value!, "mousedown", doMouseout);
+                on(popperRef.value!, "mousedown", doMouseout);
                 break;
             }
 
@@ -207,6 +221,8 @@ export function usePopperjs(
         off(popperRef.value!, "mouseover", doMouseover);
         off(referenceRef.value!, "mouseout", doMouseout);
         off(popperRef.value!, "mouseout", doMouseout);
+        off(referenceRef.value!, "mousedown", doMouseout);
+        off(popperRef.value!, "mousedown", doMouseout);
 
         off(referenceRef.value!, "focus", doOpen);
         off(popperRef.value!, "focus", doOpen);

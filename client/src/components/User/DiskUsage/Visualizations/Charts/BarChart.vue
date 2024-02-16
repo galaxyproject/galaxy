@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BCard } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
 import * as d3 from "d3";
+import { computed, onMounted, ref, watch } from "vue";
 
 import type { DataValuePoint } from ".";
 
@@ -184,6 +184,17 @@ function createLegend() {
         .attr("fill", "black")
         .text((d) => props.labelFormatter(d));
 
+    // Set the width of the SVG to the width of the widest entry
+    let maxWidth = 0;
+    for (const node of entries.nodes()) {
+        const width = (node as HTMLElement).getBoundingClientRect().width;
+        maxWidth = Math.max(maxWidth, width);
+    }
+    const svg = container.node()?.closest("svg");
+    if (svg) {
+        svg.setAttribute("width", `${maxWidth}`);
+    }
+
     return entries;
 }
 
@@ -294,7 +305,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 </script>
 
 <template>
-    <b-card class="mb-3 mx-3">
+    <BCard class="mb-3">
         <template v-slot:header>
             <h3 class="text-center my-1">
                 <slot name="title">
@@ -322,7 +333,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
                 <div>{{ labelFormatter(tooltipDataPoint) }}</div>
             </slot>
         </div>
-    </b-card>
+    </BCard>
 </template>
 
 <style lang="scss" scoped>
@@ -337,7 +348,7 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 }
 
 .bar-chart {
-    float: right;
+    float: left;
 
     &:deep(svg) {
         overflow: visible;
@@ -349,12 +360,9 @@ function setTooltipPosition(mouseX: number, mouseY: number): void {
 }
 
 .legend {
-    float: left;
+    float: right;
     height: 400px;
-
-    &:deep(svg) {
-        overflow: visible;
-    }
+    overflow: auto;
 
     &:deep(.legend-item) {
         font-size: 14px;

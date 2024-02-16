@@ -1,24 +1,30 @@
-import InvocationsList from "./InvocationsList";
+import "jest-location-mock";
+
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
+
+import InvocationsList from "./InvocationsList";
 import mockInvocationData from "./test/json/invocation.json";
-import { parseISO, formatDistanceToNow } from "date-fns";
-
-import { createPinia } from "pinia";
-
-import "jest-location-mock";
 
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
-const pinia = createPinia();
+const pinia = createTestingPinia();
 describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
+    let $router;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(`api/invocations/${mockInvocationData.id}`).reply(200, mockInvocationData);
+        axiosMock.onGet(`api/invocations/${mockInvocationData.id}/jobs_summary`).reply(200, {});
     });
 
     afterEach(() => {
@@ -139,11 +145,11 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
                     getStoredWorkflowIdByInstanceId: (state) => (id) => {
                         return "workflowId";
                     },
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {
@@ -158,7 +164,9 @@ describe("InvocationsList.vue", () => {
                 },
                 localVue,
                 pinia,
+                router,
             });
+            $router = wrapper.vm.$router;
         });
 
         it("renders one row", async () => {
@@ -194,8 +202,10 @@ describe("InvocationsList.vue", () => {
         });
 
         it("calls executeWorkflow", async () => {
+            const mockMethod = jest.fn();
+            $router.push = mockMethod;
             await wrapper.find(".workflow-run").trigger("click");
-            expect(window.location).toBeAt("workflows/run?id=workflowId");
+            expect(mockMethod).toHaveBeenCalledWith("/workflows/run?id=workflowId");
         });
 
         it("should not render pager", async () => {
@@ -216,8 +226,8 @@ describe("InvocationsList.vue", () => {
             wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
-                    getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
-                    getWorkflowByInstanceId: (state) => (id) => {
+                    getStoredWorkflowNameByInstanceId: (state) => (id) => "workflow name",
+                    getStoredWorkflowByInstanceId: (state) => (id) => {
                         return { id: "workflowId" };
                     },
                     getHistoryById: (state) => (id) => {

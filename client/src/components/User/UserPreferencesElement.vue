@@ -1,5 +1,6 @@
 <script setup>
 import { BRow } from "bootstrap-vue";
+
 defineProps({
     id: {
         type: String,
@@ -28,7 +29,7 @@ defineProps({
 });
 </script>
 <template>
-    <b-row class="ml-3 mb-1">
+    <BRow class="ml-3 mb-1">
         <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
         <div class="pref-content pr-1">
             <b-badge v-if="!!badge" variant="danger">
@@ -45,7 +46,7 @@ defineProps({
             </div>
             <slot />
         </div>
-    </b-row>
+    </BRow>
 </template>
 <style scoped>
 .pref-content {

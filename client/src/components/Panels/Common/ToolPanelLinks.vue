@@ -1,15 +1,16 @@
 <template>
-    <span v-if="link">
+    <span v-if="link" class="tool-panel-links">
         <a :href="link" target="_blank" style="display: inline">
-            <font-awesome-icon v-show="show" v-b-tooltip.hover title="Link" icon="external-link-alt" />
+            <FontAwesomeIcon v-b-tooltip.hover title="Link" icon="external-link-alt" />
+            <span class="sr-only">Link</span>
         </a>
     </span>
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faExternalLinkAlt);
 
@@ -18,9 +19,7 @@ export default {
     props: {
         links: {
             type: Object,
-        },
-        show: {
-            type: Boolean,
+            default: () => ({}),
         },
     },
     computed: {

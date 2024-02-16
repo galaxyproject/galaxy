@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool tests."""
+
 import typing
 from inspect import (
     Parameter,
@@ -60,9 +61,11 @@ def lint_tests(tool_xml, lint_ctx):
         _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
 
         # check if expect_num_outputs is set if there are outputs with filters
+        # (except for tests with expect_failure .. which can't have test outputs)
         filter = tool_xml.findall("./outputs//filter")
         if len(filter) > 0 and "expect_num_outputs" not in test.attrib:
-            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
+            if not asbool(test.attrib.get("expect_failure", False)):
+                lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):
@@ -145,7 +148,7 @@ def lint_tests(tool_xml, lint_ctx):
                                 node=output,
                             )
 
-        if "expect_failure" in test.attrib and asbool(test.attrib["expect_failure"]):
+        if asbool(test.attrib.get("expect_failure", False)):
             if found_output_test:
                 lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
                 continue

@@ -1,80 +1,78 @@
 <template>
     <section v-if="hasSelection">
-        <ConfigProvider v-slot="{ config }">
-            <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
-                <template v-slot:button-content>
-                    <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
-                        All <b>{{ totalItemsInQuery }}</b> selected
-                    </span>
-                    <span v-else data-test-id="num-active-selected">
-                        <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
-                    </span>
-                </template>
-                <b-dropdown-text>
-                    <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
-                </b-dropdown-text>
-                <b-dropdown-item v-if="showHidden" v-b-modal:show-selected-content data-description="unhide option">
-                    <span v-localize>Unhide</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-else v-b-modal:hide-selected-content data-description="hide option">
-                    <span v-localize>Hide</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="canUndeleteSelection"
-                    v-b-modal:restore-selected-content
-                    data-description="undelete option">
-                    <span v-localize>Undelete</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-if="!showDeleted" v-b-modal:delete-selected-content data-description="delete option">
-                    <span v-localize>Delete</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
-                    <span v-localize>Delete (permanently)</span>
-                </b-dropdown-item>
-                <b-dropdown-divider v-if="showBuildOptions" />
-                <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
-                    <span v-localize>Build Dataset List</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
-                    <span v-localize>Build Dataset Pair</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build list of pairs"
-                    @click="buildListOfPairs">
-                    <span v-localize>Build List of Dataset Pairs</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="showBuildOptions"
-                    data-description="build collection from rules"
-                    @click="buildCollectionFromRules">
-                    <span v-localize>Build Collection from Rules</span>
-                </b-dropdown-item>
-                <b-dropdown-divider v-if="showBuildOptionForAll" />
-                <b-dropdown-item
-                    v-if="showBuildOptionForAll"
-                    data-description="build list all"
-                    @click="buildDatasetListAll">
-                    <span v-localize>Build Dataset List</span>
-                </b-dropdown-item>
-                <b-dropdown-divider />
-                <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
-                    <span v-localize>Change Database/Build</span>
-                </b-dropdown-item>
-                <b-dropdown-item
-                    v-if="config.enable_celery_tasks"
-                    v-b-modal:change-datatype-of-selected-content
-                    data-description="change data type">
-                    <span v-localize>Change data type</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
-                    <span v-localize>Add tags</span>
-                </b-dropdown-item>
-                <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
-                    <span v-localize>Remove tags</span>
-                </b-dropdown-item>
-            </b-dropdown>
-        </ConfigProvider>
+        <b-dropdown text="Selection" size="sm" variant="primary" data-description="selected content menu" no-flip>
+            <template v-slot:button-content>
+                <span v-if="selectionMatchesQuery" data-test-id="all-filter-selected">
+                    All <b>{{ totalItemsInQuery }}</b> selected
+                </span>
+                <span v-else data-test-id="num-active-selected">
+                    <b>{{ selectionSize }}</b> of {{ totalItemsInQuery }} selected
+                </span>
+            </template>
+            <b-dropdown-text>
+                <span v-localize data-description="selected count">With {{ numSelected }} selected...</span>
+            </b-dropdown-text>
+            <b-dropdown-item v-if="canUnhideSelection" v-b-modal:show-selected-content data-description="unhide option">
+                <span v-localize>Unhide</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="canHideSelection" v-b-modal:hide-selected-content data-description="hide option">
+                <span v-localize>Hide</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="canUndeleteSelection"
+                v-b-modal:restore-selected-content
+                data-description="undelete option">
+                <span v-localize>Undelete</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="canDeleteSelection"
+                v-b-modal:delete-selected-content
+                data-description="delete option">
+                <span v-localize>Delete</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:purge-selected-content data-description="purge option">
+                <span v-localize>Delete (permanently)</span>
+            </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptions" />
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list" @click="buildDatasetList">
+                <span v-localize>Build Dataset List</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="build pair" @click="buildDatasetPair">
+                <span v-localize>Build Dataset Pair</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-if="showBuildOptions" data-description="build list of pairs" @click="buildListOfPairs">
+                <span v-localize>Build List of Dataset Pairs</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="showBuildOptions"
+                data-description="build collection from rules"
+                @click="buildCollectionFromRules">
+                <span v-localize>Build Collection from Rules</span>
+            </b-dropdown-item>
+            <b-dropdown-divider v-if="showBuildOptionForAll" />
+            <b-dropdown-item
+                v-if="showBuildOptionForAll"
+                data-description="build list all"
+                @click="buildDatasetListAll">
+                <span v-localize>Build Dataset List</span>
+            </b-dropdown-item>
+            <b-dropdown-divider />
+            <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
+                <span v-localize>Change Database/Build</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="isConfigLoaded && config.enable_celery_tasks"
+                v-b-modal:change-datatype-of-selected-content
+                data-description="change data type">
+                <span v-localize>Change data type</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:add-tags-to-selected-content data-description="add tags">
+                <span v-localize>Add tags</span>
+            </b-dropdown-item>
+            <b-dropdown-item v-b-modal:remove-tags-from-selected-content data-description="remove tags">
+                <span v-localize>Remove tags</span>
+            </b-dropdown-item>
+        </b-dropdown>
 
         <b-modal id="hide-selected-content" title="Hide Selected Content?" title-tag="h2" @ok="hideSelected">
             <p v-localize>Really hide {{ numSelected }} content items?</p>
@@ -96,22 +94,23 @@
             id="change-dbkey-of-selected-content"
             title="Change Database/Build?"
             title-tag="h2"
+            body-class="modal-with-selector"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
-            <db-key-provider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
+            <DbKeyProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                 <SingleItemSelector
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
                     :items="dbkeys"
                     :current-item-id="selectedDbKey"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
-            </db-key-provider>
+            </DbKeyProvider>
         </b-modal>
         <b-modal
             id="change-datatype-of-selected-content"
             title="Change data type?"
             title-tag="h2"
+            body-class="modal-with-selector"
             :ok-disabled="selectedDatatype == null"
             @ok="changeDatatypeOfSelected">
             <p v-localize>Select a new data type for {{ numSelected }} items:</p>
@@ -121,7 +120,6 @@
                     :loading="loadingDatatypes"
                     :items="datatypes"
                     :current-item-id="selectedDatatype"
-                    class="mb-5 pb-5"
                     @update:selected-item="onSelectedDatatype" />
             </DatatypesProvider>
         </b-modal>
@@ -147,25 +145,25 @@
 </template>
 
 <script>
-import {
-    hideSelectedContent,
-    unhideSelectedContent,
-    deleteSelectedContent,
-    undeleteSelectedContent,
-    purgeSelectedContent,
-    changeDbkeyOfSelectedContent,
-    changeDatatypeOfSelectedContent,
-    addTagsToSelectedContent,
-    removeTagsFromSelectedContent,
-} from "components/History/model/crud";
-import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
+import { HistoryFilters } from "components/History/HistoryFilters";
+import {
+    addTagsToSelectedContent,
+    changeDatatypeOfSelectedContent,
+    changeDbkeyOfSelectedContent,
+    deleteSelectedContent,
+    hideSelectedContent,
+    purgeSelectedContent,
+    removeTagsFromSelectedContent,
+    undeleteSelectedContent,
+    unhideSelectedContent,
+} from "components/History/model/crud";
+import { createDatasetCollection, getHistoryContent } from "components/History/model/queries";
+import { DatatypesProvider, DbKeyProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
-import ConfigProvider from "components/providers/ConfigProvider";
-import { HistoryFilters } from "components/History/HistoryFilters";
-import { getHistoryContent } from "components/History/model/queries";
+
+import { useConfig } from "@/composables/config";
 
 export default {
     components: {
@@ -173,7 +171,6 @@ export default {
         DatatypesProvider,
         SingleItemSelector,
         StatelessTags,
-        ConfigProvider,
     },
     props: {
         history: { type: Object, required: true },
@@ -182,6 +179,10 @@ export default {
         selectionSize: { type: Number, required: true },
         isQuerySelection: { type: Boolean, required: true },
         totalItemsInQuery: { type: Number, default: 0 },
+    },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     data: function () {
         return {
@@ -192,16 +193,28 @@ export default {
     },
     computed: {
         /** @returns {Boolean} */
-        showHidden() {
-            return HistoryFilters.checkFilter(this.filterText, "visible", false);
+        canUnhideSelection() {
+            return this.areAllSelectedHidden || (this.isAnyVisibilityAllowed && !this.areAllSelectedVisible);
+        },
+        /** @returns {Boolean} */
+        canHideSelection() {
+            return this.areAllSelectedVisible || (this.isAnyVisibilityAllowed && !this.areAllSelectedHidden);
         },
         /** @returns {Boolean} */
         showDeleted() {
-            return HistoryFilters.checkFilter(this.filterText, "deleted", true);
+            return !HistoryFilters.checkFilter(this.filterText, "deleted", false);
+        },
+        /** @returns {Boolean} */
+        canDeleteSelection() {
+            return this.areAllSelectedActive || (this.isAnyDeletedStateAllowed && !this.areAllSelectedDeleted);
+        },
+        /** @returns {Boolean} */
+        canUndeleteSelection() {
+            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
         },
         /** @returns {Boolean} */
         showBuildOptions() {
-            return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+            return !this.isQuerySelection && this.areAllSelectedActive && !this.showDeleted;
         },
         /** @returns {Boolean} */
         showBuildOptionForAll() {
@@ -222,9 +235,6 @@ export default {
         noTagsSelected() {
             return this.selectedTags.length === 0;
         },
-        canUndeleteSelection() {
-            return this.showDeleted && (this.isQuerySelection || !this.areAllSelectedPurged);
-        },
         areAllSelectedPurged() {
             for (const item of this.contentSelection.values()) {
                 if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
@@ -232,6 +242,44 @@ export default {
                 }
             }
             return true;
+        },
+        areAllSelectedVisible() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && !item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedHidden() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "visible") && item["visible"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedActive() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        areAllSelectedDeleted() {
+            for (const item of this.contentSelection.values()) {
+                if (Object.prototype.hasOwnProperty.call(item, "deleted") && !item["deleted"]) {
+                    return false;
+                }
+            }
+            return true;
+        },
+        isAnyVisibilityAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "visible", "any");
+        },
+        isAnyDeletedStateAllowed() {
+            return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
         },
     },
     watch: {
@@ -349,3 +397,9 @@ export default {
     },
 };
 </script>
+
+<style>
+.modal-with-selector {
+    overflow: initial;
+}
+</style>

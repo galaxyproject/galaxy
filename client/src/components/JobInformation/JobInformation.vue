@@ -1,21 +1,25 @@
 <template>
     <div>
-        <job-details-provider auto-refresh :job-id="job_id" @update:result="updateJob" />
+        <JobDetailsProvider auto-refresh :job-id="job_id" @update:result="updateJob" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
-                    <td>Galaxy Tool ID:</td>
+                    <td>Galaxy Tool ID</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
-                        <copy-to-clipboard
+                        <CopyToClipboard
                             message="Tool ID was copied to your clipboard"
                             :text="job.tool_id"
                             title="Copy Tool ID" />
                     </td>
                 </tr>
+                <tr v-if="job && job.state">
+                    <td>Job State</td>
+                    <td data-description="galaxy-job-state">{{ job.state }}</td>
+                </tr>
                 <tr v-if="job && job.tool_version">
-                    <td>Galaxy Tool Version:</td>
+                    <td>Galaxy Tool Version</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
                 <tr v-if="job && includeTimes">
@@ -36,16 +40,16 @@
                         {{ runTime }}
                     </td>
                 </tr>
-                <code-row v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
-                <code-row v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
-                <code-row v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
-                <code-row
+                <CodeRow v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
+                <CodeRow v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
+                <CodeRow v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
+                <CodeRow
                     v-if="job && job.traceback"
                     id="traceback"
                     :code-label="'Unexpected Job Errors'"
                     :code-item="job.traceback" />
                 <tr v-if="job">
-                    <td>Tool Exit Code:</td>
+                    <td>Tool Exit Code</td>
                     <td id="exit-code">{{ job.exit_code }}</td>
                 </tr>
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
@@ -58,13 +62,13 @@
                 </tr>
                 <slot></slot>
                 <tr v-if="job && job.id">
-                    <td>Job API ID:</td>
-                    <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
+                    <td>Job API ID</td>
+                    <td id="encoded-job-id">{{ job.id }} <DecodedId :id="job.id" /></td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
-                    <td>Copied from Job API ID:</td>
+                    <td>Copied from Job API ID</td>
                     <td id="encoded-copied-from-job-id">
-                        {{ job.copied_from_job_id }} <decoded-id :id="job.copied_from_job_id" />
+                        {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
                     </td>
                 </tr>
             </tbody>
@@ -73,14 +77,15 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import DecodedId from "../DecodedId.vue";
-import CodeRow from "./CodeRow.vue";
+import CopyToClipboard from "components/CopyToClipboard";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
-import CopyToClipboard from "components/CopyToClipboard";
-import JOB_STATES_MODEL from "utils/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
+import { getAppRoot } from "onload/loadConfig";
+import JOB_STATES_MODEL from "utils/job-states-model";
+
+import DecodedId from "../DecodedId.vue";
+import CodeRow from "./CodeRow.vue";
 
 export default {
     components: {

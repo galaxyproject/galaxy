@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
-import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
+import { computed } from "vue";
+
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
-import ObjectStoreBadges from "./ObjectStoreBadges.vue";
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+
 import type { ConcreteObjectStoreModel } from "./types";
 
-import { computed } from "vue";
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
+import ObjectStoreBadges from "./ObjectStoreBadges.vue";
+import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan.vue";
+import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 interface Props {
     storageInfo: ConcreteObjectStoreModel;
@@ -24,20 +26,26 @@ defineExpose({
 });
 </script>
 
+<script lang="ts">
+export default {
+    name: "DescribeObjectStore",
+};
+</script>
+
 <template>
     <div>
         <div>
             <span v-localize>{{ what }}</span>
             <span v-if="storageInfo.name" class="display-os-by-name">
-                a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store named
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store named
                 <b>{{ storageInfo.name }}</b>
             </span>
             <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store with id
+                a Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store with id
                 <b>{{ storageInfo.object_store_id }}</b>
             </span>
             <span v-else class="display-os-default">
-                the default configured Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store </span
+                the default configured Galaxy <ObjectStoreRestrictionSpan :is-private="isPrivate" /> object store </span
             >.
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>

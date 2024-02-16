@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBolt,
     faCar,
@@ -10,7 +10,7 @@ import {
     faTree,
     faTruck,
 } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faBolt, faCar, faGasPump, faLightbulb, faMobile, faSmog, faTree, faTruck);
 

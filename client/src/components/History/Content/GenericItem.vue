@@ -1,6 +1,6 @@
 <template>
     <component :is="providerComponent" :id="itemId" v-slot="{ result: item, loading }" auto-refresh>
-        <loading-span v-if="loading" message="Loading dataset" />
+        <LoadingSpan v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
                 :id="item.hid ?? item.element_index + 1"
@@ -12,7 +12,7 @@
                 :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
-                @delete="onDelete(item)"
+                @delete="onDelete"
                 @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
@@ -25,13 +25,15 @@
 
 <script>
 import LoadingSpan from "components/LoadingSpan";
+import { mapActions } from "pinia";
+
+import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { DatasetCollectionProvider, DatasetProvider } from "@/components/providers";
 import { DatasetCollectionElementProvider } from "@/components/providers/storeProviders";
-import { deleteContent, updateContentFields } from "@/components/History/model/queries";
+import { useHistoryStore } from "@/stores/historyStore";
+
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
-import { mapActions } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
@@ -74,8 +76,8 @@ export default {
     },
     methods: {
         ...mapActions(useHistoryStore, ["applyFilters"]),
-        onDelete(item) {
-            deleteContent(item);
+        onDelete(item, recursive = false) {
+            deleteContent(item, { recursive: recursive });
         },
         onUndelete(item) {
             updateContentFields(item, { deleted: false });

@@ -54,7 +54,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
             dbkey_text=TEST_DBKEY_TEXT
         ).wait_for_and_click()
-        self.components.edit_dataset_attributes.save_btn.wait_for_and_click()
+        self.components.edit_dataset_attributes.save_button.wait_for_and_click()
         self.sleep_for(self.wait_types.JOB_COMPLETION)
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")

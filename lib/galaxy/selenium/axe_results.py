@@ -19,12 +19,12 @@ BASELINE_AXE_PASSING_IDS = [
 
 # check all violations of this level as a baseline 'impact'...
 BASELINE_VIOLATION_FILTER: Impact = "critical"
+FORMS_VIOLATIONS = ["duplicate-id-aria"]  # https://github.com/galaxyproject/galaxy/issues/16188
 # unless they are in this list...
-KNOWN_VIOLATIONS = [
+KNOWN_VIOLATIONS = FORMS_VIOLATIONS + [
     "aria-required-attr",
     "aria-required-children",
     "aria-required-parent",
-    "duplicate-id-aria",  # id="listbox-null" appears in a couple tests (e.g. test_data_column_input_editing)
     "image-alt",  # test_workflow_editor.py::TestWorkflowEditor::test_existing_connections
     "label",
     "button-name",
@@ -32,6 +32,7 @@ KNOWN_VIOLATIONS = [
 ]
 # Over time we hope known violations grows smaller until the violation
 # filter can be lowered. Next level would be "serious".
+# xref https://github.com/galaxyproject/galaxy/issues/16185
 
 
 class AxeResult:
@@ -89,7 +90,9 @@ class AxeResults(Protocol):
     def violations_with_impact_of_at_least(self, impact: Impact) -> List[Violation]:
         """"""
 
-    def assert_no_violations_with_impact_of_at_least(self, impact: Impact) -> None:
+    def assert_no_violations_with_impact_of_at_least(
+        self, impact: Impact, excludes: Optional[List[str]] = None
+    ) -> None:
         """"""
 
 
@@ -104,8 +107,7 @@ class RealAxeResults(AxeResults):
 
     def assert_does_not_violate(self, id: str) -> None:
         violations = self._json["violations"]
-        result = _check_list_for_id(violations, id)
-        if result:
+        if result := _check_list_for_id(violations, id):
             violation = Violation(result)
             raise AssertionError(violation.message)
 
@@ -116,10 +118,14 @@ class RealAxeResults(AxeResults):
     def violations_with_impact_of_at_least(self, impact: Impact) -> List[Violation]:
         return [v for v in self.violations() if v.is_impact_at_least(impact)]
 
-    def assert_no_violations_with_impact_of_at_least(self, impact: Impact) -> None:
+    def assert_no_violations_with_impact_of_at_least(
+        self, impact: Impact, excludes: Optional[List[str]] = None
+    ) -> None:
+        excludes = excludes or []
         violations = self.violations_with_impact_of_at_least(impact)
-        if violations:
-            raise AssertionError(violations[0].message)
+        filtered_violations = [v for v in violations if v.id not in excludes]
+        if filtered_violations:
+            raise AssertionError(filtered_violations[0].message)
 
 
 class NullAxeResults(AxeResults):
@@ -138,7 +144,9 @@ class NullAxeResults(AxeResults):
     def violations_with_impact_of_at_least(self, impact: Impact) -> List[Violation]:
         return []
 
-    def assert_no_violations_with_impact_of_at_least(self, impact: Impact) -> None:
+    def assert_no_violations_with_impact_of_at_least(
+        self, impact: Impact, excludes: Optional[List[str]] = None
+    ) -> None:
         pass
 
 

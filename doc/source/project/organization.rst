@@ -42,6 +42,7 @@ Members
 -------
 
 - Enis Afgan (@afgane)
+- Ahmed Awan (@ahmedhamidawan)
 - Dannon Baker (@dannon)
 - Matthias Bernt (@bernt-matthias)
 - Daniel Blankenberg (@blankenberg)

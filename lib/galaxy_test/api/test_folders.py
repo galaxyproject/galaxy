@@ -40,7 +40,7 @@ class TestFoldersApi(ApiTestCase):
         data = {
             "description": "Description only",
         }
-        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True)
+        create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True, json=True)
         self._assert_status_code_is(create_response, 400)
 
     @requires_new_library

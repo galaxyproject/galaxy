@@ -1,6 +1,6 @@
 <template>
     <b-button
-        v-b-tooltip.hover
+        v-b-tooltip.hover.top.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
@@ -15,6 +15,7 @@
 
 <script>
 import { mapState } from "pinia";
+
 import { useUserStore } from "@/stores/userStore";
 
 export default {
@@ -22,6 +23,7 @@ export default {
     props: {
         query: {
             type: String,
+            required: true,
         },
     },
     data() {
@@ -55,7 +57,7 @@ export default {
             if (this.toggle) {
                 this.$emit("onFavorites", this.searchKey);
             } else {
-                this.$emit("onFavorites", null);
+                this.$emit("onFavorites", "");
             }
         },
     },

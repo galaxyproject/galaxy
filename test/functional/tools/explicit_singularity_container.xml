@@ -1,0 +1,25 @@
+<tool id="explicit_singularity_container" name="explicit_singularity_container" version="0.1.0">
+    <requirements>
+        <container type="singularity">shub://GodloveD/lolcow-installer:latest</container>
+    </requirements>
+    <stdio>
+        <exit_code range="2:" />
+    </stdio>
+    <command><![CDATA[
+cowsay "cowsay works LOL" > '$output_1' 2>&1 &&
+
+touch "\${TMP:-/tmp}/job_tmp" &&
+touch "\${TEMP:-/tmp}/job_temp" &&
+touch "\${TMPDIR:-/tmp}/job_tmpdir"
+    ]]></command>
+    <inputs>
+    </inputs>
+    <outputs>
+        <data name="output_1" />
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+        TODO: Fill in help.
+    ]]></help>
+</tool>

@@ -11,6 +11,7 @@ Or all in one:
 $ python dump_library_paths.py [options] --relative /srv/galaxy/datasets | rsync -arvPR \
     --files-from=- /srv/galaxy/datasets backuphost:/backup/galaxy/datasets
 """
+
 import logging
 import os
 import sys

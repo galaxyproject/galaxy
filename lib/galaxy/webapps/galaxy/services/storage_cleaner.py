@@ -51,6 +51,21 @@ class StorageCleanerService(ServiceBase):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].get_discarded(user, offset, limit, order)
 
+    def get_archived_summary(self, trans: ProvidesHistoryContext, stored_item_type: StoredItemType):
+        user = self.get_authenticated_user(trans)
+        return self.storage_cleaner_map[stored_item_type].get_archived_summary(user)
+
+    def get_archived(
+        self,
+        trans: ProvidesHistoryContext,
+        stored_item_type: StoredItemType,
+        offset: Optional[int] = None,
+        limit: Optional[int] = None,
+        order: Optional[StoredItemOrderBy] = None,
+    ):
+        user = self.get_authenticated_user(trans)
+        return self.storage_cleaner_map[stored_item_type].get_archived(user, offset, limit, order)
+
     def cleanup_items(self, trans: ProvidesHistoryContext, stored_item_type: StoredItemType, item_ids: Set[int]):
         user = self.get_authenticated_user(trans)
         return self.storage_cleaner_map[stored_item_type].cleanup_items(user, item_ids)

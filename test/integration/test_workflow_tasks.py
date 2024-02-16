@@ -3,10 +3,12 @@
 Someday when the API tests can safely assume the target Galaxy has tasks enabled, this should be moved
 into the API test suite.
 """
+
 import json
 import os
 from typing import (
     Any,
+    cast,
     Dict,
 )
 
@@ -167,3 +169,38 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
         invocation_details = self.workflow_populator.get_invocation(imported_invocation_id, step_details="true")
         api_asserts.assert_has_keys(invocation_details, "inputs", "steps", "workflow_id")
         return invocation_details
+
+    def test_workflow_invocation_pdf_report(self):
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            report_pdf = self.workflow_populator.workflow_report_pdf(workflow_id, invocation_id)
+            assert report_pdf.headers["content-type"] == "application/pdf"
+            assert ".pdf" in report_pdf.headers["content-disposition"]
+
+    def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:
+        assert "expected_response" not in kwds
+        run_summary = self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
+        return cast(RunJobsSummary, run_summary)

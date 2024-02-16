@@ -1,6 +1,7 @@
 """
 NGS indexes
 """
+
 import logging
 import os
 
@@ -8,6 +9,7 @@ from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
+from galaxy.util import UNKNOWN
 from .metadata import MetadataElement
 from .text import Html
 
@@ -30,7 +32,7 @@ class BowtieIndex(Html):
     MetadataElement(
         name="sequence_space",
         desc="sequence_space for this index set",
-        default="unknown",
+        default=UNKNOWN,
         set_in_upload=True,
         readonly=True,
     )
@@ -57,7 +59,7 @@ class BowtieIndex(Html):
             sfname = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{sfname}">{sfname}</a>')
         rval.append("</ul></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 

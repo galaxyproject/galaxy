@@ -2,6 +2,7 @@ import logging
 import os
 import os.path
 from typing import (
+    Iterable,
     List,
     Tuple,
     Union,
@@ -23,13 +24,13 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def parse_tests(tool, tests_source):
+def parse_tests(tool, tests_source) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each "<test>" elements and
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
-    tests = []
+    tests: List[ToolTestDescription] = []
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         test = description_from_tool_object(tool, i, raw_test_dict)
         tests.append(test)
@@ -183,16 +184,25 @@ def _process_raw_inputs(
                 param_value = raw_input_dict["value"]
                 param_extra = raw_input_dict["attributes"]
                 location = param_extra.get("location")
-                if param_value is None and location:
-                    # If no value is given, we try to get the file name directly from the URL
-                    param_value = os.path.basename(location)
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
-                    if not isinstance(param_value, list):
-                        param_value = [param_value]
-                    for v in param_value:
-                        _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
+                    if location and value.multiple:
+                        # We get the input/s from the location which can be a list of urls separated by commas
+                        locations = _split_if_str(location)
+                        param_value = []
+                        for location in locations:
+                            v = os.path.basename(location)
+                            param_value.append(v)
+                            # param_extra should contain only the corresponding location
+                            extra = dict(param_extra)
+                            extra["location"] = location
+                            _add_uploaded_dataset(context.for_state(), v, extra, value, required_files)
+                    else:
+                        if not isinstance(param_value, list):
+                            param_value = [param_value]
+                        for v in param_value:
+                            _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
                     processed_value = param_value
                 elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
                     assert "collection" in param_extra
@@ -359,8 +369,7 @@ class ParamContext:
 
     def for_state(self):
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
-        parent_for_state = self.parent_context.for_state()
-        if parent_for_state:
+        if parent_for_state := self.parent_context.for_state():
             return f"{parent_for_state}|{name}"
         else:
             return name

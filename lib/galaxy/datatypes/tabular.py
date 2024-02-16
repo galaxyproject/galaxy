@@ -153,7 +153,7 @@ class TabularData(Text):
         )
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
-        with compression_utils.get_fileobj(dataset.file_name) as f:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
             if ck_data and ck_data[-1] != "\n":
@@ -187,15 +187,15 @@ class TabularData(Text):
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
-            if os.stat(dataset.file_name).st_size < max_peek_size:
+            if os.stat(dataset.get_file_name()).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
-                return open(dataset.file_name, mode="rb"), headers
+                return open(dataset.get_file_name(), mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
                 return (
                     trans.fill_template_mako(
                         "/dataset/large_file.mako",
-                        truncated_data=open(dataset.file_name).read(max_peek_size),
+                        truncated_data=open(dataset.get_file_name()).read(max_peek_size),
                         data=dataset,
                     ),
                     headers,
@@ -225,7 +225,7 @@ class TabularData(Text):
             )
 
     def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
-        with open(dataset_instance.file_name) as f:
+        with open(dataset_instance.get_file_name()) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
@@ -511,7 +511,7 @@ class Tabular(TabularData):
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
                 i = 0
                 for line in iter(dataset_fh.readline, ""):
                     line = line.rstrip("\r\n")
@@ -579,10 +579,10 @@ class Tabular(TabularData):
             dataset.metadata.column_names = column_names
 
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
 
 class SraManifest(Tabular):
@@ -795,8 +795,8 @@ class Sam(Tabular, _BamOrSam):
         >>> from galaxy.model.mapping import init
         >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
         >>> hist = History()
-        >>> sa_session.add(hist)
-        >>> sa_session.flush()
+        >>> with sa_session.begin():
+        ...     sa_session.add(hist)
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)
@@ -808,7 +808,7 @@ class Sam(Tabular, _BamOrSam):
         ['ref', 'ref2']
         """
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 if (
                     self.max_optional_metadata_filesize >= 0
@@ -1048,7 +1048,7 @@ class BaseVcf(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             # Skip comments.
             for line in fh:
                 if not line.startswith("##"):
@@ -1076,7 +1076,7 @@ class BaseVcf(Tabular):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))
 
-        validate_tabular(dataset.file_name, sep="\t", validate_row=validate_row, comment_designator="#")
+        validate_tabular(dataset.get_file_name(), sep="\t", validate_row=validate_row, comment_designator="#")
         return DatatypeValidation.validated()
 
     # Dataproviders
@@ -1139,7 +1139,7 @@ class VcfGz(BaseVcf, binary.Binary):
 
         try:
             pysam.tabix_index(
-                dataset.file_name, index=index_file.file_name, preset="vcf", keep_original=True, force=True
+                dataset.get_file_name(), index=index_file.get_file_name(), preset="vcf", keep_original=True, force=True
             )
         except Exception as e:
             raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
@@ -1297,7 +1297,7 @@ class Eland(Tabular):
         **kwd,
     ) -> None:
         if dataset.has_data():
-            with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name(), compressed_formats=["gzip"]) as dataset_fh:
                 dataset_fh = cast(FileObjTypeStr, dataset_fh)
                 lanes = {}
                 tiles = {}
@@ -1313,7 +1313,7 @@ class Eland(Tabular):
                     if line:
                         line_pieces = line.split("\t")
                         if len(line_pieces) != 22:
-                            raise Exception("%s:%d:Corrupt line!" % (dataset.file_name, i))
+                            raise Exception("%s:%d:Corrupt line!" % (dataset.get_file_name(), i))
                         lanes[line_pieces[2]] = 1
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
@@ -1458,7 +1458,7 @@ class BaseCSV(TabularData):
         data_row = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name, newline="") as csvfile:
+            with open(dataset.get_file_name(), newline="") as csvfile:
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
@@ -1537,7 +1537,7 @@ class ConnectivityTable(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
 
-        with open(dataset.file_name) as fh:
+        with open(dataset.get_file_name()) as fh:
             for _ in fh:
                 data_lines += 1
 
@@ -1587,12 +1587,12 @@ class ConnectivityTable(Tabular):
                     if not self.header_regexp.match(line):
                         return False
                     else:
-                        length = int(re.split(r"\W+", line, 1)[0])
+                        length = int(re.split(r"\W+", line, maxsplit=1)[0])
                 else:
                     if not self.structure_regexp.match(line.upper()):
                         return False
                     else:
-                        if j != int(re.split(r"\W+", line, 1)[0]):
+                        if j != int(re.split(r"\W+", line, maxsplit=1)[0]):
                             return False
                         elif j == length:  # Last line of first sequence has been reached
                             return True
@@ -1677,7 +1677,7 @@ class MatrixMarket(TabularData):
     ) -> None:
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 line = ""
                 data_lines = 0
                 comment_lines = 0
@@ -1804,7 +1804,7 @@ class CMAP(TabularData):
         **kwd,
     ) -> None:
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 column_headers = None
                 cleaned_column_types = None

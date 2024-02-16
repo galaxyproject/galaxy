@@ -2,6 +2,7 @@
 Datatypes for Anvi'o
 https://github.com/merenlab/anvio
 """
+
 import glob
 import logging
 import os

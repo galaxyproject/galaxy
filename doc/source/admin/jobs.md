@@ -38,7 +38,7 @@ workers
 
 The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.md)) should be used for running jobs, and how to group those processes.
 
-The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
+The handlers configuration may define a ``default`` attribute. This is the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
 
 The collection contains `<handler>` elements.
 
@@ -111,10 +111,13 @@ In the case of Docker, containers are run using **sudo** unless ``<param id="doc
 the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
 work.
 
-The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
-*singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
-tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
-tool using a ``<container>`` tag in the ``<requirements>`` section.
+The images used for containers can either be specified explicitly in the ``<destination>`` using the ``docker_default_container_id``, ``docker_container_id_override``, ``singularity_default_container_id`` and
+``singularity_container_id_override`` parameters, but (perhaps more commonly) the image to use can be derived from the
+``<requirements>`` of the Galaxy tool being executed. In the latter case the image is specified either explicitly
+using a ``<container>`` tag or a mulled (multi package) container is implied for the set 
+of packages specified by the tool's ``<requirement>`` tags. 
+In either case the container to be used is determined using container resolvers that can be specified
+globally for an instance and/or per execution environment, see [Container resolvers](container_resolvers).
 
 ### Running jobs on a Kubernetes cluster via Pulsar
 
@@ -251,7 +254,7 @@ def ncbi_blastn_wrapper(job):
     # Allocate extra time
     inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
     inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-    query_file = inp_data[ "query" ].file_name
+    query_file = inp_data[ "query" ].get_file_name()
     query_size = os.path.getsize( query_file )
     if query_size > 1024 * 1024:
         walltime_str = "walltime=24:00:00/"
@@ -313,7 +316,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 Also available though less likely useful are ``job_id``.
 
-The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the the dynamic destination:
+The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the dynamic destination:
 
 ```xml
     <destination id="blast_dynamic" runner="dynamic">

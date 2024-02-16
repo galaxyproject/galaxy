@@ -21,8 +21,8 @@ from sys import platform as _platform
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
-    TYPE_CHECKING,
 )
 
 import yaml
@@ -31,6 +31,7 @@ from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import (
     best_search_result,
     CondaContext,
+    CondaTarget,
 )
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
@@ -53,9 +54,6 @@ from .util import (
     v2_image_name,
 )
 from ..conda_compat import MetaData
-
-if TYPE_CHECKING:
-    from .util import Target
 
 log = logging.getLogger(__name__)
 
@@ -159,12 +157,12 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
-def get_conda_hits_for_targets(targets, conda_context: CondaContext) -> List[Dict[str, Any]]:
+def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
     search_results = (best_search_result(t, conda_context, platform="linux-64")[0] for t in targets)
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets: List["Target"], conda_context: CondaContext) -> str:
+def base_image_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> str:
     """
     determine base image (DEFAULT_BASE_IMAGE/DEFAULT_EXTENDED_BASE_IMAGE) for a
     list of targets by inspecting the conda package (i.e. if the use of an
@@ -201,7 +199,7 @@ class BuildExistsException(Exception):
 
 
 def mull_targets(
-    targets,
+    targets: List[CondaTarget],
     involucro_context=None,
     command="build",
     channels=DEFAULT_CHANNELS,
@@ -225,7 +223,6 @@ def mull_targets(
     base_image=None,
     determine_base_image=True,
 ):
-    targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 

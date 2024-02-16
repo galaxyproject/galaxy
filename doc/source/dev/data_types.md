@@ -282,7 +282,7 @@ we're setting metadata about the file.
 
 ```python
     def set_meta(self, dataset, **kwd):
-        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.file_name)
+        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.get_file_name())
 ```
 
 Now we'll need to make use of this in our `set_peek`
@@ -297,7 +297,7 @@ override:
             else:
                 dataset.blurb = "%s sequences" % dataset.metadata.number_of_sequences
             # Get standard text peek from dataset
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -332,7 +332,7 @@ class Genbank(data.Text):
             else:
                 dataset.blurb = "%s sequences" % dataset.metadata.number_of_sequences
             # Get
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.get_file_name(), is_multi_byte=is_multi_byte)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -348,7 +348,7 @@ class Genbank(data.Text):
         """
         Set the number of sequences in dataset.
         """
-        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.file_name)
+        dataset.metadata.number_of_sequences = self._count_genbank_sequences(dataset.get_file_name())
 
     def _count_genbank_sequences(self, filename):
         """

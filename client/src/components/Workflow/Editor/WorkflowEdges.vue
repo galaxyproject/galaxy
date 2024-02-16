@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { computed, type Ref } from "vue";
-import { type Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
+import { computed, type Ref } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { Connection, OutputTerminal } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+
 import type { OutputTerminals } from "./modules/terminals";
+
 import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{
@@ -12,7 +16,7 @@ const props = defineProps<{
     transform: { x: number; y: number; k: number };
 }>();
 
-const connectionStore = useConnectionStore();
+const { connectionStore } = useWorkflowStores();
 const { connections } = storeToRefs(connectionStore);
 
 const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(() => {
@@ -67,5 +71,7 @@ function id(connection: Connection) {
     top: 0;
     position: absolute;
     transform-origin: 0 0;
+    z-index: 80;
+    pointer-events: none;
 }
 </style>

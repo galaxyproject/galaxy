@@ -99,7 +99,7 @@ class LSF(BaseJobExec):
                 return runner_states.WALLTIME_REACHED
         return None
 
-    def _get_job_state(self, state):
+    def _get_job_state(self, state: str) -> str:
         # based on:
         # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.3/lsf_admin/job_state_lsf.html
         # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bjobs.1.html
@@ -115,7 +115,7 @@ class LSF(BaseJobExec):
                 "UNKWN": job_states.ERROR,
                 "WAIT": job_states.QUEUED,
                 "ZOMBI": job_states.ERROR,
-            }.get(state)
+            }[state]
         except KeyError:
             raise KeyError(f"Failed to map LSF status code [{state}] to job state.")
 

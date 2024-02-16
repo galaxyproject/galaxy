@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -22,8 +23,8 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from pydantic import Extra
 from starlette.responses import StreamingResponse
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -34,10 +35,9 @@ from galaxy.files.uris import (
     stream_url_to_str,
     validate_uri_access,
 )
-from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.jobs import (
-    fetch_job_states,
-    invocation_job_source_iter,
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
 )
 from galaxy.managers.workflows import (
     MissingToolsException,
@@ -45,18 +45,32 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.invocation import InvocationMessageResponseModel
+from galaxy.schema.invocation import (
+    CreateInvocationFromStore,
+    CreateInvocationsFromStorePayload,
+    InvocationJobsResponse,
+    InvocationMessageResponseModel,
+    InvocationReport,
+    InvocationSerializationParams,
+    InvocationStep,
+    InvocationStepJobsResponseCollectionJobsModel,
+    InvocationStepJobsResponseJobModel,
+    InvocationStepJobsResponseStepModel,
+    InvocationUpdatePayload,
+    WorkflowInvocationResponse,
+)
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    InvocationSortByEnum,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
-    StoreContentSource,
     WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
@@ -68,9 +82,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
-    expose_api_raw,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -88,13 +100,13 @@ from galaxy.webapps.galaxy.api import (
     Router,
     search_query_param,
 )
+from galaxy.webapps.galaxy.api.common import SerializationViewQueryParam
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
 )
 from galaxy.webapps.galaxy.services.invocations import (
     InvocationIndexPayload,
-    InvocationSerializationParams,
     InvocationsService,
     PrepareStoreDownloadPayload,
     WriteInvocationStoreToPayload,
@@ -111,13 +123,6 @@ from galaxy.workflow.run_request import build_workflow_run_configs
 log = logging.getLogger(__name__)
 
 router = Router(tags=["workflows"])
-
-
-class CreateInvocationFromStore(StoreContentSource):
-    history_id: Optional[str]
-
-    class Config:
-        extra = Extra.allow
 
 
 class WorkflowsAPIController(
@@ -149,19 +154,18 @@ class WorkflowsAPIController(
         workflow_ids = payload.get("workflow_ids")
         if workflow_ids is None:
             workflow_ids = []
-        elif type(workflow_ids) != list:
+        elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
         workflow_ids_decoded = []
         # Decode the encoded workflow ids
         for ids in workflow_ids:
             workflow_ids_decoded.append(trans.security.decode_id(ids))
-        sess = trans.sa_session
+        session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
-            sess.delete(m)
+            session.delete(m)
         user.stored_workflow_menu_entries = []
-        q = sess.query(model.StoredWorkflow)
         # To ensure id list is unique
         seen_workflow_ids = set()
         for wf_id in workflow_ids_decoded:
@@ -170,9 +174,11 @@ class WorkflowsAPIController(
             else:
                 seen_workflow_ids.add(wf_id)
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = q.get(wf_id)
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
             user.stored_workflow_menu_entries.append(m)
-        sess.flush()
+        with transaction(session):
+            session.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
@@ -190,12 +196,8 @@ class WorkflowsAPIController(
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
+            if wf_count == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
         if kwd.get("legacy", False):
@@ -374,9 +376,8 @@ class WorkflowsAPIController(
         style = kwd.get("style", "export")
         download_format = kwd.get("format")
         version = kwd.get("version")
-        history_id = kwd.get("history_id")
         history = None
-        if history_id:
+        if history_id := kwd.get("history_id"):
             history = self.history_manager.get_accessible(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
@@ -390,9 +391,9 @@ class WorkflowsAPIController(
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers[
-                "Content-Disposition"
-            ] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            trans.response.headers["Content-Disposition"] = (
+                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            )
             trans.response.set_content_type("application/galaxy-archive")
 
         if style == "format2" and download_format != "json-download":
@@ -477,6 +478,8 @@ class WorkflowsAPIController(
             steps_updated = "steps" in workflow_dict
             if name_updated and not steps_updated:
                 sanitized_name = sanitize_html(new_workflow_name or old_workflow.name)
+                if not sanitized_name:
+                    raise exceptions.MessageException("Workflow must have a valid name.")
                 workflow = old_workflow.copy(user=trans.user)
                 workflow.stored_workflow = stored_workflow
                 workflow.name = sanitized_name
@@ -522,14 +525,17 @@ class WorkflowsAPIController(
                         require_flush = True
             # set tags
             if "tags" in workflow_dict:
-                trans.app.tag_handler.set_tags_from_list(
-                    user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
+                trans.tag_handler.set_tags_from_list(
+                    user=trans.user,
+                    item=stored_workflow,
+                    new_tags_list=workflow_dict["tags"],
                 )
 
             if require_flush:
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
-            if "steps" in workflow_dict:
+            if "steps" in workflow_dict or "comments" in workflow_dict:
                 try:
                     workflow_update_options = WorkflowUpdateOptions(**payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
@@ -574,6 +580,7 @@ class WorkflowsAPIController(
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        # payload is tool state
         if payload is None:
             payload = {}
         inputs = payload.get("inputs", {})
@@ -583,9 +590,7 @@ class WorkflowsAPIController(
             module_state: Dict[str, Any] = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
-        return {
-            "label": inputs.get("__label", ""),
-            "annotation": inputs.get("__annotation", ""),
+        step_dict = {
             "name": module.get_name(),
             "tool_state": module.get_state(),
             "content_id": module.get_content_id(),
@@ -593,6 +598,9 @@ class WorkflowsAPIController(
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
         }
+        if payload["type"] == "tool":
+            step_dict["tool_version"] = module.get_version()
+        return step_dict
 
     @expose_api
     def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
@@ -765,13 +773,15 @@ class WorkflowsAPIController(
             )
             invocations.append(workflow_invocation)
 
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         encoded_invocations = []
         for invocation in invocations:
             as_dict = workflow_invocation.to_dict()
             as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
             as_dict["messages"] = [
-                InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+                InvocationMessageResponseModel.model_validate(message).model_dump(mode="json")
+                for message in invocation.messages
             ]
             encoded_invocations.append(as_dict)
 
@@ -779,254 +789,6 @@ class WorkflowsAPIController(
             return encoded_invocations
         else:
             return encoded_invocations[0]
-
-    @expose_api
-    def index_invocations(self, trans: GalaxyWebTransaction, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations
-        GET /api/invocations
-
-        Get the list of a user's workflow invocations. If workflow_id is supplied
-        (either via URL or query parameter) it should be an encoded StoredWorkflow id
-        and returned invocations will be restricted to that workflow. history_id (an encoded
-        History id) can be used to further restrict the query. If neither a workflow_id or
-        history_id is supplied, all the current user's workflow invocations will be indexed
-        (as determined by the invocation being executed on one of the user's histories).
-
-        :param  workflow_id:      an encoded stored workflow id to restrict query to
-        :type   workflow_id:      str
-
-        :param  instance:         true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                  by default.
-        :type   instance:         boolean
-
-        :param  history_id:       an encoded history id to restrict query to
-        :type   history_id:       str
-
-        :param  job_id:           an encoded job id to restrict query to
-        :type   job_id:           str
-
-        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
-        :type   user_id:          str
-
-        :param  view:             level of detail to return per invocation 'element' or 'collection'.
-        :type   view:             str
-
-        :param  step_details:     If 'view' is 'element', also include details on individual steps.
-        :type   step_details:     bool
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        invocation_payload = InvocationIndexPayload(**kwd)
-        serialization_params = InvocationSerializationParams(**kwd)
-        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
-        trans.response.headers["total_matches"] = total_matches
-        return invocations
-
-    @expose_api_anonymous
-    def create_invocations_from_store(self, trans, payload, **kwd):
-        """
-        POST /api/invocations/from_store
-
-        Create invocation(s) from a supplied model store.
-
-        Input can be an archive describing a Galaxy model store containing an
-        workflow invocation - for instance one created with with write_store
-        or prepare_store_download endpoint.
-        """
-        create_payload = CreateInvocationFromStore(**payload)
-        serialization_params = InvocationSerializationParams(**payload)
-        # refactor into a service...
-        return self._create_from_store(trans, create_payload, serialization_params)
-
-    def _create_from_store(
-        self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
-    ):
-        history = self.history_manager.get_owned(
-            self.decode_id(payload.history_id), trans.user, current_history=trans.history
-        )
-        object_tracker = self.create_objects_from_store(
-            trans,
-            payload,
-            history=history,
-        )
-        return self.invocations_service.serialize_workflow_invocations(
-            object_tracker.invocations_by_key.values(), serialization_params
-        )
-
-    @expose_api
-    def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        GET /api/invocations/{invocation_id}
-
-        Get detailed description of workflow invocation
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_details:       fetch details about individual invocation steps
-                                    and populate a steps attribute in the resulting
-                                    dictionary. Defaults to false.
-        :type   step_details:       bool
-
-        :param  legacy_job_state:   If step_details is true, and this is set to true
-                                    populate the invocation step state with the job state
-                                    instead of the invocation step state. This will also
-                                    produce one step per job in mapping jobs to mimic the
-                                    older behavior with respect to collections. Partially
-                                    scheduled steps may provide incomplete information
-                                    and the listed steps outputs are the mapped over
-                                    step outputs but the individual job outputs
-                                    when this is set - at least for now.
-        :type   legacy_job_state:   bool
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
-        if not workflow_invocation:
-            raise exceptions.ObjectNotFound()
-
-        return self.__encode_invocation(workflow_invocation, **kwd)
-
-    @expose_api
-    def cancel_invocation(self, trans: ProvidesUserContext, invocation_id, **kwd):
-        """
-        DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
-        DELETE /api/invocations/{invocation_id}
-        Cancel the specified workflow invocation.
-
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
-        return self.__encode_invocation(workflow_invocation, **kwd)
-
-    @expose_api
-    def show_invocation_report(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
-        GET /api/invocations/{invocation_id}/report
-
-        Get JSON summarizing invocation for reporting.
-        """
-        kwd["format"] = "json"
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
-
-    @expose_api_raw
-    def show_invocation_report_pdf(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf
-        GET /api/invocations/{invocation_id}/report.pdf
-
-        Get JSON summarizing invocation for reporting.
-        """
-        kwd["format"] = "pdf"
-        trans.response.set_content_type("application/pdf")
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
-
-    @expose_api
-    def invocation_step(self, trans, invocation_id, step_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        GET /api/invocations/{invocation_id}/steps/{step_id}
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :param  payload:       payload containing update action information
-                               for running workflow.
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
-        return self.__encode_invocation_step(trans, invocation_step)
-
-    @expose_api_anonymous_and_sessionless
-    def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
-        GET /api/invocations/{invocation_id}/step_jobs_summary
-
-        return job state summary info aggregated across per step of the workflow invocation
-
-        Warning: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-
-        :param  invocation_id:    the invocation id (required)
-        :type   invocation_id:    str
-
-        :rtype:     dict[]
-        :returns:   an array of job summary object dictionaries for each step
-        """
-        decoded_invocation_id = self.decode_id(invocation_id)
-        ids = []
-        types = []
-        for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
-            ids.append(job_source_id)
-            types.append(job_source_type)
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
-
-    @expose_api_anonymous_and_sessionless
-    def invocation_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
-        GET /api/invocations/{invocation_id}/jobs_summary
-
-        return job state summary info aggregated across all current jobs of workflow invocation
-
-        Warning: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-
-        :param  invocation_id:    the invocation id (required)
-        :type   invocation_id:    str
-
-        :rtype:     dict
-        :returns:   a job summary object merged for all steps in workflow invocation
-        """
-        ids = [self.decode_id(invocation_id)]
-        types = ["WorkflowInvocation"]
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
-
-    @expose_api
-    def update_invocation_step(self, trans: GalaxyWebTransaction, invocation_id, step_id, payload, **kwd):
-        """
-        PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        PUT /api/invocations/{invocation_id}/steps/{step_id}
-
-        Update state of running workflow step invocation - still very nebulous
-        but this would be for stuff like confirming paused steps can proceed
-        etc....
-
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        action = payload.get("action", None)
-
-        invocation_step = self.workflow_manager.update_invocation_step(
-            trans,
-            decoded_invocation_step_id,
-            action=action,
-        )
-        return self.__encode_invocation_step(trans, invocation_step)
 
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
@@ -1048,7 +810,8 @@ class WorkflowsAPIController(
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
@@ -1092,9 +855,6 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __encode_invocation_step(self, trans: ProvidesUserContext, invocation_step):
-        return self.encode_all_ids(trans, invocation_step.to_dict("element"), True)
-
     def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
@@ -1103,18 +863,25 @@ class WorkflowsAPIController(
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __encode_invocation(self, invocation, **kwd):
-        params = InvocationSerializationParams(**kwd)
-        return self.invocations_service.serialize_workflow_invocation(invocation, params)
 
+StoredWorkflowIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."),
+]
 
-StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
-)
+InvocationIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Invocation ID", description="The encoded database identifier of the Invocation."),
+]
 
-InvocationIDPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
-)
+WorkflowInvocationStepIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(
+        ...,
+        title="WorkflowInvocationStep ID",
+        description="The encoded database identifier of the WorkflowInvocationStep.",
+    ),
+]
 
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
@@ -1155,9 +922,12 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
-InstanceQueryParam: Optional[bool] = Query(
-    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
-)
+InstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID.",
+    ),
+]
 
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
@@ -1169,11 +939,11 @@ query_tags = [
     IndexQueryTag("user", "The stored workflow's owner's username.", "u"),
     IndexQueryTag(
         "is:published",
-        "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
+        "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
         "is:share_with_me",
-        "Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.",
+        "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
     ),
 ]
 
@@ -1216,7 +986,7 @@ class FastAPIWorkflows:
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Lists stored workflows viewable by the user."""
-        payload = WorkflowIndexPayload.construct(
+        payload = WorkflowIndexPayload.model_construct(
             show_published=show_published,
             show_hidden=show_hidden,
             show_deleted=show_deleted,
@@ -1234,91 +1004,91 @@ class FastAPIWorkflows:
         return workflows
 
     @router.get(
-        "/api/workflows/{id}/sharing",
+        "/api/workflows/{workflow_id}/sharing",
         summary="Get the current sharing status of the given item.",
     )
     def sharing(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
-        return self.service.shareable_service.sharing(trans, id)
+        return self.service.shareable_service.sharing(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/enable_link_access",
+        "/api/workflows/{workflow_id}/enable_link_access",
         summary="Makes this item accessible by a URL link.",
     )
     def enable_link_access(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.enable_link_access(trans, id)
+        return self.service.shareable_service.enable_link_access(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/disable_link_access",
+        "/api/workflows/{workflow_id}/disable_link_access",
         summary="Makes this item inaccessible by a URL link.",
     )
     def disable_link_access(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
-        return self.service.shareable_service.disable_link_access(trans, id)
+        return self.service.shareable_service.disable_link_access(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/publish",
+        "/api/workflows/{workflow_id}/publish",
         summary="Makes this item public and accessible by a URL link.",
     )
     def publish(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
-        return self.service.shareable_service.publish(trans, id)
+        return self.service.shareable_service.publish(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/unpublish",
+        "/api/workflows/{workflow_id}/unpublish",
         summary="Removes this item from the published list.",
     )
     def unpublish(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
-        return self.service.shareable_service.unpublish(trans, id)
+        return self.service.shareable_service.unpublish(trans, workflow_id)
 
     @router.put(
-        "/api/workflows/{id}/share_with_users",
+        "/api/workflows/{workflow_id}/share_with_users",
         summary="Share this item with specific users.",
     )
     def share_with_users(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
-        return self.service.shareable_service.share_with_users(trans, id, payload)
+        return self.service.shareable_service.share_with_users(trans, workflow_id, payload)
 
     @router.put(
-        "/api/workflows/{id}/slug",
+        "/api/workflows/{workflow_id}/slug",
         summary="Set a new slug for this shared item.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def set_slug(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
-        self.service.shareable_service.set_slug(trans, id, payload)
+        self.service.shareable_service.set_slug(trans, workflow_id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -1327,8 +1097,8 @@ class FastAPIWorkflows:
     )
     def delete_workflow(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
         self.service.delete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -1339,8 +1109,8 @@ class FastAPIWorkflows:
     )
     def undelete_workflow(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -1351,9 +1121,9 @@ class FastAPIWorkflows:
     )
     def show_versions(
         self,
+        workflow_id: StoredWorkflowIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-        instance: Optional[bool] = InstanceQueryParam,
+        instance: InstanceQueryParam = False,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
 
@@ -1383,9 +1153,229 @@ class FastAPIWorkflows:
         )
 
 
+StepDetailQueryParam = Annotated[
+    bool,
+    Query(
+        title="Include step details",
+        description=(
+            "Include details for individual invocation steps and populate a steps attribute in the resulting dictionary."
+        ),
+    ),
+]
+LegacyJobStateQueryParam = Annotated[
+    bool,
+    Query(
+        title="Replace with job state",
+        description=(
+            """Populate the invocation step state with the job state instead of the invocation step state.
+        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+        Partially scheduled steps may provide incomplete information and the listed steps outputs
+        are not the mapped over step outputs but the individual job outputs."""
+        ),
+    ),
+]
+
+WorkflowIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="Workflow ID",
+        description="Return only invocations for this Workflow ID",
+    ),
+]
+
+HistoryIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="History ID",
+        description="Return only invocations for this History ID",
+    ),
+]
+
+JobIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="Job ID",
+        description="Return only invocations for this Job ID",
+    ),
+]
+
+UserIdQueryParam = Annotated[
+    Optional[DecodedDatabaseIdField],
+    Query(
+        title="User ID",
+        description="Return invocations for this User ID.",
+    ),
+]
+
+InvocationsSortByQueryParam = Annotated[
+    Optional[InvocationSortByEnum],
+    Query(
+        title="Sort By",
+        description="Sort Workflow Invocations by this attribute",
+    ),
+]
+
+InvocationsSortDescQueryParam = Annotated[
+    bool,
+    Query(
+        title="Sort Descending",
+        description="Sort in descending order?",
+    ),
+]
+
+InvocationsIncludeTerminalQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Include Terminal",
+        description="Set to false to only include terminal Invocations.",
+    ),
+]
+
+InvocationsLimitQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Limit",
+        description="Limit the number of invocations to return.",
+    ),
+]
+
+InvocationsOffsetQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Offset",
+        description="Number of invocations to skip.",
+    ),
+]
+
+
+InvocationsInstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Instance",
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
+    ),
+]
+
+CreateInvocationsFromStoreBody = Annotated[
+    CreateInvocationsFromStorePayload,
+    Body(
+        default=...,
+        title="Create invocations from store",
+        description="The values and serialization parameters for creating invocations from a supplied model store.",
+    ),
+]
+
+
 @router.cbv
 class FastAPIInvocations:
     invocations_service: InvocationsService = depends(InvocationsService)
+
+    @router.post(
+        "/api/invocations/from_store",
+        name="create_invocations_from_store",
+        description="Create invocation(s) from a supplied model store.",
+    )
+    def create_invocations_from_store(
+        self,
+        payload: CreateInvocationsFromStoreBody,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        """
+        Input can be an archive describing a Galaxy model store containing an
+        workflow invocation - for instance one created with with write_store
+        or prepare_store_download endpoint.
+        """
+        create_payload = CreateInvocationFromStore(**payload.model_dump())
+        serialization_params = InvocationSerializationParams(**payload.model_dump())
+        return self.invocations_service.create_from_store(trans, create_payload, serialization_params)
+
+    @router.get(
+        "/api/invocations",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+    )
+    def index_invocations(
+        self,
+        response: Response,
+        workflow_id: WorkflowIdQueryParam = None,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        invocation_payload = InvocationIndexPayload(
+            workflow_id=workflow_id,
+            history_id=history_id,
+            job_id=job_id,
+            user_id=user_id,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
+            instance=instance,
+        )
+        serialization_params = InvocationSerializationParams(
+            view=view,
+            step_details=step_details,
+        )
+        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
+        response.headers["total_matches"] = str(total_matches)
+        return invocations
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage",
+        summary="Get the list of a user's workflow invocations.",
+        name="index_invocations",
+        deprecated=True,
+    )
+    def index_workflow_invocations(
+        self,
+        response: Response,
+        workflow_id: StoredWorkflowIDPathParam,
+        history_id: HistoryIdQueryParam = None,
+        job_id: JobIdQueryParam = None,
+        user_id: UserIdQueryParam = None,
+        sort_by: InvocationsSortByQueryParam = None,
+        sort_desc: InvocationsSortDescQueryParam = False,
+        include_terminal: InvocationsIncludeTerminalQueryParam = True,
+        limit: InvocationsLimitQueryParam = None,
+        offset: InvocationsOffsetQueryParam = None,
+        instance: InvocationsInstanceQueryParam = False,
+        view: SerializationViewQueryParam = None,
+        step_details: StepDetailQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[WorkflowInvocationResponse]:
+        invocations = self.index_invocations(
+            response=response,
+            workflow_id=workflow_id,
+            history_id=history_id,
+            job_id=job_id,
+            user_id=user_id,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            include_terminal=include_terminal,
+            limit=limit,
+            offset=offset,
+            instance=instance,
+            view=view,
+            step_details=step_details,
+            trans=trans,
+        )
+        return invocations
 
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
@@ -1393,8 +1383,8 @@ class FastAPIInvocations:
     )
     def prepare_store_download(
         self,
+        invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: PrepareStoreDownloadPayload = Body(...),
     ) -> AsyncFile:
         return self.invocations_service.prepare_store_download(
@@ -1409,8 +1399,8 @@ class FastAPIInvocations:
     )
     def write_store(
         self,
+        invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
@@ -1420,6 +1410,316 @@ class FastAPIInvocations:
         )
         return rval
 
+    @router.get("/api/invocations/{invocation_id}", summary="Get detailed description of a workflow invocation.")
+    def show_invocation(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
+    ) -> WorkflowInvocationResponse:
+        serialization_params = InvocationSerializationParams(
+            step_details=step_details, legacy_job_state=legacy_job_state
+        )
+        return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}",
+        summary="Get detailed description of a workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}",
+        summary="Get detailed description of a workflow invocation.",
+        deprecated=True,
+    )
+    def show_workflow_invocation(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
+    ) -> WorkflowInvocationResponse:
+        """An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
+        return self.show_invocation(
+            trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state
+        )
+
+    @router.delete("/api/invocations/{invocation_id}", summary="Cancel the specified workflow invocation.")
+    def cancel_invocation(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
+    ) -> WorkflowInvocationResponse:
+        serialization_params = InvocationSerializationParams(
+            step_details=step_details, legacy_job_state=legacy_job_state
+        )
+        return self.invocations_service.cancel(trans, invocation_id, serialization_params)
+
+    @router.delete(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}", summary="Cancel the specified workflow invocation."
+    )
+    @router.delete(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}",
+        summary="Cancel the specified workflow invocation.",
+        deprecated=True,
+    )
+    def cancel_workflow_invocation(
+        self,
+        invocation_id: InvocationIDPathParam,
+        workflow_id: StoredWorkflowIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
+    ) -> WorkflowInvocationResponse:
+        """An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
+
+        return self.cancel_invocation(
+            trans=trans, invocation_id=invocation_id, step_details=step_details, legacy_job_state=legacy_job_state
+        )
+
+    @router.get(
+        "/api/invocations/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+    )
+    def show_invocation_report(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationReport:
+        return self.invocations_service.show_invocation_report(trans, invocation_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+        deprecated=True,
+    )
+    def show_workflow_invocation_report(
+        self,
+        invocation_id: InvocationIDPathParam,
+        workflow_id: StoredWorkflowIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationReport:
+        """An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored."""
+        return self.show_invocation_report(trans=trans, invocation_id=invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+    )
+    def show_invocation_report_pdf(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        wfi_report = self.invocations_service.show_invocation_report(trans, invocation_id, format="pdf")
+        return StreamingResponse(
+            content=BytesIO(wfi_report),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="report_galaxy_invocation_{trans.security.encode_id(invocation_id)}.pdf"',
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+        deprecated=True,
+    )
+    def show_workflow_invocation_report_pdf(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored."""
+        return self.show_invocation_report_pdf(trans=trans, invocation_id=invocation_id)
+
+    @router.get(
+        "/api/invocations/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    def step(
+        self,
+        step_id: WorkflowInvocationStepIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationStep:
+        return self.invocations_service.show_invocation_step(trans, step_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    def invocation_step(
+        self,
+        invocation_id: InvocationIDPathParam,
+        step_id: WorkflowInvocationStepIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationStep:
+        """An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored."""
+        return self.step(trans=trans, step_id=step_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+        deprecated=True,
+    )
+    def workflow_invocation_step(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        step_id: WorkflowInvocationStepIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationStep:
+        """An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored."""
+        return self.invocation_step(trans=trans, invocation_id=invocation_id, step_id=step_id)
+
+    @router.put(
+        "/api/invocations/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc.",
+    )
+    def update_invocation_step(
+        self,
+        invocation_id: InvocationIDPathParam,
+        step_id: WorkflowInvocationStepIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: InvocationUpdatePayload = Body(...),
+    ) -> InvocationStep:
+        return self.invocations_service.update_invocation_step(trans=trans, step_id=step_id, action=payload.action)
+
+    @router.put(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation.",
+    )
+    @router.put(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation.",
+        deprecated=True,
+    )
+    def update_workflow_invocation_step(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        step_id: WorkflowInvocationStepIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: InvocationUpdatePayload = Body(...),
+    ) -> InvocationStep:
+        """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""
+        return self.update_invocation_step(trans=trans, invocation_id=invocation_id, step_id=step_id, payload=payload)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+    )
+    def invocation_step_jobs_summary(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[
+        Union[
+            InvocationStepJobsResponseStepModel,
+            InvocationStepJobsResponseJobModel,
+            InvocationStepJobsResponseCollectionJobsModel,
+        ]
+    ]:
+        """
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        step_jobs_summary = self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
+        return [
+            (
+                InvocationStepJobsResponseStepModel(**summary)
+                if summary["model"] == "WorkflowInvocationStep"
+                else (
+                    InvocationStepJobsResponseJobModel(**summary)
+                    if summary["model"] == "Job"
+                    else InvocationStepJobsResponseCollectionJobsModel(**summary)
+                )
+            )
+            for summary in step_jobs_summary
+        ]
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+        deprecated=True,
+    )
+    def workflow_invocation_step_jobs_summary(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[
+        Union[
+            InvocationStepJobsResponseStepModel,
+            InvocationStepJobsResponseJobModel,
+            InvocationStepJobsResponseCollectionJobsModel,
+        ]
+    ]:
+        """An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored."""
+        return self.invocation_step_jobs_summary(trans=trans, invocation_id=invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+    )
+    def invocation_jobs_summary(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationJobsResponse:
+        """
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        jobs_summary = self.invocations_service.show_invocation_jobs_summary(trans, invocation_id)
+        return InvocationJobsResponse(**jobs_summary)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+        deprecated=True,
+    )
+    def workflow_invocation_jobs_summary(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationJobsResponse:
+        """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
+        return self.invocation_jobs_summary(trans=trans, invocation_id=invocation_id)
+
     # TODO: remove this endpoint after 23.1 release
     @router.get(
         "/api/invocations/{invocation_id}/biocompute",
@@ -1428,8 +1728,8 @@ class FastAPIInvocations:
     )
     def export_invocation_bco(
         self,
+        invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         merge_history_metadata: Optional[bool] = Query(default=False),
     ):
         """
@@ -1462,8 +1762,8 @@ class FastAPIInvocations:
     )
     def download_invocation_bco(
         self,
+        invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         merge_history_metadata: Optional[bool] = Query(default=False),
     ):
         """

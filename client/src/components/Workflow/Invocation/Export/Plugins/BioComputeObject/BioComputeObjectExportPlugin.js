@@ -1,7 +1,10 @@
-import { InvocationExportPlugin, InvocationExportPluginAction } from "../../model";
-import SendForm from "./SendForm.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
+
+import { InvocationExportPlugin, InvocationExportPluginAction } from "../../model";
+
+import SendForm from "./SendForm.vue";
+
 library.add(faDatabase);
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN = new InvocationExportPlugin({

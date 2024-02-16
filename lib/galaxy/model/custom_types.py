@@ -116,6 +116,19 @@ class JSONType(TypeDecorator):
         return x == y
 
 
+class DoubleEncodedJsonType(JSONType):
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        value = super().process_result_value(value, dialect)
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value
+        return value
+
+
 class MutableJSONType(JSONType):
     """Associated with MutationObj"""
 

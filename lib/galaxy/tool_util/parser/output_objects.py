@@ -5,6 +5,8 @@ from typing import (
     Optional,
 )
 
+from typing_extensions import TypedDict
+
 from galaxy.util import Element
 from galaxy.util.dictifiable import Dictifiable
 from .output_actions import ToolOutputActionGroup
@@ -12,6 +14,14 @@ from .output_collection_def import (
     dataset_collector_descriptions_from_output_dict,
     DatasetCollectionDescription,
 )
+
+
+class ChangeFormatModel(TypedDict):
+    value: Optional[str]
+    format: Optional[str]
+    input: Optional[str]
+    input_dataset: Optional[str]
+    check_attribute: Optional[str]
 
 
 class ToolOutputBase(Dictifiable):
@@ -84,7 +94,7 @@ class ToolOutput(ToolOutputBase):
         self.actions = actions
 
         # Initialize default values
-        self.change_format: List[Element] = []
+        self.change_format: List[ChangeFormatModel] = []
         self.implicit = implicit
         self.from_work_dir: Optional[str] = None
         self.dataset_collector_descriptions: List[DatasetCollectionDescription] = []

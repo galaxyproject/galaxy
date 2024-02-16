@@ -111,6 +111,10 @@ class Action:
         self._debug = app.args.debug
         self._update_time = app.args.update_time
         self._force_retry = app.args.force_retry
+        if app.args.object_store_id:
+            self._object_store_id_sql = f" AND dataset.object_store_id = '{app.args.object_store_id}'"
+        else:
+            self._object_store_id_sql = ""
         self._epoch_time = str(int(time.time()))
         self._days = app.args.days
         self._config = app.config
@@ -200,6 +204,7 @@ class Action:
             update_time_sql=self._update_time_sql,
             force_retry_sql=self._force_retry_sql,
             epoch_time=self._epoch_time,
+            object_store_id_sql=self._object_store_id_sql,
         )
 
     @property
@@ -359,6 +364,7 @@ class PurgesHDAs:
             update_time_sql=self._update_time_sql,
             force_retry_sql=self._force_retry_sql,
             epoch_time=self._epoch_time,
+            object_store_id_sql=self._object_store_id_sql,
         )
 
 
@@ -844,18 +850,27 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
     )
 
 
-class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
+class PurgeOldHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
     """
-    - Mark purged all HistoryDatasetAssociations whose history_id is null.
+    - Mark purged all HistoryDatasetAssociations that are older than the specified number of days.
+    - Mark deleted all MetadataFiles whose hda_id is purged in this step.
+    - Mark deleted all ImplicitlyConvertedDatasetAssociations whose hda_parent_id is purged in this
+      step.
+    - Mark purged all HistoryDatasetAssociations for which an ImplicitlyConvertedDatasetAssociation
+      with matching hda_id is deleted in this step.
     """
 
+    force_retry_sql = " AND NOT history_dataset_association.purged"
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
                       SET purged = true, deleted = true{update_time_sql}
-                    WHERE history_id IS NULL{force_retry_sql}
-                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
-                RETURNING id),
+                    FROM dataset
+                    WHERE history_dataset_association.dataset_id = dataset.id AND
+                          dataset.create_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                          {force_retry_sql} {object_store_id_sql}
+                RETURNING history_dataset_association.id,
+                          history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
@@ -863,12 +878,58 @@ class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRe
                      FROM purged_hda_ids),
              {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
+             history.user_id AS recalculate_disk_usage_user_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
              deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
              deleted_icda_ids.hda_id AS deleted_icda_hda_id
         FROM purged_hda_ids
+             LEFT OUTER JOIN history
+                             ON purged_hda_ids.history_id = history.id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
+    ORDER BY purged_hda_ids.id
+    """
+    causals = (
+        ("purged_hda_id", "deleted_metadata_file_id", "object_store_id"),
+        ("purged_hda_id", "deleted_icda_id", "deleted_icda_hda_id"),
+    )
+
+
+class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
+    """
+    - Mark purged all HistoryDatasetAssociations whose history_id is null.
+    """
+
+    force_retry_sql = " AND NOT history_dataset_association.purged"
+    _action_sql = """
+        WITH purged_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true, deleted = true{update_time_sql}
+                     FROM dataset
+                    WHERE history_id IS NULL{force_retry_sql}{object_store_id_sql}
+                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                RETURNING history_dataset_association.id as id,
+                          history_dataset_association.history_id as history_id),
+             hda_events
+          AS (INSERT INTO cleanup_event_hda_association
+                          (create_time, cleanup_event_id, hda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
+      SELECT purged_hda_ids.id AS purged_hda_id,
+             history.user_id AS recalculate_disk_usage_user_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.uuid AS deleted_metadata_file_uuid,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id
+        FROM purged_hda_ids
+             LEFT OUTER JOIN history
+                             ON purged_hda_ids.history_id = history.id
              LEFT OUTER JOIN deleted_metadata_file_ids
                              ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
              LEFT OUTER JOIN deleted_icda_ids
@@ -893,7 +954,7 @@ class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalcul
           AS (     UPDATE history_dataset_association
                       SET purged = true, deleted = true{update_time_sql}
                      FROM dataset
-                    WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}
+                    WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}{object_store_id_sql}
                           AND dataset.state = 'error'
                           AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING history_dataset_association.id as id,
@@ -1037,7 +1098,7 @@ class DeleteExportedHistories(Action):
                       SET deleted = true{update_time_sql}
                      FROM job_export_history_archive
                     WHERE job_export_history_archive.dataset_id = dataset.id
-                          AND NOT deleted
+                          AND NOT deleted {object_store_id_sql}
                           AND dataset.update_time <= (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING dataset.id),
              dataset_events
@@ -1063,7 +1124,7 @@ class DeleteDatasets(Action):
         WITH deleted_dataset_ids
           AS (     UPDATE dataset
                       SET deleted = true{update_time_sql}
-                    WHERE NOT deleted
+                    WHERE NOT deleted {object_store_id_sql}
                           AND NOT EXISTS
                             (SELECT true
                                FROM library_dataset_dataset_association
@@ -1097,7 +1158,7 @@ class PurgeDatasets(RemovesDatasets, Action):
         WITH purged_dataset_ids
           AS (     UPDATE dataset
                       SET purged = true{update_time_sql}
-                    WHERE deleted{force_retry_sql}
+                    WHERE deleted{force_retry_sql}{object_store_id_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
                           uuid,
@@ -1181,6 +1242,13 @@ class Cleanup:
             type=int,
             default=14,
             help="Only perform action(s) on objects that have not been updated since the specified number of days",
+        )
+        parser.add_argument(
+            "--object-store-id",
+            dest="object_store_id",
+            type=str,
+            default=None,
+            help="Only perform action(s) on objects stored in the target object store (for dataset operations - ignored by user/history centric operations)",
         )
         parser.add_argument(
             "-U",

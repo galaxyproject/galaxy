@@ -275,7 +275,7 @@ class TestFolderContentsApi(ApiTestCase):
                 history_id,
                 folder_id,
                 name,
-                content=f"{'0'*dataset_sizes[index]}",
+                content=f"{'0' * dataset_sizes[index]}",
                 ldda_message=ldda_messages[index],
                 file_type=file_types[index],
             )

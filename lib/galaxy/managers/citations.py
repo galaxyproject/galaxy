@@ -38,9 +38,12 @@ class CitationsManager:
 class DoiCache:
     def __init__(self, config):
         cache_opts = {
-            "cache.type": getattr(config, "citation_cache_type", "file"),
-            "cache.data_dir": getattr(config, "citation_cache_data_dir", None),
-            "cache.lock_dir": getattr(config, "citation_cache_lock_dir", None),
+            "cache.type": config.citation_cache_type,
+            "cache.data_dir": config.citation_cache_data_dir,
+            "cache.lock_dir": config.citation_cache_lock_dir,
+            "cache.url": config.citation_cache_url,
+            "cache.table_name": config.citation_cache_table_name,
+            "cache.schema_name": config.citation_cache_schema_name,
         }
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
 
@@ -149,12 +152,10 @@ class DoiCitation(BaseCitation):
                 log.exception("Failed to fetch bibtex for DOI %s", self.__doi)
 
         if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
-            return """@MISC{{{doi},
-                DOI = {{{doi}}},
+            return f"""@MISC{{{self.__doi},
+                DOI = {{{self.__doi}}},
                 note = {{Failed to fetch BibTeX for DOI.}}
-            }}""".format(
-                doi=self.__doi
-            )
+            }}"""
         else:
             return self.raw_bibtex
 

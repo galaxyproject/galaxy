@@ -61,9 +61,9 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             "user_id": lambda item, key, **context: self.app.security.encode_id(item.user_id),
             "provider": lambda item, key, **context: str(item.provider),
             "config": lambda item, key, **context: item.config,
-            "authn_id": lambda item, key, **context: self.app.security.encode_id(item.authn_id)
-            if item.authn_id
-            else None,
+            "authn_id": lambda item, key, **context: (
+                self.app.security.encode_id(item.authn_id) if item.authn_id else None
+            ),
             "last_update": lambda item, key, **context: str(item.last_update),
             "last_activity": lambda item, key, **context: str(item.last_activity),
             "create_time": lambda item, key, **context: item.create_time.isoformat(),

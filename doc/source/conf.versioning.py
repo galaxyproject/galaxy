@@ -47,7 +47,7 @@ for _tag in reversed(tags):
         if Version(_ver) >= MIN_DOC_VERSION:
             simpleversioning_versions.append({"id": f"release_{_ver}", "name": _ver})
 
-if re.fullmatch(r"release_\d{2}\.\d{2}", TARGET_GIT_BRANCH):
+if re.fullmatch(r"release_\d{2}\.\d{1,2}", TARGET_GIT_BRANCH):
     if _stable:
         # The current stable release will go here but fail the next conditional, avoiding either banner.
         if TARGET_GIT_BRANCH != f"release_{_stable}":

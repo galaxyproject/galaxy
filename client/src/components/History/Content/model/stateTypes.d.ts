@@ -5,6 +5,7 @@ export type State = {
     text?: string;
     icon?: string;
     spin?: boolean;
+    nonDb?: boolean;
 };
 
 export type States = {

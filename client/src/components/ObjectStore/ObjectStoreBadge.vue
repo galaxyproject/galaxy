@@ -1,9 +1,12 @@
-<script lang="ts" setup>
-import { computed } from "vue";
-import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
-import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
-import type { components } from "@/schema";
+<script setup lang="ts">
 import "./badgeIcons";
+
+import { FontAwesomeIcon, FontAwesomeLayers } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+import type { components } from "@/api/schema";
+
+import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
 type BadgeType = components["schemas"]["BadgeDict"];
 

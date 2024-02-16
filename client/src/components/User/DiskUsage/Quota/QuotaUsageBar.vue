@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+
 import localize from "@/utils/localization";
+
 import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
@@ -25,7 +27,7 @@ const quotaHasLimit = computed(() => {
 });
 const progressVariant = computed(() => {
     const percent = props.quotaUsage.quotaPercent;
-    if (percent === undefined) {
+    if (percent === undefined || percent === null) {
         return "secondary";
     }
     if (percent < 50) {

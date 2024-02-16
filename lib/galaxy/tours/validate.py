@@ -2,7 +2,7 @@ import argparse
 import sys
 
 import yaml
-from pydantic.error_wrappers import ValidationError
+from pydantic import ValidationError
 
 from galaxy.navigation.data import load_root_component
 from ._impl import (

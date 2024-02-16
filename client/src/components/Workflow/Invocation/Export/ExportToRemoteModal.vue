@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from "vue";
 import { BModal } from "bootstrap-vue";
-import { InvocationExportPlugin } from "./model";
 import ExportForm from "components/Common/ExportForm";
+import { computed, ref } from "vue";
+
+import { InvocationExportPlugin } from "./model";
 
 const modal = ref(null);
 
@@ -33,7 +34,7 @@ defineExpose({ showModal, hideModal });
 </script>
 
 <template>
-    <b-modal ref="modal" :title="title" title-tag="h2" centered hide-footer>
+    <BModal ref="modal" :title="title" title-tag="h2" centered hide-footer>
         <ExportForm what="workflow invocation" @export="doExport" />
-    </b-modal>
+    </BModal>
 </template>

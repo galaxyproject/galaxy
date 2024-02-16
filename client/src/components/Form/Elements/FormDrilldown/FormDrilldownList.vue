@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import FormDrilldownOption from "./FormDrilldownOption.vue";
 import type { Option } from "./utilities";
+
+import FormDrilldownOption from "./FormDrilldownOption.vue";
 
 defineProps<{
     currentValue: string[];
@@ -13,7 +14,7 @@ defineProps<{
 <template>
     <div>
         <div v-for="option in options" :key="option.name" class="ui-drilldown">
-            <form-drilldown-option
+            <FormDrilldownOption
                 :current-value="currentValue"
                 :handle-click="handleClick"
                 :multiple="multiple"

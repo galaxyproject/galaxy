@@ -13,68 +13,68 @@
             <b-tab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
-                <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
-                <db-key-provider v-slot="{ item, loading }">
+                <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
+                <DbKeyProvider v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
                     <div v-else>
-                        <database-edit-tab
+                        <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
                             :database-key-from-elements="databaseKeyFromElements"
                             :genomes="item"
                             @clicked-save="clickedSave" />
                     </div>
-                </db-key-provider>
+                </DbKeyProvider>
             </b-tab>
-            <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
+            <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
                 <b-tab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
                     @click="updateInfoMessage(newCollectionMessage)">
-                    <template v-slot:title> <font-awesome-icon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
-                    <suitable-converters-tab :suitable-converters="item" @clicked-convert="clickedConvert" />
+                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
-            <ConfigProvider v-slot="{ config }">
-                <b-tab
-                    v-if="config.enable_celery_tasks"
-                    title-link-class="collection-edit-change-datatype-nav"
-                    @click="updateInfoMessage(expectWaitTimeMessage)">
-                    <template v-slot:title>
-                        <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatypes") }}
-                    </template>
-                    <datatypes-provider v-slot="{ item, loading }">
-                        <div v-if="loading"><loading-span :message="loadingString" /></div>
-                        <div v-else>
-                            <change-datatype-tab
-                                v-if="item && datatypeFromElements"
-                                :datatype-from-elements="datatypeFromElements"
-                                :datatypes="item"
-                                @clicked-save="clickedDatatypeChange" />
-                        </div>
-                    </datatypes-provider>
-                </b-tab>
-            </ConfigProvider>
+            <b-tab
+                v-if="isConfigLoaded && config.enable_celery_tasks"
+                title-link-class="collection-edit-change-datatype-nav"
+                @click="updateInfoMessage(expectWaitTimeMessage)">
+                <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
+                <DatatypesProvider v-slot="{ item, loading }">
+                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-else>
+                        <ChangeDatatypeTab
+                            v-if="item && datatypeFromElements"
+                            :datatype-from-elements="datatypeFromElements"
+                            :datatypes="item"
+                            @clicked-save="clickedDatatypeChange" />
+                    </div>
+                </DatatypesProvider>
+            </b-tab>
         </b-tabs>
     </div>
 </template>
 
 <script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
-import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
+
+import { useConfig } from "@/composables/config";
+import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
+import { useHistoryStore } from "@/stores/historyStore";
+
+import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
+import ChangeDatatypeTab from "./ChangeDatatypeTab";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
-import ConfigProvider from "components/providers/ConfigProvider";
-import ChangeDatatypeTab from "./ChangeDatatypeTab";
-import LoadingSpan from "../../LoadingSpan.vue";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
@@ -86,20 +86,22 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         SuitableConvertersProvider,
-        ConfigProvider,
         ChangeDatatypeTab,
         DatatypesProvider,
         LoadingSpan,
     },
     props: {
-        collection_id: {
+        collectionId: {
             type: String,
             required: true,
         },
     },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
+    },
     data: function () {
         return {
-            attributesData: {},
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
@@ -112,30 +114,23 @@ export default {
     },
     computed: {
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useCollectionAttributesStore, ["getAttributes"]),
+        attributesData() {
+            return this.getAttributes(this.collectionId);
+        },
         databaseKeyFromElements: function () {
-            return this.attributesData.dbkey;
+            return this.attributesData?.dbkey;
         },
         datatypeFromElements: function () {
-            return this.attributesData.extension;
+            return this.attributesData?.extension;
         },
-    },
-    created() {
-        this.getCollectionDataAndAttributes();
     },
     methods: {
         updateInfoMessage: function (strMessage) {
             this.infoMessage = strMessage;
         },
-        getCollectionDataAndAttributes: async function () {
-            let attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
-            if (attributesGet == null) {
-                await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
-                attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
-            }
-            this.attributesData = attributesGet;
-        },
         clickedSave: function (attribute, newValue) {
-            const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
+            const url = prependPath(`/api/dataset_collections/${this.collectionId}/copy`);
             const data = {};
             if (attribute == "dbkey") {
                 data["dbkey"] = newValue.id;
@@ -150,7 +145,7 @@ export default {
             const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
             const data = {
                 src: "hdca",
-                id: this.collection_id,
+                id: this.collectionId,
                 source_type: selectedConverter.original_type,
                 target_type: selectedConverter.target_type,
             };
@@ -163,7 +158,7 @@ export default {
                 items: [
                     {
                         history_content_type: "dataset_collection",
-                        id: this.collection_id,
+                        id: this.collectionId,
                     },
                 ],
                 params: {

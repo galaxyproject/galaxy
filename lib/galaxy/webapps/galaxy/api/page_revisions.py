@@ -1,10 +1,14 @@
 """
 API for updating Galaxy Pages
 """
+
 import logging
 
 from galaxy.managers.base import get_object
-from galaxy.managers.pages import PageManager
+from galaxy.managers.pages import (
+    get_page_revision,
+    PageManager,
+)
 from galaxy.web import expose_api
 from . import (
     BaseGalaxyAPIController,
@@ -30,7 +34,7 @@ class PageRevisionsController(BaseGalaxyAPIController):
         :returns:   dictionaries containing different revisions of the page
         """
         page = get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
-        r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=page.id)
+        r = get_page_revision(trans.sa_session, page.id)
         out = []
         for page in r:
             as_dict = self.encode_all_ids(trans, page.to_dict(), True)

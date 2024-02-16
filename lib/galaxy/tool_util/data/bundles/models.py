@@ -11,8 +11,8 @@ from typing import (
 
 from pydantic import (
     BaseModel,
-    Extra,
-    root_validator,
+    ConfigDict,
+    model_validator,
 )
 
 from galaxy.util import (
@@ -28,9 +28,7 @@ DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 class DataTableBundleProcessorDataTableOutputColumnTranslation(BaseModel):
     type: str
     value: str
-
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
@@ -40,9 +38,7 @@ class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
     target_base: Optional[str] = None
     target_value: Optional[str] = None
     relativize_symlinks: bool
-
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
@@ -51,11 +47,10 @@ class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
     output_ref: Optional[str] = None
     value_translations: List[DataTableBundleProcessorDataTableOutputColumnTranslation] = []
     moves: List[DataTableBundleProcessorDataTableOutputColumnMove] = []
+    model_config = ConfigDict(extra="forbid")
 
-    class Config:
-        extra = Extra.forbid
-
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def fill_in_default_data_table_name(cls, values):
         data_table_name = values.get("data_table_name")
         if data_table_name is None:
@@ -65,25 +60,19 @@ class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
 
 class DataTableBundleProcessorDataTableOutput(BaseModel):
     columns: List[DataTableBundleProcessorDataTableOutputColumn]
-
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDataTable(BaseModel):
     name: str
-    output: Optional[DataTableBundleProcessorDataTableOutput]
-
-    class Config:
-        extra = Extra.forbid
+    output: Optional[DataTableBundleProcessorDataTableOutput] = None
+    model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDescription(BaseModel):
     undeclared_tables: bool = False
     data_tables: List[DataTableBundleProcessorDataTable]
-
-    class Config:
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
     @property
     def data_table_names(self) -> List[str]:
@@ -157,10 +146,7 @@ class RepoInfo(BaseModel):
     name: str
     owner: str
     installed_changeset_revision: str
-
-    class Config:
-        # we use dictionary equality (yuk) so definitely make sure this is okay.
-        extra = Extra.forbid
+    model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundle(BaseModel):
@@ -181,11 +167,11 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
         source_value = ""
     else:
         source_base = source_elem.get("base", None)
-        source_value = source_elem.text
+        source_value = source_elem.text or ""
     target_elem = move_elem.find("target")
     if target_elem is None:
         target_base = None
-        target_value = ""
+        target_value: Optional[str] = ""
     else:
         target_base = target_elem.get("base", None)
         target_value = target_elem.text

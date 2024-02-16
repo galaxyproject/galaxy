@@ -72,9 +72,9 @@ class SequenceSplitLocations(data.Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             try:
-                parsed_data = json.load(open(dataset.file_name))
+                parsed_data = json.load(open(dataset.get_file_name()))
                 # dataset.peek = json.dumps(data, sort_keys=True, indent=4)
-                dataset.peek = data.get_file_peek(dataset.file_name)
+                dataset.peek = data.get_file_peek(dataset.get_file_name())
                 dataset.blurb = "%d sections" % len(parsed_data["sections"])
             except Exception:
                 dataset.peek = "Not FQTOC file"
@@ -112,7 +112,7 @@ class Sequence(data.Text):
         """
         data_lines = 0
         sequences = 0
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             for line in fh:
                 line = line.strip()
                 if line and line.startswith("#"):
@@ -128,7 +128,7 @@ class Sequence(data.Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             if dataset.metadata.sequences:
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
@@ -164,7 +164,7 @@ class Sequence(data.Text):
         if input_datasets[0].metadata is not None and input_datasets[0].metadata.sequences is not None:
             total_sequences = input_datasets[0].metadata.sequences
         else:
-            with compression_utils.get_fileobj(input_datasets[0].file_name) as in_file:
+            with compression_utils.get_fileobj(input_datasets[0].get_file_name()) as in_file:
                 total_sequences = sum(1 for line in in_file)
             total_sequences /= 4
 
@@ -173,9 +173,9 @@ class Sequence(data.Text):
 
     @classmethod
     def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
-        data = json.load(open(toc_file_datasets[0].file_name))
+        data = json.load(open(toc_file_datasets[0].get_file_name()))
         sections = data["sections"]
-        total_sequences = int(0)
+        total_sequences = 0
         for section in sections:
             total_sequences += int(section["sequences"])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -200,24 +200,24 @@ class Sequence(data.Text):
             dir = get_subdir(part_no)
             for ds_no in range(len(input_datasets)):
                 ds = input_datasets[ds_no]
-                base_name = os.path.basename(ds.file_name)
+                base_name = os.path.basename(ds.get_file_name())
                 part_path = os.path.join(dir, base_name)
                 split_data = dict(
                     class_name=f"{cls.__module__}.{cls.__name__}",
                     output_name=part_path,
-                    input_name=ds.file_name,
+                    input_name=ds.get_file_name(),
                     args=dict(start_sequence=start_sequence, num_sequences=sequences_per_file[part_no]),
                 )
                 if toc_file_datasets is not None:
                     toc = toc_file_datasets[ds_no]
-                    split_data["args"]["toc_file"] = toc.file_name
+                    split_data["args"]["toc_file"] = toc.get_file_name()
                 with open(os.path.join(dir, f"split_info_{base_name}.json"), "w") as f:
                     json.dump(split_data, f)
             start_sequence += sequences_per_file[part_no]
         return directories
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -247,7 +247,7 @@ class Sequence(data.Text):
         sections = toc_file["sections"]
         result = []
 
-        current_sequence = int(0)
+        current_sequence = 0
         i = 0
         # skip to the section that contains my starting sequence
         while i < len(sections) and start_sequence >= current_sequence + int(sections[i]["sequences"]):
@@ -335,7 +335,7 @@ class Alignment(data.Text):
     )
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:
             return None
@@ -405,7 +405,7 @@ class Fasta(Sequence):
         return False
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a FASTA file sequence by sequence.
 
         Note that even if split_mode="number_of_parts", the actual number of
@@ -418,7 +418,7 @@ class Fasta(Sequence):
             return
         if len(input_datasets) > 1:
             raise Exception("FASTA file splitting does not support multiple files")
-        input_file = input_datasets[0].file_name
+        input_file = input_datasets[0].get_file_name()
 
         # Counting chunk size as number of sequences.
         if "split_mode" not in split_params:
@@ -639,7 +639,7 @@ class Fastg(Sequence):
         return False
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        with open(dataset.file_name) as fh:
+        with open(dataset.get_file_name()) as fh:
             for i, line in enumerate(fh):
                 if not line:
                     break  # EOF
@@ -665,7 +665,7 @@ class Fastg(Sequence):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             if dataset.metadata.sequences:
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.sequences))} sequences"
             else:
@@ -700,7 +700,7 @@ class BaseFastq(Sequence):
         data_lines = 0
         sequences = 0
         seq_counter = 0  # blocks should be 4 lines long
-        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as in_file:
             for line in in_file:
                 line = line.strip()
                 if line and line.startswith("#") and not data_lines:
@@ -776,9 +776,9 @@ class BaseFastq(Sequence):
     ):
         headers = kwd.get("headers", {})
         if preview:
-            with compression_utils.get_fileobj(dataset.file_name) as fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
                 max_peek_size = 1000000  # 1 MB
-                if os.stat(dataset.file_name).st_size < max_peek_size:
+                if os.stat(dataset.get_file_name()).st_size < max_peek_size:
                     mime = "text/plain"
                     self._clean_and_set_mime_type(trans, mime, headers)
                     return fh.read(), headers
@@ -792,7 +792,7 @@ class BaseFastq(Sequence):
             return Sequence.display_data(self, trans, dataset, preview, filename, to_ext, **kwd)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         FASTQ files are split on cluster boundaries, in increments of 4 lines
         """
@@ -872,12 +872,12 @@ class BaseFastq(Sequence):
         return False
 
     def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
-        headers = iter_headers(dataset.file_name, sep="\n", count=-1)
+        headers = iter_headers(dataset.get_file_name(), sep="\n", count=-1)
         # check to see if the base qualities match
         if not self.quality_check(headers):
             return DatatypeValidation.invalid("Invalid quality score(s) found for this fastq datatype.")
 
-        headers = iter_headers(dataset.file_name, sep="\n", count=-1)
+        headers = iter_headers(dataset.get_file_name(), sep="\n", count=-1)
         while True:
             block = list(islice(headers, 4))
             if len(block) == 0:
@@ -1021,7 +1021,7 @@ class Maf(Alignment):
         # Imported here to avoid circular dependency
         from galaxy.tools.util.maf_utilities import build_maf_index_species_chromosomes
 
-        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.file_name)
+        indexes, species, species_chromosomes, blocks = build_maf_index_species_chromosomes(dataset.get_file_name())
         if indexes is None:
             return  # this is not a MAF file
         dataset.metadata.species = species
@@ -1033,7 +1033,7 @@ class Maf(Alignment):
             chrom_file = dataset.metadata.spec["species_chromosomes"].param.new_file(
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
-        with open(chrom_file.file_name, "w") as chrom_out:
+        with open(chrom_file.get_file_name(), "w") as chrom_out:
             for spec, chroms in species_chromosomes.items():
                 chrom_out.write("{}\t{}\n".format(spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file
@@ -1043,13 +1043,13 @@ class Maf(Alignment):
             index_file = dataset.metadata.spec["maf_index"].param.new_file(
                 dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
             )
-        indexes.write(open(index_file.file_name, "wb"))
+        indexes.write(open(index_file.get_file_name(), "wb"))
         dataset.metadata.maf_index = index_file
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             if dataset.metadata.blocks:
                 dataset.blurb = f"{util.commaify(str(dataset.metadata.blocks))} blocks"
             else:
@@ -1148,7 +1148,7 @@ class MafCustomTrack(data.Text):
         forward_strand_start = math.inf
         forward_strand_end = 0
         try:
-            maf_file = open(dataset.file_name)
+            maf_file = open(dataset.get_file_name())
             maf_file.readline()  # move past track line
             for i, block in enumerate(bx.align.maf.Reader(maf_file)):
                 ref_comp = block.get_component_by_src_start(dataset.metadata.dbkey)
@@ -1324,7 +1324,7 @@ class DotBracket(Sequence):
         data_lines = 0
         sequences = 0
 
-        for line in open(dataset.file_name):
+        for line in open(dataset.get_file_name()):
             line = line.strip()
             data_lines += 1
 

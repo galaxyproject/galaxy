@@ -8,6 +8,7 @@ from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
+    PluginKind,
 )
 
 log = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ log = logging.getLogger(__name__)
 
 class Base64FilesSource(BaseFilesSource):
     plugin_type = "base64"
+    plugin_kind = PluginKind.stock
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         kwds: FilesSourceProperties = dict(

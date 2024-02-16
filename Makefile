@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=23.1
+RELEASE_CURR:=24.0
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -11,14 +11,19 @@ DOC_SOURCE_DIR=$(DOCS_DIR)/source
 SLIDESHOW_DIR=$(DOC_SOURCE_DIR)/slideshow
 OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
-YARN := $(shell command -v yarn 2> /dev/null)
+YARN := $(shell $(IN_VENV) command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+# Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
+# compatibility with smaller machines.
+NODE_OPTIONS ?= --max-old-space-size=3072
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_0.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_1.py \
 	lib/galaxy_test/api/cwl/test_cwl_conformance_v1_2.py
+NO_YARN_MSG="Could not find yarn, which is required to build the Galaxy client.\nIt should be shipped with Galaxy's virtualenv, but to install yarn manually please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -46,6 +51,11 @@ format:  ## Format Python code base
 
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
+
+pyupgrade:  ## Convert older code patterns to Python3.7/3.8 idiomatic ones
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
+	ack --type=python -f lib/galaxy/files/sources/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
@@ -120,24 +130,21 @@ release-push-dev: release-ensure-upstream # Push local dev branch upstream
 	git push $(RELEASE_UPSTREAM) dev
 
 release-issue: ## Create release issue on github
-	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
-
-release-check-metadata: ## check github PR metadata for target release
-	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-release-issue $(RELEASE_CURR)
 
 release-check-blocking-issues: ## Check github for release blocking issues
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-issues $(RELEASE_CURR)
 
 release-check-blocking-prs: ## Check github for release blocking PRs
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-prs $(RELEASE_CURR)
 
 release-bootstrap-history: ## bootstrap history for a new release
-	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-changelog $(RELEASE_CURR)
 
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
 
-update-dependencies: update-lint-requirements ## update pinned and dev dependencies
+update-dependencies: update-lint-requirements ## update pinned, dev and typecheck dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
 $(CWL_TARGETS):
@@ -163,73 +170,81 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
-	@echo "Could not find yarn, which is required to install the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
-	yarn install $(YARN_INSTALL_OPTS)
+	$(IN_VENV) yarn install $(YARN_INSTALL_OPTS)
 endif
 
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef YARN
-	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	@echo $(NO_YARN_MSG)
 	false;
 else
-	cd client && yarn install $(YARN_INSTALL_OPTS)
+	$(IN_VENV) cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
 
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
+	$(IN_VENV) python scripts/dump_openapi_schema.py --app shed _shed_schema.yaml
 
 remove-api-schema:
 	rm _schema.yaml
+	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
 	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) npx --yes @redocly/cli lint _shed_schema.yaml
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _shed_schema.yaml
 	$(MAKE) remove-api-schema
 
 update-navigation-schema: client-node-deps
 	$(IN_VENV) cd client && node navigation_to_schema.mjs
 
 install-client: node-deps ## Install prebuilt client as defined in root package.json
-	yarn install && yarn run stage
+	$(IN_VENV) yarn install && yarn run stage
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
-	cd client && yarn run build
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build
 
 client-production: client-node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
-	cd client && yarn run build-production
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build-production
 
 client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
-	cd client && yarn run build-production-maps
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run build-production-maps
 
-client-format: client-node-deps ## Reformat client code
-	cd client && yarn run format
+client-lint-autofix: client-node-deps ## Automatically fix linting errors in client code
+	$(IN_VENV) cd client && yarn run eslint --quiet --fix
+
+client-format: client-node-deps client-lint-autofix ## Reformat client code, ensures autofixes are applied first
+	$(IN_VENV) cd client && yarn run format
 
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run develop
+	$(IN_VENV) cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
-	cd client && yarn run test
+	$(IN_VENV) cd client && yarn run test
 
 client-eslint-precommit: client-node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
-	cd client && yarn run eslint-precommit
+	$(IN_VENV) cd client && yarn run eslint-precommit
 
 client-eslint: client-node-deps # Run client linting
-	cd client && yarn run eslint
+	$(IN_VENV) cd client && yarn run eslint
 
 client-format-check: client-node-deps # Run client formatting check
-	cd client && yarn run format-check
+	$(IN_VENV) cd client && yarn run format-check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
 
 client-test-watch: client ## Watch and run all client unit tests on changes
-	cd client && yarn run jest-watch
+	$(IN_VENV) cd client && yarn run jest-watch
 
 serve-selenium-notebooks: ## Serve testing notebooks for Jupyter
 	cd lib && export PYTHONPATH=`pwd`; jupyter notebook --notebook-dir=galaxy_test/selenium/jupyter

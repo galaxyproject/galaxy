@@ -1,15 +1,17 @@
-import $ from "jquery";
-import axios from "axios";
-import Vue from "vue";
-import DataDialog from "components/DataDialog/DataDialog.vue";
-import { FilesDialog } from "components/FilesDialog";
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
-import { uploadModelsToPayload } from "components/Upload/helpers";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
-import { submitUpload } from "utils/uploadbox";
-import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import axios from "axios";
+import { FilesDialog } from "components/FilesDialog";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { startWatchingHistory } from "store/historyStore/model/watchHistory";
+import Vue from "vue";
+
+import { uploadPayload } from "@/utils/upload-payload.js";
+import { uploadSubmit } from "@/utils/upload-submit.js";
+
+import DataDialog from "components/DataDialog/DataDialog.vue";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
@@ -17,7 +19,7 @@ import { useGlobalUploadModal } from "composables/globalUploadModal";
 export async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
-        // TODO: use central store (vuex) for this.
+        // TODO: use central store for this.
         return galaxy.currHistoryPanel.model.id;
     } else {
         // Otherwise manually fetch the current history json and use that id.
@@ -94,8 +96,7 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        submitUpload({
-            url: `${getAppRoot()}api/tools/fetch`,
+        uploadSubmit({
             success: (response) => {
                 refreshContentsWrapper();
                 if (options.success) {
@@ -104,7 +105,7 @@ export function create(options) {
             },
             error: options.error,
             data: {
-                payload: uploadModelsToPayload([options], history_id),
+                payload: uploadPayload([options], history_id),
             },
         });
     });
@@ -115,5 +116,5 @@ export function refreshContentsWrapper() {
     // Legacy Panel Interface. no-op if using new history
     Galaxy?.currHistoryPanel?.refreshContents();
     // Will not do anything in legacy interface
-    rewatchHistory();
+    startWatchingHistory();
 }

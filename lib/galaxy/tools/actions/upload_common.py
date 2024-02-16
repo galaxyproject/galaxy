@@ -13,6 +13,7 @@ from typing import (
     Optional,
 )
 
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
@@ -22,13 +23,14 @@ from galaxy.files.uris import (
     stream_to_file,
     validate_non_local,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     FormDefinition,
     LibraryDataset,
     LibraryFolder,
     Role,
-    tags,
 )
+from galaxy.model.base import transaction
 from galaxy.util import is_url
 from galaxy.util.path import external_chown
 
@@ -54,7 +56,7 @@ def persist_uploads(params, trans):
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
                 upload_dataset["file_data"] = dict(filename=f.filename, local_filename=local_filename)
-            elif type(f) == dict and "local_filename" not in f:
+            elif isinstance(f, dict) and "local_filename" not in f:
                 raise Exception("Uploaded file was encoded in a way not understood by Galaxy.")
             if (
                 "url_paste" in upload_dataset
@@ -86,6 +88,7 @@ class LibraryParams:
 def handle_library_params(
     trans, params, folder_id: int, replace_dataset: Optional[LibraryDataset] = None
 ) -> LibraryParams:
+    session = trans.sa_session
     # FIXME: the received params has already been parsed by util.Params() by the time it reaches here,
     # so no complex objects remain.  This is not good because it does not allow for those objects to be
     # manipulated here.  The received params should be the original kwd from the initial request.
@@ -93,12 +96,12 @@ def handle_library_params(
     # See if we have any template field contents
     template_field_contents = {}
     template_id = params.get("template_id", None)
-    folder = trans.sa_session.query(LibraryFolder).get(folder_id)
+    folder = session.get(LibraryFolder, folder_id)
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
-        template = trans.sa_session.query(FormDefinition).get(template_id)
+        template = session.get(FormDefinition, template_id)
         assert template
         for field in template.fields:
             field_name = field["name"]
@@ -107,7 +110,7 @@ def handle_library_params(
                 template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
-        role = trans.sa_session.query(Role).get(role_id)
+        role = session.get(Role, role_id)
         roles.append(role)
     tags = params.get("tags", None)
     return LibraryParams(
@@ -137,11 +140,13 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     return hda
 
 
@@ -166,7 +171,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
                 new_folder.genome_build = trans.app.genome_builds.default_value
                 folder.add_folder(new_folder)
                 trans.sa_session.add(new_folder)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 trans.app.security_agent.copy_library_permissions(trans, folder, new_folder)
                 folder = new_folder
     if library_bunch.replace_dataset:
@@ -174,7 +180,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
     ldda = trans.app.model.LibraryDatasetDatasetAssociation(
         name=uploaded_dataset.name,
@@ -189,8 +196,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
         tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag_from_filename, flush=False)
 
-    tags_list = uploaded_dataset.get("tags", False)
-    if tags_list:
+    if tags_list := uploaded_dataset.get("tags", False):
         for tag in tags_list:
             tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag, flush=False)
 
@@ -200,7 +206,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         ldda.state = ldda.states.QUEUED
     ldda.message = library_bunch.message
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
     trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
     if library_bunch.replace_dataset:
@@ -215,10 +222,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         )
         folder.add_library_dataset(ld, genome_build=uploaded_dataset.dbkey)
         trans.sa_session.add(folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
     ld.library_dataset_dataset_association_id = ldda.id
     trans.sa_session.add(ld)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     # Handle template included in the upload form, if any.  If the upload is not asynchronous ( e.g., URL paste ),
     # then the template and contents will be included in the library_bunch at this point.  If the upload is
     # asynchronous ( e.g., uploading a file ), then the template and contents will be included in the library_bunch
@@ -230,7 +239,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         # Create a new FormValues object, using the template we previously retrieved
         form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
@@ -238,7 +248,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
             ldda, library_bunch.template, form_values
         )
         trans.sa_session.add(info_association)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
@@ -246,12 +257,15 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
     return ldda
 
 
-def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
-    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
+def new_upload(
+    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None
+):
+    tag_handler = trans.tag_handler
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(
             trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state
@@ -295,7 +309,8 @@ def create_paramfile(trans, uploaded_datasets):
             for meta_name, meta_value in uploaded_dataset.metadata.items():
                 setattr(data.metadata, meta_name, meta_value)
             trans.sa_session.add(data)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             params = dict(
                 file_type=uploaded_dataset.file_type,
                 dataset_id=data.dataset.id,
@@ -377,7 +392,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
-    if type(galaxy_session) == trans.model.GalaxySession:
+    if isinstance(galaxy_session, trans.model.GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id
@@ -422,10 +437,11 @@ def active_folders(trans, folder):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
-    return (
-        trans.sa_session.query(LibraryFolder)
+    stmt = (
+        select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
         .options(joinedload(LibraryFolder.actions))
-        .order_by(LibraryFolder.table.c.name)
-        .all()
+        .unique()
+        .order_by(LibraryFolder.name)
     )
+    return trans.sa_session.scalars(stmt).all()

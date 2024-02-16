@@ -1,6 +1,6 @@
-import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
 
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.

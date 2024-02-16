@@ -15,7 +15,7 @@
                                 variant="link"
                                 role="button"
                                 @click="onHelp">
-                                <font-awesome-icon icon="question" />
+                                <FontAwesomeIcon icon="question" />
                             </b-button>
                         </div>
                         <div class="my-1">
@@ -33,20 +33,21 @@
                 </div>
             </div>
         </div>
-        <MarkdownHelp ref="help" />
+        <MarkdownHelpModal ref="help" :mode="mode" />
     </div>
 </template>
 
 <script>
-import _ from "underscore";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
-import MarkdownToolBox from "./MarkdownToolBox";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
 import FlexPanel from "components/Panels/FlexPanel";
-import MarkdownHelp from "./MarkdownHelp";
+import _ from "underscore";
+import Vue from "vue";
+
+import MarkdownHelpModal from "./MarkdownHelpModal";
+import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
 
@@ -59,7 +60,7 @@ export default {
         MarkdownToolBox,
         FlexPanel,
         FontAwesomeIcon,
-        MarkdownHelp,
+        MarkdownHelpModal,
     },
     props: {
         markdownText: {
@@ -77,6 +78,10 @@ export default {
         title: {
             type: String,
             default: null,
+        },
+        mode: {
+            type: String,
+            default: "report",
         },
     },
     data() {

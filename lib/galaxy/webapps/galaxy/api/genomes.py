@@ -100,6 +100,7 @@ class FastAPIGenomes:
     )
     def indexes(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,  # may want to get custom index in the future
         id: str = IdPathParam,
         type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,

@@ -8,8 +8,9 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
-  <tool file="ucsc_tablebrowser.xml" />
-  <tool file="test_data_source.xml" />
+  <tool file="output_format_input.xml"/>
+  <tool file="ucsc_tablebrowser.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -20,9 +21,9 @@
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml" />
-  <tool file="library_data.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
@@ -73,6 +74,7 @@
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />
+  <tool file="metadata_check_eq.xml" />
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
   <tool file="strict_shell_default_off.xml" />
@@ -88,7 +90,6 @@
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml"/>
   <tool file="expression_tools/pick_value.xml" />
-  <tool file="remote_test_data_location.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
@@ -177,9 +178,11 @@
   <tool file="output_action_change_format.xml" />
   <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
+  <tool file="collection_paired_default.xml" />
   <tool file="collection_paired_structured_like.xml" />
   <tool file="collection_paired_conditional_structured_like.xml" />
   <tool file="collection_nested_test.xml" />
+  <tool file="collection_nested_default.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
   <tool file="collection_creates_pair.xml" />
@@ -218,10 +221,18 @@
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
   <tool file="expect_num_outputs.xml" />
+  <tool file="text_repeat.xml" />
+  <tool file="integer_default.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
+  <section id="test_section_multi" name="Test Section with Multiple Versions">
+    <tool file="multiple_versions_v01.xml" />
+    <tool file="multiple_versions_v01galaxy6.xml" />
+    <tool file="multiple_versions_v02.xml" />
+  </section>
+
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
 
@@ -236,6 +247,7 @@
        parameter, and multiple datasets from a collection. -->
   <tool file="for_workflows/cat.xml" />
   <tool file="for_workflows/cat_list.xml" />
+  <tool file="for_workflows/cat_default.xml" />
   <tool file="for_workflows/cat_collection.xml" />
   <tool file="for_workflows/head.xml" />
   <tool file="for_workflows/cat_interleave.xml" />
@@ -265,7 +277,8 @@
   <tool file="mulled_example_invalid_case.xml" />
   <tool file="mulled_example_broken_no_requirements.xml" />
   <tool file="mulled_example_broken_no_requirements_fallback.xml" />
-
+  <tool file="explicit_container.xml" />
+  <tool file="explicit_singularity_container.xml"/>
   <tool file="simple_constructs.yml" />
   <tool file="from_work_dir_glob.xml" />
 

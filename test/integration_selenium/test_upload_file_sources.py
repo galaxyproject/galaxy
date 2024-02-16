@@ -20,7 +20,7 @@ class TestPosixFileSourceSeleniumIntegration(PosixFileSourceSetup, SeleniumInteg
     def test_upload_from_posix(self):
         self.admin_login()
         self.components.upload.start.wait_for_and_click()
-        self.components.upload.ftp_add.wait_for_and_click()
+        self.components.upload.file_dialog.wait_for_and_click()
         self.components.upload.file_source_selector(path="gxfiles://posix_test").wait_for_and_click()
         self.components.upload.file_source_selector(path="gxfiles://posix_test/a").wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()

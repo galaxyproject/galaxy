@@ -6,7 +6,7 @@ import AJAX_QUEUE from "utils/ajax-queue";
 var UPDATE_DELAY = 2000;
 var NON_TERMINAL_STATES = ["new", "queued", "running", "waiting"];
 var ERROR_STATES = ["error", "deleted"];
-var TERMINAL_STATES = ["ok"].concat(ERROR_STATES);
+var TERMINAL_STATES = ["ok", "skipped"].concat(ERROR_STATES);
 const POPULATED_STATE_FAILED = "failed";
 /** Fetch state on add or just wait for polling to start. */
 var FETCH_STATE_ON_ADD = false;

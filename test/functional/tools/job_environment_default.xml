@@ -13,7 +13,11 @@ echo "\$HOME" > '$home' &&
 echo "\$TMP"  > '$tmp' &&
 echo "\$SOME_ENV_VAR" > '$some_env_var' &&
 touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
-touch "\$HOME/home_test"
+touch "\$HOME/home_test" &&
+
+touch "\${TMP:-/tmp}/job_tmp" &&
+touch "\${TEMP:-/tmp}/job_temp" &&
+touch "\${TMPDIR:-/tmp}/job_tmpdir"
     ]]></command>
     <inputs>
     </inputs>

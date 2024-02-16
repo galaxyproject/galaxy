@@ -4,9 +4,17 @@ from typing import (
     Optional,
 )
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.model import (
+    User,
+    UserGroupAssociation,
+)
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -60,13 +68,13 @@ class GroupUsersManager:
         return user
 
     def _get_group(self, trans: ProvidesAppContext, group_id: int) -> model.Group:
-        group = trans.sa_session.query(model.Group).get(group_id)
+        group = trans.sa_session.get(model.Group, group_id)
         if group is None:
             raise ObjectNotFound("Group with the id provided was not found.")
         return group
 
     def _get_user(self, trans: ProvidesAppContext, user_id: int) -> model.User:
-        user = trans.sa_session.query(model.User).get(user_id)
+        user = trans.sa_session.get(User, user_id)
         if user is None:
             raise ObjectNotFound("User with the id provided was not found.")
         return user
@@ -74,17 +82,22 @@ class GroupUsersManager:
     def _get_group_user(
         self, trans: ProvidesAppContext, group: model.Group, user: model.User
     ) -> Optional[model.UserGroupAssociation]:
-        return (
-            trans.sa_session.query(model.UserGroupAssociation)
-            .filter(model.UserGroupAssociation.user == user, model.UserGroupAssociation.group == group)
-            .one_or_none()
-        )
+        return get_group_user(trans.sa_session, user, group)
 
     def _add_user_to_group(self, trans: ProvidesAppContext, group: model.Group, user: model.User):
         gra = model.UserGroupAssociation(user, group)
         trans.sa_session.add(gra)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     def _remove_user_from_group(self, trans: ProvidesAppContext, group_user: model.UserGroupAssociation):
         trans.sa_session.delete(group_user)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+
+def get_group_user(session: Session, user, group) -> Optional[UserGroupAssociation]:
+    stmt = (
+        select(UserGroupAssociation).where(UserGroupAssociation.user == user).where(UserGroupAssociation.group == group)
+    )
+    return session.execute(stmt).scalar_one_or_none()

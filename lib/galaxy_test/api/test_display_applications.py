@@ -1,6 +1,7 @@
 import random
 from typing import List
 
+from galaxy.util import UNKNOWN
 from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
@@ -36,7 +37,7 @@ class TestDisplayApplicationsApi(ApiTestCase):
 
     @requires_admin
     def test_reload_unknown_returns_as_failed(self):
-        unknown_id = "unknown"
+        unknown_id = UNKNOWN
         payload = {"ids": [unknown_id]}
         response = self._post("display_applications/reload", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)

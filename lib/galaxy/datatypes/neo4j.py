@@ -1,6 +1,7 @@
 """
 Neo4j Composite Dataset
 """
+
 import logging
 
 from galaxy.datatypes.data import Data

@@ -15,6 +15,7 @@ const baseRules = {
     // but that kind of refactoring is best done slowly, one bit at a time
     // as those components are touched.
     "vue/multi-word-component-names": "warn",
+    "vue/component-name-in-template-casing": "error",
     "vue/prop-name-casing": "warn",
     "vue/require-prop-types": "warn",
     "vue/require-default-prop": "warn",
@@ -40,11 +41,47 @@ const baseRules = {
     "vuejs-accessibility/form-control-has-label": "warn",
     "vuejs-accessibility/heading-has-content": "error",
     "vuejs-accessibility/iframe-has-title": "error",
-    "vuejs-accessibility/label-has-for": "warn",
+    "vuejs-accessibility/label-has-for": [
+        "warn",
+        {
+            required: {
+                some: ["nesting", "id"],
+            },
+            allowChildren: true,
+        },
+    ],
     "vuejs-accessibility/mouse-events-have-key-events": "warn",
     "vuejs-accessibility/no-autofocus": "error",
     "vuejs-accessibility/no-static-element-interactions": "warn",
     "vuejs-accessibility/tabindex-no-positive": "error",
+
+    // import and export sorting and linting.
+    "simple-import-sort/imports": [
+        "error",
+        {
+            groups: [
+                // Side effect imports.
+                ["^\\u0000"],
+                // Node.js builtins prefixed with `node:`.
+                ["^node:"],
+                // Packages.
+                // Things that start with a letter (or digit or underscore), or `@` followed by a letter.
+                ["^@?\\w"],
+                // Absolute imports and other imports such as Vue-style `@/foo`.
+                // Anything not matched in another group.
+                ["^"],
+                // Relative imports.
+                // Anything that starts with a dot.
+                ["^\\."],
+                // anything that ends in .vue
+                ["\\.vue$"],
+            ],
+        },
+    ],
+    "simple-import-sort/exports": "error",
+    "import/first": "error",
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
 };
 
 const baseExtends = [
@@ -53,6 +90,8 @@ const baseExtends = [
     "plugin:vue/recommended",
     "plugin:vuejs-accessibility/recommended",
 ];
+
+const basePlugins = ["simple-import-sort", "import"];
 
 module.exports = {
     root: true,
@@ -64,6 +103,7 @@ module.exports = {
     },
     rules: baseRules,
     ignorePatterns: ["dist", "src/libs", "src/nls", "src/legacy"],
+    plugins: basePlugins,
     overrides: [
         {
             files: ["**/*.test.js", "**/*.test.ts", "**/tests/jest/**"],
@@ -85,12 +125,15 @@ module.exports = {
             files: ["**/*.ts", "**/*.tsx"],
             extends: [
                 ...baseExtends,
-                "plugin:@typescript-eslint/eslint-recommended",
                 "plugin:@typescript-eslint/recommended",
+                // "plugin:@typescript-eslint/stylistic"  // TODO: work towards this
             ],
             rules: {
                 ...baseRules,
                 "@typescript-eslint/no-throw-literal": "error",
+                "@typescript-eslint/ban-ts-comment": "warn",
+                "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
+                "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {
@@ -98,9 +141,9 @@ module.exports = {
                 ecmaVersion: 2020,
                 sourceType: "module",
                 extraFileExtensions: [".vue"],
-                project: "./tsconfig.json",
+                project: true,
             },
-            plugins: ["@typescript-eslint"],
+            plugins: [...basePlugins, "@typescript-eslint"],
         },
     ],
 };

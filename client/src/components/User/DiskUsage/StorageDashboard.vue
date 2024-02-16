@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import localize from "@/utils/localization";
-import DiskUsageSummary from "./DiskUsageSummary.vue";
-import IconCard from "@/components/IconCard.vue";
 import { reactive } from "vue";
 import { useRouter } from "vue-router/composables";
+
+import localize from "@/utils/localization";
+
+import DiskUsageSummary from "./DiskUsageSummary.vue";
+import IconCard from "@/components/IconCard.vue";
 
 const router = useRouter();
 
@@ -45,17 +47,19 @@ function goToHistoriesOverview() {
             </h1>
             <h2 class="text-center my-3 h-sm">{{ texts.subtitle }}</h2>
         </header>
-        <disk-usage-summary class="m-3" />
-        <icon-card
+        <DiskUsageSummary class="m-3" />
+        <IconCard
             class="mx-auto mb-3"
+            data-description="free space card"
             :title="texts.freeSpace.title"
             :description="texts.freeSpace.description"
             :icon="texts.freeSpace.icon"
             :button-text="texts.freeSpace.buttonText"
             @onButtonClick="goToStorageManager" />
 
-        <icon-card
+        <IconCard
             class="mx-auto mb-3"
+            data-description="explore usage card"
             :title="texts.explore.title"
             :description="texts.explore.description"
             :icon="texts.explore.icon"

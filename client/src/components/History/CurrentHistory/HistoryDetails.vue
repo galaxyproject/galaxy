@@ -1,7 +1,30 @@
+<script setup lang="ts">
+import type { HistorySummary } from "@/api";
+import { useHistoryStore } from "@/stores/historyStore";
+
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
+
+interface Props {
+    history: HistorySummary;
+    writeable: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    writeable: true,
+});
+
+const historyStore = useHistoryStore();
+
+function onSave(newDetails: HistorySummary) {
+    const id = props.history.id;
+    historyStore.updateHistory({ ...newDetails, id });
+}
+</script>
+
 <template>
     <DetailsLayout
         :name="history.name"
-        :annotation="history.annotation"
+        :annotation="history.annotation || ''"
         :tags="history.tags"
         :writeable="writeable"
         @save="onSave">
@@ -11,30 +34,3 @@
         </template>
     </DetailsLayout>
 </template>
-
-<script>
-import { mapActions } from "pinia";
-import { useHistoryStore } from "@/stores/historyStore";
-import short from "components/directives/v-short";
-import DetailsLayout from "components/History/Layout/DetailsLayout";
-
-export default {
-    components: {
-        DetailsLayout,
-    },
-    directives: {
-        short,
-    },
-    props: {
-        history: { type: Object, required: true },
-        writeable: { type: Boolean, default: true },
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["updateHistory"]),
-        onSave(newDetails) {
-            const id = this.history.id;
-            this.updateHistory({ ...newDetails, id });
-        },
-    },
-};
-</script>

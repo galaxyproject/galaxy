@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool error detection."""
+
 import re
 
 from galaxy.util import etree

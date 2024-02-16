@@ -168,8 +168,7 @@ class User(Base, Dictifiable):
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
     def set_password_cleartext(self, cleartext):
-        message = validate_password_str(cleartext)
-        if message:
+        if message := validate_password_str(cleartext):
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_insecure_hash(text_type=cleartext)
@@ -399,6 +398,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -414,6 +414,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 

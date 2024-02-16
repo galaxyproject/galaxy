@@ -1,4 +1,5 @@
 """Integration tests for realtime tools."""
+
 import os
 import tempfile
 from typing import (
@@ -156,7 +157,6 @@ class TestInteractiveToolsShortURLIntegration(AbstractTestCases.BaseInteractiveT
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["interactivetools_shorten_url"] = True
         config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
 
 

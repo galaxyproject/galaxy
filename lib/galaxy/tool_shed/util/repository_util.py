@@ -21,10 +21,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
@@ -68,7 +66,7 @@ def check_for_updates(
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)
     else:
-        repository = get_tool_shed_repository_by_decoded_id(install_model_context, repository_id)
+        repository = install_model_context.get(ToolShedRepository, repository_id)
         ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
             tool_shed_registry, install_model_context, repository
         )
@@ -96,8 +94,11 @@ def _check_or_update_tool_shed_status_for_installed_repository(
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            install_model_context.add(repository)
-            install_model_context.flush()
+            session = install_model_context
+            session.add(repository)
+            with transaction(session):
+                session.commit()
+
             updated = True
     else:
         ok = False
@@ -180,7 +181,8 @@ def create_or_update_tool_shed_repository(
             status=status,
         )
     context.add(tool_shed_repository)
-    context.flush()
+    with transaction(context):
+        context.commit()
     return tool_shed_repository
 
 
@@ -224,6 +226,8 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
     items = tmp_url.split("/repos/")
     tool_shed_url = items[0]
+    if len(items) == 1:
+        raise Exception(f"Processing an invalid tool shed clone URL {repository_clone_url} - tmp_url {tmp_url}")
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
     return "/".join((tool_shed_url, "repos", repo_path, changeset_revision))
@@ -627,15 +631,7 @@ def get_tool_shed_from_clone_url(repository_clone_url):
 def get_tool_shed_repository_by_id(app, repository_id) -> ToolShedRepository:
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
-    return get_tool_shed_repository_by_decoded_id(app.install_model.context, app.security.decode_id(repository_id))
-
-
-def get_tool_shed_repository_by_decoded_id(
-    install_model_context: install_model_scoped_session, repository_id: int
-) -> ToolShedRepository:
-    return (
-        install_model_context.query(ToolShedRepository).filter(ToolShedRepository.table.c.id == repository_id).first()
-    )
+    return app.install_model.context.get(ToolShedRepository, app.security.decode_id(repository_id))
 
 
 def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedRepository):
@@ -727,7 +723,6 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
     params = dict(
-        galaxy_url=web.url_for("/", qualified=True),
         name=repository_name,
         owner=repository_owner,
         changeset_revision=changeset_revision,
@@ -766,8 +761,11 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
     repository.status = status
     repository.deleted = deleted
     repository.uninstalled = uninstalled
-    app.install_model.context.add(repository)
-    app.install_model.context.flush()
+
+    session = app.install_model.context
+    session.add(repository)
+    with transaction(session):
+        session.commit()
 
 
 __all__ = (

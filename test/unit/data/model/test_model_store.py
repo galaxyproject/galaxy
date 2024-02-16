@@ -1,4 +1,5 @@
 """Unit tests for importing and exporting data from model stores."""
+
 import json
 import os
 import pathlib
@@ -16,10 +17,12 @@ from typing import (
 
 import pytest
 from rocrate.rocrate import ROCrate
+from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
@@ -41,6 +44,7 @@ from ..test_galaxy_mapping import (
 TESTCASE_DIRECTORY = pathlib.Path(__file__).parent
 TEST_PATH_1 = TESTCASE_DIRECTORY / "1.txt"
 TEST_PATH_2 = TESTCASE_DIRECTORY / "2.bed"
+TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
 
 
@@ -71,7 +75,7 @@ def test_import_export_history_hidden_false_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    app.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -83,7 +87,7 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    app.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -116,6 +120,75 @@ def test_import_export_history_allow_discarded_data():
     assert imported_job.state == "ok"
     assert imported_job.output_datasets
     assert imported_job.output_datasets[0].dataset == datasets[1]
+
+
+def test_import_export_history_with_implicit_conversion():
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    convert_ext = "fasta"
+    implicit_hda = model.HistoryDatasetAssociation(extension=convert_ext, create_dataset=True, flush=False, history=h)
+    implicit_hda.hid = d2.hid
+    # this adds and flushes the result...
+    d2.attach_implicitly_converted_dataset(app.model.context, implicit_hda, convert_ext)
+    app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
+
+    assert len(h.active_datasets) == 3
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
+
+    assert len(imported_history.active_datasets) == 3
+    recovered_hda_2 = imported_history.active_datasets[1]
+    assert recovered_hda_2.implicitly_converted_datasets
+    imported_conversion = recovered_hda_2.implicitly_converted_datasets[0]
+    assert imported_conversion.type == "fasta"
+    assert imported_conversion.dataset == imported_history.active_datasets[2]
+
+    # implicit conversions have the same HID... ensure this property is recovered...
+    assert imported_history.active_datasets[2].hid == imported_history.active_datasets[1].hid
+
+
+def test_import_export_history_with_implicit_conversion_and_extra_files():
+    app = _mock_app()
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+
+    convert_ext = "fasta"
+    implicit_hda = model.HistoryDatasetAssociation(extension=convert_ext, create_dataset=True, flush=False, history=h)
+    implicit_hda.hid = d2.hid
+    # this adds and flushes the result...
+    d2.attach_implicitly_converted_dataset(app.model.context, implicit_hda, convert_ext)
+    app.object_store.update_from_file(implicit_hda.dataset, file_name=TEST_PATH_2_CONVERTED, create=True)
+
+    d2.dataset.create_extra_files_path()
+    implicit_hda.dataset.create_extra_files_path()
+
+    app.write_primary_file(d2, "cool primary file 1")
+    app.write_composite_file(d2, "cool composite file", "child_file")
+
+    app.write_primary_file(implicit_hda, "cool primary file implicit")
+    app.write_composite_file(implicit_hda, "cool composite file implicit", "child_file_converted")
+
+    assert len(h.active_datasets) == 3
+    imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
+
+    assert len(imported_history.active_datasets) == 3
+    recovered_hda_2 = imported_history.active_datasets[1]
+    assert recovered_hda_2.implicitly_converted_datasets
+    imported_conversion = recovered_hda_2.implicitly_converted_datasets[0]
+    assert imported_conversion.type == "fasta"
+    assert imported_conversion.dataset == imported_history.active_datasets[2]
+
+    # implicit conversions have the same HID... ensure this property is recovered...
+    assert imported_history.active_datasets[2].hid == imported_history.active_datasets[1].hid
+
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        imported_history.active_datasets[1], "child_file", "cool composite file"
+    )
+
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        imported_history.active_datasets[2], "child_file_converted", "cool composite file implicit"
+    )
 
 
 def test_import_export_bag_archive():
@@ -190,9 +263,9 @@ def test_import_library_from_dict():
     perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
 
     sa_session = fixture_context.sa_session
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 1, len(all_lddas)
 
 
@@ -245,7 +318,7 @@ def test_import_library_require_permissions():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    app.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
@@ -273,7 +346,7 @@ def test_import_export_library():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    app.commit()
 
     subfolder = model.LibraryFolder(name="sub folder 1", description="sub folder")
     root_folder.add_folder(subfolder)
@@ -287,7 +360,7 @@ def test_import_export_library():
     sa_session.add(ld)
     sa_session.add(ldda)
 
-    sa_session.flush()
+    app.commit()
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
@@ -300,9 +373,9 @@ def test_import_export_library():
     )
     import_model_store.perform_import()
 
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 2, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 2, len(all_lddas)
 
     new_library = [lib for lib in all_libraries if lib.id != library.id][0]
@@ -329,7 +402,7 @@ def test_import_export_invocation():
     sa_session = app.model.context
     h2 = model.History(user=workflow_invocation.user)
     sa_session.add(h2)
-    sa_session.flush()
+    app.commit()
 
     import_model_store = store.get_import_model_store_for_directory(
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
@@ -347,7 +420,6 @@ def validate_has_pl_galaxy(ro_crate: ROCrate):
     assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
     assert programming_language.name == "Galaxy"
     assert programming_language.url == "https://galaxyproject.org/"
-    assert programming_language.version
 
 
 def validate_organize_action(ro_crate: ROCrate):
@@ -606,8 +678,7 @@ def test_import_export_edit_collection():
     sa_session.add(hc1)
     sa_session.add(h)
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    sa_session.flush()
+    app.add_and_commit(import_history)
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
@@ -680,46 +751,38 @@ def test_import_export_composite_datasets():
 
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
     d1.dataset.create_extra_files_path()
-    sa_session.add_all((h, d1))
-    sa_session.flush()
+    app.add_and_commit(h, d1)
 
-    primary = NamedTemporaryFile("w")
-    primary.write("cool primary file")
-    primary.flush()
-    app.object_store.update_from_file(d1.dataset, file_name=primary.name, create=True, preserve_symlinks=True)
-
-    composite1 = NamedTemporaryFile("w")
-    composite1.write("cool composite file")
-    composite1.flush()
-
-    app.object_store.update_from_file(
-        d1.dataset,
-        extra_dir=os.path.normpath(os.path.join(d1.extra_files_path, "parent_dir")),
-        alt_name="child_file",
-        file_name=composite1.name,
-        create=True,
-        preserve_symlinks=True,
-    )
+    app.write_primary_file(d1, "cool primary file")
+    app.write_composite_file(d1, "cool composite file", "child_file")
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    sa_session.flush()
+    app.add_and_commit(import_history)
     _perform_import_from_directory(temp_directory, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
-    root_extra_files_path = import_dataset.extra_files_path
+    _assert_extra_files_has_parent_directory_with_single_file_containing(
+        import_dataset, "child_file", "cool composite file"
+    )
+
+
+def _assert_extra_files_has_parent_directory_with_single_file_containing(
+    dataset, expected_file_name, expected_contents
+):
+    root_extra_files_path = dataset.extra_files_path
     assert len(os.listdir(root_extra_files_path)) == 1
     assert os.listdir(root_extra_files_path)[0] == "parent_dir"
     composite_sub_dir = os.path.join(root_extra_files_path, "parent_dir")
     child_files = os.listdir(composite_sub_dir)
     assert len(child_files) == 1
+    assert child_files[0] == expected_file_name
     with open(os.path.join(composite_sub_dir, child_files[0])) as f:
         contents = f.read()
-        assert contents == "cool composite file"
+        assert contents == expected_contents
 
 
 def test_edit_metadata_files():
@@ -730,8 +793,7 @@ def test_edit_metadata_files():
     h = model.History(name="Test History", user=u)
 
     d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
-    sa_session.add_all((h, d1))
-    sa_session.flush()
+    app.add_and_commit(h, d1)
     index = NamedTemporaryFile("w")
     index.write("cool bam index")
     metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
@@ -746,8 +808,7 @@ def test_edit_metadata_files():
         export_store.add_dataset(d1)
 
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    sa_session.flush()
+    app.add_and_commit(import_history)
     _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
@@ -784,11 +845,8 @@ def _setup_simple_export(export_kwds):
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
 
-    sa_session = app.model.context
-
     import_history = model.History(name="Test History for Import", user=u)
-    sa_session.add(import_history)
-    sa_session.flush()
+    app.add_and_commit(import_history)
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:
@@ -813,9 +871,9 @@ def _assert_simple_cat_job_imported(imported_history, state="ok"):
     assert imported_job.input_datasets
     assert imported_job.input_datasets[0].dataset == datasets[0]
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -836,8 +894,7 @@ def _setup_simple_cat_job(app, state="ok"):
     j.add_input_dataset("input1", d1)
     j.add_output_dataset("out_file1", d2)
 
-    sa_session.add_all((d1, d2, h, j))
-    sa_session.flush()
+    app.add_and_commit(d1, d2, h, j)
 
     app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
     app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
@@ -872,8 +929,7 @@ def _setup_invocation(app):
     workflow_invocation.add_input(d1, step=workflow_step_1)
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, d2)
-    sa_session.add(workflow_invocation)
-    sa_session.flush()
+    app.add_and_commit(workflow_invocation)
     return workflow_invocation
 
 
@@ -919,7 +975,7 @@ def _setup_simple_collection_job(app, state="ok"):
     sa_session.add(hc2)
     sa_session.add(hc3)
     sa_session.add(j)
-    sa_session.flush()
+    app.commit()
 
     return u, h, c1, c2, c3, hc1, hc2, hc3, j
 
@@ -945,8 +1001,7 @@ def _setup_collection_invocation(app):
     wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
     workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
 
-    sa_session.add(workflow_invocation)
-    sa_session.flush()
+    app.add_and_commit(workflow_invocation)
     return workflow_invocation
 
 
@@ -1025,14 +1080,45 @@ class MockWorkflowContentsManager:
         workflow = model.Workflow()
         workflow.steps = [workflow_step_1]
         stored_workflow.latest_workflow = workflow
-        sa_session = app.model.context
-        sa_session.add_all((stored_workflow, workflow))
-        sa_session.flush()
+        app.add_and_commit(stored_workflow, workflow)
         return workflow
 
 
 class TestApp(GalaxyDataTestApp):
     workflow_contents_manager = MockWorkflowContentsManager()
+
+    def add_and_commit(self, *objs):
+        session = self.model.session
+        session.add_all(objs)
+        self.commit()
+
+    def commit(self):
+        session = self.model.session
+        with transaction(session):
+            session.commit()
+
+    def write_primary_file(self, dataset_instance, contents):
+        primary = NamedTemporaryFile("w")
+        primary.write(contents)
+        primary.flush()
+        self.object_store.update_from_file(
+            dataset_instance.dataset, file_name=primary.name, create=True, preserve_symlinks=True
+        )
+
+    def write_composite_file(self, dataset_instance, contents, file_name):
+        composite1 = NamedTemporaryFile("w")
+        composite1.write(contents)
+        composite1.flush()
+
+        dataset_instance.dataset.create_extra_files_path()
+        self.object_store.update_from_file(
+            dataset_instance.dataset,
+            extra_dir=os.path.normpath(os.path.join(dataset_instance.extra_files_path, "parent_dir")),
+            alt_name=file_name,
+            file_name=composite1.name,
+            create=True,
+            preserve_symlinks=True,
+        )
 
 
 def _mock_app(store_by=DEFAULT_OBJECT_STORE_BY):
@@ -1071,7 +1157,7 @@ def setup_fixture_context_with_history(
     app, sa_session, user = setup_fixture_context_with_user(**kwd)
     history = model.History(name=history_name, user=user)
     sa_session.add(history)
-    sa_session.flush()
+    app.commit()
     return StoreFixtureContextWithHistory(app, sa_session, user, history)
 
 

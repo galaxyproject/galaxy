@@ -138,8 +138,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
         }
         .portlet-operations {
             button {
-                @extend .ml-1;
-                @extend .py-0;
+                margin-left: 0.25rem;
+                padding-top: 0;
+                padding-bottom: 0;
             }
         }
     }
@@ -171,7 +172,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .mb-2;
     border: none;
     border-left: solid 3px $portlet-bg-color;
-    border-radius: $border-radius-large;
+    border-radius: $border-radius-large $border-radius-large $border-radius-large 0;
+    &:focus-within {
+        border-left: solid 3px $portlet-focus-color;
+    }
+
     .portlet-header:first-child {
         @extend .rounded-0;
         @extend .p-2;
@@ -211,10 +216,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         cursor: not-allowed;
         background-color: $brand-light;
     }
-}
-
-.ui-input-error {
-    border-color: $brand-danger;
 }
 
 .ui-textarea {
@@ -348,23 +349,25 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-dragover {
+.ui-dragover-warning {
+    @extend .rounded;
     @extend .p-1;
-    border-radius: $border-radius-base;
-    border: 2px solid $state-warning-bg;
     background: lighten($state-warning-bg, 10%);
+    border: 2px solid $state-warning-bg;
 }
 
 .ui-dragover-danger {
-    @extend .ui-dragover;
-    border: 2px solid $state-danger-bg;
+    @extend .rounded;
+    @extend .p-1;
     background: lighten($state-danger-bg, 10%);
+    border: 2px solid $state-danger-bg;
 }
 
 .ui-dragover-success {
-    @extend .ui-dragover;
-    border: 2px solid $state-success-bg;
+    @extend .rounded;
+    @extend .p-1;
     background: lighten($state-success-bg, 10%);
+    border: 2px solid $state-success-bg;
 }
 
 /* Used for tree in tool recommendations */
@@ -435,4 +438,30 @@ $ui-margin-horizontal-large: $margin-v * 2;
     &:hover {
         text-decoration: underline;
     }
+}
+
+.overflow-x-hidden {
+    overflow-x: hidden !important;
+}
+
+// TODO: move this to component library, once that exists
+.inline-icon-button {
+    border: none;
+    background-color: transparent;
+    color: $brand-primary;
+    display: inline;
+
+    padding: 0 0.1rem;
+
+    &:hover {
+        background-color: $brand-primary;
+        color: $brand-light;
+    }
+}
+
+.card-container {
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid $brand-secondary;
 }

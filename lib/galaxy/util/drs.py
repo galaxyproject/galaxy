@@ -1,6 +1,7 @@
 import time
 from os import PathLike
 from typing import (
+    List,
     Optional,
     Tuple,
     Union,
@@ -9,11 +10,15 @@ from typing import (
 import requests
 
 from galaxy import exceptions
-from galaxy.files import FileSourceDictifiable
+from galaxy.files import (
+    ConfiguredFileSources,
+    FileSourceDictifiable,
+)
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util.config_parsers import IpAllowedListEntryT
 
 TargetPathT = Union[str, PathLike]
 
@@ -78,6 +83,7 @@ def fetch_drs_to_file(
     force_http=False,
     retry_options: Optional[RetryOptions] = None,
     headers: Optional[dict] = None,
+    fetch_url_allowlist: Optional[List[IpAllowedListEntryT]] = None,
 ):
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):
@@ -104,15 +110,23 @@ def fetch_drs_to_file(
         access_url, access_headers = _get_access_info(get_url, access_method, headers=headers)
         opts = FilesSourceOptions()
         if access_method["type"] == "https":
-            extra_props: HTTPFilesSourceProperties = {"http_headers": access_headers or {}}
+            extra_props: HTTPFilesSourceProperties = {
+                "http_headers": access_headers or {},
+                "fetch_url_allowlist": fetch_url_allowlist or [],
+            }
             opts.extra_props = extra_props
         else:
             opts.extra_props = {}
         try:
+            file_sources = (
+                user_context.file_sources
+                if user_context
+                else ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+            )
             stream_url_to_file(
                 access_url,
                 target_path=str(target_path),
-                file_sources=user_context.file_sources,
+                file_sources=file_sources,
                 user_context=user_context,
                 file_source_opts=opts,
             )

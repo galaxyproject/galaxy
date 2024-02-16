@@ -1,11 +1,13 @@
-<script lang="ts" setup>
-import { ref, watch, onMounted } from "vue";
+<script setup lang="ts">
+import { onMounted, ref, watch } from "vue";
+
+import { getSelectableObjectStores } from "@/api/objectStores";
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import { errorMessageAsString } from "@/utils/simple-error";
 import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
-import { getSelectableObjectStores } from "./services";
 
 interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
@@ -79,7 +81,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
 
 <template>
     <div>
-        <loading-span v-if="loading" :message="loadingObjectStoreInfoMessage" />
+        <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}

@@ -1,8 +1,10 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
+import { type CleanableItem, CleanupResult } from "./model";
+
 import CleanupResultDialog from "./CleanupResultDialog.vue";
-import { CleanupResult, type CleanableItem } from "./model";
 
 const localVue = getLocalVue();
 

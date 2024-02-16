@@ -1,5 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import ConfigurationMarkdown from "./ConfigurationMarkdown.vue";
 
 const localVue = getLocalVue();

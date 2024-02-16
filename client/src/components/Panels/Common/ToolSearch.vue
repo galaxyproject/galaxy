@@ -1,133 +1,239 @@
+<script setup lang="ts">
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { getGalaxyInstance } from "@/app";
+import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
+
+import { type ToolSearchKeys } from "../utilities";
+
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+
+const router = useRouter();
+
+// Note: These are ordered by result priority (exact matches very top; words matches very bottom)
+const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
+
+const FAVORITES = ["#favs", "#favorites", "#favourites"];
+const MIN_QUERY_LENGTH = 3;
+
+const props = defineProps({
+    currentPanelView: {
+        type: String,
+        required: true,
+    },
+    enableAdvanced: {
+        type: Boolean,
+        default: false,
+    },
+    placeholder: {
+        type: String,
+        default: "search tools",
+    },
+    query: {
+        type: String,
+        default: null,
+    },
+    queryPending: {
+        type: Boolean,
+        default: false,
+    },
+    showAdvanced: {
+        type: Boolean,
+        default: false,
+    },
+    toolsList: {
+        type: Array as PropType<Tool[]>,
+        required: true,
+    },
+    currentPanel: {
+        type: Object as PropType<Record<string, Tool | ToolSection>>,
+        required: true,
+    },
+});
+
+const emit = defineEmits<{
+    (e: "update:show-advanced", showAdvanced: boolean): void;
+    (
+        e: "onResults",
+        filtered: string[] | null,
+        sectioned: Record<string, Tool | ToolSection> | null,
+        closestValue: string | null
+    ): void;
+    (e: "onQuery", query: string): void;
+}>();
+
+const searchWorker: Ref<Worker | undefined> = ref(undefined);
+
+const localFilterText = computed({
+    get: () => {
+        return props.query !== null ? props.query : "";
+    },
+    set: (newVal: any) => {
+        checkQuery(newVal);
+    },
+});
+
+const propShowAdvanced = computed({
+    get: () => {
+        return props.showAdvanced;
+    },
+    set: (val: boolean) => {
+        emit("update:show-advanced", val);
+    },
+});
+const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(() => {
+    return {
+        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        section: {
+            placeholder: "section",
+            type: String,
+            handler: contains("section"),
+            datalist: sectionNames,
+            menuItem: true,
+        },
+        ontology: {
+            placeholder: "EDAM ontology",
+            type: String,
+            handler: contains("ontology"),
+            datalist: ontologyList,
+            menuItem: true,
+        },
+        id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
+        owner: { placeholder: "repository owner", type: String, handler: contains("owner"), menuItem: true },
+        help: { placeholder: "help text", type: String, handler: contains("help"), menuItem: true },
+    };
+});
+const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
+
+const toolStore = useToolStore();
+
+const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
+const ontologyList = toolStore
+    .sectionDatalist("ontology:edam_topics")
+    .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+
+onMounted(() => {
+    searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
+    const Galaxy = getGalaxyInstance();
+    const favoritesResults = Galaxy?.user.getFavorites().tools;
+
+    searchWorker.value.onmessage = ({ data }) => {
+        const { type, payload, sectioned, query, closestTerm } = data;
+        if (type === "searchToolsByKeysResult" && query === props.query) {
+            emit("onResults", payload, sectioned, closestTerm);
+        } else if (type === "clearFilterResult") {
+            emit("onResults", null, null, null);
+        } else if (type === "favoriteToolsResult") {
+            emit("onResults", favoritesResults, null, null);
+        }
+    };
+});
+
+onUnmounted(() => {
+    searchWorker.value?.terminate();
+});
+
+function checkQuery(q: string) {
+    emit("onQuery", q);
+    if (q && q.length >= MIN_QUERY_LENGTH) {
+        if (FAVORITES.includes(q)) {
+            post({ type: "favoriteTools" });
+        } else {
+            post({
+                type: "searchToolsByKeys",
+                payload: {
+                    tools: props.toolsList,
+                    keys: KEYS,
+                    query: q,
+                    panelView: props.currentPanelView,
+                    currentPanel: props.currentPanel,
+                },
+            });
+        }
+    } else {
+        post({ type: "clearFilter" });
+    }
+}
+
+function post(message: object) {
+    searchWorker.value?.postMessage(message);
+}
+
+function onAdvancedSearch(filters: any) {
+    router.push({ path: "/tools/list", query: filters });
+}
+</script>
+
 <template>
     <div>
-        <small v-if="showAdvanced">Filter by name:</small>
+        <FilterMenu
+            v-if="props.enableAdvanced"
+            :class="!propShowAdvanced && 'mb-3'"
+            name="Tools"
+            :placeholder="props.placeholder"
+            :debounce-delay="200"
+            :filter-class="ToolFilters"
+            :filter-text.sync="localFilterText"
+            has-help
+            :loading="props.queryPending"
+            :show-advanced.sync="propShowAdvanced"
+            menu-type="separate"
+            @on-search="onAdvancedSearch">
+            <template v-slot:menu-help-text>
+                <div>
+                    <p>
+                        You can use this Advanced Tool Search Panel to find tools by applying search filters, with the
+                        results showing up in the center panel.
+                    </p>
+
+                    <p>
+                        <i>
+                            (Clicking on the Section, Repo or Owner labels in the Search Results will activate the
+                            according filter)
+                        </i>
+                    </p>
+
+                    <p>The available tool search filters are:</p>
+                    <dl>
+                        <dt><code>name</code></dt>
+                        <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
+                        <dt><code>section</code></dt>
+                        <dd>The tool section is based on the default tool panel view</dd>
+                        <dt><code>ontology</code></dt>
+                        <dd>
+                            This is the EDAM ontology term that is associated with the tool. Example inputs:
+                            <i>"topic_3174"</i> or <i>"operation_0324"</i>
+                        </dd>
+                        <dt><code>id</code></dt>
+                        <dd>The tool id (taken from its XML)</dd>
+                        <dt><code>owner</code></dt>
+                        <dd>
+                            For the tools that have been installed from the
+                            <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
+                            , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
+                            repository <b>owner</b>.
+                        </dd>
+                        <dt><code>help text</code></dt>
+                        <dd>
+                            This is like a keyword search: you can search for keywords that might exist in a tool's help
+                            text. An example input:
+                            <i>"genome, RNA, minimap"</i>
+                        </dd>
+                    </dl>
+                </div>
+            </template>
+        </FilterMenu>
         <DelayedInput
-            :class="!showAdvanced && 'mb-3'"
-            :query="query"
-            :delay="100"
-            :show-advanced="showAdvanced"
-            :enable-advanced="enableAdvanced"
-            :placeholder="showAdvanced ? 'any name' : placeholder"
-            @change="checkQuery"
-            @onToggle="onToggle" />
-        <div
-            v-if="showAdvanced"
-            description="advanced tool filters"
-            @keyup.enter="onSearch"
-            @keyup.esc="onToggle(false)">
-            <small class="mt-1">Filter by {{ sectionLabel }}:</small>
-            <b-form-input
-                v-model="filterSettings['section']"
-                autocomplete="off"
-                size="sm"
-                :placeholder="`any ${sectionLabel}`"
-                list="sectionSelect" />
-            <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
-            <small class="mt-1">Filter by id:</small>
-            <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
-            <small class="mt-1">Filter by help text:</small>
-            <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
-            <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
-                    <icon icon="search" />
-                    <span>{{ "Search" | localize }}</span>
-                </b-button>
-                <b-button size="sm" @click="onToggle(false)">
-                    <icon icon="redo" />
-                    <span>{{ "Cancel" | localize }}</span>
-                </b-button>
-            </div>
-        </div>
+            v-else
+            class="mb-3"
+            :query="props.query"
+            :delay="200"
+            :loading="queryPending"
+            :placeholder="placeholder"
+            @change="checkQuery" />
     </div>
 </template>
-
-<script>
-import { getGalaxyInstance } from "app";
-import DelayedInput from "components/Common/DelayedInput";
-import { flattenTools, searchToolsByKeys } from "../utilities.js";
-
-export default {
-    name: "ToolSearch",
-    components: {
-        DelayedInput,
-    },
-    props: {
-        currentPanelView: {
-            type: String,
-            required: true,
-        },
-        enableAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-        placeholder: {
-            type: String,
-            default: "search tools",
-        },
-        query: {
-            type: String,
-            default: null,
-        },
-        showAdvanced: {
-            type: Boolean,
-            default: false,
-        },
-        toolbox: {
-            type: Array,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            favorites: ["#favs", "#favorites", "#favourites"],
-            minQueryLength: 3,
-            filterSettings: {},
-        };
-    },
-    computed: {
-        favoritesResults() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.user.getFavorites().tools;
-        },
-        sectionNames() {
-            return this.toolbox.map((section) =>
-                section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
-            );
-        },
-        sectionLabel() {
-            return this.currentPanelView === "default" ? "section" : "ontology";
-        },
-        toolsList() {
-            return flattenTools(this.toolbox);
-        },
-    },
-    methods: {
-        checkQuery(q) {
-            this.filterSettings["name"] = q;
-            this.$emit("onQuery", q);
-            if (q && q.length >= this.minQueryLength) {
-                if (this.favorites.includes(q)) {
-                    this.$emit("onResults", this.favoritesResults);
-                } else {
-                    // keys with sorting order
-                    const keys = { exact: 4, name: 3, hyphenated: 2, description: 1, combined: 0 };
-                    this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
-                }
-            } else {
-                this.$emit("onResults", null);
-            }
-        },
-        onSearch() {
-            for (const [filter, value] of Object.entries(this.filterSettings)) {
-                if (!value) {
-                    delete this.filterSettings[filter];
-                }
-            }
-            this.$router.push({ path: "/tools/list", query: this.filterSettings });
-        },
-        onToggle(toggleAdvanced) {
-            this.$emit("update:show-advanced", toggleAdvanced);
-        },
-    },
-};
-</script>

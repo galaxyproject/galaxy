@@ -1,6 +1,7 @@
 """
 Mock infrastructure for testing ModelManagers.
 """
+
 import os
 import shutil
 import tempfile
@@ -22,6 +23,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import JobSearch
@@ -31,6 +33,7 @@ from galaxy.model import tags
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
+    transaction,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -39,6 +42,12 @@ from galaxy.model.unittest_utils import (
     GalaxyDataTestConfig,
 )
 from galaxy.security import idencoding
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
@@ -50,13 +59,6 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.web_stack import ApplicationStack
 
 
@@ -93,7 +95,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
     job_search: Optional[JobSearch] = None
-    toolbox: ToolBox
+    _toolbox: ToolBox
     tool_cache: ToolCache
     install_model: ModelMapping
     watchers: ConfigWatchers
@@ -103,11 +105,13 @@ class MockApp(di.Container, GalaxyDataTestApp):
     history_manager: HistoryManager
     job_metrics: JobMetrics
     stop: bool
+    is_webapp: bool = True
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
+        self.install_model = self.model
         self[BasicSharedApp] = cast(BasicSharedApp, self)
         self[MinimalManagerApp] = cast(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self[StructuredApp] = cast(StructuredApp, self)  # type: ignore[type-abstract]
@@ -150,6 +154,14 @@ class MockApp(di.Container, GalaxyDataTestApp):
             return "/mock/url"
 
         self.url_for = url_for
+
+    @property
+    def toolbox(self) -> ToolBox:
+        return self._toolbox
+
+    @toolbox.setter
+    def toolbox(self, toolbox: ToolBox):
+        self._toolbox = toolbox
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
@@ -227,7 +239,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         # set by MockDir
         self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
-        self.delay_tool_initialization = True
         self.external_chown_script = None
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0
@@ -252,6 +263,8 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
+        self.display_builtin_converters = True
+        self.enable_notification_system = True
 
     @property
     def config_dict(self):
@@ -273,6 +286,10 @@ class MockWebapp:
         self.security = security
 
 
+def mock_url_builder(*a, **k):
+    return f"(fake url): {a}, {k}"
+
+
 class MockTrans:
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = cast(UniverseApplication, app or MockApp(**kwargs))
@@ -284,15 +301,19 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
-        self.url_builder = None
+        self.url_builder = mock_url_builder
 
         self.galaxy_session = None
         self.__user = user
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, body=None)
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def check_csrf_token(self, payload):
         pass
@@ -314,7 +335,8 @@ class MockTrans:
         if self.galaxy_session:
             self.galaxy_session.user = user
             self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)

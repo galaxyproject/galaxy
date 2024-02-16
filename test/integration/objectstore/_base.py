@@ -17,7 +17,7 @@ OBJECT_STORE_CONFIG = string.Template(
             <auth access_key="${access_key}" secret_key="${secret_key}" />
             <bucket name="galaxy" use_reduced_redundancy="False" max_chunk_size="250"/>
             <connection host="${host}" port="${port}" is_secure="False" conn_path="" multipart="True"/>
-            <cache path="${temp_directory}/object_store_cache" size="1000" />
+            <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_swift"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_swift"/>
         </object_store>
@@ -57,8 +57,14 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, i
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 
+def get_files(directory):
+    for rel_directory, _, files in os.walk(directory):
+        for file_ in files:
+            yield os.path.join(rel_directory, file_)
+
+
 def files_count(directory):
-    return sum(len(files) for _, _, files in os.walk(directory))
+    return sum(1 for _ in get_files(directory))
 
 
 @integration_util.skip_unless_docker()
@@ -85,7 +91,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
         config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["object_store_store_by"] = "uuid"
         config["metadata_strategy"] = "extended"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
             f.write(
@@ -96,6 +102,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                         "port": OBJECT_STORE_PORT,
                         "access_key": OBJECT_STORE_ACCESS_KEY,
                         "secret_key": OBJECT_STORE_SECRET_KEY,
+                        "cache_updated_data": cls.updateCacheData(),
                     }
                 )
             )
@@ -104,3 +111,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def updateCacheData(cls):
+        return True

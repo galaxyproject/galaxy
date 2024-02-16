@@ -37,11 +37,11 @@ except Exception:
 """
 
 
-def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None):
+def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None, tool_type=None):
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         raise Exception("legacy metadata_strategy has been removed")
-    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__":
+    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__" and tool_type != "interactive":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)
@@ -186,13 +186,15 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.file_name),
+                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name()),
                 "validate": validate_outputs,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
-                "model_class": "LibraryDatasetDatasetAssociation"
-                if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
-                else "HistoryDatasetAssociation",
+                "model_class": (
+                    "LibraryDatasetDatasetAssociation"
+                    if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
+                    else "HistoryDatasetAssociation"
+                ),
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
@@ -327,7 +329,7 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
             if not real_metadata_object:
                 metadata_temp = MetadataTempFile()
                 metadata_temp.tmp_dir = tmp_dir
-                shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
+                shutil.copy(dataset.metadata.get(meta_key, None).get_file_name(), metadata_temp.get_file_name())
                 override_metadata.append((meta_key, metadata_temp.to_JSON()))
 
     with open(filename_override_metadata, "w+") as f:

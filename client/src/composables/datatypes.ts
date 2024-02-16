@@ -1,22 +1,18 @@
-import { ref } from "vue";
-import { fetcher } from "@/schema";
-
 import type { Ref } from "vue";
+import { ref } from "vue";
 
-const datatypesFetcher = fetcher.path("/api/datatypes").method("get").create();
-const edamFormatsFetcher = fetcher.path("/api/datatypes/edam_formats/detailed").method("get").create();
-const edamDataFetcher = fetcher.path("/api/datatypes/edam_data/detailed").method("get").create();
+import { datatypesFetcher, edamDataFetcher, edamFormatsFetcher } from "@/api/datatypes";
 
 export interface DetailedDatatypes {
     extension: string;
-    description?: string;
-    descriptionUrl?: string;
-    edamFormat?: string;
-    edamFormatLabel?: string;
-    edamFormatDefinition?: string;
-    edamData?: string;
-    edamDataLabel?: string;
-    edamDataDefinition?: string;
+    description?: string | null;
+    descriptionUrl?: string | null;
+    edamFormat?: string | null;
+    edamFormatLabel?: string | null;
+    edamFormatDefinition?: string | null;
+    edamData?: string | null;
+    edamDataLabel?: string | null;
+    edamDataDefinition?: string | null;
 }
 
 /**

@@ -102,13 +102,17 @@ class WorkflowRunCrateProfileBuilder:
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             if not filename:
+                # dataset was not serialized
                 filename = f"datasets/dataset_{dataset.dataset.uuid}"
+                source = None
+            else:
+                source = os.path.join(self.model_store.export_directory, filename)
             name = dataset.name
             encoding_format = dataset.datatype.get_mime()
             properties["name"] = name
             properties["encodingFormat"] = encoding_format
             file_entity = crate.add_file(
-                filename,
+                source,
                 dest_path=filename,
                 properties=properties,
             )
@@ -272,7 +276,7 @@ class WorkflowRunCrateProfileBuilder:
                     "encodingFormat": "application/json",
                 }
                 crate.add_file(
-                    attrs,
+                    attrs_path,
                     dest_path=attrs,
                     properties=properties,
                 )

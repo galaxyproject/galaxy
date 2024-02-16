@@ -40,7 +40,7 @@
                                             v-model="password"
                                             name="password"
                                             type="password" />
-                                        <b-form-text>
+                                        <b-form-text v-if="showResetLink">
                                             <span v-localize>Forgot password?</span>
                                             <a
                                                 v-localize
@@ -55,7 +55,7 @@
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]" />
+                                    <ExternalLogin :login_page="true" :exclude_idps="[connectExternalProvider]" />
                                 </div>
                             </b-card-body>
                             <b-card-footer>
@@ -88,7 +88,7 @@
                 </div>
             </template>
             <template v-else>
-                <new-user-confirmation
+                <NewUserConfirmation
                     :registration-warning-message="registrationWarningMessage"
                     :terms-url="termsUrl"
                     @setRedirect="setRedirect" />
@@ -102,12 +102,13 @@
 
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { withPrefix } from "utils/redirect";
-import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
+
+import NewUserConfirmation from "./NewUserConfirmation";
 
 Vue.use(BootstrapVue);
 
@@ -140,6 +141,10 @@ export default {
         showWelcomeWithLogin: {
             type: Boolean,
             default: false,
+        },
+        showResetLink: {
+            type: Boolean,
+            default: true,
         },
         termsUrl: {
             type: String,

@@ -1,9 +1,11 @@
-import { mount, createLocalVue } from "@vue/test-utils";
-import { useUserTags } from "composables/user";
+import { createLocalVue, mount } from "@vue/test-utils";
+import { isDate } from "date-fns";
 import { computed } from "vue";
+
+import { useUserTagsStore } from "@/stores/userTagsStore";
+
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
-import { isDate } from "date-fns";
 
 jest.mock("app");
 
@@ -15,11 +17,14 @@ const TEST_VERSIONS = [
 ];
 const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
-jest.mock("composables/user");
-useUserTags.mockReturnValue({
+jest.mock("@/stores/userTagsStore");
+useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
-    addLocalTag: jest.fn(),
+    onNewTagSeen: jest.fn(),
+    onTagUsed: jest.fn(),
+    onMultipleNewTagsSeen: jest.fn(),
 });
+
 describe("Attributes", () => {
     it("test attributes", async () => {
         const localVue = createLocalVue();
@@ -32,6 +37,7 @@ describe("Attributes", () => {
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
                 parameters: untypedParameters,
+                version: 0,
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },

@@ -57,18 +57,22 @@
     </FormCard>
 </template>
 
-<script lang="ts" setup>
-import FormDisplay from "@/components/Form/FormDisplay.vue";
+<script setup lang="ts">
+import { computed, toRef } from "vue";
+
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { Step } from "@/stores/workflowStepStore";
+
+import { useStepProps } from "../composables/useStepProps";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+
+import FormConditional from "./FormConditional.vue";
 import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
-import FormConditional from "./FormConditional.vue";
-import WorkflowIcons from "@/components/Workflow/icons";
-import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
-import { useUniqueLabelError } from "../composables/useUniqueLabelError";
-import { computed, toRef } from "vue";
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useStepProps } from "../composables/useStepProps";
 
 const props = defineProps<{
     step: Step;
@@ -77,7 +81,7 @@ const props = defineProps<{
 const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
-const stepStore = useWorkflowStepStore();
+const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
     if (label.value) {
