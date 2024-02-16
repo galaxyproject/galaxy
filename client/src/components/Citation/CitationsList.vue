@@ -5,6 +5,8 @@ import { onMounted, onUpdated, ref } from "vue";
 import { getCitations } from "@/components/Citation/services";
 import { useConfig } from "@/composables/config";
 
+import { type Citation } from ".";
+
 import CitationItem from "@/components/Citation/CitationItem.vue";
 
 const outputFormats = Object.freeze({
@@ -28,7 +30,7 @@ const { config } = useConfig(true);
 const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
 
 const outputFormat = ref(outputFormats.CITATION);
-const citations = ref<{ raw: any; cite: any }[]>([]);
+const citations = ref<Citation[]>([]);
 
 onUpdated(() => {
     emit("rendered");
