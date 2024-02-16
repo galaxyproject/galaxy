@@ -1489,13 +1489,13 @@ class HistoryItemOperator:
         self.hda_manager.ensure_can_change_datatype(item)
         self.hda_manager.ensure_can_set_metadata(item)
         is_deferred = item.has_deferred_data
-        item.dataset.state = item.dataset.states.SETTING_METADATA
+        item.state = item.dataset.states.SETTING_METADATA
         if is_deferred:
             if params.datatype == "auto":  # if `auto` just keep the original guessed datatype
                 item.update()  # TODO: remove this `update` when we can properly track the operation results to notify the history
             else:
                 trans.app.datatypes_registry.change_datatype(item, params.datatype)
-            item.dataset.state = item.dataset.states.DEFERRED
+            item.state = item.dataset.states.DEFERRED
         else:
             return change_datatype.si(
                 dataset_id=item.id, datatype=params.datatype, task_user_id=getattr(trans.user, "id", None)

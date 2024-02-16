@@ -224,8 +224,6 @@ class DatasetEmptyValidator(Validator):
         return cls(message, negate)
 
     def validate(self, value, trans=None):
-        print(f"value {value}")
-        print(f"value {value.get_size()}")
         if value:
             super().validate(value.get_size() != 0)
 

@@ -4351,7 +4351,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
-    _state: str
+    _state: Optional[str]
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
@@ -4436,32 +4436,29 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     @property
     def has_deferred_data(self):
-        return self.get_dataset_state() == Dataset.states.DEFERRED
+        return self.dataset.state == Dataset.states.DEFERRED
 
-    def get_dataset_state(self):
-        # self._state is currently only used when setting metadata externally
-        # leave setting the state as-is, we'll currently handle this specially in the external metadata code
+    @property
+    def state(self):
+        # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
             return self._state
         return self.dataset.state
 
-    def raw_set_dataset_state(self, state):
-        if state != self.dataset.state:
-            self.dataset.state = state
-            return True
-        else:
-            return False
+    @state.setter
+    def state(self, state: Optional[DatasetState]):
+        if state != self.state:
+            if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
+                self._state = state
+            else:
+                self.set_metadata_success_state()
+                sa_session = object_session(self)
+                if sa_session:
+                    sa_session.add(self.dataset)
+                self.dataset.state = state
 
-    def set_dataset_state(self, state):
-        if self.raw_set_dataset_state(state):
-            sa_session = object_session(self)
-            if sa_session:
-                object_session(self).add(self.dataset)
-                session = object_session(self)
-                with transaction(session):
-                    session.commit()  # flush here, because hda.flush() won't flush the Dataset object
-
-    state = property(get_dataset_state, set_dataset_state)
+    def set_metadata_success_state(self):
+        self._state = None
 
     def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
