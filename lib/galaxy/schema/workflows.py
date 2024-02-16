@@ -47,59 +47,71 @@ from galaxy.schema.schema import (
 #         description="Name of the workflow to create when extracting a workflow from history",
 #     )
 
-# TODO - add description to fields
-
 
 class GetTargetHistoryPayload(Model):
+    # TODO - add description to fields
     history: Optional[str] = Field(
         None,
         title="History",
-        description="The history to import the workflow into.",
+        # description="The history to import the workflow into.",
+        description="TODO",
     )
     history_id: Optional[str] = Field(
         None,
         title="History ID",
-        description="The history to import the workflow into.",
+        # description="The history to import the workflow into.",
+        description="TODO",
     )
     history_name: Optional[str] = Field(
         None,
         title="History Name",
-        description="The name of the history to import the workflow into.",
+        # description="The name of the history to import the workflow into.",
+        description="TODO",
     )
     new_history_name: Optional[str] = Field(
         None,
         title="New History Name",
-        description="The name of the new history to import the workflow into.",
+        # description="The name of the new history to import the workflow into.",
+        description="TODO",
     )
 
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
+    # TODO - add description to fields
     instance: Optional[bool] = Field(
         False,
-        title="Is Instance",
-        description="If true, the workflow is invoked as an instance.",
+        title="Is instance",
+        description="TODO",
     )
     scheduler: Optional[str] = Field(
         None,
         title="Scheduler",
-        description="Scheduler to use for workflow invocation.",
+        # description="Scheduler to use for workflow invocation.",
+        description="TODO",
     )
     batch: Optional[bool] = Field(
         False,
         title="Batch",
-        description="If true, the workflow is invoked as a batch.",
+        # description="If true, the workflow is invoked as a batch.",
+        description="TODO",
     )
     require_exact_tool_versions: Optional[bool] = Field(
-        False,
+        True,
         title="Require Exact Tool Versions",
-        description="If true, exact tool versions are required for workflow invocation.",
+        # description="If true, exact tool versions are required for workflow invocation.",
+        description="TODO",
     )
-    allow_tool_state_corrections: Optional[bool] = False
-    use_cached_job: Optional[bool] = False
+    allow_tool_state_corrections: Optional[bool] = Field(
+        False,
+        title="Allow tool state corrections",
+        description="TODO",
+    )
+    use_cached_job: Optional[bool] = Field(
+        False,
+        title="Use cached job",
+        description="TODO",
+    )
 
-    # input_step_parameters: Dict[str, InvocationInputParameter] = Field(
-    #     default=..., title="Input step parameters", description="Input step parameters of the workflow invocation."
-    # )
     @field_validator(
         "parameters",
         "inputs",
@@ -116,17 +128,69 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
             return json.loads(v)
         return v
 
-    parameters: Optional[Dict[str, Any]] = None
-    inputs: Optional[Dict[str, Any]] = None
-    ds_map: Optional[Dict[str, Dict[str, Any]]] = None
-    resource_params: Optional[Dict[str, Any]] = None
-    replacement_params: Optional[Dict[str, Any]] = None
-    step_parameters: Optional[Dict[str, Any]] = None
-    no_add_to_history: Optional[bool] = False
-    legacy: Optional[bool] = False
-    parameters_normalized: Optional[bool] = False
-    inputs_by: Optional[str] = None
-    effective_outputs: Optional[bool] = None
+    parameters: Optional[Dict[str, Any]] = Field(
+        {},
+        title="Parameters",
+        description="TODO",
+    )
+    inputs: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Inputs",
+        description="TODO",
+    )
+    ds_map: Optional[Dict[str, Dict[str, Any]]] = Field(
+        {},
+        title="Dataset Map",
+        description="TODO",
+    )
+    resource_params: Optional[Dict[str, Any]] = Field(
+        {},
+        title="Resource Parameters",
+        description="TODO",
+    )
+    replacement_params: Optional[Dict[str, Any]] = Field(
+        {},
+        title="Replacement Parameters",
+        description="TODO",
+    )
+    step_parameters: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Step Parameters",
+        description="TODO",
+    )
+    no_add_to_history: Optional[bool] = Field(
+        False,
+        title="No Add to History",
+        description="TODO",
+    )
+    legacy: Optional[bool] = Field(
+        False,
+        title="Legacy",
+        description="TODO",
+    )
+    parameters_normalized: Optional[bool] = Field(
+        False,
+        title="Parameters Normalized",
+        description="TODO",
+    )
+    inputs_by: Optional[str] = Field(
+        None,
+        title="Inputs By",
+        description="TODO",
+    )
+    effective_outputs: Optional[bool] = Field(
+        None,
+        title="Effective Outputs",
+        description="TODO",
+    )
+    preferred_intermediate_object_store_id: Optional[str] = Field(
+        None,
+        title="Preferred Intermediate Object Store ID",
+        description="TODO",
+    )
+    preferred_outputs_object_store_id: Optional[str] = Field(
+        None,
+        title="Preferred Outputs Object Store ID",
+        description="TODO",
+    )
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
-    preferred_intermediate_object_store_id: Optional[str] = None
-    preferred_outputs_object_store_id: Optional[str] = None
