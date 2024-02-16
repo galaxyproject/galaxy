@@ -1,23 +1,73 @@
+<script setup lang="ts">
+import { BButton, BCard, BCollapse, BNav, BNavItem } from "bootstrap-vue";
+import { onMounted, onUpdated, ref } from "vue";
+
+import { getCitations } from "@/components/Citation/services";
+import { useConfig } from "@/composables/config";
+
+import { type Citation } from ".";
+
+import CitationItem from "@/components/Citation/CitationItem.vue";
+
+const outputFormats = Object.freeze({
+    CITATION: "bibliography",
+    BIBTEX: "bibtex",
+    RAW: "raw",
+});
+
+interface Props {
+    id: string;
+    source: string;
+    simple: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    simple: false,
+});
+
+const { config } = useConfig(true);
+
+const emit = defineEmits(["rendered", "show", "shown", "hide", "hidden"]);
+
+const outputFormat = ref(outputFormats.CITATION);
+const citations = ref<Citation[]>([]);
+
+onUpdated(() => {
+    emit("rendered");
+});
+
+onMounted(async () => {
+    try {
+        citations.value = await getCitations(props.source, props.id);
+    } catch (e) {
+        console.error(e);
+    }
+});
+</script>
+
 <template>
     <div>
-        <b-card v-if="!simple" class="citation-card" header-tag="nav">
+        <BCard v-if="!simple" class="citation-card" header-tag="nav">
             <template v-slot:header>
-                <b-nav card-header tabs>
-                    <b-nav-item
+                <BNav card-header tabs>
+                    <BNavItem
                         :active="outputFormat === outputFormats.CITATION"
-                        @click="outputFormat = outputFormats.CITATION"
-                        >Citations (APA)</b-nav-item
-                    >
-                    <b-nav-item
+                        @click="outputFormat = outputFormats.CITATION">
+                        Citations (APA)
+                    </BNavItem>
+
+                    <BNavItem
                         :active="outputFormat === outputFormats.BIBTEX"
-                        @click="outputFormat = outputFormats.BIBTEX"
-                        >BibTeX</b-nav-item
-                    >
-                </b-nav>
+                        @click="outputFormat = outputFormats.BIBTEX">
+                        BibTeX
+                    </BNavItem>
+                </BNav>
             </template>
+
             <div v-if="source === 'histories'" class="infomessage">
                 <div v-html="config.citations_export_message_html"></div>
             </div>
+
             <div class="citations-formatted">
                 <CitationItem
                     v-for="(citation, index) in citations"
@@ -26,94 +76,31 @@
                     :citation="citation"
                     :output-format="outputFormat" />
             </div>
-        </b-card>
+        </BCard>
         <div v-else-if="citations.length">
-            <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
-            <b-collapse
+            <BButton v-b-toggle="id" variant="primary">Citations</BButton>
+
+            <BCollapse
                 :id="id.replace(/ /g, '_')"
                 class="mt-2"
                 @show="$emit('show')"
                 @shown="$emit('shown')"
                 @hide="$emit('hide')"
                 @hidden="$emit('hidden')">
-                <b-card>
+                <BCard>
                     <CitationItem
                         v-for="(citation, index) in citations"
                         :key="index"
                         class="formatted-reference"
                         :citation="citation"
                         :output-format="outputFormat" />
-                </b-card>
-            </b-collapse>
+                </BCard>
+            </BCollapse>
         </div>
     </div>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
-import { useConfig } from "@/composables/config";
-
-import CitationItem from "./CitationItem";
-import { getCitations } from "./services";
-
-Vue.use(BootstrapVue);
-
-const outputFormats = Object.freeze({
-    CITATION: "bibliography",
-    BIBTEX: "bibtex",
-    RAW: "raw",
-});
-
-export default {
-    components: {
-        CitationItem,
-    },
-    props: {
-        source: {
-            type: String,
-            required: true,
-        },
-        id: {
-            type: String,
-            required: true,
-        },
-        simple: {
-            type: Boolean,
-            required: false,
-            default: false,
-        },
-    },
-    setup() {
-        const { config } = useConfig(true);
-        return { config };
-    },
-    data() {
-        return {
-            citations: [],
-            errors: [],
-            showCollapse: false,
-            outputFormats,
-            outputFormat: outputFormats.CITATION,
-        };
-    },
-    updated() {
-        this.$nextTick(() => {
-            this.$emit("rendered");
-        });
-    },
-    created() {
-        getCitations(this.source, this.id)
-            .then((citations) => {
-                this.citations = citations;
-            })
-            .catch((e) => {
-                console.error(e);
-            });
-    },
-};
-</script>
-<style>
+<style scoped lang="scss">
 .citation-card .card-header .nav-tabs {
     margin-bottom: -0.75rem !important;
 }
