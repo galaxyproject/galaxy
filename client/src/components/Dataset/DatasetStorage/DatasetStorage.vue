@@ -5,6 +5,7 @@ import { DatasetStorageDetails } from "@/api";
 import { fetchDatasetStorage } from "@/api/datasets";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import RelocateLink from "./RelocateLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
@@ -42,25 +43,30 @@ const sourceUri = computed(() => {
     return rootSources[0]?.source_uri;
 });
 
-watch(
-    props,
-    async () => {
-        const datasetId = props.datasetId;
-        const datasetType = props.datasetType;
-        try {
-            const response = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
-            storageInfo.value = response.data;
-        } catch (error) {
-            errorMessage.value = errorMessageAsString(error);
-        }
-    },
-    { immediate: true }
-);
+async function fetch() {
+    const datasetId = props.datasetId;
+    const datasetType = props.datasetType;
+    try {
+        const response = await fetchDatasetStorage({ dataset_id: datasetId, hda_ldda: datasetType });
+        storageInfo.value = response.data;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+    }
+}
+
+watch(props, fetch, { immediate: true });
 </script>
 
 <template>
     <div>
-        <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
+        <h2 v-if="includeTitle" class="h-md">
+            Dataset Storage
+            <RelocateLink
+                v-if="storageInfo"
+                :dataset-id="datasetId"
+                :dataset-storage-details="storageInfo"
+                @relocated="fetch" />
+        </h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <LoadingSpan v-else-if="storageInfo == null"> </LoadingSpan>
         <div v-else-if="discarded">
