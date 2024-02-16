@@ -110,7 +110,7 @@ steps:
             )
             self._assert_status_code_is(invocation_response, 400)
             assert (
-                invocation_response.json().get("err_msg")
+                invocation_response.json().get("detail")
                 == "Workflow was not invoked; the following required tools are not installed: nonexistent_tool (version 0.1), compose_text_param (version 0.0.1)"
             )
             # should fail but return only the tool_id of non_existent tool as another version of compose_text_param is installed
@@ -119,6 +119,6 @@ steps:
             )
             self._assert_status_code_is(invocation_response, 400)
             assert (
-                invocation_response.json().get("err_msg")
+                invocation_response.json().get("detail")
                 == "Workflow was not invoked; the following required tools are not installed: nonexistent_tool"
             )
