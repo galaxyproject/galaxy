@@ -690,6 +690,19 @@ def populate_api_routes(webapp, app):
     #     conditions=dict(method=["POST"]),
     # )
 
+    invoke_names = {
+        "invocations": "",
+        "usage": "_deprecated",
+    }
+    for noun, suffix in invoke_names.items():
+        name = f"{noun}{suffix}"
+        webapp.mapper.connect(
+            f"workflow_{name}",
+            "/api/workflows/{workflow_id}/%s" % noun,
+            controller="workflows",
+            action="invoke",
+            conditions=dict(method=["POST"]),
+        )
     # ================================
     # ===== USERS API =====
     # ================================
