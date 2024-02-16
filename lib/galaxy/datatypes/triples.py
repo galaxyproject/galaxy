@@ -209,7 +209,7 @@ class HDT(binary.Binary, Triples):
 @build_sniff_from_prefix
 class Sbol(data.Text, Triples):
     """
-    The SBOL data format
+    The SBOL data format (https://sbolstandard.org).
     """
 
     MetadataElement(name="version", default="", readonly=True, visible=True, optional=True)
