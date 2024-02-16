@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import (
+    listify,
     string_as_bool,
     unicodify,
 )
@@ -384,6 +385,8 @@ class LDAP3(LDAP):
                 dn = response[0]["dn"]
                 attrs = response[0]["attributes"]
                 log.debug("LDAP3 authenticate: dn is %s", dn)
+                for attr in attributes:
+                    attrs[attr] = listify(attrs[attr])
                 log.debug("LDAP3 authenticate: search attributes are %s", attrs)
                 for attr in attributes:
                     if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
