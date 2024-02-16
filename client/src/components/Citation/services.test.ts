@@ -3,7 +3,7 @@
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 
-import { getCitations } from "./services.js";
+import { getCitations } from "./services";
 
 const mockCitationResponseJson = [
     {
@@ -14,7 +14,7 @@ const mockCitationResponseJson = [
 ];
 
 describe("Citation", () => {
-    let axiosMock;
+    let axiosMock: MockAdapter;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
@@ -28,7 +28,7 @@ describe("Citation", () => {
         it("Should fetch and create a citation object", async () => {
             axiosMock.onGet(`/api/tools/random_lines1/citations`).reply(200, mockCitationResponseJson);
             const citations = await getCitations("tools", "random_lines1");
-            const formattedCitation = citations[0].cite.format("bibliography", {
+            const formattedCitation = citations?.[0]?.cite.format("bibliography", {
                 format: "html",
                 template: "apa",
                 lang: "en-US",
