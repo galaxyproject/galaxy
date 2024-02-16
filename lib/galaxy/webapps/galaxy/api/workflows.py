@@ -1064,8 +1064,14 @@ class FastAPIWorkflows:
 
     @router.post(
         "/api/workflows/{workflow_id}/invocations",
-        name="Invoke workflow.",
+        name="Invoke workflow",
         summary="Schedule the workflow specified by `workflow_id` to run.",
+    )
+    @router.post(
+        "/api/workflows/{workflow_id}/usage",
+        name="Invoke workflow",
+        summary="Schedule the workflow specified by `workflow_id` to run.",
+        deprecated=True,
     )
     def invoke(
         self,

@@ -689,19 +689,24 @@ def populate_api_routes(webapp, app):
     #     action="import_tool_version",
     #     conditions=dict(method=["POST"]),
     # )
-
-    invoke_names = {
-        "usage": "_deprecated",
-    }
-    for noun, suffix in invoke_names.items():
-        name = f"{noun}{suffix}"
-        webapp.mapper.connect(
-            f"workflow_{name}",
-            "/api/workflows/{workflow_id}/%s" % noun,
-            controller="workflows",
-            action="invoke",
-            conditions=dict(method=["POST"]),
-        )
+    webapp.mapper.connect(
+        "/api/workflows/{encoded_workflow_id}",
+        controller="workflows",
+        action="show",
+        conditions=dict(method=["GET"]),
+    )
+    webapp.mapper.connect(
+        "/api/workflows/{encoded_workflow_id}",
+        controller="workflows",
+        action="update",
+        conditions=dict(method=["PUT"]),
+    )
+    webapp.mapper.connect(
+        "/api/workflows",
+        controller="workflows",
+        action="create",
+        conditions=dict(method=["POST"]),
+    )
     # ================================
     # ===== USERS API =====
     # ================================
