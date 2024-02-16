@@ -9,7 +9,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useElementBounding } from "@vueuse/core";
+import { useElementBounding, whenever } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 // @ts-ignore missing types
 import Vue2Teleport from "vue2-teleport";
@@ -254,6 +254,11 @@ watch(
         bounds.update();
     }
 );
+
+whenever(isOpen, async () => {
+    await nextTick();
+    bounds.update();
+});
 </script>
 
 <template>
@@ -413,6 +418,8 @@ watch(
     box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
+
+    background-color: $white;
 
     .headless-multiselect__option {
         padding: 0.4rem 0.5rem;

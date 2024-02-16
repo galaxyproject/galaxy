@@ -19,7 +19,6 @@ import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
-import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 
 const { config, isConfigLoaded } = useConfig();
 
@@ -151,7 +150,7 @@ function onToggleSidebar(toggle: string) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'workflows', 'visualizations'].includes(activity.id)"
+                                v-else-if="['tools', 'visualizations'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -193,7 +192,6 @@ function onToggleSidebar(toggle: string) {
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <WorkflowPanel v-else-if="isActiveSideBar('workflows')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />

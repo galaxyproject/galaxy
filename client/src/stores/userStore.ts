@@ -19,10 +19,12 @@ export interface User extends QuotaUsageResponse {
     tags_used: string[];
     isAnonymous: false;
     is_admin?: boolean;
+    username?: string;
 }
 
 export interface AnonymousUser {
     isAnonymous: true;
+    username?: string;
     is_admin?: false;
 }
 
@@ -33,6 +35,8 @@ interface Preferences {
     favorites: { tools: string[] };
 }
 
+type ListViewMode = "grid" | "list";
+
 export const useUserStore = defineStore("userStore", () => {
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
@@ -40,6 +44,7 @@ export const useUserStore = defineStore("userStore", () => {
     // explicitly pass current User, because userStore might not exist yet
     const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
     const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
+    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
@@ -126,6 +131,10 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
+    function setPreferredListViewMode(view: ListViewMode) {
+        preferredListViewMode.value = view;
+    }
+
     function toggleActivityBar() {
         showActivityBar.value = !showActivityBar.value;
     }
@@ -146,9 +155,11 @@ export const useUserStore = defineStore("userStore", () => {
         currentFavorites,
         showActivityBar,
         toggledSideBar,
+        preferredListViewMode,
         loadUser,
         setCurrentUser,
         setCurrentTheme,
+        setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
         toggleActivityBar,
