@@ -13,7 +13,6 @@ from typing import (
     Optional,
     Type,
     TYPE_CHECKING,
-    TypeVar,
 )
 from unittest import (
     skip,
@@ -198,16 +197,16 @@ class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-IntegrationInstanceObject = TypeVar("IntegrationInstanceObject", bound=IntegrationInstance)
-
-
-def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
-    def _instance() -> Iterator[IntegrationInstanceObject]:
+def integration_module_instance(clazz: Type[IntegrationInstance]):
+    def _instance() -> Iterator[IntegrationInstance]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()
-        yield instance
-        instance.tearDownClass()
+        try:
+            yield instance
+        finally:
+            instance.tearDown()
+            instance.tearDownClass()
 
     return pytest.fixture(scope="module")(_instance)
 
