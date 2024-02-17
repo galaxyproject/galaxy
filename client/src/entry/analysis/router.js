@@ -7,9 +7,6 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
-import historiesGridConfig from "components/Grid/configs/histories";
-import historiesPublishedGridConfig from "components/Grid/configs/historiesPublished";
-import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
@@ -63,6 +60,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+import GridHistory from "@/components/Grid/GridHistory";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -283,9 +281,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_published",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesPublishedGridConfig,
+                            activeList: "published",
                         },
                     },
                     {
@@ -294,17 +292,17 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesGridConfig,
+                            activeList: "my",
                         },
                         redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list_shared",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesSharedGridConfig,
+                            activeList: "shared",
                         },
                         redirect: redirectAnon(),
                     },

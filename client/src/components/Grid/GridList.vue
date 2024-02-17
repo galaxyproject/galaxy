@@ -33,12 +33,15 @@ interface Props {
     gridMessage?: string;
     // debounce delay
     delay?: number;
+    // embedded
+    embedded?: boolean;
     // rows per page to be shown
     limit?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     delay: 5000,
+    embedded: false,
     limit: 25,
 });
 
@@ -237,7 +240,7 @@ watch(operationMessage, () => {
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header d-flex justify-content-between pb-2 flex-column">
-            <div class="d-flex">
+            <div v-if="!embedded" class="d-flex">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 m-0" data-description="grid title">
                     <span v-localize>{{ gridConfig.title }}</span>
                 </Heading>
