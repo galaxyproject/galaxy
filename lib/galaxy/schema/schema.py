@@ -2404,6 +2404,9 @@ class WorkflowStepLayoutPosition(Model):
     width: int = Field(..., title="Width", description="Width of the box in pixels.")
 
 
+InvocationsStateCounts = RootModel[Dict[str, int]]
+
+
 class WorkflowStepToExportBase(Model):
     id: int = Field(
         ...,

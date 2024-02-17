@@ -67,6 +67,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     InvocationSortByEnum,
+    InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -883,6 +884,14 @@ WorkflowInvocationStepIDPathParam = Annotated[
     ),
 ]
 
+InvocationsInstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Instance",
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
+    ),
+]
+
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
 )
@@ -1125,7 +1134,21 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         instance: InstanceQueryParam = False,
     ):
-        return self.service.get_versions(trans, workflow_id, instance)
+        return self.service.get_versions(trans, workflow_id, instance or False)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/counts",
+        summary="Get state counts for accessible workflow.",
+        name="invocation_state_counts",
+        operation_id="workflows__invocation_counts",
+    )
+    def invocation_counts(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        instance: InvocationsInstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationsStateCounts:
+        return self.service.invocation_counts(trans, workflow_id, instance or False)
 
     @router.get(
         "/api/workflows/menu",
@@ -1247,14 +1270,6 @@ InvocationsOffsetQueryParam = Annotated[
     ),
 ]
 
-
-InvocationsInstanceQueryParam = Annotated[
-    Optional[bool],
-    Query(
-        title="Instance",
-        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
-    ),
-]
 
 CreateInvocationsFromStoreBody = Annotated[
     CreateInvocationsFromStorePayload,
