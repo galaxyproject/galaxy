@@ -250,7 +250,7 @@ watch(operationMessage, () => {
                         :key="actionIndex"
                         class="m-1"
                         size="sm"
-                        variant="primary"
+                        variant="outline-primary"
                         :data-description="`grid action ${action.title.toLowerCase()}`"
                         @click="action.handler()">
                         <Icon :icon="action.icon" class="mr-1" />
