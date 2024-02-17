@@ -77,10 +77,6 @@ export function fetchMenu(options = {}) {
                     url: "/pages/list",
                 },
                 {
-                    title: _l("Published Pages"),
-                    url: "/pages/list_published",
-                },
-                {
                     title: _l("Visualizations"),
                     url: "/visualizations/list",
                 },

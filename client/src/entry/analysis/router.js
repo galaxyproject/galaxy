@@ -57,6 +57,7 @@ import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
 import GridHistory from "@/components/Grid/GridHistory";
+import GridPage from "@/components/Grid/GridPage";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
@@ -370,16 +371,16 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/list",
-                        component: GridList,
+                        component: GridPage,
                         props: {
-                            gridConfig: pagesGridConfig,
+                            activeList: "my",
                         },
                     },
                     {
                         path: "pages/list_published",
-                        component: GridList,
+                        component: GridPage,
                         props: {
-                            gridConfig: pagesPublishedGridConfig,
+                            activeList: "published",
                         },
                     },
                     {
