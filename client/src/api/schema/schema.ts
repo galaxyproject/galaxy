@@ -18578,8 +18578,6 @@ export interface operations {
          */
         parameters?: {
             /** @description Whether to include deleted pages in the result. */
-            /** @description Sort page index by this specified attribute on the page model */
-            /** @description Sort in descending order? */
             /**
              * @description A mix of free text and GitHub-style tags used to filter the index operation.
              *
@@ -18616,16 +18614,19 @@ export interface operations {
              * Free text search terms will be searched against the following attributes of the
              * Pages: `title`, `slug`, `tag`, `user`.
              */
+            /** @description Sort page index by this specified attribute on the page model */
+            /** @description Sort in descending order? */
             query?: {
                 deleted?: boolean;
-                user_id?: string | null;
-                show_published?: boolean;
-                show_shared?: boolean;
-                sort_by?: "update_time" | "title" | "username";
-                sort_desc?: boolean;
                 limit?: number;
                 offset?: number;
                 search?: string | null;
+                show_own?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+                sort_by?: "create_time" | "title" | "update_time" | "username";
+                sort_desc?: boolean;
+                user_id?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
