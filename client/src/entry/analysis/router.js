@@ -377,11 +377,11 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
-                        path: "pages/:actionId",
-                        component: PageList,
-                        props: (route) => ({
-                            published: route.params.actionId == "list_published" ? true : false,
-                        }),
+                        path: "pages/list_published",
+                        component: GridList,
+                        props: {
+                            gridConfig: pagesPublishedGridConfig,
+                        },
                     },
                     {
                         path: "storage/history/:historyId",
