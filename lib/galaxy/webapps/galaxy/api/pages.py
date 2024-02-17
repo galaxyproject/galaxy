@@ -105,26 +105,26 @@ class FastAPIPages:
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: PageSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.model_construct(
             deleted=deleted,
-            user_id=user_id,
+            limit=limit,
+            offset=offset,
+            search=search,
             show_published=show_published,
             show_shared=show_shared,
             sort_by=sort_by,
             sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
+            user_id=user_id,
         )
         pages, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
