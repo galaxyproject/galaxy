@@ -65,20 +65,28 @@ export function fetchMenu(options = {}) {
                     target: "_top",
                 },
                 {
+                    title: _l("Datasets"),
+                    url: "/datasets/list",
+                },
+                {
                     title: _l("Histories"),
                     url: "/histories/list",
                 },
                 {
-                    title: _l("Workflows"),
-                    url: "/workflows/list_published",
+                    title: _l("Pages"),
+                    url: "/pages/list",
+                },
+                {
+                    title: _l("Published Pages"),
+                    url: "/pages/list_published",
                 },
                 {
                     title: _l("Visualizations"),
-                    url: "/visualizations/list_published",
+                    url: "/visualizations/list",
                 },
                 {
-                    title: _l("Pages"),
-                    url: "/pages/list_published",
+                    title: _l("Workflows"),
+                    url: "/workflows/list",
                 },
             ],
         });
@@ -197,48 +205,33 @@ export function fetchMenu(options = {}) {
                     disabled: true,
                 },
                 { divider: true },
-                {
-                    title: _l("Preferences"),
-                    url: "/user",
-                },
-                { divider: true },
-                {
-                    title: _l("Datasets"),
-                    url: "/datasets/list",
-                },
-                {
-                    title: _l("Archived Histories"),
-                    url: "/histories/archived",
-                },
-                {
-                    title: _l("Pages"),
-                    url: "/pages/list",
-                },
-                {
-                    title: _l("Workflow Invocations"),
-                    url: "/workflows/invocations",
-                },
             ],
         };
-        if (Galaxy.config.visualizations_visible) {
-            userTab.menu.push({
-                title: _l("Visualizations"),
-                url: "/visualizations/list",
-            });
-        }
         if (Galaxy.config.interactivetools_enable) {
             userTab.menu.push({
-                title: _l("Active InteractiveTools"),
+                title: _l("Active Interactive Tools"),
                 url: "/interactivetool_entry_points/list",
             });
         }
+        userTab.menu.push({
+            title: _l("Archived Histories"),
+            url: "/histories/archived",
+        });
         if (Galaxy.config.enable_notification_system) {
             userTab.menu.push({
                 title: _l("Notifications"),
                 url: "/user/notifications",
             });
         }
+        userTab.menu.push({
+            title: _l("Workflow Invocations"),
+            url: "/workflows/invocations",
+        });
         userTab.menu.push({ divider: true });
+        userTab.menu.push({
+            title: _l("Preferences"),
+            url: "/user",
+        });
         userTab.menu.push({
             title: _l("Sign Out"),
             onclick: userLogout,

@@ -7,9 +7,6 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
-import visualizationsGridConfig from "components/Grid/configs/visualizations";
-import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
-import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryView from "components/History/HistoryView";
@@ -66,6 +63,7 @@ import { parseBool } from "@/utils/utils";
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
@@ -481,16 +479,16 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "visualizations/list",
-                        component: GridList,
+                        component: GridVisualization,
                         props: {
-                            gridConfig: visualizationsGridConfig,
+                            activeList: "my",
                         },
                     },
                     {
                         path: "visualizations/list_published",
-                        component: GridList,
+                        component: GridVisualization,
                         props: {
-                            gridConfig: visualizationsPublishedGridConfig,
+                            activeList: "published",
                         },
                     },
                     {
