@@ -1454,7 +1454,7 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
-PageSortByEnum = Literal["update_time", "title", "username"]
+PageSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
 
 class PageIndexQueryPayload(Model):
