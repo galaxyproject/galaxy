@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import historiesGridConfig from "@/components/Grid/configs/histories";
@@ -10,7 +10,7 @@ import historiesSharedGridConfig from "@/components/Grid/configs/historiesShared
 import Heading from "@/components/Common/Heading.vue";
 import GridList from "@/components/Grid/GridList.vue";
 
-library.add(faStar, faTrash);
+library.add(faPlus, faStar, faTrash);
 
 interface Props {
     activeList?: "my" | "shared" | "published";
@@ -26,6 +26,12 @@ withDefaults(defineProps<Props>(), {
         <div class="mb-2">
             <div class="d-flex">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
+                <div>
+                    <BButton size="sm" variant="outline-primary" to="/histories/import">
+                        <Icon :icon="faPlus" />
+                        <span v-localize>Import New History</span>
+                    </BButton>
+                </div>
             </div>
             <BNav pills justified class="mb-2">
                 <BNavItem :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
