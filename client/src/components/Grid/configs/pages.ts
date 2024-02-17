@@ -3,7 +3,7 @@ import { useEventBus } from "@vueuse/core";
 
 import { fetcher } from "@/api/schema";
 import { getGalaxyInstance } from "@/app";
-import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
+import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
