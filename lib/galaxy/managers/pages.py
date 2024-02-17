@@ -220,7 +220,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         if show_published and not is_admin:
             show_deleted = False
 
-        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false()))
+        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false())).distinct()
 
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
