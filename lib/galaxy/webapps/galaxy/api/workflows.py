@@ -23,6 +23,10 @@ from fastapi import (
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
+from pydantic import (
+    UUID1,
+    UUID4,
+)
 from starlette.responses import StreamingResponse
 from typing_extensions import Annotated
 
@@ -821,6 +825,15 @@ InvocationsInstanceQueryParam = Annotated[
     ),
 ]
 
+MultiTypeWorkflowIDPathParam = Annotated[
+    Union[UUID4, UUID1, DecodedDatabaseIdField],
+    Path(
+        ...,
+        title="Workflow ID",
+        description="The database identifier - UUID or encoded - of the Workflow..",
+    ),
+]
+
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
 )
@@ -1075,9 +1088,9 @@ class FastAPIWorkflows:
     )
     def invoke(
         self,
-        # workflow_id: StoredWorkflowIDPathParam,
         payload: InvokeWorkflowBody,
-        workflow_id: str = Path(...),
+        # workflow_id: str = Path(...),
+        workflow_id: MultiTypeWorkflowIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
         """
