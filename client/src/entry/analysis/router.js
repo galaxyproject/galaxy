@@ -11,6 +11,7 @@ import historiesGridConfig from "components/Grid/configs/histories";
 import historiesPublishedGridConfig from "components/Grid/configs/historiesPublished";
 import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import pagesGridConfig from "components/Grid/configs/pages";
+import pagesPublishedGridConfig from "components/Grid/configs/pagesPublished";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
@@ -382,11 +383,11 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
-                        path: "pages/:actionId",
-                        component: PageList,
-                        props: (route) => ({
-                            published: route.params.actionId == "list_published" ? true : false,
-                        }),
+                        path: "pages/list_published",
+                        component: GridList,
+                        props: {
+                            gridConfig: pagesPublishedGridConfig,
+                        },
                     },
                     {
                         path: "storage/history/:historyId",
