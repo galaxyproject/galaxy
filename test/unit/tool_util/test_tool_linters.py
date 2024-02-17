@@ -204,6 +204,7 @@ INPUTS_DATA_PARAM = """
 INPUTS_DATA_PARAM_OPTIONS = """
 <tool id="id" name="name">
     <inputs>
+        <param name="input" type="data" format="tabular"/>
         <param name="valid_name" type="data" format="txt">
             <options>
                 <filter type="data_meta" key="dbkey" ref="input"/>
@@ -216,6 +217,7 @@ INPUTS_DATA_PARAM_OPTIONS = """
 INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE = """
 <tool id="id" name="name">
     <inputs>
+        <param name="input" type="data" format="tabular"/>
         <param name="valid_name" type="data" format="txt">
             <options options_filter_attribute="metadata.foo">
                 <filter type="data_meta" key="foo" ref="input"/>
@@ -231,7 +233,7 @@ INPUTS_DATA_PARAM_INVALIDOPTIONS = """
         <param name="valid_name" type="data" format="txt">
             <options/>
             <options from_file="blah">
-                <filter type="regexp"/>
+                <filter type="regexp" column="0" value=".*"/>
             </options>
         </param>
     </inputs>
@@ -523,7 +525,7 @@ INPUTS_DUPLICATE_NAMES = """
 </tool>
 """
 INPUTS_FILTER_INCORRECT = """
-<tool>
+<tool name="name" id="id">
     <inputs>
         <param name="select_param" type="select">
             <options from_data_table="bowtie2_indexes">
@@ -541,7 +543,7 @@ INPUTS_FILTER_INCORRECT = """
 """
 
 INPUTS_FILTER_CORRECT = """
-<tool>
+<tool name="name" id="id">
     <inputs>
         <param name="select_param" type="select">
             <options from_data_table="bowtie2_indexes">
@@ -1268,7 +1270,7 @@ def test_inputs_data_param_options(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert not lint_ctx.valid_messages
-    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
@@ -1278,7 +1280,7 @@ def test_inputs_data_param_options_filter_attribute(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
     run_lint_module(lint_ctx, inputs, tool_source)
     assert not lint_ctx.valid_messages
-    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
@@ -1430,7 +1432,7 @@ def test_inputs_select_filter(lint_ctx):
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
     assert (
-        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by'}."
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by', 'data_table'}."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
@@ -1535,7 +1537,7 @@ def test_inputs_duplicate_names(lint_ctx):
 
 def test_inputs_filter_correct(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_FILTER_CORRECT)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1544,7 +1546,7 @@ def test_inputs_filter_correct(lint_ctx):
 
 def test_inputs_filter_incorrect(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_FILTER_INCORRECT)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert (
@@ -1552,8 +1554,11 @@ def test_inputs_filter_incorrect(lint_ctx):
         in lint_ctx.warn_messages
     )
     assert len(lint_ctx.warn_messages) == 1
-    assert "Select parameter [select_param] contains filter without type." in lint_ctx.error_messages
-    assert "Select parameter [select_param] contains filter with unknown type 'typo'." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'typo' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by', 'data_table'}."
+        in lint_ctx.error_messages
+    )
     assert (
         "Select parameter [select_param] 'static_value' filter misses required attribute 'column'"
         in lint_ctx.error_messages
@@ -2158,7 +2163,7 @@ def test_xml_comments_are_ignored(lint_ctx: LintContext):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 129
+    assert len(linter_names) == 134
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
