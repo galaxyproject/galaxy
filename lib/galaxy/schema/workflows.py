@@ -49,35 +49,29 @@ from galaxy.schema.schema import (
 
 
 class GetTargetHistoryPayload(Model):
-    # TODO - add description to fields
+    # TODO - Are the descriptions correct?
     history: Optional[str] = Field(
         None,
         title="History",
-        # description="The history to import the workflow into.",
-        description="TODO",
+        # description="The encoded history id - passed exactly like this 'hist_id=...' -  to import the workflow into. Or the name of the new history to import the workflow into.",
+        description="The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.",
     )
     history_id: Optional[str] = Field(
         None,
         title="History ID",
         # description="The history to import the workflow into.",
-        description="TODO",
-    )
-    history_name: Optional[str] = Field(
-        None,
-        title="History Name",
-        # description="The name of the history to import the workflow into.",
-        description="TODO",
+        description="The encoded history id into which to import.",
     )
     new_history_name: Optional[str] = Field(
         None,
         title="New History Name",
         # description="The name of the new history to import the workflow into.",
-        description="TODO",
+        description="The name of the new history into which to import.",
     )
 
 
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
-    # TODO - add description to fields
+    # TODO - Are the descriptions correct?
     instance: Optional[bool] = Field(
         False,
         title="Is instance",
@@ -86,30 +80,33 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     scheduler: Optional[str] = Field(
         None,
         title="Scheduler",
-        # description="Scheduler to use for workflow invocation.",
-        description="TODO",
+        description="Scheduler to use for workflow invocation.",
     )
     batch: Optional[bool] = Field(
         False,
         title="Batch",
-        # description="If true, the workflow is invoked as a batch.",
-        description="TODO",
+        description="Indicates if the workflow is invoked as a batch.",
     )
     require_exact_tool_versions: Optional[bool] = Field(
         True,
         title="Require Exact Tool Versions",
-        # description="If true, exact tool versions are required for workflow invocation.",
-        description="TODO",
+        description="If true, exact tool versions are required for workflow invocation.",
+        # description="TODO",
     )
     allow_tool_state_corrections: Optional[bool] = Field(
         False,
         title="Allow tool state corrections",
-        description="TODO",
+        description="Indicates if tool state corrections are allowed for workflow invocation.",
     )
     use_cached_job: Optional[bool] = Field(
         False,
         title="Use cached job",
-        description="TODO",
+        description="Indicated whether to use a cached job for workflow invocation.",
+    )
+    parameters_normalized: Optional[bool] = Field(
+        False,
+        title="Parameters Normalized",
+        description="Indicates if parameters are already normalized for workflow invocation.",
     )
 
     @field_validator(
@@ -131,7 +128,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     parameters: Optional[Dict[str, Any]] = Field(
         {},
         title="Parameters",
-        description="TODO",
+        description="The raw parameters for the workflow invocation.",
     )
     inputs: Optional[Dict[str, Any]] = Field(
         None,
@@ -161,36 +158,33 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     no_add_to_history: Optional[bool] = Field(
         False,
         title="No Add to History",
-        description="TODO",
+        description="Indicates if the workflow invocation should not be added to the history.",
     )
     legacy: Optional[bool] = Field(
         False,
         title="Legacy",
-        description="TODO",
-    )
-    parameters_normalized: Optional[bool] = Field(
-        False,
-        title="Parameters Normalized",
-        description="TODO",
+        description="Indicating if to use legacy workflow invocation.",
     )
     inputs_by: Optional[str] = Field(
         None,
         title="Inputs By",
-        description="TODO",
+        # lib/galaxy/workflow/run_request.py - see line 60
+        description="How inputs maps to inputs (datasets/collections) to workflows steps.",
     )
-    effective_outputs: Optional[bool] = Field(
+    effective_outputs: Optional[Any] = Field(
         None,
         title="Effective Outputs",
+        # lib/galaxy/workflow/run_request.py - see line 455
         description="TODO",
     )
     preferred_intermediate_object_store_id: Optional[str] = Field(
         None,
         title="Preferred Intermediate Object Store ID",
-        description="TODO",
+        description="The ID of the ? object store that should be used to store ? datasets in this history.",
     )
     preferred_outputs_object_store_id: Optional[str] = Field(
         None,
         title="Preferred Outputs Object Store ID",
-        description="TODO",
+        description="The ID of the object store that should be used to store ? datasets in this history.",
     )
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
