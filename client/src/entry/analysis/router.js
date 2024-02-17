@@ -370,6 +370,13 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
+                        path: "pages/list",
+                        component: GridList,
+                        props: {
+                            gridConfig: pagesGridConfig,
+                        },
+                    },
+                    {
                         path: "pages/:actionId",
                         component: PageList,
                         props: (route) => ({
