@@ -54,8 +54,8 @@ export function fetchMenu(options = {}) {
         });
     } else {
         menu.push({
-            id: "shared",
-            title: _l("Shared Data"),
+            id: "resources",
+            title: _l("Data"),
             url: "javascript:void(0)",
             tooltip: _l("Access published resources"),
             menu: [
@@ -66,7 +66,7 @@ export function fetchMenu(options = {}) {
                 },
                 {
                     title: _l("Histories"),
-                    url: "/histories/list_published",
+                    url: "/histories/list",
                 },
                 {
                     title: _l("Workflows"),
@@ -205,15 +205,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Datasets"),
                     url: "/datasets/list",
-                },
-                {
-                    title: _l("Histories"),
-                    url: "/histories/list",
-                },
-                {
-                    title: _l("Histories shared with me"),
-                    url: "/histories/list_shared",
-                    hidden: Galaxy.config.single_user,
                 },
                 {
                     title: _l("Archived Histories"),
