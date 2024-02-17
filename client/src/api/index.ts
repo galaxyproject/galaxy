@@ -77,6 +77,8 @@ export type DCObject = components["schemas"]["DCObject"];
 
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
+export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
+
 /**
  * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
  * with additional information to simplify its handling.

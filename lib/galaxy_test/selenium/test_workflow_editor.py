@@ -115,7 +115,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         editor = self.components.workflow_editor
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SELECT_FROM_OPTIONAL_DATASET)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         node = editor.node._(label="select_from_dataset_optional")
         node.title.wait_for_and_click()
@@ -492,7 +492,7 @@ steps:
             exact_tools=True,
         )
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         editor.node._(label="multiple_versions").wait_for_and_click()
         editor.tool_version_button.wait_for_and_click()
@@ -516,7 +516,7 @@ steps:
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.screenshot("workflow_editor_tool_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()
@@ -543,7 +543,7 @@ steps:
         outer_workflow["steps"]["nested_workflow"]["run"] = embedded_workflow
         workflow_populator.upload_yaml_workflow(json.dumps(outer_workflow), exact_tools=True)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("parameter 'inttest': an integer or workflow parameter is required")
@@ -681,7 +681,7 @@ steps:
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         cat_node = editor.node._(label="first_cat")
         cat_node.wait_for_and_click()
@@ -741,7 +741,7 @@ steps:
         """
         )
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         editor.canvas_body.wait_for_visible()
         editor.tool_menu.wait_for_visible()
@@ -864,7 +864,7 @@ steps:
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INVALID_STATE, exact_tools=True)
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.2' instead of version '0.0.1'")
         self.assert_modal_has_text("Using default: '1'")
         self.screenshot("workflow_editor_invalid_state")
@@ -885,7 +885,7 @@ steps:
 """
         )
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
 
@@ -906,14 +906,14 @@ steps:
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
 
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.workflows.bookmark_link.wait_for_and_click()
+        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
         self.components.masthead.workflow.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
         # search for bookmark in tools menu
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
+        self.sleep_for(self.wait_types.UX_RENDER)
         assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):
@@ -1402,7 +1402,7 @@ steps:
     def workflow_index_open_with_name(self, name):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
 
     def workflow_upload_yaml_with_random_name(self, content):
         workflow_populator = self.workflow_populator

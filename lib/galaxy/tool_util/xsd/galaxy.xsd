@@ -120,8 +120,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
-        </xs:element>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
@@ -277,6 +276,11 @@ this attribute defined the HTTP request method to use when communicating with an
 (default: ``get``).</xs:documentation>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="require_login" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation needed</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
   </xs:element>
 
@@ -347,6 +351,19 @@ Usage example:
 ````
 <expand macro="citations" />
 ````
+       ]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="macro" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            <![CDATA[
+A generalisation for macro tokens, templates and xml macros, i.e.
+`<macro name="an_xml_macro" type="xml">` is identical to `<xml name="an_xml_macro">`,
+`<macro name="a_template" type="template">` is identical to `<template name="a_template">`, and
+`<macro name="a_token" type="xml">` is identical to `<token name="a_token">`.
+
+Note that 
        ]]></xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -2990,10 +3007,10 @@ between paired inputs of single stranded inputs.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
+          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1" />
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="name" type="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Name for this element</xs:documentation>
           </xs:annotation>

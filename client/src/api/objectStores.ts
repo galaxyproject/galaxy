@@ -13,3 +13,10 @@ export async function getObjectStoreDetails(id: string) {
     const { data } = await getObjectStore({ object_store_id: id });
     return data;
 }
+
+const updateObjectStoreFetcher = fetcher.path("/api/datasets/{dataset_id}/object_store_id").method("put").create();
+
+export async function updateObjectStore(datasetId: string, objectStoreId: string) {
+    const { data } = await updateObjectStoreFetcher({ dataset_id: datasetId, object_store_id: objectStoreId });
+    return data;
+}
