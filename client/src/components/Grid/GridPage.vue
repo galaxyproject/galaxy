@@ -28,7 +28,7 @@ withDefaults(defineProps<Props>(), {
                 <div>
                     <BButton size="sm" variant="outline-primary" to="/pages/create">
                         <Icon :icon="faPlus" />
-                        <span v-localize>Create New Page</span>
+                        <span v-localize>Create Page</span>
                     </BButton>
                 </div>
             </div>

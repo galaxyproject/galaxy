@@ -29,7 +29,7 @@ withDefaults(defineProps<Props>(), {
                 <div>
                     <BButton size="sm" variant="outline-primary" to="/histories/import">
                         <Icon :icon="faPlus" />
-                        <span v-localize>Import New History</span>
+                        <span v-localize>Import History</span>
                     </BButton>
                 </div>
             </div>

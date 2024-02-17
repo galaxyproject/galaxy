@@ -28,7 +28,7 @@ withDefaults(defineProps<Props>(), {
                 <div>
                     <BButton size="sm" variant="outline-primary" to="/visualizations">
                         <Icon :icon="faPlus" />
-                        <span v-localize>Create New Visualization</span>
+                        <span v-localize>Create Visualization</span>
                     </BButton>
                 </div>
             </div>
