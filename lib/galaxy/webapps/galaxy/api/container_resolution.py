@@ -1,6 +1,7 @@
 """
 API operations allowing clients to manage container resolution.
 """
+
 import logging
 
 import requests
@@ -31,11 +32,11 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
 
     @expose_api
     @require_admin
-    def show(self, trans, id):
+    def show(self, trans, index):
         """
         GET /api/container_resolvers/<id>
         """
-        return self._view.show(id)
+        return self._view.show(index)
 
     @expose_api
     @require_admin

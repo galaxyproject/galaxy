@@ -22,7 +22,7 @@ def test_qza_set_meta():
     qza = QIIME2Artifact()
     with get_input_files("qiime2.qza") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qza.set_meta(dataset)
 
@@ -37,7 +37,7 @@ def test_qza_set_peek():
     qza = QIIME2Artifact()
     with get_input_files("qiime2.qza") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qza.set_meta(dataset)
         qza.set_peek(dataset)
@@ -64,7 +64,7 @@ def test_qzv_set_meta():
     qzv = QIIME2Visualization()
     with get_input_files("qiime2.qzv") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qzv.set_meta(dataset)
 
@@ -78,7 +78,7 @@ def test_qzv_set_peek():
     qzv = QIIME2Visualization()
     with get_input_files("qiime2.qzv") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         qzv.set_meta(dataset)
         qzv.set_peek(dataset)
@@ -110,7 +110,7 @@ def test_qiime2tabular_set_meta():
     q2md = QIIME2Metadata()
     with get_input_files("qiime2.qiime2.tabular") as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
+        dataset.set_file_name(input_files[0])
 
         q2md.set_meta(dataset)
 

@@ -1,14 +1,12 @@
 # Contributing
 
 Galaxy welcomes new development!  This document briefly describes how to
-contribute to the [core galaxy
-repository](https://github.com/galaxyproject/galaxy).
-For information on contributing more broadly to the Galaxy ecosystem and a
-deeper discussion of some of these points - please see the
-[Develop](https://galaxyproject.org/develop) section of the [Galaxy Community
-Hub](https://galaxyproject.org) and the [Galaxy Code
-Architecture](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html#1) slides that are part of the [Galaxy Training
-Materials](https://training.galaxyproject.org/).
+contribute to the [core galaxy repository](https://github.com/galaxyproject/galaxy).
+For general information on the Galaxy ecosystem, please see the
+[Galaxy Community Hub](https://galaxyproject.org).
+For a description of how the Galaxy code is structured, see the
+[Galaxy Code Architecture slides](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html)
+that are part of the [Galaxy Training Materials](https://training.galaxyproject.org/).
 
 ## Before you Begin
 
@@ -16,9 +14,11 @@ If you have an idea for a feature to add or an approach for a bugfix, it is
 best to communicate with Galaxy developers early. The primary venue for this is
 the [GitHub issue tracker](https://github.com/galaxyproject/galaxy/issues).
 Browse through existing GitHub issues and if one seems related, comment on it.
-For more direct communication, Galaxy developers are generally available via
-[Gitter](https://gitter.im/galaxyproject/dev) and on the [development mailing
-list](http://dev.list.galaxyproject.org).
+For more direct communication, Galaxy developers are generally available on
+the [Galaxy Matrix space](https://matrix.to/#/#galaxyproject:matrix.org), in
+particular on the [galaxyprojec/dev channel](https://matrix.to/#/#galaxyproject_dev:gitter.im)
+and in the various [Working Group](https://galaxyproject.org/community/wg/)
+channels.
 
 If you're looking to help but aren't sure where to start, we also maintain a
 [tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
@@ -96,9 +96,9 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    in particular start your message with a short imperative sentence on a single
    line, possibly followed by a blank line and a more detailed explanation.
 
-   In the detailed explanation it's good to include relevant external references
-   (e.g. GitHub issue fixed) using full URLs, and errors or tracebacks the
-   commit is supposed to fix.
+   In the detailed explanation it's good to include relevant references (e.g.
+   any GitHub issue being fixed) using full URLs, and errors or tracebacks the
+   commit is meant to fix.
    You can use the Markdown syntax for lists and code highlighting, wrapping the
    explanation text at 72 characters when possible.
 
@@ -118,7 +118,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    * How to test the changes, if you haven't included specific tests already.
 
 9. The pull request should pass all the continuous integration tests which are
-   automatically started by GitHub using e.g. Travis CI.
+   automatically started by GitHub.
 
 10. Your pull request will be handled according to [some
     rules](doc/source/project/organization.rst#handling-pull-requests).
@@ -157,8 +157,8 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Galaxy follows [PEP-8](https://www.python.org/dev/peps/pep-0008/), with
   particular emphasis on readability being the ultimate goal:
   - 4 spaces (not tabs!) per indentation level
-  - divergences from PEP-8 are listed in the `[flake8]` section of the
-    `.flake8` file
+  - divergences from PEP-8 are listed in the `[flake8]` section of the `.flake8`
+    file and in the `[tool.ruff]` section of the `pyproject.toml` file.
   - The Python code base is automatically formatted using
     [isort](https://pycqa.github.io/isort/) (for imports) and
     [black](https://black.readthedocs.io). To easily format your Python code
@@ -167,6 +167,33 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Python [docstrings](http://www.python.org/dev/peps/pep-0257/) need to be in
   [reStructured Text (RST)](https://docutils.sourceforge.io/rst.html) format and
   compatible with [Sphinx](https://www.sphinx-doc.org).
+- String formatting should normally be done using
+  [formatted string literals (f-strings)](https://docs.python.org/3/tutorial/inputoutput.html#formatted-string-literals),
+  except:
+  - when the format string is kept in a separate variable, in which case the
+    [string ``format()`` method](https://docs.python.org/3/tutorial/inputoutput.html#the-string-format-method)
+    should be used;
+  - when [formatting a log message](https://docs.python.org/3/library/logging.html#logging.Logger.debug),
+    in which case it's better to use a
+    [`printf`-style](https://docs.python.org/3/library/stdtypes.html#old-string-formatting)
+    message format string and pass its arguments to the logging method
+    separately. This is a bit more efficient than using f-strings and allows for
+    better log aggregation. For more information, see this
+    [blog post](https://dev.to/izabelakowal/what-is-the-best-string-formatting-technique-for-logging-in-python-d1d).
+
+## Documentation
+
+General documentation (e.g. admin, development, release notes) is found in the
+``doc/source/`` directory.
+The documentation source files need to be written in one of these markup
+languages:
+- [reStructuredText](https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html)
+  (with Sphinx extensions)
+- [Markdown](https://myst-parser.readthedocs.io/en/latest/syntax/typography.html)
+  (with MyST-Parser extensions).
+These source files are then built into HTML documentation with
+[Sphinx](https://www.sphinx-doc.org/) by running ``make docs`` and published on
+the [Galaxy Documentation website](https://docs.galaxyproject.org/).
 
 ## A Quick Note about Tools
 

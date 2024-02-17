@@ -4,8 +4,7 @@ from .framework import (
 )
 
 
-class HistoryCopyElementsTestCase(SeleniumTestCase):
-
+class TestHistoryCopyElements(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
@@ -20,14 +19,13 @@ class HistoryCopyElementsTestCase(SeleniumTestCase):
         failed_collection = failed_response["implicit_collections"][0]
         failed_hid = failed_collection["hid"]
 
-        if not self.is_beta_history():
-            self.home()
-
         self.history_panel_wait_for_hid_state(input_hid, "ok")
         self.history_panel_wait_for_hid_state(failed_hid, "error")
         self.history_panel_click_copy_elements()
 
         with self.main_panel():
+            axe_results = self.axe_eval()
+            axe_results.assert_no_violations_with_impact_of_at_least("serious")
             self.components.history_copy_elements.collection_checkbox(id=input_collection["id"]).wait_for_and_click()
             self.components.history_copy_elements.collection_checkbox(id=failed_collection["id"]).wait_for_and_click()
 

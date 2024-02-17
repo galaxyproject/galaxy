@@ -11,13 +11,15 @@ from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
 
+from galaxy.model import Base
 from galaxy.model.migrations import (
     GXY,
+    ModelId,
     TSI,
 )
 
 config = context.config
-target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
+target_metadata = Base.metadata
 log = logging.getLogger(__name__)
 
 
@@ -72,10 +74,14 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     run_migrations(url)
 
 
-def _process_cmd_current(urls: Dict[str, str]) -> bool:
+def _process_cmd_current(urls: Dict[ModelId, str]) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
+        # Run command for each url only if urls are different; otherwise run once.
+        are_urls_equal = len(set(urls.values())) == 1
         for url in urls.values():
             _configure_and_run_migrations_online(url)
+            if are_urls_equal:
+                break
         return True
     return False
 
@@ -110,7 +116,7 @@ def _configure_and_run_migrations_offline(url: str) -> None:
 
 
 def _configure_and_run_migrations_online(url) -> None:
-    engine = create_engine(url)
+    engine = create_engine(url, future=True)
     with engine.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
@@ -123,9 +129,11 @@ def _get_url_from_config() -> str:
     return cast(str, url)
 
 
-def _load_urls() -> Dict[str, str]:
-    gxy_url = context.get_x_argument(as_dictionary=True).get(f"{GXY}_url")
-    tsi_url = context.get_x_argument(as_dictionary=True).get(f"{TSI}_url")
+def _load_urls() -> Dict[ModelId, str]:
+    context_dict = cast(Dict, context.get_x_argument(as_dictionary=True))
+    gxy_url = context_dict.get(f"{GXY}_url")
+    tsi_url = context_dict.get(f"{TSI}_url")
+    assert gxy_url and tsi_url
     return {
         GXY: gxy_url,
         TSI: tsi_url,

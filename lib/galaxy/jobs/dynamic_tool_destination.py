@@ -416,7 +416,6 @@ class RuleValidator:
                         valid_rule = False
             elif isinstance(rule["destination"], dict):
                 if "priority" in rule["destination"] and isinstance(rule["destination"]["priority"], dict):
-
                     for priority in rule["destination"]["priority"]:
                         if priority not in priority_list:
                             error = "Invalid priority '"
@@ -530,7 +529,6 @@ class RuleValidator:
                 upper_bound = -1
 
             if upper_bound != -1 and lower_bound > upper_bound:
-
                 error = f"lower_bound exceeds upper_bound for rule {str(counter)}"
                 error += f" in '{str(tool)}'."
                 if not return_bool:
@@ -850,11 +848,9 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                     valid_config = False
 
             elif isinstance(obj["default_destination"], dict):
-
                 if "priority" in obj["default_destination"] and isinstance(
                     obj["default_destination"]["priority"], dict
                 ):
-
                     for priority in obj["default_destination"]["priority"]:
                         if isinstance(obj["default_destination"]["priority"][priority], str):
                             priority_list.add(priority)
@@ -936,7 +932,6 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
 
                     if isinstance(curr, dict):
                         if "priority" in curr and isinstance(curr["priority"], str):
-
                             if curr["priority"] in priority_list:
                                 new_config["users"][user]["priority"] = curr["priority"]
                             else:
@@ -980,7 +975,6 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                     curr_tool_rules = []
 
                     if curr is not None:
-
                         # in each tool, there should always be only 2 sub-categories:
                         # default_destination (not mandatory) and rules (mandatory)
                         if "default_destination" in curr:
@@ -998,16 +992,13 @@ def validate_config(obj: dict, app=None, return_bool: bool = False):
                                 else:
                                     valid_config = False
                             elif isinstance(curr["default_destination"], dict):
-
                                 if "priority" in curr["default_destination"] and isinstance(
                                     curr["default_destination"]["priority"], dict
                                 ):
-
                                     for priority in curr["default_destination"]["priority"]:
                                         destination = curr["default_destination"]["priority"][priority]
                                         if priority in priority_list:
                                             if isinstance(destination, str):
-
                                                 is_valid = validate_destination(
                                                     app,
                                                     destination,
@@ -1354,17 +1345,17 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         for da in inp_data:
             try:
                 # If the input is a file, check and add the size
-                if inp_data[da] is not None and os.path.isfile(inp_data[da].file_name):
+                if inp_data[da] is not None and os.path.isfile(inp_data[da].get_file_name()):
                     num_input_datasets += 1
                     if verbose:
                         message = f"Loading file: {str(da)}"
-                        message += str(inp_data[da].file_name)
+                        message += str(inp_data[da].get_file_name())
                         log.debug(message)
 
                     # Add to records if the file type is fasta
                     if inp_data[da].ext == "fasta":
                         if records_rule_present:
-                            inp_db = open(inp_data[da].file_name)
+                            inp_db = open(inp_data[da].get_file_name())
 
                             # Try to find automatically computed sequences
                             metadata = inp_data[da].get_metadata()
@@ -1376,7 +1367,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                     if line[0] == ">":
                                         records += 1
                     if filesize_rule_present:
-                        query_file = str(inp_data[da].file_name)
+                        query_file = str(inp_data[da].get_file_name())
                         file_size += os.path.getsize(query_file)
             except AttributeError:
                 # Otherwise, say that input isn't a file
@@ -1401,7 +1392,6 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     if fail_message is not None:
         destination = "fail"
     elif config is not None:
-
         # Get the default priority from the config if necessary.
         # If there isn't one, choose an arbitrary one as a fallback
         if "default_destination" in config:
@@ -1477,7 +1467,6 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                         if user_authorized:
                             matched = False
                             if rule["rule_type"] == "file_size":
-
                                 # bounds comparisons
                                 upper_bound = str_to_bytes(rule["upper_bound"])
                                 lower_bound = str_to_bytes(rule["lower_bound"])
@@ -1491,7 +1480,6 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                         matched = True
 
                             elif rule["rule_type"] == "num_input_datasets":
-
                                 # bounds comparisons
                                 upper_bound = rule["upper_bound"]
                                 lower_bound = rule["lower_bound"]
@@ -1504,7 +1492,6 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                         matched = True
 
                             elif rule["rule_type"] == "records":
-
                                 # bounds comparisons
                                 upper_bound = str_to_bytes(rule["upper_bound"])
                                 lower_bound = str_to_bytes(rule["lower_bound"])
@@ -1660,14 +1647,14 @@ def get_destination_list_from_job_config(job_config_location) -> set:
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):
-            if isinstance(destination.get("id"), str):
-                destination_list.add(destination.get("id"))
-
+            destination_id = destination.get("id")
+            if destination_id:
+                destination_list.add(destination_id)
             else:
                 error = f"Destination ID '{str(destination)}"
                 error += "' in job configuration file cannot be"
                 error += " parsed. Things may not work as expected!"
-                log.debug(error)
+                log.warning(error)
 
     return destination_list
 

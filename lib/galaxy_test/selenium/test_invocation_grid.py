@@ -7,8 +7,7 @@ from .framework import (
 )
 
 
-class InvocationGridSeleniumTestCase(SeleniumTestCase, TestsGalaxyPagers):
-
+class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
     ensure_registered = True
 
     @selenium_test
@@ -47,4 +46,4 @@ class InvocationGridSeleniumTestCase(SeleniumTestCase, TestsGalaxyPagers):
 
     @retry_assertion_during_transitions
     def _assert_showing_n_invocations(self, n):
-        self.assertEqual(len(self.invocation_index_table_elements()), n)
+        assert len(self.invocation_index_table_elements()) == n

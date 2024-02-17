@@ -145,7 +145,7 @@ class DependencyManager:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
         self._enabled_container_types: List[str] = []
-        self._destination_for_container_type: Dict[str, Dict[str, "JobDestination"]] = {}
+        self._destination_for_container_type: Dict[str, Dict[str, JobDestination]] = {}
 
     def set_enabled_container_types(self, container_types_to_destinations):
         """Set the union of all enabled container types."""
@@ -241,7 +241,6 @@ class DependencyManager:
         tool_info = ToolInfo(**tool_info_kwds)
 
         for i, resolver in enumerate(self.dependency_resolvers):
-
             if index is not None and i != index:
                 continue
 
@@ -304,7 +303,6 @@ class DependencyManager:
                     break
 
             if not isinstance(resolver, ContainerResolver):
-
                 # Check individual requirements
                 for requirement in resolvable_requirements:
                     if requirement in _requirement_to_dependency:
@@ -327,7 +325,7 @@ class DependencyManager:
     def uses_tool_shed_dependencies(self):
         return any(map(lambda r: isinstance(r, ToolShedPackageDependencyResolver), self.dependency_resolvers))
 
-    def find_dep(self, name, version=None, type="package", **kwds):
+    def find_dep(self, name: str, version: Optional[str] = None, type: str = "package", **kwds):
         log.debug(f"Find dependency {name} version {version}")
         requirements = ToolRequirements([ToolRequirement(name=name, version=version, type=type)])
         dep_dict = self._requirements_to_dependencies_dict(requirements, **kwds)

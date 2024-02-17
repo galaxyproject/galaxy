@@ -3,11 +3,22 @@
 
 <% _=n_ %>
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--base.mako-->
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <!-- Set meta description -->
+        <%
+            if request.path.startswith('/login'):
+                meta_description = "Log in to Galaxy to get access to more tools and resources. Register now for a free account."
+            elif request.path.startswith('/workflows'):
+                meta_description = "Galaxy Workflows facilitate rigorous, reproducible analysis pipelines that can be shared with the community."
+            else:
+                meta_description = "Galaxy is a community-driven web-based analysis platform for life science research."
+        %>
+        <meta name="description" content="${meta_description}" />
 
         <title>
             Galaxy
@@ -39,7 +50,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('bootstrap-tour')}
     ${h.dist_css('base')}
 </%def>
 

@@ -26,7 +26,7 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import ConcreteObjectStore
+from . import ConcreteObjectStore
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -77,6 +77,7 @@ def parse_config_xml(config_xml):
             log.error(msg)
             raise Exception(msg)
         r["extra_dirs"] = [{k: e.get(k) for k in attrs} for e in extra_dirs]
+        r["private"] = ConcreteObjectStore.parse_private_from_config_xml(config_xml)
         if "job_work" not in (d["type"] for d in r["extra_dirs"]):
             msg = f'No value for {tag}:type="job_work" in XML tree'
             log.error(msg)
@@ -160,6 +161,7 @@ class PithosObjectStore(ConcreteObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         """Construct path from object and parameters"""
@@ -197,6 +199,10 @@ class PithosObjectStore(ConcreteObjectStore):
         if not dir_only:
             an = alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat"
             rel_path = os.path.join(rel_path, an)
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -297,6 +303,7 @@ class PithosObjectStore(ConcreteObjectStore):
                 new_file = os.path.join(self.staging_path, rel_path)
                 open(new_file, "w").close()
                 self.pithos.upload_from_string(rel_path, "")
+        return self
 
     def _empty(self, obj, **kwargs):
         """
@@ -307,7 +314,7 @@ class PithosObjectStore(ConcreteObjectStore):
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
         return bool(self._size(obj, **kwargs))
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         """
         :returns: The size of the object, or 0 if it doesn't exist (sorry for
             that, not our fault, the ObjectStore interface is like that some
@@ -318,10 +325,7 @@ class PithosObjectStore(ConcreteObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
-                log.warning(
-                    "Could not get size of file {path} in local cache,"
-                    "will try Pithos. Error: {err}".format(path=path, err=ex)
-                )
+                log.warning(f"Could not get size of file {path} in local cache," f"will try Pithos. Error: {ex}")
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:
@@ -404,10 +408,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if kwargs.get("create"):
             self._create(obj, **kwargs)
         if not self._exists(obj, **kwargs):
-            raise ObjectNotFound(
-                "objectstore.update_from_file, object does not exist: {obj}, "
-                "kwargs: {kwargs}".format(obj=obj, kwargs=kwargs)
-            )
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, " f"kwargs: {kwargs}")
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)

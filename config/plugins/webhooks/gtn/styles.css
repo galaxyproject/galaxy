@@ -1,6 +1,6 @@
 #gtn-screen {
 	position: fixed;
-	z-index: 202;
+	z-index: 5100;
 	width:100%;
 	height:100%;
 }
@@ -10,7 +10,7 @@
 	top:0;
 	left:0;
 	background: rgba(224, 224, 224, 0.75);
-	z-index: 201;
+	z-index: 5000;
 	width:100%;
 	height:100%;
 	opacity: 2;
@@ -20,7 +20,7 @@
 	position: fixed;
 	height: 100%;
 	width: 100%;
-	z-index: 203;
+	z-index: 5200;
 	display: flex;
 	justify-content: center;
 	flex-direction: column;

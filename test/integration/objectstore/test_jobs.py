@@ -39,7 +39,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
 TEST_INPUT_FILES_CONTENT = "1 2 3"
 
 
-class ObjectStoreJobsIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+class TestObjectStoreJobsIntegration(BaseObjectStoreIntegrationTestCase):
     # setup by _configure_object_store
     files1_path: str
     files2_path: str

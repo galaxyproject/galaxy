@@ -28,8 +28,8 @@ class BiotoolsEntry:
     def from_json(from_json: Dict[str, Any]) -> "BiotoolsEntry":
         entry = BiotoolsEntry()
         entry.biotoolsID = from_json["biotoolsID"]
-        entry.topic = from_json["topic"]
-        entry.function = from_json["function"]
+        entry.topic = from_json.get("topic", [])
+        entry.function = from_json.get("function", [])
         return entry
 
     @property

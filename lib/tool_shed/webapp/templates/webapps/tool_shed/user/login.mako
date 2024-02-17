@@ -1,9 +1,7 @@
 <%!
 #This is a hack, we should restructure templates to avoid this.
 def inherit(context):
-    if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
-        return '/webapps/galaxy/base_panels.mako'
-    elif context.get('trans').webapp.name == 'tool_shed' and context.get( 'use_panels', True ):
+    if context.get('trans').webapp.name == 'tool_shed' and context.get( 'use_panels', True ):
         return '/webapps/tool_shed/base_panels.mako'
     else:
         return '/base.mako'
@@ -14,7 +12,6 @@ def inherit(context):
 <%def name="init()">
 <%
     self.has_left_panel=False
-    self.has_right_panel=False
     self.active_view=active_view
     self.message_box_visible=False
 %>

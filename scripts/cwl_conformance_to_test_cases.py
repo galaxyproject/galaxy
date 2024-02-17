@@ -13,17 +13,17 @@ TEST_FILE_TEMPLATE = string.Template(
 
 import pytest
 
-from ..test_workflows_cwl import BaseCwlWorkflowTestCase
+from ..test_workflows_cwl import BaseCwlWorkflowsApiTestCase
 
 
-class CwlConformanceTestCase(BaseCwlWorkflowTestCase):
+class TestCwlConformance(BaseCwlWorkflowsApiTestCase):
     """Test case mapping to CWL conformance tests for version ${version}."""
 $tests'''
 )
 
 TEST_TEMPLATE = string.Template(
     '''
-${marks}    def test_conformance_${version_simple}_${label}(self):
+${marks}    def test_conformance_${version_simple}_${id_}(self):
         """${doc}
 
         Generated from::
@@ -44,8 +44,6 @@ RED_TESTS = {
         "directory_secondaryfiles",
         "docker_entrypoint",
         "dockeroutputdir",
-        "dynamic_initial_workdir",
-        "dynamic_resreq_filesizes",
         "dynamic_resreq_wf_optional_file_default",
         "dynamic_resreq_wf_optional_file_wf_default",
         "env_home_tmpdir",
@@ -102,7 +100,6 @@ RED_TESTS = {
         "directory_secondaryfiles",
         "docker_entrypoint",
         "dockeroutputdir",
-        "dynamic_resreq_filesizes",
         "dynamic_resreq_wf_optional_file_default",
         "dynamic_resreq_wf_optional_file_wf_default",
         "embedded_subworkflow",
@@ -174,13 +171,13 @@ RED_TESTS = {
         "step_input_default_value_overriden_2nd_step_noexp",
         "step_input_default_value_overriden_noexp",
         # not required
-        "225",
-        "226",
-        "233",
-        "235",
-        "236",
-        "306",
-        "307",
+        "initial_work_dir_for_null_and_arrays",
+        "initial_work_dir_for_array_dirs",
+        "illegal_symlink",
+        "modify_file_content",
+        "modify_directory_content",
+        "cond-with-defaults-1",
+        "cond-with-defaults-2",
         "all_non_null_all_null",
         "all_non_null_all_null_nojs",
         "all_non_null_multi_non_null",
@@ -209,7 +206,6 @@ RED_TESTS = {
         "directory_secondaryfiles",
         "docker_entrypoint",
         "dockeroutputdir",
-        "dynamic_resreq_filesizes",
         "dynamic_resreq_wf_optional_file_default",
         "dynamic_resreq_wf_optional_file_wf_default",
         "embedded_subworkflow",
@@ -318,9 +314,9 @@ def main():
         del test_with_doc["doc"]
         cwl_test_def = yaml.dump(test_with_doc, default_flow_style=False)
         cwl_test_def = "\n".join(f"            {line}" for line in cwl_test_def.splitlines())
-        label = conformance_test.get("label", str(i))
+        id_ = conformance_test.get("id", str(i))
         tags = conformance_test.get("tags", [])
-        is_red = label in red_tests_list
+        is_red = id_ in red_tests_list
 
         marks = "    @pytest.mark.cwl_conformance\n"
         marks += f"    @pytest.mark.cwl_conformance_{version_simple}\n"
@@ -333,7 +329,7 @@ def main():
 
         if not {"command_line_tool", "expression_tool", "workflow"}.intersection(tags):
             print(
-                f"PROBLEM - test [{label}] tagged with neither command_line_tool, expression_tool, nor workflow",
+                f"PROBLEM - test [{id_}] tagged with neither command_line_tool, expression_tool, nor workflow",
                 file=sys.stderr,
             )
 
@@ -342,17 +338,17 @@ def main():
             "version": version,
             "doc": conformance_test["doc"],
             "cwl_test_def": cwl_test_def,
-            "label": label.replace("-", "_"),
+            "id_": id_.replace("-", "_"),
             "marks": marks,
         }
         test_body = TEST_TEMPLATE.safe_substitute(template_kwargs)
         tests += test_body
 
-        if label in all_tests_found:
-            print(f"PROBLEM - Duplicate label found [{label}]", file=sys.stderr)
-        all_tests_found.add(label)
+        if id_ in all_tests_found:
+            print(f"PROBLEM - Duplicate id found [{id_}]", file=sys.stderr)
+        all_tests_found.add(id_)
         if is_red:
-            red_tests_found.add(label)
+            red_tests_found.add(id_)
 
     test_file_contents = TEST_FILE_TEMPLATE.safe_substitute(
         {

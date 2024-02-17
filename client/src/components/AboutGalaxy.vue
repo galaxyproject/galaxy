@@ -1,18 +1,20 @@
-<script setup>
+<script setup lang="ts">
 /* global __buildTimestamp__, __license__  */
 /* (injected by webpack) */
 
 import { computed } from "vue";
 
-import { getAppRoot } from "onload/loadConfig";
-import { useConfig } from "composables/useConfig";
-import UtcDate from "components/UtcDate";
-import License from "components/License/License";
-import ExternalLink from "components/ExternalLink";
+import { useConfig } from "@/composables/config";
+import { getAppRoot } from "@/onload/loadConfig";
 
-const { config, isLoaded } = useConfig();
+import Heading from "@/components/Common/Heading.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
+import License from "@/components/License/License.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
-const clientBuildDate = __buildTimestamp__ || new Date();
+const { config, isConfigLoaded } = useConfig();
+
+const clientBuildDate = __buildTimestamp__ || new Date().toISOString();
 const apiDocsLink = `${getAppRoot()}api/docs`;
 const galaxyLicense = __license__;
 
@@ -25,15 +27,15 @@ const versionUserDocumentationUrl = computed(() => {
 </script>
 
 <template>
-    <div v-if="isLoaded">
-        <h1>About This Galaxy</h1>
+    <div v-if="isConfigLoaded" class="about-galaxy">
+        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="xl">About This Galaxy</Heading>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->
-            <h2>Galaxy Version Information</h2>
+            <Heading h2 separator size="md">Galaxy Version Information</Heading>
             <p>
                 The Galaxy Server is running version
-                <external-link :href="versionUserDocumentationUrl">
-                    <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </external-link
+                <ExternalLink :href="versionUserDocumentationUrl">
+                    <strong> {{ config.version_major }}.{{ config.version_minor }}</strong> </ExternalLink
                 >, and the web client was built on <UtcDate :date="clientBuildDate" mode="pretty" />.
             </p>
             <template v-if="config.version_extra">
@@ -47,26 +49,36 @@ const versionUserDocumentationUrl = computed(() => {
             </template>
         </div>
         <div>
-            <h2>Galaxy API Documentation</h2>
+            <Heading h2 separator size="md">Galaxy API Documentation</Heading>
             <!-- API documentation link -->
             <p>
                 The Galaxy API is available, and explorable, at
-                <external-link :href="apiDocsLink">
+                <ExternalLink :href="apiDocsLink">
                     {{ apiDocsLink }}
-                </external-link>
+                </ExternalLink>
             </p>
         </div>
         <div>
-            <h2>License Information</h2>
+            <Heading h2 separator size="md">License Information</Heading>
             <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
-            <h2>Terms and Conditions</h2>
+            <Heading h2 separator size="md">Terms and Conditions</Heading>
             <p>
                 This Galaxy Server has specified Terms and Conditions that apply to use of the service.
-                <external-link :href="config.terms_url">Review them here.</external-link>
+                <ExternalLink :href="config.terms_url">Review them here.</ExternalLink>
             </p>
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
+.about-galaxy h1 {
+    --fa-primary-color: #{$brand-primary};
+    --fa-secondary-color: #{$brand-toggle};
+    --fa-secondary-opacity: 1;
+}
+</style>

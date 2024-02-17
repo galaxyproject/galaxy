@@ -1,5 +1,12 @@
 import contextlib
 import json
+from typing import (
+    Any,
+    Dict,
+    List,
+)
+
+from sqlalchemy import select
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
@@ -13,6 +20,8 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.model.base import transaction
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
@@ -37,9 +46,11 @@ steps:
       input1: test_input
 """
 
+ActionJson = Dict[str, Any]
+ActionsJson = List[ActionJson]
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
 
+class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
     framework_tool_and_types = True
 
     def setUp(self):
@@ -49,7 +60,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
     def test_basic_refactoring_types(self):
         self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
 
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "update_name", "name": "my cool new name"},
         ]
         self._refactor(actions)
@@ -186,7 +197,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
     def test_basic_refactoring_types_dry_run(self):
         self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
 
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "update_name", "name": "my cool new name"},
         ]
         response = self._dry_run(actions)
@@ -246,7 +257,7 @@ class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCas
     def test_refactoring_legacy_parameters(self):
         wf = self.workflow_populator.load_workflow_from_resource("test_workflow_randomlines_legacy_params")
         self.workflow_populator.create_workflow(wf)
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "seed"},
             {"action_type": "extract_untyped_parameter", "name": "num", "label": "renamed_num"},
         ]
@@ -301,7 +312,7 @@ steps:
         rename: "${pja_only_param} name"
 """
         )
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
         self._refactor(actions)
@@ -324,7 +335,7 @@ steps:
         rename: "${pja_only_param} name"
 """
         )
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
         response = self._dry_run(actions)
@@ -350,7 +361,7 @@ steps:
         rename: "${pja_only_param} name"
 """
         )
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
         self._refactor(actions)
@@ -366,7 +377,7 @@ steps:
         self.workflow_populator.create_workflow(wf)
         only_step = self._latest_workflow.step_by_index(0)
         assert len(only_step.workflow_outputs) == 1
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "remove_unlabeled_workflow_outputs"},
         ]
         self._refactor(actions)
@@ -395,7 +406,7 @@ steps:
 
     def test_refactor_works_with_subworkflows(self):
         self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "update_step_label", "step": {"label": "nested_workflow"}, "label": "new_nested_workflow"},
         ]
         self._refactor(actions)
@@ -428,7 +439,7 @@ steps:
         assert self._latest_workflow.step_by_index(1).tool_id == "random-missing"
         assert "num_lines" in self._latest_workflow.step_by_index(1).tool_inputs
 
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "update_step_label", "step": {"order_index": 1}, "label": "random2_new"},
         ]
         self._refactor(actions)
@@ -437,7 +448,7 @@ steps:
 
     def test_refactor_fill_step_defaults(self):
         self._load_two_random_lines_wf_with_missing_state()
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
         action_executions = self._refactor(actions).action_executions
@@ -457,7 +468,7 @@ steps:
 
     def test_refactor_fill_step_defaults_dry_run(self):
         self._load_two_random_lines_wf_with_missing_state()
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "fill_step_defaults", "step": {"order_index": 0}},
         ]
         response = self._dry_run(actions)
@@ -480,7 +491,7 @@ steps:
 
     def test_refactor_fill_defaults(self):
         self._load_two_random_lines_wf_with_missing_state()
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "fill_defaults"},
         ]
         action_executions = self._refactor(actions).action_executions
@@ -515,7 +526,7 @@ steps:
 """
         )
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
         ]
         # t = self._app.toolbox.get_tool("multiple_versions", tool_version="0.1")
@@ -539,7 +550,7 @@ steps:
 """
         )
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
         ]
         action_executions = self._refactor(actions).action_executions
@@ -574,7 +585,7 @@ steps:
         pre_upgrade_native = self._download_native(self._most_recent_stored_workflow)
         self._assert_nested_workflow_num_lines_is(pre_upgrade_native, "1")
 
-        actions = [
+        actions: ActionsJson = [
             {"action_type": "upgrade_subworkflow", "step": {"label": "nested_workflow"}},
         ]
         response = self._dry_run(actions)
@@ -602,7 +613,7 @@ steps:
         nested_stored_workflow = self._recent_stored_workflow(2)
         assert len(nested_stored_workflow.workflows) == 3
         middle_workflow_id = self._app.security.encode_id(nested_stored_workflow.workflows[1].id)
-        actions = [
+        actions: ActionsJson = [
             {
                 "action_type": "upgrade_subworkflow",
                 "step": {"label": "nested_workflow"},
@@ -757,8 +768,9 @@ steps:
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
 
-    def _refactor(self, actions, stored_workflow=None, dry_run=False, style="ga"):
-        user = self._app.model.session.query(User).order_by(User.id.desc()).limit(1).one()
+    def _refactor(self, actions: List[Dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
+        stmt = select(User).order_by(User.id.desc()).limit(1)
+        user = self._app.model.session.execute(stmt).scalar_one()
         mock_trans = MockTrans(self._app, user)
 
         app = self._app
@@ -775,13 +787,14 @@ steps:
                 RefactorRequest(actions=actions, dry_run=dry_run, style=style),
             )
         finally:
-            app = url_for = original_url_for
+            app.url_for = original_url_for
 
-    def _dry_run(self, actions, stored_workflow=None):
+    def _dry_run(self, actions: ActionsJson, stored_workflow=None):
         # Do a bunch of checks to ensure nothing workflow related was written to the database
         # or even added to the sa_session.
         sa_session = self._app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         sw_update_time = self._model_last_time(StoredWorkflow)
         assert sw_update_time
@@ -795,8 +808,8 @@ steps:
         wo_last_id = self._model_last_id(WorkflowOutput)
 
         response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
-        sa_session.flush()
-        sa_session.expunge_all()
+        with transaction(sa_session):
+            sa_session.commit()
         assert sw_update_time == self._model_last_time(StoredWorkflow)
         assert w_update_time == self._model_last_time(Workflow)
         assert ws_last_id == self._model_last_id(WorkflowStep)
@@ -808,11 +821,13 @@ steps:
         return response
 
     def _model_last_time(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.update_time.desc()).limit(1).one()
+        stmt = select(clazz).order_by(clazz.update_time.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).unique().scalar_one()
         return obj.update_time
 
     def _model_last_id(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.id.desc()).limit(1).one_or_none()
+        stmt = select(clazz).order_by(clazz.id.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).scalar_one_or_none()
         return obj.id if obj else None
 
     @property
@@ -825,7 +840,8 @@ steps:
 
     def _recent_stored_workflow(self, n=1):
         app = self._app
-        return app.model.session.query(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n).all()[-1]
+        stmt = select(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n)
+        return app.model.session.scalars(stmt).unique().all()[-1]
 
     @property
     def _latest_workflow(self):
@@ -881,7 +897,17 @@ class MockTrans(ProvidesAppContext):
         self._app = app
         self.user = user
         self.history = None
+        self.workflow_building_mode = workflow_building_modes.ENABLED
+        self.tag_handler = app.tag_handler
+
+    @property
+    def galaxy_session(self):
+        return None
 
     @property
     def app(self):
         return self._app
+
+    @property
+    def url_builder(self) -> None:
+        return None

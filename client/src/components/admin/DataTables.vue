@@ -1,5 +1,6 @@
 <template>
-    <div>
+    <div aria-labelledby="data-tables-heading">
+        <h1 id="data-tables-heading" class="h-lg">Data Tables</h1>
         <message :message="message" :status="status"></message>
         <component
             :is="currentView"
@@ -12,11 +13,12 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
+
 import Message from "../Message.vue";
-import DataTablesGrid from "./DataTablesGrid.vue";
 import DataManagerGrid from "./DataManagerGrid.vue";
+import DataTablesGrid from "./DataTablesGrid.vue";
 
 export default {
     components: {

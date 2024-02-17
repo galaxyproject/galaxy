@@ -1,8 +1,14 @@
 <template>
     <span>
-        <b-modal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
+        <b-modal
+            v-model="modalShow"
+            :title="title"
+            ok-title="Continue"
+            @ok="onOk"
+            @cancel="onCancel"
+            @hidden="onCancel">
             <div class="ml-2">
-                <h5 class="mb-3">Select {{ labelTitle }} Label:</h5>
+                <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
                 <div v-if="hasLabels">
                     <b-form-radio
                         v-for="(label, index) in labels"
@@ -27,8 +33,8 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

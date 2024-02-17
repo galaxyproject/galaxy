@@ -1,34 +1,121 @@
-<!-- menu allowing user to change the current history, make a new one, basically anything that's
-"above" editing the current history -->
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faArchive,
+    faColumns,
+    faCopy,
+    faExchangeAlt,
+    faFileArchive,
+    faFileExport,
+    faLock,
+    faPlay,
+    faPlus,
+    faShareAlt,
+    faSitemap,
+    faStream,
+    faTrash,
+    faUserLock,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import {
+    BButton,
+    BButtonGroup,
+    BDropdown,
+    BDropdownDivider,
+    BDropdownItem,
+    BDropdownText,
+    BModal,
+    BSpinner,
+} from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { ref } from "vue";
+
+import type { HistorySummary } from "@/api";
+import { iframeRedirect } from "@/components/plugins/legacyNavigation";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+
+import CopyModal from "@/components/History/Modals/CopyModal.vue";
+import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+
+library.add(
+    faArchive,
+    faColumns,
+    faCopy,
+    faExchangeAlt,
+    faFileArchive,
+    faFileExport,
+    faLock,
+    faPlay,
+    faPlus,
+    faShareAlt,
+    faSitemap,
+    faStream,
+    faTrash,
+    faUserLock
+);
+
+interface Props {
+    histories: HistorySummary[];
+    history: HistorySummary;
+    title?: string;
+    historiesLoading?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+    title: "Histories",
+    historiesLoading: false,
+});
+
+const showSwitchModal = ref(false);
+
+const userStore = useUserStore();
+const historyStore = useHistoryStore();
+
+const { isAnonymous } = storeToRefs(userStore);
+const { totalHistoryCount } = storeToRefs(historyStore);
+
+function userTitle(title: string) {
+    if (isAnonymous.value) {
+        return localize("Log in to") + " " + localize(title);
+    } else {
+        return localize(title);
+    }
+}
+</script>
 
 <template>
     <div>
-        <nav class="d-flex justify-content-between mx-3 my-2">
-            <h4 class="m-1">History</h4>
-            <b-button-group>
-                <b-button
-                    v-b-tooltip.bottom.hover
+        <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
+            <h2 class="m-1 h-sm">History</h2>
+
+            <BButtonGroup>
+                <BButton
+                    v-b-tooltip.top.hover.noninteractive
                     class="create-hist-btn"
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    title="Create new history"
-                    @click="$emit('createNewHistory')">
-                    <Icon fixed-width icon="plus" />
-                </b-button>
+                    :disabled="isAnonymous"
+                    :title="userTitle('Create new history')"
+                    @click="historyStore.createNewHistory">
+                    <FontAwesomeIcon fixed-width :icon="faPlus" />
+                </BButton>
 
-                <b-button
-                    v-b-modal.selector-history-modal
-                    v-b-tooltip.bottom.hover
+                <BButton
+                    v-b-tooltip.top.hover.noninteractive
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    title="Switch to history">
-                    <Icon fixed-width icon="exchange-alt" />
-                </b-button>
+                    :disabled="isAnonymous"
+                    :title="userTitle('Switch to history')"
+                    @click="showSwitchModal = !showSwitchModal">
+                    <FontAwesomeIcon fixed-width :icon="faExchangeAlt" />
+                </BButton>
 
-                <b-dropdown
-                    v-b-tooltip.bottom.hover
+                <BDropdown
+                    v-b-tooltip.top.hover.noninteractive
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
@@ -38,163 +125,155 @@
                     <template v-slot:button-content>
                         <span class="sr-only">History Options</span>
                     </template>
-                    <b-dropdown-text>
+
+                    <BDropdownText>
                         <div v-if="historiesLoading">
-                            <b-spinner v-if="historiesLoading" small />
+                            <BSpinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
-                        <span v-else>You have {{ histories.length }} histories.</span>
-                    </b-dropdown-text>
 
-                    <b-dropdown-item
+                        <span v-else>You have {{ totalHistoryCount }} histories.</span>
+                    </BDropdownText>
+
+                    <BDropdownItem
                         data-description="switch to multi history view"
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Open History Multiview')"
                         @click="$router.push('/histories/view_multiple')">
-                        <Icon fixed-width class="mr-1" icon="columns" />
+                        <FontAwesomeIcon fixed-width class="mr-1" :icon="faColumns" />
                         <span v-localize>Show Histories Side-by-Side</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <BDropdownDivider />
 
-                    <b-dropdown-item
-                        :title="l('Resume all Paused Jobs in this History')"
+                    <BDropdownItem
+                        :title="localize('Resume all Paused Jobs in this History')"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
-                        <Icon fixed-width icon="play" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faPlay" class="mr-1" />
                         <span v-localize>Resume Paused Jobs</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <BDropdownDivider />
 
-                    <b-dropdown-item
-                        v-b-modal:copy-history-modal
-                        :disabled="currentUser.isAnonymous"
+                    <BDropdownItem
+                        v-b-modal:copy-current-history-modal
+                        :disabled="isAnonymous"
                         :title="userTitle('Copy History to a New History')">
-                        <Icon fixed-width icon="copy" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faCopy" class="mr-1" />
                         <span v-localize>Copy this History</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item v-b-modal:delete-history-modal :title="l('Permanently Delete History')">
-                        <Icon fixed-width icon="trash" class="mr-1" />
+                    <BDropdownItem v-b-modal:delete-history-modal :title="localize('Permanently Delete History')">
+                        <FontAwesomeIcon fixed-width :icon="faTrash" class="mr-1" />
                         <span v-localize>Delete this History</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
-                        :title="l('Export Citations for all Tools used in this History')"
+                    <BDropdownItem
+                        :title="localize('Export Citations for all Tools used in this History')"
                         @click="$router.push(`/histories/citations?id=${history.id}`)">
-                        <Icon fixed-width icon="stream" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faStream" class="mr-1" />
                         <span v-localize>Export Tool Citations</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
+                    <BDropdownItem
                         data-description="export to file"
-                        :title="l('Export and Download History as a File')"
+                        :title="localize('Export and Download History as a File')"
                         @click="$router.push(`/histories/${history.id}/export`)">
-                        <Icon fixed-width icon="file-archive" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faFileArchive" class="mr-1" />
                         <span v-localize>Export History to File</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                    <BDropdownItem
+                        :disabled="isAnonymous"
+                        data-description="archive history"
+                        :title="userTitle('Archive this History')"
+                        @click="$router.push(`/histories/${history.id}/archive`)">
+                        <FontAwesomeIcon fixed-width :icon="faArchive" class="mr-1" />
+                        <span v-localize>Archive History</span>
+                    </BDropdownItem>
+
+                    <BDropdownItem
+                        :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
                         @click="iframeRedirect('/workflow/build_from_current_history')">
-                        <Icon fixed-width icon="file-export" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faFileExport" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-divider></b-dropdown-divider>
+                    <BDropdownItem
+                        :disabled="isAnonymous"
+                        :title="userTitle('Display Workflow Invocations')"
+                        @click="$router.push(`/histories/${history.id}/invocations`)">
+                        <FontAwesomeIcon fixed-width :icon="faSitemap" class="fa-rotate-270 mr-1" />
+                        <span v-localize>Show Invocations</span>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                    <BDropdownDivider />
+
+                    <BDropdownItem
+                        :disabled="isAnonymous"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
-                        <Icon fixed-width icon="share-alt" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faShareAlt" class="mr-1" />
                         <span v-localize>Share or Publish</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                    <BDropdownItem
+                        :disabled="isAnonymous"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
-                        <Icon fixed-width icon="user-lock" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faUserLock" class="mr-1" />
                         <span v-localize>Set Permissions</span>
-                    </b-dropdown-item>
+                    </BDropdownItem>
 
-                    <b-dropdown-item
+                    <BDropdownItem
                         v-b-modal:history-privacy-modal
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Make this History Private')">
-                        <Icon fixed-width icon="lock" class="mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faLock" class="mr-1" />
                         <span v-localize>Make Private</span>
-                    </b-dropdown-item>
-                </b-dropdown>
-            </b-button-group>
+                    </BDropdownItem>
+                </BDropdown>
+            </BButtonGroup>
         </nav>
 
         <SelectorModal
+            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
-            :current-history-id="history.id"
-            @selectHistory="$emit('setCurrentHistory', $event)" />
+            :additional-options="['center', 'multi']"
+            :show-modal.sync="showSwitchModal"
+            @selectHistory="historyStore.setCurrentHistory($event.id)" />
 
-        <CopyModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-current-history-modal" :history="history" />
 
-        <b-modal
+        <BModal
             id="history-privacy-modal"
             title="Make History Private"
             title-tag="h2"
-            @ok="$emit('secureHistory', history)">
+            @ok="historyStore.secureHistory(history)">
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
                 will need to be re-shared or published. Are you sure you want to do this?
             </p>
-        </b-modal>
+        </BModal>
 
-        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="$emit('deleteHistory', history)">
+        <BModal
+            id="delete-history-modal"
+            title="Delete History?"
+            title-tag="h2"
+            @ok="historyStore.deleteHistory(history.id, false)">
             <p v-localize>Really delete the current history?</p>
-        </b-modal>
+        </BModal>
 
-        <b-modal
+        <BModal
             id="purge-history-modal"
             title="Permanently Delete History?"
             title-tag="h2"
-            @ok="$emit('purgeHistory', history)">
+            @ok="historyStore.deleteHistory(history.id, true)">
             <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
-        </b-modal>
+        </BModal>
     </div>
 </template>
-
-<script>
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import CopyModal from "components/History/Modals/CopyModal";
-import SelectorModal from "components/History/Modals/SelectorModal";
-import { mapGetters } from "vuex";
-
-export default {
-    components: {
-        CopyModal,
-        SelectorModal,
-    },
-    mixins: [legacyNavigationMixin],
-    props: {
-        histories: { type: Array, required: true },
-        history: { type: Object, required: true },
-        title: { type: String, default: "Histories" },
-        historiesLoading: { type: Boolean, default: false },
-    },
-    computed: {
-        ...mapGetters("user", ["currentUser"]),
-    },
-    methods: {
-        userTitle(title) {
-            if (this.currentUser.isAnonymous) {
-                return this.l("Log in to") + " " + this.l(title);
-            } else {
-                return this.l(title);
-            }
-        },
-    },
-};
-</script>

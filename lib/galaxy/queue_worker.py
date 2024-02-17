@@ -23,6 +23,7 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
@@ -184,7 +185,7 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    app.toolbox = new_toolbox
+    app._toolbox = new_toolbox
     app.toolbox.persist_cache()
 
 
@@ -194,9 +195,8 @@ def reload_data_managers(app, **kwargs):
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
-    reload_count = app.data_managers._reload_count
-    app.data_managers = DataManagers(app)
-    app.data_managers._reload_count = reload_count + 1
+    reload_count = app.data_managers._reload_count + 1
+    app.data_managers = DataManagers(app, None, reload_count)
     if hasattr(app, "tool_cache"):
         app.tool_cache.reset_status()
     if hasattr(app, "watchers"):
@@ -216,12 +216,11 @@ def reload_sanitize_allowlist(app):
 
 
 def recalculate_user_disk_usage(app, **kwargs):
-    user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
-    if user_id:
-        user = sa_session.query(app.model.User).get(user_id)
+    if user_id := kwargs.get("user_id", None):
+        user = sa_session.get(User, user_id)
         if user:
-            user.calculate_and_set_disk_usage()
+            user.calculate_and_set_disk_usage(app.object_store)
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
@@ -238,7 +237,7 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.is_webapp:
+    if app.is_webapp and app.database_heartbeat.is_config_watcher:
         if app.toolbox_search.index_count < app.toolbox._reload_count:
             app.reindex_tool_search()
     else:

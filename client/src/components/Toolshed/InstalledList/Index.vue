@@ -2,7 +2,7 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <loading-span v-if="loading" message="Loading installed repositories" />
+            <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <div class="m-1">
@@ -52,13 +52,14 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
-import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
-import Monitor from "./Monitor";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
+import { Services } from "../services";
 import RepositoryDetails from "./Details";
+import Monitor from "./Monitor";
 
 Vue.use(BootstrapVue);
 

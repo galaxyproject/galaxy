@@ -1,5 +1,11 @@
 import datetime
 import uuid
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+)
 
 
 def dict_for(obj, **kwds):
@@ -12,7 +18,7 @@ class Dictifiable:
     when for sharing objects across boundaries, such as the API, tool scripts,
     and JavaScript code."""
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         """
         Return item dictionary.
         """
@@ -29,11 +35,12 @@ class Dictifiable:
             try:
                 return item.to_dict(view=view, value_mapper=value_mapper)
             except Exception:
+                assert value_mapper is not None
                 if key in value_mapper:
-                    return value_mapper.get(key)(item)
-                if type(item) == datetime.datetime:
+                    return value_mapper[key](item)
+                if isinstance(item, datetime.datetime):
                     return item.isoformat()
-                elif type(item) == uuid.UUID:
+                elif isinstance(item, uuid.UUID):
                     return str(item)
                 # Leaving this for future reference, though we may want a more
                 # generic way to handle special type mappings going forward.

@@ -6,7 +6,8 @@
 <%def name="title()">Extract workflow from history</%def>
 
 <%def name="stylesheets()">
-    ${h.css( 'history', 'base' )}
+    ${h.dist_css( 'base' )}
+    ${h.css( 'history' )}
     <style type="text/css">
     div.toolForm{
         margin-top: 10px;

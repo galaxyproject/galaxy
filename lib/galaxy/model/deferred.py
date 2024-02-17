@@ -29,6 +29,7 @@ from galaxy.model import (
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
@@ -123,7 +124,8 @@ class DatasetInstanceMaterializer:
                 if sa_session is None:
                     sa_session = object_session(dataset_instance)
                 sa_session.add(materialized_dataset)
-                sa_session.flush()
+                with transaction(sa_session):
+                    sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
             path = self._stream_source(target_source, datatype=dataset_instance.datatype)
             object_store.update_from_file(materialized_dataset, file_name=path)

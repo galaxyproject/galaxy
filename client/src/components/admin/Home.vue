@@ -1,12 +1,15 @@
 <template>
     <div>
-        <h2>Administration</h2>
-        Please visit
+        <h1>Administration</h1>
 
-        <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to keep
-        your Galaxy in best shape.
+        <p>
+            Please visit
 
-        <h4>Server</h4>
+            <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to
+            keep your Galaxy in best shape.
+        </p>
+
+        <Heading h2 icon="fa-server" size="md">Server</Heading>
         <ul>
             <li>
                 <strong>
@@ -40,9 +43,15 @@
                 - Manage the reference (and other) data that is stored within Tool Data Tables. See
                 <a href="https://galaxyproject.org/admin/tools/data-managers" target="_blank">wiki</a> for details.
             </li>
+            <li>
+                <strong>
+                    <router-link to="/admin/notifications">Notifications and Broadcasts</router-link>
+                </strong>
+                - Manage the notifications and broadcast messages that are displayed to users.
+            </li>
         </ul>
 
-        <h4>User Management</h4>
+        <Heading h2 icon="fa-user" size="md">User Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -82,7 +91,7 @@
             </li>
         </ul>
 
-        <h4>Tool Management</h4>
+        <Heading h2 icon="fa-wrench" size="md">Tool Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -105,18 +114,20 @@
                 </strong>
                 - Select on which repositories you want to reset metadata.
             </li>
-            <li>
-                <strong>
-                    <router-link to="/admin/tool_versions">View Lineage</router-link>
-                </strong>
-                - A view of a version lineages for all installed tools. Useful for debugging.
-            </li>
         </ul>
     </div>
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+
+import Heading from "components/Common/Heading.vue";
+
+library.add(faServer, faUser, faWrench);
+
 export default {
+    components: { Heading },
     props: {
         isToolshedInstalled: {
             type: Boolean,

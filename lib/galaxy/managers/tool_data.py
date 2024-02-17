@@ -6,16 +6,26 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.structured_app import StructuredApp
+from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file
+from galaxy.model import DatasetInstance
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
+from galaxy.tool_util.data import (
+    BundleProcessingOptions,
+    ToolDataTableManager,
+)
+from galaxy.tool_util.data._schema import (
+    ToolDataDetails,
+    ToolDataEntryList,
+    ToolDataField,
+)
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
     ToolDataTable,
-)
-from galaxy.tools.data._schema import (
-    ToolDataDetails,
-    ToolDataEntryList,
-    ToolDataField,
 )
 
 
@@ -39,12 +49,12 @@ class ToolDataManager:
         """Get details of a given data table"""
         data_table = self._data_table(table_name)
         element_view = data_table.to_dict(view="element")
-        return ToolDataDetails.construct(**element_view)
+        return ToolDataDetails.model_construct(**element_view)
 
     def show_field(self, table_name: str, field_name: str) -> ToolDataField:
         """Get information about a partiular field in a tool data table"""
         field = self._data_table_field(table_name, field_name)
-        return ToolDataField.construct(**field.to_dict())
+        return ToolDataField.model_construct(**field.to_dict())
 
     def reload(self, table_name: str) -> ToolDataDetails:
         """Reloads a tool data table."""
@@ -95,3 +105,44 @@ class ToolDataManager:
     def _reload_data_table(self, name: str) -> ToolDataDetails:
         self._app.queue_worker.send_control_task("reload_tool_data_tables", noop_self=True, kwargs={"table_name": name})
         return self.show(name)
+
+
+class ToolDataImportManager:
+    file_sources: ConfiguredFileSources
+    tool_data_tables: ToolDataTableManager
+
+    def __init__(self, app: MinimalManagerApp):
+        self.file_sources = app.file_sources
+        self.tool_data_tables = app.tool_data_tables
+
+    def import_data_bundle_by_uri(self, config, uri: str, tool_data_file_path=None):
+        # an admin-only task - so allow file:// uris
+        if uri.startswith("file://"):
+            target = uri[len("file://") :]
+        else:
+            target = stream_url_to_file(
+                uri,
+                self.file_sources,
+            )
+        options = BundleProcessingOptions(
+            what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
+            data_manager_path=config.galaxy_data_manager_data_path,
+            target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
+        )
+        self.tool_data_tables.import_bundle(
+            target,
+            options,
+        )
+
+    def import_data_bundle_by_dataset(self, config, dataset: DatasetInstance, tool_data_file_path=None):
+        options = BundleProcessingOptions(
+            what="data import",  # An alternative to this is sticking this in the bundle, only used for logging.
+            data_manager_path=config.galaxy_data_manager_data_path,
+            target_config_file=config.data_manager_config_file,
+            tool_data_file_path=tool_data_file_path,
+        )
+        self.tool_data_tables.import_bundle(
+            dataset.extra_files_path,
+            options,
+        )

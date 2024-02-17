@@ -1,13 +1,13 @@
 /**
  * Model, view, and controller objects for Galaxy tools in Trackster.
  */
-import _ from "underscore";
-import $ from "jquery";
-import d3 from "d3";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import util from "viz/trackster/util";
+import * as d3 from "d3v3";
+import $ from "jquery";
 import { DatasetCollection } from "mvc/dataset/data";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import util from "viz/trackster/util";
 
 /**
  * Mixin for tracking model visibility.

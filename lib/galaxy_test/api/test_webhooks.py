@@ -1,7 +1,7 @@
 from ._framework import ApiTestCase
 
 
-class WebhooksApiTestCase(ApiTestCase):
+class TestWebhooksApi(ApiTestCase):
     def setUp(self):
         super().setUp()
 
@@ -11,7 +11,15 @@ class WebhooksApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 200)
         webhook_objs = self._assert_are_webhooks(response)
         ids = self._get_webhook_ids(webhook_objs)
-        for expected_id in ["history_test1", "history_test2", "masthead_test", "phdcomics", "trans_object", "xkcd"]:
+        for expected_id in [
+            "history_test1",
+            "history_test2",
+            "masthead_test",
+            "phdcomics",
+            "trans_object",
+            "xkcd",
+            "gtn",
+        ]:
             assert expected_id in ids
 
     def test_get_data(self):

@@ -34,7 +34,7 @@ class NotAFile:
 
 class Dataset:
     def __init__(self, file_name, file_ext, value):
-        self.file_name = file_name
+        self.file_name_ = file_name
         self.datatype = Datatype(file_ext)
         self.ext = file_ext
         self.metadata = dict()
@@ -42,6 +42,9 @@ class Dataset:
 
     def get_metadata(self):
         return self.metadata
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_
 
 
 class Datatype:

@@ -3,19 +3,14 @@ import os
 import pytest
 
 from galaxy import config
+from galaxy.config import DEFAULT_EMAIL_FROM_LOCAL_PART
+from galaxy.exceptions import ConfigurationError
 from galaxy.util.properties import running_from_source
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def appconfig():
     return config.GalaxyAppConfiguration(override_tempdir=False)
-
-
-@pytest.fixture
-def mock_config_file(monkeypatch):
-    # Set this to return None to force the creation of base config directories
-    # in _set_config_directories(). Used to test the values of these directories only.
-    monkeypatch.setattr(config, "find_config_file", lambda x: None)
 
 
 def test_root(appconfig):
@@ -31,7 +26,7 @@ def test_common_base_config(appconfig):
     assert appconfig.sample_config_dir == expected_path
 
 
-def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
+def test_base_config_if_running_from_source(monkeypatch):
     # Simulated condition: running from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", True)
     appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
@@ -41,7 +36,7 @@ def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
     assert appconfig.managed_config_dir == appconfig.config_dir
 
 
-def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
+def test_base_config_if_running_not_from_source(monkeypatch):
     # Simulated condition: running not from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", False)
     appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
@@ -49,3 +44,65 @@ def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
     assert appconfig.config_dir == os.getcwd()
     assert appconfig.data_dir == os.path.join(appconfig.config_dir, "data")
     assert appconfig.managed_config_dir == os.path.join(appconfig.data_dir, "config")
+
+
+def test_assign_email_from(monkeypatch):
+    appconfig = config.GalaxyAppConfiguration(
+        override_tempdir=False, galaxy_infrastructure_url="http://myhost:8080/galaxy/"
+    )
+    assert appconfig.email_from == f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@myhost"
+
+
+@pytest.mark.parametrize("bracket", ["[", "]"])
+def test_error_if_database_connection_contains_brackets(bracket):
+    uri = f"dbscheme://user:pass{bracket}word@host/db"
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, database_connection=uri)
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, install_database_connection=uri)
+
+    with pytest.raises(ConfigurationError):
+        config.GalaxyAppConfiguration(override_tempdir=False, amqp_internal_connection=uri)
+
+
+class TestIsFetchWithCeleryEnabled:
+    def test_disabled_if_celery_disabled(self, appconfig):
+        appconfig.enable_celery_tasks = False
+        assert not appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_celeryconf(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_task_routes_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf = {"some-other-key": 1}
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_task_routes_empty(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"] = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_route_key(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"] = {"some-other-route": 1}
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_no_route(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = None
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_enabled_if_has_route(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = "my_route"
+        assert appconfig.is_fetch_with_celery_enabled()
+
+    def test_disabled_if_disabled_flag(self, appconfig):
+        appconfig.enable_celery_tasks = True
+        appconfig.celery_conf["task_routes"]["galaxy.fetch_data"] = config.DISABLED_FLAG
+        assert not appconfig.is_fetch_with_celery_enabled()

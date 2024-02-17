@@ -84,7 +84,7 @@ class BaseExportTestCase(BaseTestCase):
         return collection
 
 
-class ToBasicMarkdownTestCase(BaseExportTestCase):
+class TestToBasicMarkdown(BaseExportTestCase):
     def setUp(self):
         super().setUp()
         self.test_dataset_path = None
@@ -280,7 +280,8 @@ invocation_time(invocation_id=1)
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
         result = self._to_basic(example)
-        assert "\n    %s" % invocation.create_time.isoformat() in result
+        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
+        assert f"\n    {expectedtime}" in result
 
     def test_job_parameters(self):
         job = model.Job()
@@ -329,7 +330,7 @@ job_metrics(job_id=1)
         return to_basic_markdown(self.trans, example)
 
 
-class ReadyExportTestCase(BaseExportTestCase):
+class TestReadyExport(BaseExportTestCase):
     def test_ready_dataset_display(self):
         hda = self._new_hda()
         example = """
@@ -412,7 +413,9 @@ invocation_time(invocation_id=1)
         result, extra_data = self._ready_export(example)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.isoformat()
+        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
+            "%Y-%m-%d, %H:%M:%S"
+        )
 
     def _ready_export(self, example):
         return ready_galaxy_markdown_for_export(self.trans, example)

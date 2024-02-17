@@ -11,8 +11,8 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTestCase):
-
+class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):
@@ -32,10 +32,10 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         index_map = {"0": dict(src="hda", id=hda1["id"])}
         request = {}
-        request["history"] = "hist_id=%s" % history_id
+        request["history"] = f"hist_id={history_id}"
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
-        url = "workflows/%s/invocations" % (workflow_id)
+        url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request)
         invocation_url = url + "/" + invocation_response.json()["id"]
         time.sleep(5)
@@ -46,8 +46,8 @@ class MaximumWorkflowInvocationDurationTestCase(integration_util.IntegrationTest
         assert state == "failed", state
 
 
-class MaximumWorkflowJobsPerSchedulingIterationTestCase(integration_util.IntegrationTestCase):
-
+class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):
@@ -92,9 +92,7 @@ steps:
             }
             self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            self.assertEqual(
-                "a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0)
-            )
+            assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
 
     def test_scheduling_rounds(self):
         with self.dataset_populator.test_history() as history_id:

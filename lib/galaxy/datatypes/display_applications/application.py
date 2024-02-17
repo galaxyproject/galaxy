@@ -62,6 +62,7 @@ class DisplayApplicationLink:
             app_name=quote_plus(self.display_application.id),
             link_name=quote_plus(self.id),
             app_action=None,
+            environ=trans.request.environ,
         )
 
     def get_inital_values(self, data, trans):

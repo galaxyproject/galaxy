@@ -1,0 +1,133 @@
+index,,,,in gCO2e/kWh,,"Country, Region or World",
+location,continentName,countryName,regionName,carbonIntensity,Type,source,comments
+GLOBAL,GLOBAL,Any,Any,475,World,https://www.iea.org/reports/global-energy-co2-status-report-2019/emissions,Data from 2019
+TW,Asia,China,Taiwan,509,Region,https://energypedia.info/wiki/Energy_Transition_in_Taiwan,
+IL,Asia,Israel,Any,558,Country,https://www.electricitymap.org,Data from April 2022
+ZA,Africa,South Africa,Any,900.6,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+CN,Asia,China,Any,537.4,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+CN-HK,Asia,China,Hong Kong (HK Electricity Company),710,Region,carbonfootprint (March 2022) and Hong Kong Electric Company (2020) (data from 2020),Combined generation and T&D factor
+CN-HK2,Asia,China,Hong Kong (CLP Group),650,Region,carbonfootprint (March 2022) and CLP Group (2020) (data from 2020),Combined generation and T&D factor
+IN,Asia,India,Any,708.2,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+ID,Asia,Indonesia,Any,717.7,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+JP,Asia,Japan,Any,465.8,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+KR,Asia,Korea,Any,415.6,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+SA,Asia,Saudi Arabia,Any,505.9,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+SG,Asia,Singapore,Any,408,Country,carbonfootprint (March 2022) and Singapore Energy Market Authority (EMA) (data from 2020),Electricity Grid Emissions Factors
+TH,Asia,Thailand,Any,481,Country,carbonfootprint (March 2022) and Energy Policy and Planning Office (EPPO) Thai Government Ministry of Energy (data from 2020),Combined generation and T&D factor
+TR,Asia,Turkey,Any,375,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+AE,Asia,United Arab Emirates,Any,417.89,Country,carbonfootprint (March 2022) and Dubai Electricity & Water Authority (sustainability report 2020) (data from 2020),Generation factor only
+AT,Europe,Austria,Any,111.18,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+BE,Europe,Belgium,Any,161.89,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+BG,Europe,Bulgaria,Any,372.12,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+HR,Europe,Croatia,Any,226.96,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+CY,Europe,Cyprus,Any,642.9,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+CZ,Europe,Czech Republic,Any,495.49,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+DK,Europe,Denmark,Any,142.52,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+EE,Europe,Estonia,Any,598.69,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+FI,Europe,Finland,Any,95.32,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+FR,Europe,France,Any,51.28,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+DE,Europe,Germany,Any,338.66,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+GR,Europe,Greece,Any,410.01,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+HU,Europe,Hungary,Any,243.75,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+IS,Europe,Iceland,Any,0.13,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+IE,Europe,Ireland,Any,335.99,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+IT,Europe,Italy,Any,323.84,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+LV,Europe,Latvia,Any,215.67,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+LT,Europe,Lithuania,Any,253.56,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+LU,Europe,Luxembourg,Any,101.36,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+MT,Europe,Malta,Any,390.62,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+NL,Europe,Netherlands,Any,374.34,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+NO,Europe,Norway,Any,7.62,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+PL,Europe,Poland,Any,759.62,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+PT,Europe,Portugal,Any,201.55,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+RO,Europe,Romania,Any,261.84,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+RU,Europe,Russian Federation,Any,310.2,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+RS,Europe,Serbia,Any,776.69,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+SK,Europe,Slovakia,Any,155.48,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+SI,Europe,Slovenia,Any,224.05,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+ES,Europe,Spain,Any,171.03,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+SE,Europe,Sweden,Any,5.67,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+CH,Europe,Switzerland,Any,11.52,Country,carbonfootprint (March 2022) and Association of Issuing Bodies (AIB) 2021 (data from 2020),Production mix factor
+GB,Europe,United Kingdom,Any,231.12,Country,carbonfootprint (March 2022) and UK Govt - Defra/BEIS 2021 (report from 2021 using 2019/20 data),Generation & transmission & distribution factors
+CA,North America,Canada,Any,120,Country,carbonfootprint (March 2022) and UN Framework Convention on Climate Change (report from 2021 based on 2019 data),Combined generation and T&D factor
+CA-AB,North America,Canada,Alberta,670,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-BC,North America,Canada,British Columbia,19.7,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-MT,North America,Canada,Manitoba,1.3,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-NB,North America,Canada,New Brunswick,270,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-NL,North America,Canada,Newfoundland and Labrador,29,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-NS,North America,Canada,Nova Scotia,810,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-NT,North America,Canada,Northwest Territories,200,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-NU,North America,Canada,Nunavut,900,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-ON,North America,Canada,Ontario,30,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-PE,North America,Canada,Prince Edward Island,2,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-QC,North America,Canada,Quebec,1.5,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-SK,North America,Canada,Saskatchewan,710,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+CA-YT,North America,Canada,Yukon Territory,111,Region,carbonfootprint (March 2022) and Canada's submission to UN Framework convention on Climate Change (2021) (data from 2019 published in 2021),
+MX,North America,Mexico,Any,431.4,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+US,North America,United States of America,Any,423.94,Country,carbonfootprint (March 2022) and US Env Protection Agency (EPA) eGrid (data from 2019),Combined generation and T&D factor
+US-AK,North America,United States of America,Alaska,462.33,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-AL,North America,United States of America,Alabama,344.37,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-AR,North America,United States of America,Arkansas,454.4,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-AZ,North America,United States of America,Arizona,351.99,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-CA,North America,United States of America,California,216.43,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-CO,North America,United States of America,Colorado,582.34,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-CT,North America,United States of America,Connecticut,253,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-DC,North America,United States of America,Washington DC,382.68,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-DE,North America,United States of America,Delaware,360.68,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-FL,North America,United States of America,Florida,402.2,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-GA,North America,United States of America,Georgia,345.58,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-HI,North America,United States of America,Hawaii,731.21,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-IA,North America,United States of America,Iowa,293.85,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-ID,North America,United States of America,Idaho,101.89,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-IL,North America,United States of America,Illinois,265.8,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-IN,North America,United States of America,Indiana,740.02,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-KS,North America,United States of America,Kansas,384.08,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-KY,North America,United States of America,Kentucky,804.75,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-LA,North America,United States of America,Louisiana,363.82,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MA,North America,United States of America,Massachusetts,420.32,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MD,North America,United States of America,Maryland,308.21,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-ME,North America,United States of America,Maine,109,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MI,North America,United States of America,Michigan,448.08,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MN,North America,United States of America,Minnesota,367.93,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MO,North America,United States of America,Missouri,773,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MS,North America,United States of America,Mississip,427.07,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-MT,North America,United States of America,Montana,435.87,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NC,North America,United States of America,North Carolina,309.73,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-ND,North America,United States of America,North Dakota,663.05,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NE,North America,United States of America,Nebraska,573.51,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NH,North America,United States of America,New Hampshire,118.44,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NJ,North America,United States of America,New Jersey,235.1,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NM,North America,United States of America,New Mexico,601.77,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NV,North America,United States of America,Nevada,342.25,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-NY,North America,United States of America,New York,199.01,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-OH,North America,United States of America,Ohio,598.58,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-OK,North America,United States of America,Oklahoma,338.44,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-OR,North America,United States of America,Oregon,163.15,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-PA,North America,United States of America,Pennsylvania,333.19,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-RI,North America,United States of America,Rhode Island,395.27,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-SC,North America,United States of America,South Carolina,245.48,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-SD,North America,United States of America,South Dakota,162.69,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-TN,North America,United States of America,Tennessee,272.89,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-TX,North America,United States of America,Texas,409.16,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-UT,North America,United States of America,Utah,747.82,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-VA,North America,United States of America,Virginia,308,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-VT,North America,United States of America,Vermont,14.45,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-WA,North America,United States of America,Washington,101.84,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-WI,North America,United States of America,Wisconsin,569.39,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-WV,North America,United States of America,West Virginia,919.34,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+US-WY,North America,United States of America,Wyoming,950.5,Region,carbonfootprint (March 2022) (data from 2020 published in 2022),
+AU,Oceania,Australia,Any,840,Country,carbonfootprint (June 2022 v1.1) and Australian Government (data from 2019 published in August 2021),
+AU-ACT,Oceania,Australia,Australian Capital Territory,870,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-NSW,Oceania,Australia,New South Wales,870,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-NT,Oceania,Australia,Northern Territory,620,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-NT2,Oceania,Australia,Northern Territory (Darwin Katherine Interconnected System),540,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-QLD,Oceania,Australia,Queensland,920,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-SA,Oceania,Australia,South Australia,420,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-TAS,Oceania,Australia,Tasmania,180,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-VIC,Oceania,Australia,Victoria,1060,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-WA1,Oceania,Australia,Western Australia (North Western Interconnected System),580,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+AU-WA2,Oceania,Australia,Western Australia (South West Interconnected System),700,Region,carbonfootprint (March 2022) and the Australian government (data from 2019 published in 2021),
+NZ,Oceania,New Zealand,Any,110.1,Country,carbonfootprint (March 2022) and Ministry for the Environment https://www.mfe.govt.nz/node/18670/ (data from 2018),"Emission factors published in 2020, based on 2018 national inventory."
+AR,South America,Argentina,Any,307,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+BR,South America,Brazil,Any,61.7,Country,carbonfootprint (March 2022) and Climate Transparency (2021 Report) (data from 2020),Emissions intensity of the power sector
+UY,South America,Uruguay,Any,129,Country,https://app.electricitymaps.com/zone/UY,Data from 2021

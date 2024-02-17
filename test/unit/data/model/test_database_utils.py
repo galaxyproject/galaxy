@@ -5,7 +5,7 @@ from galaxy.model.database_utils import (
     create_database,
     database_exists,
 )
-from .testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     drop_database,
     replace_database_in_url,
     skip_if_not_mysql_uri,

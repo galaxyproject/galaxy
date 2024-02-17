@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div aria-labelledby="interactive-tools-heading">
         <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
-        <h2>Active Interactive Tools</h2>
+        <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input
@@ -27,12 +27,15 @@
             <template v-slot:cell(name)="row">
                 <a
                     :id="createId('link', row.item.id)"
+                    v-b-tooltip
+                    title="Open Interactive Tool"
                     :index="row.index"
                     :href="row.item.target"
                     target="_blank"
                     :name="row.item.name"
-                    >{{ row.item.name }}</a
-                >
+                    >{{ row.item.name }}
+                    <FontAwesomeIcon icon="external-link-alt" />
+                </a>
             </template>
             <template v-slot:cell(job_info)="row">
                 <label v-if="row.item.active"> running </label>
@@ -62,13 +65,22 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import { mapActions, mapState } from "pinia";
+
+import { useEntryPointStore } from "../../stores/entryPointStore";
+import { Services } from "./services";
+
+library.add(faExternalLinkAlt);
 
 export default {
     components: {
         UtcDate,
+        FontAwesomeIcon,
     },
     data() {
         return {
@@ -102,10 +114,10 @@ export default {
             filter: "",
             messages: [],
             nInteractiveTools: 0,
-            activeInteractiveTools: [],
         };
     },
     computed: {
+        ...mapState(useEntryPointStore, { activeInteractiveTools: "entryPoints" }),
         showNotFound() {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },
@@ -122,16 +134,9 @@ export default {
         this.load();
     },
     methods: {
+        ...mapActions(useEntryPointStore, ["removeEntryPoint"]),
         load() {
             this.filter = "";
-            this.services
-                .getActiveInteractiveTools()
-                .then((activeInteractiveTools) => {
-                    this.activeInteractiveTools = activeInteractiveTools;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
         },
         filtered: function (items) {
             this.nInteractiveTools = items.length;
@@ -143,7 +148,7 @@ export default {
                     this.services
                         .stopInteractiveTool(tool.id)
                         .then((response) => {
-                            this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
+                            this.removeEntryPoint(tool.id);
                         })
                         .catch((error) => {
                             this.messages.push(`Failed to stop interactive tool ${tool.name}: ${error.message}`);

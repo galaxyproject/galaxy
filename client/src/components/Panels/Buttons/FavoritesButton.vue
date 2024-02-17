@@ -1,11 +1,11 @@
 <template>
     <b-button
-        v-b-tooltip.hover
+        v-b-tooltip.hover.top.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
         aria-label="Show favorite tools"
-        :disabled="currentUser.isAnonymous"
+        :disabled="isAnonymous"
         :title="tooltipText"
         @click="onFavorites">
         <icon v-if="toggle" :icon="['fas', 'star']" />
@@ -14,13 +14,16 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "FavoritesButton",
     props: {
         query: {
             type: String,
+            required: true,
         },
     },
     data() {
@@ -30,10 +33,9 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
-
+        ...mapState(useUserStore, ["isAnonymous"]),
         tooltipText() {
-            if (this.currentUser.isAnonymous) {
+            if (this.isAnonymous) {
                 return this.l("Log in to Favorite Tools");
             } else {
                 if (this.toggle) {
@@ -55,7 +57,7 @@ export default {
             if (this.toggle) {
                 this.$emit("onFavorites", this.searchKey);
             } else {
-                this.$emit("onFavorites", null);
+                this.$emit("onFavorites", "");
             }
         },
     },

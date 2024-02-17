@@ -18,12 +18,7 @@ from galaxy.structured_app import MinimalManagerApp
 log = logging.getLogger(__name__)
 
 
-def datetime_to_iso8601(utc_datetime: datetime) -> str:
-    """
-    Returns the date as string with ISO8601 format.
-    i.e: 2021-01-23T18:25:43.511Z
-    """
-    return f"{utc_datetime.isoformat()}Z"
+SOME_EXAMPLE_DATE = "2021-01-23T18:25:43.511Z"
 
 
 class Metric(BaseModel):
@@ -36,7 +31,7 @@ class Metric(BaseModel):
         ...,  # Required
         title="Timestamp",
         description="The timestamp in ISO format.",
-        example=datetime_to_iso8601(datetime.utcnow()),
+        examples=[SOME_EXAMPLE_DATE],
     )
     level: int = Field(
         ...,  # Required
@@ -54,10 +49,8 @@ class CreateMetricsPayload(BaseModel):
     metrics: List[Metric] = Field(
         default=[],
         title="List of metrics to be recorded.",
-        example=[
-            Metric(
-                namespace="test-source", time=datetime_to_iso8601(datetime.utcnow()), level=0, args='{"test":"value"}'
-            )
+        examples=[
+            Metric(namespace="test-source", time=SOME_EXAMPLE_DATE, level=0, args='{"test":"value"}').model_dump()
         ],
     )
 

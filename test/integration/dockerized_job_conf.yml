@@ -10,12 +10,15 @@ execution:
     local_docker:
       runner: local
       docker_enabled: true
+      require_container: true
+      tmp_dir: '$(mktemp -d)'
     local_docker_inline_container_resolvers:
       runner: local
       docker_enabled: true
       container_resolvers:
         - type: fallback
           identifier: 'quay.io/biocontainers/bwa:0.7.15--0'
+      require_container: true
     local_upload:
       runner: local
 

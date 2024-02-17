@@ -4,6 +4,7 @@ from sqlalchemy import (
     and_,
     false,
     or_,
+    select,
 )
 
 import tool_shed.repository_types.util as rt_util
@@ -12,6 +13,11 @@ from tool_shed.util import (
     metadata_util,
 )
 from tool_shed.webapp import model
+from tool_shed.webapp.model import (
+    Category,
+    Repository,
+    RepositoryMetadata,
+)
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +26,6 @@ class Registry:
     def __init__(self, app):
         log.debug("Loading the repository registry...")
         self.app = app
-        self.certified_level_one_clause_list = self.get_certified_level_one_clause_list()
         # The following lists contain tuples like ( repository.name, repository.user.username, changeset_revision )
         # where the changeset_revision entry is always the latest installable changeset_revision..
         self.certified_level_one_repository_and_suite_tuples = []
@@ -143,19 +148,15 @@ class Registry:
             self.certified_level_one_viewable_suites_by_category[new_name] = 0
 
     def get_certified_level_one_clause_list(self):
-        certified_level_one_tuples = []
         clause_list = []
-        for repository in self.sa_session.query(model.Repository).filter(
-            and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false())
-        ):
+        for repository in get_repositories(self.sa_session):
             certified_level_one_tuple = self.get_certified_level_one_tuple(repository)
             latest_installable_changeset_revision, is_level_one_certified = certified_level_one_tuple
             if is_level_one_certified:
-                certified_level_one_tuples.append(certified_level_one_tuple)
                 clause_list.append(
                     and_(
-                        model.RepositoryMetadata.table.c.repository_id == repository.id,
-                        model.RepositoryMetadata.table.c.changeset_revision == latest_installable_changeset_revision,
+                        RepositoryMetadata.repository_id == repository.id,
+                        RepositoryMetadata.changeset_revision == latest_installable_changeset_revision,
                     )
                 )
         return clause_list
@@ -234,19 +235,11 @@ class Registry:
 
     def load_repository_and_suite_tuples(self):
         # Load self.certified_level_one_repository_and_suite_tuples and self.certified_level_one_suite_tuples.
-        for repository in (
-            self.sa_session.query(model.Repository)
-            .join(model.RepositoryMetadata.table)
-            .filter(or_(*self.certified_level_one_clause_list))
-            .join(model.User.table)
-        ):
+        clauses = self.get_certified_level_one_clause_list()
+        for repository in get_certified_repositories_with_user(self.sa_session, clauses, model.User):
             self.load_certified_level_one_repository_and_suite_tuple(repository)
         # Load self.repository_and_suite_tuples and self.suite_tuples
-        for repository in (
-            self.sa_session.query(model.Repository)
-            .filter(and_(model.Repository.table.c.deleted == false(), model.Repository.table.c.deprecated == false()))
-            .join(model.User.table)
-        ):
+        for repository in get_repositories_with_user(self.sa_session, model.User):
             self.load_repository_and_suite_tuple(repository)
 
     def load_viewable_repositories_and_suites_by_category(self):
@@ -259,7 +252,7 @@ class Registry:
         self.viewable_suites_by_category = {}
         self.viewable_valid_repositories_and_suites_by_category = {}
         self.viewable_valid_suites_by_category = {}
-        for category in self.sa_session.query(model.Category):
+        for category in self.sa_session.scalars(select(Category)):
             category_name = str(category.name)
             if category not in self.certified_level_one_viewable_repositories_and_suites_by_category:
                 self.certified_level_one_viewable_repositories_and_suites_by_category[category_name] = 0
@@ -393,3 +386,20 @@ class Registry:
             if repository.type == rt_util.REPOSITORY_SUITE_DEFINITION:
                 if tuple in self.suite_tuples:
                     self.suite_tuples.remove(tuple)
+
+
+def get_repositories(session):
+    stmt = select(Repository).where(Repository.deleted == false()).where(Repository.deprecated == false())
+    return session.scalars(stmt)
+
+
+def get_repositories_with_user(session, user_model):
+    stmt = (
+        select(Repository).where(Repository.deleted == false()).where(Repository.deprecated == false()).join(user_model)
+    )
+    return session.scalars(stmt)
+
+
+def get_certified_repositories_with_user(session, where_clauses, user_model):
+    stmt = select(Repository).join(RepositoryMetadata).where(or_(*where_clauses)).join(user_model)
+    return session.scalars(stmt)

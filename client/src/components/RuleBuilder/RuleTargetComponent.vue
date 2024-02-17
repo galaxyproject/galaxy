@@ -3,22 +3,20 @@
         class="rule-link dropdown-item"
         href="javascript:void(0)"
         :class="linkClassName"
-        @click="builder.addNewRule(ruleType)"
+        @click="$emit('addNewRule', ruleType)"
         >{{ title }}</a
     >
 </template>
 
 <script>
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "./rule-definitions";
+
 const RULES = RuleDefs.RULES;
 
 export default {
     props: {
         ruleType: {
             type: String,
-            required: true,
-        },
-        builder: {
             required: true,
         },
     },

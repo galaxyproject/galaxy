@@ -15,8 +15,10 @@ from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
+from galaxy.model import Role
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    BasicRoleModel,
     CreateLibrariesFromStore,
     CreateLibraryPayload,
     LibraryAvailablePermissions,
@@ -71,14 +73,14 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return LibrarySummaryList.construct(__root__=libraries)
+            library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
+            libraries.append(LibrarySummary(**library_dict))
+        return LibrarySummaryList(root=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""
         library = self.library_manager.get(trans, id)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return self._to_summary(trans, library)
 
     def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
@@ -130,8 +132,8 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         id: DecodedDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.
@@ -160,7 +162,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
         if scope == LibraryPermissionScope.current or scope is None:
             roles = self.library_manager.get_current_roles(trans, library)
-            return LibraryCurrentPermissions.construct(**roles)
+            return LibraryCurrentPermissions.model_construct(**roles)
 
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
@@ -170,14 +172,13 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
             return_roles = []
             for role in roles:
-                role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return LibraryAvailablePermissions.construct(
+                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+            return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
         else:
             raise exceptions.RequestParameterInvalidException(
-                "The value of 'scope' parameter is invalid. Alllowed values: current, available"
+                "The value of 'scope' parameter is invalid. Allowed values: current, available"
             )
 
     def set_permissions(
@@ -232,7 +233,6 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             if not is_public:
                 raise exceptions.InternalServerError("An error occurred while making library public.")
         elif action == "set_permissions":
-
             # ACCESS LIBRARY ROLES
             valid_access_roles = []
             invalid_access_roles_names = []
@@ -310,7 +310,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
                 'Allowed values are: "remove_restrictions", set_permissions"'
             )
         roles = self.library_manager.get_current_roles(trans, library)
-        return LibraryCurrentPermissions.construct(**roles)
+        return LibraryCurrentPermissions.model_construct(**roles)
 
     def set_permissions_old(self, trans, library, payload: Dict[str, Any]) -> LibraryLegacySummary:
         """
@@ -321,17 +321,15 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         permissions = {}
         for k, v in trans.app.model.Library.permitted_actions.items():
             role_params = payload.get(f"{k}_in", [])
-            in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in util.listify(role_params)]
+            in_roles = [trans.sa_session.get(Role, x) for x in util.listify(role_params)]
             permissions[trans.app.security_agent.get_action(v.action)] = in_roles
         trans.app.security_agent.set_all_library_permissions(trans, library, permissions)
         trans.sa_session.refresh(library)
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
-        item = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
-        )
-        return LibraryLegacySummary.construct(**item)
+        item = library.to_dict(view="element")
+        return LibraryLegacySummary(**item)
 
     def _to_summary(self, trans, library) -> LibrarySummary:
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return LibrarySummary(**library_dict)

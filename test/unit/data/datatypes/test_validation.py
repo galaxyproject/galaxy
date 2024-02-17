@@ -51,11 +51,14 @@ def _assert_valid(extension, file_name):
 
 def _run_validation(extension, file_name):
     datatype = datatypes_registry.datatypes_by_extension[extension]
-    validation = validate(MockDataset(get_test_fname(file_name), datatype))
+    validation = validate(MockDataset(get_test_fname(file_name), datatype))  # type: ignore[arg-type]
     return validation
 
 
 class MockDataset:
     def __init__(self, file_name, datatype):
-        self.file_name = file_name
+        self.file_name_ = file_name
         self.datatype = datatype
+
+    def get_file_name(self, sync_cache=True):
+        return self.file_name_

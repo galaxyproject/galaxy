@@ -38,6 +38,7 @@
 </template>
 <script>
 import { DatasetProvider } from "components/providers";
+
 export default {
     components: {
         DatasetProvider,

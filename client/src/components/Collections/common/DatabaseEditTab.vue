@@ -1,10 +1,10 @@
 <template>
     <div>
-        <div class="alert alert-secondary" role="alert">
-            <div class="float-left">Change Database/Build of all elements in collection</div>
+        <div>
+            <span class="float-left h-sm">Change Database/Build of all elements in collection</span>
             <div class="text-right">
                 <button
-                    class="save-collection-edit btn btn-primary"
+                    class="save-dbkey-edit btn btn-primary"
                     :disabled="selectedGenome.id == databaseKeyFromElements"
                     @click="clickedSave">
                     {{ l("Save") }}
@@ -12,8 +12,9 @@
             </div>
         </div>
         <b>{{ l("Database/Build") }}: </b>
-        <multiselect
+        <Multiselect
             v-model="selectedGenome"
+            class="database-dropdown"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"
@@ -21,7 +22,7 @@
             :searchable="true"
             :allow-empty="false">
             {{ selectedGenome.text }}
-        </multiselect>
+        </Multiselect>
     </div>
 </template>
 <script>

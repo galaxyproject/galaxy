@@ -27,9 +27,9 @@ TEST_TOOL_IDS = [
 ]
 
 
-class SwiftObjectStoreIntegrationTestCase(BaseSwiftObjectStoreIntegrationTestCase):
+class TestSwiftObjectStoreIntegration(BaseSwiftObjectStoreIntegrationTestCase):
     pass
 
 
-instance = integration_util.integration_module_instance(SwiftObjectStoreIntegrationTestCase)
+instance = integration_util.integration_module_instance(TestSwiftObjectStoreIntegration)
 test_tools = integration_util.integration_tool_runner(TEST_TOOL_IDS)

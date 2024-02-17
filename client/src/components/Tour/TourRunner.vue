@@ -1,9 +1,10 @@
 <template>
-    <CenterFrame src="welcome" />
+    <CenterFrame src="/welcome" />
 </template>
 
 <script>
 import CenterFrame from "entry/analysis/modules/CenterFrame";
+
 import { runTour } from "./runTour";
 
 export default {

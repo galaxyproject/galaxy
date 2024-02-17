@@ -1,7 +1,8 @@
-jest.mock("app");
+import flushPromises from "flush-promises";
 
 import { collectionCreatorModalSetup } from "./modal";
-import flushPromises from "flush-promises";
+
+jest.mock("app");
 
 describe("modal.js", () => {
     let showOptions = null;

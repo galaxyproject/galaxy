@@ -78,7 +78,7 @@ def view_sniffers(datatypes_registry: Registry) -> List[str]:
 
 def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     converters = []
-    for (source_type, targets) in datatypes_registry.datatype_converters.items():
+    for source_type, targets in datatypes_registry.datatype_converters.items():
         for target_type in targets:
             converters.append(
                 {
@@ -92,7 +92,7 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
 
 def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]) -> Dict[str, Dict]:
     details_dict = {}
-    for (format, edam_iri) in edam_ids.items():
+    for format, edam_iri in edam_ids.items():
         edam_details = datatypes_registry.edam.get(edam_iri, {})
 
         details_dict[format] = {

@@ -44,7 +44,7 @@ PUSH_BRANCHES=()
 WORKING_DIR_CLEAN=false
 ERROR=false
 
-NEXT_RELEASE_TEMPLATE="import datetime; print((datetime.datetime.strptime('RELEASE_CURR', '%y.%m').date() + datetime.timedelta(days=(31 * 4))).strftime('%y.%m'))"
+NEXT_RELEASE_TEMPLATE="import packaging.version as pv; v = pv.parse('RELEASE_CURR'); print(str(v.release[0]) + '.' + str(v.release[1] + 1))"
 PACKAGE_VERSION_TEMPLATE="import packaging.version; print('.'.join(map(str, packaging.version.parse('VERSION').release)))"
 PACKAGE_DEV_VERSION_TEMPLATE="import packaging.version; print(packaging.version.parse('VERSION'))"
 
@@ -397,7 +397,7 @@ function increment_minor() {
             [ "$RELEASE_TYPE" != 'rc' ] || {
                 log_error "Cannot create rc after release (current version: ${RELEASE_CURR}.0)";
                 exit 1; }
-            echo '1.dev0'
+            echo '0.dev0'
             ;;
         *)
             log_error "Don't know how to increment minor version: ${minor}"

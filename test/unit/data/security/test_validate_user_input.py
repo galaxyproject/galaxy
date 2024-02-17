@@ -1,6 +1,6 @@
 from galaxy.security.validate_user_input import (
     extract_domain,
-    validate_domain_resolves,
+    validate_email_domain_name,
     validate_email_str,
     validate_publicname_str,
 )
@@ -19,9 +19,9 @@ def test_extract_base_domain():
     assert extract_domain("jack@foo.bar.com", base_only=True) == "bar.com"
 
 
-def test_validate_domain():
-    assert validate_domain_resolves("example.org") == ""
-    assert validate_domain_resolves("this is an invalid domain!") != ""
+def test_validate_email_domain_name():
+    assert validate_email_domain_name("example.org") == ""
+    assert validate_email_domain_name("this is an invalid domain!") != ""
 
 
 def test_validate_username():

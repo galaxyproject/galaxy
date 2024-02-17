@@ -11,7 +11,7 @@ The following individuals have contributed code to Galaxy:
 * Patrick Austin <patrick.austin@stfc.ac.uk>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Abdulrahman Azab <eng.azab@gmail.com>
-* Finn Bacall <finn.bacall@cs.man.ac.uk>
+* Finn Bacall <finn.bacall@manchester.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * balto <balto_59@hotmail.fr>
 * Christopher Bare <christopherbare@gmail.com>
@@ -69,7 +69,7 @@ The following individuals have contributed code to Galaxy:
 * Ben Fulton <benmarkfulton@gmail.com>
 * Carrie Ganote <cganote@iu.edu>
 * Ryan Golhar <ngsbioinformatics@gmail.com>
-* Jeremy Goecks <jeremy.goecks@emory.edu> <jgoecks@gwu.edu>
+* Jeremy Goecks <jeremy.goecks@moffitt.org> 
 * Nuwan Goonasekera <nuwan.goonasekera@gmail.com>
 * Björn Grüning <bjoern.gruening@gmail.com> <bjoern@gruenings.eu>
 * Aysam Guerler <aysam.guerler@gmail.com>

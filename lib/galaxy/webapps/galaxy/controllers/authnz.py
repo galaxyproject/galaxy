@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-
 import datetime
 import json
 import logging
@@ -101,9 +100,9 @@ class OIDC(JSAppLauncher):
                 " Error message: {}".format(provider, user, kwargs.get("error", "None"))
             )
             return trans.show_error_message(
-                "Failed to handle authentication callback from {}. "
+                f"Failed to handle authentication callback from {provider}. "
                 "Please try again, and if the problem persists, contact "
-                "the Galaxy instance admin".format(provider)
+                "the Galaxy instance admin"
             )
         try:
             success, message, (redirect_url, user) = trans.app.authnz_manager.callback(
@@ -119,6 +118,8 @@ class OIDC(JSAppLauncher):
         if success is False:
             return trans.show_error_message(message)
         if "?confirm" in redirect_url:
+            return trans.response.send_redirect(url_for(redirect_url))
+        if "?connect_external_provider" in redirect_url:
             return trans.response.send_redirect(url_for(redirect_url))
         elif redirect_url is None:
             redirect_url = url_for("/")
@@ -143,7 +144,7 @@ class OIDC(JSAppLauncher):
             )
         except exceptions.AuthenticationFailed as e:
             return trans.response.send_redirect(
-                f"{trans.request.base + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}"
+                f"{trans.request.url_path + url_for('/')}root/login?message={str(e) or 'Duplicate Email'}"
             )
 
         if success is False:
@@ -186,6 +187,7 @@ class OIDC(JSAppLauncher):
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
+        trans.handle_user_logout()
         if success:
             return {"redirect_uri": redirect_uri}
         else:
@@ -200,13 +202,12 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
-        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
             cilogon_idps = json.loads(url_get("https://cilogon.org/idplist/", params=dict(kwargs)))
         except Exception as e:
             raise Exception(f"Invalid server response. {str(e)}.")
 
-        if allowed_idps:
+        if allowed_idps := trans.app.authnz_manager.get_allowed_idps():
             validated_idps = list(filter(lambda idp: idp["EntityID"] in allowed_idps, cilogon_idps))
 
             if not (len(validated_idps) == len(allowed_idps)):

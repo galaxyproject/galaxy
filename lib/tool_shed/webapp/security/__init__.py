@@ -1,13 +1,22 @@
 """Tool Shed Security"""
+
 import logging
+from typing import List
 
 from sqlalchemy import (
-    and_,
     false,
+    select,
 )
 
+from galaxy.model.base import transaction
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
+from tool_shed.webapp.model import (
+    Group,
+    Role,
+)
+
+IUC_NAME = "Intergalactic Utilities Commission"
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +82,7 @@ class CommunityRBACAgent(RBACAgent):
 
     @property
     def sa_session(self):
-        """Returns a SQLAlchemy session"""
+        """Returns a SQLAlchemy scoped session"""
         return self.model.context
 
     def allow_action(self, roles, action, item):
@@ -107,25 +116,33 @@ class CommunityRBACAgent(RBACAgent):
     def associate_group_role(self, group, role):
         assoc = self.model.GroupRoleAssociation(group, role)
         self.sa_session.add(assoc)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
         return assoc
 
     def associate_user_group(self, user, group):
         assoc = self.model.UserGroupAssociation(user, group)
         self.sa_session.add(assoc)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
         return assoc
 
     def associate_user_role(self, user, role):
         assoc = self.model.UserRoleAssociation(user, role)
         self.sa_session.add(assoc)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
         return assoc
 
     def associate_repository_category(self, repository, category):
         assoc = self.model.RepositoryCategoryAssociation(repository, category)
         self.sa_session.add(assoc)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
         return assoc
 
     def create_private_user_role(self, user):
@@ -134,7 +151,9 @@ class CommunityRBACAgent(RBACAgent):
             name=user.email, description=f"Private Role for {user.email}", type=self.model.Role.types.PRIVATE
         )
         self.sa_session.add(role)
-        self.sa_session.flush()
+        session = self.sa_session()
+        with transaction(session):
+            session.commit()
         # Add user to role
         self.associate_components(role=role, user=user)
         return role
@@ -147,34 +166,13 @@ class CommunityRBACAgent(RBACAgent):
         return [permission for permission in item.actions if permission.action == action.action]
 
     def get_private_user_role(self, user, auto_create=False):
-        role = (
-            self.sa_session.query(self.model.Role)
-            .filter(
-                and_(
-                    self.model.Role.table.c.name == user.email,
-                    self.model.Role.table.c.type == self.model.Role.types.PRIVATE,
-                )
-            )
-            .first()
-        )
+        role = _get_private_user_role(self.sa_session, user.email)
         if not role:
             if auto_create:
                 return self.create_private_user_role(user)
             else:
                 return None
         return role
-
-    def get_repository_reviewer_role(self):
-        return (
-            self.sa_session.query(self.model.Role)
-            .filter(
-                and_(
-                    self.model.Role.table.c.name == "Repository Reviewer",
-                    self.model.Role.table.c.type == self.model.Role.types.SYSTEM,
-                )
-            )
-            .first()
-        )
 
     def set_entity_group_associations(self, groups=None, users=None, roles=None, delete_existing_assocs=True):
         if groups is None:
@@ -187,7 +185,9 @@ class CommunityRBACAgent(RBACAgent):
             if delete_existing_assocs:
                 for a in group.roles + group.users:
                     self.sa_session.delete(a)
-                    self.sa_session.flush()
+                    session = self.sa_session()
+                    with transaction(session):
+                        session.commit()
             for role in roles:
                 self.associate_components(group=group, role=role)
             for user in users:
@@ -208,7 +208,9 @@ class CommunityRBACAgent(RBACAgent):
             if delete_existing_assocs:
                 for a in role.users + role.groups:
                     self.sa_session.delete(a)
-                    self.sa_session.flush()
+                    session = self.sa_session()
+                    with transaction(session):
+                        session.commit()
             for user in users:
                 self.associate_components(user=user, role=role)
             for group in groups:
@@ -225,7 +227,9 @@ class CommunityRBACAgent(RBACAgent):
             if delete_existing_assocs:
                 for a in user.non_private_roles + user.groups:
                     self.sa_session.delete(a)
-                    self.sa_session.flush()
+                    session = self.sa_session()
+                    with transaction(session):
+                        session.commit()
             self.sa_session.refresh(user)
             for role in roles:
                 # Make sure we are not creating an additional association with a PRIVATE role
@@ -234,9 +238,12 @@ class CommunityRBACAgent(RBACAgent):
             for group in groups:
                 self.associate_components(user=user, group=group)
 
+    def usernames_that_can_push(self, repository) -> List[str]:
+        return listify(repository.allow_push())
+
     def can_push(self, app, user, repository):
         if user:
-            return user.username in listify(repository.allow_push())
+            return user.username in self.usernames_that_can_push(repository)
         return False
 
     def user_can_administer_repository(self, user, repository):
@@ -267,39 +274,9 @@ class CommunityRBACAgent(RBACAgent):
         if user.username == archive_owner:
             return True
         # A member of the IUC is authorized to create new repositories that are owned by another user.
-        iuc_group = (
-            self.sa_session.query(self.model.Group)
-            .filter(
-                and_(
-                    self.model.Group.table.c.name == "Intergalactic Utilities Commission",
-                    self.model.Group.table.c.deleted == false(),
-                )
-            )
-            .first()
-        )
-        if iuc_group is not None:
+        if (iuc_group := get_iuc_group(self.sa_session)) is not None:
             for uga in iuc_group.users:
                 if uga.user.id == user.id:
-                    return True
-        return False
-
-    def user_can_review_repositories(self, user):
-        if user:
-            roles = user.all_roles()
-            if roles:
-                repository_reviewer_role = self.get_repository_reviewer_role()
-                if repository_reviewer_role:
-                    return repository_reviewer_role in roles
-        return False
-
-    def user_can_browse_component_review(self, app, repository, component_review, user):
-        if component_review and user:
-            if self.can_push(app, user, repository):
-                # A user with write permission on the repository can access private/public component reviews.
-                return True
-            else:
-                if self.user_can_review_repositories(user):
-                    # Reviewers can access private/public component reviews.
                     return True
         return False
 
@@ -311,3 +288,13 @@ def get_permitted_actions(filter=None):
     tmp_bunch = Bunch()
     [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
     return tmp_bunch
+
+
+def get_iuc_group(session):
+    stmt = select(Group).where(Group.name == IUC_NAME).where(Group.deleted == false()).limit(1)
+    return session.scalars(stmt).first()
+
+
+def _get_private_user_role(session, user_email):
+    stmt = select(Role).where(Role.name == user_email).where(Role.type == Role.types.PRIVATE).limit(1)
+    return session.scalars(stmt).first()

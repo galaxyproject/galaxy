@@ -53,7 +53,7 @@
                     <tool-display :tool-id="row.item.tool" />
                 </template>
                 <template v-slot:row-details="row">
-                    <resolution-details :resolution="row.item" />
+                    <ResolutionDetails :resolution="row.item" />
                 </template>
             </b-table>
         </template>
@@ -82,12 +82,13 @@
     </dependency-index-wrapper>
 </template>
 <script>
+import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
 import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+
+import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 
 Vue.use(BootstrapVue);
 

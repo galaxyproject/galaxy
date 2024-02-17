@@ -2,12 +2,24 @@ import errno
 import logging
 import os
 import time
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.util import (
+    Element,
     etree,
     parse_xml_string,
     xml_to_string,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
@@ -21,24 +33,26 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 
 class DataManagerHandler:
-    def __init__(self, app):
+    app: InstallationTarget
+    root: Optional[Element] = None
+
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     @property
-    def data_managers_path(self):
+    def data_managers_path(self) -> Optional[str]:
         tree, error_message = parse_xml(self.app.config.shed_data_manager_config_file)
         if tree:
             root = tree.getroot()
             return root.get("tool_path", None)
         return None
 
-    def data_manager_config_elems_to_xml_file(self, config_elems, config_filename):
+    def _data_manager_config_elems_to_xml_file(self, config_elems: List[Element], config_filename: StrPath) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        data_managers_path = self.data_managers_path
-        if data_managers_path:
+        if data_managers_path := self.data_managers_path:
             root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
@@ -49,18 +63,18 @@ class DataManagerHandler:
             with RenamedTemporaryFile(config_filename, mode="w") as fh:
                 fh.write(xml_to_string(root))
         except Exception:
-            log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file")
+            log.exception("Exception in DataManagerHandler._data_manager_config_elems_to_xml_file")
 
     def install_data_managers(
         self,
-        shed_data_manager_conf_filename,
-        metadata_dict,
-        shed_config_dict,
-        relative_install_dir,
+        shed_data_manager_conf_filename: StrPath,
+        metadata_dict: Dict[str, Any],
+        shed_config_dict: Dict[str, Any],
+        relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ):
-        rval = []
+    ) -> List["DataManagerInterface"]:
+        rval: List["DataManagerInterface"] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -97,8 +111,8 @@ class DataManagerHandler:
                     data_manager_id = elem.get("id", None)
                     if data_manager_id is None:
                         log.error(
-                            "A data manager was defined that does not have an id and will not be installed:\n%s"
-                            % xml_to_string(elem)
+                            "A data manager was defined that does not have an id and will not be installed:\n%s",
+                            xml_to_string(elem),
                         )
                         continue
                     data_manager_dict = (
@@ -121,15 +135,17 @@ class DataManagerHandler:
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
                         log.error(
-                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool = tool_dict.get("tool", None)
                     if tool is None:
                         log.error(
-                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool_config_filename = tool_dict.get("tool_config_filename", None)
@@ -154,7 +170,7 @@ class DataManagerHandler:
                     )
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is etree.Comment:
+                elif elem.tag is etree.Comment:  # type: ignore[comparison-overlap]
                     pass
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")
@@ -163,7 +179,7 @@ class DataManagerHandler:
             # Persist the altered shed_data_manager_config file.
             if data_manager_config_has_changes:
                 reload_count = self.app.data_managers._reload_count
-                self.data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
+                self._data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
                 while self.app.data_managers._reload_count <= reload_count:
                     time.sleep(0.1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval
@@ -215,4 +231,4 @@ class DataManagerHandler:
                     self.app.data_managers.load_manager_from_elem(elem)
                 # Persist the altered shed_data_manager_config file.
                 if data_manager_config_has_changes:
-                    self.data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
+                    self._data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)

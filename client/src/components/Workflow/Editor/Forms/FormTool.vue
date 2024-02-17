@@ -1,95 +1,85 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <ToolCard
-            v-if="hasData"
-            :id="configForm.id"
-            :user="user"
-            :version="configForm.version"
-            :title="configForm.name"
-            :description="configForm.description"
-            :options="configForm"
-            :message-text="messageText"
-            :message-variant="messageVariant"
-            @onChangeVersion="onChangeVersion"
-            @onUpdateFavorites="onUpdateFavorites">
-            <template v-slot:body>
-                <FormElement
-                    id="__label"
-                    :value="nodeLabel"
-                    title="Label"
-                    help="Add a step label."
-                    :error="errorLabel"
-                    @input="onLabel" />
-                <FormElement
-                    id="__annotation"
-                    :value="nodeAnnotation"
-                    title="Step Annotation"
-                    :area="true"
-                    help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
-                    @input="onAnnotation" />
+    <ToolCard
+        v-if="hasData"
+        :id="configForm.id"
+        :version="configForm.version"
+        :title="configForm.name"
+        :description="configForm.description"
+        :options="configForm"
+        :message-text="messageText"
+        :message-variant="messageVariant"
+        @onChangeVersion="onChangeVersion"
+        @onUpdateFavorites="onUpdateFavorites">
+        <template v-slot:body>
+            <FormElement
+                id="__label"
+                :value="label"
+                title="Label"
+                help="Add a step label."
+                :error="uniqueErrorLabel"
+                @input="onLabel" />
+            <FormElement
+                id="__annotation"
+                :value="annotation"
+                title="Step Annotation"
+                :area="true"
+                help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
+                @input="onAnnotation" />
+            <FormConditional :step="step" v-on="$listeners" />
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="id"
                     :inputs="inputs"
                     :errors="errors"
                     text-enable="Set in Advance"
                     text-disable="Set at Runtime"
+                    :workflow-building-mode="true"
                     @onChange="onChange" />
+            </div>
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Additional Options </Heading>
                 <FormSection
-                    :id="nodeId"
-                    :node-inputs="nodeInputs"
-                    :node-outputs="nodeOutputs"
-                    :node-active-outputs="nodeActiveOutputs"
+                    :id="stepId"
+                    :node-inputs="stepInputs"
+                    :node-outputs="stepOutputs"
+                    :step="step"
                     :datatypes="datatypes"
                     :post-job-actions="postJobActions"
                     @onChange="onChangePostJobActions" />
-            </template>
-        </ToolCard>
-    </CurrentUser>
+            </div>
+        </template>
+    </ToolCard>
 </template>
 
 <script>
-import CurrentUser from "components/providers/CurrentUser";
-import FormDisplay from "components/Form/FormDisplay";
-import ToolCard from "components/Tool/ToolCard";
-import FormSection from "./FormSection";
-import FormElement from "components/Form/FormElement";
-import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
+import { toRef } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
+
+import { useStepProps } from "../composables/useStepProps";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+
+import FormConditional from "./FormConditional.vue";
+import FormSection from "./FormSection.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import ToolCard from "@/components/Tool/ToolCard.vue";
 
 export default {
     components: {
-        CurrentUser,
         FormDisplay,
         ToolCard,
         FormElement,
+        FormConditional,
         FormSection,
+        Heading,
     },
     props: {
-        nodeId: {
-            type: String,
-            required: true,
-        },
-        nodeAnnotation: {
-            type: String,
-            required: true,
-        },
-        nodeLabel: {
-            type: String,
-            required: true,
-        },
-        nodeInputs: {
-            type: Array,
-            required: true,
-        },
-        nodeOutputs: {
-            type: Array,
-            required: true,
-        },
-        nodeActiveOutputs: {
-            type: Object,
-            required: true,
-        },
-        configForm: {
+        step: {
+            // type Step from @/stores/workflowStepStore
             type: Object,
             required: true,
         },
@@ -97,42 +87,51 @@ export default {
             type: Array,
             required: true,
         },
-        getManager: {
-            type: Function,
-            required: true,
-        },
-        postJobActions: {
-            type: Object,
-            required: true,
-        },
+    },
+    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
+    setup(props, { emit }) {
+        const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
+            toRef(props, "step")
+        );
+        const { stepStore } = useWorkflowStores();
+        const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
+
+        return {
+            stepId,
+            annotation,
+            label,
+            stepInputs,
+            stepOutputs,
+            configForm,
+            postJobActions,
+            uniqueErrorLabel,
+        };
     },
     data() {
         return {
-            mainValues: {},
+            mainValues: null,
             messageText: "",
             messageVariant: "success",
         };
     },
     computed: {
-        workflow() {
-            return this.getManager();
-        },
         id() {
-            return `${this.nodeId}:${this.configForm.id}`;
+            return `${this.stepId}:${this.configForm.id}`;
+        },
+        toolCardId() {
+            return `${this.stepId}`;
         },
         hasData() {
-            return !!this.configForm;
-        },
-        errorLabel() {
-            return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);
+            return !!this.configForm?.id;
         },
         inputs() {
             const inputs = this.configForm.inputs;
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
+                        const extensions = Array.isArray(input.extensions) ? Utils.textify(input.extensions) : "";
                         input.titleonly = true;
-                        input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
+                        input.info = `Data input '${input.name}' (${extensions})`;
                         input.value = { __class__: "RuntimeValue" };
                     } else {
                         input.connectable = ["rules"].indexOf(input.type) == -1;
@@ -145,7 +144,7 @@ export default {
                     }
                 }
             });
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type === "conditional") {
                     input.connectable = false;
                     input.test_param.collapsible_value = undefined;
@@ -159,17 +158,24 @@ export default {
     },
     methods: {
         onAnnotation(newAnnotation) {
-            this.$emit("onAnnotation", this.nodeId, newAnnotation);
+            this.$emit("onAnnotation", this.stepId, newAnnotation);
         },
         onLabel(newLabel) {
-            this.$emit("onLabel", this.nodeId, newLabel);
+            this.$emit("onLabel", this.stepId, newLabel);
         },
+        /**
+         * Change event is triggered on component creation and input changes.
+         * @param { Object } values contains flat key-value pairs `prefixed-name=value`
+         */
         onChange(values) {
+            const initialRequest = this.mainValues === null;
             this.mainValues = values;
-            this.postChanges();
+            if (!initialRequest) {
+                this.postChanges();
+            }
         },
         onChangePostJobActions(postJobActions) {
-            this.$emit("onChangePostJobActions", this.nodeId, postJobActions);
+            this.$emit("onChangePostJobActions", this.stepId, postJobActions);
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.configForm.name}' version ${newVersion}.`;
@@ -180,16 +186,14 @@ export default {
         },
         postChanges(newVersion) {
             const payload = Object.assign({}, this.mainValues);
-            console.debug("FormTool - Posting changes.", payload);
             const options = this.configForm;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
                 toolId = toolId.replace(toolVersion, newVersion);
                 toolVersion = newVersion;
-                console.debug("FormTool - Tool version changed.", toolId, toolVersion);
             }
-            this.$emit("onSetData", this.nodeId, {
+            this.$emit("onSetData", this.stepId, {
                 tool_id: toolId,
                 tool_version: toolVersion,
                 type: "tool",

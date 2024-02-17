@@ -1,4 +1,4 @@
-<tool id="CONVERTER_inchi_to_mol" name="InChI to MOL" version="2.4.1">
+<tool id="CONVERTER_inchi_to_mol" name="Convert InChI to MOL" version="2.4.1">
     <description></description>
     <parallelism method="multi" split_inputs="input" split_mode="to_size" split_size="10000" shared_inputs="" merge_outputs="output"></parallelism>
     <requirements>

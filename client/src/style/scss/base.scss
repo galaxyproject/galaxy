@@ -6,6 +6,7 @@
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
+@import "mixins.scss";
 
 // Fontawesome configuration.
 //$fa-font-path: "../../../node_modules/font-awesome/fonts/";
@@ -36,9 +37,11 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "charts.scss";
 @import "message.scss";
 @import "markdown.scss";
-@import "toolshed.scss";
-@import "workflow.scss";
 @import "multiselect.scss";
+@import "icon-btn.scss";
+@import "peek-columns.scss";
+@import "dataset.scss";
+@import "list-item.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -57,24 +60,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
     color: $text-color;
 }
 
-// ==== Mixins ====
-@mixin user-select($select) {
-    -webkit-touch-callout: #{$select};
-    @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
-        #{$pre + user-select}: #{$select};
-    }
-    #{user-select}: #{$select};
-}
-
-@mixin border-radius($radius) {
-    // from font-awesome 3.0
-    -webkit-border-radius: $radius;
-    -moz-border-radius: $radius;
-    border-radius: $radius;
-}
-
 // ==== Basic styles ====
-
 body {
     @extend .m-2;
 }
@@ -91,12 +77,7 @@ body {
     @include clearfix();
 }
 
-.text-normalwrap {
-    word-wrap: normal;
-}
-
 // ==== Page layout styles ====
-
 .full-content {
     @extend .m-0;
     @extend .p-0;
@@ -141,62 +122,6 @@ body {
     opacity: 0;
     z-index: 900; // Bootstrap elements start at 1000
     display: none;
-}
-
-// ==== Panel layout styles ====
-
-#left,
-#center,
-#right {
-    @extend .position-absolute;
-    @extend .h-100;
-}
-#left {
-    @extend .unified-panel;
-    left: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-#right {
-    @extend .unified-panel;
-    right: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-#right > .unified-panel-footer {
-    .drag {
-        left: 0;
-    }
-}
-#center {
-    left: $panel-width;
-    right: $panel-width;
-    .center-container {
-        @extend .position-absolute;
-        @extend .w-100;
-        @extend .h-100;
-        .center-panel {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
-            @extend .overflow-auto;
-            display: none;
-            padding: $margin-h $margin-v;
-            background: $white;
-        }
-        .center-frame {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
-        }
-    }
-    // Replaces unnecessary if/then logic in base_panels.mako
-    &:first-child {
-        left: 0;
-    }
-    &:last-child {
-        right: 0;
-    }
 }
 
 // ==== Unified panel styles ====
@@ -265,146 +190,8 @@ body {
     @extend .overflow-auto;
     flex: 1;
 }
-.unified-panel-body-background {
-    background: none repeat scroll 0 0 $panel-bg-color;
-}
-.unified-panel-footer {
-    @extend .unselectable;
-    position: relative;
-    height: $panel_footer_height;
-    line-height: $panel_footer_height;
-    width: 100%;
-    background: $panel-footer-bg-color;
-    color: $panel-header-text-color;
-    a {
-        color: $panel-header-text-color;
-    }
-    .drag {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 0 5px;
-        text-align: center;
-        height: $panel_footer_height;
-        width: $panel_footer_height - 5;
-        background-image: url(../../assets/images/visualization/draggable_horizontal.png);
-        background-repeat: no-repeat;
-        background-position: 50% 50%;
-        cursor: col-resize;
-    }
-}
-
-// Needs to be outside panel to show when hidden
-.panel-collapse {
-    @extend .fa;
-    $border-color: darken($panel-footer-bg-color, 20%);
-    font-size: 4/3em;
-    cursor: pointer;
-    display: block;
-    position: fixed;
-    text-align: center;
-    height: $panel_footer_height;
-    line-height: $panel_footer_height;
-    width: $panel_footer_height;
-    background: $panel-footer-bg-color;
-    border: solid $panel-footer-bg-color 1px;
-    z-index: 1;
-    &.right {
-        right: 0;
-        border-top-left-radius: $border-radius-base;
-        line-height: inherit;
-        &:before {
-            content: "\f054";
-        }
-        &.hidden:before {
-            content: "\f053";
-        }
-        &.hidden {
-            border-top-color: $border-color;
-            border-left-color: $border-color;
-        }
-    }
-    &.left {
-        left: 0;
-        border-top-right-radius: $border-radius-base;
-        line-height: inherit;
-        &:before {
-            content: "\f053";
-        }
-        &.hidden:before {
-            content: "\f054";
-        }
-        &.hidden {
-            border-top-color: $border-color;
-            border-right-color: $border-color;
-        }
-    }
-}
-
-// ==== Masthead ====
-#masthead {
-    @extend .p-0;
-    @extend .mb-0;
-    background-color: $brand-masthead;
-    height: $masthead-height;
-    .navbar-nav {
-        height: $masthead-height;
-        > li {
-            // This allows the background color to fill the full height of the
-            // masthead, while still keeping the contents centered (using flex)
-            min-height: 100%;
-            display: flex;
-            align-items: center;
-            &.active {
-                background: darken($brand-masthead, 10%);
-            }
-            .nav-link {
-                position: relative;
-                cursor: pointer;
-                text-decoration: none;
-                color: $brand-masthead-text;
-                &:hover {
-                    color: $brand-masthead-text-hover;
-                }
-                &.nav-icon {
-                    font-size: 1.3em;
-                    .nav-note {
-                        @extend .font-weight-bold;
-                        @extend .position-absolute;
-                        left: 1.9rem;
-                        top: 1.9rem;
-                        font-size: 0.6rem;
-                    }
-                }
-                &.toggle {
-                    color: $brand-masthead-text-hover;
-                }
-            }
-        }
-    }
-    .navbar-brand {
-        @extend .position-absolute;
-        @extend .font-weight-bold;
-        font-family: Verdana, sans-serif;
-        font-size: 1.25rem;
-        left: 0.8rem;
-        line-height: 0rem;
-        color: $brand-masthead-text-active;
-        text-decoration: none;
-        .navbar-brand-image {
-            display: inline;
-            margin-right: 0.3rem;
-            border: none;
-            max-height: 2rem;
-        }
-        .navbar-brand-title {
-            color: $brand-masthead-text;
-        }
-    }
-}
 
 // State colors
-
 $galaxy-state-border: (
     "new": $state-default-border,
     "upload": $state-info-border,
@@ -415,6 +202,7 @@ $galaxy-state-border: (
     "error": $state-danger-border,
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
+    "setting_metadata": $state-warning-border,
 );
 
 $galaxy-state-bg: (
@@ -427,6 +215,7 @@ $galaxy-state-bg: (
     "error": $state-danger-bg,
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
+    "setting_metadata": $state-warning-bg,
 );
 
 @each $state in map-keys($galaxy-state-border) {
@@ -435,9 +224,18 @@ $galaxy-state-bg: (
         border-color: map-get($galaxy-state-border, $state);
         background-color: map-get($galaxy-state-bg, $state);
 
+        &:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: +10%);
+        }
+
         &:focus,
         &:focus-within {
             background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &:focus:hover,
+        &:focus-within:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -7%);
         }
 
         &.selected {
@@ -467,7 +265,6 @@ $galaxy-state-bg: (
 }
 
 // Button styles
-
 button {
     @extend .btn;
     @extend .btn-secondary;

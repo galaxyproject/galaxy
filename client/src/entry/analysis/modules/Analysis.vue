@@ -1,74 +1,54 @@
+<script setup>
+import { onMounted, onUnmounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { usePanels } from "@/composables/usePanels";
+
+import CenterFrame from "./CenterFrame.vue";
+import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import HistoryIndex from "@/components/History/Index.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
+
+const router = useRouter();
+const showCenter = ref(false);
+const { showActivityBar, showToolbox, showPanels } = usePanels();
+
+// methods
+function hideCenter() {
+    showCenter.value = false;
+}
+
+function onLoad() {
+    showCenter.value = true;
+}
+
+// life cycle
+onMounted(() => {
+    // Using a custom event here which, in contrast to watching $route,
+    // always fires when a route is pushed instead of validating it first.
+    router.app.$on("router-push", hideCenter);
+});
+
+onUnmounted(() => {
+    router.app.$off("router-push", hideCenter);
+});
+</script>
+
 <template>
-    <div id="columns">
-        <SidePanel
-            v-if="showPanels"
-            side="left"
-            :current-panel="getToolBox()"
-            :current-panel-properties="toolBoxProperties" />
-        <div id="center">
-            <div class="center-container">
-                <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
-                <div v-show="!showCenter" class="center-panel" style="display: block">
-                    <router-view :key="$route.fullPath" />
-                </div>
-            </div>
+    <div id="columns" class="d-flex">
+        <ActivityBar v-if="showActivityBar" />
+        <FlexPanel v-if="showToolbox" side="left">
+            <ToolPanel />
+        </FlexPanel>
+        <div id="center" class="overflow-auto p-3 w-100">
+            <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
+            <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
         </div>
-        <SidePanel v-if="showPanels" side="right" :current-panel="getHistoryIndex()" :current-panel-properties="{}" />
+        <FlexPanel v-if="showPanels" side="right">
+            <HistoryIndex />
+        </FlexPanel>
+        <DragAndDropModal />
     </div>
 </template>
-<script>
-import { getGalaxyInstance } from "app";
-import HistoryIndex from "components/History/Index";
-import ToolBox from "components/Panels/ProviderAwareToolBox";
-import SidePanel from "components/Panels/SidePanel";
-import CenterFrame from "./CenterFrame";
-
-export default {
-    components: {
-        CenterFrame,
-        SidePanel,
-    },
-    data() {
-        return {
-            showCenter: false,
-        };
-    },
-    computed: {
-        showPanels() {
-            const panels = this.$route.query.hide_panels;
-            if (panels !== undefined) {
-                return panels.toLowerCase() != "true";
-            }
-            return true;
-        },
-        toolBoxProperties() {
-            const Galaxy = getGalaxyInstance();
-            return {
-                storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-            };
-        },
-    },
-    mounted() {
-        // Using a custom event here which, in contrast to watching $route,
-        // always fires when a route is pushed instead of validating it first.
-        this.$router.app.$on("router-push", this.hideCenter);
-    },
-    beforeDestroy() {
-        this.$router.app.$off("router-push", this.hideCenter);
-    },
-    methods: {
-        getHistoryIndex() {
-            return HistoryIndex;
-        },
-        getToolBox() {
-            return ToolBox;
-        },
-        hideCenter() {
-            this.showCenter = false;
-        },
-        onLoad() {
-            this.showCenter = true;
-        },
-    },
-};
-</script>

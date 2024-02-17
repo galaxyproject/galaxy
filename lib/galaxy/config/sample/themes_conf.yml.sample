@@ -1,0 +1,76 @@
+blue:
+  masthead:
+    color: "#2c3143"
+    text:
+      color: "#f8f9fa"
+      hover: gold
+      active: white
+    link:
+      color: transparent
+      hover: transparent
+      active: "#181a24"
+    logo:
+      img: "/static/favicon.svg"
+      img-secondary: null
+
+lightblue:
+  masthead:
+    color: "#384E77"
+    text:
+      color: white
+      hover: "#E6F9AF"
+      active: white
+    link:
+      color: transparent
+      hover: transparent
+      active: "#18314F"
+    logo:
+      img: "/static/favicon.svg"
+
+pride:
+  masthead:
+      color: >
+        linear-gradient(120deg,
+          #3c476d 0px 130px,
+          #fdda0f 131px 139px,
+          #fff 140px 148px,
+          #f4b0c9 149px 157px,
+          #7ccee6 158px 166px,
+          #93540c 167px 175px,
+          #000 176px 184px,
+          transparent 185px),
+        linear-gradient(270deg,
+          #3c476d 0px 110px,
+          #3c476d00 110px),
+        linear-gradient(180deg,
+          #FE0000 16.66%,
+          #FD8C00 16.66% 33.32%,
+          #FFE500 33.32% 49.98%,
+          #119F0B 49.98% 66.64%,
+          #0644B3 66.64% 83.3%,
+          #C22EDC 83.3%)
+      text:
+        color: white
+        hover: gold
+        active: white
+      link:
+        color: "#3c476d"
+        hover: "#323a53"
+        active: "#6170a6"
+      logo:
+        img: "/static/favicon.svg"
+        img-secondary: null
+
+smoky:
+  masthead:
+    color: "#0C0F0A"
+    text:
+      color: white
+      hover: "#FBFF12"
+      active: white
+    link:
+      color: transparent
+      hover: transparent
+      active: "#FF206E"
+    logo:
+      img: "/static/favicon.svg"

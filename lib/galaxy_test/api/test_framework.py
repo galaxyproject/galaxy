@@ -1,9 +1,10 @@
 # This file doesn't test any API in particular but is meant to functionally
 # test the API framework itself.
+from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 
-class ApiFrameworkTestCase(ApiTestCase):
+class TestApiFramework(ApiTestCase):
     def test_default_xframe_options(self):
         get_response = self._get("licenses")
         assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
@@ -20,6 +21,7 @@ class ApiFrameworkTestCase(ApiTestCase):
         )
         self._assert_status_code_is(create_response, 403)
 
+    @requires_admin
     def test_run_as_invalid_user(self):
         post_data = dict(name="TestHistory1")
         # admin user can run_as, but this user doesn't exist, expect 400.
@@ -31,6 +33,7 @@ class ApiFrameworkTestCase(ApiTestCase):
         )
         self._assert_status_code_is(create_response, 400)
 
+    @requires_admin
     def test_run_as_valid_user(self):
         run_as_user = self._setup_user("for_run_as@bx.psu.edu")
         post_data = dict(name="TestHistory1")

@@ -1,5 +1,11 @@
 import Cytoscape from 'cytoscape';
 
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 // Public method. Return graph data as JSON
 var parse_sif = function( text ) {
     // Private variables and methods
@@ -87,7 +93,7 @@ function run_search_algorithm( cytoscape, root_id, type, self ) {
             // Add css class for the selected edge(s)
             algorithm.path[i].addClass( 'searchpath' );
             i++;
-            // Animate the edges and nodes coloring 
+            // Animate the edges and nodes coloring
             // of the path with a delay of 500ms
             setTimeout( selectNextElement, 500 );
         }
@@ -167,7 +173,7 @@ window.bundleEntries.load = function (options) {
     sif_file_ext = "sif",
     highlighted_color = settings.get( 'color_picker_highlighted' );
     $.ajax({
-        url     : dataset.download_url,
+        url     : prefixedDownloadUrl(options.root, dataset.download_url),
         success : function( content ) {
             // Select data for the graph
             if( dataset.file_ext === sif_file_ext ) {
@@ -246,7 +252,7 @@ window.bundleEntries.load = function (options) {
                 // On tapping any node, BFS or DFS start from that node
                 cytoscape.$( 'node' ).on('tap', function( e ) {
                     var ele = e.cyTarget,
-                        search_algorithm = settings.get( 'search_algorithm' ), 
+                        search_algorithm = settings.get( 'search_algorithm' ),
                         traversal_type = settings.get( 'graph_traversal' );
                     // If search algorithm and traversal both are chosen,
                     // search algorithm will take preference

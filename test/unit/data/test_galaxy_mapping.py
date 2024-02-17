@@ -1,7 +1,6 @@
 import collections
 import os
 import random
-import unittest
 import uuid
 from tempfile import NamedTemporaryFile
 from typing import List
@@ -16,6 +15,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -23,6 +23,8 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.objectstore import QuotaSourceMap
+from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -35,9 +37,10 @@ skip_if_not_postgres_base = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE"),
     reason="GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE not set",
 )
+PRIVATE_OBJECT_STORE_ID = "my_private_data"
 
 
-class BaseModelTestCase(unittest.TestCase):
+class BaseModelTestCase(TestCase):
     model: mapping.GalaxyModelMapping
 
     @classmethod
@@ -51,18 +54,14 @@ class BaseModelTestCase(unittest.TestCase):
         assert cls.model.engine is not None
 
     @classmethod
-    def query(cls, type):
-        return cls.model.session.query(type)
-
-    @classmethod
     def persist(cls, *args, **kwargs):
         session = cls.session()
-        flush = kwargs.get("flush", True)
+        commit = kwargs.get("commit", True)
         for arg in args:
             session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get("expunge", not flush):
+            if commit:
+                session.commit()
+        if kwargs.get("expunge", not commit):
             cls.expunge()
         return arg  # Return last or only arg.
 
@@ -76,7 +75,7 @@ class BaseModelTestCase(unittest.TestCase):
         cls.model.session.expunge_all()
 
 
-class MappingTests(BaseModelTestCase):
+class TestMappings(BaseModelTestCase):
     def test_ratings(self):
         user_email = "rater@example.com"
         u = model.User(email=user_email, password="password")
@@ -87,7 +86,7 @@ class MappingTests(BaseModelTestCase):
             rating_association = rating_class(u, item, rating)
             self.persist(rating_association)
             self.expunge()
-            stored_rating = self.query(rating_class).all()[0]
+            stored_rating = self.model.session.scalars(select(rating_class)).all()[0]
             assert stored_rating.rating == rating
             assert stored_rating.user.email == user_email
 
@@ -153,8 +152,12 @@ class MappingTests(BaseModelTestCase):
         assert history.get_display_name() == "Hello₩◎ґʟⅾ"
 
     def test_hda_to_library_dataset_dataset_association(self):
-        u = model.User(email="mary@example.com", password="password")
-        hda = model.HistoryDatasetAssociation(name="hda_name")
+        model = self.model
+        u = self.model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        hda = model.HistoryDatasetAssociation(
+            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
+        )
         self.persist(hda)
         trans = collections.namedtuple("trans", "user")
         target_folder = model.LibraryFolder(name="library_folder")
@@ -179,6 +182,24 @@ class MappingTests(BaseModelTestCase):
         assert len(new_ldda.library_dataset.expired_datasets) == 1
         assert new_ldda.library_dataset.expired_datasets[0] == ldda
         assert target_folder.item_count == 1
+
+    def test_hda_to_library_dataset_dataset_association_fails_if_private(self):
+        model = self.model
+        u = model.User(email="mary2@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        hda = model.HistoryDatasetAssociation(
+            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
+        )
+        hda.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self.persist(hda)
+        trans = collections.namedtuple("trans", "user")
+        target_folder = model.LibraryFolder(name="library_folder")
+        with pytest.raises(Exception) as exec_info:
+            hda.to_library_dataset_dataset_association(
+                trans=trans(user=u),
+                target_folder=target_folder,
+            )
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_tags(self):
         TAG_NAME = "Test Tag"
@@ -234,12 +255,12 @@ class MappingTests(BaseModelTestCase):
             model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i)
             for i in range(elements)
         ]
-        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        self.persist(u, h1, d1, c1, *dces, commit=False, expunge=False)
         self.model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
 
-    def test_dataset_instance_order(self):
+    def test_dataset_instance_order(self) -> None:
         u = model.User(email="mary@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
         elements = []
@@ -304,13 +325,13 @@ class MappingTests(BaseModelTestCase):
 
         self.persist(u, h1, d1, d2, c1, hc1, dce1, dce2)
 
-        loaded_dataset_collection = (
-            self.query(model.HistoryDatasetCollectionAssociation)
+        stmt = (
+            select(model.HistoryDatasetCollectionAssociation)
             .filter(model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1")
-            .first()
-            .collection
+            .limit(1)
         )
-        self.assertEqual(len(loaded_dataset_collection.elements), 2)
+        loaded_dataset_collection = self.model.session.scalars(stmt).first().collection
+        assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
         assert loaded_dataset_collection["right"] == dce2
@@ -332,8 +353,24 @@ class MappingTests(BaseModelTestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
+        # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
+
+    def test_dataset_action_tuples(self):
+        u = model.User(email="foo", password="foo")
+        h1 = model.History(user=u)
+        hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        r1 = model.Role()
+        dp1 = model.DatasetPermissions(action="action1", dataset=hda1.dataset, role=r1)
+        dp2 = model.DatasetPermissions(action=None, dataset=hda1.dataset, role=r1)
+        dp3 = model.DatasetPermissions(action="action3", dataset=hda1.dataset, role=r1)
+        c1 = model.DatasetCollection(collection_type="type1")
+        dce1 = model.DatasetCollectionElement(collection=c1, element=hda1)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=hda2)
+        self.model.session.add_all([u, h1, hda1, hda2, r1, dp1, dp2, dp3, c1, dce1, dce2])
+        self.model.session.flush()
+        assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
 
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")
@@ -371,18 +408,31 @@ class MappingTests(BaseModelTestCase):
         )
         self.model.session.add_all([d1, d2, c1, dce1, dce2, c2, dce3, c3, c4, dce4])
         self.model.session.flush()
-        q = c2._get_nested_collection_attributes(
+
+        stmt = c2._build_nested_collection_attributes_stmt(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
-        assert [(r._fields) for r in q] == [
+        result = self.model.session.execute(stmt).all()
+        assert [(r._fields) for r in result] == [
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
-        assert q.all() == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
-        assert q.all() == [d1, d2]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
-        assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
+
+        stmt = c2._build_nested_collection_attributes_stmt(return_entities=(model.HistoryDatasetAssociation,))
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1,), (d2,)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            return_entities=(model.HistoryDatasetAssociation, model.Dataset)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1, d1.dataset), (d2, d2.dataset)]
         # Assert properties that use _get_nested_collection_attributes return correct content
         assert c2.dataset_instances == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
@@ -401,13 +451,14 @@ class MappingTests(BaseModelTestCase):
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         assert c3.dataset_states_and_extensions_summary == (set(), set())
-        q = c4._get_nested_collection_attributes(element_attributes=("element_identifier",))
-        assert q.all() == [("outer_list", "inner_list", "forward"), ("outer_list", "inner_list", "reverse")]
-        assert c4.dataset_elements == [dce1, dce2]
-        assert c4.element_identifiers_extensions_and_paths == [
-            (("outer_list", "inner_list", "forward"), "bam", "mock_dataset_14.dat"),
-            (("outer_list", "inner_list", "reverse"), "txt", "mock_dataset_14.dat"),
+
+        stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
+        result = self.model.session.execute(stmt).all()
+        assert result == [
+            ("outer_list", "inner_list", "forward"),
+            ("outer_list", "inner_list", "reverse"),
         ]
+        assert c4.dataset_elements == [dce1, dce2]
 
     def test_dataset_dbkeys_and_extensions_summary(self):
         u = model.User(email="mary2@example.com", password="password")
@@ -474,43 +525,37 @@ class MappingTests(BaseModelTestCase):
     def test_default_disk_usage(self):
         u = model.User(email="disk_default@test.com", password="password")
         self.persist(u)
-        u.adjust_total_disk_usage(1)
+        u.adjust_total_disk_usage(1, None)
         u_id = u.id
         self.expunge()
-        user_reload = self.model.session.query(model.User).get(u_id)
+        user_reload = self.model.session.get(model.User, u_id)
         assert user_reload.disk_usage == 1
 
     def test_basic(self):
-        original_user_count = len(self.model.session.query(model.User).all())
+        original_user_count = len(self.model.session.scalars(select(model.User)).all())
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
-        # gs = model.GalaxySession()
         h1 = model.History(name="History 1", user=u)
-        # h1.queries.append( model.Query( "h1->q1" ) )
-        # h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History(name=("H" * 1024))
         self.persist(u, h1, h2)
-        # q1 = model.Query( "h2->q1" )
         metadata = dict(chromCol=1, startCol=2, endCol=3)
         d1 = model.HistoryDatasetAssociation(
             extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=self.model.session
         )
-        # h2.queries.append( q1 )
-        # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist(d1)
 
         # Check
-        users = self.model.session.query(model.User).all()
+        users = self.model.session.scalars(select(model.User)).all()
         assert len(users) == original_user_count + 1
         user = [user for user in users if user.email == "james@foo.bar.baz"][0]
         assert user.email == "james@foo.bar.baz"
         assert user.password == "password"
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
-        hists = self.model.session.query(model.History).all()
-        hist0 = [history for history in hists if history.name == "History 1"][0]
-        hist1 = [history for history in hists if history.name == "H" * 255][0]
+        hists = self.model.session.scalars(select(model.History)).all()
+        hist0 = [history for history in hists if history.id == h1.id][0]
+        hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
         assert hist1.name == ("H" * 255)
         assert hist0.user == user
@@ -518,11 +563,11 @@ class MappingTests(BaseModelTestCase):
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
+        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
-        hists = self.model.session.query(model.History).all()
+        hists = self.model.session.scalars(select(model.History)).all()
         hist0 = [history for history in hists if history.name == "History 1"][0]
         hist1 = [history for history in hists if history.name == "History 2b"][0]
         assert hist0.name == "History 1"
@@ -541,7 +586,9 @@ class MappingTests(BaseModelTestCase):
         job = model.Job()
         dataset.job = job
         self.persist(job, dataset)
-        loaded_dataset = self.model.session.query(model.Dataset).filter(model.Dataset.id == dataset.id).one()
+        loaded_dataset = self.model.session.execute(
+            select(model.Dataset).filter(model.Dataset.id == dataset.id)
+        ).scalar_one()
         assert loaded_dataset.job_id == job.id
 
     def test_jobs(self):
@@ -552,7 +599,7 @@ class MappingTests(BaseModelTestCase):
 
         self.persist(u, job)
 
-        loaded_job = self.model.session.query(model.Job).filter(model.Job.user == u).first()
+        loaded_job = self.model.session.scalars(select(model.Job).filter(model.Job.user == u).limit(1)).first()
         assert loaded_job.tool_id == "cat1"
 
     def test_job_metrics(self):
@@ -570,7 +617,7 @@ class MappingTests(BaseModelTestCase):
         task.add_metric("gx", "galaxy_slots", 5)
         task.add_metric("system", "system_name", "localhost")
 
-        big_value = ":".join("%d" % i for i in range(2000))
+        big_value = ":".join(f"{i}" for i in range(2000))
         task.add_metric("env", "BIG_PATH", big_value)
         self.persist(task)
         # Ensure big values truncated
@@ -583,7 +630,7 @@ class MappingTests(BaseModelTestCase):
         job.user = u
         self.persist(u, job, task)
 
-        loaded_task = self.model.session.query(model.Task).filter(model.Task.job == job).first()
+        loaded_task = self.model.session.scalars(select(model.Task).filter(model.Task.job == job).limit(1)).first()
         assert loaded_task.prepare_input_files_cmd == "split.sh"
 
     def test_history_contents(self):
@@ -594,23 +641,26 @@ class MappingTests(BaseModelTestCase):
         self.persist(u, h1, expunge=False)
 
         d1 = self.new_hda(h1, name="1")
-        d2 = self.new_hda(h1, name="2", visible=False)
-        d3 = self.new_hda(h1, name="3", deleted=True)
+        d2 = self.new_hda(h1, name="2", visible=False, object_store_id="foobar")
+        d3 = self.new_hda(h1, name="3", deleted=True, object_store_id="three_store")
         d4 = self.new_hda(h1, name="4", visible=False, deleted=True)
 
         self.session().flush()
 
         def contents_iter_names(**kwds):
-            history = (
-                self.model.context.query(model.History).filter(model.History.name == "HistoryContentsHistory1").first()
-            )
+            history = self.model.session.scalars(
+                select(model.History).filter(model.History.name == "HistoryContentsHistory1").limit(1)
+            ).first()
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
-        self.assertEqual(contents_iter_names(), ["1", "2", "3", "4"])
+        assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
         assert contents_iter_names(visible=True) == ["1", "3"]
+        assert contents_iter_names(visible=True, object_store_ids=["three_store"]) == ["3"]
         assert contents_iter_names(visible=False) == ["2", "4"]
         assert contents_iter_names(deleted=True, visible=False) == ["4"]
+        assert contents_iter_names(deleted=False, object_store_ids=["foobar"]) == ["2"]
+        assert contents_iter_names(deleted=False, object_store_ids=["foobar2"]) == []
 
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
@@ -623,12 +673,8 @@ class MappingTests(BaseModelTestCase):
         h2 = model.History(name="HistoryAuditHistory", user=u)
 
         def get_audit_table_entries(history):
-            return (
-                self.session()
-                .query(model.HistoryAudit.table)
-                .filter(model.HistoryAudit.table.c.history_id == history.id)
-                .all()
-            )
+            stmt = select(model.HistoryAudit.table).filter(model.HistoryAudit.table.c.history_id == history.id)
+            return self.session().execute(stmt).all()
 
         def get_latest_entry(entries):
             # key ensures result is correct if new columns are added
@@ -640,7 +686,11 @@ class MappingTests(BaseModelTestCase):
 
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
-        self.session().flush()
+
+        session = self.session()
+
+        with transaction(session):
+            session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
@@ -651,7 +701,13 @@ class MappingTests(BaseModelTestCase):
         h1_latest = get_latest_entry(h1_audits)
         h2_latest = get_latest_entry(h2_audits)
 
-        model.HistoryAudit.prune(self.session())
+        # In galaxy, HistoryAudit.prune() executes in the context of a separate thread, where it
+        # starts and commits a new transaction, closing a scoped session on exit. Thus, here we
+        # should end the current transaction (via rollback) and add the History objects to a new
+        # session, as the previous one will be closed.
+        session.rollback()
+        model.HistoryAudit.prune(session)
+        session.add_all([h1, h2])
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
@@ -665,6 +721,17 @@ class MappingTests(BaseModelTestCase):
         session = self.session()
         session.add(lf)
         session.flush()
+
+    def test_current_session(self):
+        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        galaxy_session = model.GalaxySession()
+        galaxy_session.user = user
+        self.persist(user, galaxy_session)
+        assert user.current_galaxy_session == galaxy_session
+        new_galaxy_session = model.GalaxySession()
+        user.galaxy_sessions.append(new_galaxy_session)
+        self.persist(user, new_galaxy_session)
+        assert user.current_galaxy_session == new_galaxy_session
 
     def test_flush_refreshes(self):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute
@@ -681,7 +748,7 @@ class MappingTests(BaseModelTestCase):
 
         self.expunge()
         session = self.session()
-        galaxy_model_object = self.query(model.GalaxySession).get(galaxy_session_id)
+        galaxy_model_object = self.model.session.get(model.GalaxySession, galaxy_session_id)
         expected_id = galaxy_model_object.id
 
         # id loaded as part of the object query, could be any non-deferred attribute.
@@ -694,6 +761,8 @@ class MappingTests(BaseModelTestCase):
         # However, flushing anything non-empty - even unrelated object will invalidate
         # the session ID.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Fetch the ID loads the value from the database
@@ -702,6 +771,8 @@ class MappingTests(BaseModelTestCase):
 
         # Using cached_id instead does not exhibit this behavior.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert expected_id == galaxy.model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
@@ -728,11 +799,13 @@ class MappingTests(BaseModelTestCase):
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
         session.flush()
+        if session().in_transaction():
+            session.commit()
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
         # Verify a targeted flush prevent expiring unrelated objects.
-        galaxy_model_object_new.id
+        galaxy_model_object_new.id  # noqa: B018
         assert "id" not in inspect(galaxy_model_object_new).unloaded
         session.flush(model.GalaxySession())
         assert "id" not in inspect(galaxy_model_object_new).unloaded
@@ -803,7 +876,7 @@ class MappingTests(BaseModelTestCase):
         history_id = h1.id
         self.expunge()
 
-        loaded_invocation = self.query(model.WorkflowInvocation).get(workflow_invocation.id)
+        loaded_invocation = self.model.session.get(model.WorkflowInvocation, workflow_invocation.id)
         assert loaded_invocation.uuid == invocation_uuid, f"{loaded_invocation.uuid} != {invocation_uuid}"
         assert loaded_invocation
         assert loaded_invocation.history.id == history_id
@@ -821,7 +894,7 @@ class MappingTests(BaseModelTestCase):
 
         assert subworkflow_invocation_assoc.subworkflow_invocation.history.id == history_id
 
-        loaded_workflow = self.query(model.Workflow).get(workflow_id)
+        loaded_workflow = self.model.session.get(model.Workflow, workflow_id)
         assert len(loaded_workflow.steps[0].annotations) == 1
         copied_workflow = loaded_workflow.copy(user=user)
         annotations = copied_workflow.steps[0].annotations
@@ -966,6 +1039,77 @@ class MappingTests(BaseModelTestCase):
         h._next_hid(n=3)
         assert h.hid_counter == 5
 
+    def test_cannot_make_private_objectstore_dataset_public(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_make_private_public")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            self._make_owned(security_agent, u_from, d1)
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_make_private_objectstore_dataset_shared(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_make_private_shared")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.privately_share_dataset(d1.dataset, [u_to])
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_set_dataset_permisson_on_private(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_set_permissions_on_private")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        role = security_agent.get_private_user_role(u_to, auto_create=True)
+        access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.set_dataset_permission(d1.dataset, {access_action: [role]})
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_make_private_dataset_public(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, u_other = self._three_users("cannot_make_private_dataset_public")
+
+        h = self.model.History(name="History for Annotation", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.make_dataset_public(d1.dataset)
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"
         email_to = f"user_{suffix}e2@example.com"
@@ -982,22 +1126,29 @@ class MappingTests(BaseModelTestCase):
         access_action = security_agent.permitted_actions.DATASET_ACCESS.action
         manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
         permissions = {access_action: [role], manage_action: [role]}
-        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+        self._set_permissions(security_agent, hda.dataset, permissions)
 
     def _make_owned(self, security_agent, user, hda):
         role = security_agent.get_private_user_role(user, auto_create=True)
         manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
         permissions = {manage_action: [role]}
-        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+        self._set_permissions(security_agent, hda.dataset, permissions)
+
+    def _set_permissions(self, security_agent, dataset, permissions):
+        # TODO: refactor set_all_dataset_permissions to actually throw an exception :|
+        if error := security_agent.set_all_dataset_permissions(dataset, permissions):
+            raise Exception(error)
 
     def new_hda(self, history, **kwds):
-        return history.add_dataset(
-            model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
-        )
+        object_store_id = kwds.pop("object_store_id", None)
+        hda = self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
+        if object_store_id is not None:
+            hda.dataset.object_store_id = object_store_id
+        return history.add_dataset(hda)
 
 
 @skip_if_not_postgres_base
-class PostgresMappingTests(MappingTests):
+class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
         base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
@@ -1033,8 +1184,11 @@ def _workflow_from_steps(user, steps):
 
 
 class MockObjectStore:
-    def __init__(self):
-        pass
+    def __init__(self, quota_source_map=None):
+        self._quota_source_map = quota_source_map or QuotaSourceMap()
+
+    def get_quota_source_map(self):
+        return self._quota_source_map
 
     def size(self, dataset):
         return 42
@@ -1045,14 +1199,17 @@ class MockObjectStore:
     def get_filename(self, *args, **kwds):
         return "mock_dataset_14.dat"
 
+    def construct_path(self, *args, **kwds):
+        return "mock_dataset_14.dat"
+
     def get_store_by(self, *args, **kwds):
         return "id"
 
     def update_from_file(self, *arg, **kwds):
         pass
 
-
-def get_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MappingTests("test_basic"))
-    return suite
+    def is_private(self, object):
+        if object.object_store_id == PRIVATE_OBJECT_STORE_ID:
+            return True
+        else:
+            return False

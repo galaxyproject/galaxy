@@ -2,6 +2,7 @@
 Data providers for genome visualizations.
 """
 
+import abc
 import itertools
 import math
 import os
@@ -106,9 +107,9 @@ class FeatureLocationIndexDataProvider(BaseDataProvider):
 
     def get_data(self, query):
         # Init.
-        textloc_file = open(self.converted_dataset.file_name)
+        textloc_file = open(self.converted_dataset.get_file_name())
         line_len = int(textloc_file.readline())
-        file_len = os.path.getsize(self.converted_dataset.file_name)
+        file_len = os.path.getsize(self.converted_dataset.get_file_name())
         query = query.lower()
 
         # Find query in file using binary search.
@@ -348,8 +349,8 @@ class TabixDataProvider(GenomeDataProvider, FilterableMixin):
     def open_data_file(self):
         # We create a symlink to the index file. This is
         # required until https://github.com/pysam-developers/pysam/pull/586 is merged.
-        index_path = self.converted_dataset.file_name
-        with pysam.TabixFile(self.dependencies["bgzip"].file_name, index=index_path) as f:
+        index_path = self.converted_dataset.get_file_name()
+        with pysam.TabixFile(self.dependencies["bgzip"].get_file_name(), index=index_path) as f:
             yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
@@ -586,7 +587,7 @@ class RawBedDataProvider(BedDataProvider):
         data_file.seek(0)
 
         def line_filter_iter():
-            with open(self.original_dataset.file_name) as data_file:
+            with open(self.original_dataset.get_file_name()) as data_file:
                 for line in data_file:
                     if line.startswith("track") or line.startswith("browser"):
                         continue
@@ -773,7 +774,7 @@ class RawVcfDataProvider(VcfDataProvider):
 
     @contextmanager
     def open_data_file(self):
-        with open(self.original_dataset.file_name) as f:
+        with open(self.original_dataset.get_file_name()) as f:
             yield f
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs):
@@ -839,7 +840,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
         # Open current BAM file using index.
         bamfile = pysam.AlignmentFile(
-            self.original_dataset.file_name, mode="rb", index_filename=self.converted_dataset.file_name
+            self.original_dataset.get_file_name(), mode="rb", index_filename=self.converted_dataset.get_file_name()
         )
 
         # TODO: write headers as well?
@@ -873,7 +874,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
     def open_data_file(self):
         # Attempt to open the BAM file with index
         with pysam.AlignmentFile(
-            self.original_dataset.file_name, mode="rb", index_filename=self.converted_dataset.file_name
+            self.original_dataset.get_file_name(), mode="rb", index_filename=self.converted_dataset.get_file_name()
         ) as f:
             yield f
 
@@ -1140,7 +1141,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
 
 class SamDataProvider(BamDataProvider):
-
     dataset_type = "bai"
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
@@ -1163,8 +1163,8 @@ class BBIDataProvider(GenomeDataProvider):
 
     dataset_type = "bigwig"
 
-    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]:
-        ...
+    @abc.abstractmethod
+    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]: ...
 
     def valid_chroms(self):
         # No way to return this info as of now
@@ -1232,8 +1232,7 @@ class BBIDataProvider(GenomeDataProvider):
             # Get summary; this samples at intervals of length
             # (end - start)/num_points -- i.e. drops any fractional component
             # of interval length.
-            summary = _summarize_bbi(bbi, chrom, start, end, num_points)
-            if summary:
+            if summary := _summarize_bbi(bbi, chrom, start, end, num_points):
                 # mean = summary.sum_data / summary.valid_count
 
                 # Standard deviation by bin, not yet used
@@ -1291,7 +1290,7 @@ class BBIDataProvider(GenomeDataProvider):
 class BigBedDataProvider(BBIDataProvider):
     def _get_dataset(self):
         # Nothing converts to bigBed so we don't consider converted dataset
-        f = open(self.original_dataset.file_name, "rb")
+        f = open(self.original_dataset.get_file_name(), "rb")
         return f, BigBedFile(file=f)
 
 
@@ -1303,9 +1302,9 @@ class BigWigDataProvider(BBIDataProvider):
 
     def _get_dataset(self):
         if self.converted_dataset is not None:
-            f = open(self.converted_dataset.file_name, "rb")
+            f = open(self.converted_dataset.get_file_name(), "rb")
         else:
-            f = open(self.original_dataset.file_name, "rb")
+            f = open(self.original_dataset.get_file_name(), "rb")
         return f, BigWigFile(file=f)
 
 
@@ -1319,8 +1318,8 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
     dataset_type = "interval_index"
 
     def write_data_to_file(self, regions, filename):
-        index = Indexes(self.converted_dataset.file_name)
-        with open(self.original_dataset.file_name) as source, open(filename, "w") as out:
+        index = Indexes(self.converted_dataset.get_file_name())
+        with open(self.original_dataset.get_file_name()) as source, open(filename, "w") as out:
             for region in regions:
                 # Write data from region.
                 chrom = region.chrom
@@ -1341,7 +1340,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
 
     @contextmanager
     def open_data_file(self):
-        i = Indexes(self.converted_dataset.file_name)
+        i = Indexes(self.converted_dataset.get_file_name())
         yield i
 
     def get_iterator(self, data_file, chrom, start, end, **kwargs) -> Iterator[str]:
@@ -1357,7 +1356,7 @@ class IntervalIndexDataProvider(GenomeDataProvider, FilterableMixin):
     def process_data(self, iterator, start_val=0, max_vals=None, **kwargs):
         results = []
         message = None
-        with open(self.original_dataset.file_name) as source:
+        with open(self.original_dataset.get_file_name()) as source:
             # Build data to return. Payload format is:
             # [ <guid/offset>, <start>, <end>, <name>, <score>, <strand>, <thick_start>,
             #   <thick_end>, <blocks> ]
@@ -1401,7 +1400,7 @@ class RawGFFDataProvider(GenomeDataProvider):
         Returns an iterator that provides data in the region chrom:start-end as well as
         a file offset.
         """
-        source = open(self.original_dataset.file_name)
+        source = open(self.original_dataset.get_file_name())
 
         # Read first line in order to match chrom naming format.
         line = source.readline()

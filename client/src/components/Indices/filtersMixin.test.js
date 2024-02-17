@@ -1,5 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
+
 import filtersMixin from "./filtersMixin";
 
 const localVue = getLocalVue();
@@ -42,5 +43,17 @@ describe("filtersMixin.js", () => {
         wrapper.vm.appendTagFilter("name", "foobar");
         wrapper.vm.appendTagFilter("name", "foobar");
         expect(wrapper.vm.filter).toBe("name:'foobar'");
+    });
+
+    it("should have an effective filter that combines implicit and explicit filter", async () => {
+        wrapper.vm.implicitFilter = "tag:cowdog";
+        wrapper.vm.appendTagFilter("name", "foobar");
+        expect(wrapper.vm.filter).toBe("name:'foobar'");
+        expect(wrapper.vm.effectiveFilter).toBe("tag:cowdog name:'foobar'");
+    });
+
+    it("should just use implicit filter as effective if filter is empty", async () => {
+        wrapper.vm.implicitFilter = "tag:cowdog";
+        expect(wrapper.vm.effectiveFilter).toBe("tag:cowdog");
     });
 });

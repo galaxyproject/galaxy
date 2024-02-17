@@ -104,7 +104,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Set the default server during startup
         self.__default_pbs_server = None
-        self.default_pbs_server  # this is a method with a property decorator, so this causes the default server to be set
+        self.default_pbs_server  # noqa: B018 this is a method with a property decorator, so this causes the default server to be set
 
         # Proceed with general initialization
         super().__init__(app, nworkers)
@@ -122,7 +122,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         if not url:
             return
 
-        # Determine the the PBS server
+        # Determine the PBS server
         url_split = url.split("/")
         server = url_split[2]
         if server == "":
@@ -132,8 +132,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Determine the queue, set the PBS destination (not the same thing as a Galaxy job destination)
         pbs_destination = f"@{server}"
-        pbs_queue = url_split[3] or None
-        if pbs_queue is not None:
+        if (pbs_queue := url_split[3] or None) is not None:
             pbs_destination = f"{pbs_queue}{pbs_destination}"
 
         params = dict(destination=pbs_destination)

@@ -2,6 +2,8 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+
+import json
 import logging
 from typing import (
     Any,
@@ -36,12 +38,16 @@ from galaxy.managers import (
     annotatable,
     base,
     deletable,
+    genomes,
     hdas,
     hdcas,
     taggable,
     tools,
 )
+from galaxy.managers.job_connections import JobConnectionsManager
+from galaxy.schema import ValueFilterQueryParams
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import listify
 from .base import (
     parse_bool,
     raise_filter_err,
@@ -54,7 +60,6 @@ log = logging.getLogger(__name__)
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
 class HistoryContentsManager(base.SortableManager):
-
     root_container_class = model.History
 
     contained_class = model.HistoryDatasetAssociation
@@ -94,24 +99,6 @@ class HistoryContentsManager(base.SortableManager):
         self.subcontainer_manager = app[self.subcontainer_class_manager_class]
 
     # ---- interface
-    def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns non-subcontainer objects within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.contained_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        return self.contained_manager.list(filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
-
-    def subcontainers(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns only the containers within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.subcontainer_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        # TODO: collections.DatasetCollectionManager doesn't have the list
-        # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
-        return self._session().query(self.subcontainer_class).filter(filters).all()
-
     def contents(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
         Returns a list of both/all types of contents, filtered and in some order.
@@ -176,7 +163,7 @@ class HistoryContentsManager(base.SortableManager):
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
         statement = (
-            sql.select([sql.column("state"), func.count("*")])
+            sql.select(sql.column("state"), func.count("*"))
             .select_from(contents_subquery)
             .group_by(sql.column("state"))
         )
@@ -200,7 +187,7 @@ class HistoryContentsManager(base.SortableManager):
             cast(func.sum(subquery.c.active), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted
@@ -237,15 +224,6 @@ class HistoryContentsManager(base.SortableManager):
     # ---- private
     def _session(self):
         return self.app.model.context
-
-    def _filter_to_contents_query(self, container, content_class, **kwargs):
-        # TODO: use list (or by_history etc.)
-        container_filter = self._get_filter_for_contained(container, content_class)
-        query = self._session().query(content_class).filter(container_filter)
-        return query
-
-    def _get_filter_for_contained(self, container, content_class):
-        return content_class.history == container
 
     def _union_of_contents(self, container, expand_models=True, **kwargs):
         """
@@ -430,39 +408,31 @@ class HistoryContentsManager(base.SortableManager):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))  # type: ignore[attr-defined]
             .options(undefer(component_class._metadata))
-            .options(joinedload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
+            .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
     def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))
             .options(joinedload(component_class.collection))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))
         )
-
-        # This will conditionally join a potentially costly job_state summary
-        # All the paranoia if-checking makes me wonder if serialization_params
-        # should really be a property of the manager class instance
-        if serialization_params and serialization_params.keys:
-            if "job_state_summary" in serialization_params.keys:
-                query = query.options(joinedload(component_class.job_state_summary))
-
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -519,14 +489,37 @@ class HistoryContentsFilters(
     base.ModelFilterParser,
     annotatable.AnnotatableFilterMixin,
     deletable.PurgableFiltersMixin,
+    genomes.GenomeFilterMixin,
     taggable.TaggableFilterMixin,
     tools.ToolFilterMixin,
 ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
-    def _parse_orm_filter(self, attr, op, val):
+    def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
+        """Parse query filters but consider case where related filter is included."""
+        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
+        if query_filters.q and query_filters.qv and has_related_q:
+            qv_index = query_filters.q.index(has_related_q[0])
+            qv_hid = query_filters.qv[qv_index]
 
+            # Type check whether hid is int
+            if not qv_hid.isdigit():
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "unparsable value for related filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
+                )
+
+            query_filters_with_relations = self.get_query_filters_with_relations(
+                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
+            )
+            return super().parse_query_filters(query_filters_with_relations)
+        return super().parse_query_filters(query_filters)
+
+    def _parse_orm_filter(self, attr, op, val):
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
         # using the model_class defined above - they need to be wrapped in their own .column()
         # (and some of these are *not* a normal columns (especially 'state') anyway)
@@ -536,6 +529,12 @@ class HistoryContentsFilters(
             if attr == "history_content_type" and op == "eq":
                 if val in ("dataset", "dataset_collection"):
                     return sql.column("history_content_type") == val
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+            if attr == "related":
+                if op == "eq":
+                    # unclear if multiple related values make sense, maybe this should be `.eq_` instead
+                    return sql.column("hid").in_(listify(json.loads(val)))
                 raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "type_id":
@@ -570,10 +569,33 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-        column_filter = get_filter(attr, op, val)
-        if column_filter is not None:
+        if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
+
+    def get_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, related_q: str, history_id):
+        """Return `query_filters_with_relations` changing `related:hid` to `related:[hid1, hid2, ...]`."""
+        if query_filters.q and query_filters.qv:
+            qv_index = query_filters.q.index(related_q)
+            qv_hid = query_filters.qv[qv_index]
+
+            # Make new q and qv excluding related filter
+            new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
+            new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]
+
+            # Get list of related item hids from job_connections manager
+            job_connections_manager = JobConnectionsManager(self.app.model.session)
+            related = job_connections_manager.get_related_hids(history_id, int(qv_hid))
+
+            # Make new query_filters with updated list of related hids for given hid
+            new_q.append("related-eq")
+            new_qv.append(json.dumps(related))
+            query_filters_with_relations = ValueFilterQueryParams(
+                q=new_q,
+                qv=new_qv,
+            )
+            return query_filters_with_relations
+        return query_filters
 
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = "-"
@@ -588,7 +610,9 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
+        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)

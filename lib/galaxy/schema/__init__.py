@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import (
     Dict,
@@ -13,10 +14,10 @@ from pydantic import (
 
 
 class BootstrapAdminUser(BaseModel):
-    id = 0
+    id: int = 0
     email: Optional[str] = None
     preferences: Dict[str, str] = {}
-    bootstrap_admin_user = True
+    bootstrap_admin_user: bool = True
 
     def all_roles(*args) -> list:
         return []
@@ -32,13 +33,13 @@ class ValueFilterQueryParams(BaseModel):
         default=None,
         title="Filter Query",
         description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-        example="create_time-gt",
+        examples=["create_time-gt"],
     )
     qv: Optional[Union[List[str], str]] = Field(
         default=None,
         title="Filter Value",
         description="The value to filter by.",
-        example="2015-01-29",
+        examples=["2015-01-29"],
     )
 
 
@@ -70,7 +71,7 @@ class FilterQueryParams(ValueFilterQueryParams, PaginationQueryParams):
             "by '-asc' or '-dsc' for ascending and descending order respectively. "
             "Orders can be stacked as a comma-separated list of values."
         ),
-        example="name-dsc,create_time",
+        examples=["name-dsc,create_time"],
     )
 
 
@@ -84,7 +85,7 @@ class SerializationParams(BaseModel):
             "The name of the view used to serialize this item. "
             "This will return a predefined set of attributes of the item."
         ),
-        example="summary",
+        examples=["summary"],
     )
     keys: Optional[List[str]] = Field(
         default=None,
@@ -104,3 +105,8 @@ class SerializationParams(BaseModel):
 class PdfDocumentType(str, Enum):
     invocation_report = "invocation_report"
     page = "page"
+
+
+class APIKeyModel(BaseModel):
+    key: str = Field(..., title="Key", description="API key to interact with the Galaxy API")
+    create_time: datetime = Field(..., title="Create Time", description="The time and date this API key was created.")

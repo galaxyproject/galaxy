@@ -45,21 +45,30 @@ In order to use this.
 """
 
 import inspect
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from enum import IntEnum
 from typing import (
     Callable,
     List,
     Optional,
     Type,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
 
+import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import (
-    etree,
+    Element,
     submodules,
 )
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.parser.interface import ToolSource
 
 
 class LintLevel(IntEnum):
@@ -71,36 +80,73 @@ class LintLevel(IntEnum):
     ALL = 0
 
 
+class Linter(ABC):
+    """
+    a linter. needs to define a lint method and the code property.
+    optionally a fix method can be given
+    """
+
+    @classmethod
+    @abstractmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        """
+        should add at most one message to the lint context
+        """
+        pass
+
+    @classmethod
+    def name(cls) -> str:
+        """
+        get the linter name
+        """
+        return cls.__name__
+
+    @classmethod
+    def list_listers(cls) -> List[str]:
+        """
+        list the names of all linter derived from Linter
+        """
+        return [s.__name__ for s in cls.__subclasses__()]
+
+
 class LintMessage:
     """
     a message from the linter
     """
 
-    def __init__(self, level: str, message: str, **kwargs):
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, **kwargs):
         self.level = level
         self.message = message
+        self.linter = linter
 
     def __eq__(self, other) -> bool:
         """
         add equal operator to easy lookup of a message in a
-        List[LintMessage] which is usefull in tests
+        List[LintMessage] which is useful in tests.
+
+        If the other object is a string, it is loosely checked if the
+        string is contained in the message.
         """
         if isinstance(other, str):
-            return self.message == other
+            return other in self.message
         if isinstance(other, LintMessage):
             return self.message == other.message
         return False
 
     def __str__(self) -> str:
-        return f".. {self.level.upper()}: {self.message}"
+        if self.linter:
+            linter = f" ({self.linter})"
+        else:
+            linter = ""
+        return f".. {self.level.upper()}{linter}: {self.message}"
 
     def __repr__(self) -> str:
         return f"LintMessage({self.message})"
 
 
 class XMLLintMessageLine(LintMessage):
-    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
-        super().__init__(level, message)
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
+        super().__init__(level, message, linter)
         self.line = None
         if node is not None:
             self.line = node.sourceline
@@ -115,8 +161,8 @@ class XMLLintMessageLine(LintMessage):
 
 
 class XMLLintMessageXPath(LintMessage):
-    def __init__(self, level: str, message: str, node: Optional[etree.Element] = None):
-        super().__init__(level, message)
+    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
+        super().__init__(level, message, linter)
         self.xpath = None
         if node is not None:
             tool_xml = node.getroottree()
@@ -167,7 +213,8 @@ class LintContext:
         return len(self.warn_messages) > 0
 
     def lint(self, name: str, lint_func: Callable[[LintTargetType, "LintContext"], None], lint_target: LintTargetType):
-        name = name.replace("tsts", "tests")[len("lint_") :]
+        if name.startswith("lint_"):
+            name = name[len("lint_") :]
         if name in self.skip_types:
             return
 
@@ -184,37 +231,18 @@ class LintContext:
         lint_func(lint_target, self)
 
         if self.level < LintLevel.SILENT:
-            # TODO: colorful emoji if in click CLI.
-            if self.error_messages:
-                status = "FAIL"
-            elif self.warn_messages:
-                status = "WARNING"
-            else:
-                status = "CHECK"
-
-            def print_linter_info(printed_linter_info):
-                if printed_linter_info:
-                    return True
-                print(f"Applying linter {name}... {status}")
-                return True
-
-            plf = False
             for message in self.error_messages:
-                plf = print_linter_info(plf)
                 print(f"{message}")
 
             if self.level <= LintLevel.WARN:
                 for message in self.warn_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
 
             if self.level <= LintLevel.INFO:
                 for message in self.info_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
             if self.level <= LintLevel.VALID:
                 for message in self.valid_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
             self.message_list = tmp_message_list + self.message_list
 
@@ -234,22 +262,22 @@ class LintContext:
     def error_messages(self) -> List[LintMessage]:
         return [x for x in self.message_list if x.level == "error"]
 
-    def __handle_message(self, level: str, message: str, *args, **kwargs) -> None:
+    def __handle_message(self, level: str, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
         if args:
             message = message % args
-        self.message_list.append(self.lint_message_class(level=level, message=message, **kwargs))
+        self.message_list.append(self.lint_message_class(level=level, message=message, linter=linter, **kwargs))
 
-    def valid(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("check", message, *args, **kwargs)
+    def valid(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("check", message, linter, *args, **kwargs)
 
-    def info(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("info", message, *args, **kwargs)
+    def info(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("info", message, linter, *args, **kwargs)
 
-    def error(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("error", message, *args, **kwargs)
+    def error(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("error", message, linter, *args, **kwargs)
 
-    def warn(self, message: str, *args, **kwargs) -> None:
-        self.__handle_message("warning", message, *args, **kwargs)
+    def warn(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+        self.__handle_message("warning", message, linter, *args, **kwargs)
 
     def failed(self, fail_level: Union[LintLevel, str]) -> bool:
         if isinstance(fail_level, str):
@@ -316,18 +344,22 @@ def lint_xml(
 
 def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> LintContext:
     extra_modules = extra_modules or []
-    import galaxy.tool_util.linters
 
-    tool_xml = getattr(tool_source, "xml_tree", None)
-    tool_type = tool_source.parse_tool_type() or "default"
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
     linter_modules.extend(extra_modules)
+    return lint_tool_source_with_modules(lint_context, tool_source, linter_modules)
+
+
+def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter_modules) -> LintContext:
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    tool_type = tool_source.parse_tool_type() or "default"
+
     for module in linter_modules:
-        lint_tool_types = getattr(module, "lint_tool_types", ["default"])
+        lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue
 
-        for (name, value) in inspect.getmembers(module):
+        for name, value in inspect.getmembers(module):
             if callable(value) and name.startswith("lint_"):
                 # Look at the first argument to the linter to decide
                 # if we should lint the XML description or the abstract
@@ -341,6 +373,8 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> Lint
                         lint_context.lint(name, value, tool_xml)
                 else:
                     lint_context.lint(name, value, tool_source)
+            elif inspect.isclass(value) and issubclass(value, Linter) and not inspect.isabstract(value):
+                lint_context.lint(name, value.lint, tool_source)
     return lint_context
 
 

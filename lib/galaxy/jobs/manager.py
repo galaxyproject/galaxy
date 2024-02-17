@@ -1,6 +1,7 @@
 """
 Top-level Galaxy job manager, moves jobs to handler(s)
 """
+
 import logging
 from functools import partial
 

@@ -1,7 +1,6 @@
 import json
 import os
 
-from galaxy_test.base.populators import uses_test_history
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
@@ -15,7 +14,7 @@ from .test_workflows import BaseWorkflowsApiTestCase
 WORKFLOWS_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
-class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
+class TestWorkflowsFromYamlApi(BaseWorkflowsApiTestCase):
     def setUp(self):
         super().setUp()
 
@@ -78,13 +77,13 @@ input1: "hello world"
             round_trip_format_conversion=True,
         )
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(contents1.strip(), "hello world\nhello world")
+        assert contents1.strip() == "hello world\nhello world"
 
     def test_outputs(self):
         workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
         workflow = self._get(f"workflows/{workflow_id}/download").json()
-        self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
-        self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+        assert workflow["steps"]["1"]["workflow_outputs"][0]["output_name"] == "out_file1"
+        assert workflow["steps"]["1"]["workflow_outputs"][0]["label"] == "wf_output_1"
         workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
 
     def test_runtime_inputs(self):
@@ -160,7 +159,7 @@ steps:
         assert subworkflow_connection["input_subworkflow_step_id"] == 0
 
         # content = self.dataset_populator.get_history_dataset_content( history_id )
-        # self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+        # assert content == "chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n"
 
     def test_subworkflow_duplicate(self):
         duplicate_subworkflow_invocate_wf = """
@@ -262,7 +261,6 @@ steps:
         )
         self.workflow_populator.dump_workflow(workflow_id)
 
-    @uses_test_history()
     def test_conditional_ints(self, history_id):
         self._run_jobs(
             """
@@ -339,7 +337,7 @@ test_data:
         )
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(content, "hello world\nhello world 2\n")
+        assert content == "hello world\nhello world 2\n"
 
     def test_workflow_import_tool(self):
         history_id = self.dataset_populator.new_history()
@@ -347,7 +345,7 @@ test_data:
         jobs_descriptions = {"test_data": {"input1": "hello world"}}
         self._run_jobs(workflow_path, source_type="path", jobs_descriptions=jobs_descriptions, history_id=history_id)
         content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(content, "hello world\nhello world 2\n")
+        assert content == "hello world\nhello world 2\n"
 
     def test_parameter_default_rep(self):
         workflow = self._upload_and_download(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT)

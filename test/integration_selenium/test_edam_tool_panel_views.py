@@ -5,8 +5,7 @@ from .framework import (
 )
 
 
-class EdamToolPanelViewsSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
-
+class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
     ensure_registered = True  # to test workflow editor
 
     @selenium_test
@@ -39,4 +38,4 @@ class EdamToolPanelViewsSeleniumIntegrationTestCase(SeleniumIntegrationTestCase)
         labels = tool_panel.panel_labels.all()
         assert len(labels) > 0
         label0 = labels[0]
-        assert label0.text.strip() == "ANALYSIS"
+        assert label0.text.strip().startswith("ANALYSIS")

@@ -14,8 +14,9 @@ def require_login(verb="perform this action", use_panels=False):
                 return func(self, trans, *args, **kwargs)
             else:
                 return trans.show_error_message(
-                    'You must be <a target="galaxy_main" href="%s">logged in</a> to %s.'
-                    % (url_for(controller="user", action="login"), verb),
+                    'You must be <a target="galaxy_main" href="{}">logged in</a> to {}.'.format(
+                        url_for(controller="user", action="login"), verb
+                    ),
                     use_panels=use_panels,
                 )
 

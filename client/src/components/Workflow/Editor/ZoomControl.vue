@@ -1,7 +1,39 @@
+<script setup lang="ts">
+import BootstrapVue from "bootstrap-vue";
+import Vue, { computed } from "vue";
+
+import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
+
+Vue.use(BootstrapVue);
+
+const props = defineProps({
+    zoomLevel: { type: Number, default: 1 },
+});
+
+const emit = defineEmits<{
+    (e: "onZoom", zoom: number): void;
+}>();
+
+const zoomDefault = 1;
+const zoomPercentage = computed(() => Math.round(props.zoomLevel * 100));
+
+function onZoomIn() {
+    emit("onZoom", getZoomInLevel(props.zoomLevel));
+}
+
+function onZoomOut() {
+    emit("onZoom", getZoomOutLevel(props.zoomLevel));
+}
+
+function onZoomReset() {
+    emit("onZoom", zoomDefault);
+}
+</script>
+
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
         <b-button
-            v-b-tooltip.hover
+            :disabled="isMinZoom(props.zoomLevel)"
             role="button"
             class="fa fa-minus"
             title="Zoom Out"
@@ -20,7 +52,7 @@
             {{ zoomPercentage }}%
         </b-button>
         <b-button
-            v-b-tooltip.hover
+            :disabled="isMaxZoom(props.zoomLevel)"
             role="button"
             class="fa fa-plus"
             title="Zoom In"
@@ -29,44 +61,6 @@
             @click="onZoomIn" />
     </span>
 </template>
-
-<script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { zoomLevels, defaultZoomLevel } from "./modules/canvas";
-
-Vue.use(BootstrapVue);
-
-export default {
-    props: {
-        zoomLevel: {
-            type: Number,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            zoomDefault: defaultZoomLevel,
-        };
-    },
-    computed: {
-        zoomPercentage() {
-            return Math.floor(zoomLevels[this.zoomLevel] * 100);
-        },
-    },
-    methods: {
-        onZoomIn() {
-            this.$emit("onZoom", this.zoomLevel + 1);
-        },
-        onZoomOut() {
-            this.$emit("onZoom", this.zoomLevel - 1);
-        },
-        onZoomReset() {
-            this.$emit("onZoom", this.zoomDefault);
-        },
-    },
-};
-</script>
 
 <style scoped>
 .zoom-reset {
@@ -77,6 +71,6 @@ export default {
     left: 1rem;
     bottom: 1rem;
     cursor: pointer;
-    z-index: 1002;
+    z-index: 2000;
 }
 </style>

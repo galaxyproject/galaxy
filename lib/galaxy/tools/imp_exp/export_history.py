@@ -40,9 +40,6 @@ def main(argv=None):
     )
     parser.add_option("--file-sources", type=str, help="file sources json")
     (options, args) = parser.parse_args(argv)
-    galaxy_version = options.galaxy_version
-    if galaxy_version is None:
-        galaxy_version = "19.05"
 
     gzip = bool(options.gzip)
     assert len(args) >= 2

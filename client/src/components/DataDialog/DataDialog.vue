@@ -39,14 +39,17 @@
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixin";
-import { UrlTracker } from "./utilities";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import { Model } from "./model";
 import { Services } from "./services";
-import { getAppRoot } from "onload/loadConfig";
-import { mountUploadModal } from "components/Upload";
+import { UrlTracker } from "./utilities";
 
 Vue.use(BootstrapVue);
 
@@ -78,6 +81,10 @@ export default {
             default: true,
         },
     },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
+    },
     data() {
         return {
             errorMessage: null,
@@ -87,13 +94,22 @@ export default {
             optionsShow: false,
             undoShow: false,
             hasValue: false,
+            urlTracker: null,
         };
+    },
+    watch: {
+        history: async function () {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        },
     },
     created: function () {
         this.services = new Services();
-        this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
-        this.load();
+        if (this.history) {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        }
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/
@@ -133,8 +149,9 @@ export default {
                 modalShow: true,
                 selectable: true,
             };
-            mountUploadModal(propsData);
+            this.openGlobalUploadModal(propsData);
             this.modalShow = false;
+            this.$emit("onUpload");
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         onOk() {
@@ -171,8 +188,8 @@ export default {
                     this.formatRows();
                     this.optionsShow = true;
                 })
-                .catch((errorMessage) => {
-                    this.errorMessage = errorMessage;
+                .catch((error) => {
+                    this.errorMessage = errorMessageAsString(error);
                 });
         },
     },

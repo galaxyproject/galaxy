@@ -1,5 +1,7 @@
 import logging
 import os
+import random
+import string
 import weakref
 from datetime import (
     datetime,
@@ -20,7 +22,6 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
-    false,
     ForeignKey,
     Integer,
     not_,
@@ -34,7 +35,6 @@ from sqlalchemy.orm import (
     registry,
     relationship,
 )
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
@@ -61,13 +61,14 @@ log = logging.getLogger(__name__)
 WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
 
-    class _HasTable:
-        table: Table
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
 
 else:
-    _HasTable = object
-
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 mapper_registry = registry()
 
@@ -83,7 +84,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class APIKeys(Base, _HasTable):
+class APIKeys(Base):
     __tablename__ = "api_keys"
 
     id = Column(Integer, primary_key=True)
@@ -91,9 +92,10 @@ class APIKeys(Base, _HasTable):
     user_id = Column(ForeignKey("galaxy_user.id"), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
+    deleted = Column(Boolean, index=True, default=False)
 
 
-class User(Base, Dictifiable, _HasTable):
+class User(Base, Dictifiable):
     __tablename__ = "galaxy_user"
 
     id = Column(Integer, primary_key=True)
@@ -132,7 +134,6 @@ class User(Base, Dictifiable, _HasTable):
             & not_(Role.name == User.email)  # type: ignore[has-type]
         ),
     )
-    repository_reviews = relationship("RepositoryReview", back_populates="user")
 
     def __init__(self, email=None, password=None):
         self.email = email
@@ -167,14 +168,22 @@ class User(Base, Dictifiable, _HasTable):
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
     def set_password_cleartext(self, cleartext):
-        message = validate_password_str(cleartext)
-        if message:
+        if message := validate_password_str(cleartext):
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_insecure_hash(text_type=cleartext)
 
+    def set_random_password(self, length=16):
+        """
+        Sets user password to a random string of the given length.
+        :return: void
+        """
+        self.set_password_cleartext(
+            "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length))
+        )
 
-class PasswordResetToken(Base, _HasTable):
+
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -192,7 +201,7 @@ class PasswordResetToken(Base, _HasTable):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(Base, Dictifiable, _HasTable):
+class Group(Base, Dictifiable):
     __tablename__ = "galaxy_group"
 
     id = Column(Integer, primary_key=True)
@@ -211,7 +220,7 @@ class Group(Base, Dictifiable, _HasTable):
         self.deleted = False
 
 
-class Role(Base, Dictifiable, _HasTable):
+class Role(Base, Dictifiable):
     __tablename__ = "role"
 
     id = Column(Integer, primary_key=True)
@@ -246,7 +255,7 @@ class Role(Base, Dictifiable, _HasTable):
         return False
 
 
-class UserGroupAssociation(Base, _HasTable):
+class UserGroupAssociation(Base):
     __tablename__ = "user_group_association"
 
     id = Column(Integer, primary_key=True)
@@ -263,7 +272,7 @@ class UserGroupAssociation(Base, _HasTable):
         self.group = group
 
 
-class UserRoleAssociation(Base, _HasTable):
+class UserRoleAssociation(Base):
     __tablename__ = "user_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -281,7 +290,7 @@ class UserRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class GroupRoleAssociation(Base, _HasTable):
+class GroupRoleAssociation(Base):
     __tablename__ = "group_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -297,7 +306,7 @@ class GroupRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class RepositoryRoleAssociation(Base, _HasTable):
+class RepositoryRoleAssociation(Base):
     __tablename__ = "repository_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -314,7 +323,7 @@ class RepositoryRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class GalaxySession(Base, _HasTable):
+class GalaxySession(Base):
     __tablename__ = "galaxy_session"
 
     id = Column(Integer, primary_key=True)
@@ -338,7 +347,7 @@ class GalaxySession(Base, _HasTable):
         self.last_action = self.last_action or datetime.now()
 
 
-class Repository(Base, Dictifiable, _HasTable):
+class Repository(Base, Dictifiable):
     __tablename__ = "repository"
 
     id = Column(Integer, primary_key=True)
@@ -375,8 +384,6 @@ class Repository(Base, Dictifiable, _HasTable):
         back_populates="repository",
     )
     roles = relationship("RepositoryRoleAssociation", back_populates="repository")
-    reviews = relationship("RepositoryReview", back_populates="repository")
-    reviewers = relationship("User", secondary=lambda: RepositoryReview.__table__, viewonly=True)  # type: ignore
 
     dict_collection_visible_keys = [
         "id",
@@ -391,6 +398,7 @@ class Repository(Base, Dictifiable, _HasTable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -406,6 +414,7 @@ class Repository(Base, Dictifiable, _HasTable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
@@ -430,8 +439,7 @@ class Repository(Base, Dictifiable, _HasTable):
             if str(role.name) == admin_role_name:
                 return role
         raise Exception(
-            "Repository %s owned by %s is not associated with a required administrative role."
-            % (str(self.name), str(self.user.username))
+            f"Repository {self.name} owned by {self.user.username} is not associated with a required administrative role."
         )
 
     def allow_push(self):
@@ -541,115 +549,7 @@ class Repository(Base, Dictifiable, _HasTable):
         return rval
 
 
-class RepositoryReview(Base, Dictifiable, _HasTable):
-    __tablename__ = "repository_review"
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(ForeignKey("repository.id"), index=True)
-    changeset_revision = Column(TrimmedString(255), index=True)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
-    approved = Column(TrimmedString(255))
-    rating = Column(Integer, index=True)
-    deleted = Column(Boolean, index=True, default=False)
-    repository = relationship("Repository", back_populates="reviews")
-    # Take care when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
-    # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
-    # reset on a repository!
-    repository_metadata = relationship(
-        "RepositoryMetadata",
-        viewonly=True,
-        foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-        primaryjoin=lambda: (
-            (RepositoryReview.repository_id == RepositoryMetadata.repository_id)  # type: ignore[has-type]
-            & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)  # type: ignore[has-type]
-        ),
-        back_populates="reviews",
-    )
-    user = relationship("User", back_populates="repository_reviews")
-
-    component_reviews = relationship(
-        "ComponentReview",
-        viewonly=True,
-        primaryjoin=lambda: (
-            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false())  # type: ignore[has-type]
-        ),
-        back_populates="repository_review",
-    )
-
-    private_component_reviews = relationship(
-        "ComponentReview",
-        viewonly=True,
-        primaryjoin=lambda: (
-            (RepositoryReview.id == ComponentReview.repository_review_id)  # type: ignore[has-type]
-            & (ComponentReview.deleted == false())  # type: ignore[has-type]
-            & (ComponentReview.private == true())  # type: ignore[has-type]
-        ),
-    )
-
-    dict_collection_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
-    dict_element_visible_keys = ["id", "repository_id", "changeset_revision", "user_id", "rating", "deleted"]
-    approved_states = Bunch(NO="no", YES="yes")
-
-    def __init__(self, deleted=False, **kwd):
-        super().__init__(**kwd)
-        self.deleted = deleted
-
-
-class ComponentReview(Base, Dictifiable, _HasTable):
-    __tablename__ = "component_review"
-
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    repository_review_id = Column(ForeignKey("repository_review.id"), index=True)
-    component_id = Column(ForeignKey("component.id"), index=True)
-    comment = Column(TEXT)
-    private = Column(Boolean, default=False)
-    approved = Column(TrimmedString(255))
-    rating = Column(Integer)
-    deleted = Column(Boolean, index=True, default=False)
-    repository_review = relationship("RepositoryReview", back_populates="component_reviews")
-    component = relationship("Component")
-
-    dict_collection_visible_keys = [
-        "id",
-        "repository_review_id",
-        "component_id",
-        "private",
-        "approved",
-        "rating",
-        "deleted",
-    ]
-    dict_element_visible_keys = [
-        "id",
-        "repository_review_id",
-        "component_id",
-        "private",
-        "approved",
-        "rating",
-        "deleted",
-    ]
-    approved_states = Bunch(NO="no", YES="yes", NA="not_applicable")
-
-    def __init__(self, private=False, approved=False, deleted=False, **kwd):
-        super().__init__(**kwd)
-        self.private = private
-        self.approved = approved
-        self.deleted = deleted
-
-
-class Component(Base, _HasTable):
-    __tablename__ = "component"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(TrimmedString(255))
-    description = Column(TEXT)
-
-
-class ItemRatingAssociation(_HasTable):
+class ItemRatingAssociation:
     def __init__(self, id=None, user=None, item=None, rating=0, comment=""):
         self.id = id
         self.user = user
@@ -661,7 +561,7 @@ class ItemRatingAssociation(_HasTable):
         """Set association's item."""
 
 
-class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
+class RepositoryRatingAssociation(Base, ItemRatingAssociation):
     __tablename__ = "repository_rating_association"
 
     id = Column(Integer, primary_key=True)
@@ -678,7 +578,7 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
         self.repository = repository
 
 
-class Category(Base, Dictifiable, _HasTable):
+class Category(Base, Dictifiable):
     __tablename__ = "category"
 
     id = Column(Integer, primary_key=True)
@@ -697,7 +597,7 @@ class Category(Base, Dictifiable, _HasTable):
         self.deleted = deleted
 
 
-class RepositoryCategoryAssociation(Base, _HasTable):
+class RepositoryCategoryAssociation(Base):
     __tablename__ = "repository_category_association"
 
     id = Column(Integer, primary_key=True)
@@ -711,7 +611,7 @@ class RepositoryCategoryAssociation(Base, _HasTable):
         self.category = category
 
 
-class Tag(Base, _HasTable):
+class Tag(Base):
     __tablename__ = "tag"
     __table_args__ = (UniqueConstraint("name"),)
 
@@ -730,7 +630,7 @@ class Tag(Base, _HasTable):
 # TLDR: a declaratively-mapped class cannot have a .metadata attribute (it is used by SQLAlchemy's DeclarativeBase).
 
 
-class RepositoryMetadata(Dictifiable, _HasTable):
+class RepositoryMetadata(Dictifiable):
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.
     table = Table(
@@ -841,23 +741,13 @@ class RepositoryMetadata(Dictifiable, _HasTable):
 
 
 # After the map_imperatively statement has been executed, the members of the
-# properties dictionary (repository, reviews) will be available as instrumented
+# properties dictionary (repository) will be available as instrumented
 # class attributes on RepositoryMetadata.
 mapper_registry.map_imperatively(
     RepositoryMetadata,
     RepositoryMetadata.table,
     properties=dict(
         repository=relationship(Repository, back_populates="metadata_revisions"),
-        reviews=relationship(
-            RepositoryReview,
-            viewonly=True,
-            foreign_keys=lambda: [RepositoryReview.repository_id, RepositoryReview.changeset_revision],
-            primaryjoin=lambda: (
-                (RepositoryReview.repository_id == RepositoryMetadata.repository_id)
-                & (RepositoryReview.changeset_revision == RepositoryMetadata.changeset_revision)
-            ),
-            back_populates="repository_metadata",
-        ),
     ),
 )
 

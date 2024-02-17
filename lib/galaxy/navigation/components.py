@@ -1,9 +1,6 @@
+import abc
 import re
 import string
-from abc import (
-    ABCMeta,
-    abstractproperty,
-)
 from enum import Enum
 from typing import (
     Dict,
@@ -40,14 +37,16 @@ class LocatorT(NamedTuple):
             return str(by.value)
 
 
-class Target(metaclass=ABCMeta):
-    @abstractproperty
+class Target(metaclass=abc.ABCMeta):
+    @property
+    @abc.abstractmethod
     def description(self) -> str:
         """Return a plain-text description of the browser target for logging/messages."""
 
-    @abstractproperty
+    @property
+    @abc.abstractmethod
     def component_locator(self) -> LocatorT:
-        """Return a (by, selector) Selenium elment locator tuple for this selector."""
+        """Return a (by, selector) Selenium element locator tuple for this selector."""
 
     @property
     def selenium_locator(self) -> Tuple[str, str]:
@@ -256,8 +255,7 @@ class Component:
 
         def arguments() -> Tuple[str, Optional[Dict[str, str]], Optional[str]]:
             assert path
-            match = CALL_ARGUMENTS_RE.match(path)
-            if match:
+            if match := CALL_ARGUMENTS_RE.match(path):
                 component_name = match.group("SUBCOMPONENT")
                 expression = match.group("ARGS")
                 rest = match.group("REST")

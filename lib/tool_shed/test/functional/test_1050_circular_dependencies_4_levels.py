@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 emboss_repository_name = "emboss_0050"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -36,18 +34,12 @@ running_standalone = False
 class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
     """Verify that the code correctly handles circular dependencies down to n levels."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_convert_repository(self):
         """Create and populate convert_chars_0050."""
@@ -59,21 +51,15 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_column_repository(self):
@@ -84,20 +70,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_create_emboss_datatypes_repository(self):
@@ -112,20 +92,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_create_filtering_repository(self):
@@ -136,20 +110,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=filtering_repository_description,
             long_description=filtering_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0030_create_freebayes_repository(self):
@@ -160,20 +128,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="freebayes/freebayes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "freebayes/freebayes.tar",
                 commit_message="Uploaded freebayes tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0035_create_bismark_repository(self):
@@ -184,42 +146,28 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             description=bismark_repository_description,
             long_description=bismark_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="bismark/bismark.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.user_populator().setup_bismark_repo(repository, end=1)
 
     def test_0040_create_and_upload_dependency_definitions(self):
         """Set up the dependency structure."""
         global running_standalone
         if running_standalone:
-            column_repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_repository_name, common.test_user_1_name
-            )
-            convert_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+            convert_repository = self._get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name
             )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            bismark_repository = self.test_db_util.get_repository_by_name_and_owner(
+            bismark_repository = self._get_repository_by_name_and_owner(
                 bismark_repository_name, common.test_user_1_name
             )
             dependency_xml_path = self.generate_temp_path("test_1050", additional_paths=["dependencies"])
@@ -231,31 +179,31 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             column_tuple = (
                 self.url,
                 column_repository.name,
-                column_repository.user.username,
+                column_repository.owner,
                 self.get_repository_tip(column_repository),
             )
             convert_tuple = (
                 self.url,
                 convert_repository.name,
-                convert_repository.user.username,
+                convert_repository.owner,
                 self.get_repository_tip(convert_repository),
             )
             freebayes_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             emboss_tuple = (
                 self.url,
                 emboss_repository.name,
-                emboss_repository.user.username,
+                emboss_repository.owner,
                 self.get_repository_tip(emboss_repository),
             )
             bismark_tuple = (
                 self.url,
                 bismark_repository.name,
-                bismark_repository.user.username,
+                bismark_repository.owner,
                 self.get_repository_tip(bismark_repository),
             )
             self.create_repository_dependency(
@@ -269,7 +217,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             )
             self.create_repository_dependency(
                 repository=freebayes_repository,
-                repository_tuples=[freebayes_tuple, bismark_tuple, emboss_tuple, column_tuple],
+                repository_tuples=[freebayes_tuple, emboss_tuple, column_tuple],
                 filepath=dependency_xml_path,
             )
             self.create_repository_dependency(
@@ -295,24 +243,16 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
              id: 7 key: http://toolshed.local:10001__ESEP__emboss_5__ESEP__test__ESEP__8de5fe0d7b04
                  ['http://toolshed.local:10001', 'emboss_datatypes', 'test', 'dbd4f68bf507']
         """
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        filtering_repository = self._get_repository_by_name_and_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        bismark_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        bismark_repository = self._get_repository_by_name_and_owner(bismark_repository_name, common.test_user_1_name)
         self.check_repository_dependency(convert_repository, column_repository)
         self.check_repository_dependency(column_repository, convert_repository)
         self.check_repository_dependency(emboss_repository, bismark_repository)
@@ -327,28 +267,27 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         strings_displayed = [
             f"{freebayes_repository.name} depends on {', '.join(repo.name for repo in freebayes_dependencies)}."
         ]
-        self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
+        if not self.is_v2:
+            self.display_manage_repository_page(freebayes_repository, strings_displayed=strings_displayed)
 
     def test_0050_verify_tool_dependencies(self):
         """Check that freebayes and emboss display tool dependencies."""
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        self.display_manage_repository_page(
-            freebayes_repository,
-            strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],
-        )
-        self.display_manage_repository_page(
-            emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
-        )
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        if not self.is_v2:
+            self.display_manage_repository_page(
+                freebayes_repository,
+                strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],
+            )
+            self.display_manage_repository_page(
+                emboss_repository, strings_displayed=["Tool dependencies", "emboss", "5.0.0", "package"]
+            )
 
     def test_0055_install_column_repository(self):
         """Install column_maker with repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
@@ -368,15 +307,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "freebayes_0050",
             "bismark_0050",
         ]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories=installed_repositories)
 
     def test_0060_install_emboss_repository(self):
         """Install emboss_5 with repository dependencies."""
         global running_standalone
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             category_name,
@@ -398,40 +336,32 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "bismark_0050",
         ]
         strings_not_displayed = ["filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0065_deactivate_bismark_repository(self):
         """Deactivate bismark and verify things are okay."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
+        repository = self._get_installed_repository_by_name_owner(bismark_repository_name, common.test_user_1_name)
         self.deactivate_repository(repository)
         # Now we have emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed.
         installed_repositories = [
             (column_repository_name, common.test_user_1_name),
             (emboss_repository_name, common.test_user_1_name),
             (convert_repository_name, common.test_user_1_name),
-            (bismark_repository_name, common.test_user_1_name),
         ]
         strings_displayed = ["emboss_0050", "column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["bismark", "filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0070_uninstall_emboss_repository(self):
         """Uninstall the emboss_5 repository."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        self.uninstall_repository(repository)
-        strings_not_displayed = [repository.name, repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
-        self.test_db_util.ga_refresh(repository)
+        repository = self._get_installed_repository_by_name_owner(emboss_repository_name, common.test_user_1_name)
+        self._uninstall_repository(repository)
+        self._assert_has_no_installed_repos_with_names(repository.name)
+        self._refresh_tool_shed_repository(repository)
         self.check_galaxy_repository_tool_panel_section(repository, "emboss_5_0050")
         # Now we have bismark, column_maker, and convert_chars installed, filtering and freebayes never installed,
         # and emboss uninstalled.
@@ -441,35 +371,22 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         ]
         strings_displayed = ["column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["emboss_0050", "filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0075_install_freebayes_repository(self):
         """Install freebayes with repository dependencies. This should also automatically reactivate bismark and reinstall emboss_5."""
         strings_displayed = ["Handle", "tool dependencies", "freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"]
-        self.install_repository(
+        self._install_repository(
             freebayes_repository_name,
             common.test_user_1_name,
             category_name,
-            strings_displayed=strings_displayed,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             new_tool_panel_section_label="freebayes",
         )
-        emboss_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        bismark_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
-        strings_displayed = [
-            "emboss_0050",
-            emboss_repository.installed_changeset_revision,
-            bismark_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("emboss_0050")
         # Installing freebayes should automatically reinstall emboss and reactivate bismark.
         # Now column_maker, convert_chars, emboss, freebayes, and bismark should be installed.
         installed_repositories = [
@@ -487,7 +404,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "freebayes_0050",
         ]
         strings_not_displayed = ["filtering_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)

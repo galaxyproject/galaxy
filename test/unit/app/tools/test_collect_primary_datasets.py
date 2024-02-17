@@ -1,6 +1,5 @@
 import json
 import os
-import unittest
 from typing import cast
 
 from galaxy import (
@@ -8,22 +7,24 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
-from galaxy.objectstore import ObjectStore
+from galaxy.model.base import transaction
+from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
     BaseToolProvidedMetadata,
     LegacyToolProvidedMetadata,
     NullToolProvidedMetadata,
 )
+from galaxy.util.unittest import TestCase
 
 DEFAULT_TOOL_OUTPUT = "out1"
 DEFAULT_EXTRA_NAME = "test1"
 
 
-class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools):
+class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
-        object_store = cast(ObjectStore, MockObjectStore())
+        object_store = cast(BaseObjectStore, MockObjectStore())
         self.app.object_store = object_store
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
@@ -43,7 +44,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 2)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 2
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2"]
@@ -74,7 +75,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 3
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
@@ -113,7 +114,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+        assert len(datasets[DEFAULT_TOOL_OUTPUT]) == 3
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
@@ -349,7 +350,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         collected = self._collect(**kwargs)
         assert DEFAULT_TOOL_OUTPUT in collected, f"No such key [{DEFAULT_TOOL_OUTPUT}], in {collected}"
         output_files = collected[DEFAULT_TOOL_OUTPUT]
-        assert DEFAULT_EXTRA_NAME in output_files, "No such key [%s]" % DEFAULT_EXTRA_NAME
+        assert DEFAULT_EXTRA_NAME in output_files, f"No such key [{DEFAULT_EXTRA_NAME}]"
         return output_files[DEFAULT_EXTRA_NAME]
 
     def _collect(self, job_working_directory=None):
@@ -376,15 +377,13 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string(xml_str)
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        )
 
     def _replace_output_collectors_from_dict(self, output_dict):
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_output_dict(
-            output_dict
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_output_dict(output_dict)
         )
 
     def _append_job_json(self, object, output_path=None, line_type="new_primary_dataset"):
@@ -394,7 +393,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
             object["filename"] = name
         line = json.dumps(object)
         with open(os.path.join(self.test_directory, "galaxy.json"), "a") as f:
-            f.write("%s\n" % line)
+            f.write(f"{line}\n")
 
     def _setup_extra_file(self, **kwargs):
         path = kwargs.get("path", None)
@@ -403,9 +402,8 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
             name = kwargs.get("name", DEFAULT_EXTRA_NAME)
             visible = kwargs.get("visible", "visible")
             ext = kwargs.get("ext", "data")
-            template_args = (self.hda.id, name, visible, ext)
             directory = kwargs.get("directory", self.test_directory)
-            path = os.path.join(directory, "primary_%s_%s_%s_%s" % template_args)
+            path = os.path.join(directory, f"primary_{self.hda.id}_{name}_{visible}_{ext}")
             if "dbkey" in kwargs:
                 path = "{}_{}".format(path, kwargs["dbkey"])
         if not path:
@@ -437,13 +435,18 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesTools)
         self.app.model.context.add(history)
         for hda in hdas:
             history.add_dataset(hda, set_hid=False)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return history
 
 
 class MockObjectStore:
     def __init__(self):
         self.created_datasets = {}
+
+    def get_store_by(self, obj, **kwargs):
+        return "uuid"
 
     def update_from_file(self, dataset, file_name, create):
         if create:
@@ -456,7 +459,7 @@ class MockObjectStore:
     def exists(self, *args, **kwargs):
         return True
 
-    def get_filename(self, dataset):
+    def get_filename(self, dataset, **kwargs):
         return self.created_datasets[dataset]
 
 

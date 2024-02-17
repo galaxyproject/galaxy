@@ -134,7 +134,6 @@ class TempFileHandler:
 
 # an object corresponding to a reference layered alignment
 class RegionAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
@@ -226,7 +225,6 @@ class GenomicRegionAlignment(RegionAlignment):
 
 
 class SplicedAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=None, temp_file_handler=None):
@@ -660,9 +658,6 @@ def get_starts_ends_fields_from_gene_bed(line):
     if len(fields) < 12:
         raise Exception(f"Not a proper 12 column BED line ({line}).")
     tx_start = int(fields[1])
-    strand = fields[5]
-    if strand != "-":
-        strand = "+"  # Default strand is +
     cds_start = int(fields[6])
     cds_end = int(fields[7])
 

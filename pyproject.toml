@@ -1,13 +1,13 @@
 [tool.black]
 line-length = 120
-target-version = ['py37']
+target-version = ['py38']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
   | packages
+  | lib/tool_shed/test/test_data/repos
 )/
 '''
-force-exclude = 'lib/galaxy/util/jstree.py'
 
 [tool.darker]
 isort = true
@@ -24,8 +24,13 @@ repository = "https://github.com/galaxyproject/galaxy/"
 documentation = "https://docs.galaxyproject.org/"
 
 [[tool.poetry.source]]
+name = "PyPI"
+priority = "default"
+
+[[tool.poetry.source]]
 name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
+priority = "primary"
 
 [tool.poetry.dependencies]
 a2wsgi = "*"
@@ -34,7 +39,7 @@ alembic = "*"
 apispec = "*"
 Babel = "*"
 bdbag = ">=1.6.3"
-Beaker = "1.11.0"
+Beaker = "*"
 bioblend = "*"
 bleach = "*"
 boltons = "*"
@@ -45,50 +50,57 @@ Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/p
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
-cwltool = "==3.1.20211107152837"
+cwltool = ">=3.1.20230624081518"  # save time, minimum needed by cwl-1.0 branch
+conda-package-streaming = "*"
 dictobj = "*"
+dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
+dparse = "*"
 edam-ontology = "*"
-fastapi = ">=0.71.0"  # https://github.com/tiangolo/fastapi/issues/4041
-fastapi-utils = "*"
+fastapi = ">=0.108"
 fs = "*"
-future = "*"
+future = { git = "https://github.com/nsoranzo/python-future.git", branch = "python312-imp-module_past" }
 galaxy_sequence_utils = "*"
-gravity = ">=0.10.0"
+graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
+gravity = ">=1.0.4"
 gunicorn = "*"
 gxformat2 = "*"
+h5grove = ">=1.2.1"
 h5py = "*"
-importlib_resources = "*"
-isa-rwval = "*"
-kombu = "*"
+importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
+isa-rwval = ">=0.10.10"
+kombu = ">=5.3"  # for importlib-metadata fix
+isal = "*"
 lagom = "*"
 Mako = "*"
 Markdown = "*"
 MarkupSafe = "*"
 Mercurial = "*"
 mrcfile = "*"
+msal = "*"
 nodeenv = "*"
-nose = "*"
 numpy = "*"
+packaging = "*"
 paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
 Parsley = "*"
 Paste = "*"
 pebble = "*"
 psutil = "*"
-pulsar-galaxy-lib = ">=0.14.13"
+pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = "*"
+pydantic = {version = ">=2, !=2.6.0, !=2.6.1", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
-pysam = "*"
-python = ">=3.7,<3.11"  # Keep maximum version strict to appease numpy and scipy
+pysam = ">=0.21"  # for Python 3.11 support on macOS
+python = ">=3.8,<3.13"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 PyYAML = "*"
 refgenconf = ">=0.12.0"
+regex = "*"
 requests = "*"
 rocrate = "*"
 Routes = "*"
@@ -96,11 +108,11 @@ schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-lang
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
-sqlalchemy-migrate = "*"  # required to support tool shed
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
 starlette-context = "*"
+starlette-graphene3 = "*"
 svgwrite = "*"
 tifffile = "*"
 tuswsgi = "*"
@@ -110,37 +122,96 @@ uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
+s3fs = "^2023.1.0"
 
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
-black = "^22.1.0"
-cwltest = "2.2.20210901154959"
+axe-selenium-python = "*"
+black = "*"
+codespell = "*"
+cwltest = "*"
 darker = "*"
 fluent-logger = "*"
+galaxy-release-util = "*"
 httpx = "*"
-isort = "^5.10.1"
+isort = "*"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
-NoseHTML = "*"
-PyGithub = "*"
+myst-parser = "*"
+pkce = "*"
+playwright = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-celery = "*"
 pytest-cov = "*"
 pytest-html = "*"
+pytest-httpserver = "*"
 python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
 pytest-json-report = "*"
 pytest-mock = "*"
+pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
-recommonmark = "*"
 responses = "*"
 selenium = "*"
+urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
+seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx_markdown_tables = "*"
-sphinx_rtd_theme = ">=1.0.0"
+sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
-twill = "*"
+twill = ">=3.2.1"  # https://github.com/twill-tools/twill/issues/18
 watchdog = "*"
+Werkzeug = "*"
+
+[tool.poetry.group.typecheck.dependencies]
+mypy = "*"
+lxml-stubs = "*"
+pydantic = ">=2, !=2.6.0, !=2.6.1"  # for pydantic.mypy plugin
+types-bleach = "*"
+types-boto = "*"
+types-contextvars = "*"
+types-dataclasses = "*"
+types-docutils = "*"
+types-Markdown = "*"
+types-paramiko = "*"
+types-pkg-resources = "*"
+types-python-dateutil = "*"
+types-PyYAML = "*"
+types-requests = "*"
+types-six = "*"
+
+[tool.ruff]
+target-version = "py38"
+exclude = [
+  "lib/tool_shed/test/test_data/repos"
+]
+
+[tool.ruff.lint]
+# Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
+# flake8-logging-format (G) and pyupgrade (UP)
+select = ["E", "F", "B", "G", "UP"]
+# Exceptions:
+# B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
+# B9 flake8-bugbear opinionated warnings
+# E402 module level import not at top of file # TODO, we would like to improve this.
+# E501 is line length (delegated to black)
+# G* are TODOs
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
+
+[tool.ruff.lint.isort]
+# We are not selecting "I" rules in ruff yet because support for all the isort
+# options we need is not complete, but these are the one currently implemented.
+combine-as-imports = true
+relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.lint.per-file-ignores]
+# Don't check pyupgrade rules on tool scripts, which may use different Python versions
+"test/functional/tools/*" = ["UP"]
+"tools/*" = ["UP"]
+# Don't check some pyupgrade rules on generated files
+"lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
+"lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]

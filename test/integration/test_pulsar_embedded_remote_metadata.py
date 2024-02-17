@@ -26,6 +26,6 @@ test_tools = integration_util.integration_tool_runner(
     [
         "simple_constructs",
         "metadata_bam",
-        # "job_properties",  # https://github.com/galaxyproject/galaxy/issues/11813
+        "job_properties",
     ]
 )

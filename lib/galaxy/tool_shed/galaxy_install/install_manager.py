@@ -1,6 +1,13 @@
 import json
 import logging
 import os
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 from sqlalchemy import or_
 
@@ -8,6 +15,8 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.model.base import transaction
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -28,12 +37,52 @@ from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
 )
+from galaxy.util.tool_shed.tool_shed_registry import Registry
+from tool_shed_client.schema import (
+    ExtraRepoInfo,
+    RepositoryMetadataInstallInfoDict,
+)
 
 log = logging.getLogger(__name__)
 
 
+def get_install_info_from_tool_shed(
+    tool_shed_url: str, tool_shed_registry: Registry, name: str, owner: str, changeset_revision: str
+) -> Tuple[RepositoryMetadataInstallInfoDict, ExtraRepoInfo]:
+    params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
+    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
+    try:
+        raw_text = util.url_get(
+            tool_shed_url,
+            auth=tool_shed_registry.url_auth(tool_shed_url),
+            pathspec=pathspec,
+            params=params,
+        )
+    except Exception:
+        message = "Error attempting to retrieve installation information from tool shed "
+        message += f"{tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
+        log.exception(message)
+        raise exceptions.InternalServerError(message)
+    if raw_text:
+        # If successful, the response from get_repository_revision_install_info will be 3
+        # dictionaries, a dictionary defining the Repository, a dictionary defining the
+        # Repository revision (RepositoryMetadata), and a dictionary including the additional
+        # information required to install the repository.
+        items = json.loads(util.unicodify(raw_text))
+        repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
+        repo_info_dict: ExtraRepoInfo = items[2]
+    else:
+        message = f"Unable to retrieve installation information from tool shed {tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
+        log.warning(message)
+        raise exceptions.InternalServerError(message)
+    return repository_revision_dict, repo_info_dict
+
+
 class InstallRepositoryManager:
-    def __init__(self, app, tpm=None):
+    app: InstallationTarget
+    tpm: tool_panel_manager.ToolPanelManager
+
+    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)
@@ -60,36 +109,12 @@ class InstallRepositoryManager:
                 return repo_info_dict, tool_panel_section_key
         return None, None
 
-    def __get_install_info_from_tool_shed(self, tool_shed_url, name, owner, changeset_revision):
-        params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
-        pathspec = ["api", "repositories", "get_repository_revision_install_info"]
-        try:
-            raw_text = util.url_get(
-                tool_shed_url,
-                auth=self.app.tool_shed_registry.url_auth(tool_shed_url),
-                pathspec=pathspec,
-                params=params,
-            )
-        except Exception:
-            message = "Error attempting to retrieve installation information from tool shed "
-            message += f"{tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
-            log.exception(message)
-            raise exceptions.InternalServerError(message)
-        if raw_text:
-            # If successful, the response from get_repository_revision_install_info will be 3
-            # dictionaries, a dictionary defining the Repository, a dictionary defining the
-            # Repository revision (RepositoryMetadata), and a dictionary including the additional
-            # information required to install the repository.
-            items = json.loads(util.unicodify(raw_text))
-            repository_revision_dict = items[1]
-            repo_info_dict = items[2]
-        else:
-            message = (
-                "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s"
-                % (str(tool_shed_url), str(changeset_revision), str(name), str(owner))
-            )
-            log.warning(message)
-            raise exceptions.InternalServerError(message)
+    def __get_install_info_from_tool_shed(
+        self, tool_shed_url: str, name: str, owner: str, changeset_revision: str
+    ) -> Tuple[RepositoryMetadataInstallInfoDict, List[ExtraRepoInfo]]:
+        repository_revision_dict, repo_info_dict = get_install_info_from_tool_shed(
+            tool_shed_url, self.app.tool_shed_registry, name, owner, changeset_revision
+        )
         # Make sure the tool shed returned everything we need for installing the repository.
         if not repository_revision_dict or not repo_info_dict:
             invalid_parameter_message = "No information is available for the requested repository revision.\n"
@@ -113,7 +138,7 @@ class InstallRepositoryManager:
         shed_tool_conf=None,
         reinstalling=False,
         tool_panel_section_mapping=None,
-    ):
+    ) -> None:
         """
         Generate the metadata for the installed tool shed repository, among other things.
         This method is called when an administrator is installing a new repository or
@@ -144,8 +169,12 @@ class InstallRepositoryManager:
         )
         if tool_shed_status_dict:
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
+
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
@@ -162,7 +191,8 @@ class InstallRepositoryManager:
             )
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
-            tool_util.copy_sample_files(self.app, tool_index_sample_files, tool_path=tool_path)
+            tool_data_path = self.app.config.tool_data_path
+            tool_util.copy_sample_files(tool_data_path, tool_index_sample_files, tool_path=tool_path)
             sample_files_copied = [str(s) for s in tool_index_sample_files]
             repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
@@ -177,7 +207,7 @@ class InstallRepositoryManager:
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the
                 # local Galaxy instance.
                 tool_util.copy_sample_files(
-                    self.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied
+                    tool_data_path, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied
                 )
                 self.tpm.add_to_tool_panel(
                     repository_name=tool_shed_repository.name,
@@ -192,6 +222,7 @@ class InstallRepositoryManager:
                 )
         if "data_manager" in irmm_metadata_dict:
             dmh = data_manager.DataManagerHandler(self.app)
+            assert shed_config_dict
             dmh.install_data_managers(
                 self.app.config.shed_data_manager_config_file,
                 irmm_metadata_dict,
@@ -301,7 +332,9 @@ class InstallRepositoryManager:
         query = self.install_model.context.query(self.install_model.ToolShedRepository).filter(or_(*clause_list))
         return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 
-    def install(self, tool_shed_url, name, owner, changeset_revision, install_options):
+    def install(
+        self, tool_shed_url: str, name: str, owner: str, changeset_revision: str, install_options: Dict[str, Any]
+    ):
         # Get all of the information necessary for installing the repository from the specified tool shed.
         repository_revision_dict, repo_info_dicts = self.__get_install_info_from_tool_shed(
             tool_shed_url, name, owner, changeset_revision
@@ -324,7 +357,11 @@ class InstallRepositoryManager:
         return installed_tool_shed_repositories
 
     def __initiate_and_install_repositories(
-        self, tool_shed_url, repository_revision_dict, repo_info_dicts, install_options
+        self,
+        tool_shed_url: str,
+        repository_revision_dict: RepositoryMetadataInstallInfoDict,
+        repo_info_dicts: List[ExtraRepoInfo],
+        install_options: Dict[str, Any],
     ):
         try:
             has_repository_dependencies = repository_revision_dict["has_repository_dependencies"]
@@ -526,7 +563,11 @@ class InstallRepositoryManager:
         install_options=None,
     ):
         tool_panel_section_mapping = tool_panel_section_mapping or {}
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
+
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
             if tool_section is None:
@@ -821,8 +862,11 @@ class InstallRepositoryManager:
         """
         tool_shed_repository.status = status
         tool_shed_repository.error_message = error_message
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

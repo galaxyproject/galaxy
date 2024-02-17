@@ -2,6 +2,12 @@ import abc
 import logging
 import os
 import re
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -9,6 +15,7 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -48,19 +55,19 @@ class InfernalCM(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 model"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} models"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'infernal_model.cm' )
@@ -72,12 +79,12 @@ class InfernalCM(Text):
         """
         return file_prefix.startswith("INFERNAL")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of models and the version of CM file in dataset.
         """
-        dataset.metadata.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.file_name)
-        with open(dataset.file_name) as f:
+        dataset.metadata.number_of_models = generic_util.count_special_lines("^INFERNAL", dataset.get_file_name())
+        with open(dataset.get_file_name()) as f:
             first_line = f.readline()
             if first_line.startswith("INFERNAL"):
                 dataset.metadata.cm_version = (first_line.split()[0]).replace("INFERNAL", "")
@@ -88,22 +95,22 @@ class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "HMMER Database"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"HMMER database ({nice_size(dataset.get_size())})"
 
     @abc.abstractmethod
-    def sniff_prefix(self, filename):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         raise NotImplementedError
 
 
@@ -111,7 +118,7 @@ class Hmmer2(Hmmer):
     edam_format = "format_3328"
     file_ext = "hmm2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """HMMER2 files start with HMMER2.0"""
         return file_prefix.startswith("HMMER2.0")
 
@@ -120,7 +127,7 @@ class Hmmer3(Hmmer):
     edam_format = "format_3329"
     file_ext = "hmm3"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """HMMER3 files start with HMMER3/f"""
         return file_prefix.startswith("HMMER3/f")
 
@@ -131,7 +138,7 @@ class HmmerPress(Binary):
     file_ext = "hmmpress"
     composite_type = "basic"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "HMMER Binary database"
@@ -140,7 +147,7 @@ class HmmerPress(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -175,31 +182,31 @@ class Stockholm_1_0(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
 
         Set the number of models in dataset.
         """
         dataset.metadata.number_of_models = generic_util.count_special_lines(
-            "^#[[:space:]+]STOCKHOLM[[:space:]+]1.0", dataset.file_name
+            "^#[[:space:]+]STOCKHOLM[[:space:]+]1.0", dataset.get_file_name()
         )
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
 
         Split the input files by model records.
@@ -209,7 +216,7 @@ class Stockholm_1_0(Text):
 
         if len(input_datasets) > 1:
             raise Exception("STOCKHOLM-file splitting does not support multiple files")
-        input_files = [ds.file_name for ds in input_datasets]
+        input_files = [ds.get_file_name() for ds in input_datasets]
 
         chunk_size = None
         if split_params["split_mode"] == "number_of_parts":
@@ -237,7 +244,6 @@ class Stockholm_1_0(Text):
                 part_file.writelines(accumulated_lines)
 
         try:
-
             stockholm_records = _read_stockholm_records(input_files[0])
             stockholm_lines_accumulated = []
             for counter, stockholm_record in enumerate(stockholm_records, start=1):
@@ -266,23 +272,23 @@ class MauveXmfa(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
             else:
                 dataset.blurb = f"{dataset.metadata.number_of_models} alignments"
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("#FormatVersion Mauve1")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         dataset.metadata.number_of_models = generic_util.count_special_lines(
-            "^#Sequence([[:digit:]]+)Entry", dataset.file_name
+            "^#Sequence([[:digit:]]+)Entry", dataset.get_file_name()
         )
 
 

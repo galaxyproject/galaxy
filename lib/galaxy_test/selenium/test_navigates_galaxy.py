@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
+class TestNavigatesGalaxySelenium(SeleniumTestCase):
     """Test the Selenium test framework itself.
 
     Unlike the others test cases in this module, this test case tests the
@@ -20,10 +20,7 @@ class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
         self.upload_start_click()
         # Open the details, verify they are open and do a refresh.
         exception = None
-        if self.is_beta_history():
-            disabled_element_selector = ".show-history-content-selectors-btn"
-        else:
-            disabled_element_selector = ".history-refresh-button"
+        disabled_element_selector = ".show-history-content-selectors-btn"
         try:
             self.wait_for_selector(disabled_element_selector).click()
         except Exception as e:

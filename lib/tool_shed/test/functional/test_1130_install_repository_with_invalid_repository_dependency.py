@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0110"
 column_maker_repository_description = "A flexible aligner."
@@ -19,18 +17,12 @@ running_standalone = False
 class TestBasicRepositoryDependencies(ShedTwillTestCase):
     """Testing emboss 5 with repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_category(self):
         """Create a category for this test suite"""
@@ -40,52 +32,40 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         """Create and populate the column_maker repository."""
         global running_standalone
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         column_maker_repository = self.get_or_create_repository(
             name=column_maker_repository_name,
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
         """Create and populate the emboss_5_0110 repository."""
         global running_standalone
         if running_standalone:
-            category = self.test_db_util.get_category_by_name(category_name)
+            category = self.populator.get_category_with_name(category_name)
             repository = self.get_or_create_repository(
                 name=emboss_repository_name,
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded emboss tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0025_generate_repository_dependency_with_invalid_url(self):
@@ -93,15 +73,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
-            column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_maker_repository = self._get_repository_by_name_and_owner(
                 column_maker_repository_name, common.test_user_1_name
             )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
             url = "http://http://this is not an url!"
             name = column_maker_repository.name
-            owner = column_maker_repository.user.username
+            owner = column_maker_repository.owner
             changeset_revision = self.get_repository_tip(column_maker_repository)
             strings_displayed = ["Repository dependencies are currently supported only within the same tool shed"]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -118,15 +96,11 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
-            repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_maker_repository_name, common.test_user_1_name
-            )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
             url = self.url
             name = "!?invalid?!"
-            owner = repository.user.username
+            owner = repository.owner
             changeset_revision = self.get_repository_tip(repository)
             strings_displayed = ["because the name is invalid."]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -143,12 +117,8 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple"])
-            repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_maker_repository_name, common.test_user_1_name
-            )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
             url = self.url
             name = repository.name
             owner = "!?invalid?!"
@@ -168,15 +138,11 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path("test_1110", additional_paths=["simple", "invalid"])
-            repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_maker_repository_name, common.test_user_1_name
-            )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
             url = self.url
             name = repository.name
-            owner = repository.user.username
+            owner = repository.owner
             changeset_revision = "!?invalid?!"
             strings_displayed = ["because the changeset revision is invalid."]
             repository_tuple = (url, name, owner, changeset_revision)
@@ -190,28 +156,22 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0045_install_repository_with_invalid_repository_dependency(self):
         """Install the repository and verify that galaxy detects invalid repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         preview_strings_displayed = [
             "emboss_0110",
             self.get_repository_tip(repository),
             "Ignoring repository dependency definition",
         ]
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             category_name,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
-            post_submit_strings_displayed=[repository.name, repository.name, "New"],
-            includes_tools_for_display_in_tool_panel=True,
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.display_installed_repository_manage_page(
-            installed_repository=installed_repository,
-            strings_displayed=[],
-            strings_not_displayed=["Repository dependencies"],
-        )
+        json = self.display_installed_repository_manage_json(installed_repository)
+        assert "repository_dependencies" not in json

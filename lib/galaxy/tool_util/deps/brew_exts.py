@@ -29,6 +29,10 @@ import re
 import string
 import subprocess
 import sys
+from typing import (
+    List,
+    Tuple,
+)
 
 WHITESPACE_PATTERN = re.compile(r"[\s]+")
 
@@ -76,7 +80,7 @@ class RecipeContext:
         return recipe_cellar_path(self.brew_context.homebrew_cellar, self.recipe, self.version)
 
     @property
-    def tap_path(self):
+    def tap_path(self) -> str:
         return os.path.join(self.brew_context.homebrew_prefix, "Library", "Taps", self.__tap_path(self.recipe))
 
     def __tap_path(self, recipe):
@@ -156,14 +160,14 @@ class CommandLineException(Exception):
         self.stdout = stdout
         self.stderr = stderr
         self.message = (
-            "Failed to execute command-line %s, stderr was:\n"
+            f"Failed to execute command-line {command}, stderr was:\n"
             "-------->>begin stderr<<--------\n"
-            "%s\n"
+            f"{stderr}\n"
             "-------->>end stderr<<--------\n"
             "-------->>begin stdout<<--------\n"
-            "%s\n"
+            f"{stdout}\n"
             "-------->>end stdout<<--------\n"
-        ) % (command, stderr, stdout)
+        )
 
     def __str__(self):
         return self.message
@@ -234,7 +238,7 @@ def versioned_install(recipe_context, package=None, version=None, installed_deps
             attempt_unlink_all(package, deps)
 
 
-def commit_for_version(recipe_context, package, version):
+def commit_for_version(recipe_context: RecipeContext, package, version):
     tap_path = recipe_context.tap_path
     commit = None
     with brew_head_at_commit("master", tap_path):
@@ -320,7 +324,6 @@ def build_env_statements(cellar_root, cellar_path, relaxed=None, custom_only=Fal
 
 
 def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=False):
-
     path_appends = []
     ld_path_appends = []
     actions = []
@@ -490,8 +493,8 @@ def extended_brew_info(recipe):
     return extra_info
 
 
-def brew_versions_info(package, tap_path):
-    def versioned(recipe_path):
+def brew_versions_info(package, tap_path: str) -> List[Tuple[str, str, bool]]:
+    def versioned(recipe_path: str):
         if not os.path.isabs(recipe_path):
             recipe_path = os.path.join(os.getcwd(), recipe_path)
         # Dependencies in the same repository should be versioned,
@@ -502,7 +505,7 @@ def brew_versions_info(package, tap_path):
     # TODO: Also use tags.
     stdout = brew_execute(["versions", package])
     version_parts = [line for line in stdout.split("\n") if line and "git checkout" in line]
-    version_parts = map(lambda l: WHITESPACE_PATTERN.split(l), version_parts)
+    version_parts = [WHITESPACE_PATTERN.split(line) for line in version_parts]
     info = [(p[0], p[3], versioned(p[4])) for p in version_parts]
     return info
 

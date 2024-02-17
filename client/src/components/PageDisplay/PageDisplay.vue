@@ -1,25 +1,41 @@
 <template>
-    <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="markdownConfig"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :download-endpoint="stsUrl(config)"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
-    </config-provider>
+    <PublishedItem :item="page">
+        <template v-slot>
+            <div v-if="isConfigLoaded">
+                <Markdown
+                    v-if="page.content_format == 'markdown'"
+                    :markdown-config="page"
+                    :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                    :download-endpoint="stsUrl(config)"
+                    :export-link="exportUrl"
+                    :read-only="!userOwnsPage"
+                    @onEdit="onEdit" />
+                <PageHtml v-else :page="page" />
+            </div>
+            <LoadingSpan v-else message="Loading Galaxy configuration" />
+        </template>
+    </PublishedItem>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown.vue";
+import { storeToRefs } from "pinia";
+
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import { withPrefix } from "@/utils/redirect";
+import { urlData } from "@/utils/url";
+
+import PageHtml from "./PageHtml.vue";
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import Markdown from "@/components/Markdown/Markdown.vue";
 
 export default {
     components: {
-        ConfigProvider,
+        LoadingSpan,
         Markdown,
+        PageHtml,
+        PublishedItem,
     },
     props: {
         pageId: {
@@ -27,41 +43,42 @@ export default {
             required: true,
         },
     },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        const userStore = useUserStore();
+        const { currentUser } = storeToRefs(userStore);
+        return { config, currentUser, isConfigLoaded };
+    },
     data() {
         return {
-            markdownConfig: {},
+            page: {},
         };
     },
     computed: {
+        userOwnsPage() {
+            return this.currentUser.username === this.page.username;
+        },
         dataUrl() {
-            return `${getAppRoot()}api/pages/${this.pageId}`;
+            return `/api/pages/${this.pageId}`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
         editUrl() {
-            return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
+            return `/pages/editor?id=${this.pageId}`;
         },
     },
     created() {
-        this.getContent().then((data) => {
-            this.markdownConfig = { ...data, markdown: data.content };
+        urlData({ url: this.dataUrl }).then((data) => {
+            this.page = data;
         });
     },
     methods: {
         onEdit() {
-            window.location = this.editUrl;
+            window.location = withPrefix(this.editUrl);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;
-        },
-        async getContent() {
-            try {
-                const response = await axios.get(this.dataUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
-            }
         },
     },
 };

@@ -31,6 +31,13 @@ mapping:
           Where the hgweb.config file is stored.
           The default is the Galaxy installation directory.
 
+      config_hg_for_dev:
+        type: str
+        required: false
+        desc: |
+          Allow pushing directly to mercurial repositories directly
+          and without authentication.
+
       file_path:
         type: str
         default: database/community_files
@@ -259,27 +266,6 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
-      debug:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Configuration for debugging middleware
-
-      use_lint:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Check for WSGI compliance.
-
-      use_printdebug:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Intercept print statements and show them on the returned page.
-
       admin_users:
         type: str
         required: false
@@ -363,6 +349,67 @@ mapping:
         desc: |
           Address to join mailing list
 
+      ga4gh_service_id:
+        type: str
+        required: false
+        desc: |
+          Service ID for GA4GH services.
+
+          If unset, one will be generated using the URL the target API requests are made against.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+          This value should likely reflect your service's URL. For instance for usegalaxy.org
+          this value should be org.usegalaxy. Particular Galaxy implementations will treat this
+          value as a prefix and append the service type to this ID. For instance for the DRS
+          service "id" (available via the DRS API) for the above configuration value would be
+          org.usegalaxy.drs.
+
+      organization_name:
+        type: str
+        required: false
+        desc: |
+          The name of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "Not Evil Corporation".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint for the Galaxy DRS API.
+          If unset, one will be generated using ga4gh_service_id (but only in the context
+          of GA4GH APIs).
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      organization_url:
+        type: str
+        required: false
+        desc: |
+          The URL of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "notevilcorp.com".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      ga4gh_service_environment:
+        type: str
+        required: False
+        desc: |
+          Service environment (exposed via the service-info endpoint for the Galaxy DRS API) for
+          implemented GA4GH services.
+
+          Suggested values are prod, test, dev, staging.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
       use_heartbeat:
         type: bool
         default: true
@@ -370,13 +417,6 @@ mapping:
         desc: |
           Write thread status periodically to 'heartbeat.log' (careful, uses disk
            space rapidly!)
-
-      use_profile:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Profiling middleware (cProfile based)
 
       enable_galaxy_flavor_docker_image:
         type: bool
@@ -548,6 +588,25 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
+      citation_cache_url:
+        type: str
+        required: false
+        desc: |
+          Url to database used by beaker for citation related caching.
+
+      citation_cache_table_name:
+        type: str
+        default: beaker_cache
+        required: false
+        desc: |
+          Database table used by beaker for citation related caching.
+
+      citation_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          Schema of database table used by beaker for citation related caching.
+
       log_actions:
         type: bool
         default: false
@@ -584,6 +643,22 @@ mapping:
         desc: |
           Determines the minimum log level that will be sent as an event to Sentry.
           Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+
+      sentry_traces_sample_rate:
+        type: float
+        default: 0.0
+        required: false
+        desc: |
+          Set to a number between 0 and 1. With this option set, every transaction created
+          will have that percentage chance of being sent to Sentry. A value higher than 0
+          is required to analyze performance.
+
+      sentry_ca_certs:
+        type: str
+        required: False
+        desc: |
+          Use this option to provide the path to location of the CA (Certificate Authority)
+          certificate file if the sentry server uses a self-signed certificate.
 
       session_duration:
         type: int

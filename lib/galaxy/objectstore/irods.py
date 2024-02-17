@@ -1,9 +1,11 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
+
 import logging
 import os
 import shutil
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -25,11 +27,12 @@ from galaxy.exceptions import (
 from galaxy.util import (
     directory_hash_id,
     ExecutionTimer,
+    string_as_bool,
     umask_fix_perms,
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import DiskObjectStore
+from . import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
@@ -73,12 +76,14 @@ def parse_config_xml(config_xml):
         port = int(c_xml[0].get("port", 0))
         timeout = int(c_xml[0].get("timeout", 30))
         refresh_time = int(c_xml[0].get("refresh_time", 300))
+        connection_pool_monitor_interval = int(c_xml[0].get("connection_pool_monitor_interval", -1))
 
         c_xml = config_xml.findall("cache")
         if not c_xml:
             _config_xml_error("cache")
         cache_size = float(c_xml[0].get("size", -1))
         staging_path = c_xml[0].get("path", None)
+        cache_updated_data = string_as_bool(c_xml[0].get("cache_updated_data", "True"))
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
@@ -102,12 +107,15 @@ def parse_config_xml(config_xml):
                 "port": port,
                 "timeout": timeout,
                 "refresh_time": refresh_time,
+                "connection_pool_monitor_interval": connection_pool_monitor_interval,
             },
             "cache": {
                 "size": cache_size,
                 "path": staging_path,
+                "cache_updated_data": cache_updated_data,
             },
             "extra_dirs": extra_dirs,
+            "private": DiskObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -133,10 +141,12 @@ class CloudConfigMixin:
                 "port": self.port,
                 "timeout": self.timeout,
                 "refresh_time": self.refresh_time,
+                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
             },
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
             },
         }
 
@@ -193,16 +203,18 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.refresh_time = connection_dict.get("refresh_time")
         if self.refresh_time is None:
             _config_dict_error("connection->refresh_time")
+        self.connection_pool_monitor_interval = connection_dict.get("connection_pool_monitor_interval")
+        if self.connection_pool_monitor_interval is None:
+            _config_dict_error("connection->connection_pool_monitor_interval")
 
-        cache_dict = config_dict["cache"]
-        if cache_dict is None:
-            _config_dict_error("cache")
-        self.cache_size = cache_dict.get("size", -1)
+        cache_dict = config_dict.get("cache") or {}
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_path
         if self.cache_size is None:
             _config_dict_error("cache->size")
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         if self.staging_path is None:
             _config_dict_error("cache->path")
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:
@@ -227,6 +239,14 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         )
         # Set connection timeout
         self.session.connection_timeout = self.timeout
+
+        if self.connection_pool_monitor_interval != -1:
+            # This Event object is initialized to False
+            # It is set to True in shutdown(), causing
+            # the connection pool monitor thread to return/terminate
+            self.stop_connection_pool_monitor_event = threading.Event()
+            self.connection_pool_monitor_thread = None
+
         log.debug("irods_pt __init__: %s", ipt_timer)
 
     def shutdown(self):
@@ -237,11 +257,57 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.session.cleanup()
         except OSError:
             pass
+
+        if self.connection_pool_monitor_interval != -1:
+            # Set to True so the connection pool monitor thread will return/terminate
+            self.stop_connection_pool_monitor_event.set()
+            if self.connection_pool_monitor_thread is not None:
+                self.connection_pool_monitor_thread.join(5)
+
         log.debug("irods_pt shutdown: %s", ipt_timer)
 
     @classmethod
     def parse_xml(cls, config_xml):
         return parse_config_xml(config_xml)
+
+    def start_connection_pool_monitor(self):
+        self.connection_pool_monitor_thread = threading.Thread(
+            target=self._connection_pool_monitor,
+            args=(),
+            kwargs={
+                "refresh_time": self.refresh_time,
+                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
+                "stop_connection_pool_monitor_event": self.stop_connection_pool_monitor_event,
+            },
+            name="ConnectionPoolMonitorThread",
+            daemon=True,
+        )
+        self.connection_pool_monitor_thread.start()
+        log.info("Connection pool monitor started")
+
+    def start(self):
+        if self.connection_pool_monitor_interval != -1:
+            self.start_connection_pool_monitor()
+
+    def _connection_pool_monitor(self, *args, **kwargs):
+        refresh_time = kwargs["refresh_time"]
+        connection_pool_monitor_interval = kwargs["connection_pool_monitor_interval"]
+        stop_connection_pool_monitor_event = kwargs["stop_connection_pool_monitor_event"]
+
+        while not stop_connection_pool_monitor_event.is_set():
+            curr_time = datetime.now()
+            idle_connection_set = self.session.pool.idle.copy()
+            for conn in idle_connection_set:
+                # If the connection was created more than 'refresh_time'
+                # seconds ago, release the connection (as its stale)
+                if (curr_time - conn.create_time).total_seconds() > refresh_time:
+                    log.debug(
+                        "Idle connection with id {} was created more than {} seconds ago. Releasing the connection.".format(
+                            id(conn), refresh_time
+                        )
+                    )
+                    self.session.pool.release_connection(conn, True)
+            stop_connection_pool_monitor_event.wait(connection_pool_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -268,6 +334,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         ipt_timer = ExecutionTimer()
@@ -303,6 +370,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         log.debug("irods_pt _construct_path: %s", ipt_timer)
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -375,7 +446,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
-        options = {kw.DEST_RESC_NAME_KW: self.resource}
+        # we need to allow irods to override already existing zero-size output files created
+        # in object store cache during job setup (see also https://github.com/galaxyproject/galaxy/pull/17025#discussion_r1394517033)
+        # TODO: get rid of this flag when Galaxy stops pre-creating those output files in cache
+        options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
             cache_path = self._get_cache_path(rel_path)
@@ -538,6 +612,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_irods(rel_path, from_string="")
         log.debug("irods_pt _create: %s", ipt_timer)
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -545,7 +620,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):
@@ -650,6 +725,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
         rel_path = self._construct_path(obj, **kwargs)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
@@ -657,6 +733,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # iRODS does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -665,8 +743,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             log.debug("irods_pt _get_filename: %s", ipt_timer)
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
@@ -698,7 +776,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)

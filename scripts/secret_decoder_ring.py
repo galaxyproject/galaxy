@@ -20,8 +20,8 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("action", metavar="ACTION", type=str, default=None, help="decode|encode")
-parser.add_argument("value", metavar="VALUE", type=str, default=None, help="value to encode or decode")
+parser.add_argument("action", metavar="ACTION", type=str, default=None, choices=("decode", "encode"))
+parser.add_argument("value", metavar="VALUE", nargs="+", type=str, default=None, help="value to encode or decode")
 populate_config_args(parser)
 args = parser.parse_args()
 
@@ -39,9 +39,10 @@ security_helper = IdEncodingHelper(id_secret=id_secret)
 # Login manager to manage current_user functionality
 
 if args.action == "decode":
-    sys.stdout.write(security_helper.decode_guid(args.value.lstrip("F")))
+    for value in args.value:
+        sys.stdout.write(security_helper.decode_guid(value.lstrip("F")))
+        sys.stdout.write("\n")
 elif args.action == "encode":
-    sys.stdout.write(unicodify(security_helper.encode_guid(args.value)))
-else:
-    sys.stdout.write("Unknown argument")
-sys.stdout.write("\n")
+    for value in args.value:
+        sys.stdout.write(unicodify(security_helper.encode_guid(value)))
+        sys.stdout.write("\n")

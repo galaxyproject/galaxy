@@ -20,9 +20,6 @@ export default {
         displayRuleType: {
             required: true,
         },
-        builder: {
-            required: true,
-        },
     },
     data: function () {
         return {
@@ -40,7 +37,7 @@ export default {
             this.$emit("update:displayRuleType", null);
         },
         okay() {
-            this.builder.handleRuleSave(this.ruleType);
+            this.$emit("saveRule", this.ruleType);
             this.cancel();
         },
     },

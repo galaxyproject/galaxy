@@ -1,9 +1,11 @@
+import { createLocalVue, shallowMount } from "@vue/test-utils";
+
+import { Model } from "./model";
+import { Services } from "./services";
+import { UrlTracker } from "./utilities";
+
 import DataDialog from "./DataDialog.vue";
 import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
-import { Model } from "./model";
-import { UrlTracker } from "./utilities";
-import { Services } from "./services";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
 
 jest.mock("app");
 
@@ -19,9 +21,9 @@ describe("model.js", () => {
         const model = new Model();
         try {
             model.add({ idx: 1 });
-            throw "Accepted invalid record.";
+            throw Error("Accepted invalid record.");
         } catch (error) {
-            expect(error).toBe("Invalid record with no <id>.");
+            expect(error.message).toBe("Invalid record with no <id>.");
         }
         model.add({ id: 1 });
         expect(model.count()).toBe(1);

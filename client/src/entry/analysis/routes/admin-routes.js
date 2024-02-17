@@ -1,30 +1,38 @@
 import { getGalaxyInstance } from "app";
-
-import Admin from "entry/analysis/modules/Admin";
-import Home from "components/admin/Home";
 import ActiveInvocations from "components/admin/ActiveInvocations";
 import DataManager from "components/admin/DataManager/DataManager";
-import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
+import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
 import DataManagerTable from "components/admin/DataManager/DataManagerTable";
 import DataManagerView from "components/admin/DataManager/DataManagerView";
 import DataTables from "components/admin/DataTables";
 import DataTypes from "components/admin/DataTypes";
+import ToolboxDependencies from "components/admin/Dependencies/Landing";
 import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
-import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
-import Jobs from "components/admin/Jobs";
-import RegisterForm from "components/login/RegisterForm";
+import Home from "components/admin/Home";
+import JobsList from "components/admin/JobsList";
+import BroadcastForm from "components/admin/Notifications/BroadcastForm";
+import NotificationForm from "components/admin/Notifications/NotificationForm";
+import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
+import FormGeneric from "components/Form/FormGeneric";
+import adminFormsGridConfig from "components/Grid/configs/adminForms";
+import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
+import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
+import adminRolesGridConfig from "components/Grid/configs/adminRoles";
+import adminUsersGridConfig from "components/Grid/configs/adminUsers";
+import GridList from "components/Grid/GridList";
+import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
-import ToolboxDependencies from "components/admin/Dependencies/Landing";
+import Admin from "entry/analysis/modules/Admin";
 
 export default [
     {
         path: "/admin",
         component: Admin,
+        meta: { requiresAdmin: true }, // All children of this route require admin
         children: [
             {
                 path: "",
@@ -41,7 +49,7 @@ export default [
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
             { path: "invocations", component: ActiveInvocations },
-            { path: "jobs", component: Jobs },
+            { path: "jobs", component: JobsList },
             { path: "reset_metadata", component: ResetMetadata },
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },
@@ -55,9 +63,10 @@ export default [
                     const Galaxy = getGalaxyInstance();
                     return {
                         redirect: "/admin/users",
-                        registration_warning_message: Galaxy.config.registration_warning_message,
-                        mailing_join_addr: Galaxy.config.mailing_join_addr,
-                        server_mail_configured: Galaxy.config.server_mail_configured,
+                        registrationWarningMessage: Galaxy.config.registration_warning_message,
+                        mailingJoinAddr: Galaxy.config.mailing_join_addr,
+                        serverMailConfigured: Galaxy.config.server_mail_configured,
+                        sessionCsrfToken: Galaxy.session_csrf_token,
                     };
                 },
             },
@@ -93,48 +102,71 @@ export default [
                 ],
             },
 
+            // notifications and broadcasts
+            {
+                path: "notifications",
+                component: NotificationsManagement,
+            },
+
+            {
+                path: "notifications/create_new_broadcast",
+                name: "NewBroadcast",
+                component: BroadcastForm,
+            },
+
+            {
+                path: "notifications/edit_broadcast/:id",
+                name: "EditBroadcast",
+                component: BroadcastForm,
+                props: true,
+            },
+
+            {
+                path: "notifications/create_new_notification",
+                name: "NewNotification",
+                component: NotificationForm,
+            },
+
             // grids
             {
                 path: "forms",
-                component: Grid,
-                props: {
-                    urlBase: "forms/forms_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminFormsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "groups",
-                component: Grid,
-                props: {
-                    urlBase: "admin/groups_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminGroupsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "quotas",
-                component: Grid,
-                props: {
-                    urlBase: "admin/quotas_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminQuotasGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "roles",
-                component: Grid,
-                props: {
-                    urlBase: "admin/roles_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminRolesGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "users",
-                component: Grid,
-                props: {
-                    urlBase: "admin/users_list",
-                },
-            },
-            {
-                path: "tool_versions",
-                component: Grid,
-                props: {
-                    urlBase: "admin/tool_versions_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminUsersGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             // forms
             {
@@ -142,123 +174,123 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     title: "Reset passwords",
-                    url: `admin/reset_user_password?id=${route.query.id}`,
+                    url: `/admin/reset_user_password?id=${route.query.id}`,
                     icon: "fa-user",
                     submitTitle: "Save new password",
-                    redirect: "admin/users",
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_roles_and_groups_for_user",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
+                    url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
                     icon: "fa-users",
-                    redirect: "admin/users",
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_users_and_groups_for_role",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "admin/users",
+                    url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
+                    redirect: "/admin/roles",
                 }),
             },
             {
                 path: "form/manage_users_and_roles_for_group",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "admin/users",
+                    url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
+                    redirect: "/admin/groups",
                 }),
             },
             {
                 path: "form/manage_users_and_groups_for_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/create_role",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_role",
-                    redirect: "admin/roles",
+                    url: "/admin/create_role",
+                    redirect: "/admin/roles",
                 },
             },
             {
                 path: "form/create_group",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_group",
-                    redirect: "admin/groups",
+                    url: "/admin/create_group",
+                    redirect: "/admin/groups",
                 },
             },
             {
                 path: "form/create_quota",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_quota",
-                    redirect: "admin/quotas",
+                    url: "/admin/create_quota",
+                    redirect: "/admin/quotas",
                 },
             },
             {
                 path: "form/rename_role",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_role?id=${route.query.id}`,
-                    redirect: "admin/roles",
+                    url: `/admin/rename_role?id=${route.query.id}`,
+                    redirect: "/admin/roles",
                 }),
             },
             {
                 path: "form/rename_group",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_group?id=${route.query.id}`,
-                    redirect: "admin/groups",
+                    url: `/admin/rename_group?id=${route.query.id}`,
+                    redirect: "/admin/groups",
                 }),
             },
             {
                 path: "form/rename_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/rename_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/edit_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/edit_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/edit_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/set_quota_default",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/set_quota_default?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/set_quota_default?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/create_form",
                 component: FormGeneric,
                 props: {
-                    url: "forms/create_form",
-                    redirect: "admin/forms",
+                    url: "/forms/create_form",
+                    redirect: "/admin/forms",
                 },
             },
             {
                 path: "form/edit_form",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `forms/edit_form?id=${route.query.id}`,
-                    redirect: "admin/forms",
+                    url: `/forms/edit_form?id=${route.query.id}`,
+                    redirect: "/admin/forms",
                 }),
             },
         ],

@@ -4,14 +4,13 @@ import requests
 import yaml
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
-from ..locations import ToolLocationResolver
+from . import ToolLocationResolver
 
 
 class DockStoreResolver(ToolLocationResolver):
-
     scheme = "dockstore"
 
-    def get_tool_source_path(self, uri_like):
+    def get_tool_source_path(self, uri_like: str) -> str:
         assert uri_like.startswith("dockstore://")
         tool_id = uri_like[len("dockstore://") :]
         if ":" in tool_id:

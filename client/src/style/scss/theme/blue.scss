@@ -10,15 +10,19 @@ $brand-dark: #2c3143;
 $brand-toggle: gold;
 
 // Masthead colors
-$brand-masthead: $brand-dark;
-$brand-masthead-text: $brand-light;
-$brand-masthead-text-active: lighten($brand-light, 15%);
-$brand-masthead-text-hover: $brand-toggle;
+$masthead-color: $brand-dark;
+$masthead-text-color: $brand-light;
+$masthead-text-active: lighten($brand-light, 15%);
+$masthead-text-hover: $brand-toggle;
+$masthead-link-color: transparent;
+$masthead-link-hover: transparent;
+$masthead-link-active: darken($masthead-color, 10%);
 
 // Text colors
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);
 $text-light: lighten($text-color, 20%);
+$text-shadow: drop-shadow(0 0 0.2rem $brand-dark);
 
 // Light grays for backgrounds
 $white: lighten($brand-light, 15%); // body background
@@ -80,8 +84,8 @@ $state-success-bg: theme-color-level("success", $alert-bg-level);
 $state-success-border: theme-color-level("success", $alert-border-level);
 
 // Fonts and sizes
-$font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+$font-family-sans-serif: "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 $font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base: $font-family-sans-serif;
 $font-size-base: 0.85rem; // default 1rem
@@ -121,11 +125,12 @@ $panel_footer_height: 25px;
 
 // Portlets
 $portlet-bg-color: $gray-200;
+$portlet-focus-color: $brand-info;
 
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
-$border-radius-extralarge: 1rem;
+$border-radius-extralarge: 0.7rem;
 $border-default: 1px solid $border-color;
 
 // Buttons
@@ -150,8 +155,8 @@ $state-running-border: $border-color;
 
 // Workflow editor
 $workflow-editor-bg: $white;
-$workflow-editor-grid-size: 0.7rem;
 $workflow-editor-grid-color: lighten($brand-primary, 65%);
+$workflow-editor-grid-color-landmark: lighten($brand-primary, 60%);
 $workflow-overview-bg: $panel-bg-color;
 $workflow-node-width: 12.5rem;
 

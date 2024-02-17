@@ -1,106 +1,101 @@
+<script setup lang="ts">
+import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
+import { computed, onMounted, ref, watchEffect } from "vue";
+
+import localize from "@/utils/localization";
+import { wait } from "@/utils/utils";
+
+import type { CleanableSummary, CleanupOperation } from "./model";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface CleanupOperationSummaryProps {
+    operation: CleanupOperation;
+    refreshOperationId?: string;
+    refreshDelay?: number;
+}
+
+const props = withDefaults(defineProps<CleanupOperationSummaryProps>(), {
+    refreshOperationId: undefined,
+    refreshDelay: 500,
+});
+
+const summary = ref<CleanableSummary>();
+const loading = ref(true);
+const errorMessage = ref<string>();
+
+const canClearItems = computed(() => {
+    return (summary.value?.totalItems ?? 0) > 0;
+});
+
+const emit = defineEmits<{
+    (e: "onReviewItems", operation: CleanupOperation, totalItems: number): void;
+}>();
+
+onMounted(async () => {
+    await refresh();
+});
+
+watchEffect(async () => {
+    if (props.operation.id === props.refreshOperationId) {
+        await refresh();
+    }
+});
+
+async function refresh() {
+    loading.value = true;
+    try {
+        const start = Date.now();
+        summary.value = await props.operation.fetchSummary();
+        const duration = Date.now() - start;
+        await wait(props.refreshDelay - duration);
+    } catch (error) {
+        onError(String(error));
+    } finally {
+        loading.value = false;
+    }
+}
+
+function onError(message: string) {
+    errorMessage.value = message;
+}
+
+function onReviewItems() {
+    emit("onReviewItems", props.operation, summary.value?.totalItems ?? 0);
+}
+</script>
+
 <template>
-    <b-card :title="operation.name" class="operation-card mx-2" footer-bg-variant="white" footer-border-variant="white">
+    <BCard
+        :title="props.operation.name"
+        class="operation-card mx-2"
+        footer-bg-variant="white"
+        footer-border-variant="white">
         <LoadingSpan v-if="loading" />
-        <b-card-text v-if="!loading">
+        <BCardText v-if="!loading">
             {{ operation.description }}
-        </b-card-text>
+        </BCardText>
         <template v-slot:footer>
             <div v-if="!loading">
-                <b-alert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
-                    <h4 class="alert-heading">Failed to retrieve details.</h4>
+                <BAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
+                    <h2 class="alert-heading h-sm">Failed to retrieve details.</h2>
                     {{ errorMessage }}
-                </b-alert>
-                <b-link
-                    v-else-if="canClearItems"
+                </BAlert>
+                <BLink
+                    v-else-if="summary && canClearItems"
                     href="#"
                     class="card-link"
                     data-test-id="review-link"
                     @click="onReviewItems">
-                    <b>{{ reviewAndClearText }} {{ summary.niceTotalSize }}</b>
-                </b-link>
+                    <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
+                </BLink>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">
-                    {{ noItemsToClearText }}
+                    {{ localize("No items to clear") }}
                 </b>
             </div>
         </template>
-    </b-card>
+    </BCard>
 </template>
-
-<script>
-import _l from "utils/localization";
-import { delay } from "utils/utils";
-import LoadingSpan from "components/LoadingSpan";
-import { CleanupOperation } from "./model";
-
-export default {
-    components: {
-        LoadingSpan,
-    },
-    props: {
-        operation: {
-            type: CleanupOperation,
-            required: true,
-        },
-        refreshOperationId: {
-            type: String,
-            required: false,
-            default: null,
-        },
-        refreshDelay: {
-            type: Number,
-            required: false,
-            default: 500,
-        },
-    },
-    data() {
-        return {
-            noItemsToClearText: _l("No items to clear"),
-            reviewAndClearText: _l("Review and clear"),
-            summary: null,
-            loading: true,
-            errorMessage: null,
-        };
-    },
-    computed: {
-        /** @returns {Boolean} */
-        canClearItems() {
-            return this.summary.totalItems > 0;
-        },
-    },
-    watch: {
-        /** The parent signaled that `operationId` must be updated */
-        async refreshOperationId(operationId) {
-            if (this.operation.id === operationId) {
-                await this.refresh();
-            }
-        },
-    },
-    async created() {
-        await this.refresh();
-    },
-    methods: {
-        async refresh() {
-            this.loading = true;
-            try {
-                const start = Date.now();
-                this.summary = await this.operation.fetchSummary();
-                const duration = Date.now() - start;
-                await delay(this.refreshDelay - duration);
-            } catch (error) {
-                this.onError(error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        onError(err) {
-            this.errorMessage = err;
-        },
-        onReviewItems() {
-            this.$emit("onReviewItems", this.operation, this.summary.totalItems);
-        },
-    },
-};
-</script>
 
 <style scoped>
 .operation-card {

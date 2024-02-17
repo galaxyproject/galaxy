@@ -23,18 +23,29 @@ import tempfile
 import textwrap
 import threading
 import time
-import typing
 import unicodedata
 import xml.dom.minidom
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from typing import (
     Any,
+    cast,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Mapping,
     Optional,
     overload,
+    Tuple,
+    TypeVar,
+    Union,
 )
 from urllib.parse import (
     urlencode,
@@ -49,8 +60,11 @@ from boltons.iterutils import (
     remap,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-from typing_extensions import Literal
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from typing_extensions import (
+    Literal,
+    Self,
+)
 
 try:
     import grp
@@ -60,24 +74,53 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-    from lxml.etree import (
-        _Element as Element,
-        ElementTree,
-    )
+
+    # lxml.etree.Element is a function that returns a new instance of the
+    # lxml.etree._Element class. This class doesn't have a proper __init__()
+    # method, so we can add a __new__() constructor that mimicks the
+    # xml.etree.ElementTree.Element initialization.
+    class Element(etree._Element):
+        def __new__(cls, tag, attrib={}, **extra) -> Self:  # noqa: B006
+            return cast(Self, etree.Element(tag, attrib, **extra))
+
+        def __iter__(self) -> Iterator[Self]:  # type: ignore[override]
+            return cast(Iterator[Self], super().__iter__())
+
+        def find(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Union[Self, None]:
+            ret = super().find(path, namespaces)
+            if ret is not None:
+                return cast(Self, ret)
+            else:
+                return None
+
+        def findall(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> List[Self]:  # type: ignore[override]
+            return cast(List[Self], super().findall(path, namespaces))
+
+    def SubElement(parent: Element, tag: str, attrib: Optional[Dict[str, str]] = None, **extra) -> Element:
+        return cast(Element, etree.SubElement(parent, tag, attrib, **extra))
+
+    # lxml.etree.ElementTree is a function that returns a new instance of the
+    # lxml.etree._ElementTree class. This class doesn't have a proper __init__()
+    # method, so we can add a __new__() constructor that mimicks the
+    # xml.etree.ElementTree.ElementTree initialization.
+    class ElementTree(etree._ElementTree):
+        def __new__(cls, element=None, file=None) -> Self:
+            return cast(Self, etree.ElementTree(element, file=file))
+
+        def getroot(self) -> Element:
+            return cast(Element, super().getroot())
+
+    def XML(text: Union[str, bytes]) -> Element:
+        return cast(Element, etree.XML(text))
+
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-    from xml.etree.ElementTree import (  # noqa: F401
+    from xml.etree.ElementTree import (  # type: ignore[assignment]  # noqa: F401
         Element,
         ElementTree,
+        XML,
     )
-
-try:
-    import docutils.core as docutils_core
-    import docutils.writers.html4css1 as docutils_html4css1
-except ImportError:
-    docutils_core = None  # type: ignore[assignment]
-    docutils_html4css1 = None  # type: ignore[assignment]
 
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -85,7 +128,9 @@ from .path import (  # noqa: F401
     safe_contains,
     safe_makedirs,
     safe_relpath,
+    StrPath,
 )
+from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
     shlex_join = shlex.join  # type: ignore[attr-defined]
@@ -120,9 +165,9 @@ RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
 RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 
-XML = etree.XML
-
 defaultdict = collections.defaultdict
+
+UNKNOWN = "unknown"
 
 
 def str_removeprefix(s: str, prefix: str):
@@ -131,7 +176,7 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):
+    if s.startswith(prefix):  # type: ignore[unreachable]
         return s[len(prefix) :]
     return s
 
@@ -256,7 +301,7 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
         yield data
 
 
-def chunk_iterable(it: typing.Iterable, size: int = 1000):
+def chunk_iterable(it: Iterable, size: int = 1000) -> Iterator[tuple]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -283,15 +328,24 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: typing.Union[str, os.PathLike], strip_whitespace=True, remove_comments=True):
+def parse_xml(
+    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
+) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
+    schema = None
     if remove_comments and LXML_AVAILABLE:
         # If using stdlib etree comments are always removed,
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
+
+    if LXML_AVAILABLE and schemafname:
+        with open(str(schemafname), "rb") as schema_file:
+            schema_root = etree.XML(schema_file.read())
+            schema = etree.XMLSchema(schema_root)
+
     try:
-        tree = etree.parse(str(fname), parser=parser)
+        tree = cast(ElementTree, etree.parse(str(fname), parser=parser))
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -299,47 +353,52 @@ def parse_xml(fname: typing.Union[str, os.PathLike], strip_whitespace=True, remo
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
                     elem.tail = elem.tail.strip()
+        if schema:
+            schema.assertValid(tree)
     except OSError as e:
-        if e.errno is None and not os.path.exists(fname):
+        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
             # lxml doesn't set errno
-            e.errno = errno.ENOENT
+            e.errno = errno.ENOENT  # type: ignore[unreachable]
         raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
         raise
+    except etree.DocumentInvalid:
+        log.exception("Validation of file %s failed", fname)
+        raise
     return tree
 
 
-def parse_xml_string(xml_string, strip_whitespace=True):
+def parse_xml_string(xml_string: str, strip_whitespace: bool = True) -> Element:
     try:
-        tree = etree.fromstring(xml_string)
+        elem = XML(xml_string)
     except ValueError as e:
         if "strings with encoding declaration are not supported" in unicodify(e):
-            tree = etree.fromstring(xml_string.encode("utf-8"))
+            # This happens with lxml for a string that starts with e.g. `<?xml version="1.0" encoding="UTF-8"?>`
+            elem = XML(xml_string.encode("utf-8"))
         else:
             raise e
     if strip_whitespace:
-        for elem in tree.iter("*"):
-            if elem.text is not None:
-                elem.text = elem.text.strip()
-            if elem.tail is not None:
-                elem.tail = elem.tail.strip()
-    return tree
+        for sub_elem in elem.iter("*"):
+            if sub_elem.text is not None:
+                sub_elem.text = sub_elem.text.strip()
+            if sub_elem.tail is not None:
+                sub_elem.tail = sub_elem.tail.strip()
+    return elem
 
 
-def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
+def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) -> ElementTree:
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem, pretty=False) -> str:
+def xml_to_string(elem: Optional[Element], pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
+    if elem is None:
+        return ""
     try:
-        if elem is not None:
-            xml_str = etree.tostring(elem, encoding="unicode")
-        else:
-            xml_str = ""
+        xml_str = etree.tostring(elem, encoding="unicode")
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, "text"):
@@ -527,7 +586,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         now = datetime.utcnow()
     else:
         now = datetime.now()
-    if type(time) is int:
+    if isinstance(time, (int, float)):
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
         diff = now - time
@@ -785,7 +844,7 @@ def ready_name_for_url(raw_name):
     return slug_base
 
 
-def which(file):
+def which(file: str) -> Optional[str]:
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
@@ -939,33 +998,6 @@ class Params:
         self.__dict__.update(values)
 
 
-def rst_to_html(s, error=False):
-    """Convert a blob of reStructuredText to HTML"""
-    log = get_logger("docutils")
-
-    if docutils_core is None:
-        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
-
-    class FakeStream:
-        def write(self, str):
-            if len(str) > 0 and not str.isspace():
-                if error:
-                    raise Exception(str)
-                log.warning(str)
-
-    settings_overrides = {
-        "embed_stylesheet": False,
-        "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
-        "warning_stream": FakeStream(),
-        "doctitle_xform": False,  # without option, very different rendering depending on
-        # number of sections in help content.
-    }
-
-    return unicodify(
-        docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides)
-    )
-
-
 def xml_text(root, name=None):
     """Returns the text inside an element"""
     if name is not None:
@@ -995,7 +1027,7 @@ def parse_resource_parameters(resource_param_file):
         resource_definitions_root = resource_definitions.getroot()
         for parameter_elem in resource_definitions_root.findall("param"):
             name = parameter_elem.get("name")
-            resource_parameters[name] = parameter_elem
+            resource_parameters[name] = etree.tostring(parameter_elem, encoding="unicode")
 
     return resource_parameters
 
@@ -1043,7 +1075,28 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False) -> typing.List[Any]:
+ItemType = TypeVar("ItemType")
+
+
+@overload
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
+
+
+@overload
+def listify(item: str, do_strip: bool = False) -> List[str]: ...
+
+
+@overload
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]: ...
+
+
+# Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
+# because then that would also match Union types.
+@overload
+def listify(item: Any, do_strip: bool = False) -> List: ...
+
+
+def listify(item: Any, do_strip: bool = False) -> List:
     """
     Make a single item a single item list.
 
@@ -1062,9 +1115,7 @@ def listify(item, do_strip=False) -> typing.List[Any]:
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
-    elif isinstance(item, tuple):
+    elif isinstance(item, (list, tuple)):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
@@ -1101,8 +1152,7 @@ def unicodify(  # type: ignore[misc]
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> None:
-    ...
+) -> None: ...
 
 
 @overload
@@ -1112,8 +1162,7 @@ def unicodify(
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> str:
-    ...
+) -> str: ...
 
 
 def unicodify(
@@ -1499,7 +1548,7 @@ def size_to_bytes(size):
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
-def send_mail(frm, to, subject, body, config, html=None):
+def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     """
     Sends an email.
 
@@ -1520,7 +1569,10 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     :type  html: str
     :param html: Alternative HTML representation of the body content. If
-                 provided will convert the message to a MIMEMultipart. (Default 'None')
+                 provided will convert the message to a MIMEMultipart. (Default None)
+
+    :type  reply_to: str
+    :param reply_to: Reply-to address (Default None)
     """
 
     to = listify(to)
@@ -1532,6 +1584,9 @@ def send_mail(frm, to, subject, body, config, html=None):
     msg["To"] = ", ".join(to)
     msg["From"] = frm
     msg["Subject"] = subject
+
+    if reply_to:
+        msg["Reply-To"] = reply_to
 
     if config.smtp_server is None:
         log.error("Mail is not configured for this Galaxy instance.")
@@ -1631,10 +1686,15 @@ galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  
 
 
 def galaxy_directory():
-    root_path = os.path.abspath(galaxy_root_path)
-    if os.path.basename(root_path) == "packages":
-        root_path = os.path.abspath(os.path.join(root_path, ".."))
-    return root_path
+    path = galaxy_root_path
+    if in_packages():
+        path = os.path.join(galaxy_root_path, "..")
+    return os.path.abspath(path)
+
+
+def in_packages():
+    # Normalize first; otherwise basename will be `..`
+    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
 
 
 def galaxy_samples_directory():
@@ -1722,7 +1782,7 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
     parsed_url = urlparse(base_url)
     if scheme != "http":
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {scheme}"
+    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {parsed_url.scheme}"
     if port != 80:
         url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:
@@ -1764,6 +1824,17 @@ def is_url(uri, allow_list=None):
     if allow_list is None:
         allow_list = ("http://", "https://", "ftp://")
     return any(uri.startswith(scheme) for scheme in allow_list)
+
+
+def check_github_api_response_rate_limit(response):
+    if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
+        # It can take tens of minutes before the rate limit window resets
+        message = "GitHub API rate limit exceeded."
+        rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
+        if rate_limit_reset_UTC_timestamp:
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
+        raise Exception(message)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
@@ -1853,7 +1924,29 @@ class StructuredExecutionTimer:
         return time.time() - self.begin
 
 
-if __name__ == "__main__":
-    import doctest
+def enum_values(enum_class):
+    """
+    Return a list of member values of enumeration enum_class.
+    Values are in member definition order.
+    """
+    return [value.value for value in enum_class.__members__.values()]
 
-    doctest.testmod(sys.modules[__name__], verbose=False)
+
+def hex_to_lowercase_alphanum(hex_string: str) -> str:
+    """
+    Convert a hexadecimal string encoding into a lowercase 36-base alphanumeric string using the
+    characters a-z and 0-9
+    """
+    import numpy as np
+
+    return np.base_repr(int(hex_string, 16), 36).lower()
+
+
+def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
+    """
+    Convert a lowercase 36-base alphanumeric string encoding using the characters a-z and 0-9 to a
+    hexadecimal string
+    """
+    import numpy as np
+
+    return np.base_repr(int(lowercase_alphanum, 36), 16).lower()

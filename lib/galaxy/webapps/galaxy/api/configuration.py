@@ -2,6 +2,7 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
+
 import logging
 from typing import (
     Any,
@@ -14,7 +15,7 @@ from fastapi import Path
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import UserModel
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -60,7 +61,7 @@ class FastAPIConfiguration:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        view: Optional[str] = SerializationViewQueryParam,
+        view: SerializationViewQueryParam = None,
         keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """
@@ -74,6 +75,7 @@ class FastAPIConfiguration:
 
     @router.get(
         "/api/version",
+        public=True,
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )
@@ -121,7 +123,9 @@ class FastAPIConfiguration:
 
 def _user_to_model(user):
     if user:
-        return UserModel.construct(**user.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode}))
+        return UserModel.model_construct(
+            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        )
     return None
 
 

@@ -9,24 +9,12 @@ from tool_shed.util import (
 log = logging.getLogger(__name__)
 
 
-def build_approved_select_field(trans, name, selected_value=None, for_component=True):
-    options = [
-        ("No", trans.model.ComponentReview.approved_states.NO),
-        ("Yes", trans.model.ComponentReview.approved_states.YES),
-    ]
-    if for_component:
-        options.append(("Not applicable", trans.model.ComponentReview.approved_states.NA))
-        if selected_value is None:
-            selected_value = trans.model.ComponentReview.approved_states.NA
-    select_field = SelectField(name=name)
-    for option_tup in options:
-        selected = selected_value and option_tup[1] == selected_value
-        select_field.add_option(option_tup[0], option_tup[1], selected=selected)
-    return select_field
-
-
 def build_changeset_revision_select_field(
-    trans, repository, selected_value=None, add_id_to_name=True, downloadable=False, reviewed=False, not_reviewed=False
+    trans,
+    repository,
+    selected_value=None,
+    add_id_to_name=True,
+    downloadable=False,
 ):
     """
     Build a SelectField whose options are the changeset_rev strings of certain revisions of the
@@ -38,24 +26,6 @@ def build_changeset_revision_select_field(
     if downloadable:
         # Restrict the options to downloadable revisions.
         repository_metadata_revisions = repository.downloadable_revisions
-    elif reviewed:
-        # Restrict the options to revisions that have been reviewed.
-        repository_metadata_revisions = []
-        metadata_changeset_revision_hashes = []
-        for metadata_revision in repository.metadata_revisions:
-            metadata_changeset_revision_hashes.append(metadata_revision.changeset_revision)
-        for review in repository.reviews:
-            if review.changeset_revision in metadata_changeset_revision_hashes:
-                repository_metadata_revisions.append(review.repository_metadata)
-    elif not_reviewed:
-        # Restrict the options to revisions that have not yet been reviewed.
-        repository_metadata_revisions = []
-        reviewed_metadata_changeset_revision_hashes = []
-        for review in repository.reviews:
-            reviewed_metadata_changeset_revision_hashes.append(review.changeset_revision)
-        for metadata_revision in repository.metadata_revisions:
-            if metadata_revision.changeset_revision not in reviewed_metadata_changeset_revision_hashes:
-                repository_metadata_revisions.append(metadata_revision)
     else:
         # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions

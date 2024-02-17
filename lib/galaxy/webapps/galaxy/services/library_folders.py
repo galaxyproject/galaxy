@@ -12,11 +12,9 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.roles import RoleManager
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    LibraryFolderDatabaseIdField,
-)
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
+    BasicRoleModel,
     CreateLibraryFolderPayload,
     LibraryAvailablePermissions,
     LibraryFolderCurrentPermissions,
@@ -53,7 +51,7 @@ class LibraryFoldersService(ServiceBase):
         """
         folder = self.folder_manager.get(trans, folder_id, check_manageable=False, check_accessible=True)
         return_dict = self.folder_manager.get_folder_dict(trans, folder)
-        return LibraryFolderDetails.construct(**return_dict)
+        return LibraryFolderDetails(**return_dict)
 
     def create(
         self, trans, parent_folder_id: LibraryFolderDatabaseIdField, payload: CreateLibraryFolderPayload
@@ -77,15 +75,15 @@ class LibraryFoldersService(ServiceBase):
         parent_folder = self.folder_manager.get(trans, parent_folder_id)
         new_folder = self.folder_manager.create(trans, parent_folder.id, payload.name, payload.description)
         return_dict = self.folder_manager.get_folder_dict(trans, new_folder)
-        return LibraryFolderDetails.construct(**return_dict)
+        return LibraryFolderDetails(**return_dict)
 
     def get_permissions(
         self,
         trans,
         folder_id: LibraryFolderDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryFolderCurrentPermissions, LibraryAvailablePermissions]:
         """
@@ -112,17 +110,14 @@ class LibraryFoldersService(ServiceBase):
 
         if scope is None or scope == LibraryPermissionScope.current:
             current_permissions = self.folder_manager.get_current_roles(trans, folder)
-            return LibraryFolderCurrentPermissions.construct(**current_permissions)
+            return LibraryFolderCurrentPermissions.model_construct(**current_permissions)
         #  Return roles that are available to select.
         elif scope == LibraryPermissionScope.available:
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, folder, query, page, page_limit)
             return_roles = []
             for role in roles:
-                role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
-            return LibraryAvailablePermissions.construct(
-                roles=return_roles, page=page, page_limit=page_limit, total=total_roles
-            )
+                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
+            return LibraryAvailablePermissions(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise RequestParameterInvalidException(
                 "The value of 'scope' parameter is invalid. Allowed values: current, available"
@@ -168,7 +163,6 @@ class LibraryFoldersService(ServiceBase):
         if action is None:
             raise RequestParameterMissingException('The mandatory parameter "action" is missing.')
         elif action == "set_permissions":
-
             # ADD TO LIBRARY ROLES
             valid_add_roles = []
             invalid_add_roles_names = []
@@ -227,7 +221,7 @@ class LibraryFoldersService(ServiceBase):
                 'The mandatory parameter "action" has an invalid value.' 'Allowed values are: "set_permissions"'
             )
         current_permissions = self.folder_manager.get_current_roles(trans, folder)
-        return LibraryFolderCurrentPermissions.construct(**current_permissions)
+        return LibraryFolderCurrentPermissions(**current_permissions)
 
     def delete(
         self, trans, folder_id: LibraryFolderDatabaseIdField, undelete: Optional[bool] = False
@@ -250,7 +244,7 @@ class LibraryFoldersService(ServiceBase):
         folder = self.folder_manager.get(trans, folder_id, True)
         folder = self.folder_manager.delete(trans, folder, undelete)
         folder_dict = self.folder_manager.get_folder_dict(trans, folder)
-        return LibraryFolderDetails.construct(**folder_dict)
+        return LibraryFolderDetails(**folder_dict)
 
     def update(
         self, trans, folder_id: LibraryFolderDatabaseIdField, payload: UpdateLibraryFolderPayload
@@ -275,4 +269,4 @@ class LibraryFoldersService(ServiceBase):
         folder = self.folder_manager.get(trans, folder_id)
         updated_folder = self.folder_manager.update(trans, folder, payload.name, payload.description)
         folder_dict = self.folder_manager.get_folder_dict(trans, updated_folder)
-        return LibraryFolderDetails.construct(**folder_dict)
+        return LibraryFolderDetails(**folder_dict)

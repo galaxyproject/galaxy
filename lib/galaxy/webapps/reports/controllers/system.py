@@ -11,6 +11,7 @@ from sqlalchemy import (
     desc,
     false,
     null,
+    select,
     true,
 )
 from sqlalchemy.orm import joinedload
@@ -74,13 +75,14 @@ class System(BaseUIController):
             cutoff_time = datetime.utcnow() - timedelta(days=userless_histories_days)
             history_count = 0
             dataset_count = 0
-            for history in trans.sa_session.query(model.History).filter(
+            stmt = select(model.History).filter(
                 and_(
-                    model.History.table.c.user_id == null(),
-                    model.History.table.c.deleted == true(),
+                    model.History.user_id == null(),
+                    model.History.deleted == true(),
                     model.History.update_time < cutoff_time,
                 )
-            ):
+            )
+            for history in trans.sa_session.scalars(stmt).all():
                 for dataset in history.datasets:
                     if not dataset.deleted:
                         dataset_count += 1
@@ -106,18 +108,21 @@ class System(BaseUIController):
             history_count = 0
             dataset_count = 0
             disk_space = 0
-            histories = (
-                trans.sa_session.query(model.History)
+
+            stmt = (
+                select(model.History)
                 .filter(
                     and_(
-                        model.History.table.c.deleted == true(),
-                        model.History.table.c.purged == false(),
+                        model.History.deleted == true(),
+                        model.History.purged == false(),
                         model.History.update_time < cutoff_time,
                     )
                 )
-                .options(joinedload("datasets"))
+                .options(joinedload(model.History.datasets))
+                .unique()
             )
 
+            histories = trans.sa_session.scalars(stmt).all()
             for history in histories:
                 for hda in history.datasets:
                     if not hda.dataset.purged:
@@ -144,13 +149,14 @@ class System(BaseUIController):
             cutoff_time = datetime.utcnow() - timedelta(days=deleted_datasets_days)
             dataset_count = 0
             disk_space = 0
-            for dataset in trans.sa_session.query(model.Dataset).filter(
+            stmt = select(model.Dataset).filter(
                 and_(
-                    model.Dataset.table.c.deleted == true(),
-                    model.Dataset.table.c.purged == false(),
-                    model.Dataset.table.c.update_time < cutoff_time,
+                    model.Dataset.deleted == true(),
+                    model.Dataset.purged == false(),
+                    model.Dataset.update_time < cutoff_time,
                 )
-            ):
+            )
+            for dataset in trans.sa_session.scalars(stmt).all():
                 dataset_count += 1
                 try:
                     disk_space += dataset.file_size
@@ -167,28 +173,22 @@ class System(BaseUIController):
     @web.expose
     def dataset_info(self, trans, **kwd):
         message = ""
-        dataset = trans.sa_session.query(model.Dataset).get(trans.security.decode_id(kwd.get("id", "")))
+        dataset = trans.sa_session.get(model.Dataset, trans.security.decode_id(kwd.get("id", "")))
         # Get all associated hdas and lddas that use the same disk file.
-        associated_hdas = (
-            trans.sa_session.query(trans.model.HistoryDatasetAssociation)
-            .filter(
-                and_(
-                    trans.model.HistoryDatasetAssociation.deleted == false(),
-                    trans.model.HistoryDatasetAssociation.dataset_id == dataset.id,
-                )
+        stmt = select(trans.model.HistoryDatasetAssociation).filter(
+            and_(
+                trans.model.HistoryDatasetAssociation.deleted == false(),
+                trans.model.HistoryDatasetAssociation.dataset_id == dataset.id,
             )
-            .all()
         )
-        associated_lddas = (
-            trans.sa_session.query(trans.model.LibraryDatasetDatasetAssociation)
-            .filter(
-                and_(
-                    trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
-                    trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
-                )
+        associated_hdas = trans.sa_session.scalars(stmt).all()
+        stmt = select(trans.model.LibraryDatasetDatasetAssociation).filter(
+            and_(
+                trans.model.LibraryDatasetDatasetAssociation.deleted == false(),
+                trans.model.LibraryDatasetDatasetAssociation.dataset_id == dataset.id,
             )
-            .all()
         )
+        associated_lddas = trans.sa_session.scalars(stmt).all()
         return trans.fill_template(
             "/webapps/reports/dataset_info.mako",
             dataset=dataset,
@@ -208,11 +208,12 @@ class System(BaseUIController):
         disk_usage = self.get_disk_usage(file_path)
         min_file_size = 2**32  # 4 Gb
         file_size_str = nice_size(min_file_size)
-        datasets = (
-            trans.sa_session.query(model.Dataset)
-            .filter(and_(model.Dataset.table.c.purged == false(), model.Dataset.table.c.file_size > min_file_size))
-            .order_by(desc(model.Dataset.table.c.file_size))
+        stmt = (
+            select(model.Dataset)
+            .filter(and_(model.Dataset.purged == false(), model.Dataset.file_size > min_file_size))
+            .order_by(desc(model.Dataset.file_size))
         )
+        datasets = trans.sa_session.scalars(stmt).all()
         return file_path, disk_usage, datasets, file_size_str
 
 

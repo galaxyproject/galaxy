@@ -1,6 +1,7 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
+
 import logging
 import socket
 
@@ -174,8 +175,6 @@ class RemoteUser:
                 "/user/logout",
                 "/user/manage_user_info",
                 "/user/edit_info",
-                "/userskeys/all_users",
-                "/userskeys/admin_api_keys",
             )
 
             if not path_info.startswith("/user"):

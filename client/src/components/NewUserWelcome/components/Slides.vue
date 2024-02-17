@@ -4,25 +4,35 @@
             {{ header }}
         </h1>
         <hr />
-        <b-carousel indicators controls :interval="0" no-animation align="center" position="float">
+        <b-carousel
+            indicators
+            controls
+            :interval="0"
+            class="new-user-welcome-slides"
+            no-animation
+            align="center"
+            position="float">
             <b-carousel-slide v-for="(slide, idx) in slides" :key="idx">
-                <h3 class="carousel-caption">
+                <h2 class="carousel-caption h-md">
                     {{ slide.text | localize }}
-                </h3>
+                </h2>
                 <img class="carousel-fig" :src="imgUrl(slide.file)" :class="slide.size" :alt="slide.alt" />
             </b-carousel-slide>
             <b-carousel-slide>
-                <h3>{{ "Enjoy using Galaxy!" | localize }}</h3>
+                <h2 class="h-md">{{ "Enjoy using Galaxy!" | localize }}</h2>
                 <img class="large-img" :src="imgUrl('sections/galaxy_logo.png')" alt="Galaxy logo" />
             </b-carousel-slide>
         </b-carousel>
         <div class="button-housing">
-            <b-button class="mt-auto carousel-button" variant="primary" @click="$emit('back')">Return</b-button>
+            <b-button class="mt-auto carousel-button new-user-welcome-return" variant="primary" @click="$emit('back')"
+                >Return</b-button
+            >
         </div>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+
 export default {
     props: {
         header: { type: String, required: true },

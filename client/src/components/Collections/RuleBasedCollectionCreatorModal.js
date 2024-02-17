@@ -1,5 +1,6 @@
 import _l from "utils/localization";
 import Vue from "vue";
+
 import { collectionCreatorModalSetup } from "./common/modal";
 
 function ruleBasedCollectionCreatorModal(elements, elementsType, importType, options) {
@@ -42,12 +43,11 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         }
     );
 }
-function createCollectionViaRules(selection, defaultHideSourceItems) {
+function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     let elements;
     let elementsType;
     let importType;
     const selectionType = selection.selectionType;
-    const copyElements = !defaultHideSourceItems;
     if (!selectionType) {
         // Have HDAs from the history panel.
         elements = selection.toJSON();
@@ -81,7 +81,7 @@ function createCollectionViaRules(selection, defaultHideSourceItems) {
         ftpUploadSite: selection.ftpUploadSite,
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function (elements, collectionType, name, hideSourceItems) {
-            return selection.createHDCA(elements, collectionType, name, hideSourceItems, copyElements);
+            return selection.createHDCA(elements, collectionType, name, hideSourceItems);
         },
     });
     return promise;

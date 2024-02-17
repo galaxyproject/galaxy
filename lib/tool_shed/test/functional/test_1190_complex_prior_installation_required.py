@@ -1,19 +1,19 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 matplotlib_repository_name = "package_matplotlib_1_2_0170"
-matplotlib_repository_description = "Contains a tool dependency definition that downloads and compiles version 1.2.x of the the python matplotlib package."
+matplotlib_repository_description = (
+    "Contains a tool dependency definition that downloads and compiles version 1.2.x of the python matplotlib package."
+)
 matplotlib_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."
 )
 
 numpy_repository_name = "package_numpy_1_7_0170"
 numpy_repository_description = (
-    "Contains a tool dependency definition that downloads and compiles version 1.7 of the the python numpy package."
+    "Contains a tool dependency definition that downloads and compiles version 1.7 of the python numpy package."
 )
 numpy_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."
@@ -36,18 +36,12 @@ running_standalone = False
 class TestComplexPriorInstallation(ShedTwillTestCase):
     """Test features related to datatype converters."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_matplotlib_repository(self):
         """Create and populate the package_matplotlib_1_2_0170 repository.
@@ -62,23 +56,15 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
             description=matplotlib_repository_description,
             long_description=matplotlib_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="package_matplotlib/package_matplotlib_1_2.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "package_matplotlib/package_matplotlib_1_2.tar",
                 commit_message="Uploaded matplotlib tool dependency tarball.",
-                strings_displayed=[
-                    "This repository currently contains a single file named <b>tool_dependencies.xml</b>"
-                ],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_numpy_repository(self):
@@ -95,21 +81,13 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
                 description=numpy_repository_description,
                 long_description=numpy_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="package_numpy/package_numpy_1_7.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "package_numpy/package_numpy_1_7.tar",
                 commit_message="Uploaded numpy tool dependency tarball.",
-                strings_displayed=[
-                    "This repository currently contains a single file named <b>tool_dependencies.xml</b>"
-                ],
-                strings_not_displayed=[],
             )
 
     def test_0015_create_complex_repository_dependency(self):
@@ -121,10 +99,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         and installed first.
         """
         global running_standalone
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         # Generate the new dependency XML. Normally, the create_repository_dependency method would be used for this, but
@@ -136,7 +112,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         new_xml += "    </package>\n"
         url = self.url
         name = numpy_repository.name
-        owner = numpy_repository.user.username
+        owner = numpy_repository.owner
         if running_standalone:
             changeset_revision = self.get_repository_tip(numpy_repository)
             processed_xml = new_xml % (url, name, owner, changeset_revision)
@@ -144,18 +120,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
             dependency_xml_path = self.generate_temp_path("test_0170", additional_paths=["matplotlib"])
             new_xml_file = os.path.join(dependency_xml_path, "tool_dependencies.xml")
             open(new_xml_file, "w").write(original_xml.replace("<!--NUMPY-->", processed_xml))
-            # Upload the generated complex repository dependency XML to the matplotlib repository.
-            self.upload_file(
-                matplotlib_repository,
-                filename="tool_dependencies.xml",
-                filepath=dependency_xml_path,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded complex repository dependency on numpy 1.7.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.add_file_to_repository(matplotlib_repository, dependency_xml_path, "tool_dependencies.xml")
 
     def test_0020_verify_generated_dependency(self):
         """Verify that matplotlib now has a package tool dependency and a complex repository dependency.
@@ -165,40 +130,33 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         'Inherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
         dependency on the latest revision of package_numpy_1_7_0170.
         """
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         changeset_revision = self.get_repository_tip(numpy_repository)
         self.check_repository_dependency(matplotlib_repository, depends_on_repository=numpy_repository)
-        self.display_manage_repository_page(
-            matplotlib_repository, strings_displayed=["numpy", "1.7", "package", changeset_revision]
-        )
+        if not self.is_v2:
+            self.display_manage_repository_page(
+                matplotlib_repository, strings_displayed=["numpy", "1.7", "package", changeset_revision]
+            )
 
     def test_0025_install_matplotlib_repository(self):
         """Install the package_matplotlib_1_2_0170 repository.
 
         This is step 4 - Install package_matplotlib_1_2_0170 with repository dependencies.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         preview_strings_displayed = ["package_matplotlib_1_2_0170", self.get_repository_tip(matplotlib_repository)]
-        strings_displayed = ["Handle repository dependencies", numpy_repository_name, "Never installed"]
-        self.install_repository(
+        self._install_repository(
             matplotlib_repository_name,
             common.test_user_1_name,
             category_name,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
-            strings_displayed=strings_displayed,
-            strings_not_displayed=[],
-            post_submit_strings_displayed=["package_matplotlib_1_2_0170", "New"],
-            includes_tools_for_display_in_tool_panel=False,
         )
 
     def test_0030_verify_installation_order(self):
@@ -209,12 +167,10 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         prior_installation_required attribute set. Confirm that this resulted in package_numpy_1_7_0170 being installed before
         package_matplotlib_1_2_0170.
         """
-        matplotlib_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        matplotlib_repository = self._get_installed_repository_by_name_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
-        numpy_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
+        numpy_repository = self._get_installed_repository_by_name_owner(numpy_repository_name, common.test_user_1_name)
         assert (
             matplotlib_repository.update_time > numpy_repository.update_time
         ), "Error: package_numpy_1_7_0170 shows a later update time than package_matplotlib_1_2_0170"

@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_repository_name = "column_maker_0150"
 column_repository_description = "Add column"
@@ -35,15 +33,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_convert_repository(self):
         """Create and populate convert_chars_0150."""
@@ -54,19 +44,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="convert_chars/convert_chars.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "convert_chars/convert_chars.tar",
             commit_message="Uploaded convert_chars tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_create_column_repository(self):
@@ -77,19 +61,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "column_maker/column_maker.tar",
             commit_message="Uploaded column_maker tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_repository_dependency(self):
@@ -98,17 +76,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         Column maker repository dependency:
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         """
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         dependency_xml_path = self.generate_temp_path("test_0150", additional_paths=["column"])
         convert_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -120,12 +94,8 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0020_verify_repository_dependency(self):
         """Verify that the previously generated repositiory dependency displays correctly."""
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         self.check_repository_dependency(
             repository=column_repository,
             depends_on_repository=convert_repository,

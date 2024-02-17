@@ -1,4 +1,4 @@
-export function getResource() {
-    const resource = import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index");
-    return resource.newUserDict;
+export async function getResource() {
+    const resourceBundle = await import("../../../../static/plugins/welcome_page/new_user/dist/static/topics/index.js");
+    return resourceBundle;
 }

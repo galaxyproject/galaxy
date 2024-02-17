@@ -9,56 +9,31 @@
 
 /* jquery and _ are exposed via expose-loader while several external plugins rely on these */
 import $ from "jquery"; // eslint-disable-line no-unused-vars
+import Client from "mvc/visualization/chart/chart-client";
 import _ from "underscore"; // eslint-disable-line no-unused-vars
+import { TracksterUIView } from "viz/trackster";
+
+// Previously "chart"
 
 export { getGalaxyInstance, setGalaxyInstance } from "app";
-import { TracksterUIView } from "viz/trackster";
-export { TracksterUI } from "viz/trackster";
-import Circster from "viz/circster";
-export { PhylovizView as phyloviz } from "viz/phyloviz";
-export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
-export { createTabularDatasetChunkedView } from "mvc/dataset/data";
-export { History } from "mvc/history/history-model";
-export { HistoryContents } from "mvc/history/history-contents";
-// TODO: there are side effects in history-view-edit somewhere; follow up as legacy history panel bits are removed.
-import { HistoryViewEdit } from "mvc/history/history-view-edit"; // eslint-disable-line no-unused-vars
-export { historyEntry as history } from "mvc/history/history-view";
-export { default as HistoryViewAnnotated } from "mvc/history/history-view-annotated";
-export { default as HistoryCopyDialog } from "mvc/history/copy-dialog";
-export { default as HDAListItemEdit } from "mvc/history/hda-li-edit";
-export { default as HDAModel } from "mvc/history/hda-model";
-export { default as LegacyGridView } from "legacy/grid/grid-view";
-export { create_chart, create_histogram } from "reports/run_stats";
-export { default as ToolshedGroups } from "toolshed/toolshed.groups";
-export { openGlobalUploadModal } from "components/Upload";
 export { runTour } from "components/Tour/runTour";
+export { default as LegacyGridView } from "legacy/grid/grid-view";
+export { createTabularDatasetChunkedView } from "mvc/dataset/data";
+export { create_chart, create_histogram } from "reports/run_stats";
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
+export { TracksterUI } from "viz/trackster";
 
 export function trackster(options) {
     new TracksterUIView(options);
 }
 
-export function circster(options) {
-    new Circster.GalaxyApp(options);
-}
-
 // Previously wandering around as window.thing = thing in the onload script
-export { show_in_overlay, hide_modal, show_message, show_modal, Modal } from "layout/modal";
-export { make_popupmenu, make_popup_menus } from "ui/popupmenu";
-export { render_embedded_items } from "mvc/embedded-objects";
+export { hide_modal, Modal, show_in_overlay, show_message, show_modal } from "layout/modal";
+export { make_popup_menus, make_popupmenu } from "ui/popupmenu";
 export { default as async_save_text } from "utils/async-save-text";
-
-// Previously "chart"
-import Client from "mvc/visualization/chart/chart-client";
 export function chart(options) {
     return new Client(options);
 }
-
-export { initMasthead } from "components/Masthead/initMasthead";
-export { mountMakoTags } from "components/Tags";
-export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
-export { mountPageEditor } from "components/PageEditor/mount";
-export { mountPageDisplay } from "components/PageDisplay";
 
 // Used in common.mako
 export { default as store } from "storemodern";

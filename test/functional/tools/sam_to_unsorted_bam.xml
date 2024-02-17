@@ -56,17 +56,17 @@
         <!-- Test that sam input is properly converted to bam -->
         <test>
             <param name="input3" value="sam_with_header.sam" ftype="sam"/>
-            <output name="bam_output" file="bam_from_sam.bam" ftype="bam"/>
+            <output name="bam_output" file="bam_from_sam.bam" ftype="bam" lines_diff="2"/>
         </test>
         <!-- Test that sam input is properly converted to qname_sorted.bam -->
         <test>
             <param name="input4" value="sam_with_header.sam" ftype="sam"/>
-            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam"/>
+            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam" lines_diff="2"/>
         </test>
         <!-- Test that sam input is properly converted to qname_sorted.bam (which is qname_input_sorted.bam compatible) -->
         <test>
             <param name="input4" value="sam_with_header.sam" ftype="sam"/>
-            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam"/>
+            <output name="qname_sorted_bam_output" file="qname_sorted.bam" ftype="qname_sorted.bam" lines_diff="2"/>
         </test>
     </tests>
     <help>

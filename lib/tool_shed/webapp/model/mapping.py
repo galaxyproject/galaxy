@@ -2,6 +2,7 @@
 Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
+
 import logging
 from typing import (
     Any,

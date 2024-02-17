@@ -15,6 +15,7 @@ from sqlalchemy.orm import (
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.model.tool_shed_install.mapping as mapping
+from galaxy.model.base import transaction
 
 
 def main(opts, session, model):
@@ -26,7 +27,8 @@ def main(opts, session, model):
             if row.metadata_["shed_config_filename"] == opts.bad_filename:
                 row.metadata_["shed_config_filename"] = opts.good_filename
                 session.add(row)
-                session.flush()
+                with transaction(session):
+                    session.commit()
     return 0
 
 
@@ -44,7 +46,7 @@ def create_database(config_file):
         exit(1)
 
     # Initialize the database connection.
-    engine = create_engine(database_connection)
+    engine = create_engine(database_connection, future=True)
     MetaData(bind=engine)
     install_session = scoped_session(sessionmaker(bind=engine, autoflush=False, autocommit=True))
     model = mapping.init(database_connection)

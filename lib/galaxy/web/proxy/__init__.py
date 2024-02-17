@@ -27,7 +27,6 @@ SECURE_COOKIE = "galaxysession"
 
 
 class ProxyManager:
-
     valid_update_keys = (
         "host",
         "port",
@@ -49,7 +48,6 @@ class ProxyManager:
             "dynamic_proxy_golang_docker_address",
             "dynamic_proxy_golang_api_key",
         ]:
-
             setattr(self, option, getattr(config, option))
 
         if self.manage_dynamic_proxy:

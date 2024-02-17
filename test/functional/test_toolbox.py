@@ -1,13 +1,5 @@
 import logging
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
@@ -17,7 +9,6 @@ from galaxy_test.base.env import (
     setup_keep_outdir,
     target_url_parts,
 )
-from galaxy_test.base.instrument import register_job_data
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 
 log = logging.getLogger(__name__)
@@ -46,11 +37,9 @@ class ToolTestCase(DrivenFunctionalTestCase):
             resource_parameters=resource_parameters,
             test_index=test_index,
             tool_version=tool_version,
-            register_job_data=register_job_data,
         )
 
 
-@nottest
 def build_tests(
     app=None,
     testing_shed_tools=False,

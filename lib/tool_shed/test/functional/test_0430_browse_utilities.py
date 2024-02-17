@@ -1,9 +1,8 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.api import skip_if_api_v2
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -33,15 +32,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0010_create_emboss_repository(self):
         """Create and populate the emboss_0430 repository
@@ -59,19 +50,13 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             emboss_repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded emboss.tar.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_tool_dependency_repository(self):
@@ -90,39 +75,35 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="freebayes/freebayes.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "freebayes/freebayes.tar",
             commit_message="Uploaded freebayes.tar.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
+    @skip_if_api_v2
     def test_0030_browse_tools(self):
         """Load the page to browse tools.
 
         We are at step 3.
         Verify the existence of emboss tools in the browse tools page.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         changeset_revision = self.get_repository_tip(repository)
         strings_displayed = ["EMBOSS", "antigenic1", "5.0.0", changeset_revision, "user1", "emboss_0430"]
         self.browse_tools(strings_displayed=strings_displayed)
 
+    @skip_if_api_v2
     def test_0040_browse_tool_dependencies(self):
         """Browse tool dependencies and look for the right versions of freebayes and samtools.
 
         We are at step 4.
         Verify that the browse tool dependencies page shows the correct dependencies defined for freebayes_0430.
         """
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         freebayes_changeset_revision = self.get_repository_tip(freebayes_repository)

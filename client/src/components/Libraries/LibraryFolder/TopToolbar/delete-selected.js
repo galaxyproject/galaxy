@@ -1,9 +1,10 @@
 import { getGalaxyInstance } from "app";
-import { Toast } from "ui/toast";
-import _l from "utils/localization";
-import mod_library_model from "mvc/library/library-model";
-import _ from "underscore";
+import { Toast } from "composables/toast";
 import $ from "jquery";
+import _ from "underscore";
+import _l from "utils/localization";
+
+import mod_library_model from "./library-model";
 
 let progress = 0;
 let items_total = 0;

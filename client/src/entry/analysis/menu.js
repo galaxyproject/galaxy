@@ -166,7 +166,7 @@ export function fetchMenu(options = {}) {
         if (options.allow_user_creation) {
             userTab = {
                 id: "user",
-                title: _l("Login or Register"),
+                title: _l("Log in or Register"),
                 cls: "loggedout-only",
                 url: "/login",
                 tooltip: _l("Log in or register a new account"),
@@ -191,25 +191,17 @@ export function fetchMenu(options = {}) {
             tooltip: _l("Account and saved data"),
             menu: [
                 {
-                    title: `${_l("Logged in as")} ${
+                    title: `${_l("Signed in as")} ${
                         Galaxy.user.get("username") ? Galaxy.user.get("username") : Galaxy.user.get("email")
                     }`,
                     disabled: true,
                 },
+                { divider: true },
                 {
                     title: _l("Preferences"),
                     url: "/user",
                 },
-                {
-                    title: _l("Custom Builds"),
-                    url: "/custom_builds",
-                },
                 { divider: true },
-                {
-                    title: _l("Logout"),
-                    onclick: userLogout,
-                    hidden: Galaxy.config.single_user,
-                },
                 {
                     title: _l("Datasets"),
                     url: "/datasets/list",
@@ -222,6 +214,10 @@ export function fetchMenu(options = {}) {
                     title: _l("Histories shared with me"),
                     url: "/histories/list_shared",
                     hidden: Galaxy.config.single_user,
+                },
+                {
+                    title: _l("Archived Histories"),
+                    url: "/histories/archived",
                 },
                 {
                     title: _l("Pages"),
@@ -240,12 +236,23 @@ export function fetchMenu(options = {}) {
             });
         }
         if (Galaxy.config.interactivetools_enable) {
-            userTab.menu.push({ divider: true });
             userTab.menu.push({
                 title: _l("Active InteractiveTools"),
                 url: "/interactivetool_entry_points/list",
             });
         }
+        if (Galaxy.config.enable_notification_system) {
+            userTab.menu.push({
+                title: _l("Notifications"),
+                url: "/user/notifications",
+            });
+        }
+        userTab.menu.push({ divider: true });
+        userTab.menu.push({
+            title: _l("Sign Out"),
+            onclick: userLogout,
+            hidden: Galaxy.config.single_user,
+        });
     }
     menu.push(userTab);
     return menu;

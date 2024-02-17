@@ -1,0 +1,54 @@
+<tool id="interactive_tool_pavian" tool_type="interactive" name="Pavian" version="1.0" profile="22.01">
+    <description>Interactive analysis of metagenomics data</description>
+    <requirements>
+        <container type="docker">quay.io/galaxy/pavian:0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Pavian visualisation" requires_domain="True">
+            <port>80</port>
+            <url>/</url>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+#import re
+#if $infile
+    #for $input in $infile
+        #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+        ln -s '$input' '/home/shiny/$link_name' &&
+    #end for
+#end if
+cat '$shiny' /srv/shiny-server/app.R > /tmp/foo.R &&
+mv /tmp/foo.R /srv/shiny-server/app.R &&
+/usr/bin/shiny-server.sh
+    ]]>
+    </command>
+    <configfiles>
+        <configfile name="shiny"><![CDATA[
+options(pavian.load_server_directory=TRUE);
+options(pavian.server_access=TRUE);
+options(shiny.maxRequestSize=500*1024^2);
+options(pavian.server_dir="/home/shiny/")
+        ]]></configfile>
+    </configfiles>
+    <inputs>
+        <param name="infile" type="data" multiple="true" optional="true" format="tabular" 
+            label="Kraken and MetaPhlAn-style report(s)" 
+            help="Centrifuge results can be used after running centrifuge-kreport on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output file"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+<![CDATA[
+
+`Pavian <https://github.com/fbreitwieser/pavian>`_  is a interactive browser application for analyzing and visualization metagenomics classification results from classifiers such as Kraken, KrakenUniq, Kraken 2, Centrifuge and MetaPhlAn. Pavian also provides an alignment viewer for validation of matches to a particular genome.
+
+pavian natively supports the Kraken and MetaPhlAn-style report formats. In extension, you can use Centrifuge results by running centrifuge-report on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output files.
+]]>
+    </help>
+    <citations>
+           <citation type="doi">10.1093/bioinformatics/btz715</citation>
+    </citations>
+</tool>

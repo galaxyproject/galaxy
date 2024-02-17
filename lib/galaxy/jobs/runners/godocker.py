@@ -124,7 +124,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
     runner_name = "GodockerJobRunner"
 
     def __init__(self, app, nworkers, **kwargs):
-        """1: Get runner_param_specs from job_conf.xml
+        """1: Get runner_param_specs from the job config
         2: Initialise job runner parent object
         3: Login to godocker and store the token
         4: Start the worker and monitor threads
@@ -235,8 +235,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched executing Job in GoDocker"""
-        # This function is called by fail_job() where
-        # param job = self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id)
+        # This function is called by fail_job()
         # No Return data expected
         job_id = job_wrapper.job_id
         log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")

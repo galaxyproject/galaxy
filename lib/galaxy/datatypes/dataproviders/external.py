@@ -2,6 +2,7 @@
 Data providers that iterate over a source that is not in memory
 or not in a file.
 """
+
 import gzip
 import logging
 import subprocess
@@ -158,7 +159,7 @@ class TempfileDataProvider(base.DataProvider):
     """
     Writes the data from the given source to a temp file, allowing
     it to be used as a source where a file_name is needed (e.g. as a parameter
-    to a command line tool: samtools view -t <this_provider.source.file_name>)
+    to a command line tool: samtools view -t <this_provider.source.get_file_name()>)
     """
 
     def __init__(self, source, **kwargs):

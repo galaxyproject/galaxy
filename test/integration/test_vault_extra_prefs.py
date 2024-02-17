@@ -10,16 +10,17 @@ from requests import (
     put,
 )
 
+from galaxy.managers.users import get_user_by_email
 from galaxy_test.driver import integration_util
 
 TEST_USER_EMAIL = "vault_test_user@bx.psu.edu"
 
 
-class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
+class TestExtraUserPreferences(integration_util.IntegrationTestCase, integration_util.ConfiguresDatabaseVault):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["vault_config_file"] = os.path.join(os.path.dirname(__file__), "vault_conf.yml")
+        cls._configure_database_vault(config)
         config["user_preferences_extra_conf_path"] = os.path.join(
             os.path.dirname(__file__), "user_preferences_extra_conf.yml"
         )
@@ -28,7 +29,7 @@ class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # create some initial data
         put(
@@ -52,39 +53,39 @@ class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
 
         # value should be what we saved
         input_client_id = get_input_by_name(inputs, "client_id")
-        self.assertEqual(input_client_id["value"], "hello_client_id")
+        assert input_client_id["value"] == "hello_client_id"
 
         # however, this value should not be in the vault
-        self.assertIsNone(app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/client_id"))
+        assert app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/client_id") is None
         # it should be in the user preferences model
-        self.assertEqual(db_user.extra_preferences["vaulttestsection|client_id"], "hello_client_id")
+        assert db_user.extra_preferences["vaulttestsection|client_id"] == "hello_client_id"
 
         # the secret however, was configured to be stored in the vault
         input_client_secret = get_input_by_name(inputs, "client_secret")
-        self.assertEqual(input_client_secret["value"], "hello_client_secret")
-        self.assertEqual(
-            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/client_secret"),
-            "hello_client_secret",
+        assert input_client_secret["value"] == "hello_client_secret"
+        assert (
+            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/client_secret")
+            == "hello_client_secret"
         )
         # it should not be stored in the user preferences model
-        self.assertIsNone(db_user.extra_preferences["vaulttestsection|client_secret"])
+        assert db_user.extra_preferences["vaulttestsection|client_secret"] is None
 
         # secret type values should not be retrievable by the client
         input_refresh_token = get_input_by_name(inputs, "refresh_token")
-        self.assertNotEqual(input_refresh_token["value"], "a_super_secret_value")
-        self.assertEqual(input_refresh_token["value"], "__SECRET_PLACEHOLDER__")
+        assert input_refresh_token["value"] != "a_super_secret_value"
+        assert input_refresh_token["value"] == "__SECRET_PLACEHOLDER__"
 
         # however, that secret value should be correctly stored on the server
-        self.assertEqual(
-            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"),
-            "a_super_secret_value",
+        assert (
+            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token")
+            == "a_super_secret_value"
         )
 
     def test_extra_prefs_vault_storage_update_secret(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         app = cast(Any, self._test_driver.app if self._test_driver else None)
-        db_user = app.model.context.query(app.model.User).filter(app.model.User.email == user["email"]).first()
+        db_user = self._get_dbuser(app, user)
 
         # write the initial secret value
         put(
@@ -107,8 +108,9 @@ class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
         )
 
         # value should not have been overwritten
-        self.assertEqual(
-            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"), "a_new_secret_value"
+        assert (
+            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token")
+            == "a_new_secret_value"
         )
 
         # write a new value
@@ -122,10 +124,13 @@ class ExtraUserPreferencesTestCase(integration_util.IntegrationTestCase):
         )
 
         # value should now be overwritten
-        self.assertEqual(
-            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token"),
-            "an_updated_secret_value",
+        assert (
+            app.vault.read_secret(f"user/{db_user.id}/preferences/vaulttestsection/refresh_token")
+            == "an_updated_secret_value"
         )
 
     def __url(self, action, user):
         return self._api_url(f"users/{user['id']}/{action}", params=dict(key=self.master_api_key))
+
+    def _get_dbuser(self, app, user):
+        return get_user_by_email(app.model.session, user["email"])

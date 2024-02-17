@@ -19,9 +19,11 @@ require("imports-loader?imports=default|jqueryVendor|jQuery!libs/farbtastic");
 // TODO: ensure unused
 //require("imports-loader?imports=default|jquery|jqueryVendor,define=>false!jquery.cookie");
 require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.dynatree");
-require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery/jquery.wymeditor");
 require("imports-loader?imports=default|jqueryVendor|jQuery!jquery-migrate");
 
 // require("imports-loader?jQuery=jqueryVendor!../ui/autocom_tagging");
+
+// Only used in reports
+require("imports-loader?imports=default|jqueryVendor|jQuery!libs/jquery.sparklines");
 
 module.exports = jQuery;

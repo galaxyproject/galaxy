@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+import { type HDCADetailed } from "@/api";
+import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
+
+import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
+
+interface Props {
+    dsc: HDCADetailed;
+    writeable: boolean;
+}
+
+const props = defineProps<Props>();
+
+const jobState = computed(() => {
+    return new JobStateSummary(props.dsc);
+});
+</script>
+
 <template>
     <DetailsLayout
         :name="dsc.name"
@@ -7,7 +28,8 @@
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
             <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
-            <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
+            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
+
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
@@ -16,29 +38,3 @@
         </template>
     </DetailsLayout>
 </template>
-
-<script>
-import short from "components/directives/v-short";
-import DetailsLayout from "components/History/Layout/DetailsLayout";
-import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
-import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
-
-export default {
-    components: {
-        CollectionDescription,
-        DetailsLayout,
-    },
-    directives: {
-        short,
-    },
-    props: {
-        dsc: { type: Object, required: true },
-        writeable: { type: Boolean, required: true },
-    },
-    computed: {
-        jobState() {
-            return new JobStateSummary(this.dsc);
-        },
-    },
-};
-</script>

@@ -13,6 +13,7 @@ from galaxy.managers.pages import (
     PageContentProcessor,
     placeholderRenderForSave,
 )
+from galaxy.model.base import transaction
 from galaxy.model.mapping import init_models_from_config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.security.idencoding import IdEncodingHelper
@@ -53,7 +54,9 @@ def main(argv):
                 if not args.dry_run:
                     p.content = unicodify(processor.output(), "utf-8")
                     session.add(p)
-                    session.flush()
+                    session = session()
+                    with transaction(session):
+                        session.commit()
                 else:
                     print("Modifying revision %s." % p.id)
                     print(difflib.unified_diff(p.content, newcontent))

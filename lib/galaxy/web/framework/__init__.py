@@ -27,6 +27,11 @@ def legacy_url_for(mapper, *args, **kwargs) -> str:
     """
     rc = request_config()
     rc.mapper = mapper
+    if environ := kwargs.pop("environ", None):
+        rc.environ = environ
+        if hasattr(rc, "using_request_local"):
+            rc.request_local = lambda: rc
+            rc = request_config()
     return base.routes.url_for(*args, **kwargs)
 
 

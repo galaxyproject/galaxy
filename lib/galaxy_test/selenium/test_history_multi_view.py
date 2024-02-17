@@ -1,11 +1,11 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
 
 
-class HistoryMultiViewTestCase(SeleniumTestCase):
-
+class TestHistoryMultiView(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
@@ -22,14 +22,15 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.screenshot("multi_history_collection")
 
     @selenium_test
+    @managed_history
     def test_list_list_display(self):
         history_id = self.current_history_id()
         method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json
         self.prepare_multi_history_view(method)
         dataset_selector = self.history_panel_wait_for_hid_state(1, None, multi_history_panel=True)
-        self.click(dataset_selector)
+        dataset_selector.wait_for_and_click()
         dataset_selector = self.history_panel_wait_for_hid_state(3, None, multi_history_panel=True)
-        self.click(dataset_selector)
+        dataset_selector.wait_for_and_click()
         self.screenshot("multi_history_list_list")
 
     def prepare_multi_history_view(self, collection_populator_method):
@@ -41,5 +42,5 @@ class HistoryMultiViewTestCase(SeleniumTestCase):
         self.home()
         self.open_history_multi_view()
         selector = self.history_panel_wait_for_hid_state(collection_hid, "ok", multi_history_panel=True)
-        self.click(selector)
+        selector.wait_for_and_click()
         return selector

@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
+
 import CollectionProgress from "./CollectionProgress";
 import { JobStateSummary } from "./JobStateSummary";
 

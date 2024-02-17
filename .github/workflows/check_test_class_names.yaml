@@ -1,0 +1,28 @@
+name: Check test class names
+on:
+  pull_request:
+    paths:
+      - '.ci/check_test_class_names.sh'
+      - 'lib/galaxy_test/**'
+      - 'test/**'
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
+      - name: Run tests
+        run: .ci/check_test_class_names.sh

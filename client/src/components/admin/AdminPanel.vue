@@ -12,7 +12,7 @@
                         v-for="(section, sectionIndex) in sections"
                         :key="sectionIndex"
                         class="toolSectionTitle pt-1 px-3">
-                        {{ section.title }}
+                        <h2 class="font-weight-bold h-text mb-0">{{ section.title }}</h2>
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
                                 <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
@@ -43,9 +43,9 @@ export default {
             default: "",
         },
     },
-    data() {
-        return {
-            sections: [
+    computed: {
+        sections() {
+            return [
                 {
                     title: "Server",
                     items: [
@@ -78,6 +78,11 @@ export default {
                             id: "admin-link-local-data",
                             title: "Local Data",
                             route: "/admin/data_manager",
+                        },
+                        {
+                            id: "admin-link-notifications",
+                            title: "Notifications and Broadcasts",
+                            route: "/admin/notifications",
                         },
                     ],
                 },
@@ -137,19 +142,14 @@ export default {
                             route: "/admin/toolbox_dependencies",
                         },
                         {
-                            id: "admin-link-tool-versions",
-                            title: "View Lineage",
-                            route: "/admin/tool_versions",
-                        },
-                        {
                             id: "admin-link-error-stack",
                             title: "View Error Logs",
                             route: "/admin/error_stack",
                         },
                     ],
                 },
-            ],
-        };
+            ];
+        },
     },
 };
 </script>

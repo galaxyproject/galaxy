@@ -1,16 +1,19 @@
 """ Test Tool execution and state handling logic.
 """
+
 from collections import OrderedDict
 from typing import cast
-from unittest import TestCase
 
 import webob.exc
+from sqlalchemy import select
 
 import galaxy.model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
     <command>echo "$param1" #for $r in $repeat# "$r.param2" #end for# &lt; $out1</command>
@@ -27,13 +30,13 @@ BASE_REPEAT_TOOL_CONTENTS = """<tool id="test_tool" name="Test Tool">
 """
 
 # Tool with a repeat parameter, to test state update.
-REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % """<param type="text" name="param2" value="" />"""
-REPEAT_COLLECTION_PARAM_CONTENTS = (
-    BASE_REPEAT_TOOL_CONTENTS % """<param type="data_collection" name="param2" collection_type="paired" />"""
+REPEAT_TOOL_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % ("""<param type="text" name="param2" value="" />""",)
+REPEAT_COLLECTION_PARAM_CONTENTS = BASE_REPEAT_TOOL_CONTENTS % (
+    """<param type="data_collection" name="param2" collection_type="paired" />""",
 )
 
 
-class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
+class TestToolExecution(TestCase, tools_support.UsesTools):
     tool_action: "MockAction"
 
     def setUp(self):
@@ -131,7 +134,9 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesTools):
         self.trans.sa_session.add(hda)
         add_object_to_object_session(self.history, hda)
         self.history.datasets.append(hda)
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
         return hda
 
     def __add_collection_dataset(self, id, collection_type="paired", *hdas):
@@ -195,13 +200,14 @@ class MockTrans:
         self.user = None
         self.history._active_datasets_and_roles = [
             hda
-            for hda in self.app.model.context.query(galaxy.model.HistoryDatasetAssociation).all()
+            for hda in self.app.model.session.scalars(select(galaxy.model.HistoryDatasetAssociation)).all()
             if hda.active and hda.history == history
         ]
         self.workflow_building_mode = False
         self.webapp = Bunch(name="galaxy")
         self.sa_session = self.app.model.context
         self.url_builder = None
+        self.galaxy_session = None
 
     def get_history(self, **kwargs):
         return self.history

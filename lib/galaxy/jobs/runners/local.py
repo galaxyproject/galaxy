@@ -1,6 +1,7 @@
 """
 Job runner plugin for executing jobs on the local system via the command line.
 """
+
 import datetime
 import logging
 import os
@@ -8,6 +9,10 @@ import subprocess
 import tempfile
 import threading
 from time import sleep
+from typing import (
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -21,6 +26,9 @@ from .util.process_groups import (
     check_pg,
     kill_pg,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +57,7 @@ class LocalJobRunner(BaseJobRunner):
 
         super().__init__(app, nworkers)
 
-    def __command_line(self, job_wrapper):
+    def __command_line(self, job_wrapper: "MinimalJobWrapper") -> Tuple[str, str]:
         """ """
         command_line = job_wrapper.runner_command_line
 

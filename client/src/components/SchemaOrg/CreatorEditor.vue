@@ -10,12 +10,12 @@
             <div v-for="(creator, index) in creatorsCurrent" :key="index">
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
-                        <font-awesome-icon v-b-tooltip.hover title="Edit Creator" icon="edit" @click="onEdit(index)" />
-                        <font-awesome-icon
-                            v-b-tooltip.hover
-                            title="Remove Creator"
-                            icon="times"
-                            @click="onRemove(index)" />
+                        <span v-b-tooltip.hover title="Edit Creator"
+                            ><FontAwesomeIcon icon="edit" @click="onEdit(index)"
+                        /></span>
+                        <span v-b-tooltip.hover title="Remove Creator">
+                            <FontAwesomeIcon icon="times" @click="onRemove(index)" />
+                        </span>
                     </template>
                 </CreatorViewer>
             </div>
@@ -31,16 +31,16 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
+import CreatorViewer from "./CreatorViewer";
+import OrganizationForm from "./OrganizationForm";
+import PersonForm from "./PersonForm";
 
 library.add(faTimes);
 library.add(faEdit);
-
-import PersonForm from "./PersonForm";
-import CreatorViewer from "./CreatorViewer";
-import OrganizationForm from "./OrganizationForm";
 
 export default {
     components: {
@@ -52,6 +52,7 @@ export default {
     props: {
         creators: {
             type: Array,
+            default: () => [],
         },
     },
     data() {
@@ -61,8 +62,11 @@ export default {
         };
     },
     watch: {
-        creators() {
-            this.creatorsCurrent = this.creators;
+        creators: {
+            handler(newCreators) {
+                this.creatorsCurrent = newCreators;
+            },
+            immediate: true,
         },
     },
     methods: {

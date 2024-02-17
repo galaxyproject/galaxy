@@ -1,6 +1,7 @@
 """
 Base classes for job runner plugins.
 """
+
 import datetime
 import os
 import string
@@ -10,24 +11,33 @@ import threading
 import time
 import traceback
 import typing
+import uuid
 from queue import (
     Empty,
     Queue,
 )
 
+from sqlalchemy import select
+from sqlalchemy.orm import object_session
+
 import galaxy.jobs
 from galaxy import model
+from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
 )
-from galaxy.job_execution.setup import JobIO
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
+    DescribesScriptIntegrityChecks,
     job_script,
     write_script,
+)
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
 )
 from galaxy.tool_util.deps.dependencies import (
     JobInfo,
@@ -35,12 +45,14 @@ from galaxy.tool_util.deps.dependencies import (
 )
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
+    asbool,
     DATABASE_MAX_STRING_SIZE,
     ExecutionTimer,
     in_directory,
     ParamsWithSpecs,
     shrink_stream_by_size,
     unicodify,
+    UNKNOWN,
 )
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -81,7 +93,6 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
-
     runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
@@ -131,47 +142,72 @@ class BaseJobRunner:
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)"""
         while self._should_stop is False:
-            try:
-                (method, arg) = self.work_queue.get(timeout=1)
-            except Empty:
-                continue
-            if method is STOP_SIGNAL:
-                return
-            # id and name are collected first so that the call of method() is the last exception.
-            try:
-                if isinstance(arg, AsynchronousJobState):
-                    job_id = arg.job_wrapper.get_id_tag()
-                else:
-                    # arg should be a JobWrapper/TaskWrapper
-                    job_id = arg.get_id_tag()
-            except Exception:
-                job_id = "unknown"
-            try:
-                name = method.__name__
-            except Exception:
-                name = "unknown"
-            try:
-                action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
-                action_timer = self.app.execution_timer_factory.get_timer(
-                    f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
-                )
-                method(arg)
-                log.trace(action_timer.to_str(job_id=job_id))
-            except Exception:
-                log.exception(f"({job_id}) Unhandled exception calling {name}")
-                if not isinstance(arg, JobState):
-                    job_state = JobState(job_wrapper=arg, job_destination={})
-                else:
-                    job_state = arg
-                if method != self.fail_job:
-                    # Prevent fail_job cycle in the work_queue
-                    self.work_queue.put((self.fail_job, job_state))
+            with self.app.model.session():  # Create a Session instance and ensure it's closed.
+                try:
+                    (method, arg) = self.work_queue.get(timeout=1)
+                except Empty:
+                    continue
+                if method is STOP_SIGNAL:
+                    return
+                # id and name are collected first so that the call of method() is the last exception.
+                try:
+                    if isinstance(arg, AsynchronousJobState):
+                        job_id = arg.job_wrapper.get_id_tag()
+                    else:
+                        # arg should be a JobWrapper/TaskWrapper
+                        job_id = arg.get_id_tag()
+                except Exception:
+                    job_id = UNKNOWN
+                try:
+                    name = method.__name__
+                except Exception:
+                    name = UNKNOWN
+
+                # Ensure a Job object belongs to a session
+                self._ensure_db_session(arg)
+
+                try:
+                    action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
+                    action_timer = self.app.execution_timer_factory.get_timer(
+                        f"internals.{action_str}", "job runner action %s for job ${job_id} executed" % (action_str)
+                    )
+                    method(arg)
+                    log.trace(action_timer.to_str(job_id=job_id))
+                except Exception:
+                    log.exception(f"({job_id}) Unhandled exception calling {name}")
+                    if not isinstance(arg, JobState):
+                        job_state = JobState(job_wrapper=arg, job_destination={})
+                    else:
+                        job_state = arg
+                    if method != self.fail_job:
+                        # Prevent fail_job cycle in the work_queue
+                        self.work_queue.put((self.fail_job, job_state))
+
+    def _ensure_db_session(self, arg: typing.Union["JobWrapper", "JobState"]) -> None:
+        """Ensure Job object belongs to current session."""
+        try:
+            job_wrapper = arg.job_wrapper  # type: ignore[union-attr]
+        except AttributeError:
+            job_wrapper = arg
+
+        if job_wrapper._job_io:
+            job = job_wrapper._job_io.job
+            if object_session(job) is None:
+                self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper: "MinimalJobWrapper"):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run."""
         put_timer = ExecutionTimer()
-        queue_job = job_wrapper.enqueue()
+        try:
+            queue_job = job_wrapper.enqueue()
+        except Exception as e:
+            queue_job = False
+            # Required for exceptions thrown by object store incompatiblity.
+            # tested by test/integration/objectstore/test_private_handling.py
+            job_wrapper.fail(str(e), exception=e)
+            log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
+            return
         if queue_job:
             self.mark_as_queued(job_wrapper)
             log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
@@ -186,8 +222,7 @@ class BaseJobRunner:
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
-        join_timeout = self.app.config.monitor_thread_join_timeout
-        if join_timeout > 0:
+        if (join_timeout := self.app.config.monitor_thread_join_timeout) > 0:
             log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
             start = time.time()
             # NOTE: threads that have already joined by now are not going to be logged
@@ -278,7 +313,7 @@ class BaseJobRunner:
         return True
 
     # Runners must override the job handling methods
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         raise NotImplementedError()
 
     def stop_job(self, job_wrapper):
@@ -334,7 +369,7 @@ class BaseJobRunner:
         output_paths = {}
         for dataset_path in job_wrapper.job_io.get_output_fnames():
             path = dataset_path.real_path
-            if job_wrapper.get_destination_configuration("outputs_to_working_directory", False):
+            if asbool(job_wrapper.get_destination_configuration("outputs_to_working_directory", False)):
                 path = dataset_path.false_path
             output_paths[dataset_path.dataset_id] = path
 
@@ -342,7 +377,7 @@ class BaseJobRunner:
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
         job_tool = job_wrapper.tool
-        for (joda, dataset) in self._walk_dataset_outputs(job):
+        for joda, dataset in self._walk_dataset_outputs(job):
             if joda and job_tool:
                 hda_tool_output = job_tool.find_output_def(joda.name)
                 if hda_tool_output and hda_tool_output.from_work_dir:
@@ -367,16 +402,26 @@ class BaseJobRunner:
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
                 if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    joda = (
-                        self.sa_session.query(self.app.model.JobToOutputDatasetAssociation)
+                    stmt = (
+                        select(self.app.model.JobToOutputDatasetAssociation)
                         .filter_by(job=job, dataset=dataset)
-                        .first()
+                        .limit(1)
                     )
+                    joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
         # for dataset_assoc in job.output_datasets + job.output_library_datasets:
         #      yield (dataset_assoc, dataset_assoc.dataset)
         #  I don't understand the reworking it backwards.  -John
+
+    def _verify_celery_config(self):
+        if not self.app.config.enable_celery_tasks:
+            raise ConfigurationError("Can't request celery metadata without enabling celery tasks")
+        celery_conf = self.app.config.celery_conf
+        if not celery_conf and not celery_conf["result_backend"]:
+            raise ConfigurationError(
+                "Celery backend not set. Please set `result_backend` on the `celery_conf` config option."
+            )
 
     def _handle_metadata_externally(self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False):
         """
@@ -396,10 +441,7 @@ class BaseJobRunner:
             )
             metadata_strategy = job_wrapper.metadata_strategy
             if "celery" in metadata_strategy:
-                if not self.app.config.enable_celery_tasks:
-                    raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
-                if not self.app.config.celery_backend == "rpc://localhost":
-                    raise Exception(f"Boo, wrong celery backend {self.app.config.celery_backend}")
+                self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.
@@ -428,19 +470,15 @@ class BaseJobRunner:
                             dependency_shell_commands = "&&".join(dependency_shell_commands)
                         external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
                 log.debug(
-                    "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
+                    "executing external set_meta script for job %d: %s", job_wrapper.job_id, external_metadata_script
                 )
-                external_metadata_proc = subprocess.Popen(
+                subprocess.call(
                     args=external_metadata_script,
                     shell=True,
                     cwd=job_wrapper.working_directory,
                     env=os.environ,
                     preexec_fn=os.setpgrp,
                 )
-                job_wrapper.external_output_metadata.set_job_runner_external_pid(
-                    external_metadata_proc.pid, self.sa_session
-                )
-                external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
@@ -474,7 +512,7 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path: str, contents: str, job_io: JobIO):
+    def write_executable_script(self, path: str, contents: str, job_io: DescribesScriptIntegrityChecks) -> None:
         write_script(path, contents, job_io)
 
     def _find_container(
@@ -579,23 +617,10 @@ class BaseJobRunner:
 
             tool_stdout_path = os.path.join(outputs_directory, "tool_stdout")
             tool_stderr_path = os.path.join(outputs_directory, "tool_stderr")
-            # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
-            # assumption in 20.XX.
-            if os.path.exists(tool_stdout_path):
-                with open(tool_stdout_path, "rb") as stdout_file:
-                    tool_stdout = self._job_io_for_db(stdout_file)
-            else:
-                # Legacy job, were getting a merged output - assume it is mostly tool output.
-                tool_stdout = job_stdout
-                job_stdout = None
-
-            if os.path.exists(tool_stderr_path):
-                with open(tool_stderr_path, "rb") as stdout_file:
-                    tool_stderr = self._job_io_for_db(stdout_file)
-            else:
-                # Legacy job, were getting a merged output - assume it is mostly tool output.
-                tool_stderr = job_stderr
-                job_stderr = None
+            with open(tool_stdout_path, "rb") as stdout_file:
+                tool_stdout = self._job_io_for_db(stdout_file)
+            with open(tool_stderr_path, "rb") as stderr_file:
+                tool_stderr = self._job_io_for_db(stderr_file)
 
             check_output_detected_state = job_wrapper.check_tool_output(
                 tool_stdout,
@@ -614,7 +639,8 @@ class BaseJobRunner:
 
             # Flush with streams...
             self.sa_session.add(job)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
             if not job_ok:
                 job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
@@ -805,11 +831,19 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                     self.watched.append(async_job_state)
             except Empty:
                 pass
+            # Ideally we'd construct a sqlalchemy session now and pass it into `check_watched_items`
+            # and have that be the only session being used. The next best thing is to scope
+            # the session and discard it after each check_watched_item loop
+            scoped_id = str(uuid.uuid4())
+            self.app.model.set_request_id(scoped_id)
             # Iterate over the list of watched jobs and check state
             try:
+                check_database_connection(self.sa_session)
                 self.check_watched_items()
             except Exception:
                 log.exception("Unhandled exception checking active jobs")
+            finally:
+                self.app.model.unset_request_id(scoped_id)
             # Sleep a bit before the next state check
             time.sleep(self.app.config.job_runner_monitor_sleep)
 

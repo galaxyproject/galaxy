@@ -10,7 +10,7 @@ user2_data = dict(email="user2@user2.user2", username="user2", password=default_
 
 
 # =============================================================================
-class TagHandlerTestCase(BaseTestCase):
+class TestTagHandler(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.app.hda_manager = self.app[hdas.HDAManager]
@@ -24,7 +24,7 @@ class TagHandlerTestCase(BaseTestCase):
         return self.app.hda_manager.create(history=history1)
 
     def _check_tag_list(self, tags, expected_tags):
-        self.assertEqual(len(tags), len(expected_tags))
+        assert len(tags) == len(expected_tags)
         actual_tags = []
         for tag in tags:
             if tag.user_value:
@@ -94,7 +94,7 @@ class TagHandlerTestCase(BaseTestCase):
         tags = ["tag1"]
         self.tag_handler.set_tags_from_list(self.user, hda, tags)
         self.tag_handler.delete_item_tags(user=self.user, item=hda)
-        self.assertEqual(hda.tags, [])
+        assert hda.tags == []
 
     def test_unique_constraint_applied(self):
         tag_name = "abc"
@@ -106,9 +106,9 @@ class TagHandlerTestCase(BaseTestCase):
         hda = self._create_vanilla_hda()
         tags = ["tag1"]
         self.tag_handler.set_tags_from_list(self.user, hda, tags)
-        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag="tag1"))
+        assert self.tag_handler.item_has_tag(self.user, item=hda, tag="tag1")
         # ItemTagAssociation
-        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0]))
+        assert self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0])
         # Tag
-        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0].tag))
-        self.assertFalse(self.tag_handler.item_has_tag(self.user, item=hda, tag="tag2"))
+        assert self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0].tag)
+        assert not self.tag_handler.item_has_tag(self.user, item=hda, tag="tag2")

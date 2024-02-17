@@ -1,32 +1,61 @@
+import "jest-location-mock";
+
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
+
 import ToolSearch from "./ToolSearch";
+
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 describe("ToolSearch", () => {
-    it("test tools advanced filter panel", async () => {
+    it("test tools advanced filter panel navigation", async () => {
+        const pinia = createPinia();
         const wrapper = mount(ToolSearch, {
             propsData: {
                 currentPanelView: "default",
+                enableAdvanced: false,
                 showAdvanced: false,
+                toolsList: [],
+                currentPanel: {},
             },
             localVue,
+            router,
             stubs: {
                 icon: { template: "<div></div>" },
             },
+            pinia,
         });
+        const $router = wrapper.vm.$router;
 
-        expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(false);
-        await wrapper.setProps({ showAdvanced: true });
-        expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='toggle advanced search']").exists()).toBe(false);
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
+        await wrapper.setProps({ enableAdvanced: true, showAdvanced: true });
+        expect(wrapper.find("[data-description='wide toggle advanced search']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
+
+        // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
+        const sectionField = wrapper.find("[placeholder='any section']");
+        expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();
+        await sectionField.trigger("keyup.esc");
+        expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
+
+        // Add filters to fields
+        await wrapper.find("[data-description='toggle advanced search']").trigger("click");
+        // await wrapper.setProps({ showAdvanced: true });
         const filterInputs = {
-            "[placeholder='any tool name']": "name-filter",
+            "[placeholder='any name']": "name-filter",
             "[placeholder='any section']": "section-filter",
+            "[placeholder='any EDAM ontology']": "ontology-filter",
             "[placeholder='any id']": "id-filter",
-            "[placeholder='any description']": "desc-filter",
+            "[placeholder='any repository owner']": "owner-filter",
+            "[placeholder='any help text']": "help-filter",
         };
 
-        // Now add filters in all input fields in the advanced menu
+        // Now add all filters in the advanced menu
         Object.entries(filterInputs).forEach(([selector, value]) => {
             const filterInput = wrapper.find(selector);
             if (filterInput.vm && filterInput.props().type == "text") {
@@ -34,19 +63,21 @@ describe("ToolSearch", () => {
             }
         });
 
-        // Test: values are stored in the filterSettings object
-        expect(Object.values(wrapper.vm.filterSettings)).toEqual(Object.values(filterInputs));
-
-        // Test: clearing the filters
-        const clearButton = wrapper.find("[description='clear filters']");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(4);
-        await clearButton.trigger("click");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(0);
-
-        // Test: keyup.esc (should toggle the view out)
-        const nameField = wrapper.find("[placeholder='any tool name']");
-        expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();
-        await nameField.trigger("keyup.esc");
-        expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
+        // Test: we route to the list with filters
+        const mockMethod = jest.fn();
+        $router.push = mockMethod;
+        await wrapper.find("[data-description='apply filters']").trigger("click");
+        const filterSettings = {
+            name: "name-filter",
+            section: "section-filter",
+            ontology: "ontology-filter",
+            id: "id-filter",
+            owner: "owner-filter",
+            help: "help-filter",
+        };
+        expect(mockMethod).toHaveBeenCalledWith({
+            path: "/tools/list",
+            query: filterSettings,
+        });
     });
 });

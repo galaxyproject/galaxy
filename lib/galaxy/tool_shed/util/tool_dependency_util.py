@@ -5,6 +5,7 @@ import shutil
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -215,7 +216,8 @@ def remove_tool_dependency(app, tool_dependency):
         tool_dependency.status = app.install_model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
         context.add(tool_dependency)
-        context.flush()
+        with transaction(context):
+            context.commit()
         # Since the received tool_dependency is in an error state, nothing will need to be changed in any
         # of the in-memory dictionaries in the installed_repository_manager because changing the state from
         # error to uninstalled requires no in-memory changes..

@@ -8,8 +8,8 @@ from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.driver import integration_util
 
 
-class WorkflowInvocationTestCase(integration_util.IntegrationTestCase, UsesShedApi):
-
+class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     require_admin_user = False
 
@@ -40,16 +40,16 @@ steps:
                 workflow_id, history_id=history_id, request={"require_exact_tool_versions": True}
             )
             self._assert_status_code_is(invocation_response, 400)
-            self.assertEqual(
-                invocation_response.json().get("err_msg"),
-                "Workflow was not invoked; the following required tools are not installed: nonexistent_tool (version 0.1), compose_text_param (version 0.0.1)",
+            assert (
+                invocation_response.json().get("err_msg")
+                == "Workflow was not invoked; the following required tools are not installed: nonexistent_tool (version 0.1), compose_text_param (version 0.0.1)"
             )
             # should fail but return only the tool_id of non_existent tool as another version of compose_text_param is installed
             invocation_response = self.workflow_populator.invoke_workflow(
                 workflow_id, history_id=history_id, request={"require_exact_tool_versions": False}
             )
             self._assert_status_code_is(invocation_response, 400)
-            self.assertEqual(
-                invocation_response.json().get("err_msg"),
-                "Workflow was not invoked; the following required tools are not installed: nonexistent_tool",
+            assert (
+                invocation_response.json().get("err_msg")
+                == "Workflow was not invoked; the following required tools are not installed: nonexistent_tool"
             )
