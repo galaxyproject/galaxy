@@ -88,7 +88,7 @@ const fields: FieldArray = [
         type: "date",
     },
     {
-        key: "owner",
+        key: "username",
         title: "Owner",
         type: "text",
     },
