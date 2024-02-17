@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { BNav, BNavItem } from "bootstrap-vue";
 
 import historiesGridConfig from "@/components/Grid/configs/histories";
@@ -10,7 +10,7 @@ import historiesSharedGridConfig from "@/components/Grid/configs/historiesShared
 import Heading from "@/components/Common/Heading.vue";
 import GridList from "@/components/Grid/GridList.vue";
 
-library.add(faPlus, faStar, faTrash);
+library.add(faPlus);
 
 interface Props {
     activeList?: "my" | "shared" | "published";
