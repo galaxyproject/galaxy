@@ -4,7 +4,7 @@
             {{ error }}
         </b-alert>
         <b-card v-if="showItems" no-body class="my-2">
-            <h5 class="m-3">Currently installing...</h5>
+            <h2 class="m-3 h-text">Currently installing...</h2>
             <b-table
                 class="mx-3 mb-0"
                 sticky-header
@@ -15,7 +15,10 @@
                     <b-link @click="onQuery(row.item.name)"> {{ row.item.name }} ({{ row.item.owner }}) </b-link>
                 </template>
                 <template v-slot:cell(status)="row">
-                    <InstallationButton
+                    <b>Status: </b><span>{{ row.item.status }}</span>
+                </template>
+                <template v-slot:cell(actions)="row">
+                    <InstallationActions
                         class="float-right"
                         :status="row.item.status"
                         @onUninstall="uninstallRepository(row.item)" />
@@ -26,16 +29,17 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+
+import InstallationActions from "../RepositoryDetails/InstallationActions";
 import { Services } from "../services";
-import InstallationButton from "../RepositoryDetails/InstallationButton";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
-        InstallationButton,
+        InstallationActions,
     },
     data() {
         return {
@@ -43,7 +47,7 @@ export default {
             loading: true,
             error: null,
             items: [],
-            fields: ["name", "status"],
+            fields: ["name", "status", "actions"],
         };
     },
     computed: {

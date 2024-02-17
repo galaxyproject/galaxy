@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
-import DisplayApplications from "./DisplayApplications";
 import MockProvider from "components/providers/MockProvider";
+import { getLocalVue } from "tests/jest/helpers";
+
+import DisplayApplications from "./DisplayApplications";
 
 const localVue = getLocalVue();
 
@@ -53,7 +54,7 @@ describe("DisplayApplications", () => {
     it("check props", async () => {
         const labels = wrapper.findAll(".font-weight-bold");
         for (let i = 0; i < 2; i++) {
-            expect(labels.at(i).text()).toBe(`${i + 1}. app-${i + 1}`);
+            expect(labels.at(i).text()).toBe(`app-${i + 1}`);
         }
         const links = wrapper.findAll("a");
         for (let i = 0; i < 3; i++) {

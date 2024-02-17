@@ -1,8 +1,9 @@
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
 import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
 import ToolFooter from "./ToolFooter";
 
 const localVue = getLocalVue(true);

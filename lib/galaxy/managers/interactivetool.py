@@ -1,12 +1,23 @@
+import json
 import logging
 import sqlite3
-
-from sqlalchemy import or_
-
-from galaxy import (
-    exceptions,
-    model,
+from urllib.parse import (
+    urlsplit,
+    urlunsplit,
 )
+
+from sqlalchemy import (
+    or_,
+    select,
+)
+
+from galaxy import exceptions
+from galaxy.model import (
+    InteractiveToolEntryPoint,
+    Job,
+)
+from galaxy.model.base import transaction
+from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
@@ -133,7 +144,12 @@ class InteractiveToolSqlite:
             entry_point.token,
             entry_point.host,
             entry_point.port,
-            None,
+            json.dumps(
+                {
+                    "requires_path_in_url": entry_point.requires_path_in_url,
+                    "requires_path_in_header_named": entry_point.requires_path_in_header_named,
+                }
+            ),
         )
 
     def remove_entry_point(self, entry_point):
@@ -152,7 +168,8 @@ class InteractiveToolManager:
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, app.security.encode_id)
+        self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
+        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, self.encoder.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -162,11 +179,15 @@ class InteractiveToolManager:
                 tool_port=entry["port"],
                 entry_url=entry["url"],
                 name=entry["name"],
+                label=entry["label"],
                 requires_domain=entry["requires_domain"],
+                requires_path_in_url=entry["requires_path_in_url"],
+                requires_path_in_header_named=entry["requires_path_in_header_named"],
             )
             self.sa_session.add(ep)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def configure_entry_point(self, job, tool_port=None, host=None, port=None, protocol=None):
         return self.configure_entry_points(
@@ -191,7 +212,8 @@ class InteractiveToolManager:
                 self.save_entry_point(ep)
                 configured.append(ep)
         if configured:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         return dict(not_configured=not_configured, configured=configured)
 
     def save_entry_point(self, entry_point):
@@ -210,30 +232,22 @@ class InteractiveToolManager:
             )
 
     def get_nonterminal_for_user_by_trans(self, trans):
-        if trans.user:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
-        else:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(
-                trans.app.model.Job.session_id == trans.get_galaxy_session().id
-            )
+        if trans.user is None and trans.get_galaxy_session() is None:
+            return []
 
-        def build_and_apply_filters(query, objects, filter_func):
-            if objects is not None:
-                if isinstance(objects, str):
-                    query = query.filter(filter_func(objects))
-                elif isinstance(objects, list):
-                    t = []
-                    for obj in objects:
-                        t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
+        def build_subquery():
+            if trans.user:
+                stmt = select(Job.id).where(Job.user == trans.user)
+            else:
+                stmt = select(Job.id).where(Job.session_id == trans.get_galaxy_session().id)
+            filters = []
+            for state in Job.non_ready_states:
+                filters.append(Job.state == state)
+            stmt = stmt.where(or_(*filters)).subquery()
+            return stmt
 
-        jobs = build_and_apply_filters(
-            jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s
-        )
-        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(
-            trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs])
-        )
+        stmt = select(InteractiveToolEntryPoint).where(InteractiveToolEntryPoint.job_id.in_(build_subquery()))
+        return trans.sa_session.scalars(stmt)
 
     def can_access_job(self, trans, job):
         if job:
@@ -267,64 +281,78 @@ class InteractiveToolManager:
             # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
             self.job_manager.stop(job)
             trans.sa_session.add(job)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def remove_entry_points(self, entry_points):
         if entry_points:
             for entry_point in entry_points:
                 self.remove_entry_point(entry_point, flush=False)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def remove_entry_point(self, entry_point, flush=True):
         entry_point.deleted = True
         self.sa_session.add(entry_point)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         self.propagator.remove_entry_point(entry_point)
 
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
-            request_host = trans.request.host
-            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                request_host = self.app.config.interactivetools_proxy_host
-            protocol = trans.request.host_url.split("//", 1)[0]
-            if entry_point.requires_domain:
-                rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"
-                if entry_point.entry_url:
-                    rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
-            else:
-                rval = self.get_entry_point_path(trans, entry_point)
+            use_it_proxy_host_cfg = (
+                not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
+            )
 
-            return rval
+            url_parts = urlsplit(trans.request.host_url)
+            url_host = self.app.config.interactivetools_proxy_host if use_it_proxy_host_cfg else trans.request.host
+            url_path = url_parts.path
+
+            if entry_point.requires_domain:
+                url_host = f"{self.get_entry_point_subdomain(trans, entry_point)}.{url_host}"
+                if entry_point.entry_url:
+                    url_path = f"{url_path.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
+            else:
+                url_path = self.get_entry_point_path(trans, entry_point)
+                if not use_it_proxy_host_cfg:
+                    return url_path
+
+            return urlunsplit((url_parts.scheme, url_host, url_path, "", ""))
+
+    def _get_entry_point_url_elements(self, trans, entry_point):
+        encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+        ep_encoded_id = encoder.encode_id(entry_point.id)
+        ep_class_id = entry_point.class_id
+        ep_prefix = self.app.config.interactivetools_prefix
+        ep_token = entry_point.token
+        return ep_encoded_id, ep_class_id, ep_prefix, ep_token
 
     def get_entry_point_subdomain(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        entry_point_token = entry_point.token
-        if self.app.config.interactivetools_shorten_url:
-            return f"{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}"
-        return f"{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}"
+        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+        return f"{ep_encoded_id}-{ep_token}.{ep_class_id}.{ep_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        rval = "/"
+        url_path = "/"
         if not entry_point.requires_domain:
-            rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
-            if self.app.config.interactivetools_shorten_url:
-                rval = f"/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/"
-            else:
-                rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
+            ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+            path_parts = [
+                part.strip("/")
+                for part in (
+                    str(self.app.config.interactivetools_base_path),
+                    ep_prefix,
+                    ep_class_id,
+                    ep_encoded_id,
+                    ep_token,
+                )
+            ]
+            url_path += "/".join(part for part in path_parts if part) + "/"
         if entry_point.entry_url:
-            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
-        if rval[0] != "/":
-            rval = f"/{rval}"
-        return rval
+            url_path += entry_point.entry_url.lstrip("/")
+        return url_path
 
     def access_entry_point_target(self, trans, entry_point_id):
-        entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
+        entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
                 return self.target_if_active(trans, entry_point)

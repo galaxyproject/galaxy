@@ -1,3 +1,8 @@
+import json
+
+import yaml
+from selenium.webdriver.common.by import By
+
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
@@ -22,8 +27,7 @@ from .framework import (
 )
 
 
-class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
-
+class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
     ensure_registered = True
 
     @selenium_test
@@ -137,7 +141,7 @@ steps:
         self.workflow_run_ensure_expanded()
         workflow_run = self.components.workflow_run
         input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
-        input_element = input_div_element.find_element_by_css_selector("input")
+        input_element = input_div_element.find_element(By.CSS_SELECTOR, "input")
         input_element.clear()
         input_element.send_keys("12345")
 
@@ -177,6 +181,25 @@ steps:
         self.screenshot("workflow_run_tool_upgrade")
 
     @selenium_test
+    def test_run_form_safe_upgrade_handling(self):
+        workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
+        # 0.9.0 is a version that does not exist in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "0.9.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # Check that this tool form does not contain a warning about different versions.
+        assert self.components.workflow_run.warning.is_absent
+
+    @selenium_test
     @managed_history
     def test_execution_with_multiple_inputs(self):
         history_id = self.workflow_run_and_submit(
@@ -187,7 +210,7 @@ steps:
         )
         self.workflow_run_wait_for_ok(hid=7)
         content = self.dataset_populator.get_history_dataset_content(history_id, hid=7)
-        self.assertEqual("10.0\n30.0\n20.0\n40.0\n", content)
+        assert "10.0\n30.0\n20.0\n40.0\n" == content
 
     @selenium_test
     @managed_history
@@ -254,6 +277,37 @@ steps:
         )
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
+    @selenium_test
+    @managed_history
+    def test_workflow_run_button_disabled_when_required_input_missing(self):
+        self.workflow_run_open_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    optional: false
+  data_param:
+    type: data
+  collection_param:
+    type: data_collection
+steps: {}
+"""
+        )
+        workflow_run = self.components.workflow_run
+        # None of the required parameters are present
+        workflow_run.run_workflow_disabled.wait_for_present()
+        # upload datasets and collections
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_collection_populator.create_list_in_history(history_id, wait=True)
+        input_element = workflow_run.simplified_input(label="text_param").wait_for_and_click()
+        input_element.send_keys("3")
+        # Everything is set, workflow is runnable, disabled class should be removed
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        input_element.clear()
+        workflow_run.run_workflow_disabled.wait_for_present()
+
     def _assert_has_3_lines_after_run(self, hid):
         self.workflow_run_wait_for_ok(hid=hid)
         history_id = self.current_history_id()
@@ -263,7 +317,7 @@ steps:
     def _set_num_lines_to_3(self, element_id):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
         div = self.tool_parameter_div(element_id)
-        input_element = div.find_element_by_css_selector("input")
+        input_element = div.find_element(By.CSS_SELECTOR, "input")
         # runtime parameters not being set to tool default value:
         # https://github.com/galaxyproject/galaxy/pull/7157
         # initial_value = input_element.get_attribute("value")
@@ -274,7 +328,7 @@ steps:
     def _set_replacement_parameter(self, element_id, value):
         # for random_lines num_lines parameter as runtime parameter in workflow form.
         div = self.tool_parameter_div(element_id)
-        input_element = div.find_element_by_css_selector("input")
+        input_element = div.find_element(By.CSS_SELECTOR, "input")
         initial_value = input_element.get_attribute("value")
         assert initial_value == "", initial_value
         input_element.clear()

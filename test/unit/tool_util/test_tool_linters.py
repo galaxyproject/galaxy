@@ -5,7 +5,10 @@ import pytest
 
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
+    lint_tool_source_with_modules,
+    lint_xml_with,
     LintContext,
+    Linter,
     XMLLintMessageLine,
     XMLLintMessageXPath,
 )
@@ -19,36 +22,39 @@ from galaxy.tool_util.linters import (
     stdio,
     tests,
     xml_order,
+    xsd,
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.util import (
+    ElementTree,
+    parse_xml,
+)
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
 # tests tool xml for citations linter
 CITATIONS_MULTIPLE = """
-<tool>
+<tool id="id" name="name">
     <citations/>
     <citations/>
 </tool>
 """
 
 CITATIONS_ABSENT = """
-<tool/>
+<tool id="id" name="name"/>
 """
 
 CITATIONS_ERRORS = """
-<tool>
+<tool id="id" name="name">
     <citations>
-        <nonsense/>
-        <citation type="hoerensagen"/>
         <citation type="doi"> </citation>
     </citations>
 </tool>
 """
 
 CITATIONS_VALID = """
-<tool>
+<tool id="id" name="name">
     <citations>
         <citation type="doi">DOI</citation>
     </citations>
@@ -57,23 +63,23 @@ CITATIONS_VALID = """
 
 # tests tool xml for command linter
 COMMAND_MULTIPLE = """
-<tool>
-    <command/>
-    <command/>
+<tool id="id" name="name">
+    <command>ls</command>
+    <command>df</command>
 </tool>
 """
 COMMAND_MISSING = """
-<tool/>
+<tool id="id" name="name"/>
 """
 COMMAND_TODO = """
-<tool>
+<tool id="id" name="name">
     <command>
         ## TODO
     </command>
 </tool>
 """
 COMMAND_DETECT_ERRORS_INTERPRETER = """
-<tool>
+<tool id="id" name="name">
     <command detect_errors="nonsense" interpreter="python"/>
 </tool>
 """
@@ -86,7 +92,7 @@ GENERAL_MISSING_TOOL_ID_NAME_VERSION = """
 """
 
 GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES = """
-<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
+<tool name=" BWA Mapper " id="bwa tool" version=" 1.0.1 " display_interface="true" require_login="true" hidden="true">
     <requirements>
         <requirement type="package" version=" 1.2.5 "> bwa </requirement>
     </requirements>
@@ -94,7 +100,7 @@ GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES = """
 """
 
 GENERAL_REQUIREMENT_WO_VERSION = """
-<tool name="BWA Mapper" id="bwa_tool" version="1.0.1blah" is_multi_byte="true" display_interface="true" require_login="true" hidden="true" profile="20.09">
+<tool name="BWA Mapper" id="bwa_tool" version="1.0.1blah" display_interface="true" require_login="true" hidden="true" profile="20.09">
     <requirements>
         <requirement type="package">bwa</requirement>
         <requirement type="package" version="1.2.5"></requirement>
@@ -107,33 +113,38 @@ GENERAL_VALID = """
 </tool>
 """
 
+GENERAL_VALID_NEW_PROFILE_FMT = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+</tool>
+"""
+
 # test tool xml for help linter
 HELP_MULTIPLE = """
-<tool>
+<tool id="id" name="name">
     <help>Help</help>
     <help>More help</help>
 </tool>
 """
 
 HELP_ABSENT = """
-<tool>
+<tool id="id" name="name">
 </tool>
 """
 
 HELP_EMPTY = """
-<tool>
+<tool id="id" name="name">
     <help> </help>
 </tool>
 """
 
 HELP_TODO = """
-<tool>
+<tool id="id" name="name">
     <help>TODO</help>
 </tool>
 """
 
 HELP_INVALID_RST = """
-<tool>
+<tool id="id" name="name">
     <help>
         **xxl__
     </help>
@@ -142,7 +153,7 @@ HELP_INVALID_RST = """
 
 # test tool xml for inputs linter
 INPUTS_NO_INPUTS = """
-<tool>
+<tool id="id" name="name">
 </tool>
 """
 
@@ -153,7 +164,7 @@ INPUTS_NO_INPUTS_DATASOURCE = """
 """
 
 INPUTS_VALID = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="txt_param" type="text"/>
         <param name="int_param" type="integer"/>
@@ -162,7 +173,7 @@ INPUTS_VALID = """
 """
 
 INPUTS_PARAM_NAME = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param type="text"/>
         <param name="" type="text"/>
@@ -174,7 +185,7 @@ INPUTS_PARAM_NAME = """
 """
 
 INPUTS_PARAM_TYPE = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="valid_name"/>
         <param argument="--another-valid-name" type=""/>
@@ -183,15 +194,68 @@ INPUTS_PARAM_TYPE = """
 """
 
 INPUTS_DATA_PARAM = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="valid_name" type="data"/>
     </inputs>
 </tool>
 """
 
+INPUTS_DATA_PARAM_OPTIONS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options>
+                <filter type="data_meta" key="dbkey" ref="input"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options options_filter_attribute="metadata.foo">
+                <filter type="data_meta" key="foo" ref="input"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DATA_PARAM_INVALIDOPTIONS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="valid_name" type="data" format="txt">
+            <options/>
+            <options from_file="blah">
+                <filter type="regexp"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_BOOLEAN_PARAM_SWAPPED_LABELS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="valid_name" type="boolean" truevalue="false" falsevalue="true" />
+    </inputs>
+</tool>
+"""
+
+INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="valid_name" type="boolean" truevalue="--foo" falsevalue="--foo" />
+    </inputs>
+</tool>
+"""
+
 INPUTS_CONDITIONAL = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <conditional>
             <param name="select" type="select"/>
@@ -246,7 +310,7 @@ INPUTS_CONDITIONAL = """
 """
 
 INPUTS_SELECT_INCOMPATIBLE_DISPLAY = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="radio_select" type="select" display="radio" optional="true" multiple="true">
             <option value="1">1</option>
@@ -266,7 +330,7 @@ INPUTS_SELECT_INCOMPATIBLE_DISPLAY = """
 """
 
 INPUTS_SELECT_DUPLICATED_OPTIONS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
             <option value="v">x</option>
@@ -277,7 +341,7 @@ INPUTS_SELECT_DUPLICATED_OPTIONS = """
 """
 
 SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select" type="select" optional="true" multiple="true">
             <option value="v">x</option>
@@ -288,7 +352,7 @@ SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED = """
 """
 
 INPUTS_SELECT_DEPRECATIONS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select_do" type="select" dynamic_options="blah()"/>
         <param name="select_ff" type="select">
@@ -302,7 +366,7 @@ INPUTS_SELECT_DEPRECATIONS = """
 """
 
 INPUTS_SELECT_OPTION_DEFINITIONS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select_noopt" type="select"/>
         <param name="select_noopts" type="select">
@@ -328,7 +392,7 @@ INPUTS_SELECT_OPTION_DEFINITIONS = """
 """
 
 INPUTS_SELECT_FILTER = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select_filter_types" type="select">
             <options from_data_table="xyz">
@@ -341,93 +405,159 @@ INPUTS_SELECT_FILTER = """
 """
 
 INPUTS_VALIDATOR_INCOMPATIBILITIES = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="param_name" type="text">
             <validator type="in_range">TEXT</validator>
             <validator type="regex" filename="blah"/>
             <validator type="expression"/>
-            <validator type="expression">[</validator>
+            <validator type="regex">[</validator>
+            <validator type="expression">(</validator>
+            <validator type="expression">value and "," not in value</validator>
             <validator type="value_in_data_table"/>
         </param>
         <param name="another_param_name" type="data" format="bed">
-            <validator type="metadata"/>
+            <validator type="metadata" value="value"/>
+            <validator type="dataset_metadata_equal" value="value" value_json="['1', '2']" metadata_name="columns"/>
         </param>
     </inputs>
 </tool>
 """
 
 INPUTS_VALIDATOR_CORRECT = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="data_param" type="data" format="data">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
-            <validator type="unspecified_build" message="cutom validation message" negate="true"/>
-            <validator type="dataset_ok_validator" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_equal" metadata_name="columns" value="xyz" message="custom validation message %s" negate="true"/>
+            <validator type="unspecified_build" message="custom validation message" negate="true"/>
+            <validator type="dataset_ok_validator" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_equal" metadata_name="columns" value="8"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message" negate="true"/>
         </param>
-        <param name="collection_param" type="collection">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message"/>
-            <validator type="unspecified_build" message="cutom validation message"/>
-            <validator type="dataset_ok_validator" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+        <param name="collection_param" type="data_collection">
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message"/>
+            <validator type="unspecified_build" message="custom validation message"/>
+            <validator type="dataset_ok_validator" message="custom validation message"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message"/>
         </param>
         <param name="text_param" type="text">
             <validator type="regex">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message"/>
-            <validator type="empty_field" message="cutom validation message"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message"/>
+            <validator type="empty_field" message="custom validation message"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message"/>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
         <param name="select_param" type="select">
             <options from_data_table="bowtie2_indexes"/>
             <validator type="no_options" negate="true"/>
             <validator type="regex" negate="true">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message" negate="true"/>
-            <validator type="empty_field" message="cutom validation message" negate="true"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
-            <validator type="expression" message="cutom validation message" negate="true">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message" negate="true"/>
+            <validator type="empty_field" message="custom validation message" negate="true"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message" negate="true"/>
+            <validator type="expression" message="custom validation message" negate="true">somepythonexpression</validator>
         </param>
         <param name="int_param" type="integer">
             <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
     </inputs>
 </tool>
 """
 
+INPUTS_TYPE_CHILD_COMBINATIONS = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="text_param" type="text">
+            <options/>
+        </param>
+        <param name="select_param" type="select">
+            <options from_data_table="data_table">
+                <option name="x" value="y"/>
+            </options>
+        </param>
+        <param name="data_param" type="data" format="tabular">
+            <options>
+                <column name="x" index="0"/>
+            </options>
+        </param>
+        <param name="int_param" type="integer">
+            <options>
+                <column name="x" index="0"/>
+            </options>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DUPLICATE_NAMES = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="dup" type="text"/>
+        <param name="dup" type="text"/>
+        <param name="dup_in_section" type="text"/>
+        <section name="sec" title="">
+            <param name="dup_in_section" type="text"/>
+        </section>
+        <conditional name="cond">
+            <param name="dup_in_cond" type="select">
+                <option value="a">a</option>
+                <option value="b">b</option>
+            </param>
+            <when value="a">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+            <when value="b">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+        </conditional>
+        <param name="dup_in_output" type="text"/>
+    </inputs>
+    <outputs>
+        <data name="dup_in_output"/>
+    </outputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
-<tool/>
+<tool id="id" name="name"/>
 """
 OUTPUTS_MULTIPLE = """
-<tool>
+<tool id="id" name="name">
     <outputs/>
     <outputs/>
 </tool>
 """
 OUTPUTS_UNKNOWN_TAG = """
-<tool>
+<tool id="id" name="name">
     <outputs>
-        <output/>
+        <output name="name"/>
     </outputs>
 </tool>
 """
 OUTPUTS_UNNAMED_INVALID_NAME = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <data label="data out"/>
+        <collection type="list" format="txt" label="collection out"/>
         <collection name="2output" label="coll out"/>
     </outputs>
 </tool>
 """
+OUTPUTS_FORMAT_INPUT_LEGACY = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="valid_name" format="input"/>
+    </outputs>
+</tool>
+"""
 OUTPUTS_FORMAT_INPUT = """
-<tool>
+<tool id="id" name="name" profile="16.04">
     <outputs>
         <data name="valid_name" format="input"/>
     </outputs>
@@ -437,7 +567,7 @@ OUTPUTS_FORMAT_INPUT = """
 # check that linter accepts format source for collection elements as means to specify format
 # and that the linter warns if format and format_source are used
 OUTPUTS_COLLECTION_FORMAT_SOURCE = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <collection name="output_collection" type="paired">
             <data name="forward" format_source="input_readpair" />
@@ -447,28 +577,55 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
 </tool>
 """
 
-# check that linter does not complain about missing format if from_tool_provided_metadata is used
-OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
-<tool>
+# check that setting format with actions is supported
+OUTPUTS_FORMAT_ACTION = """
+<tool id="id" name="name">
     <outputs>
         <data name="output">
-            <discover_datasets from_tool_provided_metadata="true"/>
+            <actions>
+                <conditional name="library.type">
+                    <when value="paired">
+                        <action type="format">
+                            <option type="from_param" name="library.input_2" param_attribute="ext" />
+                        </action>
+                    </when>
+                </conditional>
+            </actions>
         </data>
     </outputs>
 </tool>
 """
+
+# check that linter does not complain about missing format if from_tool_provided_metadata is used
+OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA = """
+<tool id="id" name="name">
+    <command>galaxy.json</command>
+    <outputs>
+        <data name="output">
+            <discover_datasets/>
+        </data>
+    </outputs>
+</tool>
+"""
+
 OUTPUTS_DUPLICATED_NAME_LABEL = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <data name="valid_name" format="fasta"/>
         <data name="valid_name" format="fasta"/>
+        <data name="another_valid_name" format="fasta" label="same label may be OK if there is a filter">
+            <filter>a condition</filter>
+        </data>
+        <data name="yet_another_valid_name" format="fasta" label="same label may be OK if there is a filter">
+            <filter>another condition</filter>
+        </data>
     </outputs>
 </tool>
 """
 
 # tool xml for repeats linter
 REPEATS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <repeat>
             <param name="another_param_name" type="data" format="bed"/>
@@ -479,34 +636,34 @@ REPEATS = """
 
 # tool xml for stdio linter
 STDIO_DEFAULT_FOR_DEFAULT_PROFILE = """
-<tool>
+<tool id="id" name="name">
 </tool>
 """
 
 STDIO_DEFAULT_FOR_NONLEGACY_PROFILE = """
-<tool profile="21.09">
+<tool id="id" name="name" profile="21.09">
 </tool>
 """
 
 STDIO_MULTIPLE_STDIO = """
-<tool>
+<tool id="id" name="name">
     <stdio/>
     <stdio/>
 </tool>
 """
 
 STDIO_INVALID_CHILD_OR_ATTRIB = """
-<tool>
+<tool id="id" name="name">
     <stdio>
-        <reqex/>
         <regex descriptio="blah" level="fatal" match="error" source="stdio"/>
         <exit_code descriptio="blah" level="fatal" range="1:"/>
+        <reqex/>
     </stdio>
 </tool>
 """
 
 STDIO_INVALID_MATCH = """
-<tool>
+<tool id="id" name="name">
     <stdio>
         <regex match="["/>
     </stdio>
@@ -515,13 +672,13 @@ STDIO_INVALID_MATCH = """
 
 # check that linter does complain about tests wo assumptions
 TESTS_ABSENT = """
-<tool/>
+<tool id="id" name="name"/>
 """
 TESTS_ABSENT_DATA_SOURCE = """
-<tool tool_type="data_source"/>
+<tool id="id" name="name" tool_type="data_source"/>
 """
 TESTS_WO_EXPECTATIONS = """
-<tool>
+<tool id="id" name="name">
     <tests>
         <test>
         </test>
@@ -530,12 +687,13 @@ TESTS_WO_EXPECTATIONS = """
 """
 
 TESTS_PARAM_OUTPUT_NAMES = """
-<tool>
+<tool id="id" name="name">
     <inputs>
-        <param argument="--existent-test-name"/>
-        <conditional>
-            <when>
-                <param name="another_existent_test_name"/>
+        <param argument="--existent-test-name" type="text"/>
+        <conditional name="cond">
+            <param name="cond_select" type="select"/>
+            <when value="blah">
+                <param name="another_existent_test_name" type="text"/>
             </when>
         </conditional>
     </inputs>
@@ -561,7 +719,7 @@ TESTS_PARAM_OUTPUT_NAMES = """
 """
 
 TESTS_EXPECT_FAILURE_OUTPUT = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <data name="test"/>
     </outputs>
@@ -569,12 +727,13 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
         <test expect_failure="true">
             <output name="test"/>
         </test>
+        <test expect_num_outputs="1" expect_failure="true"/>
     </tests>
 </tool>
 """
 
 ASSERTS = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <data name="out_archive"/>
         <data name="out_tabular"/>
@@ -593,7 +752,7 @@ ASSERTS = """
             </assert_command>
             <output name="out_archive">
                 <assert_contents>
-                    <has_size value="500k" delta="1O"/>
+                    <has_size value="500k" delta="1X"/>
                     <has_archive_member path=".*/my-file.txt">
                         <not_has_text invalid_attrib_also_checked_in_nested_asserts="Blah" text="EDK72998.1" />
                     </has_archive_member>
@@ -611,7 +770,7 @@ ASSERTS = """
 </tool>
 """
 TESTS_VALID = """
-<tool>
+<tool id="id" name="name">
     <outputs>
         <data name="test"/>
     </outputs>
@@ -622,13 +781,122 @@ TESTS_VALID = """
     </tests>
 </tool>
 """
+TESTS_OUTPUT_TYPE_MISMATCH = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name"/>
+        <collection name="collection_name" type="list:list"/>
+    </outputs>
+    <tests>
+        <test>
+            <output_collection name="data_name"/>
+            <output name="collection_name"/>
+        </test>
+    </tests>
+</tool>
+"""
+TESTS_DISCOVER_OUTPUTS = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name">
+            <discover_datasets/>
+        </data>
+        <collection name="collection_name" type="list:list">
+            <discover_datasets/>
+        </collection>
+    </outputs>
+    <tests>
+        <!-- this should be fine -->
+        <test>
+            <output name="data_name">
+                <discovered_dataset/>
+            </output>
+            <output_collection name="collection_name">
+                <element count="2"/>
+            </output_collection>
+        </test>
+        <!-- this should be fine as well -->
+        <test>
+            <output name="data_name" count="2"/>
+            <output_collection name="collection_name">
+                <element>
+                    <element/>
+                </element>
+            </output_collection>
+        </test>
+        <!-- no count or discovered_dataset/element  -->
+        <test>
+            <output name="data_name"/>
+            <output_collection name="collection_name"/>
+        </test>
+        <!-- no count or discovered_dataset/element
+             - no outputs can be given
+             - consequently also counts and expect_num_output need not to be given -->
+        <test expect_failure="true"/>
+        <!-- no nested element and count at element -->
+        <test>
+            <output name="data_name" count="1"/>
+            <output_collection name="collection_name" count="1">
+                <element/>
+            </output_collection>
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="name">
+            <filter/>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_COMPARE_ATTRIB_INCOMPATIBILITY = """
+<tool id="id" name="name">
+    <outputs>
+        <data name="data_name"/>
+        <collection name="collection_name" type="list:list"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="data_name" compare="re_match" decompress="true"/>
+            <output_collection name="collection_name">
+                <element compare="contains" sort="true" />
+            </output_collection>
+        </test>
+        <test>
+            <output name="data_name" compare="diff" lines_diff="2"/>
+            <output_collection name="collection_name">
+                <element compare="contains" lines_diff="2" />
+            </output_collection>
+        </test>
+    </tests>
+</tool>"""
 
 # tool xml for xml_order linter
 XML_ORDER = """
-<tool>
+<tool id="id" name="name">
     <wrong_tag/>
     <command/>
     <stdio/>
+</tool>
+"""
+
+TOOL_WITH_COMMENTS = """
+<tool>
+    <stdio>
+    <!-- This is a comment -->
+    </stdio>
+    <outputs>
+    <!-- This is a comment -->
+    </outputs>
 </tool>
 """
 
@@ -643,7 +911,7 @@ def lint_ctx_xpath():
     return LintContext("all", lint_message_class=XMLLintMessageXPath)
 
 
-def get_xml_tool_source(xml_string):
+def get_xml_tree(xml_string: str) -> ElementTree:
     with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
         tmp.write(xml_string)
         tmp.flush()
@@ -651,36 +919,42 @@ def get_xml_tool_source(xml_string):
         return load_with_references(tool_path)[0]
 
 
-def failed_assert_print(lint_ctx):
-    return (
-        f"Valid: {lint_ctx.valid_messages}\n"
-        f"Info: {lint_ctx.info_messages}\n"
-        f"Warnings: {lint_ctx.warn_messages}\n"
-        f"Errors: {lint_ctx.error_messages}"
-    )
+def get_xml_tool_source(xml_string: str) -> XmlToolSource:
+    return XmlToolSource(get_xml_tree(xml_string))
+
+
+def get_tool_xml_exact(xml_string: str):
+    """Returns the tool XML as it is, without stripping comments or anything else."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
+        tmp.write(xml_string)
+        tmp.flush()
+        tool_path = tmp.name
+        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
+
+
+def run_lint_module(lint_ctx, lint_module, lint_target):
+    lint_tool_source_with_modules(lint_ctx, lint_target, list(set([lint_module, xsd])))
 
 
 def run_lint(lint_ctx, lint_func, lint_target):
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
     # check if the lint messages have the line
     for message in lint_ctx.message_list:
-        if lint_func != general.lint_general:
-            assert message.line is not None, f"No context found for message: {message.message}"
+        assert message.line is not None, f"No context found for message: {message.message}"
 
 
 def test_citations_multiple(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_MULTIPLE)
-    run_lint(lint_ctx, citations.lint_citations, tool_source)
-    assert "More than one citation section found, behavior undefined." in lint_ctx.error_messages
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert lint_ctx.error_messages == ["Invalid XML: Element 'citations': This element is not expected."]
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 1
 
 
 def test_citations_absent(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_ABSENT)
-    run_lint(lint_ctx, citations.lint_citations, tool_source)
+    run_lint_module(lint_ctx, citations, tool_source)
     assert lint_ctx.warn_messages == ["No citations found, consider adding citations to your tool."]
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -689,20 +963,17 @@ def test_citations_absent(lint_ctx):
 
 def test_citations_errors(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_ERRORS)
-    run_lint(lint_ctx, citations.lint_citations, tool_source)
-    assert "Unknown tag discovered in citations block [nonsense], will be ignored." in lint_ctx.warn_messages
-    assert "Unknown citation type discovered [hoerensagen], will be ignored." in lint_ctx.warn_messages
-    assert "Empty doi citation." in lint_ctx.error_messages
-    assert "Found no valid citations." in lint_ctx.warn_messages
-    assert len(lint_ctx.warn_messages) == 3
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert lint_ctx.error_messages == ["Empty doi citation."]
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.info_messages
-    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.valid_messages) == 1
 
 
 def test_citations_valid(lint_ctx):
     tool_source = get_xml_tool_source(CITATIONS_VALID)
-    run_lint(lint_ctx, citations.lint_citations, tool_source)
-    assert "Found 1 likely valid citations." in lint_ctx.valid_messages
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert "Found 1 citations." in lint_ctx.valid_messages
     assert len(lint_ctx.valid_messages) == 1
     assert not lint_ctx.info_messages
     assert not lint_ctx.error_messages
@@ -710,39 +981,48 @@ def test_citations_valid(lint_ctx):
 
 def test_command_multiple(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MULTIPLE)
-    run_lint(lint_ctx, command.lint_command, tool_source)
-    assert "More than one command tag found, behavior undefined." in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 1
-    assert not lint_ctx.info_messages
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.error_messages == ["Invalid XML: Element 'command': This element is not expected."]
+    assert lint_ctx.info_messages == ["Tool contains a command."]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
 
 def test_command_missing(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_MISSING)
-    run_lint(lint_ctx, command.lint_command, tool_source)
-    assert "No command tag found, must specify a command template to execute." in lint_ctx.error_messages
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.error_messages == ["No command tag found, must specify a command template to execute."]
+    assert not lint_ctx.info_messages
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
 
 
 def test_command_todo(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_TODO)
-    run_lint(lint_ctx, command.lint_command, tool_source)
-    assert "Tool contains a command." in lint_ctx.info_messages
-    assert "Command template contains TODO text." in lint_ctx.warn_messages
+    run_lint_module(lint_ctx, command, tool_source)
+    assert not lint_ctx.error_messages
+    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.warn_messages == ["Command template contains TODO text."]
+    assert not lint_ctx.valid_messages
 
 
 def test_command_detect_errors_interpreter(lint_ctx):
     tool_source = get_xml_tool_source(COMMAND_DETECT_ERRORS_INTERPRETER)
-    run_lint(lint_ctx, command.lint_command, tool_source)
-    assert "Command uses deprecated 'interpreter' attribute." in lint_ctx.warn_messages
-    assert "Tool contains a command with interpreter of type [python]." in lint_ctx.info_messages
-    assert "Unknown detect_errors attribute [nonsense]" in lint_ctx.warn_messages
+    run_lint_module(lint_ctx, command, tool_source)
     assert "Command is empty." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'command', attribute 'detect_errors': [facet 'enumeration'] The value 'nonsense' is not an element of the set {'default', 'exit_code', 'aggressive'}."
+        in lint_ctx.error_messages
+    )
+    assert lint_ctx.warn_messages == ["Command uses deprecated 'interpreter' attribute."]
+    assert lint_ctx.info_messages == ["Tool contains a command with interpreter of type [python]."]
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_general_missing_tool_id_name_version(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_MISSING_TOOL_ID_NAME_VERSION)
-    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, general, tool_source)
     assert "Tool version is missing or empty." in lint_ctx.error_messages
     assert "Tool name is missing or empty." in lint_ctx.error_messages
     assert "Tool does not define an id attribute." in lint_ctx.error_messages
@@ -751,7 +1031,7 @@ def test_general_missing_tool_id_name_version(lint_ctx):
 
 def test_general_whitespace_in_versions_and_names(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_WHITESPACE_IN_VERSIONS_AND_NAMES)
-    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, general, tool_source)
     assert "Tool version is pre/suffixed by whitespace, this may cause errors: [ 1.0.1 ]." in lint_ctx.warn_messages
     assert "Tool name is pre/suffixed by whitespace, this may cause errors: [ BWA Mapper ]." in lint_ctx.warn_messages
     assert "Requirement version contains whitespace, this may cause errors: [ 1.2.5 ]." in lint_ctx.warn_messages
@@ -761,7 +1041,7 @@ def test_general_whitespace_in_versions_and_names(lint_ctx):
 
 def test_general_requirement_without_version(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_REQUIREMENT_WO_VERSION)
-    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, general, tool_source)
     assert "Tool version [1.0.1blah] is not compliant with PEP 440." in lint_ctx.warn_messages
     assert "Requirement bwa defines no version" in lint_ctx.warn_messages
     assert "Requirement without name found" in lint_ctx.error_messages
@@ -776,7 +1056,7 @@ def test_general_requirement_without_version(lint_ctx):
 
 def test_general_valid(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_VALID)
-    run_lint(lint_ctx, general.lint_general, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, general, tool_source)
     assert "Tool defines a version [1.0+galaxy1]." in lint_ctx.valid_messages
     assert "Tool specifies profile version [21.09]." in lint_ctx.valid_messages
     assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
@@ -787,19 +1067,31 @@ def test_general_valid(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_general_valid_new_profile_fmt(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_NEW_PROFILE_FMT)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "Tool defines a version [1.0+galaxy1]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [23.0]." in lint_ctx.valid_messages
+    assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
+    assert "Tool defines a name [valid name]." in lint_ctx.valid_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
 def test_help_multiple(lint_ctx):
     tool_source = get_xml_tool_source(HELP_MULTIPLE)
-    run_lint(lint_ctx, help.lint_help, tool_source)
-    assert "More than one help section found, behavior undefined." in lint_ctx.error_messages
+    run_lint_module(lint_ctx, help, tool_source)
     assert not lint_ctx.info_messages
-    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.valid_messages) == 2  # has help and valid rst
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 1
+    assert lint_ctx.error_messages == ["Invalid XML: Element 'help': This element is not expected."]
 
 
 def test_help_absent(lint_ctx):
     tool_source = get_xml_tool_source(HELP_ABSENT)
-    run_lint(lint_ctx, help.lint_help, tool_source)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "No help section found, consider adding a help section to your tool." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -809,7 +1101,7 @@ def test_help_absent(lint_ctx):
 
 def test_help_empty(lint_ctx):
     tool_source = get_xml_tool_source(HELP_EMPTY)
-    run_lint(lint_ctx, help.lint_help, tool_source)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Help section appears to be empty." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -819,7 +1111,7 @@ def test_help_empty(lint_ctx):
 
 def test_help_todo(lint_ctx):
     tool_source = get_xml_tool_source(HELP_TODO)
-    run_lint(lint_ctx, help.lint_help, tool_source)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Tool contains help section." in lint_ctx.valid_messages
     assert "Help contains valid reStructuredText." in lint_ctx.valid_messages
     assert "Help contains TODO text." in lint_ctx.warn_messages
@@ -831,7 +1123,7 @@ def test_help_todo(lint_ctx):
 
 def test_help_invalid_rst(lint_ctx):
     tool_source = get_xml_tool_source(HELP_INVALID_RST)
-    run_lint(lint_ctx, help.lint_help, tool_source)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Tool contains help section." in lint_ctx.valid_messages
     assert (
         "Invalid reStructuredText found in help - [<string>:2: (WARNING/2) Inline strong start-string without end-string.\n]."
@@ -845,7 +1137,7 @@ def test_help_invalid_rst(lint_ctx):
 
 def test_inputs_no_inputs(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_NO_INPUTS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found no input parameters." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -855,7 +1147,7 @@ def test_inputs_no_inputs(lint_ctx):
 
 def test_inputs_no_inputs_datasource(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_NO_INPUTS_DATASOURCE)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "No input parameters, OK for data sources" in lint_ctx.info_messages
     assert "display tag usually present in data sources" in lint_ctx.info_messages
     assert "uihints tag usually present in data sources" in lint_ctx.info_messages
@@ -867,7 +1159,7 @@ def test_inputs_no_inputs_datasource(lint_ctx):
 
 def test_inputs_valid(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_VALID)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -877,7 +1169,7 @@ def test_inputs_valid(lint_ctx):
 
 def test_inputs_param_name(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_PARAM_NAME)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 5 input parameters." in lint_ctx.info_messages
     assert "Param input [2] is not a valid Cheetah placeholder." in lint_ctx.warn_messages
     assert "Found param input with no name specified." in lint_ctx.error_messages
@@ -894,10 +1186,13 @@ def test_inputs_param_name(lint_ctx):
 
 def test_inputs_param_type(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_PARAM_TYPE)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 2 input parameters." in lint_ctx.info_messages
-    assert "Param input [valid_name] input with no type specified." in lint_ctx.error_messages
-    assert "Param input [another_valid_name] with empty type specified." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'param': The attribute 'type' is required but missing." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'param', attribute 'type': [facet 'enumeration'] The value '' is not an element of the set {'text', 'integer', 'float', 'color', 'boolean', 'genomebuild', 'select', 'data_column', 'hidden', 'hidden_data', 'baseurl', 'file', 'data', 'drill_down', 'group_tag', 'data_collection', 'directory_uri'}."
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -906,7 +1201,7 @@ def test_inputs_param_type(lint_ctx):
 
 def test_inputs_data_param(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert (
         "Param input [valid_name] with no format specified - 'data' format will be assumed." in lint_ctx.warn_messages
@@ -917,17 +1212,70 @@ def test_inputs_data_param(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_inputs_boolean_param(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_BOOLEAN_PARAM_DUPLICATE_LABELS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_data_param_options(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_data_param_options_filter_attribute(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_inputs_data_param_invalid_options(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_INVALIDOPTIONS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert not lint_ctx.valid_messages
+    assert "Found 1 input parameters." in lint_ctx.info_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert "Data parameter [valid_name] contains multiple options elements." in lint_ctx.error_messages
+    assert "Data parameter [valid_name] filter needs to define a ref attribute" in lint_ctx.error_messages
+    assert (
+        'Data parameter [valid_name] for filters only type="data_meta" and key="dbkey" are allowed, found type="regexp" and key="None"'
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 3
+
+
 def test_inputs_conditional(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_CONDITIONAL)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 10 input parameters." in lint_ctx.info_messages
-    assert "Conditional without a name" in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'conditional': The attribute 'name' is required but missing." in lint_ctx.error_messages
+    )
     assert (
         "Select parameter of a conditional [select] options have to be defined by 'option' children elements."
         in lint_ctx.error_messages
     )
-    assert "Conditional [cond_wo_param] needs exactly one child <param> found 0" in lint_ctx.error_messages
-    assert "Conditional [cond_w_mult_param] needs exactly one child <param> found 2" in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'param': This element is not expected. Expected is ( when )." in lint_ctx.error_messages
+    )  # 2x param
+    assert (
+        "Invalid XML: Element 'conditional': Missing child element(s). Expected is ( param )."
+        in lint_ctx.error_messages
+    )
     assert 'Conditional [cond_text] first param should have type="select"' in lint_ctx.error_messages
     assert (
         'Conditional [cond_boolean] first param of type="boolean" is discouraged, use a select'
@@ -936,7 +1284,7 @@ def test_inputs_conditional(lint_ctx):
     assert "Conditional [cond_boolean] no truevalue/falsevalue found for when block 'False'" in lint_ctx.warn_messages
     assert 'Conditional [cond_w_optional_select] test parameter cannot be optional="true"' in lint_ctx.warn_messages
     assert 'Conditional [cond_w_multiple_select] test parameter cannot be multiple="true"' in lint_ctx.warn_messages
-    assert "Conditional [when_wo_value] when without value" in lint_ctx.error_messages
+    assert "Invalid XML: Element 'when': The attribute 'value' is required but missing." in lint_ctx.error_messages
     assert "Conditional [missing_when] no <when /> block found for select option 'none'" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -946,7 +1294,7 @@ def test_inputs_conditional(lint_ctx):
 
 def test_inputs_select_incompatible_display(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_INCOMPATIBLE_DISPLAY)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 3 input parameters." in lint_ctx.info_messages
     assert 'Select [radio_select] display="radio" is incompatible with optional="true"' in lint_ctx.error_messages
     assert 'Select [radio_select] display="radio" is incompatible with multiple="true"' in lint_ctx.error_messages
@@ -966,7 +1314,7 @@ def test_inputs_select_incompatible_display(lint_ctx):
 
 def test_inputs_duplicated_options(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_DUPLICATED_OPTIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert "Select parameter [select] has multiple options with the same text content" in lint_ctx.error_messages
     assert "Select parameter [select] has multiple options with the same value" in lint_ctx.error_messages
@@ -978,14 +1326,14 @@ def test_inputs_duplicated_options(lint_ctx):
 
 def test_inputs_duplicated_options_with_different_select(lint_ctx):
     tool_source = get_xml_tool_source(SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
-def test_inputs_select_deprections(lint_ctx):
+def test_inputs_select_deprecations(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_DEPRECATIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 3 input parameters." in lint_ctx.info_messages
     assert "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in lint_ctx.warn_messages
     assert "Select parameter [select_ff] options uses deprecated 'from_file' attribute." in lint_ctx.warn_messages
@@ -1003,7 +1351,8 @@ def test_inputs_select_deprections(lint_ctx):
 
 def test_inputs_select_option_definitions(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_OPTION_DEFINITIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert "Found 6 input parameters." in lint_ctx.info_messages
     assert (
         "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute."
@@ -1023,24 +1372,23 @@ def test_inputs_select_option_definitions(lint_ctx):
         in lint_ctx.error_messages
     )
     assert "Select parameter [select_noval_notext] has option without value" in lint_ctx.error_messages
-    assert "Select parameter [select_noval_notext] has option without text" in lint_ctx.warn_messages
     assert (
         "Select parameter [select_meta_file_key_incomp] 'meta_file_key' is only compatible with 'from_dataset'."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 7
 
 
 def test_inputs_select_filter(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_FILTER)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
-    assert "Select parameter [select_filter_types] contains filter without type." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
     assert (
-        "Select parameter [select_filter_types] contains filter with unknown type 'unknown_filter_type'."
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by'}."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
@@ -1051,7 +1399,7 @@ def test_inputs_select_filter(lint_ctx):
 
 def test_inputs_validator_incompatibilities(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_VALIDATOR_INCOMPATIBILITIES)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert (
         "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')"
@@ -1067,10 +1415,12 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         in lint_ctx.error_messages
     )
     assert "Parameter [param_name]: expression validators are expected to contain text" in lint_ctx.error_messages
+    assert "Parameter [param_name]: regex validators are expected to contain text" in lint_ctx.error_messages
     assert (
-        "Parameter [param_name]: '[' is no valid regular expression: unterminated character set at position 0"
+        "Parameter [param_name]: '[' is no valid regex: unterminated character set at position 0"
         in lint_ctx.error_messages
     )
+    assert "Parameter [param_name]: '(' is no valid expression" in lint_ctx.error_messages
     assert (
         "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)"
         in lint_ctx.error_messages
@@ -1079,15 +1429,23 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         "Parameter [param_name]: 'value_in_data_table' validators need to define the 'table_name' attribute"
         in lint_ctx.error_messages
     )
+    assert (
+        "Parameter [another_param_name]: attribute 'value' is incompatible with validator of type 'metadata'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [another_param_name]: 'dataset_metadata_equal' validators must not define the 'value' and the 'value_json' attributes"
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 7
+    assert len(lint_ctx.error_messages) == 11
 
 
 def test_inputs_validator_correct(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_VALIDATOR_CORRECT)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    run_lint_module(lint_ctx, inputs, tool_source)
     assert "Found 5 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1095,20 +1453,61 @@ def test_inputs_validator_correct(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_repeats(lint_ctx):
-    tool_source = get_xml_tool_source(REPEATS)
-    run_lint(lint_ctx, inputs.lint_repeats, tool_source)
-    assert "Repeat does not specify name attribute." in lint_ctx.error_messages
-    assert "Repeat does not specify title attribute." in lint_ctx.error_messages
-    assert not lint_ctx.info_messages
+def test_inputs_type_child_combinations(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_TYPE_CHILD_COMBINATIONS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
+    assert (
+        "Parameter [text_param] './options' tags are only allowed for parameters of type ['data', 'select', 'drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [select_param] './options/option' tags are only allowed for parameters of type ['drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [int_param] './options' tags are only allowed for parameters of type ['data', 'select', 'drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [int_param] './options/column' tags are only allowed for parameters of type ['data', 'select']"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 4
+
+
+def test_inputs_duplicate_names(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DUPLICATE_NAMES)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool defines multiple parameters with the same name: 'dup'" in lint_ctx.error_messages
+    assert (
+        "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
+
+
+def test_inputs_repeats(lint_ctx):
+    """
+    this was previously covered by a linter in inputs
+    """
+    tool_source = get_xml_tool_source(REPEATS)
+    run_lint_module(lint_ctx, inputs, tool_source)
+    assert lint_ctx.info_messages == ["Found 1 input parameters."]
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Invalid XML: Element 'repeat': The attribute 'name' is required but missing." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'repeat': The attribute 'title' is required but missing." in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 2
 
 
 def test_outputs_missing(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MISSING)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "Tool contains no outputs section, most tools should produce outputs." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1118,20 +1517,26 @@ def test_outputs_missing(lint_ctx):
 
 def test_outputs_multiple(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MULTIPLE)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "0 outputs found." in lint_ctx.info_messages
-    assert "Tool contains multiple output sections, behavior undefined." in lint_ctx.warn_messages
+    assert "Invalid XML: Element 'outputs': This element is not expected." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
-    assert not lint_ctx.error_messages
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_outputs_unknown_tag(lint_ctx):
+    """
+    In the past it has been assumed that output tags are not allowed, but only data.
+    But, actually they are covered by xsd which is also tested here.
+    Still output tags are not covered in the user facing xml schema docs and should
+    probably be avoided.
+    """
     tool_source = get_xml_tool_source(OUTPUTS_UNKNOWN_TAG)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    lint_tool_source_with_modules(lint_ctx, tool_source, [outputs, xsd])
     assert "0 outputs found." in lint_ctx.info_messages
-    assert "Unknown element found in outputs [output]" in lint_ctx.warn_messages
+    assert "Avoid the use of 'output' and replace by 'data' or 'collection'" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
@@ -1140,36 +1545,45 @@ def test_outputs_unknown_tag(lint_ctx):
 
 def test_outputs_unnamed_invalid_name(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_UNNAMED_INVALID_NAME)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
-    assert "2 outputs found." in lint_ctx.info_messages
-    assert "Tool output doesn't define a name - this is likely a problem." in lint_ctx.warn_messages
+    run_lint_module(lint_ctx, outputs, tool_source)
+    assert "3 outputs found." in lint_ctx.info_messages
+    assert "Invalid XML: Element 'data': The attribute 'name' is required but missing." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'collection': The attribute 'name' is required but missing." in lint_ctx.error_messages
     assert "Tool data output with missing name doesn't define an output format." in lint_ctx.warn_messages
     assert "Tool output name [2output] is not a valid Cheetah placeholder." in lint_ctx.warn_messages
     assert "Collection output with undefined 'type' found." in lint_ctx.warn_messages
     assert "Tool collection output 2output doesn't define an output format." in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 5
-    assert not lint_ctx.error_messages
+    assert len(lint_ctx.warn_messages) == 4
+    assert len(lint_ctx.error_messages) == 2
 
 
-def test_outputs_format_input(lint_ctx):
-    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+def test_outputs_format_input_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT_LEGACY)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
-    assert (
-        "Using format='input' on data, format_source attribute is less ambiguous and should be used instead."
-        in lint_ctx.warn_messages
-    )
+    assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
 
 
+def test_outputs_format_input(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT)
+    run_lint_module(lint_ctx, outputs, tool_source)
+    assert "1 outputs found." in lint_ctx.info_messages
+    assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.error_messages
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 1
+
+
 def test_outputs_collection_format_source(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_COLLECTION_FORMAT_SOURCE)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "Tool data output 'reverse' should use either format_source or format/ext" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1177,9 +1591,18 @@ def test_outputs_collection_format_source(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_outputs_format_action(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_ACTION)
+    run_lint_module(lint_ctx, outputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
 def test_outputs_discover_tool_provided_metadata(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1188,20 +1611,25 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
 
 
 def test_outputs_duplicated_name_label(lint_ctx):
+    """ """
     tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
-    assert "2 outputs found." in lint_ctx.info_messages
+    run_lint_module(lint_ctx, outputs, tool_source)
+    assert "4 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 2
+    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.warn_messages
+    assert (
+        "Tool output [yet_another_valid_name] uses duplicated label 'same label may be OK if there is a filter', double check if filters imply disjoint cases"
+        in lint_ctx.warn_messages
+    )
     assert "Tool output [valid_name] has duplicated name" in lint_ctx.error_messages
-    assert "Tool output [valid_name] uses duplicated label '${tool.name} on ${on_string}'" in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 2
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
-    run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "No stdio definition found, tool indicates error conditions with output written to stderr."
         in lint_ctx.info_messages
@@ -1214,7 +1642,7 @@ def test_stdio_default_for_default_profile(lint_ctx):
 
 def test_stdio_default_for_nonlegacy_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_NONLEGACY_PROFILE)
-    run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "No stdio definition found, tool indicates error conditions with non-zero exit codes." in lint_ctx.info_messages
     )
@@ -1226,8 +1654,8 @@ def test_stdio_default_for_nonlegacy_profile(lint_ctx):
 
 def test_stdio_multiple_stdio(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_MULTIPLE_STDIO)
-    run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
-    assert "More than one stdio tag found, behavior undefined." in lint_ctx.error_messages
+    run_lint_module(lint_ctx, stdio, tool_source)
+    assert "Invalid XML: Element 'stdio': This element is not expected." in lint_ctx.error_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1235,22 +1663,33 @@ def test_stdio_multiple_stdio(lint_ctx):
 
 
 def test_stdio_invalid_child_or_attrib(lint_ctx):
+    """
+    note the test name is due to that this was previously covered by linting code in stdio
+    """
     tool_source = get_xml_tool_source(STDIO_INVALID_CHILD_OR_ATTRIB)
-    run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
-    assert (
-        "Unknown stdio child tag discovered [reqex]. Valid options are exit_code and regex." in lint_ctx.warn_messages
-    )
-    assert "Unknown attribute [descriptio] encountered on exit_code tag." in lint_ctx.warn_messages
-    assert "Unknown attribute [descriptio] encountered on regex tag." in lint_ctx.warn_messages
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 3
-    assert not lint_ctx.error_messages
+    assert not len(lint_ctx.warn_messages) == 3
+    assert "Invalid XML: Element 'reqex': This element is not expected." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'regex', attribute 'source': [facet 'enumeration'] The value 'stdio' is not an element of the set {'stdout', 'stderr', 'both'}."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Invalid XML: Element 'regex', attribute 'descriptio': The attribute 'descriptio' is not allowed."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Invalid XML: Element 'exit_code', attribute 'descriptio': The attribute 'descriptio' is not allowed."
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 4
 
 
 def test_stdio_invalid_match(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_INVALID_MATCH)
-    run_lint(lint_ctx, stdio.lint_stdio, XmlToolSource(tool_source))
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "Match '[' is no valid regular expression: unterminated character set at position 0" in lint_ctx.error_messages
     )
@@ -1262,7 +1701,7 @@ def test_stdio_invalid_match(lint_ctx):
 
 def test_tests_absent(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_ABSENT)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1272,7 +1711,7 @@ def test_tests_absent(lint_ctx):
 
 def test_tests_data_source(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_ABSENT_DATA_SOURCE)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No tests found, that should be OK for data_sources." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1282,18 +1721,21 @@ def test_tests_data_source(lint_ctx):
 
 def test_tests_param_output_names(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_PARAM_OUTPUT_NAMES)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
-    assert "Test 1: Found test param tag without a name defined." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'param': The attribute 'name' is required but missing." in lint_ctx.error_messages
     assert "Test 1: Test param non_existent_test_name not found in the inputs" in lint_ctx.error_messages
     assert "Test 1: Found output tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output tag with unknown name [nonexistent_output], valid names [['existent_output']]"
+        "Test 1: Found output tag with unknown name [nonexistent_output], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
-    assert "Test 1: Found output_collection tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names [['existent_collection']]"
+        "Invalid XML: Element 'output_collection': The attribute 'name' is required but missing."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.info_messages
@@ -1304,18 +1746,22 @@ def test_tests_param_output_names(lint_ctx):
 
 def test_tests_expect_failure_output(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_OUTPUT)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No valid test(s) found." in lint_ctx.warn_messages
     assert "Test 1: Cannot specify outputs in a test expecting failure." in lint_ctx.error_messages
+    assert (
+        "Test 2: Cannot make assumptions on the number of outputs in a test expecting failure."
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 1
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_tests_without_expectations(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_WO_EXPECTATIONS)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert (
         "Test 1: No outputs or expectations defined for tests, this test is likely invalid." in lint_ctx.warn_messages
     )
@@ -1328,7 +1774,7 @@ def test_tests_without_expectations(lint_ctx):
 
 def test_tests_valid(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_VALID)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
@@ -1338,35 +1784,125 @@ def test_tests_valid(lint_ctx):
 
 def test_tests_asserts(lint_ctx):
     tool_source = get_xml_tool_source(ASSERTS)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
-    assert "Test 1: unknown assertion 'invalid'" in lint_ctx.error_messages
-    assert "Test 1: unknown attribute 'invalid_attrib' for 'has_text'" in lint_ctx.error_messages
-    assert "Test 1: missing attribute 'text' for 'has_text'" in lint_ctx.error_messages
-    assert "Test 1: attribute 'value' for 'has_size' needs to be 'int' got '500k'" in lint_ctx.error_messages
-    assert "Test 1: attribute 'delta' for 'has_size' needs to be 'int' got '1O'" in lint_ctx.error_messages
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert "Invalid XML: Element 'invalid': This element is not expected." in lint_ctx.error_messages
     assert (
-        "Test 1: unknown attribute 'invalid_attrib_also_checked_in_nested_asserts' for 'not_has_text'"
+        "Invalid XML: Element 'has_text', attribute 'invalid_attrib': The attribute 'invalid_attrib' is not allowed."
         in lint_ctx.error_messages
     )
-    assert "Test 1: 'has_size' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Invalid XML: Element 'has_text': The attribute 'text' is required but missing." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'has_size', attribute 'delta': '1X' is not a valid value of the union type 'Bytes'."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Invalid XML: Element 'not_has_text', attribute 'invalid_attrib_also_checked_in_nested_asserts': The attribute 'invalid_attrib_also_checked_in_nested_asserts' is not allowed."
+        in lint_ctx.error_messages
+    )
+    assert "Test 1: 'has_size' needs to specify 'value', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 9
+    assert len(lint_ctx.error_messages) == 8
+
+
+def test_tests_output_type_mismatch(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert (
+        "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 2
+
+
+def test_tests_discover_outputs(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert (
+        "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must have a 'count' attribute or 'element' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 4
+
+
+def test_tests_expect_num_outputs_filter(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert "Test 1: should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert len(lint_ctx.error_messages) == 0
+
+
+def test_tests_compare_attrib_incompatibility(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_COMPARE_ATTRIB_INCOMPATIBILITY)
+    run_lint_module(lint_ctx, tests, tool_source)
+    assert 'Test 1: Attribute decompress is incompatible with compare="re_match".' in lint_ctx.error_messages
+    assert 'Test 1: Attribute sort is incompatible with compare="contains".' in lint_ctx.error_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 1
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_xml_order(lint_ctx):
     tool_source = get_xml_tool_source(XML_ORDER)
-    run_lint(lint_ctx, xml_order.lint_xml_order, tool_source)
-    assert "Unknown tag [wrong_tag] encountered, this may result in a warning in the future." in lint_ctx.info_messages
-    assert "Best practice violation [stdio] elements should come before [command]" in lint_ctx.warn_messages
-    assert len(lint_ctx.info_messages) == 1
+    run_lint_module(lint_ctx, xml_order, tool_source)
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
-    assert not lint_ctx.error_messages
+    assert lint_ctx.warn_messages == ["Best practice violation [stdio] elements should come before [command]"]
+    assert lint_ctx.error_messages == ["Invalid XML: Element 'wrong_tag': This element is not expected."]
 
 
-COMPLETE = """<tool>
+DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">
+    <inputs>
+        <param name="select" type="select">
+            <option value="a">a</option>
+            <option value="a">a</option>
+        </param>
+    </inputs>
+</tool>
+"""
+
+
+def test_data_manager(lint_ctx_xpath, lint_ctx):
+    """
+    test that all (not really testing 'all', but more than the general linter
+    which was the only one applied to data managers until 23.0) linters are applied
+    """
+    tool_source = get_xml_tool_source(DATA_MANAGER)
+    lint_tool_source_with(lint_ctx, tool_source)
+    assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
+    assert "Tool contains no outputs section, most tools should produce outputs." in lint_ctx.warn_messages
+    assert "No help section found, consider adding a help section to your tool." in lint_ctx.warn_messages
+    assert "No citations found, consider adding citations to your tool." in lint_ctx.warn_messages
+    assert "Select parameter [select] has multiple options with the same text content" in lint_ctx.error_messages
+    assert "Select parameter [select] has multiple options with the same value" in lint_ctx.error_messages
+    assert "No command tag found, must specify a command template to execute." in lint_ctx.error_messages
+    assert lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 4
+    assert len(lint_ctx.error_messages) == 3
+
+
+COMPLETE = """<tool id="id" name="name">
     <macros>
         <import>macros.xml</import>
         <xml name="test_macro">
@@ -1375,10 +1911,11 @@ COMPLETE = """<tool>
                 <option value="a">a</option>
             </param>
         </xml>
+        <template name="a_template">blah fasel</template>
     </macros>
     <inputs>
         <expand macro="test_macro"/>
-        <param/>
+        <param type="text"/>
         <expand macro="test_macro2"/>
     </inputs>
 </tool>
@@ -1416,12 +1953,25 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
     lint_tool_source_with(lint_ctx, tool_source)
 
     asserts = (
-        ("Select parameter [select] has multiple options with the same value", 5, "/tool/inputs/param[1]"),
-        ("Found param input with no name specified.", 13, "/tool/inputs/param[2]"),
-        ("Param input [No_type] input with no type specified.", 3, "/tool/inputs/param[3]"),
+        (
+            "Select parameter [select] has multiple options with the same value",
+            5,
+            "/tool/inputs/param[1]",
+            "InputsSelectOptionDuplicateValue",
+        ),
+        ("Found param input with no name specified.", 14, "/tool/inputs/param[2]", "InputsName"),
+        (
+            "Invalid XML: Element 'param': The attribute 'type' is required but missing.",
+            3,
+            "/tool/inputs/param[3]",
+            "XSD",
+        ),
     )
     for a in asserts:
-        message, line, xpath = a
+        message, line, xpath, linter = a
+        # check message + path combinations
+        # found = set([(lint_message.message, lint_message.xpath) for lint_message in lint_ctx_xpath.message_list])
+        # path_asserts = set([(a[0], a[2]) for a in asserts])
         found = False
         for lint_message in lint_ctx_xpath.message_list:
             if lint_message.message != message:
@@ -1430,12 +1980,14 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
             assert (
                 lint_message.xpath == xpath
             ), f"Assumed xpath {xpath}; found xpath {lint_message.xpath} for: {message}"
+            assert lint_message.linter == linter
         assert found, f"Did not find {message}"
         for lint_message in lint_ctx.message_list:
             if lint_message.message != message:
                 continue
             found = True
             assert lint_message.line == line, f"Assumed line {line}; found line {lint_message.line} for: {message}"
+            assert lint_message.linter == linter
         assert found, f"Did not find {message}"
 
 
@@ -1501,9 +2053,9 @@ def test_linting_cwl_tool(lint_ctx):
         tool_source = tool_sources[0][1]
         lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [0.0.1]." in lint_ctx.valid_messages
-    assert "Tool defines a name [tool]." in lint_ctx.valid_messages
-    assert "Tool defines an id [tool]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool defines a name [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool defines an id [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [17.09]." in lint_ctx.valid_messages
     assert "CWL appears to be valid." in lint_ctx.info_messages
     assert "Description of tool is empty or absent." in lint_ctx.warn_messages
     assert "Tool does not specify a DockerPull source." in lint_ctx.warn_messages
@@ -1512,3 +2064,32 @@ def test_linting_cwl_tool(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
+
+
+def test_xml_comments_are_ignored(lint_ctx: LintContext):
+    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
+    lint_xml_with(lint_ctx, tool_xml)
+    for lint_message in lint_ctx.message_list:
+        assert "Comment" not in lint_message.message
+
+
+def test_list_linters():
+    linter_names = Linter.list_listers()
+    # make sure to add/remove a test for new/removed linters if this number changes
+    assert len(linter_names) == 129
+    assert "Linter" not in linter_names
+    # make sure that linters from all modules are available
+    for prefix in [
+        "Citations",
+        "Command",
+        "CWL",
+        "ToolProfile",
+        "Help",
+        "Inputs",
+        "Outputs",
+        "StdIO",
+        "Tests",
+        "XMLOrder",
+        "XSD",
+    ]:
+        assert len([x for x in linter_names if x.startswith(prefix)])

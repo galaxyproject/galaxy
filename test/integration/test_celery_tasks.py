@@ -1,4 +1,7 @@
+import tarfile
+
 from celery import shared_task
+from sqlalchemy import select
 
 from galaxy.celery import galaxy_task
 from galaxy.celery.tasks import (
@@ -6,18 +9,16 @@ from galaxy.celery.tasks import (
     purge_hda,
 )
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.schema.tasks import GeneratePdfDownload
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    UsesCeleryTasks,
-)
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 @shared_task
@@ -31,10 +32,26 @@ def process_page(request: CreatePagePayload):
     return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
-class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
+@galaxy_task
+def invalidate_connection(sa_session: galaxy_scoped_session):
+    sa_session().connection().invalidate()
+
+
+@galaxy_task
+def use_session(sa_session: galaxy_scoped_session):
+    sa_session().query(HistoryDatasetAssociation).get(1)
+
+
+class TestCeleryTasksIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_recover_from_invalid_connection(self):
+        invalidate_connection.delay().get()
+        use_session.delay().get()
 
     def test_random_simple_task_to_verify_framework_for_testing(self):
         assert mul.delay(4, 4).get(timeout=10) == 16
@@ -71,7 +88,7 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
         assert hda_purged()
 
     def test_pdf_download(self):
-        short_term_storage_allocator = self._app[ShortTermStorageAllocator]
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]  # type: ignore[type-abstract]
         short_term_storage_target = short_term_storage_allocator.new_target("moo.pdf", "application/pdf")
         request_id = short_term_storage_target.request_id
         pdf_download_request = GeneratePdfDownload(
@@ -85,11 +102,27 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
         assert "application/pdf" in contents.headers["content-type"]
         assert contents.content[0:4] == b"%PDF"
 
+    def test_import_export_history_contents(self):
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
+
+        contents = hda1
+        temp_tar = self.dataset_populator.download_contents_to_store(history_id, contents, "tgz")
+        with tarfile.open(name=temp_tar) as tf:
+            assert "datasets_attrs.txt" in tf.getnames()
+
+        second_history_id = self.dataset_populator.new_history()
+        as_list = self.dataset_populator.create_contents_from_store(
+            second_history_id,
+            store_path=temp_tar,
+        )
+        assert len(as_list) == 1
+        new_hda = as_list[0]
+        assert new_hda["model_class"] == "HistoryDatasetAssociation"
+        assert new_hda["state"] == "discarded"
+        assert not new_hda["deleted"]
+
     @property
     def _latest_hda(self):
-        latest_hda = (
-            self._app.model.session.query(HistoryDatasetAssociation)
-            .order_by(HistoryDatasetAssociation.table.c.id.desc())
-            .first()
-        )
-        return latest_hda
+        stmt = select(HistoryDatasetAssociation).order_by(HistoryDatasetAssociation.table.c.id.desc()).limit(1)
+        return self._app.model.session.scalars(stmt).first()

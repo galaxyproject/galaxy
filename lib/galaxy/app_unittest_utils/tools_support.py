@@ -1,6 +1,6 @@
 """ Module contains test fixtures meant to aide in the testing of jobs and
 tool evaluation. Such extensive "fixtures" are something of an anti-pattern
-so use of this should be limitted to tests of very 'extensive' classes.
+so use of this should be limited to tests of very 'extensive' classes.
 """
 
 import os.path
@@ -8,10 +8,14 @@ import shutil
 import string
 import tempfile
 from collections import defaultdict
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+)
 
 import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.app import UniverseApplication
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
@@ -25,10 +29,9 @@ galaxy.model.set_datatypes_registry(datatypes_registry)
 class UsesApp:
     def setup_app(self):
         self.test_directory = tempfile.mkdtemp()
-        self.app = MockApp()
+        self.app = cast(UniverseApplication, MockApp())
         self.app.config.new_file_path = os.path.join(self.test_directory, "new_files")
         self.app.config.admin_users = "mary@example.com"
-        self.app.job_search = None
 
     def tear_down_app(self):
         shutil.rmtree(self.test_directory)
@@ -102,12 +105,10 @@ class UsesTools(UsesApp):
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
         self.app.config.track_jobs_in_database = False
-        self.app.job_config["get_job_tool_configurations"] = lambda ids, tool_classes: [Bunch(handler=Bunch())]
 
     def __setup_tool(self):
         tool_source = get_tool_source(self.tool_file)
         self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
-        self.tool.assert_finalized()
         if getattr(self, "tool_action", None):
             self.tool.tool_action = self.tool_action
         return self.tool
@@ -122,7 +123,7 @@ class MockContext:
     def __init__(self, model_objects=None):
         self.expunged_all = False
         self.flushed = False
-        self.model_objects = model_objects or defaultdict(lambda: {})
+        self.model_objects = model_objects or defaultdict(dict)
         self.created_objects = []
         self.current = self
 
@@ -132,11 +133,17 @@ class MockContext:
     def query(self, clazz):
         return MockQuery(self.model_objects.get(clazz))
 
+    def get(self, clazz, id):
+        return self.query(clazz).get(id)
+
     def flush(self):
         self.flushed = True
 
     def add(self, object):
         self.created_objects.append(object)
+
+    def commit(self):
+        pass
 
 
 class MockQuery:

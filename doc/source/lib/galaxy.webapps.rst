@@ -14,6 +14,7 @@ Subpackages
 
    galaxy.webapps.base
    galaxy.webapps.galaxy
+   galaxy.webapps.openapi
    galaxy.webapps.reports
 
 Submodules

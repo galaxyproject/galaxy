@@ -1,11 +1,12 @@
 <template>
     <span>
-        <span :class="spinnerClasses"></span>
-        <span class="loading-message">{{ message }}.<span class="blinking">..</span></span>
+        <span :class="spinnerClasses" title="loading"></span>
+        <span v-if="!spinnerOnly" class="loading-message">{{ message }}.<span class="blinking">..</span></span>
     </span>
 </template>
 <script>
 export default {
+    name: "LoadingSpan",
     props: {
         classes: {
             type: String,
@@ -15,6 +16,11 @@ export default {
         message: {
             type: String,
             default: "Loading",
+        },
+        spinnerOnly: {
+            type: Boolean,
+            required: false,
+            default: false,
         },
     },
     computed: {

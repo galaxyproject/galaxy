@@ -1,9 +1,9 @@
 """
 API operations on Quota objects.
 """
+
 import logging
 
-from fastapi import Path
 from fastapi.param_functions import Body
 
 from galaxy.managers.context import ProvidesUserContext
@@ -15,23 +15,18 @@ from galaxy.quota._schema import (
     QuotaSummaryList,
     UpdateQuotaParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
-from galaxy.webapps.galaxy.services.quotas import QuotasService
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import QuotaIdPathParam
+from galaxy.webapps.galaxy.services.quotas import QuotasService
 
 log = logging.getLogger(__name__)
 
 
 router = Router(tags=["quotas"])
-
-
-QuotaIdPathParam: EncodedDatabaseIdField = Path(
-    ..., title="Quota ID", description="The encoded identifier of the Quota."  # Required
-)
 
 
 @router.cbv
@@ -64,24 +59,28 @@ class FastAPIQuota:
 
     @router.get(
         "/api/quotas/{id}",
+        name="quota",
         summary="Displays details on a particular active quota.",
         require_admin=True,
     )
     def show(
-        self, trans: ProvidesUserContext = DependsOnTrans, id: EncodedDatabaseIdField = QuotaIdPathParam
+        self,
+        id: QuotaIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> QuotaDetails:
         """Displays details on a particular active quota."""
         return self.service.show(trans, id)
 
     @router.get(
         "/api/quotas/deleted/{id}",
+        name="deleted_quota",
         summary="Displays details on a particular quota that has been deleted.",
         require_admin=True,
     )
     def show_deleted(
         self,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = QuotaIdPathParam,
     ) -> QuotaDetails:
         """Displays details on a particular quota that has been deleted."""
         return self.service.show(trans, id, deleted=True)
@@ -106,8 +105,8 @@ class FastAPIQuota:
     )
     def update(
         self,
+        id: QuotaIdPathParam,
         payload: UpdateQuotaParams,
-        id: EncodedDatabaseIdField = QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Updates an existing quota."""
@@ -120,12 +119,20 @@ class FastAPIQuota:
     )
     def delete(
         self,
-        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: DeleteQuotaPayload = Body(None),  # Optional
     ) -> str:
         """Deletes an existing quota."""
         return self.service.delete(trans, id, payload)
+
+    @router.post(
+        "/api/quotas/{id}/purge",
+        summary="Purges a previously deleted quota.",
+        require_admin=True,
+    )
+    def purge(self, id: QuotaIdPathParam, trans: ProvidesUserContext = DependsOnTrans) -> str:
+        return self.service.purge(trans, id)
 
     @router.post(
         "/api/quotas/deleted/{id}/undelete",
@@ -134,7 +141,7 @@ class FastAPIQuota:
     )
     def undelete(
         self,
-        id: EncodedDatabaseIdField = QuotaIdPathParam,
+        id: QuotaIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> str:
         """Restores a previously deleted quota."""

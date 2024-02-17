@@ -1,5 +1,3 @@
-from unittest import TestCase
-
 from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.tools.parameters import basic
@@ -7,6 +5,7 @@ from galaxy.util import (
     bunch,
     XML,
 )
+from galaxy.util.unittest import TestCase
 
 
 class BaseParameterTestCase(TestCase, UsesApp):
@@ -16,6 +15,7 @@ class BaseParameterTestCase(TestCase, UsesApp):
             app=self.app,
             tool_type="default",
             valid_input_states=model.Dataset.valid_input_states,
+            profile=23.0,
         )
 
     def _parameter_for(self, **kwds):

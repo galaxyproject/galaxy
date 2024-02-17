@@ -5,9 +5,8 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 import logging
 import os
 import shutil
-import threading
-import time
 from datetime import datetime
+from typing import Optional
 
 try:
     from azure.common import AzureHttpError
@@ -27,10 +26,12 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
-from ..objectstore import (
-    ConcreteObjectStore,
-    convert_bytes,
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    enable_cache_monitor,
+    InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
 )
 
 NO_BLOBSERVICE_ERROR_MESSAGE = (
@@ -52,9 +53,7 @@ def parse_config_xml(config_xml):
         container_name = container_xml.get("name")
         max_chunk_size = int(container_xml.get("max_chunk_size", 250))  # currently unused
 
-        c_xml = config_xml.findall("cache")[0]
-        cache_size = float(c_xml.get("size", -1))
-        staging_path = c_xml.get("path", None)
+        cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
         tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
@@ -72,11 +71,9 @@ def parse_config_xml(config_xml):
                 "name": container_name,
                 "max_chunk_size": max_chunk_size,
             },
-            "cache": {
-                "size": cache_size,
-                "path": staging_path,
-            },
+            "cache": cache_dict,
             "extra_dirs": extra_dirs,
+            "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -91,6 +88,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     Galaxy and Azure.
     """
 
+    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "azure_blob"
 
     def __init__(self, config, config_dict):
@@ -100,7 +98,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         auth_dict = config_dict["auth"]
         container_dict = config_dict["container"]
-        cache_dict = config_dict["cache"]
+        cache_dict = config_dict.get("cache") or {}
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.account_name = auth_dict.get("account_name")
         self.account_key = auth_dict.get("account_key")
@@ -108,8 +107,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         self.container_name = container_dict.get("name")
         self.max_chunk_size = container_dict.get("max_chunk_size", 250)  # currently unused
 
-        self.cache_size = cache_dict.get("size", -1)
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         self._initialize()
 
@@ -119,15 +119,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         self._configure_connection()
 
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
@@ -144,6 +137,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 "cache": {
                     "size": self.cache_size,
                     "path": self.staging_path,
+                    "cache_updated_data": self.cache_updated_data,
                 },
             }
         )
@@ -172,6 +166,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         # extra_dir should never be constructed from provided data but just
@@ -209,6 +204,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
 
         return rel_path
 
@@ -274,12 +272,12 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         local_destination = self._get_cache_path(rel_path)
         try:
             log.debug("Pulling '%s' into cache to %s", rel_path, local_destination)
-            if self.cache_size > 0 and self._get_size_in_azure(rel_path) > self.cache_size:
+            if not self.cache_target.fits_in_cache(self._get_size_in_azure(rel_path)):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s bytes) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     self._get_size_in_azure(rel_path),
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             else:
@@ -400,9 +398,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         return False
 
     def _create(self, obj, **kwargs):
-
         if not self._exists(obj, **kwargs):
-
             # Pull out locally used fields
             extra_dir = kwargs.get("extra_dir", None)
             extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
@@ -507,12 +503,15 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -521,8 +520,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
@@ -548,7 +547,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
@@ -577,56 +576,13 @@ class AzureBlobObjectStore(ConcreteObjectStore):
     def _get_store_usage_percent(self):
         return 0.0
 
-    ##################
-    # Secret Methods #
-    ##################
+    @property
+    def cache_target(self) -> CacheTarget:
+        return CacheTarget(
+            self.staging_path,
+            self.cache_size,
+            0.9,
+        )
 
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            total_size = 0
-            # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
-            # Sort the file list (based on access time)
-            file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
-            if total_size > cache_limit:
-                log.info(
-                    "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                    convert_bytes(total_size),
-                    convert_bytes(cache_limit),
-                )
-                # How much to delete? If simply deleting up to the cache-10% limit,
-                # is likely to be deleting frequently and may run the risk of hitting
-                # the limit - maybe delete additional #%?
-                # For now, delete enough to leave at least 10% of the total cache free
-                delete_this_much = total_size - cache_limit
-                # Keep deleting datasets from file_list until deleted_amount does not
-                # exceed delete_this_much; start deleting from the front of the file list,
-                # which assumes the oldest files come first on the list.
-                deleted_amount = 0
-                for entry in enumerate(file_list):
-                    if deleted_amount < delete_this_much:
-                        deleted_amount += entry[2]
-                        os.remove(entry[1])
-                        # Debugging code for printing deleted files' stats
-                        # folder, file_name = os.path.split(f[1])
-                        # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
-                        # log.debug("%s. %-25s %s, size %s (deleted %s/%s)" \
-                        #     % (i, file_name, convert_bytes(f[2]), file_date, \
-                        #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
-                    else:
-                        log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
-
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
+    def shutdown(self):
+        self.cache_monitor and self.cache_monitor.shutdown()

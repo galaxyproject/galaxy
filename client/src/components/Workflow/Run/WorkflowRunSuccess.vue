@@ -2,20 +2,21 @@
     <div>
         <div class="donemessagelarge">
             <p>
-                Successfully invoked workflow <b>{{ workflowName }}</b
-                ><em v-if="multipleInvocations"> - {{ timesExecuted }} times</em>.
+                Successfully invoked workflow <b>{{ workflowName }}</b>
+                <em v-if="multipleInvocations"> - {{ timesExecuted }} times</em>.
             </p>
-            <p v-if="multipleInvocations">
+
+            <p v-if="multipleHistoryTargets">
                 This workflow will generate results in multiple histories. You can observe progress in the
-                <a :href="historyTarget">history multi-view</a>.
+                <a :href="multiHistoryView">history multi-view</a>.
             </p>
             <p v-else-if="wasNewHistoryTarget">
                 This workflow will generate results in a new history.
-                <a class="workflow-new-history-target-link" :href="historyTarget">Switch to that history now</a>.
+                <a class="workflow-new-history-target-link" :href="newHistoryTarget">Switch to that history now</a>.
             </p>
             <p v-else>You can check the status of queued jobs and view the resulting data the History panel.</p>
         </div>
-        <workflow-invocation-state
+        <WorkflowInvocationState
             v-for="(invocation, index) in invocations"
             :key="invocation.id"
             :index="index"
@@ -25,10 +26,13 @@
 </template>
 
 <script>
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
-import Webhooks from "mvc/webhooks";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
+import { mapState } from "pinia";
+import { refreshContentsWrapper } from "utils/data";
+import Webhooks from "utils/webhooks";
+
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
@@ -44,36 +48,36 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            refreshHistoryTimeout: null,
-        };
-    },
     computed: {
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         timesExecuted() {
             return this.invocations.length;
         },
         multipleInvocations() {
             return this.timesExecuted > 1;
         },
-        historyTarget() {
-            if (this.multipleInvocations) {
-                return `${getAppRoot()}history/view_multiple`;
-            } else {
-                return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
-            }
+        multipleHistoryTargets() {
+            return this.targetHistories.length > 1;
+        },
+        targetHistories() {
+            return this.invocations.reduce((histories, invocation) => {
+                if (invocation.history_id && !histories.includes(invocation.history_id)) {
+                    histories.push(invocation.history_id);
+                }
+                return histories;
+            }, []);
+        },
+        multiHistoryView() {
+            return `${getAppRoot()}histories/view_multiple`;
+        },
+        newHistoryTarget() {
+            return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
         },
         wasNewHistoryTarget() {
             if (this.invocations.length < 1) {
                 return false;
             }
-            const Galaxy = getGalaxyInstance();
-            return (
-                (this.invocations[0].history_id &&
-                    Galaxy.currHistoryPanel &&
-                    Galaxy.currHistoryPanel.model.id != this.invocations[0].history_id) ||
-                false
-            );
+            return this.invocations[0].history_id && this.currentHistoryId != this.invocations[0].history_id;
         },
     },
     mounted() {
@@ -82,26 +86,7 @@ export default {
             toolId: null,
             toolVersion: null,
         });
-        this._refreshHistory();
-    },
-    methods: {
-        _refreshHistory() {
-            // remove when disabling backbone history
-            const Galaxy = getGalaxyInstance();
-            var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-            if (this.refreshHistoryTimeout) {
-                window.clearTimeout(this.refreshHistoryTimeout);
-            }
-            if (history && history.refresh) {
-                history.refresh().success(() => {
-                    if (history.numOfUnfinishedShownContents() === 0) {
-                        this.refreshHistoryTimeout = window.setTimeout(() => {
-                            this._refreshHistory();
-                        }, history.UPDATE_DELAY);
-                    }
-                });
-            }
-        },
+        refreshContentsWrapper();
     },
 };
 </script>

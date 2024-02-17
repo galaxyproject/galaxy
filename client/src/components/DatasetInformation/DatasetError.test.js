@@ -1,7 +1,10 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
-import DatasetError from "./DatasetError";
+import { createPinia } from "pinia";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
+
 import MockProvider from "../providers/MockProvider";
+import DatasetError from "./DatasetError";
 
 jest.mock("components/providers", () => {
     return {}; // stubbed below
@@ -10,7 +13,8 @@ jest.mock("components/providers", () => {
 const localVue = getLocalVue();
 
 function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
-    return mount(DatasetError, {
+    const pinia = createPinia();
+    const wrapper = mount(DatasetError, {
         propsData: {
             datasetId: "dataset_id",
         },
@@ -34,7 +38,13 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user
             FontAwesomeIcon: false,
             FormElement: false,
         },
+        pinia,
     });
+
+    const userStore = useUserStore();
+    userStore.currentUser = { email: user_email || "email" };
+
+    return wrapper;
 }
 
 describe("DatasetError", () => {
@@ -48,7 +58,6 @@ describe("DatasetError", () => {
         expect(messages.at(1).text()).toBe("message_2");
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
-        expect(wrapper.findAll("#dataset-error-email").length).toBe(1);
     });
 
     it("check props without common problems", async () => {

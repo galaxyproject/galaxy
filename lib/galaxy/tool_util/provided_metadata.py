@@ -103,8 +103,8 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         with open(meta_file) as f:
             for line in f:
                 try:
-                    line = stringify_dictionary_keys(json.loads(line))
-                    assert "type" in line
+                    line_as_dict = stringify_dictionary_keys(json.loads(line))
+                    assert "type" in line_as_dict
                 except Exception as e:
                     message = f'Got JSON data from tool, but line is improperly formatted or no "type" key in: [{line}]'
                     raise ValueError(message) from e
@@ -112,12 +112,12 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                 # This isn't insecure.  We loop the job's output datasets in
                 # the finish method, so if a tool writes out metadata for a
                 # dataset id that it doesn't own, it'll just be ignored.
-                dataset_id_not_specified = line["type"] == "dataset" and "dataset_id" not in line
+                dataset_id_not_specified = line_as_dict["type"] == "dataset" and "dataset_id" not in line_as_dict
                 if dataset_id_not_specified:
-                    dataset_basename = line["dataset"]
+                    dataset_basename = line_as_dict["dataset"]
                     if job_wrapper:
                         try:
-                            line["dataset_id"] = job_wrapper.job_io.get_output_file_id(dataset_basename)
+                            line_as_dict["dataset_id"] = job_wrapper.job_io.get_output_file_id(dataset_basename)
                         except KeyError:
                             log.warning(
                                 f"({job_wrapper.job_id}) Tool provided job dataset-specific metadata without specifying a dataset"
@@ -131,11 +131,11 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
                             )
                         dataset_id = match.group(2)
                         if dataset_id.isdigit():
-                            line["dataset_id"] = dataset_id
+                            line_as_dict["dataset_id"] = dataset_id
                         else:
-                            line["dataset_uuid"] = dataset_id
+                            line_as_dict["dataset_uuid"] = dataset_id
 
-                self.tool_provided_job_metadata.append(line)
+                self.tool_provided_job_metadata.append(line_as_dict)
 
     def get_dataset_meta(self, output_name, dataset_id, dataset_uuid):
         for meta in self.tool_provided_job_metadata:
@@ -167,7 +167,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         return []
 
     def rewrite(self):
-        with open(self.meta_file, "wt") as job_metadata_fh:
+        with open(self.meta_file, "w") as job_metadata_fh:
             for meta in self.tool_provided_job_metadata:
                 job_metadata_fh.write(f"{json.dumps(meta)}\n")
 
@@ -230,5 +230,5 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
         return self.tool_provided_job_metadata.get("__unnamed_outputs", [])
 
     def rewrite(self):
-        with open(self.meta_file, "wt") as job_metadata_fh:
+        with open(self.meta_file, "w") as job_metadata_fh:
             json.dump(self.tool_provided_job_metadata, job_metadata_fh)

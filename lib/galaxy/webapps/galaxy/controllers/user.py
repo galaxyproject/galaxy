@@ -18,6 +18,7 @@ from galaxy import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
+from galaxy.managers.users import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname,
@@ -29,7 +30,6 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
 )
 from ..api import depends
@@ -41,7 +41,7 @@ def _filtered_registration_params_dict(payload):
     return {k: v for (k, v) in payload.items() if k in ["email", "username", "password", "confirm", "subscribe"]}
 
 
-class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+class User(BaseUIController, UsesFormDefinitionsMixin):
     user_manager: users.UserManager = depends(users.UserManager)
     installed_len_files = None
 
@@ -173,7 +173,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             if trans.app.config.error_email_to is not None:
                 message += f" Contact: {trans.app.config.error_email_to}."
             return self.message_exception(trans, message, sanitize=False)
-        elif not trans.app.auth_manager.check_password(user, password):
+        elif not trans.app.auth_manager.check_password(user, password, trans.request):
             return self.message_exception(trans, "Invalid password.")
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if trans.app.config.activation_grace_period != 0:  # grace period is ON
@@ -189,7 +189,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
+            pw_expires = getattr(trans.app.config, "password_expiration_period", None)
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 return {
@@ -206,7 +206,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
-    def resend_verification(self, trans):
+    def resend_verification(self, trans, **kwargs):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
@@ -248,8 +248,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @web.expose
     @web.json
     def logout(self, trans, logout_all=False, **kwd):
-        message = trans.check_csrf_token(kwd)
-        if message:
+        if message := trans.check_csrf_token(kwd):
             return self.message_exception(trans, message)
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
@@ -285,39 +284,37 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if email is not None:
             email = unquote(email)
         activation_token = params.get("activation_token", None)
+        index_url = web.url_for(controller="root", action="index")
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
             return trans.show_error_message(
-                "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-            ) % web.url_for(controller="root", action="index")
+                f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+            )
         else:
             # Find the user
-            user = (
-                trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            )
+            user = get_user_by_email(trans.sa_session, email)
             if not user:
                 # Probably wrong email address
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
             # If the user is active already don't try to activate
             if user.active is True:
                 return trans.show_ok_message(
-                    "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-            if user.activation_token == activation_token:
+                    f"Your account is already active. Nothing has changed. <br><a href='{index_url}'>Go to login page.</a>"
+                )
+            if user.activation_token == activation_token[:64]:
                 user.activation_token = None
                 self.user_manager.activate(user)
                 return trans.show_ok_message(
-                    "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"Your account has been successfully activated! <br><a href='{index_url}'>Go to login page.</a>"
+                )
             else:
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-        return
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
 
     @expose_api_anonymous_and_sessionless
     def change_password(self, trans, payload=None, **kwd):
@@ -343,8 +340,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def reset_password(self, trans, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         payload = payload or {}
-        message = self.user_manager.send_reset_email(trans, payload)
-        if message:
+        if message := self.user_manager.send_reset_email(trans, payload):
             return self.message_exception(trans, message)
         return {"message": "Reset link has been sent to your email."}
 

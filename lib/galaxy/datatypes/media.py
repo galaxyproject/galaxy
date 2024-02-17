@@ -1,14 +1,20 @@
 """Video classes"""
+
 import json
 import subprocess
 import wave
 from functools import lru_cache
+from typing import (
+    List,
+    Tuple,
+)
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import which
 
 
@@ -27,7 +33,6 @@ def ffprobe(path):
 
 
 class Audio(Binary):
-
     MetadataElement(
         name="duration",
         default=0,
@@ -67,9 +72,9 @@ class Audio(Binary):
         no_value=0,
     )
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
-            metadata, streams = ffprobe(dataset.file_name)
+            metadata, streams = ffprobe(dataset.get_file_name())
 
             dataset.metadata.duration = metadata["duration"]
             dataset.metadata.audio_codecs = [
@@ -82,7 +87,6 @@ class Audio(Binary):
 
 
 class Video(Binary):
-
     MetadataElement(
         name="resolution_w",
         default=0,
@@ -143,7 +147,7 @@ class Video(Binary):
         no_value=0,
     )
 
-    def _get_resolution(self, streams):
+    def _get_resolution(self, streams: List) -> Tuple[int, int, float]:
         for stream in streams:
             if stream["codec_type"] == "video":
                 w = stream["width"]
@@ -154,9 +158,9 @@ class Video(Binary):
             w = h = fps = 0
         return w, h, fps
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if which("ffprobe"):
-            metadata, streams = ffprobe(dataset.file_name)
+            metadata, streams = ffprobe(dataset.get_file_name())
             (w, h, fps) = self._get_resolution(streams)
             dataset.metadata.resolution_w = w
             dataset.metadata.resolution_h = h
@@ -176,10 +180,11 @@ class Video(Binary):
 class Mkv(Video):
     file_ext = "mkv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "matroska" in metadata["format_name"].split(",")
+        return False
 
 
 class Mp4(Video):
@@ -194,28 +199,31 @@ class Mp4(Video):
 
     file_ext = "mp4"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mp4" in metadata["format_name"].split(",")
+        return False
 
 
 class Flv(Video):
     file_ext = "flv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "flv" in metadata["format_name"].split(",")
+        return False
 
 
 class Mpg(Video):
     file_ext = "mpg"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mpegvideo" in metadata["format_name"].split(",")
+        return False
 
 
 class Mp3(Audio):
@@ -230,10 +238,11 @@ class Mp3(Audio):
 
     file_ext = "mp3"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if which("ffprobe"):
             metadata, streams = ffprobe(filename)
             return "mp3" in metadata["format_name"].split(",")
+        return False
 
 
 class Wav(Audio):
@@ -262,18 +271,18 @@ class Wav(Audio):
         name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True
     )
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype."""
         return "audio/wav"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         with wave.open(filename, "rb"):
             return True
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents."""
         try:
-            with wave.open(dataset.dataset.file_name, "rb") as fd:
+            with wave.open(dataset.dataset.get_file_name(), "rb") as fd:
                 dataset.metadata.rate = fd.getframerate()
                 dataset.metadata.nframes = fd.getnframes()
                 dataset.metadata.sampwidth = fd.getsampwidth()

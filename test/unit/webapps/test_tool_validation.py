@@ -1,7 +1,5 @@
 import os
 import shutil
-import tarfile
-import tempfile
 from contextlib import contextmanager
 
 from galaxy.app_unittest_utils.galaxy_mock import MockApp
@@ -9,14 +7,15 @@ from galaxy.tools.repositories import ValidationContext
 from galaxy.util import galaxy_directory
 from tool_shed.tools.tool_validator import ToolValidator
 
-BISMARK_TAR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/bismark/bismark.tar")
+BISMARK_DIR = os.path.join(galaxy_directory(), "lib/tool_shed/test/test_data/repos/bismark/0")
 BOWTIE2_INDICES = os.path.join(
     galaxy_directory(), "lib/tool_shed/test/test_data/bowtie2_loc_sample/bowtie2_indices.loc.sample"
 )
 
 
 def test_validate_valid_tool():
-    with get_tool_validator() as tv, setup_bismark() as repo_dir:
+    repo_dir = BISMARK_DIR
+    with get_tool_validator() as tv:
         full_path = os.path.join(repo_dir, "bismark_methylation_extractor.xml")
         tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=full_path)
         assert tool.name == "Bismark"
@@ -27,14 +26,16 @@ def test_validate_valid_tool():
 
 
 def test_tool_validation_denies_allow_codefile():
-    with get_tool_validator() as tv, setup_bismark() as repo_dir:
+    repo_dir = BISMARK_DIR
+    with get_tool_validator() as tv:
         full_path = os.path.join(repo_dir, "bismark_methylation_extractor.xml")
         tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=full_path)
         assert tool._allow_code_files is False
 
 
 def test_validate_tool_without_index():
-    with get_tool_validator() as tv, setup_bismark() as repo_dir:
+    repo_dir = BISMARK_DIR
+    with get_tool_validator() as tv:
         full_path = os.path.join(repo_dir, "bismark_bowtie2_wrapper.xml")
         tool, valid, message = tv.load_tool_from_config(repository_id=None, full_path=full_path)
         assert valid is True
@@ -61,15 +62,6 @@ def test_validate_tool_without_index():
         assert len(invalid_files_and_errors_tups) == 0
         assert not tool.params_with_missing_data_table_entry
         assert not tool.params_with_missing_index_file
-
-
-@contextmanager
-def setup_bismark():
-    repo_dir = tempfile.mkdtemp()
-    with tarfile.open(BISMARK_TAR) as archive:
-        archive.extractall(repo_dir)
-    yield repo_dir
-    shutil.rmtree(repo_dir, ignore_errors=True)
 
 
 @contextmanager

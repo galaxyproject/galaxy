@@ -13,13 +13,13 @@ Subpackages
    :maxdepth: 4
 
    galaxy.actions
+   galaxy.app_unittest_utils
    galaxy.auth
    galaxy.authnz
+   galaxy.celery
    galaxy.config
-   galaxy.containers
    galaxy.datatypes
    galaxy.dependencies
-   galaxy.eggs
    galaxy.exceptions
    galaxy.files
    galaxy.forms
@@ -30,7 +30,6 @@ Subpackages
    galaxy.metadata
    galaxy.model
    galaxy.objectstore
-   galaxy.openid
    galaxy.quota
    galaxy.schema
    galaxy.security
@@ -67,10 +66,26 @@ galaxy.config\_watchers module
    :undoc-members:
    :show-inheritance:
 
+galaxy.di module
+----------------
+
+.. automodule:: galaxy.di
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.main module
 ------------------
 
 .. automodule:: galaxy.main
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.main\_config module
+--------------------------
+
+.. automodule:: galaxy.main_config
    :members:
    :undoc-members:
    :show-inheritance:
@@ -87,6 +102,14 @@ galaxy.queues module
 --------------------
 
 .. automodule:: galaxy.queues
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.structured\_app module
+-----------------------------
+
+.. automodule:: galaxy.structured_app
    :members:
    :undoc-members:
    :show-inheritance:

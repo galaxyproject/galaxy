@@ -1,7 +1,6 @@
 .git
 .tox
-.venv
-.venv3
+.venv*
 packages/*/.venv
 packages/*/build
 packages/*/dist
@@ -9,10 +8,9 @@ packages/venv
 node_modules
 database
 doc/build
-doc/source/conf.py
 eggs
-lib/galaxy/util/jstree.py
 lib/galaxy/web/proxy/js/node_modules
+lib/tool_shed/test/test_data/repos
 static/maps
 static/scripts
 test/functional/tools/cwl_tools/v1.?/

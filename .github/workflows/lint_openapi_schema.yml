@@ -1,0 +1,63 @@
+name: OpenAPI linting
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+      - 'lib/galaxy_test/selenium/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate-schema:
+    name: Validate OpenAPI schema
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8', '3.12']
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: 'galaxy root'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Get full Python version
+        id: full-python-version
+        shell: bash
+        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v3
+        with:
+          path: 'galaxy root/.venv'
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
+      - name: Install dependencies
+        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
+        working-directory: 'galaxy root'
+      - name: Lint schema
+        run: make lint-api-schema
+        working-directory: 'galaxy root'
+      - name: Build typescript schema
+        run: make update-client-api-schema
+        working-directory: 'galaxy root'
+      - name: Diff...
+        run: git diff
+        working-directory: 'galaxy root'
+      - name: Check for changes
+        run: |
+          if [[ `git status --porcelain` ]]; then
+            echo "Rebuilding client/src/api/schema/schema.ts resulted in changes, run 'make update-client-api-schema' and commit results"
+            exit 1
+          fi
+        working-directory: 'galaxy root'

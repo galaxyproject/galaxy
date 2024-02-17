@@ -13,6 +13,7 @@ Subpackages
    :maxdepth: 4
 
    galaxy.tools.actions
+   galaxy.tools.bundled
    galaxy.tools.data
    galaxy.tools.data_manager
    galaxy.tools.error_reports
@@ -21,11 +22,18 @@ Subpackages
    galaxy.tools.imp_exp
    galaxy.tools.parameters
    galaxy.tools.search
-   galaxy.tools.toolbox
    galaxy.tools.util
 
 Submodules
 ----------
+
+galaxy.tools.biotools module
+----------------------------
+
+.. automodule:: galaxy.tools.biotools
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 galaxy.tools.cache module
 -------------------------
@@ -79,6 +87,14 @@ galaxy.tools.recommendations module
 -----------------------------------
 
 .. automodule:: galaxy.tools.recommendations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.tools.remote\_tool\_eval module
+--------------------------------------
+
+.. automodule:: galaxy.tools.remote_tool_eval
    :members:
    :undoc-members:
    :show-inheritance:

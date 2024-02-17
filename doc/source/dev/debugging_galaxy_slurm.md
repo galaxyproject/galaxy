@@ -2,15 +2,15 @@
 # Debugging Galaxy: Slurm Compute Cluster
 
 This document explains how to debug a Galaxy instance that uses a Slurm compute cluster (not the
-default LocalRunner). If you have a MacOS machine, you need to create a Linux VM using Oracle's 
-VirtualBoxVM and run the instructions in the VM. For reference, I created a 64-bit Linux VM with 
-4096 MB of RAM and 32 GB of disk space (all other parameters were left as default) and managed to 
-successfully run the instructions. If using a Linux VM, you may need to install Git, Python, VSCode, 
-and Docker (if using Irods storage). Finally, These instructions are intended for developers who 
-want to debug their Galaxy instance and are not meant for deployment purposes (We have nice Ansible 
+default LocalRunner). If you have a MacOS machine, you need to create a Linux VM using Oracle's
+VirtualBoxVM and run the instructions in the VM. For reference, I created a 64-bit Linux VM with
+4096 MB of RAM and 32 GB of disk space (all other parameters were left as default) and managed to
+successfully run the instructions. If using a Linux VM, you may need to install Git, Python, VSCode,
+and Docker (if using Irods storage). Finally, These instructions are intended for developers who
+want to debug their Galaxy instance and are not meant for deployment purposes (We have nice Ansible
 playbooks for that).
 
-## Debugging Galaxy in VS Code 
+## Debugging Galaxy in VS Code
 
 1. Install libslurm-dev
     * `sudo apt install libslurm-dev`
@@ -19,7 +19,7 @@ playbooks for that).
 
 2. Install slurm-drmaa
     * Download slurm-drmaa tar file from https://github.com/natefoo/slurm-drmaa/releases/download/1.1.2/slurm-drmaa-1.1.2.tar.gz
-    * Extract the downloaded tar file into home directory: `tar -xzvf slurm-drmaa-1.1.2.tar.gz -C ~`       
+    * Extract the downloaded tar file into home directory: `tar -xzvf slurm-drmaa-1.1.2.tar.gz -C ~`
     * To compile and install slurm-drmaa
         * `cd ~/slurm-drmaa-1.1.2`
         * `./configure --with-slurm-inc=/usr/include --with-slurm-lib=/usr/lib/x86_64-linux-gpu`
@@ -71,6 +71,6 @@ playbooks for that).
         * `sudo service slurmd start`
         * `sudo service slurmctld start`
 
-6. Follow the instructions [here](./debuging_galaxy.md) to setup VSCode for debugging. 
+6. Follow the instructions [here](debugging_galaxy) to setup VSCode for debugging.
 
-Enjoy debugging session your Galaxy instance backed by a Slurm cluster!        
+Enjoy debugging session your Galaxy instance backed by a Slurm cluster!

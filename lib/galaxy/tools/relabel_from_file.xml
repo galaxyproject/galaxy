@@ -198,7 +198,7 @@ the tool will return::
 
 .. class:: warningmark
 
-Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), dash and underscore (-, _). Punctuation or whitespace are not allowed.
+Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), dash (-), underscore (_), dot (.), space ( ) and comma (,). Other characters are not allowed.
 
 .. class:: infomark
 

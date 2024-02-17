@@ -1,0 +1,91 @@
+name: Window Manager - Introduction
+description: "An introduction on how to display multiple datasets and visualizations next to each other."
+title_default: "Window Manager Introduction"
+tags:
+  - "core"
+  - "UI"
+  - "visualization"
+
+requirements:
+  - new_history
+
+steps:
+    - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
+
+    - component: upload.start
+      intro: "First, we will upload some tabular data into our new history."
+      postclick: true
+
+    - component: upload.create_button
+      intro: "We will be using the paste feature to create a new dataset."
+      postclick: true
+
+    - component: upload.title(n=0)
+      intro: "Giving the dataset a name"
+      textinsert: First Dataset
+
+    - component: upload.paste_content(n=0)
+      intro: "...and paste content into the text area field."
+      textinsert: |
+        1 0.039 0.000
+        2 0.455 0.000
+        3 0.472 0.000
+        4 0.030 0.000
+        5 0.000 0.000
+        6 0.000 0.000
+        7 0.000 0.000
+        8 0.000 0.000
+
+    - component: upload.settings_button(n=0)
+      intro: "Now, we may further configure the upload content."
+      postclick: true
+
+    - component: upload.setting_space_to_tab
+      intro: "...by specifying that all spaces in our table should be converted into tabs."
+      postclick: true
+
+    - component: upload.create_button
+      intro: "We will create another dataset, so that we can try the Window Manager on multiple datasets."
+      postclick: true
+
+    - component: upload.title(n=1)
+      intro: "Giving the second dataset a name"
+      textinsert: Second Dataset
+
+    - component: upload.paste_content(n=1)
+      intro: "...and paste content into the text area field again."
+      textinsert: |
+        1 0.069 0.000
+        2 0.711 0.000
+        3 0.999 0.000
+        4 0.420 0.000
+        5 0.190 0.000
+
+    - component: upload.start_button
+      intro: "Upload the data into your Galaxy history."
+      postclick: true
+
+    - component: upload.close_button
+      intro: "Hit the close button to close the upload dialog."
+      postclick: true
+
+    - element: "#enable-window-manager > .nav-link"
+      intro: "Clicking this button will enable Galaxy's Window Manager mode."
+      postclick: true
+
+    - element: "#current-history-panel"
+      intro: "This is your history. It contains our two tables being uploaded."
+
+    - component: history_panel.item(hid=1,state=ok).display_button
+      intro: "Clicking the eye-icon usually displays a dataset in the center panel."
+      postclick: true
+
+    - element: "#winbox-1"
+      intro: "However while using the Window Manager, the dataset will be shown as resizable window."
+
+    - title: "Done."
+      intro: "You have created a Window. Click on eye-icon for the other dataset to view it in a window as well."
+
+    - component: history_panel.item(hid=2,state=ok).display_button
+      intro: "View the second dataset in a window as well."
+      postclick: true

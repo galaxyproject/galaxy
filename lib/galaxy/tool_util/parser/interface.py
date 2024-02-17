@@ -7,15 +7,58 @@ from abc import (
 )
 from os.path import join
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
 )
+
+import packaging.version
+from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
+if TYPE_CHECKING:
+    from galaxy.tool_util.deps.requirements import (
+        ContainerDescription,
+        ResourceRequirement,
+        ToolRequirements,
+    )
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+
+
+class AssertionDict(TypedDict):
+    tag: str
+    attributes: Dict[str, Any]
+    children: Optional[List[Dict[str, Any]]]
+
+
+AssertionList = Optional[List[AssertionDict]]
+XmlInt = Union[str, int]
+
+
+class ToolSourceTest(TypedDict):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Any]
+    stdout: AssertionList
+    stderr: AssertionList
+    expect_exit_code: Optional[XmlInt]
+    expect_failure: bool
+    expect_test_failure: bool
+    maxseconds: Optional[XmlInt]
+    expect_num_outputs: Optional[XmlInt]
+    command: AssertionList
+    command_version: AssertionList
+
+
+class ToolSourceTests(TypedDict):
+    tests: List[ToolSourceTest]
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -26,7 +69,7 @@ class ToolSource(metaclass=ABCMeta):
     language: str
 
     @abstractmethod
-    def parse_id(self):
+    def parse_id(self) -> Optional[str]:
         """Parse an ID describing the abstract tool. This is not the
         GUID tracked by the tool shed but the simple id (there may be
         multiple tools loaded in Galaxy with this same simple id).
@@ -70,6 +113,7 @@ class ToolSource(metaclass=ABCMeta):
         """Parse list of edam topic codes."""
         return []
 
+    @abstractmethod
     def parse_xrefs(self) -> List[Dict[str, str]]:
         """Parse list of external resource URIs and types."""
 
@@ -181,8 +225,10 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(self):
-        """Return pair of ToolRequirement and ContainerDescription lists."""
+    def parse_requirements_and_containers(
+        self,
+    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
+        """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
     def parse_input_pages(self):
@@ -224,7 +270,7 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self):
+    def parse_help(self) -> Optional[str]:
         """Return RST definition of help text for tool or None if the tool
         doesn't define help text.
         """
@@ -238,7 +284,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return license corresponding to tool wrapper."""
 
     @abstractmethod
-    def parse_python_template_version(self):
+    def parse_python_template_version(self) -> Optional[packaging.version.Version]:
         """
         Return minimum python version that the tool template has been developed against.
         """
@@ -264,7 +310,7 @@ class ToolSource(metaclass=ABCMeta):
             paths_and_modtimes[self.source_path] = os.path.getmtime(self.source_path)
         return paths_and_modtimes
 
-    def parse_tests_to_dict(self):
+    def parse_tests_to_dict(self) -> ToolSourceTests:
         return {"tests": []}
 
     def __str__(self):
@@ -274,6 +320,10 @@ class ToolSource(metaclass=ABCMeta):
         else:
             as_str = f"{self.__class__.__name__}[In-memory]"
         return as_str
+
+    @abstractmethod
+    def to_string(self) -> str:
+        """Return the tool source as a string"""
 
 
 class PagesSource:
@@ -289,15 +339,6 @@ class PagesSource:
     @property
     def inputs_defined(self):
         return True
-
-
-class PageSource(metaclass=ABCMeta):
-    def parse_display(self):
-        return None
-
-    @abstractmethod
-    def parse_input_sources(self) -> List:
-        """Return a list of InputSource objects."""
 
 
 class InputSource(metaclass=ABCMeta):
@@ -332,6 +373,10 @@ class InputSource(metaclass=ABCMeta):
         """
         return _parse_name(self.get("name"), self.get("argument"))
 
+    @abstractmethod
+    def parse_input_type(self) -> str:
+        """Return the type of this input."""
+
     def parse_help(self):
         return self.get("help")
 
@@ -350,7 +395,7 @@ class InputSource(metaclass=ABCMeta):
         return []
 
     def parse_optional(self, default=None):
-        """Return boolean indicating wheter parameter is optional."""
+        """Return boolean indicating whether parameter is optional."""
         if default is None:
             default = self.default_optional
         return self.get_bool("optional", default)
@@ -373,12 +418,24 @@ class InputSource(metaclass=ABCMeta):
         # For repeats
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
-    def parse_test_input_source(self):
+    def parse_test_input_source(self) -> "InputSource":
         # For conditionals
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
+
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        return None
+
+
+class PageSource(metaclass=ABCMeta):
+    def parse_display(self):
+        return None
+
+    @abstractmethod
+    def parse_input_sources(self) -> List[InputSource]:
+        """Return a list of InputSource objects."""
 
 
 class TestCollectionDef:
@@ -500,7 +557,7 @@ class RequiredFiles:
             excludes.append({"path": ".hg", "path_type": "prefix"})
 
         files: List[str] = []
-        for (dirpath, _, filenames) in safe_walk(tool_directory):
+        for dirpath, _, filenames in safe_walk(tool_directory):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
                 if matches(self.includes, rel_path) and not matches(self.excludes, rel_path):

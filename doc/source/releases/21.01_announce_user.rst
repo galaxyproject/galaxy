@@ -174,7 +174,7 @@ Builtin Tool Updates
 Release Notes
 ===========================================================
 
-Please see the `full release notes <21.01_announce.html>`_ for more details.
+Please see the :doc:`full release notes <21.01_announce>` for more details.
 
 .. include:: 21.01_prs.rst
 

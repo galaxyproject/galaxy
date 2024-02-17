@@ -73,8 +73,9 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
+
 import Alert from "components/Alert.vue";
 
 export default {
@@ -116,7 +117,7 @@ export default {
             return [
                 {
                     text: "Data Managers",
-                    to: "/",
+                    to: { name: "DataManager" },
                 },
                 {
                     text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",

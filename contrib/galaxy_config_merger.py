@@ -6,21 +6,6 @@ Created by Anne Pajon on 31 Jan 2012
 
 Copyright (c) 2012 Cancer Research UK - Cambridge Research Institute.
 
-This source file is licensed under the Academic Free License version
-3.0 available at http://www.opensource.org/licenses/AFL-3.0.
-
-Permission is hereby granted to reproduce, translate, adapt, alter,
-transform, modify, or arrange this source file (the "Original Work");
-to distribute or communicate copies of it under any license of your
-choice that does not contradict the terms and conditions; to perform
-or display the Original Work publicly.
-
-THE ORIGINAL WORK IS PROVIDED UNDER THIS LICENSE ON AN "AS IS" BASIS
-AND WITHOUT WARRANTY, EITHER EXPRESS OR IMPLIED, INCLUDING, WITHOUT
-LIMITATION, THE WARRANTIES OF NON-INFRINGEMENT, MERCHANTABILITY OR
-FITNESS FOR A PARTICULAR PURPOSE. THE ENTIRE RISK AS TO THE QUALITY OF
-THE ORIGINAL WORK IS WITH YOU.
-
 Script for merging specific local Galaxy config galaxy.ini.cri with default Galaxy galaxy.ini.sample
 """
 
@@ -45,7 +30,7 @@ def main():
 
     for option in ["sample", "config"]:
         if getattr(options, option) is None:
-            print("Please supply a --%s parameter.\n" % (option))
+            print(f"Please supply a --{option} parameter.\n")
             parser.print_help()
             sys.exit()
 
@@ -60,11 +45,11 @@ def main():
     logging.info("---------- DIFFERENCE ANALYSIS BEGIN ----------")
     for section in config.sections():
         if not config_sample.has_section(section):
-            logging.warning("-MISSING- section [%s] not found in sample file. It will be ignored." % section)
+            logging.warning("-MISSING- section [%s] not found in sample file. It will be ignored.", section)
         else:
-            for (name, value) in config.items(section):
+            for name, value in config.items(section):
                 if not config_sample.has_option(section, name):
-                    if not "#%s" % name in config_sample_content:
+                    if f"#{name}" not in config_sample_content:
                         logging.warning(
                             f"-MISSING- section [{section}] option '{name}' not found in sample file. It will be ignored."
                         )

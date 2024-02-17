@@ -1,10 +1,13 @@
-import WorkflowRun from "./WorkflowRun.vue";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
-import { watchForChange } from "jest/helpers";
-
-import sampleRunData1 from "./testdata/run1.json";
+import { createTestingPinia } from "@pinia/testing";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { PiniaVuePlugin } from "pinia";
+import { watchForChange } from "tests/jest/helpers";
 
 import { getRunData } from "./services";
+import sampleRunData1 from "./testdata/run1.json";
+
+import WorkflowRun from "./WorkflowRun.vue";
+
 jest.mock("./services");
 
 getRunData.mockImplementation(async () => {
@@ -31,9 +34,11 @@ describe("WorkflowRun.vue", () => {
     beforeEach(() => {
         const propsData = { workflowId: run1WorkflowId };
         localVue = createLocalVue();
+        localVue.use(PiniaVuePlugin);
         wrapper = shallowMount(WorkflowRun, {
             propsData: propsData,
             localVue,
+            pinia: createTestingPinia(),
         });
     });
 
@@ -49,6 +54,7 @@ describe("WorkflowRun.vue", () => {
 
         expect(wrapper.vm.error).toBeNull();
         expect(wrapper.vm.loading).toBe(false);
+        expect(wrapper.vm.simpleForm).toBe(false);
         const model = wrapper.vm.model;
         expect(model).not.toBeNull();
         expect(model.workflowId).toBe(run1WorkflowId);

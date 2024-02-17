@@ -10,22 +10,23 @@ from markupsafe import escape
 
 from galaxy import (
     datatypes,
-    model,
     util,
     web,
 )
-from galaxy.datatypes import sniff
 from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import (
     decode_dataset_user,
     encode_dataset_user,
 )
+from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.hdas import (
     HDADeserializer,
     HDAManager,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import Dataset
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -34,7 +35,6 @@ from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     inflector,
     sanitize_text,
-    smart_str,
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -47,6 +47,7 @@ from galaxy.webapps.base.controller import (
     url_for,
     UsesExtendedMetadataMixin,
 )
+from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -65,18 +66,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     history_manager: HistoryManager = depends(HistoryManager)
     hda_manager: HDAManager = depends(HDAManager)
     hda_deserializer: HDADeserializer = depends(HDADeserializer)
+    service: DatasetsService = depends(DatasetsService)
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
-
-    def _get_job_for_dataset(self, trans, dataset_id):
-        """
-        Return the job for the given dataset. This will throw an error if the
-        dataset is either nonexistent or inaccessible to the user.
-        """
-        hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
-        assert hda and self._can_access_dataset(trans, hda)
-        return hda.creating_job
 
     def _can_access_dataset(self, trans, dataset_association, allow_admin=True, additional_roles=None):
         roles = trans.get_current_user_roles()
@@ -87,66 +80,18 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         )
 
     @web.expose
-    def errors(self, trans, id):
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(self.decode_id(id))
-
-        if not hda or not self._can_access_dataset(trans, hda):
-            return trans.show_error_message(
-                "Either this dataset does not exist or you do not have permission to access it."
-            )
-        return trans.fill_template("dataset/errors.mako", hda=hda)
-
-    @web.expose
-    def stdout(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        stdout = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            stdout = job.stdout
-        except Exception:
-            stdout = "Invalid dataset ID or you are not allowed to access this dataset"
-        return smart_str(stdout)
-
-    @web.expose
-    # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
-    def stderr(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        stderr = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            stderr = job.stderr
-        except Exception:
-            stderr = "Invalid dataset ID or you are not allowed to access this dataset"
-        return smart_str(stderr)
-
-    @web.expose
-    def exit_code(self, trans, dataset_id=None, **kwargs):
-        trans.response.set_content_type("text/plain")
-        exit_code = ""
-        try:
-            job = self._get_job_for_dataset(trans, dataset_id)
-            exit_code = job.exit_code
-        except Exception:
-            exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
-        return exit_code
-
-    @web.expose
     def default(self, trans, dataset_id=None, **kwd):
         return "This link may not be followed from within Galaxy."
 
-    @web.expose
-    def get_metadata_file(self, trans, hda_id, metadata_file):
+    @web.expose_api_raw_anonymous_and_sessionless
+    def get_metadata_file(self, trans, hda_id, metadata_name, **kwd):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
-        data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
-        if not data or not self._can_access_dataset(trans, data):
-            return trans.show_error_message("You are not allowed to access this dataset")
-
-        fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in data.name)[0:150]
-
-        file_ext = data.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
-        trans.response.headers["Content-Type"] = "application/octet-stream"
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="Galaxy{data.hid}-[{fname}].{file_ext}"'
-        return open(data.metadata.get(metadata_file).file_name, "rb")
+        # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
+        fh, headers = self.service.get_metadata_file(
+            trans, history_content_id=hda_id, metadata_file=metadata_name, open_file=True
+        )
+        trans.response.headers.update(headers)
+        return fh
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -160,37 +105,28 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             except Exception:
                 data = None
         if not data:
-            raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable(f"Invalid reference dataset id: {str(hda_id)}.")
+            raise web.httpexceptions.HTTPNotFound(f"Invalid reference dataset id: {str(hda_id)}.")
         if not self._can_access_dataset(trans, data):
             return trans.show_error_message("You are not allowed to access this dataset")
-        if data.purged:
+        if data.purged or data.dataset.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
+        elif data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
-        if data.state == trans.model.Dataset.states.UPLOAD:
+        elif data.state == Dataset.states.UPLOAD:
             return trans.show_error_message(
                 "Please wait until this dataset finishes uploading before attempting to view it."
             )
+        elif data.state == Dataset.states.DISCARDED:
+            return trans.show_error_message("The dataset you are attempting to view has been discarded.")
+        elif data.state == Dataset.states.DEFERRED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view has deferred data. You can only use this dataset as input for jobs."
+            )
+        elif data.state == Dataset.states.PAUSED:
+            return trans.show_error_message(
+                "The dataset you are attempting to view is in paused state. One of the inputs for the job that creates this dataset has failed."
+            )
         return data
-
-    @web.expose
-    @web.json
-    def transfer_status(self, trans, dataset_id, filename=None):
-        """Primarily used for the S3ObjectStore - get the status of data transfer
-        if the file is not in cache"""
-        data = self._check_dataset(trans, dataset_id)
-        if isinstance(data, str):
-            return data
-        log.debug(f"Checking transfer status for dataset {data.dataset.id}...")
-
-        # Pulling files in extra_files_path into cache is not handled via this
-        # method but that's primarily because those files are typically linked to
-        # through tool's output page anyhow so tying a JavaScript event that will
-        # call this method does not seem doable?
-        if data.dataset.external_filename:
-            return True
-        else:
-            return trans.app.object_store.file_ready(data.dataset)
 
     @web.expose
     def display(
@@ -201,8 +137,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return data
         if "hdca" in kwd:
             raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
-        hdca_id = kwd.get("hdca_id", None)
-        if hdca_id:
+        if hdca_id := kwd.get("hdca_id", None):
             hdca = self.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
             del kwd["hdca_id"]
             kwd["hdca"] = hdca
@@ -212,6 +147,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         # Ensure ck_size is an integer before passing through to datatypes.
         if ck_size:
             ck_size = int(ck_size)
+        kwd.pop("dataset", None)
+        # `dataset` in kwd would interfere with positional dataset argument of `display_data` method.
         display_data, headers = data.datatype.display_data(
             trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd
         )
@@ -277,7 +214,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 "name": name,
                                 "label": spec.desc,
                                 "options": attributes.options,
-                                "value": attributes.value if attributes.multiple else [attributes.value],
+                                "value": attributes.value,
                             }
                         )
                     elif type(attributes) is form_builder.TextField:
@@ -293,6 +230,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if data.missing_meta():
                 message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 status = "warning"
+            metadata_disable = data.state not in [
+                trans.model.Dataset.states.OK,
+                trans.model.Dataset.states.FAILED_METADATA,
+            ]
             # datatype conversion
             conversion_options = [
                 (f"{convert_id} (using '{convert_name}')", convert_id)
@@ -311,13 +252,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # datatype changing
             datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
             datatype_disable = len(datatype_options) == 0
+            datatype_input_default_value = None
+            current_datatype = trans.app.datatypes_registry.datatypes_by_extension.get(data.ext)
+            if current_datatype and current_datatype.is_datatype_change_allowed():
+                datatype_input_default_value = data.ext
             datatype_inputs = [
                 {
                     "type": "select",
                     "name": "datatype",
                     "label": "New Type",
                     "options": datatype_options,
-                    "value": [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                    "value": datatype_input_default_value,
                     "help": "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.",
                 }
             ]
@@ -325,7 +270,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             permission_disable = True
             permission_inputs = list()
             if trans.user:
-                if data.dataset.actions:
+                if not data.dataset.shareable:
+                    permission_message = "The dataset is stored on private storage to you and cannot be shared."
+                    permission_inputs.append(
+                        {"name": "not_shareable", "type": "hidden", "label": permission_message, "readonly": True}
+                    )
+                elif data.dataset.actions:
                     in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
@@ -371,6 +321,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 "message": message,
                 "status": status,
                 "dataset_id": dataset_id,
+                "metadata_disable": metadata_disable,
                 "attribute_inputs": attribute_inputs,
                 "conversion_inputs": conversion_inputs,
                 "conversion_disable": conversion_disable,
@@ -409,13 +360,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     annotation = sanitize_html(payload.get("annotation"))
                     self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
                 # if setting metadata previously failed and all required elements have now been set, clear the failed state.
-                if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
-                    data._state = None
+                if data.state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                    data.set_metadata_success_state()
                 message = f"Attributes updated. {message}" if message else "Attributes updated."
             else:
                 message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
                 status = "warning"
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         elif operation == "datatype":
             # The user clicked the Save button on the 'Change data type' form
             datatype = payload.get("datatype")
@@ -431,10 +383,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.",
                     )
                 else:
-                    path = data.dataset.file_name
-                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
+                    path = data.dataset.get_file_name()
+                    datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
                         trans.app.datatypes_registry.set_external_metadata_tool,
                         trans,
@@ -461,7 +414,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             payload_permissions = {}
             for key, value in {"DATASET_MANAGE_PERMISSIONS": "manage_ids", "DATASET_ACCESS": "access_ids"}.items():
                 role_ids = util.listify(payload.get(key))
-                payload_permissions[f"{value}[]"] = role_ids
+                decoded_role_ids = list(map(self.decode_id, role_ids))
+                payload_permissions[f"{value}[]"] = decoded_role_ids
 
             self.hda_manager.update_permissions(
                 trans,
@@ -484,7 +438,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if data is None:
             trans.log_event(f"Problem retrieving dataset id ({dataset_id}).")
             return None, self.message_exception(trans, "The dataset id is invalid.")
-        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
+        if dataset_id is not None and data.user and data.user != trans.user:
             trans.log_event(f"User attempted to edit a dataset they do not own (encoded: {dataset_id}, decoded: {id}).")
             return None, self.message_exception(trans, "The dataset id is invalid.")
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans.app.security_agent):
@@ -494,9 +448,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             manage_permissions_action = trans.app.security_agent.get_action(
                 trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
             )
-            permissions = {
-                manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.history.user)]
-            }
+            permissions = {manage_permissions_action: [trans.app.security_agent.get_private_user_role(data.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
         return data, None
 
@@ -523,124 +475,40 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return trans.show_message(message, type=status, use_panels=True)
 
     @web.expose
-    @web.json
-    @web.require_login("use Galaxy datasets")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns dataset's name and link."""
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        return_dict = {
-            "name": dataset.name,
-            "link": url_for(
-                controller="dataset",
-                action="display_by_username_and_slug",
-                username=dataset.history.user.username,
-                slug=trans.security.encode_id(dataset.id),
-            ),
-        }
-        return return_dict
-
-    @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a dataset in a page."""
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset:
-            return f"Embedded Dataset '{dataset.name}'"
-
-    @web.expose
-    @web.require_login("use Galaxy datasets")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Does nothing because datasets do not have an importable/accessible attribute. This method could potentially set another attribute."""
-        return
-
-    @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a dataset asynchronously and return updated community data."""
-
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if not dataset:
-            return trans.show_error_message("The specified dataset does not exist.")
-
-        # Rate dataset.
-        self.rate_item(trans.sa_session, trans.get_user(), dataset, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, dataset)
-
-    @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True):
+    def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True, **kwargs):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
-        id = slug
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset:
-            # Filename used for composite types.
-            if filename:
-                return self.display(trans, dataset_id=slug, filename=filename)
+        dataset = self._check_dataset(trans, slug)
+        if not isinstance(dataset, trans.app.model.DatasetInstance):
+            return dataset
+        # Filename used for composite types.
+        if filename:
+            return self.display(trans, dataset_id=slug, filename=filename)
 
-            truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
-            dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.history.user, dataset)
+        truncated, dataset_data = self.hda_manager.text_data(dataset, preview)
+        dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.user, dataset)
 
-            # If dataset is chunkable, get first chunk.
-            first_chunk = None
-            if dataset.datatype.CHUNKABLE:
-                first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
+        # If dataset is chunkable, get first chunk.
+        first_chunk = None
+        if dataset.datatype.CHUNKABLE:
+            first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
 
-            # If data is binary or an image, stream without template; otherwise, use display template.
-            # TODO: figure out a way to display images in display template.
-            if (
-                isinstance(dataset.datatype, datatypes.binary.Binary)
-                or isinstance(dataset.datatype, datatypes.images.Image)
-                or isinstance(dataset.datatype, datatypes.text.Html)
-            ):
-                trans.response.set_content_type(dataset.get_mime())
-                return open(dataset.file_name, "rb")
-            else:
-                # Get rating data.
-                user_item_rating = 0
-                if trans.get_user():
-                    user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), dataset)
-                    if user_item_rating:
-                        user_item_rating = user_item_rating.rating
-                    else:
-                        user_item_rating = 0
-                ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
-
-                return trans.fill_template_mako(
-                    "/dataset/display.mako",
-                    item=dataset,
-                    item_data=dataset_data,
-                    truncated=truncated,
-                    user_item_rating=user_item_rating,
-                    ave_item_rating=ave_item_rating,
-                    num_ratings=num_ratings,
-                    first_chunk=first_chunk,
-                )
+        # If data is binary or an image, stream without template; otherwise, use display template.
+        # TODO: figure out a way to display images in display template.
+        if (
+            isinstance(dataset.datatype, datatypes.binary.Binary)
+            or isinstance(dataset.datatype, datatypes.images.Image)
+            or isinstance(dataset.datatype, datatypes.text.Html)
+        ):
+            trans.response.set_content_type(dataset.get_mime())
+            return open(dataset.get_file_name(), "rb")
         else:
-            raise web.httpexceptions.HTTPNotFound()
-
-    @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if dataset is None:
-            raise web.httpexceptions.HTTPNotFound()
-        truncated, dataset_data = self.hda_manager.text_data(dataset, preview=True)
-        # Get annotation.
-        dataset.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, dataset)
-        return trans.fill_template_mako(
-            "/dataset/item_content.mako", item=dataset, item_data=dataset_data, truncated=truncated
-        )
+            return trans.fill_template_mako(
+                "/dataset/display.mako",
+                item=dataset,
+                item_data=dataset_data,
+                truncated=truncated,
+                first_chunk=first_chunk,
+            )
 
     @web.expose
     def annotate_async(self, trans, id, new_annotation=None, **kwargs):
@@ -654,7 +522,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), dataset, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
 
     @web.expose
@@ -715,6 +584,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         **kwds,
     ):
         """Access to external display applications"""
+        if None in [app_name, link_name]:
+            return trans.show_error_message("A display application name and link name must be provided.")
+        app_name = unquote_plus(app_name)
+        link_name = unquote_plus(link_name)
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
         for name, value in dict(kwds).items():  # clone kwds because we remove stuff as we go.
@@ -736,10 +609,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             user_roles = []
         # Decode application name and link name
-        app_name = unquote_plus(app_name)
-        link_name = unquote_plus(link_name)
-        if None in [app_name, link_name]:
-            return trans.show_error_message("A display application name and link name must be provided.")
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
             msg = []
             preparable_steps = []
@@ -804,7 +673,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                     ), f"Extra file content requested ({action_param_extra}), but allow_extra_files_access is False."
                                     file_name = os.path.join(value.extra_files_path, action_param_extra)
                                 else:
-                                    file_name = value.file_name
+                                    file_name = value.get_file_name()
                                 content_length = os.path.getsize(file_name)
                                 rval = open(file_name, "rb")
                             except OSError as e:
@@ -827,24 +696,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         msg.append((f"Invalid action provided: {app_action}", "error"))
                 else:
                     if app_action is None:
-                        if trans.history != data.history:
-                            msg.append(
-                                (
-                                    "You must import this dataset into your current history before you can view it at the desired display application.",
-                                    "error",
-                                )
+                        refresh = True
+                        trans.response.status = 202
+                        msg.append(
+                            (
+                                "Launching this display application requires additional datasets to be generated, you can view the status of these jobs below. ",
+                                "info",
                             )
-                        else:
-                            refresh = True
-                            msg.append(
-                                (
-                                    "Launching this display application required additional datasets to be generated, you can view the status of these jobs below. ",
-                                    "info",
-                                )
-                            )
-                            if not display_link.preparing_display():
-                                display_link.prepare_display()
-                            preparable_steps = display_link.get_prepare_steps()
+                        )
+                        if not display_link.preparing_display():
+                            display_link.prepare_display()
+                        preparable_steps = display_link.get_prepare_steps()
                     else:
                         raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
             return trans.fill_template_mako(
@@ -865,19 +727,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         id = None
         try:
             id = self.decode_id(dataset_id)
-            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            assert hda, f"Invalid HDA: {id}"
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in trans.history.datasets, "Data does not belong to current history"
-            # Mark deleted and cleanup
+            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(hda.history)
             hda.mark_deleted()
             hda.clear_associated_files()
             trans.log_event(f"Dataset id {str(id)} marked as deleted")
-            self.hda_manager.stop_creating_job(hda)
-            trans.sa_session.flush()
+            self.hda_manager.stop_creating_job(hda, flush=True)
         except Exception:
             msg = f"HDA deletion failed (encoded: {dataset_id}, decoded: {id})"
             log.exception(msg)
@@ -892,17 +747,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         id = None
         try:
             id = self.decode_id(dataset_id)
-            history = trans.get_history()
-            hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            assert hda and hda.undeletable, f"Invalid HDA: {id}"
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
-            # Mark undeleted
-            hda.mark_undeleted()
-            trans.sa_session.flush()
+            item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(item.history)
+            self.hda_manager.undelete(item)
             trans.log_event(f"Dataset id {str(id)} has been undeleted")
         except Exception:
             msg = f"HDA undeletion failed (encoded: {dataset_id}, decoded: {id})"
@@ -915,22 +762,15 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _unhide(self, trans, dataset_id):
         try:
             id = self.decode_id(dataset_id)
-        except Exception:
-            return False
-        history = trans.get_history()
-        hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        if hda:
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
-            assert topmost_parent in history.datasets, "Data does not belong to current history"
-            # Mark undeleted
-            hda.mark_unhidden()
-            trans.sa_session.flush()
+            item = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            self.hda_manager.error_unless_mutable(item.history)
+            item.mark_unhidden()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.log_event(f"Dataset id {str(id)} has been unhidden")
             return True
-        return False
+        except Exception:
+            return False
 
     def _purge(self, trans, dataset_id):
         message = None
@@ -954,25 +794,25 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             hda.deleted = True
             # HDA is purgeable
             # Decrease disk usage first
-            hda.purge_usage_from_quota(user)
+            hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
             # Mark purged
             hda.purged = True
             trans.sa_session.add(hda)
             trans.log_event(f"HDA id {hda.id} has been purged")
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             # Don't delete anything if there are active HDAs or any LDDAs, even if
             # the LDDAs are deleted.  Let the cleanup scripts get it in the latter
             # case.
             if hda.dataset.user_can_purge:
                 try:
                     hda.dataset.full_delete()
-                    trans.log_event(
-                        f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}"
-                    )
+                    trans.log_event(f"Dataset id {hda.dataset.id} has been purged upon the purge of HDA id {hda.id}")
                     trans.sa_session.add(hda.dataset)
                 except Exception:
                     log.exception(f"Unable to purge dataset ({hda.dataset.id}) on purge of HDA ({hda.id}):")
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         except Exception:
             msg = f"HDA purge failed (encoded: {dataset_id}, decoded: {id})"
             log.exception(msg)
@@ -1111,7 +951,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     new_history.name = new_history_name
                     new_history.user = user
                     trans.sa_session.add(new_history)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     target_history_ids.append(new_history.id)
                 if user:
                     target_histories = [
@@ -1155,12 +996,12 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                 copy.copy_tags_from(user, content)
                         for hist in target_histories:
                             hist.add_pending_items()
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if current_history in target_histories:
                     refresh_frames = ["history"]
                 hist_names_str = ", ".join(
-                    '<a href="%s" target="_top">%s</a>'
-                    % (
+                    '<a href="{}" target="_top">{}</a>'.format(
                         url_for(
                             controller="history", action="switch_to_history", hist_id=trans.security.encode_id(hist.id)
                         ),
@@ -1228,7 +1069,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         if imported:
                             dataset_copy.name = f"imported: {dataset_copy.name}"
                         hist.add_dataset(dataset_copy)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             num_datasets_copied = len(dataset_ids) - invalid_datasets
             done_msg = "%i dataset%s copied to %i histor%s." % (
                 num_datasets_copied,

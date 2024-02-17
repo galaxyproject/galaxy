@@ -1,6 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
+
 import SelectedItems from "./SelectedItems";
 
 const localVue = getLocalVue();
@@ -62,6 +63,17 @@ describe("History SelectedItems", () => {
         await wrapper.setProps({ scopeKey: "different-scope" });
 
         expectSelectionDisabled();
+    });
+
+    it("should discard (but not disable) the current selection on `reset`", async () => {
+        const numberOfExpectedItems = 3;
+        await selectSomeItemsManually(numberOfExpectedItems);
+        expect(slotProps.selectionSize).toBe(numberOfExpectedItems);
+
+        await resetSelection();
+
+        expect(slotProps.selectionSize).toBe(0);
+        expectSelectionEnabled();
     });
 
     describe("Query Selection Mode", () => {
@@ -169,6 +181,12 @@ describe("History SelectedItems", () => {
         const { setSelected } = slotProps;
         expect(setSelected).toBeInstanceOf(Function);
         await setSelected(item, false);
+    }
+
+    async function resetSelection() {
+        const { resetSelection } = slotProps;
+        expect(resetSelection).toBeInstanceOf(Function);
+        resetSelection();
     }
 
     async function selectAllItemsInCurrentQuery(loadedItems) {

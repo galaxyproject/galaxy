@@ -1,6 +1,6 @@
 <template>
     <div v-if="hasDetails">
-        <h3>Details</h3>
+        <h4 class="h-md">Details</h4>
         <div v-if="hasMessages" id="dataset-error-job-messages">
             <p>Execution resulted in the following messages:</p>
             <div v-for="(jobMessage, index) in jobMessages" :key="index">

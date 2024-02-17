@@ -35,20 +35,22 @@ def mock_init_dburl(mock_init, monkeypatch):
 
 
 def test_load_config_from_schema(mock_init):
+    # If the schema has a default value for a property foo, that value will be
+    # assigned to config.foo. Otherwise, the value of config.foo will be None.
     config = BaseAppConfiguration()
 
     assert len(config._raw_config) == 6
-    assert config._raw_config["property1"] == "a"
-    assert config._raw_config["property2"] == 1
-    assert config._raw_config["property3"] == 1.0
-    assert config._raw_config["property4"] is True
-    assert config._raw_config["property5"] is None
-    assert config._raw_config["property6"] is None
+    assert config.property1 == "a"
+    assert config.property2 == 1
+    assert config.property3 == 1.0
+    assert config.property4 is True
+    assert config.property5 is None
+    assert config.property6 is None
 
-    assert type(config._raw_config["property1"]) is str
-    assert type(config._raw_config["property2"]) is int
-    assert type(config._raw_config["property3"]) is float
-    assert type(config._raw_config["property4"]) is bool
+    assert isinstance(config.property1, str)
+    assert isinstance(config.property2, int)
+    assert isinstance(config.property3, float)
+    assert isinstance(config.property4, bool)
 
 
 def test_update_raw_config_from_kwargs(mock_init):
@@ -62,10 +64,10 @@ def test_update_raw_config_from_kwargs(mock_init):
     assert config._raw_config["property5"] is None  # no change
     assert config._raw_config["property6"] is None  # no change
 
-    assert type(config._raw_config["property1"]) is str
-    assert type(config._raw_config["property2"]) is int
-    assert type(config._raw_config["property3"]) is float
-    assert type(config._raw_config["property4"]) is bool
+    assert isinstance(config._raw_config["property1"], str)
+    assert isinstance(config._raw_config["property2"], int)
+    assert isinstance(config._raw_config["property3"], float)
+    assert isinstance(config._raw_config["property4"], bool)
 
 
 def test_update_raw_config_from_string_kwargs(mock_init):
@@ -78,10 +80,10 @@ def test_update_raw_config_from_string_kwargs(mock_init):
     assert config._raw_config["property3"] == 2.0  # updated
     assert config._raw_config["property4"] is False  # updated
 
-    assert type(config._raw_config["property1"]) is str
-    assert type(config._raw_config["property2"]) is int
-    assert type(config._raw_config["property3"]) is float
-    assert type(config._raw_config["property4"]) is bool
+    assert isinstance(config._raw_config["property1"], str)
+    assert isinstance(config._raw_config["property2"], int)
+    assert isinstance(config._raw_config["property3"], float)
+    assert isinstance(config._raw_config["property4"], bool)
 
 
 def test_update_raw_config_from_kwargs_with_none(mock_init):
@@ -109,7 +111,7 @@ def test_update_raw_config_from_kwargs_falsy_not_none(mock_init):
     config = BaseAppConfiguration(property1=0)
 
     assert config._raw_config["property1"] == "0"  # updated
-    assert type(config._raw_config["property1"]) is str  # and converted to str
+    assert isinstance(config._raw_config["property1"], str)  # and converted to str
 
 
 def test_unset_renamed_option_set_by_old_option(mock_init, monkeypatch):

@@ -71,11 +71,11 @@ export function matchCase(input, value) {
     return -1;
 }
 
-/** Match server validation response to highlight errors
+/** Match server validation response to highlight inputs
  * @param{dict}   index     - Index of input elements
- * @param{dict}   response  - Nested dictionary with error messages
+ * @param{dict}   response  - Nested dictionary with error/warning messages
  */
-export function matchErrors(index, response) {
+export function matchInputs(index, response) {
     var result = {};
     function search(id, head) {
         if (typeof head === "string") {
@@ -104,7 +104,7 @@ export function matchErrors(index, response) {
  * @param{dict}   index     - Index of input elements
  * @param{dict}   values    - Dictionary of parameter values
  */
-export function validateInputs(index, values) {
+export function validateInputs(index, values, allowEmptyValueOnRequiredInput = false) {
     let batchN = -1;
     let batchSrc = null;
     for (const inputId in values) {
@@ -113,8 +113,10 @@ export function validateInputs(index, values) {
         if (!inputDef || inputDef.step_linked) {
             continue;
         }
-        if (inputValue == null && !inputDef.optional && inputDef.type != "hidden") {
-            return [inputId, "Please provide a value for this option."];
+        if (!inputDef.optional && inputDef.type != "hidden") {
+            if (inputValue == null || (allowEmptyValueOnRequiredInput && inputValue === "")) {
+                return [inputId, "Please provide a value for this option."];
+            }
         }
         if (inputDef.wp_linked && inputDef.text_value == inputValue) {
             return [inputId, "Please provide a value for this workflow parameter."];

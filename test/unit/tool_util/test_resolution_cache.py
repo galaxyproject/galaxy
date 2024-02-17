@@ -27,6 +27,12 @@ def resolution_cache(tmpdir):
     return resolution_cache
 
 
+def test_resolution_cache_namespace_missing():
+    resolution_cache = ResolutionCache()
+    resolution_cache.mulled_resolution_cache = {"a": "b"}
+    assert not _namespace_has_repo_name("bioconda", "mytool3000", resolution_cache=resolution_cache)
+
+
 def test_resolution_cache_namepace_has_repo_name(resolution_cache):
     resolution_cache.mulled_resolution_cache[NAMESPACE_HAS_REPO_NAME_KEY] = ["mytool3000"]
     assert _namespace_has_repo_name("bioconda", "mytool3000", resolution_cache=resolution_cache)

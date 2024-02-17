@@ -25,7 +25,6 @@ def solid2sanger(quality_string, min_qual=0):
                 qv = "0"
             if int(qv) < min_qual:
                 return False
-                break
             sanger += chr(int(qv) + 33)
         except Exception:
             pass

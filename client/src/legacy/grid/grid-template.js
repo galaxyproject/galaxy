@@ -1,5 +1,6 @@
 // dependencies
-import Utils from "utils/utils";
+import { sanitize } from "dompurify";
+
 // grid view templates
 export default {
     // template
@@ -281,7 +282,7 @@ export default {
                     <input type="hidden" id="operation" name="operation" value="">
                     <td></td>
                     <td colspan="100">
-                        For <span class="grid-selected-count"></span> selected items: 
+                        For <span class="grid-selected-count"></span> selected items:
             `;
 
             // configure buttons for operations
@@ -536,7 +537,7 @@ export default {
 
     // template for filter items
     filter_element: function (filter_key, filter_value) {
-        filter_value = Utils.sanitize(filter_value);
+        filter_value = sanitize(filter_value);
         return `<span class="text-filter-val">${filter_value}<a href="javascript:void(0);" filter_key="${filter_key}" filter_val="${filter_value}"><i class="fa fa-times" style="padding-left: 5px; padding-bottom: 6px;"/></a></span>`;
     },
 };

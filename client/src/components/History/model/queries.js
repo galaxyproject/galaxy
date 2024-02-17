@@ -45,7 +45,7 @@ function buildQueryStringFrom(filters) {
  * @param {Boolean} recursive Scorch the earth?
  */
 export async function deleteContent(content, deleteParams = {}) {
-    const defaults = { purge: false, recursive: false };
+    const defaults = { purge: false, recursive: false, stop_job: true };
     const params = Object.assign({}, defaults, deleteParams);
     const { history_id, history_content_type, id } = content;
     const url = `api/histories/${history_id}/contents/${history_content_type}s/${id}`;
@@ -65,6 +65,20 @@ export async function updateContentFields(content, newFields = {}) {
     return doResponse(response);
 }
 
+/** Get all objects that match filters in a history
+ *
+ * @param {string} historyId
+ * @param {Object} filters
+ * @param {string} type
+ *
+ */
+export async function getHistoryContent(historyId, filters = {}, type = "dataset") {
+    const filterQuery = buildQueryStringFrom(filters);
+    const url = `api/histories/${historyId}/contents/${type}s?v=dev&${filterQuery}`;
+    const response = await axios.get(prependPath(url));
+    return doResponse(response);
+}
+
 /**
  * Performs an operation on a specific set of items or all the items
  * matching the filters.
@@ -75,17 +89,18 @@ export async function updateContentFields(content, newFields = {}) {
  * @param {String} operation The operation to perform on all items
  * @param {Object} filters The filter query parameters
  * @param {Object[]} items The set of items to process as `{ id, history_content_type }`
+ * @param {Object} params Optional extra parameters passed to the operation
  */
-export async function bulkUpdate(history, operation, filters, items = []) {
+export async function bulkUpdate(history, operation, filters, items = [], params = null) {
     const { id } = history;
     const filterQuery = buildQueryStringFrom(filters);
     const url = `api/histories/${id}/contents/bulk?${filterQuery}`;
     const payload = {
         operation,
         items,
+        params,
     };
     const response = await axios.put(prependPath(url), payload);
-    console.debug(`Submitted request to ${operation} selected content in bulk.`, response);
     return doResponse(response);
 }
 

@@ -3,6 +3,7 @@ from datetime import datetime
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
+from galaxy.model.base import transaction
 from ._safe_eval import safe_eval
 
 __all__ = ("failure",)
@@ -15,47 +16,6 @@ MESSAGES = dict(
     unknown_error="it encountered an unknown error",
     tool_detected="it encountered a tool detected error condition",
 )
-
-
-def eval_condition(condition, job_state):
-    runner_state = getattr(job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
-
-    attempt = 1
-    now = datetime.utcnow()
-    last_running_state = None
-    last_queued_state = None
-    for state in job_state.job_wrapper.get_job().state_history:
-        if state.state == model.Job.states.RUNNING:
-            last_running_state = state
-        elif state.state == model.Job.states.QUEUED:
-            last_queued_state = state
-        elif state.state == model.Job.states.RESUBMITTED:
-            attempt = attempt + 1
-
-    seconds_running = 0
-    seconds_since_queued = 0
-    if last_running_state:
-        seconds_running = (now - last_running_state.create_time).total_seconds()
-    if last_queued_state:
-        seconds_since_queued = (now - last_queued_state.create_time).total_seconds()
-
-    condition_locals = {
-        "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
-        "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
-        "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
-        "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
-        "any_failure": True,
-        "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
-        "attempt": attempt,
-        "seconds_running": seconds_running,
-        "seconds_since_queued": seconds_since_queued,
-    }
-
-    # Small optimization to eliminate the need to parse AST and eval for simple variables.
-    if condition in condition_locals:
-        return condition_locals[condition]
-    else:
-        return safe_eval(condition, condition_locals)
 
 
 def failure(app, job_runner, job_state):
@@ -118,14 +78,14 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         new_destination = job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination)
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
-        job_state.job_wrapper.invalidate_external_metadata()
         job = job_state.job_wrapper.get_job()
         if resubmit.get("handler", None):
             log.debug("%s Job reassigned to handler %s", job_log_prefix, resubmit["handler"])
             job.set_handler(resubmit["handler"])
             job_runner.sa_session.add(job)
             # Is this safe to do here?
-            job_runner.sa_session.flush()
+            with transaction(job_runner.sa_session):
+                job_runner.sa_session.commit()
         # Cache the destination to prevent rerunning dynamic after
         # resubmit
         job_state.job_wrapper.job_runner_mapper.cached_job_destination = new_destination

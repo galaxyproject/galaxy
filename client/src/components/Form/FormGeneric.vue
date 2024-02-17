@@ -25,12 +25,13 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import { submitData } from "./services";
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { visitInputs } from "components/Form/utilities";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
+import { visitInputs } from "components/Form/utilities";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { withPrefix } from "utils/redirect";
+
+import { submitData } from "./services";
 
 export default {
     components: {
@@ -99,7 +100,7 @@ export default {
             this.formData = formData;
         },
         onCancel() {
-            window.location = `${getAppRoot()}${this.cancelRedirect}`;
+            window.location = withPrefix(this.cancelRedirect);
         },
         onSubmit() {
             submitData(this.url, this.formData).then((response) => {
@@ -115,7 +116,7 @@ export default {
                 }
                 if (this.redirect) {
                     const urlParams = new URLSearchParams(params);
-                    window.location = `${getAppRoot()}${this.redirect}?${urlParams.toString()}`;
+                    window.location = withPrefix(`${this.redirect}?${urlParams.toString()}`);
                 } else {
                     const replaceParams = {};
                     visitInputs(response.inputs, (input, name) => {
@@ -132,7 +133,7 @@ export default {
         showMessage(message, variant = "success") {
             this.messageText = message;
             this.messageVariant = variant;
-            document.querySelector(".center-panel").scrollTop = 0;
+            document.querySelector("#center").scrollTop = 0;
         },
     },
 };

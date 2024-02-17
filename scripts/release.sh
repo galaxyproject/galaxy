@@ -44,7 +44,7 @@ PUSH_BRANCHES=()
 WORKING_DIR_CLEAN=false
 ERROR=false
 
-NEXT_RELEASE_TEMPLATE="import datetime; print((datetime.datetime.strptime('RELEASE_CURR', '%y.%m').date() + datetime.timedelta(days=(31 * 4))).strftime('%y.%m'))"
+NEXT_RELEASE_TEMPLATE="import packaging.version as pv; v = pv.parse('RELEASE_CURR'); print(str(v.release[0]) + '.' + str(v.release[1] + 1))"
 PACKAGE_VERSION_TEMPLATE="import packaging.version; print('.'.join(map(str, packaging.version.parse('VERSION').release)))"
 PACKAGE_DEV_VERSION_TEMPLATE="import packaging.version; print(packaging.version.parse('VERSION'))"
 
@@ -397,7 +397,7 @@ function increment_minor() {
             [ "$RELEASE_TYPE" != 'rc' ] || {
                 log_error "Cannot create rc after release (current version: ${RELEASE_CURR}.0)";
                 exit 1; }
-            echo '1.dev0'
+            echo '0.dev0'
             ;;
         *)
             log_error "Don't know how to increment minor version: ${minor}"
@@ -444,7 +444,7 @@ function packages_make_all() {
     (
         cd packages/
         for dir in *; do
-            [ ! -d "$dir" -o ! -f "${dir}/setup.py" ] && continue
+            [ ! -d "$dir" -o ! -f "${dir}/setup.cfg" ] && continue
             # can't use log_exec here because we want to capture output
             echo + make -C "$dir" "$@" 1>&2
             make -C "$dir" "$@" >"${dir}/make-${1}.log" 2>&1
@@ -460,9 +460,9 @@ function update_package_versions() {
     (
         cd packages/
         for dir in *; do
-            project_file="${dir}/galaxy/project_galaxy_${dir}.py"
+            project_file="${dir}/galaxy/setup.cfg"
             if [ -f "${project_file}" ]; then
-                sed_inplace -e "s/^__version__ =.*/__version__ = \"${package_version}\"/" "$project_file"
+                sed_inplace -e "s/^version =.*/version = \"${package_version}\"/" "$project_file"
             fi
         done
     )

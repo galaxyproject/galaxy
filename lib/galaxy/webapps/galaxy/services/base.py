@@ -1,6 +1,10 @@
+import mimetypes
+from tempfile import NamedTemporaryFile
 from typing import (
+    Any,
     cast,
     List,
+    NamedTuple,
     Optional,
 )
 
@@ -18,10 +22,20 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.model_stores import create_objects_from_store
 from galaxy.model import User
+from galaxy.model.store import (
+    get_export_store_factory,
+    ModelExportStore,
+)
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageTarget,
+)
+from galaxy.util import ready_name_for_url
 
 
 def ensure_celery_tasks_enabled(config):
@@ -29,6 +43,10 @@ def ensure_celery_tasks_enabled(config):
         raise ConfigDoesNotAllowException(
             "This operation requires asynchronous tasks to be enabled on the Galaxy server and they are not, please contact the server admin."
         )
+
+
+class SecurityNotProvidedError(Exception):
+    pass
 
 
 class ServiceBase:
@@ -43,16 +61,24 @@ class ServiceBase:
        the required parameters and outputs of each operation.
     """
 
-    def __init__(self, security: IdEncodingHelper):
-        self.security = security
+    def __init__(self, security: Optional[IdEncodingHelper] = None):
+        self._security = security
 
-    def decode_id(self, id: EncodedDatabaseIdField) -> int:
+    @property
+    def security(self) -> IdEncodingHelper:
+        if self._security is None:
+            raise SecurityNotProvidedError(
+                "Security encoding helper must be set in the service constructor to encode/decode ids."
+            )
+        return self._security
+
+    def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
         """Decodes a previously encoded database ID."""
-        return decode_with_security(self.security, id)
+        return decode_with_security(self.security, id, kind=kind)
 
-    def encode_id(self, id: int) -> EncodedDatabaseIdField:
+    def encode_id(self, id: int, kind: Optional[str] = None) -> EncodedDatabaseIdField:
         """Encodes a raw database ID."""
-        return encode_with_security(self.security, id)
+        return encode_with_security(self.security, id, kind=kind)
 
     def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
         """
@@ -102,6 +128,51 @@ class ServiceBase:
         return cast(User, trans.user)
 
 
+class ServedExportStore(NamedTuple):
+    export_store: ModelExportStore
+    export_target: Any
+
+
+def model_store_storage_target(
+    short_term_storage_allocator: ShortTermStorageAllocator, file_name: str, model_store_format: str
+) -> ShortTermStorageTarget:
+    cleaned_filename = ready_name_for_url(file_name)
+    filename_with_extension = f"{cleaned_filename}.{model_store_format}"
+    mime_type = mimetypes.guess_type(filename_with_extension)[0] or "application/octet-stream"
+
+    return short_term_storage_allocator.new_target(
+        filename_with_extension,
+        mime_type,
+    )
+
+
+class ServesExportStores:
+    def serve_export_store(self, app, download_format: str):
+        export_target = NamedTemporaryFile("wb")
+        export_store = get_export_store_factory(app, download_format)(export_target.name)
+        return ServedExportStore(export_store, export_target)
+
+
+class ConsumesModelStores:
+    def create_objects_from_store(
+        self,
+        trans,
+        payload,
+        history=None,
+        for_library=False,
+    ):
+        galaxy_user = None
+        if isinstance(trans.user, User):
+            galaxy_user = trans.user
+        return create_objects_from_store(
+            app=trans.app,
+            galaxy_user=galaxy_user,
+            payload=payload,
+            history=history,
+            for_library=for_library,
+        )
+
+
 def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
     name = None
     try:
@@ -117,7 +188,7 @@ def async_task_summary(async_result: AsyncResult) -> AsyncTaskResultSummary:
         pass
 
     return AsyncTaskResultSummary(
-        id=async_result.id,
+        id=str(async_result.id),
         ignored=async_result.ignored,
         name=name,
         queue=queue,

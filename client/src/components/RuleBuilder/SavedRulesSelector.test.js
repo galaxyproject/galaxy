@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+import { getLocalVue } from "tests/jest/helpers";
 
 const localVue = getLocalVue();
 
@@ -48,9 +48,10 @@ describe("SavedRulesSelector", () => {
             ],
         };
         const ruleHeaders = ["A"];
+        const dateTime = new Date().toISOString();
         await wrapper.setProps({
             user: "test_user",
-            savedRules: [{ rule: JSON.stringify(testRules) }],
+            savedRules: [{ dateTime: dateTime, rule: JSON.stringify(testRules) }],
             ruleColHeaders: [ruleHeaders],
         });
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");

@@ -4,13 +4,11 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
-import json
+
 import logging
-import os
 import sys
 from typing import (
     Any,
-    cast,
     Dict,
     List,
 )
@@ -19,13 +17,9 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
-from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.structured_app import StructuredApp
-from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
-
-VERSION_JSON_FILE = "version.json"
 
 
 class ConfigurationManager:
@@ -41,32 +35,24 @@ class ConfigurationManager:
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.model_dump())
 
     def version(self) -> Dict[str, Any]:
         version_info = {
             "version_major": self._app.config.version_major,
             "version_minor": self._app.config.version_minor,
         }
-        # Try loading extra version info
-        json_file = os.path.join(self._app.config.root, VERSION_JSON_FILE)  # TODO: add this to schema
-        json_file = os.environ.get("GALAXY_VERSION_JSON_FILE", json_file)
-        try:
-            with open(json_file) as f:
-                extra_info = json.load(f)
-        except OSError:
-            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
-        else:
-            version_info["extra"] = extra_info
+        if self._app.config.version_extra:
+            version_info["extra"] = self._app.config.version_extra
         return version_info
 
     def decode_id(
         self,
-        encoded_id: EncodedDatabaseIdField,
+        encoded_id: str,
     ) -> Dict[str, int]:
         # Handle the special case for library folders
         if (len(encoded_id) % 16 == 1) and encoded_id.startswith("F"):
-            encoded_id = cast(EncodedDatabaseIdField, encoded_id[1:])
+            encoded_id = encoded_id[1:]
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
@@ -126,19 +112,19 @@ class ConfigSerializer(base.ModelSerializer):
         def _config_is_truthy(item, key, **context):
             return True if item.get(key) else False
 
+        object_store = self.app.object_store
         self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
             "brand": _use_config,
-            "display_galaxy_brand": _use_config,
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
             "terms_url": _use_config,
-            "myexperiment_target_url": _use_config,
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
+            "citations_export_message_html": _use_config,
             "support_url": _use_config,
             "quota_url": _use_config,
             "helpsite_url": _use_config,
@@ -159,6 +145,7 @@ class ConfigSerializer(base.ModelSerializer):
             "prefer_custos_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
+            "post_user_logout_href": _use_config,
             "datatypes_disable_auto": _use_config,
             "allow_user_dataset_purge": _defaults_to(False),  # schema default is True
             "ga_code": _use_config,
@@ -169,11 +156,10 @@ class ConfigSerializer(base.ModelSerializer):
             "matomo_site_id": _use_config,
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
-            "use_legacy_history": _use_config,
+            "enable_beacon_integration": _use_config,
             "simplified_workflow_run_ui": _use_config,
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,
-            "simplified_workflow_run_ui": _use_config,
             "has_user_tool_filters": _defaults_to(False),
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
@@ -183,15 +169,21 @@ class ConfigSerializer(base.ModelSerializer):
             "ftp_upload_site": _use_config,
             "version_major": _defaults_to(None),
             "version_minor": _defaults_to(None),
+            "version_extra": _use_config,
             "require_login": _use_config,
             "inactivity_box_content": _use_config,
             "visualizations_visible": _use_config,
             "interactivetools_enable": _use_config,
             "aws_estimate": _use_config,
+            "carbon_emission_estimates": _defaults_to(True),
+            "carbon_intensity": _use_config,
+            "geographical_server_location_name": _use_config,
+            "geographical_server_location_code": _use_config,
+            "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
-            "server_startttime": lambda item, key, **context: server_starttime,
+            "server_starttime": lambda item, key, **context: self.app.server_starttime,
             "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
             "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
             "registration_warning_message": _use_config,
@@ -201,6 +193,7 @@ class ConfigSerializer(base.ModelSerializer):
             "python": _defaults_to((sys.version_info.major, sys.version_info.minor)),
             "select_type_workflow_threshold": _use_config,
             "file_sources_configured": lambda item, key, **context: self.app.file_sources.custom_sources_configured,
+            "toolbox_auto_sort": _use_config,
             "panel_views": lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
             "default_panel_view": _use_config,
             "upload_from_form_button": _use_config,
@@ -208,8 +201,26 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "quota_source_labels": lambda item, key, **context: list(
+                object_store.get_quota_source_map().get_quota_source_labels()
+            ),
+            "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
+            "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
+            "themes": _use_config,
+            "tool_training_recommendations": _use_config,
+            "tool_training_recommendations_link": _use_config,
+            "tool_training_recommendations_api_url": _use_config,
+            "enable_notification_system": _use_config,
+            "instance_resource_url": _use_config,
+            "instance_access_url": _use_config,
+            "organization_name": _use_config,
+            "organization_url": _use_config,
+            "fixed_delegated_auth": _defaults_to(False),
+            "help_forum_api_url": _use_config,
+            "enable_help_forum_tool_panel_integration": _use_config,
         }
 
 
@@ -230,5 +241,9 @@ class AdminConfigSerializer(ConfigSerializer):
                 "user_library_import_dir": _defaults_to(None),
                 "allow_library_path_paste": _defaults_to(False),
                 "allow_user_deletion": _defaults_to(False),
+                "tool_shed_urls": self._serialize_tool_shed_urls,
             }
         )
+
+    def _serialize_tool_shed_urls(self, item: Any, key: str, **context) -> List[str]:
+        return list(self.app.tool_shed_registry.tool_sheds.values()) if self.app.tool_shed_registry else []

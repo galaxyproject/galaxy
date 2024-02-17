@@ -9,22 +9,19 @@ There are two ways in which you can configure logging for Galaxy servers:
 1. Basic/automatic configuration with control over log level and log destination (standard output or a named log file).
 2. More complex configuration using the Python :mod:`logging` module's :func:`logging.config.dictConfig` or :func:`logging.config.fileConfig`.
 
-By default, Galaxy logs all messages to standard output at the ``DEBUG`` logging level, unless the ``--daemon`` argument
-is passed to ``run.sh``, in which case, output is logged to a location configured in `gravity`_.
-
-Gravity and related terminology are explained in detail in the :doc:`Scaling and Load Balancing <scaling>` documentation.
-
 Basic Configuration
 ----------------------------
 
-Basic logging configuration can be used to modify the level of log messages and the file to which Galaxy logs. The level
-is controlled by the ``log_level`` configuration option.
+Basic logging configuration can be used to modify the level of log messages and the file to which Galaxy logs.
 
-If not set, Galaxy logs all messages at the ``DEBUG`` level (versions prior to 18.01 defaulted to ``INFO`` if unset, but
-the default config file shipped with ``log_level`` explicitly set to ``DEBUG`` for development purposes).
+The logging level is controlled by the ``log_level`` configuration option. By default, Galaxy logs all messages at the
+``DEBUG`` level.
 
-Galaxy logs all messages to standard output by default if running in the foreground. If running in the background, the
-log is written to a location configured in `gravity`_.
+Galaxy logs all messages to standard output by default if running in the foreground. If running in the background (e.g.
+by passing the ``--daemon`` argument to ``run.sh``), the log is written to a location configured in
+`gravity <https://github.com/galaxyproject/gravity/>`_.
+
+Gravity and related terminology are explained in detail in the :doc:`Scaling and Load Balancing <scaling>` documentation.
 
 **Setting the log level:**
 
@@ -45,6 +42,20 @@ To change the log file name or location, use the ``$GALAXY_LOG`` environment var
 
     $ GALAXY_LOG=/path/to/galaxy/logfile sh run.sh --daemon
 
+It is also possible to specify the path to the log file using the ``log_destination`` configuration option in
+``galaxy.yml``. Additionally, it is possible to automatically rotate logs once the log file reaches a given size, using
+the ``log_rotate_size`` and ``log_rotate_count`` options, which control the size at which the log is rotated, and the
+number of rotated logs to keep, respectively:
+
+.. code-block:: yaml
+
+    galaxy:
+        # Set log file path
+        log_destination: /srv/galaxy/log/galaxy.log
+        # Rotate once log reaches 100 MB
+        log_rotate_size: 100 MB
+        # Keep the 10 most recent log files
+        log_rotate_count: 10
 
 Advanced Configuration
 ----------------------------

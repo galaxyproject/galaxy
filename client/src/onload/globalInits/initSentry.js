@@ -8,10 +8,16 @@ import * as Sentry from "@sentry/browser";
  */
 export const initSentry = (galaxy, config) => {
     console.log("initSentry");
-
     if (config.sentry) {
         const { sentry_dsn_public, email } = config.sentry;
-        Sentry.init({ dsn: sentry_dsn_public });
+        let release = galaxy.config.version_major;
+        if (galaxy.config.version_minor) {
+            release += `.${galaxy.config.version_minor}`;
+        }
+        Sentry.init({
+            dsn: sentry_dsn_public,
+            release: release,
+        });
         if (email) {
             Sentry.configureScope((scope) => {
                 scope.setUser({

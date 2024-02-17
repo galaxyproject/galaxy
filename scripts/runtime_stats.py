@@ -111,8 +111,8 @@ def parse_arguments():
 
     if args.debug:
         print("Got options:")
-        for i in vars(args).items():
-            print("%s: %s" % i)
+        for key, value in vars(args).items():
+            print(f"{key}: {value}")
 
     return args
 
@@ -120,7 +120,6 @@ def parse_arguments():
 def query(
     tool_id=None, user=None, like=None, source="metrics", connect_args=None, debug=False, min=-1, max=-1, **kwargs
 ):
-
     connect_arg_str = ""
     for k, v in connect_args.items():
         connect_arg_str += f"{k}={v}"

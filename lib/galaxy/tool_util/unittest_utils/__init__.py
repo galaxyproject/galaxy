@@ -1,3 +1,9 @@
+from typing import (
+    Callable,
+    Dict,
+    Optional,
+    Union,
+)
 from unittest.mock import Mock
 
 
@@ -9,3 +15,14 @@ def mock_trans(has_user=True, is_admin=False):
     else:
         trans.user = None
     return trans
+
+
+def t_data_downloader_for(content: Union[Dict[Optional[str], bytes], bytes]) -> Callable[[str], bytes]:
+    def get_content(filename: Optional[str]) -> bytes:
+        if isinstance(content, dict):
+            assert filename in content, f"failed to find {filename} in {content}"
+            return content[filename]
+        else:
+            return content
+
+    return get_content

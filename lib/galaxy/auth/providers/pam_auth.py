@@ -3,6 +3,7 @@ Created on 13/07/2015
 
 Author Peter van Heusden (pvh@sanbi.ac.za)
 """
+
 import logging
 import shlex
 
@@ -10,7 +11,7 @@ from galaxy.util import (
     commands,
     string_as_bool,
 )
-from ..providers import AuthProvider
+from . import AuthProvider
 
 log = logging.getLogger(__name__)
 
@@ -55,10 +56,9 @@ Configuration example (for internal authentication, use email for user details):
 
 
 class PAM(AuthProvider):
-
     plugin_type = "PAM"
 
-    def authenticate(self, email, username, password, options):
+    def authenticate(self, email, username, password, options, request):
         pam_username = None
         auto_register_username = None
         auto_register_email = None
@@ -156,8 +156,8 @@ class PAM(AuthProvider):
             )
             return False, "", ""
 
-    def authenticate_user(self, user, password, options):
-        return self.authenticate(user.email, user.username, password, options)[0]
+    def authenticate_user(self, user, password, options, request):
+        return self.authenticate(user.email, user.username, password, options, request)[0]
 
 
 __all__ = ("PAM",)

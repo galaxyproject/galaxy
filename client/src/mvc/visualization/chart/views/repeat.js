@@ -1,12 +1,12 @@
 /** This class creates a ui component which enables the dynamic creation of portlets */
-import _l from "utils/localization";
-import _ from "underscore";
-import $ from "jquery";
 import Backbone from "backbone";
-import { getGalaxyInstance } from "app";
+import $ from "jquery";
+import _ from "underscore";
+import _l from "utils/localization";
 import Utils from "utils/utils";
-import Portlet from "mvc/ui/ui-portlet";
-import Ui from "mvc/ui/ui-misc";
+
+import Ui from "./misc";
+import Portlet from "./portlet";
 
 export var View = Backbone.View.extend({
     initialize: function (options) {
@@ -42,9 +42,8 @@ export var View = Backbone.View.extend({
 
     /** Add new repeat block */
     add: function (options) {
-        const Galaxy = getGalaxyInstance();
         if (!options.id || this.list[options.id]) {
-            Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
+            console.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
         var button_delete = new Ui.Button({
@@ -75,9 +74,8 @@ export var View = Backbone.View.extend({
 
     /** Delete repeat block */
     del: function (id) {
-        const Galaxy = getGalaxyInstance();
         if (!this.list[id]) {
-            Galaxy.emit.debug("form-repeat::del()", "Invalid repeat block id.");
+            console.debug("form-repeat::del()", "Invalid repeat block id.");
             return;
         }
         this.$list.find(`#${id}`).remove();

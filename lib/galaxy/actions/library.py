@@ -1,6 +1,7 @@
 """
 Contains library functions
 """
+
 import json
 import logging
 import os.path
@@ -16,7 +17,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.model import LibraryDataset
+from galaxy.model import (
+    LibraryDataset,
+    LibraryFolder,
+)
+from galaxy.model.base import transaction
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -88,7 +93,7 @@ class LibraryActions:
     Mixin for controllers that provide library functionality.
     """
 
-    def _upload_dataset(self, trans, folder_id: str, replace_dataset: Optional[LibraryDataset] = None, **kwd):
+    def _upload_dataset(self, trans, folder_id: int, replace_dataset: Optional[LibraryDataset] = None, **kwd):
         # Set up the traditional tool state/params
         cntrller = "api"
         tool_id = "upload1"
@@ -213,18 +218,17 @@ class LibraryActions:
         (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
-        for (path, name, folder) in files_and_folders:
+        for path, name, folder in files_and_folders:
             uploaded_datasets.append(
                 self._make_library_uploaded_dataset(trans, params, name, path, "path_paste", library_bunch, folder)
             )
         return uploaded_datasets, 200, None
 
     def _get_path_files_and_folders(self, params, preserve_dirs):
-        problem_response = self._check_path_paste_params(params)
-        if problem_response:
+        if problem_response := self._check_path_paste_params(params):
             return problem_response
         files_and_folders = []
-        for (line, path) in self._paths_list(params):
+        for line, path in self._paths_list(params):
             line_files_and_folders = self._get_single_path_files_and_folders(line, path, preserve_dirs)
             files_and_folders.extend(line_files_and_folders)
         return files_and_folders, None, None
@@ -257,7 +261,7 @@ class LibraryActions:
             response_code = 400
             return None, response_code, message
         bad_paths = []
-        for (_, path) in self._paths_list(params):
+        for _, path in self._paths_list(params):
             if not os.path.exists(path):
                 bad_paths.append(path)
         if bad_paths:
@@ -299,30 +303,27 @@ class LibraryActions:
         if link_data_only == "link_to_files":
             uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return uploaded_dataset
 
-    def _create_folder(self, trans, parent_id, library_id, **kwd):
+    def _create_folder(self, trans, parent_id: int, **kwd):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        try:
-            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(
-                trans.security.decode_id(parent_id)
-            )
-        except Exception:
-            parent_folder = None
+        parent_folder = trans.sa_session.get(LibraryFolder, parent_id)
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
         self._check_access(trans, is_admin, parent_folder, current_user_roles)
         self._check_add(trans, is_admin, parent_folder, current_user_roles)
-        new_folder = trans.app.model.LibraryFolder(name=kwd.get("name", ""), description=kwd.get("description", ""))
+        new_folder = LibraryFolder(name=kwd.get("name", ""), description=kwd.get("description", ""))
         # We are associating the last used genome build with folders, so we will always
         # initialize a new folder with the first dbkey in genome builds list which is currently
         # ?    unspecified (?)
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return 200, dict(created=new_folder)
@@ -335,7 +336,7 @@ class LibraryActions:
                 raise ObjectNotFound(message)
             elif (
                 not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset)
-                and item.history.user == trans.user
+                and item.user == trans.user
             ):
                 message = f"You do not have permission to access the history dataset with id ({str(item.id)})."
                 raise ItemAccessibilityException(message)
@@ -349,7 +350,7 @@ class LibraryActions:
             ):
                 if isinstance(item, trans.model.Library):
                     item_type = "data library"
-                elif isinstance(item, trans.model.LibraryFolder):
+                elif isinstance(item, LibraryFolder):
                     item_type = "folder"
                 else:
                     item_type = "(unknown item type)"

@@ -5,7 +5,13 @@ from .framework import (
 )
 
 
-class CustomBuildsTestcase(SharedStateSeleniumTestCase):
+class TestCustomBuilds(SharedStateSeleniumTestCase):
+    user_email: str
+    build_name1: str
+    build_name2: str
+    build_key1: str
+    build_key2: str
+
     @selenium_test
     def test_build_add(self):
         self._login()
@@ -27,9 +33,9 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         actual_builds = self.get_custom_builds()
         intersection = set(actual_builds).intersection(expected_builds)
         if present:
-            self.assertEqual(intersection, set(expected_builds))
+            assert intersection == set(expected_builds)
         else:
-            self.assertEqual(intersection, set())
+            assert intersection == set()
 
     def _login(self):
         self.home()  # ensure Galaxy is loaded
@@ -55,11 +61,11 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def delete_custom_build(self, build_name):
         delete_button = None
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
+            td = row.find_elements(self.by.TAG_NAME, "td")
             name = td[0].text
             if name == build_name:
-                delete_button = td[3].find_element_by_css_selector(".fa-trash-o")
+                delete_button = td[3].find_element(self.by.CSS_SELECTOR, ".fa-trash-o")
                 break
 
         if delete_button is None:
@@ -71,21 +77,21 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector("table.grid > tbody")
-        for row in grid.find_elements_by_tag_name("tr"):
-            name = row.find_elements_by_tag_name("td")[0].text
+        for row in grid.find_elements(self.by.TAG_NAME, "tr"):
+            name = row.find_elements(self.by.TAG_NAME, "td")[0].text
             builds.append(name)
         return builds
 
     def navigate_to_custom_builds_page(self):
         self.home()
-        self.click_masthead_user()  # Open masthead menu
-        self.components.masthead.custom_builds.wait_for_and_click()
+        self.navigate_to_user_preferences()
+        self.components.preferences.custom_builds.wait_for_and_click()
 
     def setup_shared_state(self):
-        CustomBuildsTestcase.user_email = self._get_random_email()
+        TestCustomBuilds.user_email = self._get_random_email()
         self.register(self.user_email)
 
-        CustomBuildsTestcase.build_name1 = self._get_random_name()
-        CustomBuildsTestcase.build_name2 = self._get_random_name()
-        CustomBuildsTestcase.build_key1 = self._get_random_name(len=5)
-        CustomBuildsTestcase.build_key2 = self._get_random_name(len=5)
+        TestCustomBuilds.build_name1 = self._get_random_name()
+        TestCustomBuilds.build_name2 = self._get_random_name()
+        TestCustomBuilds.build_key1 = self._get_random_name(len=5)
+        TestCustomBuilds.build_key2 = self._get_random_name(len=5)

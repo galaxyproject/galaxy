@@ -17,14 +17,6 @@ galaxy.job\_metrics.instrumenters.cgroup module
    :undoc-members:
    :show-inheritance:
 
-galaxy.job\_metrics.instrumenters.collectl module
--------------------------------------------------
-
-.. automodule:: galaxy.job_metrics.instrumenters.collectl
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.job\_metrics.instrumenters.core module
 ---------------------------------------------
 

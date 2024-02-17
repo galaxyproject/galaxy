@@ -40,8 +40,9 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import { getAppRoot } from "onload/loadConfig";
+
 import Alert from "components/Alert.vue";
 
 export default {
@@ -74,7 +75,7 @@ export default {
             return [
                 {
                     text: "Tool Data Tables",
-                    to: "/",
+                    to: "/admin/data_manager",
                 },
                 {
                     text: this.dataTableName,
@@ -98,9 +99,7 @@ export default {
     },
     methods: {
         fields(columns) {
-            // Columns and data are given as arrays. Use each column index as field
-            // key for the table and the column values as labels
-            return columns.reduce((acc, c, i) => Object.assign(acc, { [i]: { label: c } }), {});
+            return columns.map((elem, index) => ({ key: index.toString(), label: elem }));
         },
         reload() {
             axios

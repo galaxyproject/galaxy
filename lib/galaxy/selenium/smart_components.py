@@ -1,13 +1,25 @@
-from .components import (
+from typing import (
+    List,
+    Optional,
+)
+
+from selenium.webdriver.support.select import Select
+
+from galaxy.navigation.components import (
     Component,
     Target,
+)
+from .axe_results import (
+    AxeResults,
+    Impact,
 )
 
 
 class SmartComponent:
     """Wrap a Component with driver aware methods.
 
-    Allows smarter selectors that know how to wait for themselves, test themselves,
+    Adapts Galaxy's component locators more tightly to Selenium - including a Selenium
+    runtime. Allows smarter selectors that know how to wait for themselves, test themselves,
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
@@ -64,6 +76,9 @@ class SmartTarget:
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
 
+    def wait_for_select(self, **kwds):
+        return Select(self.wait_for_visible(**kwds))
+
     def wait_for_clickable(self, **kwds):
         return self._has_driver.wait_for_clickable(self._target, **kwds)
 
@@ -99,9 +114,41 @@ class SmartTarget:
     def assert_absent_or_hidden_after_transitions(self, **kwds):
         self._has_driver.assert_absent_or_hidden_after_transitions(self._target, **kwds)
 
+    def assert_disabled(self, **kwds):
+        self._has_driver.assert_disabled(self._target, **kwds)
+
+    def data_value(self, attribute: str):
+        full_attribute = f"data-{attribute}"
+        attribute_value = (
+            self._has_driver.driver.find_element(*self._target.element_locator).get_attribute(full_attribute) or ""
+        )
+        return attribute_value
+
+    def assert_data_value(self, attribute: str, expected_value: str):
+        if (actual_value := self.data_value(attribute)) != expected_value:
+            message = f"Expected data-{attribute} to have value [{expected_value}] but had value [{actual_value}]"
+            raise AssertionError(message)
+
     def has_class(self, class_name):
         classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""
         return class_name in classes_str.split(" ")
 
     def wait_for_and_send_keys(self, *text):
         self.wait_for_visible().send_keys(*text)
+
+    def wait_for_and_clear_and_send_keys(self, *text):
+        dom_element = self.wait_for_visible()
+        dom_element.clear()
+        dom_element.send_keys(*text)
+
+    def axe_eval(self) -> AxeResults:
+        return self._has_driver.axe_eval(context=self._target.element_locator[1])
+
+    def assert_no_axe_violations_with_impact_of_at_least(
+        self, impact: Impact, excludes: Optional[List[str]] = None
+    ) -> None:
+        self.wait_for_visible()
+        self.axe_eval().assert_no_violations_with_impact_of_at_least(impact, excludes=excludes)
+
+    def __str__(self):
+        return f"SmartTarget[_target={self._target}]"

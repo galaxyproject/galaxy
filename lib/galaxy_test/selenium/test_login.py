@@ -4,7 +4,14 @@ from .framework import (
 )
 
 
-class LoginTestCase(SeleniumTestCase):
+class TestLogin(SeleniumTestCase):
+    @selenium_test
+    def test_login_accessibility(self):
+        self.home()
+        self.components.masthead.register_or_login.wait_for_and_click()
+        login = self.components.login
+        login.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
+
     @selenium_test
     def test_logging_in(self):
         email = self._get_random_email()

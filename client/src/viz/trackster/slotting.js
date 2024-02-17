@@ -1,4 +1,5 @@
 import _ from "underscore";
+
 var extend = _.extend;
 
 // HACK: LABEL_SPACING is currently duplicated between here and painters

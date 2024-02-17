@@ -16,7 +16,7 @@ export const fields = [
     {
         label: "Description",
         key: "message",
-        sortable: false,
+        sortable: true,
     },
     {
         label: "Type",
@@ -36,7 +36,7 @@ export const fields = [
     {
         label: "State",
         key: "state",
-        sortable: true,
+        sortable: false,
     },
     {
         label: "",

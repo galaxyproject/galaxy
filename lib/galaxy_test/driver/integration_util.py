@@ -4,30 +4,46 @@ Tests that start an actual Galaxy server with a particular configuration in
 order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
+
 import os
-from typing import ClassVar
+import re
+from typing import (
+    ClassVar,
+    Iterator,
+    Optional,
+    Type,
+    TYPE_CHECKING,
+)
 from unittest import (
     skip,
     SkipTest,
-    TestCase,
 )
 
 import pytest
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.util.commands import which
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy.util import safe_makedirs
+from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import (
+    _identity,
+    skip_unless_executable,
+)
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from .driver_util import GalaxyTestDriver
+
+if TYPE_CHECKING:
+    from galaxy_test.base.populators import BaseDatasetPopulator
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
-
-
-def _identity(func):
-    return func
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
 def skip_if_jenkins(cls):
@@ -47,12 +63,6 @@ def skip_unless_postgres():
     if POSTGRES_CONFIGURED:
         return _identity
     return pytest.mark.skip("GALAXY_TEST_DBURI does not point to postgres database, required for this test.")
-
-
-def skip_unless_executable(executable):
-    if which(executable):
-        return _identity
-    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
 def skip_unless_docker():
@@ -81,7 +91,14 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
-class IntegrationInstance(UsesApiTestCaseMixin):
+def skip_unless_environ(env_var):
+    if os.environ.get(env_var):
+        return _identity
+
+    return pytest.mark.skip(f"{env_var} must be set for this test")
+
+
+class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
 
     _test_driver: GalaxyTestDriver  # Optional in parent class, but required for integration tests.
@@ -93,6 +110,8 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     # Don't pull in default configs for un-configured things from Galaxy's
     # config directory and such.
     isolate_galaxy_config = True
+
+    dataset_populator: Optional["BaseDatasetPopulator"]
 
     @classmethod
     def setUpClass(cls):
@@ -109,6 +128,11 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         """Shutdown Galaxy server and cleanup temp directory."""
         cls._test_driver.tear_down()
         cls._app_available = False
+
+    def tearDown(self):
+        if logs := self._test_driver.get_logs():
+            print(logs)
+        return super().tearDown()
 
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
@@ -154,15 +178,6 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         if not self._app.config.database_connection.startswith("post"):
             raise SkipTest("Test only valid for postgres")
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, galaxy_config_kwds):
-        """Extension point for subclasses to modify arguments used to configure Galaxy.
-
-        This method will be passed the keyword argument pairs used to call
-        Galaxy Config object and can modify the Galaxy instance created for
-        the test as needed.
-        """
-
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
 
@@ -171,43 +186,27 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         # realpath here to get around problems with symlinks being blocked.
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
-
-def setup_celery_includes():
-    from galaxy.celery import TASKS_MODULES
-
-    def celery_includes():
-        return TASKS_MODULES
-
-    return pytest.fixture(scope="session")(celery_includes)
-
-
-class UsesCeleryTasks:
-    @classmethod
-    def setup_celery_config(cls, config):
-        config["enable_celery_tasks"] = True
-        config["celery_broker"] = "memory://"
-        config["celery_backend"] = "cache+memory://"
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_app(self, celery_app):
-        self._celery_app = celery_app
-
-    @pytest.fixture(autouse=True)
-    def _request_celery_worker(self, celery_worker):
-        self._celery_worker = celery_worker
+    @pytest.fixture
+    def history_id(self) -> Iterator[str]:
+        assert self.dataset_populator
+        with self.dataset_populator.test_history() as history_id:
+            yield history_id
 
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-def integration_module_instance(clazz):
-    def _instance():
+def integration_module_instance(clazz: Type[IntegrationInstance]):
+    def _instance() -> Iterator[IntegrationInstance]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()
-        yield instance
-        instance.tearDownClass()
+        try:
+            yield instance
+        finally:
+            instance.tearDown()
+            instance.tearDownClass()
 
     return pytest.fixture(scope="module")(_instance)
 
@@ -217,3 +216,30 @@ def integration_tool_runner(tool_ids):
         instance._run_tool_test(tool_id)
 
     return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)
+
+
+class ConfiguresObjectStores:
+    object_stores_parent: ClassVar[str]
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_store(cls, template, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        cls.object_stores_parent = temp_directory
+        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        xml = template.safe_substitute({"temp_directory": temp_directory})
+        with open(config_path, "w") as f:
+            f.write(xml)
+        config["object_store_config_file"] = config_path
+        for path in re.findall(r'files_dir path="([^"]*)"', xml):
+            assert path.startswith(temp_directory)
+            dir_name = os.path.basename(path)
+            os.path.join(temp_directory, dir_name)
+            safe_makedirs(path)
+            setattr(cls, f"{dir_name}_path", path)
+
+
+class ConfiguresDatabaseVault:
+    @classmethod
+    def _configure_database_vault(cls, config):
+        config["vault_config_file"] = VAULT_CONF

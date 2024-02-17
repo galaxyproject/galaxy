@@ -1,16 +1,20 @@
 import abc
+import logging
 import os
 from typing import (
     Set,
     Union,
 )
 
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
     iter_headers,
 )
 from .tabular import Tabular
+
+log = logging.getLogger(__name__)
 
 
 @build_sniff_from_prefix
@@ -20,12 +24,12 @@ class GoldenPath(Tabular):
     edam_format = "format_3693"
     file_ext = "agp"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
-        AGPFile(dataset.file_name)
-        super().set_meta(dataset, **kwd)
+        AGPFile(dataset.get_file_name())
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for and does cursory validation on data that looks like AGP
 
@@ -118,7 +122,6 @@ class AGPFile:
     """
 
     def __init__(self, in_file):
-
         self._agp_version = "2.1"
         self._fname = os.path.abspath(in_file)
 
@@ -186,7 +189,6 @@ class AGPFile:
     def _add_line(self, agp_line):
         # Perform validity checks if this is a new object
         if agp_line.obj != self._current_obj:
-
             # Check if we have already seen this object before
             if agp_line.obj in self._seen_objs:
                 raise AGPError(self.fname, agp_line.line_number, "object identifier out of order")
@@ -334,22 +336,18 @@ class AGPLine(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __str__(self):
         """Return the tab delimited AGP line"""
-        pass
 
     @abc.abstractmethod
     def __iter__(self):
         """Return the AGP line's iterator"""
-        pass
 
     @abc.abstractmethod
     def _validate_numerics(self):
         """Ensure all numeric fields and positive integers."""
-        pass
 
     @abc.abstractmethod
     def _validate_strings(self):
         """Ensure all text fields are strings."""
-        pass
 
     def _validate_obj_coords(self):
         if self.obj_beg > self.obj_end:
@@ -364,11 +362,9 @@ class AGPLine(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _validate_line(self):
         """Final remaining validations specific to the gap or sequence AGP lines."""
-        pass
 
 
 class AGPSeqLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequences.
     """
@@ -465,7 +461,6 @@ class AGPSeqLine(AGPLine):
 
 
 class AGPGapLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequence gaps.
     """
@@ -605,4 +600,6 @@ class AGPGapLine(AGPLine):
                 )
         else:
             if "na" in all_evidence:
-                raise AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")
+                log.warning(
+                    AGPError(self.fname, self.line_number, "'na' is invalid linkage evidence when asserting linkage")
+                )

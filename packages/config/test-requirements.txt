@@ -1,2 +1,2 @@
-gravity
-pytest<6.1
+gravity>=1.0
+pytest

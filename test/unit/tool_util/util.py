@@ -3,9 +3,7 @@ from os import environ
 
 import pytest
 
-external_dependency_management = pytest.mark.skipif(
-    not environ.get("GALAXY_TEST_INCLUDE_SLOW"), reason="GALAXY_TEST_INCLUDE_SLOW not set"
-)
+external_dependency_management = pytest.mark.external_dependency_management
 
 
 @contextmanager

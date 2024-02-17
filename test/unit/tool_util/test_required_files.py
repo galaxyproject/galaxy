@@ -99,7 +99,7 @@ class BaseRequiredFilesTestCase(BaseLoaderTestCase):
 
 
 # directly include just one file that is there
-class RequiredFiles1TestCase(BaseRequiredFilesTestCase):
+class TestRequiredFiles1(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_1
 
     def test_expected_files(self):
@@ -109,7 +109,7 @@ class RequiredFiles1TestCase(BaseRequiredFilesTestCase):
 
 
 # include a glob and exclude a file in the glob
-class RequiredFiles2TestCase(BaseRequiredFilesTestCase):
+class TestRequiredFiles2(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_2
 
     def test_expected_files(self):
@@ -119,7 +119,7 @@ class RequiredFiles2TestCase(BaseRequiredFilesTestCase):
 
 
 # include a glob with multiple matches
-class RequiredFiles3TestCase(BaseRequiredFilesTestCase):
+class TestRequiredFiles3(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_3
 
     def test_expected_files(self):
@@ -130,7 +130,7 @@ class RequiredFiles3TestCase(BaseRequiredFilesTestCase):
 
 
 # include a file with regex and exclude with glob
-class RequiredFiles4TestCase(BaseRequiredFilesTestCase):
+class TestRequiredFiles4(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_4
 
     def test_expected_files(self):
@@ -139,7 +139,7 @@ class RequiredFiles4TestCase(BaseRequiredFilesTestCase):
         assert "my_script.R" in files
 
 
-class HgExcludedByDefaultTestCase(BaseRequiredFilesTestCase):
+class TestHgExcludedByDefault(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_3
 
     def test_expected_files(self):
@@ -149,7 +149,7 @@ class HgExcludedByDefaultTestCase(BaseRequiredFilesTestCase):
         assert "my_script.R" in files
 
 
-class HgExclusionDisabledTestCase(BaseRequiredFilesTestCase):
+class TestHgExclusionDisabled(BaseRequiredFilesTestCase):
     source_contents = TOOL_REQUIRED_FILES_XML_DISABLED_DEFAULT_EXCLUSIONS
 
     def test_expected_files(self):

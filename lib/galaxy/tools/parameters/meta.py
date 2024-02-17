@@ -2,12 +2,19 @@ import copy
 import itertools
 import logging
 from collections import namedtuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
+from galaxy.model import HistoryDatasetCollectionAssociation
 from galaxy.model.dataset_collections import (
     matching,
     subcollections,
@@ -171,7 +178,10 @@ def process_key(incoming_key, incoming_value, d):
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
 
-def expand_meta_parameters(trans, tool, incoming):
+ExpandedT = Tuple[List[Dict[str, Any]], Optional[matching.MatchingCollections]]
+
+
+def expand_meta_parameters(trans, tool, incoming) -> ExpandedT:
     """
     Take in a dictionary of raw incoming parameters and expand to a list
     of expanded incoming parameters (one set of parameters per tool
@@ -186,7 +196,7 @@ def expand_meta_parameters(trans, tool, incoming):
     # order matters, so the following reorders incoming
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
-    nested_dict = {}
+    nested_dict: Dict[str, Any] = {}
     for incoming_key, incoming_value in incoming_copy.items():
         if not incoming_key.startswith("__"):
             process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
@@ -255,7 +265,7 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
             encoded_hdc_id = incoming_val
             subcollection_type = None
     hdc_id = trans.app.security.decode_id(encoded_hdc_id)
-    hdc = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
+    hdc = trans.sa_session.get(HistoryDatasetCollectionAssociation, hdc_id)
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)

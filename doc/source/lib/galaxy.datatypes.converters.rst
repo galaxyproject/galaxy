@@ -161,6 +161,14 @@ galaxy.datatypes.converters.maf\_to\_interval\_converter module
    :undoc-members:
    :show-inheritance:
 
+galaxy.datatypes.converters.parquet\_to\_csv\_converter module
+--------------------------------------------------------------
+
+.. automodule:: galaxy.datatypes.converters.parquet_to_csv_converter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.datatypes.converters.pbed\_ldreduced\_converter module
 -------------------------------------------------------------
 

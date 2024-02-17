@@ -1,22 +1,25 @@
-from typing import (
-    Any,
-    Dict,
-    List,
+from sqlalchemy import (
+    false,
+    select,
 )
-
-from sqlalchemy import false
+from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.exceptions import (
     Conflict,
     ObjectAttributeMissingException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
-from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.managers.roles import get_roles_by_ids
+from galaxy.managers.users import get_users_by_ids
+from galaxy.model import Group
+from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fields import Security
+from galaxy.schema.groups import GroupCreatePayload
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.web import url_for
 
 
 class GroupsManager:
@@ -30,93 +33,130 @@ class GroupsManager:
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query(model.Group).filter(model.Group.deleted == false()):
-            item = group.to_dict(value_mapper={"id": trans.security.encode_id})
-            encoded_id = trans.security.encode_id(group.id)
-            item["url"] = url_for("group", id=encoded_id)
+        for group in get_not_deleted_groups(trans.sa_session):
+            item = group.to_dict()
+            encoded_id = Security.security.encode_id(group.id)
+            item["url"] = self._url_for(trans, "group", id=encoded_id)
             rval.append(item)
         return rval
 
-    def create(self, trans: ProvidesAppContext, payload: Dict[str, Any]):
+    def create(self, trans: ProvidesAppContext, payload: GroupCreatePayload):
         """
         Creates a new group.
         """
-        name = payload.get("name", None)
+        sa_session = trans.sa_session
+        name = payload.name
         if name is None:
             raise ObjectAttributeMissingException("Missing required name")
-        self._check_duplicated_group_name(trans, name)
+        self._check_duplicated_group_name(sa_session, name)
 
         group = model.Group(name=name)
-        trans.sa_session.add(group)
-        encoded_user_ids = payload.get("user_ids", [])
-        users = self._get_users_by_encoded_ids(trans, encoded_user_ids)
-        encoded_role_ids = payload.get("role_ids", [])
-        roles = self._get_roles_by_encoded_ids(trans, encoded_role_ids)
+        sa_session.add(group)
+        user_ids = payload.user_ids
+        users = get_users_by_ids(sa_session, user_ids)
+        role_ids = payload.role_ids
+        roles = get_roles_by_ids(sa_session, role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        trans.sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
-        encoded_id = trans.security.encode_id(group.id)
-        item = group.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
-        item["url"] = url_for("group", id=encoded_id)
+        encoded_id = Security.security.encode_id(group.id)
+        item = group.to_dict(view="element")
+        item["url"] = self._url_for(trans, "group", id=encoded_id)
         return [item]
 
-    def show(self, trans: ProvidesAppContext, encoded_id: EncodedDatabaseIdField):
+    def show(self, trans: ProvidesAppContext, group_id: int):
         """
         Displays information about a group.
         """
-        group = self._get_group(trans, encoded_id)
-        item = group.to_dict(view="element", value_mapper={"id": trans.security.encode_id})
-        item["url"] = url_for("group", id=encoded_id)
-        item["users_url"] = url_for("group_users", group_id=encoded_id)
-        item["roles_url"] = url_for("group_roles", group_id=encoded_id)
+        encoded_id = Security.security.encode_id(group_id)
+        group = self._get_group(trans.sa_session, group_id)
+        item = group.to_dict(view="element")
+        item["url"] = self._url_for(trans, "group", id=encoded_id)
+        item["users_url"] = self._url_for(trans, "group_users", group_id=encoded_id)
+        item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, encoded_id: EncodedDatabaseIdField, payload: Dict[str, Any]):
+    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
         """
         Modifies a group.
         """
-        group = self._get_group(trans, encoded_id)
-        name = payload.get("name", None)
-        if name:
-            self._check_duplicated_group_name(trans, name)
+        sa_session = trans.sa_session
+        group = self._get_group(sa_session, group_id)
+        if name := payload.name:
+            self._check_duplicated_group_name(sa_session, name)
             group.name = name
-            trans.sa_session.add(group)
-        encoded_user_ids = payload.get("user_ids", [])
-        users = self._get_users_by_encoded_ids(trans, encoded_user_ids)
-        encoded_role_ids = payload.get("role_ids", [])
-        roles = self._get_roles_by_encoded_ids(trans, encoded_role_ids)
-        trans.app.security_agent.set_entity_group_associations(
+            sa_session.add(group)
+        user_ids = payload.user_ids
+        users = get_users_by_ids(sa_session, user_ids)
+        role_ids = payload.role_ids
+        roles = get_roles_by_ids(sa_session, role_ids)
+        self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
         )
-        trans.sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
-    def _decode_id(self, encoded_id: EncodedDatabaseIdField) -> int:
-        return decode_id(self._app, encoded_id)
+        encoded_id = Security.security.encode_id(group.id)
+        item = group.to_dict(view="element")
+        item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
+        return item
 
-    def _decode_ids(self, encoded_ids: List[EncodedDatabaseIdField]) -> List[int]:
-        return [self._decode_id(encoded_id) for encoded_id in encoded_ids]
+    def delete(self, trans: ProvidesAppContext, group_id: int):
+        group = self._get_group(trans.sa_session, group_id)
+        group.deleted = True
+        trans.sa_session.add(group)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
-    def _check_duplicated_group_name(self, trans: ProvidesAppContext, group_name: str) -> None:
-        if trans.sa_session.query(model.Group).filter(model.Group.name == group_name).first():
+    def purge(self, trans: ProvidesAppContext, group_id: int):
+        sa_session = trans.sa_session
+        group = self._get_group(sa_session, group_id)
+        if not group.deleted:
+            raise RequestParameterInvalidException(
+                f"Group '{group.name}' has not been deleted, so it cannot be purged."
+            )
+        # Delete UserGroupAssociations
+        for uga in group.users:
+            sa_session.delete(uga)
+        # Delete GroupRoleAssociations
+        for gra in group.roles:
+            sa_session.delete(gra)
+        # Delete the group
+        sa_session.delete(group)
+        with transaction(sa_session):
+            sa_session.commit()
+
+    def undelete(self, trans: ProvidesAppContext, group_id: int):
+        group = self._get_group(trans.sa_session, group_id)
+        if not group.deleted:
+            raise RequestParameterInvalidException(
+                f"Group '{group.name}' has not been deleted, so it cannot be undeleted."
+            )
+        group.deleted = False
+        trans.sa_session.add(group)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+    def _url_for(self, trans, name, **kwargs):
+        return trans.url_builder(name, **kwargs)
+
+    def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
+        if get_group_by_name(sa_session, group_name):
             raise Conflict(f"A group with name '{group_name}' already exists")
 
-    def _get_group(self, trans: ProvidesAppContext, encoded_id: EncodedDatabaseIdField) -> model.Group:
-        decoded_group_id = self._decode_id(encoded_id)
-        group = trans.sa_session.query(model.Group).get(decoded_group_id)
+    def _get_group(self, sa_session: galaxy_scoped_session, group_id: int) -> model.Group:
+        group = sa_session.get(model.Group, group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {encoded_id} was not found.")
+            raise ObjectNotFound("Group with the provided id was not found.")
         return group
 
-    def _get_users_by_encoded_ids(
-        self, trans: ProvidesAppContext, encoded_user_ids: List[EncodedDatabaseIdField]
-    ) -> List[model.User]:
-        decoded_user_ids = self._decode_ids(encoded_user_ids)
-        users = trans.sa_session.query(model.User).filter(model.User.table.c.id.in_(decoded_user_ids)).all()
-        return users
 
-    def _get_roles_by_encoded_ids(
-        self, trans: ProvidesAppContext, encoded_role_ids: List[EncodedDatabaseIdField]
-    ) -> List[model.Role]:
-        decoded_role_ids = self._decode_ids(encoded_role_ids)
-        roles = trans.sa_session.query(model.Role).filter(model.Role.id.in_(decoded_role_ids)).all()
-        return roles
+def get_group_by_name(session: Session, name: str):
+    stmt = select(Group).filter(Group.name == name).limit(1)
+    return session.scalars(stmt).first()
+
+
+def get_not_deleted_groups(session: Session):
+    stmt = select(Group).where(Group.deleted == false())
+    return session.scalars(stmt)

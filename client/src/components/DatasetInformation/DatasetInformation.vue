@@ -1,7 +1,7 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ result: dataset, loading }">
         <div v-if="!loading">
-            <h3>Dataset Information</h3>
+            <h2 class="h-md">Dataset Information</h2>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>
@@ -32,18 +32,18 @@
                     </tr>
                     <tr>
                         <td>File contents</td>
-                        <td id="file-contents"><a :href="dataset.download_url">contents</a></td>
+                        <td id="file-contents"><a :href="prefixedUrl(dataset.download_url)">contents</a></td>
                     </tr>
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
                         <td>
-                            <div id="dataset-id">{{ dataset.id }} <decoded-id :id="dataset.id" /></div>
+                            <div id="dataset-id">{{ dataset.id }} <DecodedId :id="dataset.id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.history_id">
                         <td>History API ID</td>
                         <td>
-                            <div id="history_id">{{ dataset.history_id }} <decoded-id :id="dataset.history_id" /></div>
+                            <div id="history_id">{{ dataset.history_id }} <DecodedId :id="dataset.history_id" /></div>
                         </td>
                     </tr>
                     <tr v-if="dataset.uuid">
@@ -77,12 +77,14 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
-import UtcDate from "components/UtcDate";
-import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
-import DatasetSources from "./DatasetSources";
+import UtcDate from "components/UtcDate";
+import { withPrefix } from "utils/redirect";
+import { bytesToString } from "utils/utils";
+
+import DecodedId from "../DecodedId";
 import DatasetHashes from "./DatasetHashes";
+import DatasetSources from "./DatasetSources";
 
 export default {
     components: {
@@ -100,7 +102,10 @@ export default {
     },
     methods: {
         bytesToString(raw_size) {
-            return Utils.bytesToString(raw_size);
+            return bytesToString(raw_size, false);
+        },
+        prefixedUrl(url) {
+            return withPrefix(url);
         },
     },
 };

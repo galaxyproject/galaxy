@@ -152,19 +152,3 @@
         ${heads_str}
     </div>
 </%def>
-
-<%def name="render_review_comment( comment_text )">
-    <style type="text/css">
-        #reviews_table{ table-layout:fixed;
-                        width:100%;
-                        overflow-wrap:normal;
-                        overflow:hidden;
-                        border:0px; 
-                        word-break:keep-all;
-                        word-wrap:break-word;
-                        line-break:strict; }
-    </style>
-    <table id="reviews_table">
-        <tr><td>${comment_text}</td></tr>
-    </table>
-</%def>

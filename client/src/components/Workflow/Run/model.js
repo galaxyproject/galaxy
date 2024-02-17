@@ -1,7 +1,6 @@
-import _ from "underscore";
-
 import { visitInputs } from "components/Form/utilities";
-import Utils from "utils/utils";
+import _ from "underscore";
+import { isEmpty } from "utils/utils";
 
 export class WorkflowRunModel {
     constructor(runData) {
@@ -33,7 +32,7 @@ export class WorkflowRunModel {
             if (step.step_version) {
                 title += ` (Galaxy Version ${step.step_version})`;
             }
-            step = Utils.merge(
+            step = Object.assign(
                 {
                     index: i,
                     fixed_title: _.escape(title),
@@ -101,7 +100,7 @@ export class WorkflowRunModel {
                 name: wp_name,
                 type: "text",
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
-                style: "ui-form-wp-source",
+                cls: "ui-input-linked",
                 links: [],
                 optional: true,
             });
@@ -123,8 +122,7 @@ export class WorkflowRunModel {
                     wp_input.links.push(step);
                     input.wp_linked = true;
                     input.type = "text";
-                    input.backdrop = true;
-                    input.style = "ui-form-wp-target";
+                    input.cls = "ui-input-linked";
                 });
             });
             _.each(step.replacement_parameters, (wp_name) => {
@@ -154,8 +152,9 @@ export class WorkflowRunModel {
                             (data_ref.step_linked && !isDataStep(data_ref.step_linked)) || input.wp_linked;
                     }
                     if (
-                        is_data_input ||
-                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
+                        !input.optional &&
+                        (is_data_input ||
+                            (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked))
                     ) {
                         step.expanded = true;
                         hasOpenToolSteps = true;
@@ -165,7 +164,7 @@ export class WorkflowRunModel {
                     }
                     input.flavor = "workflow";
                     if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
-                        if (input.optional || (!Utils.isEmpty(input.value) && input.value !== "")) {
+                        if (input.optional || (!isEmpty(input.value) && input.value !== "")) {
                             input.collapsible_value = input.value;
                             input.collapsible_preview = true;
                         }
@@ -192,4 +191,52 @@ export function isDataStep(steps) {
         }
     }
     return true;
+}
+
+/** Produces a dictionary of parameter replacements to be consumed by the form components */
+export function getReplacements(inputs, stepData, wpData) {
+    const params = {};
+    visitInputs(inputs, (input, name) => {
+        params[name] = input;
+    });
+    const replaceParams = {};
+    _.each(params, (input, name) => {
+        if (input.wp_linked || input.step_linked) {
+            let newValue = null;
+            if (input.step_linked) {
+                _.each(input.step_linked, (sourceStep) => {
+                    if (isDataStep(sourceStep)) {
+                        const sourceData = stepData[sourceStep.index];
+                        const value = sourceData && sourceData.input;
+                        if (value) {
+                            newValue = { values: [] };
+                            _.each(value.values, (v) => {
+                                newValue.values.push(v);
+                            });
+                        }
+                    }
+                });
+                if (!input.multiple && newValue && newValue.values.length > 0) {
+                    newValue = {
+                        values: [newValue.values[0]],
+                    };
+                }
+            }
+            if (input.wp_linked) {
+                newValue = input.value;
+                const re = /\$\{(.+?)\}/g;
+                let match;
+                while ((match = re.exec(input.value))) {
+                    const wpValue = wpData[match[1]];
+                    if (wpValue) {
+                        newValue = newValue.split(match[0]).join(wpValue);
+                    }
+                }
+            }
+            if (newValue !== undefined) {
+                replaceParams[name] = newValue;
+            }
+        }
+    });
+    return replaceParams;
 }

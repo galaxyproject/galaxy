@@ -2,24 +2,39 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+
 import copy
+import json
 import logging
 import os
 import re
+from dataclasses import dataclass
 from io import StringIO
+from typing import (
+    Any,
+    cast,
+    Dict,
+    get_args,
+    Optional,
+)
+
+from typing_extensions import Literal
 
 from galaxy.model import (
+    DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     MetadataFile,
     User,
 )
-from galaxy.tools.wrappers import (
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
+from galaxy.tools.expressions import do_eval
+from galaxy.util import (
+    Element,
+    string_as_bool,
 )
-from galaxy.util import string_as_bool
+from galaxy.util.template import fill_template
 from . import validation
+from .cancelable_request import request
 
 log = logging.getLogger(__name__)
 
@@ -117,7 +132,7 @@ class RegexpFilter(Filter):
             pass
         filter_pattern = re.compile(filter_value)
         for fields in options:
-            if self.keep == (not filter_pattern.match(fields[self.column]) is None):
+            if self.keep == (filter_pattern.match(fields[self.column]) is not None):
                 rval.append(fields)
         return rval
 
@@ -320,11 +335,11 @@ class UniqueValueFilter(Filter):
 
     def filter_options(self, options, trans, other_values):
         rval = []
-        skip_list = []
+        seen = set()
         for fields in options:
-            if fields[self.column] not in skip_list:
+            if fields[self.column] not in seen:
                 rval.append(fields)
-                skip_list.append(fields[self.column])
+                seen.add(fields[self.column])
         return rval
 
 
@@ -360,8 +375,6 @@ class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
 
-    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
-
     Type: attribute_value_splitter
 
     Required Attributes:
@@ -380,7 +393,7 @@ class AttributeValueSplitterFilter(Filter):
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans, other_values):
-        attr_names = []
+        attr_names = set()
         rval = []
         for fields in options:
             for column in self.columns:
@@ -390,7 +403,7 @@ class AttributeValueSplitterFilter(Filter):
                         name = ary[0]
                         if name not in attr_names:
                             rval.append(fields[0:column] + [name] + fields[column:])
-                            attr_names.append(name)
+                            attr_names.add(name)
         return rval
 
 
@@ -467,6 +480,8 @@ class RemoveValueFilter(Filter):
         self.separator = elem.get("separator", ",")
 
     def filter_options(self, options, trans, other_values):
+        from galaxy.tools.wrappers import DatasetFilenameWrapper
+
         if trans is not None and trans.workflow_building_mode:
             return options
 
@@ -491,9 +506,7 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(
-                    data_ref, DatasetFilenameWrapper
-                ):
+                if not isinstance(data_ref, (HistoryDatasetAssociation, DatasetFilenameWrapper)):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
@@ -516,9 +529,10 @@ class SortByColumnFilter(Filter):
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
         self.column = d_option.column_spec_to_index(column)
+        self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
     def filter_options(self, options, trans, other_values):
-        return sorted(options, key=lambda x: x[self.column])
+        return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
 filter_types = dict(
@@ -538,7 +552,7 @@ filter_types = dict(
 class DynamicOptions:
     """Handles dynamically generated SelectToolParameter options"""
 
-    def __init__(self, elem, tool_param):
+    def __init__(self, elem: Element, tool_param):
         def load_from_parameter(from_parameter, transform_lines=None):
             obj = self.tool_param
             for field in from_parameter.split("."):
@@ -548,7 +562,7 @@ class DynamicOptions:
             return self.parse_file_fields(obj)
 
         self.tool_param = tool_param
-        self.columns = {}
+        self.columns: Dict[str, int] = {}
         self.filters = []
         self.file_fields = None
         self.largest_index = 0
@@ -568,11 +582,12 @@ class DynamicOptions:
         dataset_file = elem.get("from_dataset", None)
         from_parameter = elem.get("from_parameter", None)
         self.tool_data_table_name = elem.get("from_data_table", None)
+        self.from_url_options = parse_from_url_options(elem)
         # Options are defined from a data table loaded by the app
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        self.tool_data_table  # Need to touch tool data table once to populate self.columns
+        self.tool_data_table  # noqa: B018 Need to touch tool data table once to populate self.columns
 
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
@@ -718,10 +733,10 @@ class DynamicOptions:
                     if getattr(dataset, "purged", False) or getattr(dataset, "deleted", False):
                         log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
                         continue
-                if not hasattr(dataset, "file_name"):
+                if not hasattr(dataset, "get_file_name"):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-                path = dataset.file_name
+                path = dataset.get_file_name()
                 if os.path.getsize(path) < 1048576:
                     with open(path) as fh:
                         options += self.parse_file_fields(fh)
@@ -770,6 +785,49 @@ class DynamicOptions:
         return rval
 
     def get_options(self, trans, other_values):
+        def to_triple(values):
+            if len(values) == 2:
+                return [str(values[0]), str(values[1]), False]
+            else:
+                return [str(values[0]), str(values[1]), bool(values[2])]
+
+        if from_url_options := self.from_url_options:
+            context = User.user_template_environment(trans.user)
+            url = fill_template(from_url_options.from_url, context)
+            request_body = template_or_none(from_url_options.request_body, context)
+            request_headers = template_or_none(from_url_options.request_headers, context)
+            try:
+                unset_value = object()
+                cached_value = trans.get_cache_value(
+                    (url, from_url_options.request_method, request_body, request_headers), unset_value
+                )
+                if cached_value is unset_value:
+                    data = request(
+                        url=url,
+                        method=from_url_options.request_method,
+                        data=json.loads(request_body) if request_body else None,
+                        headers=json.loads(request_headers) if request_headers else None,
+                        timeout=10,
+                    )
+                    trans.set_cache_value((url, from_url_options.request_method, request_body, request_headers), data)
+                else:
+                    data = cached_value
+            except Exception as e:
+                log.warning("Fetching from url '%s' failed: %s", url, str(e))
+                data = None
+
+            if from_url_options.postprocess_expression:
+                try:
+                    data = do_eval(
+                        from_url_options.postprocess_expression,
+                        data,
+                    )
+                except Exception as eval_error:
+                    log.warning("Failed to evaluate postprocess_expression: %s", str(eval_error))
+                    data = []
+
+            # We only support the very specific ["name", "value", "selected"] format for now.
+            return [to_triple(d) for d in data]
         rval = []
         if (
             self.file_fields is not None
@@ -798,24 +856,75 @@ class DynamicOptions:
         return int(column_spec)
 
 
+REQUEST_METHODS = Literal["GET", "POST"]
+
+
+@dataclass
+class FromUrlOptions:
+    from_url: str
+    request_method: REQUEST_METHODS
+    request_body: Optional[str]
+    request_headers: Optional[str]
+    postprocess_expression: Optional[str]
+
+
+def strip_or_none(maybe_string: Optional[Element]) -> Optional[str]:
+    if maybe_string is not None:
+        if maybe_string.text:
+            return maybe_string.text.strip()
+    return None
+
+
+def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
+    from_url = elem.get("from_url")
+    if from_url:
+        request_method = cast(Literal["GET", "POST"], elem.get("request_method", "GET"))
+        assert request_method in get_args(REQUEST_METHODS)
+        request_headers = strip_or_none(elem.find("request_headers"))
+        request_body = strip_or_none(elem.find("request_body"))
+        postprocess_expression = strip_or_none(elem.find("postprocess_expression"))
+        return FromUrlOptions(
+            from_url,
+            request_method=request_method,
+            request_headers=request_headers,
+            request_body=request_body,
+            postprocess_expression=postprocess_expression,
+        )
+    return None
+
+
+def template_or_none(template: Optional[str], context: Dict[str, Any]) -> Optional[str]:
+    if template:
+        return fill_template(template, context=context)
+    return None
+
+
 def _get_ref_data(other_values, ref_name):
     """
     get the list of data sets from ref_name
     - a KeyError is raised if no such element exists
     - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
     """
+    from galaxy.tools.wrappers import (
+        DatasetFilenameWrapper,
+        DatasetListWrapper,
+    )
+
     ref = other_values[ref_name]
     if not isinstance(
         ref,
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
             list,
         ),
     ):
         raise ValueError
+    if isinstance(ref, DatasetCollectionElement) and ref.hda:
+        ref = ref.hda
     if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):

@@ -1,6 +1,6 @@
-import unittest
 from unittest import mock
 
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import (
     collections,
     hdas,
@@ -32,6 +32,7 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
     def _create_history(self, user_data=None, **kwargs):
         user_data = user_data or user2_data
         owner = self.user_manager.create(**user_data)
+        self.trans.set_user(owner)
         return self.history_manager.create(user=owner, **kwargs)
 
     def _create_hda(self, history, dataset=None, **kwargs):
@@ -52,14 +53,8 @@ class HDCATestCase(BaseTestCase, CreatesCollectionsMixin):
         return hdca
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.hdcas.HDCASerializer.url_for", testable_url_for)
-class HDCASerializerTestCase(HDCATestCase):
+@mock.patch("galaxy.managers.base.ModelSerializer.url_for", mock_url_builder)
+class TestHDCASerializer(HDCATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hdca_serializer = hdcas.HDCASerializer(self.app)
@@ -83,13 +78,9 @@ class HDCASerializerTestCase(HDCATestCase):
         self.log("should have a serializer for all serializable keys")
         for key in serializer.serializable_keyset:
             instantiated_attribute = getattr(item, key, None)
-            if not (
-                (key in serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
-        else:
-            self.assertTrue(True, "all serializable keys have a serializer")
+            assert key in serializer.serializers or isinstance(
+                instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         serializer = self.hdca_serializer
@@ -104,9 +95,3 @@ class HDCASerializerTestCase(HDCATestCase):
         self.log("should be able to use keys on their own")
         serialized = serializer.serialize_to_view(item, keys=only_keys)
         self.assertKeys(serialized, only_keys)
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

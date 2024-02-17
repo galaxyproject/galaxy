@@ -1,138 +1,220 @@
+<script setup>
+import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
+import { withPrefix } from "utils/redirect";
+import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+
+import { loadWebhookMenuItems } from "./_webhooks";
+import MastheadItem from "./MastheadItem";
+import QuotaMeter from "./QuotaMeter";
+import { getActiveTab } from "./utilities";
+
+import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+
+const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
+
+const route = useRoute();
+const { config, isConfigLoaded } = useConfig();
+
+const emit = defineEmits(["open-url"]);
+
+const props = defineProps({
+    tabs: {
+        type: Array,
+        default: () => [],
+    },
+    brand: {
+        type: String,
+        default: null,
+    },
+    initialActiveTab: {
+        type: String,
+        default: "analysis",
+    },
+    logoUrl: {
+        type: String,
+        default: null,
+    },
+    logoSrc: {
+        type: String,
+        default: null,
+    },
+    logoSrcSecondary: {
+        type: String,
+        default: null,
+    },
+    windowTab: {
+        type: Object,
+        default: null,
+    },
+});
+
+const activeTab = ref(props.initialActiveTab);
+const extensionTabs = ref([]);
+const windowToggle = ref(false);
+
+let entryPointStore;
+const itsMenu = reactive({
+    id: "interactive",
+    url: "/interactivetool_entry_points/list",
+    tooltip: "See Running Interactive Tools",
+    icon: "fa-cogs",
+    hidden: true,
+});
+
+function setActiveTab() {
+    const currentRoute = route.path;
+    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+}
+
+function onWindowToggle() {
+    windowToggle.value = !windowToggle.value;
+}
+function updateVisibility(isActive) {
+    itsMenu.hidden = !isActive;
+}
+
+watch(
+    () => route.path,
+    () => {
+        setActiveTab();
+    }
+);
+
+/* lifecyle */
+onBeforeMount(() => {
+    entryPointStore = useEntryPointStore();
+    entryPointStore.startWatchingEntryPoints();
+    entryPointStore.$subscribe((mutation, state) => {
+        updateVisibility(state.entryPoints.length > 0);
+    });
+});
+onMounted(() => {
+    loadWebhookMenuItems(extensionTabs.value);
+    setActiveTab();
+});
+</script>
+
 <template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
-        <b-navbar-brand :href="brandLink" aria-label="homepage">
-            <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-            <img v-if="brandImageSecondary" alt="logo" class="navbar-brand-image" :src="brandImageSecondary" />
-            <span class="navbar-brand-title">{{ brandTitle }}</span>
-        </b-navbar-brand>
-        <b-navbar-nav>
-            <masthead-item
-                v-for="(tab, idx) in tabs"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
+    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <BNavbarNav>
+            <BNavbarBrand
+                v-b-tooltip.hover
+                class="ml-2 mr-2"
+                title="Home"
+                aria-label="homepage"
+                :href="withPrefix(logoUrl)">
+                <img alt="logo" :src="withPrefix(logoSrc)" />
+                <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
+            </BNavbarBrand>
+            <span v-if="brand" class="navbar-text px-2">
+                {{ brand }}
+            </span>
+        </BNavbarNav>
+        <BNavbarNav>
+            <MastheadItem
+                v-for="(tab, idx) in props.tabs"
+                v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
-                :active-tab="activeTab">
-            </masthead-item>
-        </b-navbar-nav>
-        <div ref="quota-meter-container" class="quota-meter-container" />
-    </b-navbar>
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <MastheadItem
+                v-show="itsMenu.hidden !== true"
+                :key="`its-tab`"
+                :tab="itsMenu"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <MastheadItem
+                v-for="(tab, idx) in extensionTabs"
+                v-show="tab.hidden !== true"
+                :key="`extension-tab-${idx}`"
+                :tab="tab"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <BNavItem
+                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system && !showActivityBar"
+                id="notifications-bell">
+                <NotificationsBell tooltip-placement="bottom" />
+            </BNavItem>
+        </BNavbarNav>
+        <QuotaMeter />
+    </BNavbar>
 </template>
 
-<script>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
-import MastheadItem from "./MastheadItem";
-import { fetchMenu } from "layout/menu";
-import { loadWebhookMenuItems } from "./_webhooks";
+<style scoped lang="scss">
+@import "theme/blue.scss";
 
-export default {
-    name: "Masthead",
-    components: {
-        BNavbar,
-        BNavbarBrand,
-        BNavbarNav,
-        MastheadItem,
-    },
-    props: {
-        displayGalaxyBrand: {
-            type: Boolean,
-            default: true,
-        },
-        brand: {
-            type: String,
-            default: null,
-        },
-        brandLink: {
-            type: String,
-            default: null,
-        },
-        brandImage: {
-            type: String,
-            default: null,
-        },
-        brandImageSecondary: {
-            type: String,
-            default: null,
-        },
-        initialActiveTab: {
-            type: String,
-            default: null,
-        },
-        mastheadState: {
-            type: Object,
-            default: null,
-        },
-        menuOptions: {
-            type: Object,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            activeTab: null,
-            baseTabs: [],
-            extensionTabs: [],
-        };
-    },
-    computed: {
-        brandTitle() {
-            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
-            if (this.brand) {
-                brandTitle += this.brand;
+#masthead {
+    padding: 0;
+    margin-bottom: 0;
+    background: var(--masthead-color);
+    height: $masthead-height;
+    &:deep(.navbar-nav) {
+        height: $masthead-height;
+        & > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            background: var(--masthead-link-color);
+            &:hover {
+                background: var(--masthead-link-hover);
             }
-            return brandTitle;
-        },
-        tabs() {
-            const scratchbookTabs = [this.mastheadState.frame.buttonActive, this.mastheadState.frame.buttonLoad];
-            const tabs = [].concat(this.baseTabs, this.extensionTabs, scratchbookTabs);
-            return tabs.map(this._tabToJson);
-        },
-    },
-    created() {
-        this.activeTab = this.initialActiveTab;
-        this.baseTabs = fetchMenu(this.menuOptions);
-        loadWebhookMenuItems(this.extensionTabs);
-    },
-    mounted() {
-        this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
-        this.mastheadState.quotaMeter.render();
-        const frames = this.mastheadState.frame.getFrames();
-        frames
-            .on("add remove", () => {
-                const tab = this.mastheadState.frame.buttonLoad;
-                tab.note = String(frames.length());
-                tab.visible = frames.length() > 0;
-                tab.show_note = frames.length() > 0;
-            })
-            .on("show hide", () => {
-                this._reflectScratchbookFrames();
-            });
-    },
-    methods: {
-        addItem(item) {
-            this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
-        },
-        _tabToJson(el) {
-            const defaults = {
-                visible: true,
-                target: "_parent",
-            };
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
+            &.show,
+            &.active {
+                background: var(--masthead-link-active);
+                .nav-link {
+                    color: var(--masthead-text-active);
+                }
             }
-            return Object.assign({}, defaults, asJson);
-        },
-        _reflectScratchbookFrames() {
-            const frames = this.mastheadState.frame.getFrames();
-            const tab = this.mastheadState.frame.buttonLoad;
-            tab.toggle = frames.visible;
-            tab.icon = (frames.visible && "fa-eye") || "fa-eye-slash";
-        },
-    },
-};
-</script>
+            .nav-link {
+                position: relative;
+                cursor: pointer;
+                text-decoration: none;
+                color: var(--masthead-text-color);
+                &:hover {
+                    color: var(--masthead-text-hover);
+                }
+                &.nav-icon {
+                    font-size: 1.3em;
+                    .nav-note {
+                        position: absolute;
+                        left: 1.9rem;
+                        top: 1.9rem;
+                        font-size: 0.6rem;
+                        font-weight: bold;
+                    }
+                }
+                &.toggle {
+                    color: var(--masthead-text-hover);
+                }
+            }
+        }
+    }
+    .navbar-brand {
+        cursor: pointer;
+        img {
+            filter: $text-shadow;
+            display: inline;
+            border: none;
+            height: 2.3rem;
+        }
+    }
+    .navbar-text {
+        filter: $text-shadow;
+        font-weight: bold;
+        font-family: Verdana, sans-serif;
+        font-size: 1rem;
+        line-height: 2rem;
+        color: var(--masthead-text-color);
+    }
+}
+</style>

@@ -9,33 +9,43 @@ from sqlalchemy import (
     text,
 )
 
+import galaxy.model.migrations.scripts
 from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
     AlembicManager,
-    DatabaseStateCache,
     DatabaseStateVerifier,
     get_last_sqlalchemymigrate_version,
     GXY,
-    IncorrectVersionError,
-    listify,
-    load_metadata,
-    metadata_contains_only_kombu_tables,
-    NoVersionTableError,
-    OutdatedDatabaseError,
     scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
-    SQLALCHEMYMIGRATE_TABLE,
     TSI,
     verify_databases,
 )
+from galaxy.model.migrations.base import (
+    DatabaseStateCache,
+    listify,
+    load_metadata,
+    metadata_contains_only_kombu_tables,
+    SQLALCHEMYMIGRATE_TABLE,
+)
+from galaxy.model.migrations.exceptions import (
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
+    OutdatedDatabaseError,
+    SAMigrateError,
+)
 from galaxy.model.migrations.scripts import LegacyManageDb
-from ..testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
+from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
     drop_existing_database,
     url_factory,
+)
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
 )
 
 # Revision numbers from test versions directories
@@ -180,7 +190,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert DatabaseStateCache(engine).is_database_empty()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
 
@@ -189,7 +199,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert not DatabaseStateCache(engine).has_alembic_version_table()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_alembic_version_table()
 
@@ -198,7 +208,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert not DatabaseStateCache(engine).has_sqlalchemymigrate_version_table()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert DatabaseStateCache(engine).has_sqlalchemymigrate_version_table()
 
@@ -219,7 +229,7 @@ class TestDatabaseStateCache:
         with create_and_drop_database(db_url):
             with disposing_engine(db_url) as engine:
                 assert DatabaseStateCache(engine).is_database_empty()
-                with engine.connect() as conn:
+                with engine.begin() as conn:
                     metadata.create_all(bind=conn)
                 assert not DatabaseStateCache(engine).is_database_empty()
                 assert DatabaseStateCache(engine).contains_only_kombu_tables()
@@ -450,17 +460,17 @@ class TestDatabaseStates:
         # the stored version is not the latest after which we could transition to Alembic.
         # Expect: fail with appropriate message.
         def test_combined_database(self, db_state2_combined):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state2_combined) as engine:
                     _verify_databases(engine)
 
         def test_separate_databases_gxy_raises_error(self, db_state2_gxy, db_state6_tsi):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state2_gxy) as engine1, disposing_engine(db_state6_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
         def test_separate_databases_tsi_raises_error(self, db_state6_gxy, db_state2_tsi):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state6_gxy) as engine1, disposing_engine(db_state2_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
@@ -497,17 +507,17 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
         def test_combined_database_no_automigrate(self, db_state3_combined):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state3_combined) as engine:
                     _verify_databases(engine)
 
         def test_separate_databases_no_automigrate_gxy_raises_error(self, db_state3_gxy, db_state6_tsi):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state3_gxy) as engine1, disposing_engine(db_state6_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
         def test_separate_databases_no_automigrate_tsi_raises_error(self, db_state6_gxy, db_state3_tsi):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state6_gxy) as engine1, disposing_engine(db_state3_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
@@ -723,7 +733,7 @@ def _get_paths_to_version_locations():
 
 def load_sqlalchemymigrate_version(db_url, version):
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             sql_delete = text(f"delete from {SQLALCHEMYMIGRATE_TABLE}")  # there can be only 1 row
             sql_insert = text(f"insert into {SQLALCHEMYMIGRATE_TABLE} values('_', '_', {version})")
             conn.execute(sql_delete)
@@ -737,7 +747,7 @@ def test_load_sqlalchemymigrate_version(url_factory, metadata_state2_gxy):  # no
             load_metadata(metadata_state2_gxy, engine)
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             version = 42
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 result = conn.execute(sql).scalar()
                 assert result != version
                 load_sqlalchemymigrate_version(db_url, version)
@@ -756,7 +766,7 @@ def database_is_empty_or_contains_kombu_tables(db_url):
     (ref: https://github.com/galaxyproject/galaxy/issues/13689)
     """
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             metadata = MetaData()
             metadata.reflect(bind=conn)
             return not bool(metadata.tables) or metadata_contains_only_kombu_tables(metadata)
@@ -855,7 +865,7 @@ def is_metadata_loaded(db_url, metadata):
     # True if the set of tables from the up-to-date state metadata (state6)
     # is a subset of the metadata reflected from `db_url`.
     with disposing_engine(db_url) as engine:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             db_metadata = MetaData()
             db_metadata.reflect(bind=conn)
             tables = _get_tablenames(metadata)
@@ -875,7 +885,7 @@ def test_is_metadata_loaded(url_factory, metadata_state1_gxy):  # noqa F811
     with create_and_drop_database(db_url):
         assert not is_metadata_loaded(db_url, metadata)
         with disposing_engine(db_url) as engine:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 metadata.create_all(bind=conn)
         assert is_metadata_loaded(db_url, metadata)
 
@@ -886,7 +896,7 @@ def test_is_multiple_metadata_loaded(url_factory, metadata_state1_gxy, metadata_
     with create_and_drop_database(db_url):
         assert not is_metadata_loaded(db_url, metadata)
         with disposing_engine(db_url) as engine:
-            with engine.connect() as conn:
+            with engine.begin() as conn:
                 metadata_state1_gxy.create_all(bind=conn)
                 metadata_state1_tsi.create_all(bind=conn)
         assert is_metadata_loaded(db_url, metadata)
@@ -1120,20 +1130,17 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
 
 @pytest.fixture(autouse=True)
 def legacy_manage_db(monkeypatch):
-    def get_alembic_cfg(self):
-        path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
-        path = os.path.normpath(path)
-        # Adjust path when running from packages
-        if os.path.split(path)[1] == "packages":
-            path = os.path.join(path, os.pardir)
-        path = os.path.join(path, "lib", "galaxy", "model", "migrations", "alembic.ini")
-
-        config = Config(path)
-        path1, path2 = _get_paths_to_version_locations()
-        config.set_main_option("version_locations", f"{path1};{path2}")
+    def get_alembic_cfg():
+        traversable = resource_path("galaxy.model.migrations", "alembic.ini")
+        with as_file(traversable) as path:
+            config = Config(path)
+            path1, path2 = _get_paths_to_version_locations()
+            config.set_main_option("version_locations", f"{path1};{path2}")
+            # config.set_main_option() calls config.file_config() which memoizes
+            # the temporary file path from the as_file() contextmanager
         return config
 
-    monkeypatch.setattr(LegacyManageDb, "_get_alembic_cfg", get_alembic_cfg)
+    monkeypatch.setattr(galaxy.model.migrations.scripts, "get_alembic_cfg", get_alembic_cfg)
 
 
 @pytest.fixture(autouse=True)
@@ -1163,14 +1170,14 @@ class TestLegacyManageDbScript:
         def test_get_gxy_db_version__state2__gxy_database(self, db_state2_gxy):
             # Expect: fail
             db_url = db_state2_gxy
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 
         def test_get_gxy_db_version__state2__combined_database(self, db_state2_combined):
             # Expect: fail
             db_url = db_state2_combined
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 

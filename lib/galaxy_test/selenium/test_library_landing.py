@@ -5,9 +5,8 @@ from .framework import (
 )
 
 
-class LibraryLandingTestCase(SeleniumTestCase):
-
-    requires_admin = True
+class TestLibraryLanding(SeleniumTestCase):
+    run_as_admin = True
 
     def setup_with_driver(self):
         super().setup_with_driver()
@@ -73,8 +72,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
         self._assert_num_displayed_libraries_is(3)
         self.screenshot("libraries_index_search")
-        # sort ascending
-        self.libraries_index_sort_click()
+        #  ascending sort is default
         self._assert_names_are([f"{namebase} a", f"{namebase} b", f"{namebase} c"])
         # sort descending
         self.libraries_index_sort_click()
@@ -86,8 +84,8 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_names_are(self, expected_names):
-        names = [e.find_element_by_css_selector("td a").text for e in self.libraries_index_table_elements()]
-        self.assertEqual(names, expected_names)
+        names = [e.find_element(self.by.CSS_SELECTOR, "td a").text for e in self.libraries_index_table_elements()]
+        assert names == expected_names
 
     @retry_assertion_during_transitions
     def _assert_at_least_one_library_displayed(self):
@@ -95,7 +93,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_num_displayed_libraries_is(self, n):
-        self.assertEqual(n, self._num_displayed_libraries())
+        assert n == self._num_displayed_libraries()
 
     def _num_displayed_libraries(self):
         return len(self.libraries_index_table_elements())

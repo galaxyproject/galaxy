@@ -1,5 +1,7 @@
 import hash from "object-hash";
-import { LastQueue } from "utils/promise-queue";
+import { LastQueue } from "utils/lastQueue";
+
+import { HasAttributesMixin } from "./utils";
 
 /**
  * Builds a provider that gets its result from a single promise-based query function and
@@ -14,6 +16,7 @@ import { LastQueue } from "utils/promise-queue";
 export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => {
     const promiseCache = new Map();
     return {
+        mixins: [HasAttributesMixin],
         props: {
             useCache: {
                 type: Boolean,
@@ -65,6 +68,12 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             );
         },
         methods: {
+            update(attributes) {
+                for (var attrname in attributes) {
+                    this.attributes[attrname] = attributes[attrname];
+                }
+                this.doQuery();
+            },
             doQuery() {
                 let lookupPromise;
                 if (this.useCache) {
@@ -74,7 +83,7 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
                         promiseCache.set(this.cacheKey, lookupPromise);
                     }
                 } else {
-                    lookupPromise = this.queue.enqueue(lookup, this.$attrs);
+                    lookupPromise = this.queue.enqueue(lookup, this.attributes);
                 }
                 lookupPromise.then(
                     (result) => {

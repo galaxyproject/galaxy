@@ -1,9 +1,48 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
+
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUploadStore } from "@/stores/uploadStore";
+import localize from "@/utils/localization";
+import Query from "@/utils/query-string-parsing";
+
+library.add(faUpload);
+
+const props = withDefaults(
+    defineProps<{
+        title?: string;
+    }>(),
+    {
+        title: "Download from URL or upload files from disk",
+    }
+);
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
+const { percentage, status } = storeToRefs(useUploadStore());
+
+onMounted(() => {
+    if (Query.get("tool_id") == "upload1") {
+        openGlobalUploadModal();
+    }
+});
+
+const localizedTitle = computed(() => {
+    return localize(props.title);
+});
+function showUploadDialog() {
+    openGlobalUploadModal();
+}
+</script>
 <template>
     <b-button
-        id="tool-panel-upload-button"
-        v-b-tooltip.hover.bottom
-        :aria-label="title | localize"
-        :title="title | localize"
+        id="activity-upload"
+        v-b-tooltip.hover.noninteractive.bottom
+        :aria-label="localizedTitle"
+        :title="localizedTitle"
         class="upload-button"
         size="sm"
         @click="showUploadDialog">
@@ -16,52 +55,8 @@
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" class="mr-1" />
+            <FontAwesomeIcon icon="upload" class="mr-1" />
             <b v-localize>Upload Data</b>
         </span>
     </b-button>
 </template>
-
-<script>
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { openGlobalUploadModal } from "./mount";
-library.add(faUpload);
-
-export default {
-    components: { FontAwesomeIcon },
-    directives: {
-        "v-b-tooltip": VBTooltip,
-    },
-    props: {
-        title: { type: String, default: "Download from URL or upload files from disk" },
-    },
-    data() {
-        return {
-            status: "",
-            percentage: 0,
-        };
-    },
-    created() {
-        this.eventHub.$on("upload:status", this.setStatus);
-        this.eventHub.$on("upload:percentage", this.setPercentage);
-    },
-    beforeDestroy() {
-        this.eventHub.$off("upload:status", this.setStatus);
-        this.eventHub.$off("upload:percentage", this.setPercentage);
-    },
-    methods: {
-        showUploadDialog(e) {
-            openGlobalUploadModal();
-        },
-        setStatus(val) {
-            this.status = val;
-        },
-        setPercentage(val) {
-            this.percentage = Math.round(val);
-        },
-    },
-};
-</script>

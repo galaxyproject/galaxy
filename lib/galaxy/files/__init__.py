@@ -1,18 +1,39 @@
 import logging
 import os
-from collections import (
-    defaultdict,
-    namedtuple,
+from collections import defaultdict
+from typing import (
+    Any,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
 )
-from typing import Set
 
 from galaxy import exceptions
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
 from galaxy.util import plugin_config
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
-FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
+
+class FileSourcePath(NamedTuple):
+    file_source: BaseFilesSource
+    path: str
+
+
+class FileSourceScore(NamedTuple):
+    file_source: BaseFilesSource
+    score: int
+
+
+class NoMatchingFileSource(Exception):
+    pass
 
 
 class ConfiguredFileSources:
@@ -45,12 +66,17 @@ class ConfiguredFileSources:
                         return
                 stock_file_source_conf_dict.append({"type": plugin_type})
 
+            _ensure_loaded("http")
+            _ensure_loaded("base64")
+            _ensure_loaded("drs")
+
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")
             if file_sources_config.library_import_dir is not None:
                 _ensure_loaded("gximport")
             if file_sources_config.user_library_import_dir is not None:
                 _ensure_loaded("gxuserimport")
+
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
                 # insert at begining instead of append so FTP and library import appear
@@ -81,24 +107,21 @@ class ConfiguredFileSources:
             dict_to_list_key="id",
         )
 
+    def find_best_match(self, url: str):
+        """Returns the best matching file source for handling a particular url. Each filesource scores its own
+        ability to match a particular url, and the highest scorer with a score > 0 is selected."""
+        scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
+        scores.sort(key=lambda f: f.score, reverse=True)
+        return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
+
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
-        scheme, rest = uri.split("://", 1)
-        if scheme not in self.get_schemes():
-            raise exceptions.RequestParameterInvalidException(f"Unsupported URI scheme [{scheme}]")
-
-        if scheme != "gxfiles":
-            # prefix unused
-            id_prefix = None
-            path = rest
-        else:
-            if "/" in rest:
-                id_prefix, path = rest.split("/", 1)
-            else:
-                id_prefix, path = rest, "/"
-        file_source = self.get_file_source(id_prefix, scheme)
+        file_source = self.find_best_match(uri)
+        if not file_source:
+            raise exceptions.RequestParameterInvalidException(f"Could not find handler for URI [{uri}]")
+        path = file_source.to_relative_path(uri)
         return FileSourcePath(file_source, path)
 
     def validate_uri_root(self, uri, user_context):
@@ -133,41 +156,39 @@ class ConfiguredFileSources:
                     "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
                 )
 
-    def get_file_source(self, id_prefix, scheme):
-        for file_source in self._file_sources:
-            # gxfiles uses prefix to find plugin, other scheme are assumed to have
-            # at most one file_source.
-            if scheme != file_source.get_scheme():
-                continue
-            prefix_match = scheme != "gxfiles" or file_source.get_prefix() == id_prefix
-            if prefix_match:
-                return file_source
-
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
-        if path_or_uri.startswith("gx") and "://" in path_or_uri:
-            for scheme in self.get_schemes():
-                if path_or_uri.startswith(f"{scheme}://"):
-                    return True
+        file_source = self.find_best_match(path_or_uri)
+        if file_source:
+            return True
+        else:
+            return False
 
-        return False
-
-    def get_schemes(self):
-        schemes = set()
-        for file_source in self._file_sources:
-            schemes.add(file_source.get_scheme())
-        return schemes
-
-    def plugins_to_dict(self, for_serialization=False, user_context=None):
+    def plugins_to_dict(
+        self,
+        for_serialization: bool = False,
+        user_context: Optional["FileSourceDictifiable"] = None,
+        browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
+                continue
+            if include_kind and file_source.plugin_kind not in include_kind:
+                continue
+            if exclude_kind and file_source.plugin_kind in exclude_kind:
+                continue
+            if browsable_only and not file_source.get_browsable():
                 continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
         return rval
 
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_dict(
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+    ) -> Dict[str, Any]:
         return {
             "file_sources": self.plugins_to_dict(for_serialization=for_serialization, user_context=user_context),
             "config": self._file_sources_config.to_dict(),
@@ -186,7 +207,7 @@ class ConfiguredFileSources:
         )
 
     @staticmethod
-    def from_dict(as_dict):
+    def from_dict(as_dict, load_stock_plugins=False):
         if as_dict is not None:
             sources_as_dict = as_dict["file_sources"]
             config_as_dict = as_dict["config"]
@@ -194,20 +215,32 @@ class ConfiguredFileSources:
         else:
             sources_as_dict = []
             file_sources_config = ConfiguredFileSourcesConfig()
-        return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
+        return ConfiguredFileSources(
+            file_sources_config, conf_dict=sources_as_dict, load_stock_plugins=load_stock_plugins
+        )
+
+
+class NullConfiguredFileSources(ConfiguredFileSources):
+    def __init__(
+        self,
+    ):
+        super().__init__(ConfiguredFileSourcesConfig())
 
 
 class ConfiguredFileSourcesConfig:
     def __init__(
         self,
         symlink_allowlist=None,
+        fetch_url_allowlist=None,
         library_import_dir=None,
         user_library_import_dir=None,
         ftp_upload_dir=None,
         ftp_upload_purge=True,
     ):
         symlink_allowlist = symlink_allowlist or []
+        fetch_url_allowlist = fetch_url_allowlist or []
         self.symlink_allowlist = symlink_allowlist
+        self.fetch_url_allowlist = fetch_url_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
         self.ftp_upload_dir = ftp_upload_dir
@@ -218,16 +251,18 @@ class ConfiguredFileSourcesConfig:
         # Formalize what we read in from config to create a more clear interface
         # for this component.
         kwds = {}
-        kwds["symlink_allowlist"] = getattr(config, "user_library_import_symlink_allowlist", [])
-        kwds["library_import_dir"] = getattr(config, "library_import_dir", None)
-        kwds["user_library_import_dir"] = getattr(config, "user_library_import_dir", None)
-        kwds["ftp_upload_dir"] = getattr(config, "ftp_upload_dir", None)
-        kwds["ftp_upload_purge"] = getattr(config, "ftp_upload_purge", True)
+        kwds["symlink_allowlist"] = config.user_library_import_symlink_allowlist
+        kwds["fetch_url_allowlist"] = [str(ip) for ip in config.fetch_url_allowlist_ips]
+        kwds["library_import_dir"] = config.library_import_dir
+        kwds["user_library_import_dir"] = config.user_library_import_dir
+        kwds["ftp_upload_dir"] = config.ftp_upload_dir
+        kwds["ftp_upload_purge"] = config.ftp_upload_purge
         return ConfiguredFileSourcesConfig(**kwds)
 
     def to_dict(self):
         return {
             "symlink_allowlist": self.symlink_allowlist,
+            "fetch_url_allowlist": self.fetch_url_allowlist,
             "library_import_dir": self.library_import_dir,
             "user_library_import_dir": self.user_library_import_dir,
             "ftp_upload_dir": self.ftp_upload_dir,
@@ -238,6 +273,7 @@ class ConfiguredFileSourcesConfig:
     def from_dict(as_dict):
         return ConfiguredFileSourcesConfig(
             symlink_allowlist=as_dict["symlink_allowlist"],
+            fetch_url_allowlist=parse_allowlist_ips(as_dict["fetch_url_allowlist"]),
             library_import_dir=as_dict["library_import_dir"],
             user_library_import_dir=as_dict["user_library_import_dir"],
             ftp_upload_dir=as_dict["ftp_upload_dir"],
@@ -259,14 +295,19 @@ class FileSourceDictifiable(Dictifiable):
         raise NotImplementedError
 
     @property
-    def group_names(sefl) -> Set[str]:
+    def group_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def file_sources(self):
+        """Return other filesources available in the system, for chained filesource resolution"""
         raise NotImplementedError
 
 
 class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans):
+    def __init__(self, trans, **kwargs):
         self.trans = trans
 
     @property
@@ -317,6 +358,10 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
         vault = self.trans.app.vault
         return vault or defaultdict(lambda: None)
 
+    @property
+    def file_sources(self):
+        return self.trans.app.file_sources
+
 
 class DictFileSourcesUserContext(FileSourceDictifiable):
     def __init__(self, **kwd):
@@ -357,3 +402,7 @@ class DictFileSourcesUserContext(FileSourceDictifiable):
     @property
     def app_vault(self):
         return self._kwd.get("app_vault")
+
+    @property
+    def file_sources(self):
+        return self._kwd.get("file_sources")

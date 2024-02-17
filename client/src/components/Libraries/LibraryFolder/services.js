@@ -7,29 +7,45 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getFolderContents(id, include_deleted, limit, offset, search_text = false) {
-        const url = `${
-            this.root
-        }api/folders/${id}/contents?include_deleted=${include_deleted}&limit=${limit}&offset=${offset}${this.getSearchQuery(
-            search_text
-        )}`;
+    async getFolderContents(folderId, includeDeleted, sortBy, sortDesc, limit, offset, searchText) {
+        const url = `${this.root}api/folders/${folderId}/contents`;
+        const config = {
+            params: {
+                include_deleted: includeDeleted,
+                sort_by: sortBy,
+                sort_desc: sortDesc,
+                limit,
+                offset,
+            },
+        };
+        searchText = searchText.trim();
+        if (searchText) {
+            config.params.search_text = searchText;
+        }
         try {
-            const response = await axios.get(url);
+            const response = await axios.get(url, config);
             return response.data;
         } catch (e) {
             rethrowSimple(e);
         }
     }
 
-    async getFilteredFolderContents(id, excluded, search_text) {
-        const contents = await axios.get(`${this.root}api/folders/${id}/contents?${this.getSearchQuery(search_text)}`);
+    async getFilteredFolderContents(id, excluded, searchText) {
+        // The intent of this method is to get folder contents applying
+        // seachText filters only; we explicitly set limit to 0
+        const config = {
+            params: {
+                limit: 0,
+            },
+        };
+        searchText = searchText?.trim();
+        if (searchText) {
+            config.params.search_text = searchText;
+        }
+        const contents = await axios.get(`${this.root}api/folders/${id}/contents`, config);
         return contents.data.folder_contents.filter((item) => {
             return !excluded.some((exc) => exc.id === item.id);
         });
-    }
-
-    getSearchQuery(search_text) {
-        return search_text ? `&search_text=${encodeURI(search_text.trim())}` : "";
     }
 
     updateFolder(item, onSucess, onError) {

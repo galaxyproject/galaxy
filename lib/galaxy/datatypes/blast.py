@@ -33,7 +33,17 @@ Covers the ``blastxml`` format and the BLAST databases.
 import logging
 import os
 from time import sleep
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
 
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -57,16 +67,16 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "NCBI Blast XML data"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -96,7 +106,7 @@ class BlastXml(GenericXml):
         return True
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) == 1:
             # For one file only, use base class method (move/copy)
@@ -163,8 +173,7 @@ class BlastXml(GenericXml):
                     # Enough to check <BlastOutput_program> and <BlastOutput_version> match
                     h.close()
                     raise ValueError(
-                        "BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n"
-                        % (split_files[0], f, old_header[:300], header[:300])
+                        f"BLAST XML headers don't match for {split_files[0]} and {f} - have:\n{old_header[:300]}\n...\n\nAnd:\n{header[:300]}\n...\n"
                     )
                 else:
                     out.write("    <Iteration>\n")
@@ -182,7 +191,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -191,14 +200,24 @@ class _BlastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
         except Exception:
             return "BLAST database (multiple files)"
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -206,7 +225,14 @@ class _BlastDb(Data):
         headers = kwd.get("headers", {})
         if not preview:
             return super().display_data(
-                trans, data=data, preview=preview, filename=filename, to_ext=to_ext, size=size, offset=offset, **kwd
+                trans,
+                dataset=dataset,
+                preview=preview,
+                filename=filename,
+                to_ext=to_ext,
+                offset=offset,
+                ck_size=ck_size,
+                **kwd,
             )
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"
@@ -220,7 +246,7 @@ class _BlastDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(data.file_name, encoding="utf-8") as handle:
+            with open(dataset.get_file_name(), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -229,11 +255,13 @@ class _BlastDb(Data):
         # Galaxy assumes HTML for the display of composite datatypes,
         return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"), headers
 
-    def merge(split_files, output_file):
+    @staticmethod
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merge BLAST databases (not implemented for now)."""
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    @classmethod
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:
             return None
@@ -340,7 +368,7 @@ class LastDb(Data):
     file_ext = "lastdb"
     composite_type = "basic"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"
@@ -349,7 +377,7 @@ class LastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

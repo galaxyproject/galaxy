@@ -5,9 +5,10 @@ from typing import (
 )
 
 from pydantic import (
-    BaseModel,
     Field,
+    RootModel,
 )
+from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     EncodedDatabaseIdField,
@@ -15,13 +16,15 @@ from galaxy.schema.fields import (
 )
 from galaxy.schema.schema import (
     GroupModel,
+    Model,
     UserModel,
+    WithModelClass,
 )
 
-QUOTA_MODEL_CLASS_NAME = "Quota"
-USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "UserQuotaAssociation"
-GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "GroupQuotaAssociation"
-DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "DefaultQuotaAssociation"
+QUOTA = Literal["Quota"]
+USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]
+GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
+DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
 class QuotaOperation(str, Enum):
@@ -67,8 +70,10 @@ QuotaOperationField = Field(
 )
 
 
-class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class DefaultQuota(
+    Model, WithModelClass
+):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+    model_class: DEFAULT_QUOTA_ASSOCIATION = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -80,8 +85,8 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
     )
 
 
-class UserQuota(BaseModel):
-    model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class UserQuota(Model, WithModelClass):
+    model_class: USER_QUOTA_ASSOCIATION = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
         title="User",
@@ -89,8 +94,8 @@ class UserQuota(BaseModel):
     )
 
 
-class GroupQuota(BaseModel):
-    model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class GroupQuota(Model, WithModelClass):
+    model_class: GROUP_QUOTA_ASSOCIATION = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -98,16 +103,21 @@ class GroupQuota(BaseModel):
     )
 
 
-class QuotaBase(BaseModel):
+class QuotaBase(Model, WithModelClass):
     """Base model containing common fields for Quotas."""
 
-    model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
+    model_class: QUOTA = ModelClassField(QUOTA)
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",
     )
     name: str = QuotaNameField
+    quota_source_label: Optional[str] = Field(
+        None,
+        title="Quota Source Label",
+        description="Quota source label",
+    )
 
 
 class QuotaSummary(QuotaBase):
@@ -117,12 +127,13 @@ class QuotaSummary(QuotaBase):
         ...,
         title="URL",
         description="The relative URL to get this particular Quota details from the rest API.",
-        deprecated=True,
+        # TODO: also deprecate on python side, https://github.com/pydantic/pydantic/issues/2255
+        json_schema_extra={"deprecated": True},
     )
 
 
-class QuotaSummaryList(BaseModel):
-    __root__: List[QuotaSummary] = Field(
+class QuotaSummaryList(RootModel):
+    root: List[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
     )
@@ -166,7 +177,7 @@ class CreateQuotaResult(QuotaSummary):
     )
 
 
-class CreateQuotaParams(BaseModel):
+class CreateQuotaParams(Model):
     name: str = QuotaNameField
     description: str = QuotaDescriptionField
     amount: str = Field(
@@ -184,6 +195,11 @@ class CreateQuotaParams(BaseModel):
             " equivalent to ``no``."
         ),
     )
+    quota_source_label: Optional[str] = Field(
+        default=None,
+        title="Quota Source Label",
+        description="If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.",
+    )
     in_users: Optional[List[str]] = Field(
         default=[],
         title="Users",
@@ -196,7 +212,7 @@ class CreateQuotaParams(BaseModel):
     )
 
 
-class UpdateQuotaParams(BaseModel):
+class UpdateQuotaParams(Model):
     name: Optional[str] = Field(
         default=None,
         title="Name",
@@ -243,7 +259,7 @@ class UpdateQuotaParams(BaseModel):
     )
 
 
-class DeleteQuotaPayload(BaseModel):
+class DeleteQuotaPayload(Model):
     purge: bool = Field(
         False,
         title="Purge",

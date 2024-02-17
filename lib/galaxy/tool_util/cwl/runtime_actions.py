@@ -70,14 +70,6 @@ def handle_outputs(job_directory=None):
     # registered with ToolOutput objects via from_work_dir handling.
     if job_directory is None:
         job_directory = os.path.join(os.getcwd(), os.path.pardir)
-    metadata_directory = os.path.join(job_directory, "metadata")
-    metadata_params_path = os.path.join(metadata_directory, "params.json")
-    try:
-        with open(metadata_params_path) as f:
-            metadata_params = json.load(f)
-    except OSError:
-        raise Exception(f"Failed to find params.json from metadata directory [{metadata_directory}]")
-
     cwl_job_file = os.path.join(job_directory, JOB_JSON_FILE)
     if not os.path.exists(cwl_job_file):
         # Not a CWL job, just continue
@@ -88,7 +80,10 @@ def handle_outputs(job_directory=None):
     job_proxy = load_job_proxy(job_directory, strict_cwl_validation=False)
     tool_working_directory = os.path.join(job_directory, "working")
 
-    job_id_tag = metadata_params["job_id_tag"]
+    cwl_metadata_params_path = os.path.join(job_directory, "cwl_params.json")
+    with open(cwl_metadata_params_path) as f:
+        cwl_metadata_params = json.load(f)
+    job_id_tag = cwl_metadata_params["job_id_tag"]
     from galaxy.job_execution.output_collect import (
         default_exit_code_file,
         read_exit_code_from,
@@ -96,7 +91,6 @@ def handle_outputs(job_directory=None):
 
     exit_code_file = default_exit_code_file(".", job_id_tag)
     tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
-
     outputs = job_proxy.collect_outputs(tool_working_directory, tool_exit_code)
 
     # Build galaxy.json file.
@@ -126,7 +120,6 @@ def handle_outputs(job_directory=None):
 
         secondary_files = output.get("secondaryFiles", [])
         if secondary_files:
-
             order = []
             index_contents = {"order": order}
 
@@ -228,7 +221,8 @@ def handle_outputs(job_directory=None):
         if output_name not in handled_outputs:
             handle_known_output_json(None, output_name)
 
-    with open("galaxy.json", "w") as f:
+    job_metadata = os.path.join(job_directory, cwl_metadata_params["job_metadata"])
+    with open(job_metadata, "w") as f:
         json.dump(provided_metadata, f)
 
 

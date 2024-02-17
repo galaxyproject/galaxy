@@ -2,7 +2,7 @@
     <b-container>
         <b-row>
             <b-col>
-                <h4>Current Custom Builds</h4>
+                <h1 class="h-sm">Current Custom Builds</h1>
             </b-col>
         </b-row>
         <b-row>
@@ -23,12 +23,12 @@
         <template v-if="installedBuilds.length > 0">
             <b-row class="mt-2">
                 <b-col>
-                    <h4>System Installed Builds</h4>
+                    <h2 class="h-sm">System Installed Builds</h2>
                 </b-col>
             </b-row>
             <b-row>
                 <b-col id="installed-builds" class="mb-4">
-                    <multiselect
+                    <Multiselect
                         v-model="selectedInstalledBuilds"
                         multiple
                         taggable
@@ -36,13 +36,13 @@
                         track-by="value"
                         :searchable="false"
                         :options="installedBuilds">
-                    </multiselect>
+                    </Multiselect>
                 </b-col>
             </b-row>
         </template>
         <b-row>
             <b-col>
-                <h4>Add a Custom Build</h4>
+                <h2 class="h-sm">Add a Custom Build</h2>
             </b-col>
         </b-row>
         <b-row>
@@ -107,7 +107,7 @@
             </b-col>
             <b-col>
                 <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
-                    <h4>FASTA format</h4>
+                    <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
                         This is a multi-fasta file from your current history that provides the genome sequences for each
                         chromosome/contig in your build.
@@ -124,7 +124,7 @@ GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
                     >
                 </b-card>
                 <b-card v-else class="alert-info">
-                    <h4>Length Format</h4>
+                    <h2 class="h-sm">Length Format</h2>
                     <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
                     <pre class="card-text">chrom/contig   length of chrom/contig</pre>
                     <p class="card-text">For example, the first few entries of <em>mm9.len</em> are as follows:</p>
@@ -147,12 +147,14 @@ chr5    152537259</pre
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import axios from "axios";
-import { getGalaxyInstance } from "app";
-import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+
+import { getGalaxyInstance } from "app";
+import axios from "axios";
+import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+import Multiselect from "vue-multiselect";
+
 Vue.use(BootstrapVue);
 
 export default {

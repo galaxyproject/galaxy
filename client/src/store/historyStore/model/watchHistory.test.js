@@ -1,49 +1,120 @@
-import MockAdapter from "axios-mock-adapter";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
-import { watchHistory } from "./watchHistory";
-import store from "store/index";
+import MockAdapter from "axios-mock-adapter";
+import { createPinia, mapState } from "pinia";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
+
+import { watchHistoryOnce } from "./watchHistory";
+
+const pinia = createPinia();
+
+const testApp = {
+    template: `<div/>`,
+    computed: {
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
+    },
+};
 
 describe("watchHistory", () => {
     let axiosMock;
+    let wrapper;
+    const historyData = {
+        id: "history-id",
+        update_time: "0",
+    };
+    const historyItems = [
+        {
+            id: "id-1",
+            hid: 1,
+            name: "first",
+            state: "ok",
+            deleted: false,
+            visible: true,
+            history_id: "history-id",
+        },
+        {
+            id: "id-2",
+            hid: 2,
+            name: "second",
+            state: "error",
+            deleted: false,
+            visible: true,
+            history_id: "history-id",
+        },
+    ];
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
-        const historyData = {
-            id: "history-id",
-            update_time: "0",
-        };
-        axiosMock.onGet(`/history/current_history_json`).reply(200, historyData);
-        const historyItems = [
-            {
-                id: "id-1",
-                hid: 1,
-                name: "first",
-                state: "ok",
-                deleted: false,
-                visible: true,
-            },
-            {
-                id: "id-2",
-                hid: 2,
-                name: "second",
-                state: "error",
-                deleted: false,
-                visible: true,
-            },
-        ];
-        axiosMock.onGet(/api\/histories\/history-id\/contents?.*/).reply(200, historyItems);
+        const localVue = createLocalVue();
+        useHistoryItemsStore(pinia);
+
+        wrapper = mount(testApp, {
+            localVue,
+            pinia,
+        });
+
+        const historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "history-id" }]);
+        historyStore.setCurrentHistoryId("history-id");
     });
 
     afterEach(() => {
-        axiosMock.restore();
+        axiosMock.reset();
     });
 
-    it("store initialization", async () => {
-        expect(store.getters["history/currentHistoryId"]).toBe(null);
-        await watchHistory();
-        expect(store.getters["history/currentHistoryId"]).toBe("history-id");
-        expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "" }).length).toBe(2);
-        expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "second" })[0].hid).toBe(2);
-        expect(store.getters["getHistoryItems"]({ historyId: "history-id", filterText: "state=ok" })[0].hid).toBe(1);
+    it("sets up the history and history item stores", async () => {
+        axiosMock
+            .onGet(`/history/current_history_json`)
+            .replyOnce(200, historyData)
+            .onGet(/api\/histories\/history-id\/contents?.*/)
+            .replyOnce(200, historyItems);
+        await watchHistoryOnce();
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
+        expect(wrapper.vm.getHistoryItems("history-id", "second")[0].hid).toBe(2);
+        expect(wrapper.vm.getHistoryItems("history-id", "state:ok")[0].hid).toBe(1);
+    });
+
+    it("survives a failing request", async () => {
+        // Setup a failing request, then update history content
+        axiosMock
+            .onGet(`/history/current_history_json`)
+            .replyOnce(200, historyData)
+            .onGet(/api\/histories\/history-id\/contents?.*/)
+            .replyOnce(200, historyItems)
+            .onGet(`/history/current_history_json`)
+            .replyOnce(500);
+
+        await watchHistoryOnce();
+        expect(wrapper.vm.currentHistoryId).toBe("history-id");
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(2);
+        try {
+            await watchHistoryOnce();
+        } catch (error) {
+            console.log(error);
+            expect(error.response.status).toBe(500);
+        }
+        // Need to reset axios mock here. Smells like a bug,
+        // maybe in axios-mock-adapter, maybe on our side
+        axiosMock.reset();
+        axiosMock
+            .onGet(`/history/current_history_json`)
+            .replyOnce(200, { ...historyData, update_time: "1" })
+            .onGet(/api\/histories\/history-id\/contents?.*/)
+            .replyOnce(200, [
+                {
+                    id: "id-3",
+                    hid: 3,
+                    name: "third",
+                    state: "ok",
+                    deleted: false,
+                    visible: true,
+                    history_id: "history-id",
+                },
+            ]);
+        await watchHistoryOnce();
+        // We should have received the update and have 3 items in the history
+        expect(wrapper.vm.getHistoryItems("history-id", "").length).toBe(3);
     });
 });

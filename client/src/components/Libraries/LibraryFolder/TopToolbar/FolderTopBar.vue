@@ -3,10 +3,10 @@
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button
                 class="mr-1 btn btn-secondary"
-                :to="{ path: `/` }"
+                :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
-                <font-awesome-icon icon="home" />
+                <FontAwesomeIcon icon="home" />
             </b-button>
             <div>
                 <div class="form-inline">
@@ -17,7 +17,7 @@
                         class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                         type="button"
                         @click="newFolder">
-                        <font-awesome-icon icon="plus" />
+                        <FontAwesomeIcon icon="plus" />
                         Folder
                     </button>
                     <div v-if="metadata.can_add_library_item">
@@ -38,7 +38,7 @@
                                     from User Directory
                                 </a>
                                 <div v-if="library_import_dir || allow_library_path_paste">
-                                    <h5 class="dropdown-header cursor-pointer">Admins only</h5>
+                                    <h2 class="dropdown-header cursor-pointer h-text">Admins only</h2>
                                     <a
                                         v-if="library_import_dir"
                                         class="dropdown-item cursor-pointer"
@@ -60,8 +60,8 @@
                             type="button"
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown">
-                            <font-awesome-icon icon="book" />
-                            Export to History <span class="caret"></span>
+                            <FontAwesomeIcon icon="book" />
+                            Add to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
@@ -85,7 +85,7 @@
                         title="Download items as archive"
                         class="dropdown dataset-manipulation mr-1">
                         <button id="download--btn" type="button" class="primary-button" @click="downloadData('zip')">
-                            <font-awesome-icon icon="download" />
+                            <FontAwesomeIcon icon="download" />
                             Download
                         </button>
                     </div>
@@ -96,16 +96,12 @@
                         class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1"
                         type="button"
                         @click="deleteSelected">
-                        <font-awesome-icon icon="trash" />
+                        <FontAwesomeIcon icon="trash" />
                         Delete
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox
-                            id="checkbox-1"
-                            :checked="include_deleted"
-                            name="checkbox-1"
-                            @input="toggle_include_deleted($event)">
+                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -120,23 +116,24 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-import Vue from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { deleteSelectedItems } from "./delete-selected";
+import { getGalaxyInstance } from "app";
+import BootstrapVue from "bootstrap-vue";
 import { initTopBarIcons } from "components/Libraries/icons";
-import mod_import_dataset from "./import-to-history/import-dataset";
-import mod_import_collection from "./import-to-history/import-collection";
-import mod_add_datasets from "./add-datasets";
-import { Toast } from "ui/toast";
-import download from "./download";
-import mod_utils from "utils/utils";
-import { getAppRoot } from "onload/loadConfig";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
+import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import { Toast } from "composables/toast";
+import { getAppRoot } from "onload/loadConfig";
+import mod_utils from "utils/utils";
+import Vue from "vue";
+
 import SearchField from "../SearchField";
 import { Services } from "../services";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
+import mod_add_datasets from "./add-datasets";
+import { deleteSelectedItems } from "./delete-selected";
+import download from "./download";
+import mod_import_collection from "./import-to-history/import-collection";
+import mod_import_dataset from "./import-to-history/import-dataset";
 
 initTopBarIcons();
 
@@ -155,7 +152,7 @@ export default {
             type: String,
             required: true,
         },
-        include_deleted: {
+        includeDeleted: {
             type: Boolean,
             required: true,
         },
@@ -244,7 +241,7 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.search_text
+                    this.$parent.searchText
                 );
                 this.$emit("setBusy", false);
                 return selected;
@@ -340,9 +337,6 @@ export default {
                 },
                 cache: true,
             });
-        },
-        toggle_include_deleted: function (value) {
-            this.$emit("fetchFolderContents", value);
         },
         updateContent: function () {
             this.$emit("fetchFolderContents");

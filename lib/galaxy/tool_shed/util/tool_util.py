@@ -1,16 +1,12 @@
-import logging
 import os
 import shutil
+from typing import Optional
 
-import galaxy.tools
 from galaxy import util
 from galaxy.datatypes.sniff import is_column_based
 from galaxy.tool_shed.util import basic_util
 from galaxy.util import checkers
-from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-
-log = logging.getLogger(__name__)
 
 
 def build_shed_tool_conf_select_field(app):
@@ -39,14 +35,15 @@ def build_tool_panel_section_select_field(app):
     return select_field
 
 
-def copy_sample_file(app, filename, dest_path=None):
+def copy_sample_file(tool_data_path: str, filename: str, dest_path: Optional[str] = None) -> str:
     """
     Copies a sample file at `filename` to `the dest_path`
     directory and strips the '.sample' extensions from `filename`.
     Returns the path to the copied file (with the .sample extension).
     """
     if dest_path is None:
-        dest_path = os.path.abspath(app.config.tool_data_path)
+        dest_path = tool_data_path
+    assert dest_path
     sample_file_name = basic_util.strip_path(filename)
     copied_file = sample_file_name.rsplit(".sample", 1)[0]
     full_source_path = os.path.abspath(filename)
@@ -63,7 +60,13 @@ def copy_sample_file(app, filename, dest_path=None):
     return non_sample_path
 
 
-def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None):
+def copy_sample_files(
+    tool_data_path: str,
+    sample_files,
+    tool_path: Optional[str] = None,
+    sample_files_copied=None,
+    dest_path: Optional[str] = None,
+) -> None:
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not
     already been copied.  Those that have been copied are contained in sample_files_copied.
@@ -79,13 +82,18 @@ def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=Non
             if tool_path:
                 filename = os.path.join(tool_path, filename)
             # Attempt to ensure we're copying an appropriate file.
-            if is_data_index_sample_file(filename):
-                copy_sample_file(app, filename, dest_path=dest_path)
+            if _is_data_index_sample_file(filename):
+                copy_sample_file(tool_data_path, filename, dest_path=dest_path)
 
 
 def generate_message_for_invalid_tools(
-    app, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False
-):
+    app,
+    invalid_file_tups: list,
+    repository,
+    metadata_dict: Optional[dict],
+    as_html: bool = True,
+    displaying_invalid_tool: bool = False,
+) -> str:
     if as_html:
         new_line = "<br/>"
         bold_start = "<b>"
@@ -133,23 +141,6 @@ def generate_message_for_invalid_tools(
     return message
 
 
-def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
-    for elem in config_elems:
-        if elem.tag == "tool":
-            if elem.get("guid") == tool_dict["guid"]:
-                tool_path = shed_tool_conf_dict["tool_path"]
-                relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                return tool_path, relative_install_dir
-        elif elem.tag == "section":
-            for section_elem in elem:
-                if section_elem.tag == "tool":
-                    if section_elem.get("guid") == tool_dict["guid"]:
-                        tool_path = shed_tool_conf_dict["tool_path"]
-                        relative_install_dir = os.path.join(tool_path, partial_install_dir)
-                        return tool_path, relative_install_dir
-    return None, None
-
-
 def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tups, sample_files_copied):
     """
     Inspect each tool to see if it has any input parameters that are dynamically
@@ -167,7 +158,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                 for sample_file in sample_files:
                     sample_file_name = basic_util.strip_path(sample_file)
                     if sample_file_name == f"{missing_file_name}.sample":
-                        target_path = copy_sample_file(app, os.path.join(tool_path, sample_file))
+                        target_path = copy_sample_file(app.config.tool_data_path, os.path.join(tool_path, sample_file))
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file(target_path)
                         sample_files_copied.append(target_path)
@@ -175,7 +166,7 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
     return repository_tools_tups, sample_files_copied
 
 
-def is_data_index_sample_file(file_path):
+def _is_data_index_sample_file(file_path):
     """
     Attempt to determine if a .sample file is appropriate for copying to ~/tool-data when
     a tool shed repository is being installed into a Galaxy instance.
@@ -199,34 +190,6 @@ def is_data_index_sample_file(file_path):
         return False
     # Default to copying the file if none of the above are true.
     return True
-
-
-def new_state(trans, tool, invalid=False):
-    """Create a new `DefaultToolState` for the received tool.  Only inputs on the first page will be initialized."""
-    state = galaxy.tools.DefaultToolState()
-    state.inputs = {}
-    if invalid:
-        # We're attempting to display a tool in the tool shed that has been determined to have errors, so is invalid.
-        return state
-    try:
-        # Attempt to generate the tool state using the standard Galaxy-side code
-        return tool.new_state(trans)
-    except Exception as e:
-        # Fall back to building tool state as below
-        log.debug(
-            'Failed to build tool state for tool "%s" using standard method, will try to fall back on custom method: %s',
-            tool.id,
-            e,
-        )
-    inputs = tool.inputs_by_page[0]
-    context = ExpressionContext(state.inputs, parent=None)
-    for input in inputs.values():
-        try:
-            state.inputs[input.name] = input.get_initial_value(trans, context)
-        except Exception:
-            # FIXME: not all values should be an empty list
-            state.inputs[input.name] = []
-    return state
 
 
 def panel_entry_per_tool(tool_section_dict):
@@ -254,9 +217,6 @@ __all__ = (
     "copy_sample_file",
     "copy_sample_files",
     "generate_message_for_invalid_tools",
-    "get_tool_path_install_dir",
     "handle_missing_index_file",
-    "is_data_index_sample_file",
-    "new_state",
     "panel_entry_per_tool",
 )

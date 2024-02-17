@@ -60,7 +60,7 @@ then
         cp -f "${GALAXY}/tool-data/shared/ucsc/new/ucsc_build_sites.txt" "${GALAXY}/tool-data/shared/ucsc/ucsc_build_sites.txt"
     fi
 else
-    echo "Failed to update builds.txt" >&2
+    echo "Failed to update ucsc_build_sites.txt" >&2
 fi
 
 # Try to build chromInfo tables

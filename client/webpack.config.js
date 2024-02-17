@@ -5,6 +5,9 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
+const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
+const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -24,24 +27,38 @@ const modulesExcludedFromLibs = [
     "citeproc",
 ].join("|");
 
+const buildDate = new Date();
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
+    let minimizations = {};
+    if (targetEnv == "production") {
+        minimizations = {
+            minimize: true,
+            minimizer: [new TerserPlugin(), new CssMinimizerPlugin()],
+        };
+    } else {
+        minimizations = {
+            minimize: false,
+        };
+    }
+
     const buildconfig = {
         mode: targetEnv,
         entry: {
-            login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-            admin: ["polyfills", "bundleEntries", "entry/admin"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
         },
         output: {
-            path: path.join(__dirname, "../", "/static/dist"),
+            path: path.join(__dirname, "dist"),
             filename: "[name].bundled.js",
+            clean: true,
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss"],
+            plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -52,6 +69,7 @@ module.exports = (env = {}, argv = {}) => {
                 assert: require.resolve("assert/"),
             },
             alias: {
+                vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
@@ -78,14 +96,22 @@ module.exports = (env = {}, argv = {}) => {
                     },
                 },
             },
-            minimize: true,
-            minimizer: [`...`, new CssMinimizerPlugin()],
+            ...minimizations,
         },
         module: {
             rules: [
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                },
+                {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: "ts-loader",
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
                 },
                 {
                     test: /\.mjs$/,
@@ -169,6 +195,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.(txt|tmpl)$/,
                     loader: "raw-loader",
                 },
+                {
+                    test: /\.ya?ml$/,
+                    use: "yaml-loader",
+                },
             ],
         },
         resolveLoader: {
@@ -193,13 +223,22 @@ module.exports = (env = {}, argv = {}) => {
             }),
             new webpack.DefinePlugin({
                 __targetEnv__: JSON.stringify(targetEnv),
-                __buildTimestamp__: JSON.stringify(new Date().toISOString()),
+                __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
+                __license__: JSON.stringify(require("./package.json").license),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
             }),
             new DuplicatePackageCheckerPlugin(),
+            new DumpMetaPlugin({
+                filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
+                prepare: (stats) => ({
+                    // add any other information you need to dump
+                    hash: stats.hash,
+                    epoch: Date.parse(buildDate),
+                }),
+            }),
         ],
         devServer: {
             client: {
@@ -207,19 +246,27 @@ module.exports = (env = {}, argv = {}) => {
                     errors: true,
                     warnings: false,
                 },
+                webSocketURL: {
+                    port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
+                },
             },
+            allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
+                writeToDisk: true,
             },
             hot: true,
-            port: 8081,
+            port: process.env.WEBPACK_PORT || 8081,
             host: "0.0.0.0",
             // proxy *everything* to the galaxy server.
             // someday, when we have a fully API-driven independent client, this
             // can be a more limited set -- e.g. `/api`, `/auth`
             proxy: {
                 "**": {
-                    target: process.env.GALAXY_URL || "http://localhost:8080",
+                    // We explicitly use ipv4 loopback instead of localhost to
+                    // avoid ipv6/ipv4 resolution order issues; this should
+                    // align with Galaxy's default.
+                    target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
                     secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
                     logLevel: "debug",
@@ -228,8 +275,8 @@ module.exports = (env = {}, argv = {}) => {
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
-        buildconfig.devtool = "eval-cheap-source-map";
+    if (process.env.GXY_BUILD_SOURCEMAPS) {
+        buildconfig.devtool = "source-map";
     }
 
     return buildconfig;

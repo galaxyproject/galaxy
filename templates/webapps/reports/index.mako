@@ -12,7 +12,7 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base" )}
+    ${h.dist_css( "base" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -35,7 +35,7 @@
             </a>
         </div>
     </div>
-    <div class="unified-panel-body">
+    <div style="padding: 0.5rem;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionPad"></div>
@@ -121,5 +121,5 @@
 
 <%def name="center_panel()">
     <% center_url = h.url_for( controller='home', action='run_stats' ) %>
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
+    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 75%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

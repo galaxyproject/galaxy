@@ -1,16 +1,54 @@
 <template>
-    <TourStep
-        v-if="currentStep"
-        :key="currentIndex"
-        :step="currentStep"
-        :is-playing="isPlaying"
-        :is-last="isLast"
-        @next="next"
-        @end="end"
-        @play="play" />
+    <div class="d-flex flex-column">
+        <div v-if="historiesLoading">computing tour requirements...</div>
+        <b-modal
+            v-else-if="loginRequired(currentUser)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
+        </b-modal>
+        <b-modal
+            v-else-if="adminRequired(currentUser)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
+        </b-modal>
+        <b-modal
+            v-else-if="newHistoryRequired(currentHistory)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger">
+                This tour is designed to run on a new history, please create a new history before running it.
+                <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
+            </b-alert>
+        </b-modal>
+        <TourStep
+            v-else-if="currentStep"
+            :key="currentIndex"
+            :step="currentStep"
+            :is-playing="isPlaying"
+            :is-last="isLast"
+            @next="next"
+            @end="end"
+            @play="play" />
+    </div>
 </template>
 
 <script>
+import { mapActions, mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
 import TourStep from "./TourStep";
 
 // popup display duration when auto-playing the tour
@@ -25,14 +63,21 @@ export default {
             type: Array,
             required: true,
         },
+        requirements: {
+            type: Array,
+            required: true,
+        },
     },
     data() {
         return {
             currentIndex: -1,
             isPlaying: false,
+            showRequirementDialog: true,
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistory", "historiesLoading"]),
         currentStep() {
             return this.steps[this.currentIndex];
         },
@@ -42,6 +87,9 @@ export default {
         isLast() {
             return this.currentIndex === this.steps.length - 1;
         },
+        hasBegun() {
+            return this.currentIndex >= 1;
+        },
     },
     beforeDestroy() {
         window.removeEventListener("keyup", this.handleKeyup);
@@ -50,6 +98,7 @@ export default {
         this.start();
     },
     methods: {
+        ...mapActions(useHistoryStore, ["createNewHistory"]),
         start() {
             window.addEventListener("keyup", this.handleKeyup);
             this.currentIndex = 0;
@@ -58,6 +107,26 @@ export default {
             this.isPlaying = isPlaying;
             if (this.isPlaying) {
                 this.next();
+            }
+        },
+        loginRequired(user) {
+            return !this.hasBegun && this.requirements.indexOf("logged_in") >= 0 && user.isAnonymous;
+        },
+        adminRequired(user) {
+            return !this.hasBegun && this.requirements.indexOf("admin") >= 0 && !user.is_admin;
+        },
+        newHistoryRequired(history) {
+            if (this.hasBegun) {
+                return false;
+            }
+            const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
+            if (!hasNewHistoryRequirement) {
+                return false;
+            } else if (history && history.size != 0) {
+                // TODO: better estimate for whether the history is new.
+                return true;
+            } else {
+                return false;
             }
         },
         async next() {

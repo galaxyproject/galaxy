@@ -1,15 +1,12 @@
 import logging
-import os
 from enum import Enum
 from typing import (
     Dict,
     List,
-    Optional,
     Tuple,
 )
 
 from galaxy.tool_util.edam_util import (
-    load_edam_tree,
     ROOT_OPERATION,
     ROOT_TOPIC,
 )
@@ -36,10 +33,7 @@ class EdamPanelMode(str, Enum):
 
 
 class EdamToolPanelView(ToolPanelView):
-    def __init__(self, edam_ontology_path: Optional[str], mode: EdamPanelMode = EdamPanelMode.merged):
-        edam = load_edam_tree(
-            None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path
-        )
+    def __init__(self, edam: Dict[str, Dict], mode: EdamPanelMode = EdamPanelMode.merged):
         self.edam = edam
         self.mode = mode
         self.include_topics = mode in [EdamPanelMode.merged, EdamPanelMode.topics]
@@ -129,7 +123,7 @@ class EdamToolPanelView(ToolPanelView):
                 populate_section(*tuple_)
 
         section = new_panel.get_or_create_section("uncategorized", "Uncategorized")
-        for (tool_id, key, val, val_name) in uncategorized:
+        for tool_id, key, val, val_name in uncategorized:
             toolbox_registry.add_tool_to_tool_panel_view(val, section)
             new_panel.record_section_for_tool_id(tool_id, key, val_name)
         log.debug("Loading EDAM tool panel finished %s", execution_timer)
@@ -162,15 +156,15 @@ class EdamToolPanelView(ToolPanelView):
         if mode == EdamPanelMode.merged:
             model_id = "ontology:edam_merged"
             name = "EDAM Operations and Topics"
-            description = "Tools are grouped using both annotated operation and topic information (if availabled)."
+            description = "Tools are grouped using both annotated operation and topic information (if available)."
         elif mode == EdamPanelMode.operations:
             model_id = "ontology:edam_operations"
             name = "EDAM Operations"
-            description = "Tools are grouped using annotated EDAM operation information (if availabled)."
+            description = "Tools are grouped using annotated EDAM operation information (if available)."
         elif mode == EdamPanelMode.topics:
             model_id = "ontology:edam_topics"
             name = "EDAM Topics"
-            description = "Tools are grouped using annotated EDAM topic information (if availabled)."
+            description = "Tools are grouped using annotated EDAM topic information (if available)."
         else:
             raise AssertionError(f"Invalid EDAM mode encountered {mode}")
         model_class = self.__class__.__name__

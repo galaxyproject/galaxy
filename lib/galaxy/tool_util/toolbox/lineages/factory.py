@@ -44,7 +44,15 @@ class LineageMap:
         if lineage:
             return lineage
         if tool_id not in self.lineage_map:
-            tool = self.app.toolbox._tools_by_id.get(tool_id)
+            toolbox = None
+            try:
+                toolbox = self.app.toolbox
+            except AttributeError:
+                # We're building the lineage map while building the toolbox,
+                # so app.toolbox may not be available.
+                # TODO: is the fallback really needed / can it be fixed by improving _get_versionless ?
+                pass
+            tool = toolbox and toolbox._tools_by_id.get(tool_id)
             if tool:
                 lineage = ToolLineage.from_tool(tool)
             if lineage:

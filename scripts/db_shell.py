@@ -11,11 +11,11 @@
 # % ipython -i scripts/db_shell.py -- -c config/galaxy.ini
 #
 # You can also use this script as a library, for instance see https://gist.github.com/1979583
-# TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
 
 import datetime
 import decimal
+import logging
 import os.path
 import sys
 
@@ -32,6 +32,11 @@ from galaxy.model import *  # noqa
 from galaxy.model import set_datatypes_registry  # More explicit than `*` import
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
+
+WARNING_MODULES = ["parso", "asyncio", "galaxy.datatypes"]
+for mod in WARNING_MODULES:
+    logger = logging.getLogger(mod)
+    logger.setLevel("WARNING")
 
 registry = Registry()
 registry.load_datatypes()

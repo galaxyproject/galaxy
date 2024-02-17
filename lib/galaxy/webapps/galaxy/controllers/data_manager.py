@@ -129,7 +129,7 @@ class DataManager(BaseUIController):
                     "name": hda.name,
                     "created": unicodify(hda.create_time.strftime(trans.app.config.pretty_datetime_format)),
                     "fileSize": nice_size(hda.dataset.file_size),
-                    "fileName": hda.file_name,
+                    "fileName": hda.get_file_name(),
                     "infoUrl": web.url_for(
                         controller="dataset", action="show_params", dataset_id=trans.security.encode_id(hda.id)
                     ),

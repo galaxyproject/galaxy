@@ -1,0 +1,3 @@
+# Table used for listing QIIME2View display servers
+#<unique_id>	<display_name>	<url>
+main_q2view	qiime2view	https://view.qiime2.org/visualization/?type=html&src=%(q2view_file_url_qp)s

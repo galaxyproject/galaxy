@@ -1,14 +1,15 @@
 /** This class renders the chart data selection form with repeats. */
 
-import _ from "underscore";
-import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import Utils from "utils/utils";
-import Repeat from "./repeat";
-import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
-import { appendVueComponent } from "utils/mountVueComponent";
+import { visitInputs } from "components/Form/utilities";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import { replaceChildrenWithComponent } from "utils/mountVueComponent";
+import Utils from "utils/utils";
+
+import Repeat from "./repeat";
 
 var GroupView = Backbone.View.extend({
     initialize: function (app, options) {
@@ -75,7 +76,7 @@ var GroupView = Backbone.View.extend({
                             params[name] = input.value;
                         });
                         self.redraw(params);
-                        const instance = appendVueComponent(self.$el, FormDisplay, {
+                        const instance = replaceChildrenWithComponent(self.el, FormDisplay, {
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {

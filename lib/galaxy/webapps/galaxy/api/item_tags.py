@@ -1,73 +1,138 @@
 """
 API operations related to tagging items.
 """
+
 import logging
 
-from galaxy import exceptions
-from galaxy.web import expose_api
-from galaxy.webapps.base.controller import UsesTagsMixin
-from . import BaseGalaxyAPIController
+from fastapi import (
+    Body,
+    Path,
+)
+from typing_extensions import Annotated
+
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.item_tags import ItemTagsManager
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.item_tags import (
+    ItemTagsCreatePayload,
+    ItemTagsListResponse,
+    ItemTagsResponse,
+)
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 
 log = logging.getLogger(__name__)
 
-
-class BaseItemTagsController(BaseGalaxyAPIController, UsesTagsMixin):
-    """ """
-
-    @expose_api
-    def index(self, trans, **kwd):
-        """ """
-        tags = self._get_user_tags(trans, self.tagged_item_class, kwd[self.tagged_item_id])
-        return [self._api_value(tag, trans, view="collection") for tag in tags]
-
-    @expose_api
-    def show(self, trans, tag_name, **kwd):
-        """ """
-        tag = self._get_item_tag_assoc(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name)
-        if not tag:
-            raise exceptions.ObjectNotFound("Failed to retrieve specified tag.")
-        return self._api_value(tag, trans)
-
-    @expose_api
-    def create(self, trans, tag_name, payload=None, **kwd):
-        """ """
-        payload = payload or {}
-        value = payload.get("value", None)
-        tag = self._apply_item_tag(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name, value)
-        return self._api_value(tag, trans)
-
-    # Not handling these differently at this time
-    update = create
-
-    @expose_api
-    def delete(self, trans, tag_name, **kwd):
-        """ """
-        deleted = self._remove_items_tag(trans, self.tagged_item_class, kwd[self.tagged_item_id], tag_name)
-        if not deleted:
-            raise exceptions.RequestParameterInvalidException("Failed to delete specified tag.")
-        # TODO: ugh - 204 would be better
-        return "OK"
-
-    def _api_value(self, tag, trans, view="element"):
-        return tag.to_dict(view=view, value_mapper={"id": trans.security.encode_id})
+router = Router()
 
 
-class HistoryContentTagsController(BaseItemTagsController):
-    controller_name = "history_content_tags"
-    tagged_item_class = "HistoryDatasetAssociation"
-    tagged_item_id = "history_content_id"
+@router.cbv
+class FastAPIItemTags:
+    manager: ItemTagsManager = depends(ItemTagsManager)
+
+    @classmethod
+    def create_class(cls, prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params):
+        class Temp(cls):
+            @router.get(
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags",
+                tags=[api_docs_tag],
+                summary=f"Show tags based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
+            )
+            def index(
+                self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
+                trans: ProvidesAppContext = DependsOnTrans,
+            ) -> ItemTagsListResponse:
+                return self.manager.index(trans, tagged_item_class, item_id)
+
+            @router.get(
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
+                summary=f"Show tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
+            )
+            def show(
+                self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
+                trans: ProvidesAppContext = DependsOnTrans,
+                tag_name: str = Path(..., title="Tag Name"),
+            ) -> ItemTagsResponse:
+                return self.manager.show(trans, tagged_item_class, item_id, tag_name)
+
+            @router.post(
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
+                summary=f"Create tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
+            )
+            def create(
+                self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
+                trans: ProvidesAppContext = DependsOnTrans,
+                tag_name: str = Path(..., title="Tag Name"),
+                payload: ItemTagsCreatePayload = Body(None),
+            ) -> ItemTagsResponse:
+                if payload is None:
+                    payload = ItemTagsCreatePayload()
+                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
+
+            @router.put(
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
+                summary=f"Update tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
+            )
+            def update(
+                self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
+                trans: ProvidesAppContext = DependsOnTrans,
+                tag_name: str = Path(..., title="Tag Name"),
+                payload: ItemTagsCreatePayload = Body(...),
+            ) -> ItemTagsResponse:
+                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
+
+            @router.delete(
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
+                summary=f"Delete tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
+            )
+            def delete(
+                self,
+                item_id: Annotated[DecodedDatabaseIdField, Path(..., title="Item ID", alias=tagged_item_id)],
+                trans: ProvidesAppContext = DependsOnTrans,
+                tag_name: str = Path(..., title="Tag Name"),
+            ) -> bool:
+                return self.manager.delete(trans, tagged_item_class, item_id, tag_name)
+
+        return Temp
 
 
-class HistoryTagsController(BaseItemTagsController):
-    controller_name = "history_tags"
-    tagged_item_class = "History"
-    tagged_item_id = "history_id"
+prefixes = {
+    "histories": ["History", "history_id", "histories"],
+    "histories/{history_id}/contents": ["HistoryDatasetAssociation", "history_content_id", "histories"],
+    "workflows": ["StoredWorkflow", "workflow_id", "workflows"],
+}
+for prefix, tagged_item in prefixes.items():
+    tagged_item_class, tagged_item_id, api_docs_tag = tagged_item
+    extra_path_params = None
+    if tagged_item_id == "history_content_id":
+        extra_path_params = {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "history_id",
+                    "required": True,
+                    "schema": {"title": "History ID", "type": "string"},
+                }
+            ]
+        }
 
-
-class WorkflowTagsController(BaseItemTagsController):
-    controller_name = "workflow_tags"
-    tagged_item_class = "StoredWorkflow"
-    tagged_item_id = "workflow_id"
+    router.cbv(FastAPIItemTags.create_class(prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params))
 
 
 # TODO: Visualization and Pages once APIs for those are available

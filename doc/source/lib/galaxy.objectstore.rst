@@ -6,6 +6,14 @@ galaxy.objectstore package
    :undoc-members:
    :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 4
+
+   galaxy.objectstore.unittest_utils
+
 Submodules
 ----------
 

@@ -1,159 +1,182 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBug,
+    faChartBar,
+    faInfoCircle,
+    faLink,
+    faQuestion,
+    faRedo,
+    faSitemap,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { type DatasetDetails } from "@/api";
+import { copy as sendToClipboard } from "@/utils/clipboard";
+import localize from "@/utils/localization";
+import { absPath, prependPath } from "@/utils/redirect";
+
+import { type ItemUrls } from ".";
+
+import DatasetDownload from "@/components/History/Content/Dataset/DatasetDownload.vue";
+
+library.add(faBug, faChartBar, faInfoCircle, faLink, faQuestion, faRedo, faSitemap);
+
+interface Props {
+    item: DatasetDetails;
+    writable: boolean;
+    showHighlight: boolean;
+    itemUrls: ItemUrls;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    writable: true,
+    showHighlight: false,
+});
+
+const emit = defineEmits(["toggleHighlights"]);
+
+const router = useRouter();
+
+const showDownloads = computed(() => {
+    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+});
+const showError = computed(() => {
+    return props.item.state == "error" || props.item.state == "failed_metadata";
+});
+const showInfo = computed(() => {
+    return props.item.accessible;
+});
+const showRerun = computed(() => {
+    return props.item.accessible && props.item.rerunnable && props.item.creating_job && props.item.state != "upload";
+});
+const showVisualizations = computed(() => {
+    // TODO: Check hasViz, if visualizations are activated in the config
+    return !props.item.purged && ["ok", "failed_metadata", "error"].includes(props.item.state);
+});
+const reportErrorUrl = computed(() => {
+    return prependPath(props.itemUrls.reportError);
+});
+const showDetailsUrl = computed(() => {
+    return prependPath(props.itemUrls.showDetails);
+});
+const rerunUrl = computed(() => {
+    return prependPath(props.itemUrls.rerun);
+});
+const visualizeUrl = computed(() => {
+    return prependPath(props.itemUrls.visualize);
+});
+const downloadUrl = computed(() => {
+    return prependPath(`api/datasets/${props.item.id}/display?to_ext=${props.item.extension}`);
+});
+
+function onCopyLink() {
+    const msg = localize("Link copied to your clipboard");
+    sendToClipboard(absPath(downloadUrl.value), msg);
+}
+
+function onDownload(resource: string) {
+    window.location.href = resource;
+}
+
+function onError() {
+    router.push(props.itemUrls.reportError);
+}
+
+function onInfo() {
+    router.push(props.itemUrls.showDetails);
+}
+
+function onRerun() {
+    router.push(`/root?job_id=${props.item.creating_job}`);
+}
+
+function onVisualize() {
+    router.push(props.itemUrls.visualize);
+}
+
+function onHighlight() {
+    emit("toggleHighlights");
+}
+</script>
+
 <template>
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
-                    <span class="fa fa-bug" />
-                </b-button>
-                <b-button
-                    v-if="showDownloads"
-                    class="download-btn px-1"
-                    title="Download"
+                <BButton
+                    v-if="showError"
+                    class="px-1"
+                    title="Error"
                     size="sm"
                     variant="link"
-                    @click.stop="onDownload">
-                    <span class="fa fa-save" />
-                </b-button>
-                <b-button
+                    :href="reportErrorUrl"
+                    @click.prevent.stop="onError">
+                    <FontAwesomeIcon :icon="faBug" />
+                </BButton>
+
+                <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
+
+                <BButton
                     v-if="showDownloads"
                     class="px-1"
                     title="Copy Link"
                     size="sm"
                     variant="link"
                     @click.stop="onCopyLink">
-                    <span class="fa fa-link" />
-                </b-button>
-                <b-button
+                    <FontAwesomeIcon :icon="faLink" />
+                </BButton>
+
+                <BButton
                     v-if="showInfo"
                     class="params-btn px-1"
                     title="Dataset Details"
                     size="sm"
                     variant="link"
-                    @click.stop="onInfo">
-                    <span class="fa fa-info-circle" />
-                </b-button>
-                <b-button
-                    v-if="showRerun"
+                    :href="showDetailsUrl"
+                    @click.prevent.stop="onInfo">
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </BButton>
+
+                <BButton
+                    v-if="writable && showRerun"
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
                     variant="link"
-                    @click.stop="onRerun">
-                    <span class="fa fa-redo" />
-                </b-button>
-                <b-button
+                    :href="rerunUrl"
+                    @click.prevent.stop="onRerun">
+                    <FontAwesomeIcon :icon="faRedo" />
+                </BButton>
+
+                <BButton
                     v-if="showVisualizations"
-                    class="px-1"
+                    class="visualize-btn px-1"
                     title="Visualize"
                     size="sm"
                     variant="link"
-                    @click.stop="onVisualize">
-                    <span class="fa fa-bar-chart-o" />
-                </b-button>
-                <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
-                    <span class="fa fa-question" />
-                </b-button>
-            </div>
-            <div class="btn-group float-right">
-                <b-button
-                    class="px-1"
-                    title="Edit Tags"
+                    :href="visualizeUrl"
+                    @click.prevent.stop="onVisualize">
+                    <FontAwesomeIcon :icon="faChartBar" />
+                </BButton>
+
+                <BButton
+                    v-if="showHighlight"
+                    class="highlight-btn px-1"
+                    title="Show Related Items"
                     size="sm"
                     variant="link"
-                    :pressed="showTags"
-                    @click="onToggleTags">
-                    <span class="fa fa-tags" />
-                </b-button>
+                    @click.stop="onHighlight">
+                    <FontAwesomeIcon :icon="faSitemap" />
+                </BButton>
+
+                <BButton v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
+                    <FontAwesomeIcon :icon="faQuestion" />
+                </BButton>
             </div>
-        </div>
-        <div v-if="showTags" class="mb-2">
-            <StatelessTags v-model="tags" class="tags" @input="onTags" />
         </div>
     </div>
 </template>
-
-<script>
-import { StatelessTags } from "components/Tags";
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
-import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "utils/redirect";
-import { updateContentFields } from "components/History/model/queries";
-
-export default {
-    components: {
-        StatelessTags,
-    },
-    mixins: [legacyNavigationMixin],
-    props: {
-        item: { type: Object, required: true },
-    },
-    data() {
-        return {
-            showTags: false,
-            tags: this.item.tags,
-        };
-    },
-    computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
-        showDownloads() {
-            return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
-        },
-        showError() {
-            return this.item.state == "error";
-        },
-        showInfo() {
-            return this.item.state != "noPermission";
-        },
-        showRerun() {
-            return (
-                this.item.rerunnable &&
-                this.item.creating_job &&
-                this.item.state != "upload" &&
-                this.item.state != "noPermission"
-            );
-        },
-        showVisualizations() {
-            // TODO: Check hasViz, if visualizations are activated in the config
-            return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
-        },
-    },
-    methods: {
-        onCopyLink() {
-            const msg = this.localize("Link is copied to your clipboard");
-            sendToClipboard(absPath(this.downloadUrl), msg);
-        },
-        onDownload() {
-            window.location.href = this.downloadUrl;
-        },
-        onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
-        },
-        onInfo() {
-            this.backboneRoute(`datasets/${this.item.id}/details`);
-        },
-        onRerun() {
-            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
-        },
-        onTags() {
-            updateContentFields(this.item, { tags: this.tags });
-        },
-        onToggleTags() {
-            this.showTags = !this.showTags;
-        },
-        onVisualize() {
-            const path = `visualizations?dataset_id=${this.item.id}`;
-            const redirectParams = {
-                path: path,
-                title: "Dataset details",
-                tryIframe: false,
-            };
-            if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(path);
-            }
-        },
-    },
-};
-</script>

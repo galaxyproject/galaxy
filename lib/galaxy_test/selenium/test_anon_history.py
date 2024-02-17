@@ -1,28 +1,17 @@
+from galaxy_test.base.decorators import requires_new_user
 from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
 
 
-class AnonymousHistoriesTestCase(SeleniumTestCase):
+class TestAnonymousHistories(SeleniumTestCase):
     @selenium_test
     def test_anon_history_landing(self):
         self.home()
         self.assert_initial_history_panel_state_correct()
-
-        if self.is_beta_history():
-            self.beta_history_element("editor toggle").assert_absent_or_hidden()
-        else:
-            # Anonymous users cannot annotate or tag, these components should be absent.
-            self.components.history_panel.tag_icon.assert_absent_or_hidden()
-            self.components.history_panel.annotation_icon.assert_absent_or_hidden()
-
-            # History has a name but...
-            name_element = self.components.history_panel.name.wait_for_and_click()
-
-            # ... name should NOT be editable when clicked by anon-user
-            editable_text_class = self.navigation._.selectors.editable_text
-            assert editable_text_class.as_css_class not in name_element.get_attribute("class")
+        self.history_element("editor toggle").wait_for_present()
+        self.history_element("name display").wait_for_present()
 
     @selenium_test
     def test_anon_history_upload(self):
@@ -37,12 +26,14 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
         self.components.history_panel.empty_message.assert_absent_or_hidden()
 
     @selenium_test
+    @requires_new_user
     def test_anon_history_after_registration(self):
         self._upload_file_anonymous_then_register_user()
         self.home()
         self.history_panel_wait_for_hid_state(1, "ok")
 
     @selenium_test
+    @requires_new_user
     def test_clean_anon_history_after_logout(self):
         self._upload_file_anonymous_then_register_user()
         self.logout_if_needed()

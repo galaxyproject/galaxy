@@ -2,10 +2,8 @@ import hashlib
 import logging
 from operator import itemgetter
 from typing import (
-    Any,
-    Dict,
-    List,
     Optional,
+    Set,
 )
 
 from galaxy import exceptions
@@ -13,9 +11,15 @@ from galaxy.files import (
     ConfiguredFileSources,
     ProvidesUserFileSourcesUserContext,
 )
+from galaxy.files.sources import (
+    FilesSourceOptions,
+    PluginKind,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
-    FilesSourcePluginList,
+    AnyRemoteFilesListResponse,
+    CreatedEntryResponse,
+    CreateEntryPayload,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
     RemoteFilesTarget,
@@ -44,7 +48,8 @@ class RemoteFilesManager:
         format: Optional[RemoteFilesFormat],
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
-    ) -> List[Dict[str, Any]]:
+        writeable: Optional[bool] = False,
+    ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
@@ -78,8 +83,16 @@ class RemoteFilesManager:
 
         file_source_path = self._file_sources.get_file_source_path(uri)
         file_source = file_source_path.file_source
+
+        opts = FilesSourceOptions()
+        opts.writeable = writeable or False
         try:
-            index = file_source.list(file_source_path.path, recursive=recursive, user_context=user_file_source_context)
+            index = file_source.list(
+                file_source_path.path,
+                recursive=recursive,
+                user_context=user_file_source_context,
+                opts=opts,
+            )
         except exceptions.MessageException:
             log.warning(f"Problem listing file source path {file_source_path}", exc_info=True)
             raise
@@ -91,7 +104,7 @@ class RemoteFilesManager:
             # rip out directories, ensure sorted by path
             index = [i for i in index if i["class"] == "File"]
             index = sorted(index, key=itemgetter("path"))
-        if format == RemoteFilesFormat.jstree:
+        elif format == RemoteFilesFormat.jstree:
             if disable is None:
                 disable = RemoteFilesDisableMode.folders
 
@@ -118,12 +131,43 @@ class RemoteFilesManager:
 
         return index
 
-    def get_files_source_plugins(self, user_context: ProvidesUserContext) -> FilesSourcePluginList:
+    def get_files_source_plugins(
+        self,
+        user_context: ProvidesUserContext,
+        browsable_only: Optional[bool] = True,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
+    ):
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
-        plugins = self._file_sources.plugins_to_dict(user_context=user_file_source_context)
-        return FilesSourcePluginList.parse_obj(plugins)
+        browsable_only = True if browsable_only is None else browsable_only
+        plugins_dict = self._file_sources.plugins_to_dict(
+            user_context=user_file_source_context,
+            browsable_only=browsable_only,
+            include_kind=include_kind,
+            exclude_kind=exclude_kind,
+        )
+        return plugins_dict
 
     @property
     def _file_sources(self) -> ConfiguredFileSources:
         return self._app.file_sources
+
+    def create_entry(self, user_ctx: ProvidesUserContext, entry_data: CreateEntryPayload) -> CreatedEntryResponse:
+        """Create an entry (directory or record) in a remote files location."""
+        target = entry_data.target
+        user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)
+        self._file_sources.validate_uri_root(target, user_context=user_file_source_context)
+        file_source_path = self._file_sources.get_file_source_path(target)
+        file_source = file_source_path.file_source
+        try:
+            result = file_source.create_entry(entry_data.dict(), user_context=user_file_source_context)
+        except Exception:
+            message = f"Problem creating entry {entry_data.name} in file source {entry_data.target}"
+            log.warning(message, exc_info=True)
+            raise exceptions.InternalServerError(message)
+        return CreatedEntryResponse(
+            name=result["name"],
+            uri=result["uri"],
+            external_link=result.get("external_link", None),
+        )

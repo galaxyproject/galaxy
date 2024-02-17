@@ -71,7 +71,7 @@ A special thanks to the release testing team for testing many of the new feature
 - `David López <https://github.com/davelopez>`_
 - `John Chilton <https://github.com/jmchilton>`_
 - `Keith Suderman <https://github.com/ksuderman>`_
-- `Sergey Golitsynskiy <https://github.com/ic4f>`_
+- `John Davis <https://github.com/jdavcs>`_
 
 Release Notes
 ===========================================================

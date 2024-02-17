@@ -1,6 +1,6 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
 
 export async function sendErrorReport(dataset, message, email) {
     const payload = {

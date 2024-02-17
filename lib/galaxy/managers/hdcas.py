@@ -4,6 +4,7 @@ Manager and Serializer for HDCAs.
 HistoryDatasetCollectionAssociations (HDCAs) are datasets contained or created in a
 history.
 """
+
 import logging
 from typing import Dict
 
@@ -59,7 +60,6 @@ class HDCAManager(
     secured.AccessibleManagerMixin,
     secured.OwnableManagerMixin,
     deletable.PurgableManagerMixin,
-    taggable.TaggableManagerMixin,
     annotatable.AnnotatableManagerMixin,
 ):
     """
@@ -311,10 +311,12 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 history_id=self.app.security.encode_id(item.history_id),
                 id=self.app.security.encode_id(item.id),
                 type=self.hdca_manager.model_class.content_type,
+                context=context,
             ),
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
+            "collection_id": self.serialize_id,
         }
         self.serializers.update(serializers)
 

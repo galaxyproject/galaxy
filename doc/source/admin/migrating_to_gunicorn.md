@@ -40,7 +40,7 @@ If you manage your Galaxy server via Ansible, you should continue to run Galaxy 
 while we are working on updating the Ansible roles for installing Galaxy.
 We will update instructions here and on the [Galaxy Training Network](https://training.galaxyproject.org/).
 
-If you start web and job Handlers using an external process manager like
+If you start web and job handlers using an external process manager like
 systemd or supervisor, please read the [Scaling and Load Balancing documentation](scaling.md).
 In particular, you can use [gravity](https://github.com/galaxyproject/gravity) to generate supervisor configuration files
 that you can either use directly or as a basis to update your existing configuration.

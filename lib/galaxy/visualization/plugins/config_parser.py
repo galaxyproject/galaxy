@@ -148,18 +148,15 @@ class VisualizationsConfigParser:
         # consider unifying the above into its own element and parsing method
 
         # load optional custom configuration specifiers
-        specs_section = xml_tree.find("specs")
-        if specs_section is not None:
+        if (specs_section := xml_tree.find("specs")) is not None:
             returned["specs"] = DictParser(specs_section)
 
         # load group specifiers
-        groups_section = xml_tree.find("groups")
-        if groups_section is not None:
+        if (groups_section := xml_tree.find("groups")) is not None:
             returned["groups"] = ListParser(groups_section)
 
         # load settings specifiers
-        settings_section = xml_tree.find("settings")
-        if settings_section is not None:
+        if (settings_section := xml_tree.find("settings")) is not None:
             returned["settings"] = ListParser(settings_section)
 
         return returned
@@ -226,8 +223,7 @@ class DataSourceParser:
 
         # to_params (optional, 0 or more) - tells the registry to set certain params based on the model_clas, tests
         returned["to_params"] = {}
-        to_params = self.parse_to_params(xml_tree.findall("to_param"))
-        if to_params:
+        if to_params := self.parse_to_params(xml_tree.findall("to_param")):
             returned["to_params"] = to_params
 
         return returned
@@ -286,8 +282,9 @@ class DataSourceParser:
             test_result = test_elem.text.strip() if test_elem.text else None
             if not test_type or not test_result:
                 log.warning(
-                    "Skipping test. Needs both type attribute and text node to be parsed: "
-                    + f"{test_type}, {test_elem.text}"
+                    "Skipping test. Needs both type attribute and text node to be parsed: %s, %s",
+                    test_type,
+                    test_elem.text,
                 )
                 continue
             test_result = test_result.strip()
@@ -308,27 +305,27 @@ class DataSourceParser:
             if test_type == "isinstance":
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return isinstance(getter(o), result)
 
             elif test_type == "has_dataprovider":
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return hasattr(getter(o), "has_dataprovider") and getter(o).has_dataprovider(result)
 
             elif test_type == "has_attribute":
                 # does the object itself have attr in 'result' (no equivalence checking)
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return hasattr(getter(o), result)
 
             elif test_type == "not_eq":
 
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return str(getter(o)) != result
 
             else:
                 # default to simple (string) equilavance (coercing the test_attr to a string)
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return str(getter(o)) == result
 
             tests.append({"type": test_type, "result": test_result, "result_type": test_result_type, "fn": test_fn})
@@ -463,16 +460,14 @@ class ParamParser:
         # NOTE: the interpretation of this list is deferred till parsing and based on param type
         #   e.g. it could be 'val in constrain_to', or 'constrain_to is min, max for number', etc.
         # TODO: currently unused
-        constrain_to = xml_tree.get("constrain_to")
-        if constrain_to:
+        if constrain_to := xml_tree.get("constrain_to"):
             returned["constrain_to"] = constrain_to.split(",")
 
         # is the param a comma-separated-value list?
         returned["csv"] = xml_tree.get("csv") == "true"
 
         # remap keys in the params/query string to the var names used in the template
-        var_name_in_template = xml_tree.get("var_name_in_template")
-        if var_name_in_template:
+        if var_name_in_template := xml_tree.get("var_name_in_template"):
             returned["var_name_in_template"] = var_name_in_template
 
         return returned

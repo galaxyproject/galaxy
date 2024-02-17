@@ -16,7 +16,7 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from ..exceptions.error_codes import (
+from .error_codes import (
     error_codes_by_name,
     ErrorCode,
 )
@@ -57,6 +57,16 @@ class ObjectInvalid(Exception):
 
 
 # Please keep the exceptions ordered by status code
+
+
+class AcceptedRetryLater(MessageException):
+    status_code = 202
+    err_code = error_codes_by_name["ACCEPTED_RETRY_LATER"]
+    retry_after: int
+
+    def __init__(self, msg, retry_after=60):
+        super().__init__(msg)
+        self.retry_after = retry_after
 
 
 class NoContentException(MessageException):
@@ -141,6 +151,16 @@ class ToolInputsNotReadyException(MessageException):
     error_code = error_codes_by_name["TOOL_INPUTS_NOT_READY"]
 
 
+class ToolInputsNotOKException(MessageException):
+    def __init__(self, err_msg=None, type="info", *, src: str, id: int, **extra_error_info):
+        super().__init__(err_msg, type, **extra_error_info)
+        self.src = src
+        self.id = id
+
+    status_code = 400
+    error_code = error_codes_by_name["TOOL_INPUTS_NOT_OK"]
+
+
 class RealUserRequiredException(MessageException):
     status_code = 400
     error_code = error_codes_by_name["REAL_USER_REQUIRED"]
@@ -165,6 +185,11 @@ class ItemAccessibilityException(MessageException):
 class ItemOwnershipException(MessageException):
     status_code = 403
     err_code = error_codes_by_name["USER_DOES_NOT_OWN_ITEM"]
+
+
+class ItemImmutableException(MessageException):
+    status_code = 403
+    err_code = error_codes_by_name["ITEM_IS_IMMUTABLE"]
 
 
 class ConfigDoesNotAllowException(MessageException):
@@ -199,19 +224,18 @@ class ObjectNotFound(MessageException):
     err_code = error_codes_by_name["USER_OBJECT_NOT_FOUND"]
 
 
+class Conflict(MessageException):
+    status_code = 409
+    err_code = error_codes_by_name["CONFLICT"]
+
+
 class DeprecatedMethod(MessageException):
     """
     Method (or a particular form/arg signature) has been removed and won't be available later
     """
 
-    status_code = 404
-    # TODO:?? 410 Gone?
+    status_code = 410
     err_code = error_codes_by_name["DEPRECATED_API_CALL"]
-
-
-class Conflict(MessageException):
-    status_code = 409
-    err_code = error_codes_by_name["CONFLICT"]
 
 
 class ConfigurationError(Exception):

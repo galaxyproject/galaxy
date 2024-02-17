@@ -2,6 +2,7 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
+
 import logging
 from typing import (
     Any,
@@ -14,14 +15,14 @@ from fastapi import Path
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import UserModel
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
-from .common import (
+from galaxy.webapps.galaxy.api.common import (
     parse_serialization_params,
     SerializationKeysQueryParam,
     SerializationViewQueryParam,
@@ -32,7 +33,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["configuration"])
 
 
-EncodedIdPathParam: EncodedDatabaseIdField = Path(
+EncodedIdPathParam = Path(
     ...,
     title="Encoded id",
     description="Encoded id to be decoded",
@@ -50,7 +51,7 @@ class FastAPIConfiguration:
     )
     def whoami(self, trans: ProvidesUserContext = DependsOnTrans) -> Optional[UserModel]:
         """Return information about the current authenticated user."""
-        return _user_to_model(trans.user, trans.security)
+        return _user_to_model(trans.user)
 
     @router.get(
         "/api/configuration",
@@ -60,7 +61,7 @@ class FastAPIConfiguration:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        view: Optional[str] = SerializationViewQueryParam,
+        view: SerializationViewQueryParam = None,
         keys: Optional[str] = SerializationKeysQueryParam,
     ) -> Dict[str, Any]:
         """
@@ -74,6 +75,7 @@ class FastAPIConfiguration:
 
     @router.get(
         "/api/version",
+        public=True,
         summary="Return Galaxy version information: major/minor version, optional extra info",
         response_description="Galaxy version information: major/minor version, optional extra info",
     )
@@ -97,7 +99,7 @@ class FastAPIConfiguration:
         summary="Decode a given id",
         response_description="Decoded id",
     )
-    def decode_id(self, encoded_id: EncodedDatabaseIdField = EncodedIdPathParam) -> Dict[str, int]:
+    def decode_id(self, encoded_id: str = EncodedIdPathParam) -> Dict[str, int]:
         """Decode a given id."""
         return self.configuration_manager.decode_id(encoded_id)
 
@@ -119,8 +121,12 @@ class FastAPIConfiguration:
         self.configuration_manager.reload_toolbox()
 
 
-def _user_to_model(user, security):
-    return UserModel(**user.to_dict(view="element", value_mapper={"id": security.encode_id})) if user else None
+def _user_to_model(user):
+    if user:
+        return UserModel.model_construct(
+            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+        )
+    return None
 
 
 def _index(manager: ConfigurationManager, trans, view, keys):

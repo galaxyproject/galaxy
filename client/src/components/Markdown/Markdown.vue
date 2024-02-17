@@ -3,114 +3,80 @@
         <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
-                <sts-download-button
+                <StsDownloadButton
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
-                    title="Download PDF"></sts-download-button>
+                    size="sm"
+                    title="Generate PDF">
+                </StsDownloadButton>
                 <b-button
                     v-if="!readOnly"
-                    v-b-tooltip.hover.bottom
-                    class="float-right markdown-edit"
-                    title="Edit Markdown"
-                    variant="link"
+                    v-b-tooltip.hover
+                    class="float-right markdown-edit mr-2"
                     role="button"
+                    size="sm"
+                    title="Edit Markdown"
                     @click="$emit('onEdit')">
-                    <font-awesome-icon icon="edit" />
+                    Edit
+                    <FontAwesomeIcon icon="edit" />
                 </b-button>
-                <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
-                <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                    ><br />
-                    <small>Username: {{ markdownConfig.username }}</small>
+                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
+                <span class="float-left font-weight-light">
+                    <h1 class="text-break align-middle">
+                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                    </h1>
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h2>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
-                <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
+                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
-                        <h5>{{ obj.error || "Error" }}</h5>
+                        <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
-                    <pre><code>{{ getVersion }}</code></pre>
-                </div>
-                <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
-                    <pre><code>{{ getTime }}</code></pre>
-                </div>
-                <HistoryLink v-else-if="obj.name == 'history_link'" :args="obj.args" :histories="histories" />
-                <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
-                <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
-                <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
-                <InvocationTime v-else-if="obj.name == 'invocation_time'" :args="obj.args" :invocations="invocations" />
-                <JobMetrics v-else-if="obj.name == 'job_metrics'" :args="obj.args" />
-                <JobParameters v-else-if="obj.name == 'job_parameters'" :args="obj.args" />
-                <WorkflowDisplay v-else-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
-                <Visualization v-else-if="obj.name == 'visualization'" :args="obj.args" />
-                <HistoryDatasetCollectionDisplay
-                    v-else-if="obj.name == 'history_dataset_collection_display'"
-                    :args="obj.args"
-                    :collections="historyDatasetCollections" />
-                <ToolStd
-                    v-else-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
-                    :args="obj.args"
-                    :name="obj.name"
-                    :jobs="jobs" />
-                <HistoryDatasetDisplay
-                    v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
-                    :args="obj.args"
-                    :datasets="historyDatasets"
-                    :embedded="obj.name == 'history_dataset_embedded'" />
-                <HistoryDatasetDetails
-                    v-else-if="
-                        [
-                            'history_dataset_name',
-                            'history_dataset_info',
-                            'history_dataset_peek',
-                            'history_dataset_type',
-                        ].includes(obj.name)
-                    "
+                <MarkdownContainer
+                    v-else
                     :name="obj.name"
                     :args="obj.args"
-                    :datasets="historyDatasets" />
+                    :datasets="datasets"
+                    :collections="collections"
+                    :histories="histories"
+                    :invocations="invocations"
+                    :time="time"
+                    :version="version"
+                    :workflows="workflows" />
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import store from "store";
-import MarkdownIt from "markdown-it";
-import markdownItRegexp from "markdown-it-regexp";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
+import { mapActions } from "pinia";
+import Vue from "vue";
 
-import LoadingSpan from "components/LoadingSpan";
-import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
-import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
-import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
-import HistoryLink from "./Elements/HistoryLink";
-import InvocationTime from "./Elements/InvocationTime";
-import JobMetrics from "./Elements/JobMetrics";
-import JobParameters from "./Elements/JobParameters";
-import ToolStd from "./Elements/ToolStd";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
-import Visualization from "./Elements/Visualization";
-import StsDownloadButton from "./StsDownloadButton";
+import { useWorkflowStore } from "@/stores/workflowStore";
+
+import MarkdownContainer from "./MarkdownContainer.vue";
+import LoadingSpan from "components/LoadingSpan.vue";
+import StsDownloadButton from "components/StsDownloadButton.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -129,23 +95,10 @@ Vue.use(BootstrapVue);
 library.add(faDownload, faEdit);
 
 export default {
-    store: store,
     components: {
-        HistoryDatasetDetails,
-        HistoryDatasetAsImage,
-        HistoryDatasetCollectionDisplay,
-        HistoryDatasetDisplay,
-        HistoryDatasetIndex,
-        HistoryDatasetLink,
-        HistoryLink,
-        JobMetrics,
-        JobParameters,
-        LoadingSpan,
-        ToolStd,
-        WorkflowDisplay,
-        Visualization,
-        InvocationTime,
+        MarkdownContainer,
         FontAwesomeIcon,
+        LoadingSpan,
         StsDownloadButton,
     },
     props: {
@@ -174,22 +127,27 @@ export default {
         return {
             markdownObjects: [],
             markdownErrors: [],
-            historyDatasets: {},
+            datasets: {},
             histories: {},
-            historyDatasetCollections: {},
+            collections: {},
             workflows: {},
-            jobs: {},
             invocations: {},
             loading: true,
+            workflowID: "",
         };
     },
     computed: {
-        getVersion() {
-            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
+        effectiveExportLink() {
+            return this.enable_beta_markdown_export ? this.exportLink : null;
         },
-        getTime() {
-            const generateTime = this.markdownConfig.generate_time;
+        time() {
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -197,29 +155,45 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
         },
-        effectiveExportLink() {
-            return this.enable_beta_markdown_export ? this.exportLink : null;
+        workflowVersions() {
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
+        },
+        version() {
+            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
         },
     },
     watch: {
-        markdownConfig: function (config) {
-            const markdown = config.markdown;
-            this.markdownErrors = config.errors || [];
-            this.markdownObjects = this.splitMarkdown(markdown);
-            this.historyDatasets = config.history_datasets || {};
-            this.histories = config.histories || {};
-            this.historyDatasetCollections = config.history_dataset_collections || {};
-            this.workflows = config.workflows || {};
-            this.jobs = config.jobs || {};
-            this.invocations = config.invocations || {};
-            this.loading = false;
+        markdownConfig() {
+            this.initConfig();
         },
     },
+    created() {
+        this.initConfig();
+        this.fetchWorkflowForInstanceId(this.workflowID);
+    },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
+        initConfig() {
+            if (Object.keys(this.markdownConfig).length) {
+                const config = this.markdownConfig;
+                const markdown = config.content || config.markdown || "";
+                this.markdownErrors = config.errors || [];
+                this.markdownObjects = this.splitMarkdown(markdown);
+                this.datasets = config.history_datasets || {};
+                this.histories = config.histories || {};
+                this.collections = config.history_dataset_collections || {};
+                this.workflows = config.workflows || {};
+                this.invocations = config.invocations || {};
+                this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
+            }
+        },
         splitMarkdown(markdown) {
             const sections = [];
             let digest = markdown;
@@ -284,9 +258,6 @@ export default {
                 args: args,
                 content: content,
             };
-        },
-        onDownload() {
-            window.location.href = this.exportLink;
         },
     },
 };

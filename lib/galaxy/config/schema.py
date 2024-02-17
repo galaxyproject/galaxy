@@ -52,12 +52,19 @@ class AppSchema(Schema):
         self._reloadable_options = set()  # config options we can reload at runtime
         self._paths_to_resolve = {}  # {config option: referenced config option}
         self._per_host_options = set()  # config options that can be set using a per_host config parameter
+        self._deprecated_aliases = {}
         for key, data in app_schema.items():
             self._defaults[key] = data.get("default")
+            if data.get("deprecated_alias"):
+                self._deprecated_aliases[data.get("deprecated_alias")] = key
             if data.get("reloadable"):
                 self._reloadable_options.add(key)
             if data.get("per_host"):
-                self._per_host_options.add(key)
+                resolves_to = data.get("resolves_to")
+                if resolves_to:
+                    self._per_host_options.add(resolves_to)
+                else:
+                    self._per_host_options.add(key)
             if data.get("path_resolves_to"):
                 self._paths_to_resolve[key] = data.get("path_resolves_to")
 

@@ -1,6 +1,13 @@
 from typing import (
     Any,
     List,
+    Optional,
+    TYPE_CHECKING,
+)
+
+from sqlalchemy import (
+    func,
+    text,
 )
 
 from galaxy import model as m
@@ -10,6 +17,10 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.structured_app import StructuredApp
+from .base import raise_filter_err
+
+if TYPE_CHECKING:
+    from galaxy.managers.base import OrmFilterParsersType
 
 
 class GenomesManager:
@@ -17,8 +28,15 @@ class GenomesManager:
         self._app = app
         self.genomes = app.genomes
 
-    def get_dbkeys(self, user: m.User, chrom_info: bool) -> List[List[str]]:
+    def get_dbkeys(self, user: Optional[m.User], chrom_info: bool) -> List[List[str]]:
         return self.genomes.get_dbkeys(user, chrom_info)
+
+    def is_registered_dbkey(self, dbkey: str, user: Optional[m.User]) -> bool:
+        dbkeys = self.get_dbkeys(user, chrom_info=False)
+        for _, key in dbkeys:
+            if dbkey == key:
+                return True
+        return False
 
     def get_genome(
         self, trans: ProvidesUserContext, id: str, num: int, chrom: str, low: int, high: int, reference: bool
@@ -57,3 +75,37 @@ class GenomesManager:
             raise ReferenceDataError(f"Data tables not found for {index_type} for {id}")
         else:
             return f"{file_name}{ext}"
+
+
+class GenomeFilterMixin:
+    orm_filter_parsers: "OrmFilterParsersType"
+    database_connection: str
+    valid_ops = ("eq", "contains", "has")
+
+    def create_genome_filter(self, attr, op, val):
+        def _create_genome_filter(model_class=None):
+            if op not in GenomeFilterMixin.valid_ops:
+                raise_filter_err(attr, op, val, "bad op in filter")
+            if model_class is None:
+                return True
+            # Doesn't filter genome_build for collections
+            if model_class.__name__ == "HistoryDatasetCollectionAssociation":
+                return False
+            # TODO: should use is_postgres(self.database_connection) in 23.2
+            if self.database_connection.startswith("postgres"):
+                column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
+            else:
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+            lower_val = val.lower()  # Ignore case
+            # dbkey can either be "hg38" or '["hg38"]', so we need to check both
+            if op == "eq":
+                cond = func.lower(column) == lower_val or func.lower(column) == f'["{lower_val}"]'
+            else:
+                cond = func.lower(column).contains(lower_val, autoescape=True)
+            return cond
+
+        return _create_genome_filter
+
+    def _add_parsers(self, database_connection: str):
+        self.database_connection = database_connection
+        self.orm_filter_parsers.update({"genome_build": self.create_genome_filter})

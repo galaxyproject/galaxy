@@ -1,14 +1,14 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
+import { rethrowSimple } from "utils/simple-error";
 
 export class Services {
     constructor(options = {}) {
         this.root = options.root || getAppRoot();
     }
 
-    async getLibraries(include_deleted = false) {
-        const url = `${this.root}api/libraries?deleted=${include_deleted}`;
+    async getLibraries(includeDeleted = false) {
+        const url = `${this.root}api/libraries?deleted=${includeDeleted}`;
         try {
             const response = await axios.get(url);
             return response.data;

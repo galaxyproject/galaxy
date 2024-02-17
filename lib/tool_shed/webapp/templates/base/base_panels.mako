@@ -3,7 +3,6 @@
 
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
-    self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible = app.config.message_box_visible
     self.show_inactivity_warning = False
     self.overlay_visible=False
@@ -19,9 +18,6 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     <!--- base/base_panels.mako stylesheets() -->
-    ${h.css(
-        'bootstrap-tour',
-    )}
     ${h.dist_css(
         'base'
     )}
@@ -39,7 +35,7 @@
 
 <%def name="javascript_entry()">
     <!-- base/base_panels.mako javascript_entry -->
-    ${ h.dist_js('generic.bundled')}
+    ${ h.dist_js('toolshed.bundled')}
 </%def>
 
 <%def name="javascript_app()">
@@ -50,23 +46,6 @@
 ## Default late-load javascripts
 <%def name="late_javascripts()">
     <!--- base/base_panels.mako late_javascripts() -->
-
-    <script type="text/javascript">
-
-        var panelConfig = {
-            left_panel: ${h.to_js_bool(self.has_left_panel)},
-            right_panel: ${h.to_js_bool(self.has_right_panel)},
-            rightPanelSelector: '#right',
-            leftPanelSelector: '#left'
-        };
-
-        // "late javascripts"
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
-        });
-
-    </script>
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
         ${galaxy_client.config_google_analytics(app.config.ga_code)}
@@ -123,10 +102,6 @@
     ${self.init()}
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        ## For mobile browsers, don't scale up
-        <meta name = "viewport" content = "maximum-scale=1.0">
-        ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
 
         <title>
             Galaxy
@@ -177,7 +152,7 @@
             <div id="background"></div>
 
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
+            <div>
                 ${self.masthead()}
             </div>
 
@@ -195,30 +170,17 @@
 
             ${self.overlay(visible=self.overlay_visible)}
 
-            <div id="columns">
+            <div id="columns" class="d-flex">
                 %if self.has_left_panel:
                     <div id="left">
                         ${self.left_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse left"></div>
-                            <div id="left-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end left-->
+                    </div>
                 %endif
                 <div id="center" class="inbound">
                     ${self.center_panel()}
-                </div><!--end center-->
-                %if self.has_right_panel:
-                    <div id="right">
-                        ${self.right_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="right-panel-collapse" class="panel-collapse right"></div>
-                            <div id="right-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end right-->
-                %endif
-            </div><!--end columns-->
-        </div><!--end everything-->
+                </div>
+            </div>
+        </div>
 
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

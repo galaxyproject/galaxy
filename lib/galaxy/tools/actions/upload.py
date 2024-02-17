@@ -3,6 +3,7 @@ import logging
 import os
 
 from galaxy.exceptions import RequestParameterMissingException
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
@@ -150,5 +151,6 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     )
     outputs.append(hdca)
     # Following flushed needed for an ID.
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     target["destination"]["object_id"] = hdca.id

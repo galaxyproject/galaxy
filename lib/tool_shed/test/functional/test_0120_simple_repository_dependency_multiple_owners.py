@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 datatypes_repository_name = "blast_datatypes_0120"
 datatypes_repository_description = "Galaxy applicable datatypes for BLAST"
@@ -22,9 +20,6 @@ Tool shed side:
 3a) Check for appropriate strings.
 """
 
-base_datatypes_count = 0
-repository_datatypes_count = 0
-
 
 class TestRepositoryMultipleOwners(ShedTwillTestCase):
     def test_0000_initiate_users(self):
@@ -34,21 +29,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
         """Create and populate the blast_datatypes_0120 repository
@@ -64,19 +46,13 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=datatypes_repository_description,
             long_description=datatypes_repository_long_description,
             owner=common.test_user_2_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="blast/blast_datatypes.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "blast/blast_datatypes.tar",
             commit_message="Uploaded blast_datatypes tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_verify_datatypes_repository(self):
@@ -86,22 +62,10 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        global repository_datatypes_count
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_2_name
-        )
-        strings_displayed = [
-            "BlastXml",
-            "BlastNucDb",
-            "BlastProtDb",
-            "application/xml",
-            "text/html",
-            "blastxml",
-            "blastdbn",
-            "blastdbp",
-        ]
+        repository = self._get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_2_name)
+        # v2 rightfully doesn't display anything about datatypes...
+        strings_displayed = ["Galaxy datatypes for the BLAST top hit"]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        repository_datatypes_count = int(self.get_repository_datatypes_count(repository))
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
@@ -117,19 +81,13 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
             description=tool_repository_description,
             long_description=tool_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="blast/blastxml_to_top_descr.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "blast/blastxml_to_top_descr.tar",
             commit_message="Uploaded blastxml_to_top_descr tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_verify_tool_repository(self):
@@ -138,9 +96,11 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 2a.
         Check for appropriate strings, such as tool name, description, and version.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
-        strings_displayed.extend(["0.0.1", "Valid tools"])
+        strings_displayed.append("0.0.1")
+        if not self.is_v2:
+            strings_displayed.append("Valid tools")
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):
@@ -149,17 +109,15 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         """
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        datatypes_repository = self._get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            tool_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         dependency_xml_path = self.generate_temp_path("test_0120", additional_paths=["dependencies"])
         datatypes_tuple = (
             self.url,
             datatypes_repository.name,
-            datatypes_repository.user.username,
+            datatypes_repository.owner,
             self.get_repository_tip(datatypes_repository),
         )
         self.create_repository_dependency(
@@ -172,10 +130,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 3a.
         Check the newly created repository dependency to ensure that it was defined and displays correctly.
         """
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        datatypes_repository = self._get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            tool_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         self.check_repository_dependency(tool_repository, datatypes_repository)

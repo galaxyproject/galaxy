@@ -17,6 +17,14 @@ galaxy.jobs.runners.util.cli.job.lsf module
    :undoc-members:
    :show-inheritance:
 
+galaxy.jobs.runners.util.cli.job.pbs module
+-------------------------------------------
+
+.. automodule:: galaxy.jobs.runners.util.cli.job.pbs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.jobs.runners.util.cli.job.slurm module
 ---------------------------------------------
 

@@ -37,14 +37,29 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``templates_dir``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory containing custom templates for Galaxy, such as
+    HTML/text email templates. Defaults to 'templates'. Default
+    templates can be found in the Galaxy root under config/templates.
+    These can be copied to <templates_dir> if you wish to customize
+    them.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``templates``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``cache_dir``
 ~~~~~~~~~~~~~
 
 :Description:
     Top level cache directory. Any other cache directories
-    (tool_cache_data_dir, template_cache_path, etc.) should be
-    subdirectories.
+    (template_cache_path, etc.) should be subdirectories.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``cache``
@@ -57,10 +72,19 @@
 
 :Description:
     By default, Galaxy uses a SQLite database at
-    '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+    '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
     string to specify an external database instead.
     Sample default
     'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+    You may specify additional options that will be passed to the
+    SQLAlchemy database engine by using the prefix
+    "database_engine_option_". For some of these options, default
+    values are provided (e.g. see database_engine_option_pool_size,
+    etc.).
+    The same applies to `install_database_connection`, for which you
+    should use the "install_database_engine_option_" prefix.
+    For more options, please check SQLAlchemy's documentation at
+    https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 :Default: ``None``
 :Type: str
 
@@ -592,22 +616,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -764,7 +772,7 @@
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default container resolvers loaded is
     determined by enable_mulled_containers. For available options see
-    config/container_resolvers_conf.xml.sample.
+    https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
 :Default: ``None``
 :Type: str
 
@@ -1071,19 +1079,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``cluster_files_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If using a cluster, Galaxy will write job scripts and
-    stdout/stderr to this directory.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``pbs``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``template_cache_path``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1155,25 +1150,10 @@
     expanded XML strings. Enabling the tool cache results in slightly
     faster startup times. The tool cache is backed by a SQLite
     database, which cannot be stored on certain network disks. The
-    cache location is configurable using the ``tool_cache_data_dir``
-    setting, but can be disabled completely here.
+    cache location is configurable with the ``tool_cache_data_dir``
+    tag in tool config files.
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
-``tool_cache_data_dir``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tool related caching. Fully expanded tools and metadata will be
-    stored at this path. Per tool_conf cache locations can be
-    configured in (``shed_``)tool_conf.xml files using the
-    tool_cache_data_dir attribute.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``tool_cache``
-:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1185,18 +1165,6 @@
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``delay_tool_initialization``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set this to true to delay parsing of tool inputs and outputs until
-    they are needed. This results in faster startup times but uses
-    more memory when using forked Galaxy processes.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1259,6 +1227,43 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the url
+    of the database used by beaker for bio.tools web service request
+    related caching. The application config code will set it to the
+    value of database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the
+    database table name used by beaker for bio.tools web service
+    request related caching.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the
+    database table name used by beaker for bio.tools web service
+    request related caching.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1299,6 +1304,42 @@
     The value of this option will be resolved with respect to
     <cache_dir>.
 :Default: ``citations/locks``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the url of the
+    database used by beaker for citation caching. The application
+    config code will set it to the value of database_connection if
+    this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the database
+    table name used by beaker for citation related caching.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the database
+    schema name of the table used by beaker for citation related
+    caching.
+:Default: ``None``
 :Type: str
 
 
@@ -1351,6 +1392,43 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the url
+    of the database used by beaker for caching mulled resolution
+    requests. The application config code will set it to the value of
+    database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the
+    database table name used by beaker for caching mulled resolution
+    requests.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the
+    database schema name of the table used by beaker for caching
+    mulled resolution requests.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1362,6 +1440,85 @@
     <config_dir>.
 :Default: ``object_store_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_config``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying an object_store_config_file, the object
+    store configuration can be embedded into Galaxy's config with this
+    option.
+    This option has no effect if the file specified by
+    object_store_config_file exists. Otherwise, if this option is set,
+    it overrides any other objectstore settings.
+    The syntax, available instrumenters, and documentation of their
+    options is explained in detail in the object store sample
+    configuration file, `object_store_conf.sample.yml`
+:Default: ``None``
+:Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_monitor_driver``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Specify where cache monitoring is driven for caching object stores
+    such as S3, Azure, and iRODS. This option has no affect on disk
+    object stores. For production instances, the cache should be
+    monitored by external tools such as tmpwatch and this value should
+    be set to 'external'. This will disable all cache monitoring in
+    Galaxy. Alternatively, 'celery' can monitor caches using a
+    periodic task or an 'inprocess' thread can be used - but this last
+    option seriously limits Galaxy's ability to scale. The default of
+    'auto' will use 'celery' if 'enable_celery_tasks' is set to true
+    or 'inprocess' otherwise. This option serves as the default for
+    all object stores and can be overridden on a per object store
+    basis (but don't - just setup tmpwatch for all relevant cache
+    paths).
+:Default: ``auto``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_monitor_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    For object store cache monitoring done by Galaxy, this is the
+    interval between cache checking steps. This is used by both
+    inprocess cache monitors (which we recommend you do not use) and
+    by the celery task if it is configured (by setting
+    enable_celery_tasks to true and not setting
+    object_store_cache_monitor_driver to external).
+:Default: ``600``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default cache path for caching object stores if cache not
+    configured for that object store entry.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``object_store_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default cache size for caching object stores if cache not
+    configured for that object store entry.
+:Default: ``-1``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1511,9 +1668,22 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    URL of the support resource for the galaxy instance.  Used in
-    activation emails.
+    URL of the support resource for the galaxy instance.  Used outside
+    of web contexts such as in activation emails and in Galaxy
+    markdown report generation.
     Example value 'https://galaxyproject.org/'
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``instance_access_url``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL used to access this Galaxy server. Used outside of web
+    contexts such as in Galaxy markdown report generation.
+    Example value 'https://usegalaxy.org'
 :Default: ``None``
 :Type: str
 
@@ -1756,6 +1926,54 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``carbon_emission_estimates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This flag enables carbon emissions estimates for every job based
+    on its runtime metrics. CPU and RAM usage and the total job
+    runtime are used to determine an estimate value. These estimates
+    and are based off of the work of the Green Algorithms Project and
+    the United States Environmental Protection Agency (EPA). Visit
+    https://www.green-algorithms.org/ and
+    https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+    for more detals.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``geographical_server_location_code``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The estimated geographical location of the server hosting your
+    galaxy instance given as an ISO 3166 code. This is used to make
+    carbon emissions estimates more accurate as the location effects
+    the carbon intensity values used in the estimate calculation. This
+    defaults to "GLOBAL" if not set or the
+    `geographical_server_location_code` value is invalid or
+    unsupported. To see a full list of supported locations, visit
+    https://galaxyproject.org/admin/carbon_emissions
+:Default: ``GLOBAL``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``power_usage_effectiveness``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The estimated power usage effectiveness of the data centre housing
+    the server your galaxy instance is running on. This can make
+    carbon emissions estimates more accurate. For more information on
+    how to calculate a PUE value, visit
+    https://en.wikipedia.org/wiki/Power_usage_effectiveness
+:Default: ``1.67``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_enable``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1821,18 +2039,6 @@
     interactive tools
 :Default: ``interactivetool``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactivetools_shorten_url``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Shorten the uuid portion of the subdomain or path for interactive
-    tools. Especially useful for avoiding the need for wildcard
-    certificates by keeping subdomain under 63 chars
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1906,7 +2112,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Display the "Galaxy" text in the masthead.
+    This option has been deprecated, use the `logo_src` instead to
+    change the default logo including the galaxy brand title.
 :Default: ``true``
 :Type: bool
 
@@ -1942,18 +2149,6 @@
     <config_dir>.
 :Default: ``trs_servers_conf.yml``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``use_legacy_history``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Server-wide default selection to use the legacy history during the
-    transition period, after which this option will disappear.  Users
-    will remain able to swap back and forth per their preference.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2005,8 +2200,7 @@
     file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
     If you plan to run Interactive Tools make sure the docker
-    container can reach this URL. For more details see
-    `job_conf.xml.interactivetools`.
+    container can reach this URL.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -2055,7 +2249,7 @@
 
 :Description:
     The brand image source.
-:Default: ``/static/favicon.png``
+:Default: ``/static/favicon.svg``
 :Type: str
 
 
@@ -2576,12 +2770,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``log_destination``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log destination, defaults to special value "stdout" that logs to
+    standard output. If set to anything else, then it will be
+    interpreted as a path that will be used as the log file, and
+    logging to stdout will be disabled.
+:Default: ``stdout``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``log_rotate_size``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Size of log file at which size it will be rotated as per the
+    documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    If log_rotate_count is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation. Size can
+    be a number of bytes or a human-friendly representation like "100
+    MB" or "1G".
+:Default: ``0``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``log_rotate_count``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of log file backups to keep, per the documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    Any additional rotated log files will automatically be pruned. If
+    log_rotate_size is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``log_level``
 ~~~~~~~~~~~~~
 
 :Description:
-    Verbosity of console log messages.  Acceptable values can be found
+    Verbosity of console log messages. Acceptable values can be found
     here: https://docs.python.org/library/logging.html#logging-levels
     A custom debug level of "TRACE" is available for even more
     verbosity.
@@ -2594,9 +2831,8 @@
 ~~~~~~~~~~~
 
 :Description:
-    Controls where and how the server logs messages. If unset, the
-    default is to log all messages to standard output at the level
-    defined by the `log_level` configuration option. Configuration is
+    Controls where and how the server logs messages. If set, overrides
+    all settings in the log_* configuration options. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
 :Default: ``None``
@@ -2706,7 +2942,7 @@
     edited or manipulated through the Admin control panel -- see
     "Manage Allowlist"
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``sanitize_allowlist.txt``
 :Type: str
 
@@ -2873,6 +3109,31 @@
     Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or
     CRITICAL.
 :Default: ``ERROR``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_traces_sample_rate``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to a number between 0 and 1. With this option set, every
+    transaction created will have that percentage chance of being sent
+    to Sentry. A value higher than 0 is required to analyze
+    performance.
+:Default: ``0.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~
+``sentry_ca_certs``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use this option to provide the path to location of the CA
+    (Certificate Authority) certificate file if the sentry server uses
+    a self-signed certificate.
+:Default: ``None``
 :Type: str
 
 
@@ -3049,11 +3310,20 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's name text will
+    receive this score multiplier.
+:Default: ``20.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_name_exact_multiplier``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If a search query matches a tool name exactly, the score will be
+    multiplied by this factor.
+:Default: ``10.0``
 :Type: float
 
 
@@ -3062,11 +3332,10 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's ID text will
+    receive this score multiplier. The query must be an exact match
+    against ID in order to be counted as a match.
+:Default: ``20.0``
 :Type: float
 
 
@@ -3075,10 +3344,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's section text will
+    receive this score multiplier.
 :Default: ``3.0``
 :Type: float
 
@@ -3088,11 +3355,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``2.0``
+    In tool search, a query match against a tool's description text
+    will receive this score multiplier.
+:Default: ``8.0``
 :Type: float
 
 
@@ -3101,10 +3366,8 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's label text will
+    receive this score multiplier.
 :Default: ``1.0``
 :Type: float
 
@@ -3114,11 +3377,10 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``5.0``
+    A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+    search, a query match against a tool's stub text will receive this
+    score multiplier.
+:Default: ``2.0``
 :Type: float
 
 
@@ -3127,10 +3389,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's help text will
+    receive this score multiplier.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_help_bm25f_k1``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The lower this parameter, the greater the diminishing reward for
+    term frequency in the help text. A higher K1 increases the level
+    of reward for additional occurences of a term. The default value
+    will provide a slight increase in score for the first, second and
+    third occurrence and little reward thereafter.
 :Default: ``0.5``
 :Type: float
 
@@ -3140,8 +3414,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Limits the number of results in toolbox search.  Can be used to
-    tweak how many results will appear.
+    Limits the number of results in toolbox search. Use to set the
+    maximum number of tool search results to display.
 :Default: ``20``
 :Type: int
 
@@ -3151,9 +3425,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable/ disable Ngram-search for tools. It makes tool search
-    results tolerant for spelling mistakes in the query by dividing
-    the query into multiple ngrams and search for each ngram
+    Disabling this will prevent partial matches on tool names.
+    Enable/disable Ngram-search for tools. It makes tool search
+    results tolerant for spelling mistakes in the query, and will also
+    match query substrings e.g. "genome" will match "genomics" or
+    "metagenome".
 :Default: ``true``
 :Type: bool
 
@@ -3163,7 +3439,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set minimum size of ngrams
+    Set minimum character length of ngrams
 :Default: ``3``
 :Type: int
 
@@ -3173,9 +3449,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set maximum size of ngrams
+    Set maximum character length of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``tool_ngram_factor``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Ngram matched scores will be multiplied by this factor. Should
+    always be below 1, because an ngram match is a partial match of a
+    search term.
+:Default: ``0.2``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3278,6 +3566,17 @@
     If use_remote_user is enabled, you can set this to a URL that will
     log your users out.
 :Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``post_user_logout_href``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This is the default url to which users are redirected after they
+    log out.
+:Default: ``/root/login?is_logout_redirect=true``
 :Type: str
 
 
@@ -3742,9 +4041,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``master_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bootstrap_admin_api_key``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     API key that allows performing some admin actions without actually
@@ -3752,6 +4051,78 @@
     if you need to bootstrap Galaxy, in particular to create a real
     admin user account via API. You should probably not set this on a
     production server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``organization_name``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The name of the organization that operates this Galaxy instance.
+    Serves as the default for the GA4GH service organization name and
+    can be exposed through Galaxy markdown for reports and such. For
+    instance, "Not Evil Corporation".
+    For GA4GH APIs, this is exposed via the service-info endpoint for
+    the Galaxy DRS API. If unset, one will be generated using
+    ga4gh_service_id (but only in the context of GA4GH APIs).
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``organization_url``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL of the organization that operates this Galaxy instance.
+    Serves as the default for the GA4GH service organization name and
+    can be exposed through Galaxy markdown for reports and such. For
+    instance, "notevilcorp.com".
+    For GA4GH APIs, this is exposed via the service-info endpoint.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_id``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service ID for GA4GH services (exposed via the service-info
+    endpoint for the Galaxy DRS API). If unset, one will be generated
+    using the URL the target API requests are made against.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+    This value should likely reflect your service's URL. For instance
+    for usegalaxy.org this value should be org.usegalaxy. Particular
+    Galaxy implementations will treat this value as a prefix and
+    append the service type to this ID. For instance for the DRS
+    service "id" (available via the DRS API) for the above
+    configuration value would be org.usegalaxy.drs.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_environment``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service environment (exposed via the service-info endpoint for the
+    Galaxy DRS API) for implemented GA4GH services.
+    Suggested values are prod, test, dev, staging.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 :Default: ``None``
 :Type: str
 
@@ -3827,17 +4198,6 @@
     invocation use job caching. This isn't a boolean so an option for
     'show-selection' can be added later.
 :Default: ``off``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``myexperiment_target_url``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL to the myExperiment instance being used (omit scheme but
-    include port).
-:Default: ``www.myexperiment.org:80``
 :Type: str
 
 
@@ -3947,12 +4307,30 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    XML config file that contains the job metric collection
+    YAML or XML config file that contains the job metric collection
     configuration.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``job_metrics_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~
+``job_metrics``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a job_metrics_config_file, the definition
+    of the metrics to enable can be embedded into Galaxy's config with
+    this option. This has no effect if a job_metrics_config_file is
+    used.
+    The syntax, available instrumenters, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+    By default, the core plugin is enabled. Setting this option to
+    false or an empty list disables metrics entirely.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4037,10 +4415,10 @@
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
-    job configuration file.
+    job configuration file or the <job_config> option.
     The value of this option will be resolved with respect to
     <config_dir>.
-:Default: ``job_conf.xml``
+:Default: ``job_conf.yml``
 :Type: str
 
 
@@ -4094,15 +4472,15 @@
     When jobs fail due to job runner problems, Galaxy can be
     configured to retry these or reroute the jobs to new destinations.
     Very fine control of this is available with resubmit declarations
-    in job_conf.xml. For simple deployments of Galaxy though, the
+    in the job config. For simple deployments of Galaxy though, the
     following attribute can define resubmission conditions for all job
     destinations. If any job destination defines even one resubmission
-    condition explicitly in job_conf.xml - the condition described by
-    this option will not apply to that destination. For instance, the
-    condition: 'attempt < 3 and unknown_error and (time_running < 300
-    or time_since_queued < 300)' would retry up to two times jobs that
-    didn't fail due to detected memory or walltime limits but did fail
-    quickly (either while queueing or running). The commented out
+    condition explicitly in the job config - the condition described
+    by this option will not apply to that destination. For instance,
+    the condition: 'attempt < 3 and unknown_error and (time_running <
+    300 or time_since_queued < 300)' would retry up to two times jobs
+    that didn't fail due to detected memory or walltime limits but did
+    fail quickly (either while queueing or running). The commented out
     default below results in no default job resubmission condition,
     failing jobs are just failed outright.
 :Default: ``None``
@@ -4175,18 +4553,35 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy workflow handler process runs one thread responsible
+    for checking the state of active workflow invocations.  This
+    thread operates in a loop and sleeps for the given number of
+    seconds at the end of each iteration. This can be decreased if
+    extremely high job throughput is necessary, but doing so can
+    increase CPU usage of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`
-    and `extended`. In extended mode jobs will decide if a tool run
-    failed, the object stores configuration is serialized and made
-    available to the job and is used for writing output datasets to
-    the object store as part of the job and dynamic output discovery
-    (e.g. discovered datasets <discover_datasets>, unpopulated
-    collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended`, `directory_celery` and `extended_celery`. In extended
+    mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is
+    used for writing output datasets to the object store as part of
+    the job and dynamic output discovery (e.g. discovered datasets
+    <discover_datasets>, unpopulated collections, etc) happens as part
+    of the job. In `directory_celery` and `extended_celery` metadata
+    will be set within a celery task.
 :Default: ``directory``
 :Type: str
 
@@ -4588,6 +4983,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``toolbox_auto_sort``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If true, the toolbox will be sorted by tool id when the toolbox is
+    loaded. This is useful for ensuring that tools are always
+    displayed in the same order in the UI.  If false, the order of
+    tools in the toolbox will be preserved as they are loaded from the
+    tool config files.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``tool_filters``
 ~~~~~~~~~~~~~~~~
@@ -4693,6 +5102,27 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~
+``celery_conf``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration options passed to Celery.
+    To refer to a task by name, use the template `galaxy.foo` where
+    `foo` is the function name of the task defined in the
+    galaxy.celery.tasks module.
+    The `broker_url` option, if unset, defaults to the value of
+    `amqp_internal_connection`. The `result_backend` option must be
+    set if the `enable_celery_tasks` option is set.
+    The galaxy.fetch_data task can be disabled by setting its route to
+    "disabled": `galaxy.fetch_data: disabled`. (Other tasks cannot be
+    disabled on a per-task basis at this time.)
+    For details, see Celery documentation at
+    https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Type: any
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_celery_tasks``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -4705,24 +5135,15 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~
-``celery_broker``
-~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``celery_user_rate_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Celery broker (if unset falls back to amqp_internal_connection).
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~
-``celery_backend``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If set, it will be the results backend for Celery.
-:Default: ``None``
-:Type: str
+    If set to a non-0 value, upper limit on number of tasks that can
+    be executed per user per second.
+:Default: ``0.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~
@@ -4786,7 +5207,7 @@
 :Description:
     Set remote path of the trained model (HDF5 file) for tool
     recommendation.
-:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5``
 :Type: str
 
 
@@ -4797,7 +5218,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``10``
+:Default: ``20``
 :Type: int
 
 
@@ -4887,6 +5308,131 @@
 :Description:
     Display built-in converters in the tool panel.
 :Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``themes_config_file``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional file containing one or more themes for galaxy. If several
+    themes are defined, users can choose their preferred theme in the
+    client.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``themes_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beacon_integration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables user preferences and api endpoint for the beacon
+    integration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Displays a link to training material, if any includes the current
+    tool. When activated the following options also need to be set:
+    tool_training_recommendations_link,
+    tool_training_recommendations_api_url
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_link``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Template URL to display all tutorials containing current tool.
+    Valid template inputs are:   {repository_owner}   {name}
+    {tool_id}   {training_tool_identifier}   {version}
+:Default: ``https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_api_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL to API describing tutorials containing specific tools. When
+    CORS is used, make sure to add this host.
+:Default: ``https://training.galaxyproject.org/training-material/api/top-tools.json``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citations_export_message_html``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Message to display on the export citations tool page
+:Default: ``When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_notification_system``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the Notification System integrated in Galaxy.
+    Users can receive automatic notifications when a certain resource
+    is shared with them or when some long running operations have
+    finished, etc.
+    The system allows notification scheduling and expiration, and
+    users can opt-out of specific notification categories or channels.
+    Admins can schedule and broadcast notifications that will be
+    visible to all users, including special server-wide announcements
+    such as scheduled maintenance, high load warnings, and event
+    announcements, to name a few examples.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``expired_notifications_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all expired
+    notifications from the database (every 24 hours by default). Runs
+    in a Celery task.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``help_forum_api_url``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL pointing to the Galaxy Help Forum API base URL. The API
+    must be compatible with Discourse API
+    (https://docs.discourse.org/).
+:Default: ``https://help.galaxyproject.org/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``help_forum_tool_panel_integration_enabled``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the integration of the Galaxy Help Forum in the tool panel.
+    This requires the help_forum_api_url to be set.
+:Default: ``false``
 :Type: bool
 
 

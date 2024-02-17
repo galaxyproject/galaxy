@@ -14,9 +14,7 @@ Subpackages
 
    galaxy.tool_shed.galaxy_install.datatypes
    galaxy.tool_shed.galaxy_install.metadata
-   galaxy.tool_shed.galaxy_install.migrate
    galaxy.tool_shed.galaxy_install.repository_dependencies
-   galaxy.tool_shed.galaxy_install.tool_dependencies
    galaxy.tool_shed.galaxy_install.tools
 
 Submodules
@@ -34,14 +32,6 @@ galaxy.tool\_shed.galaxy\_install.installed\_repository\_manager module
 -----------------------------------------------------------------------
 
 .. automodule:: galaxy.tool_shed.galaxy_install.installed_repository_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.tool\_shed.galaxy\_install.tool\_migration\_manager module
------------------------------------------------------------------
-
-.. automodule:: galaxy.tool_shed.galaxy_install.tool_migration_manager
    :members:
    :undoc-members:
    :show-inheritance:

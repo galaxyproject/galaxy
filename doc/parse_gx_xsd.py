@@ -17,7 +17,6 @@ markdown_buffer = StringIO()
 
 def main():
     """Entry point for the function that builds Markdown help for the Galaxy XSD."""
-    toc_list = []
     content_list = []
     found_tag = False
     with open(sys.argv[1]) as markdown_template:
@@ -25,16 +24,11 @@ def main():
             if line.startswith("$tag:"):
                 found_tag = True
                 tag = Tag(line.rstrip())
-                toc_list.append(tag.build_toc_entry())
                 content_list.append(tag.build_help())
             elif not found_tag:
                 print(line, end="")
             else:
                 raise Exception("No normal text allowed after the first $tag")
-    print("## Contents\n")
-    for el in toc_list:
-        print(el)
-    print("\n")
     for el in content_list:
         print(el, end="")
 
@@ -57,18 +51,8 @@ class Tag:
         self.title = title
 
     @property
-    def _anchor(self):
-        anchor = self.title
-        for _ in ["|", "_"]:
-            anchor = anchor.replace(_, "-")
-        return "#" + anchor
-
-    @property
     def _pretty_title(self):
         return " > ".join("``%s``" % p for p in self.title.split("|"))
-
-    def build_toc_entry(self):
-        return f"* [{self._pretty_title}]({self._anchor})"
 
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)
@@ -123,8 +107,7 @@ def _build_tag(tag, hide_attributes):
                     assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
-    best_practices = _get_bp_link(annotation_el)
-    if best_practices:
+    if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
         tag_help.write(
             """
@@ -157,7 +140,7 @@ def _get_bp_link(annotation_el):
     anchor = annotation_el.attrib.get("{http://galaxyproject.org/xml/1.0}best_practices", None)
     link = None
     if anchor:
-        link = "https://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
+        link = "https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#%s" % anchor
     return link
 
 
@@ -184,6 +167,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             details = details.replace("\n", " ").strip()
+            details = details.replace("|", "\\|").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
                 details += (

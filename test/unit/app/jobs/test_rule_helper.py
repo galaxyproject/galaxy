@@ -3,6 +3,7 @@ import uuid
 from galaxy import model
 from galaxy.jobs.rule_helper import RuleHelper
 from galaxy.model import mapping
+from galaxy.model.base import transaction
 from galaxy.util import bunch
 
 USER_EMAIL_1 = "u1@example.com"
@@ -55,11 +56,8 @@ def test_job_count():
 
 
 def __assert_job_count_is(expected_count, rule_helper, **kwds):
-    acutal_count = rule_helper.job_count(**kwds)
-
-    if expected_count != acutal_count:
-        template = "Expected job count %d, actual job count %s for params %s"
-        raise AssertionError(template % (expected_count, acutal_count, kwds))
+    if expected_count != (actual_count := rule_helper.job_count(**kwds)):
+        raise AssertionError(f"Expected job count {expected_count}, actual job count {actual_count} for params {kwds}")
 
 
 def __setup_fixtures(app):
@@ -200,4 +198,6 @@ class MockApp:
     def add(self, *args):
         for arg in args:
             self.model.context.add(arg)
-        self.model.context.flush()
+        session = self.model.context
+        with transaction(session):
+            session.commit()

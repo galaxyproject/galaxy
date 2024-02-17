@@ -1,6 +1,6 @@
 /***
 
-Chimera interactions viewer. It reads sqlite file 
+Chimera interactions viewer. It reads sqlite file
 and shows up the list of interactions and a summary
 in multiple plots, comic alignments
 

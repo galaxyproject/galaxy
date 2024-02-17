@@ -1,3 +1,4 @@
+from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
@@ -5,11 +6,11 @@ from .framework import (
 )
 
 
-class AdminAppTestCase(SeleniumTestCase):
-
-    requires_admin = True
+class TestAdminApp(SeleniumTestCase):
+    run_as_admin = True
 
     @selenium_test
+    @requires_admin
     def test_html_allowlist(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -23,7 +24,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_allowlist_local_landing")
         # This should be updated if the list of built-in converters is changed.
-        render_button = self.driver.find_element_by_xpath("//td[.='CONVERTER_bam_to_bigwig_0']/following::td/button")
+        render_button = self.find_element_by_xpath("//td[.='CONVERTER_bam_to_bigwig_0']/following::td/button")
         render_button.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_allowlist_converter_html_rendered")
@@ -31,13 +32,14 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_allowlist_render_landing")
         self.sleep_for(self.wait_types.UX_RENDER)
-        sanitize_button = self.driver.find_element_by_xpath("//td[.='CONVERTER_bam_to_bigwig_0']/following::td/button")
+        sanitize_button = self.find_element_by_xpath("//td[.='CONVERTER_bam_to_bigwig_0']/following::td/button")
         sanitize_button.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_allowlist_converter_sanitized")
 
     @selenium_test
     @flakey
+    @requires_admin
     def test_admin_toolshed(self):
         """
         This tests installing a repository, checking for upgrades, and uninstalling.
@@ -58,7 +60,7 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.index.toolshed.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_landing")
-        repo_search_input = self.driver.find_element_by_id("toolshed-repo-search")
+        repo_search_input = self.find_element_by_id("toolshed-repo-search")
         repo_search_input.clear()
         repo_search_input.send_keys(repository_name)
         # If this hasn't succeeded after 30 seconds, the @flakey context should
@@ -67,38 +69,39 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.SHED_SEARCH)
         self.screenshot("admin_toolshed_search")
         admin_component.toolshed.search_results.wait_for_visible()
-        repository_row = self.driver.find_element_by_link_text(repository_name)
+        repository_row = self.find_element_by_link_text(repository_name)
         repository_row.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_repo_details")
-        install_button = self.driver.find_element_by_xpath("(//button[contains(., 'Install')])[2]")
+        install_button = self.find_element_by_xpath("(//button[contains(., 'Install')])[2]")
         install_button.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("admin_toolshed_repo_install_settings")
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        ok_button = self.driver.find_element_by_xpath(
+        ok_button = self.find_element_by_xpath(
             "//*[@id='repo-install-settings___BV_modal_footer_']/button[contains(., 'OK')]"
         )
         ok_button.click()
         self.sleep_for(self.wait_types.REPO_INSTALL)
-        installed_only = self.driver.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
+        installed_only = self.find_element_by_xpath("//span[contains(. ,'Installed Only')]/../../input")
         self.action_chains().move_to_element(installed_only).click().perform()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # This serves as a check for the presence of the upgrade notification.
         admin_component.toolshed.upgrade_notification.wait_for_visible()
         self.screenshot("admin_toolshed_repo_installed")
-        repository_row = self.driver.find_element_by_xpath(f"//div[contains(text(), '{repository_name}')]/..")
+        repository_row = self.find_element_by_xpath(f"//div[contains(text(), '{repository_name}')]/..")
         repository_row.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_toolshed_installed_only")
         # Unfortunately reusing the element isn't feasible, since the div
         # containing the button gets replaced with a new div and button.
-        uninstall_button = self.driver.find_element_by_xpath("(//button[contains(., 'Uninstall')])[1]")
+        uninstall_button = self.find_element_by_xpath("(//button[contains(., 'Uninstall')])[1]")
         uninstall_button.click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_toolshed_repo_uninstalled")
 
     @selenium_test
+    @requires_admin
     def test_admin_dependencies_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -107,9 +110,9 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.index.dependencies.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         # Ensure that tabs are visible
-        self.driver.find_element_by_link_text("Dependencies")
-        self.driver.find_element_by_link_text("Containers")
-        unused_link = self.driver.find_element_by_link_text("Unused")
+        self.find_element_by_link_text("Dependencies")
+        self.find_element_by_link_text("Containers")
+        unused_link = self.find_element_by_link_text("Unused")
         # Ensure that #manage-resolver-type is visible.
         admin_component.manage_dependencies.resolver_type.wait_for_visible()
         self.screenshot("admin_dependencies_landing")
@@ -120,6 +123,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_dependencies_unused")
 
     @selenium_test
+    @requires_admin
     def test_admin_jobs_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -138,15 +142,16 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
         new_label = lock_label.wait_for_text()
-        self.assertNotEqual(new_label, original_label)
+        assert new_label != original_label
         self.screenshot("admin_jobs_locked")
         lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
-        self.assertEqual(lock_label.wait_for_text(), original_label)
+        assert lock_label.wait_for_text() == original_label
 
     @selenium_test
+    @requires_admin
     def test_admin_server_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -174,6 +179,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_local_data")
 
     @selenium_test
+    @requires_admin
     def test_admin_user_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -201,6 +207,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_roles")
 
     @selenium_test
+    @requires_admin
     def test_admin_data_manager(self):
         admin_component = self.components.admin
         self.admin_login()

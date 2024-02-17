@@ -1,7 +1,5 @@
-import ipaddress
 import logging
 import os
-import socket
 import tempfile
 from dataclasses import dataclass
 from io import StringIO
@@ -14,28 +12,26 @@ from typing import (
     List,
     Optional,
 )
-from urllib.parse import urlparse
 
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
-from galaxy.datatypes.sniff import stream_to_file
-from galaxy.exceptions import (
-    ConfigDoesNotAllowException,
-    RequestParameterInvalidException,
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files.uris import (
+    stream_to_file,
+    validate_non_local,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     FormDefinition,
     LibraryDataset,
     LibraryFolder,
     Role,
-    tags,
 )
-from galaxy.util import (
-    is_url,
-    unicodify,
-)
+from galaxy.model.base import transaction
+from galaxy.util import is_url
 from galaxy.util.path import external_chown
 
 log = logging.getLogger(__name__)
@@ -44,90 +40,6 @@ log = logging.getLogger(__name__)
 def validate_datatype_extension(datatypes_registry, ext):
     if ext and ext not in ("auto", "data") and not datatypes_registry.get_datatype_by_extension(ext):
         raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
-
-
-def validate_url(url, ip_allowlist):
-    # If it doesn't look like a URL, ignore it.
-    if not (url.lstrip().startswith("http://") or url.lstrip().startswith("https://")):
-        return url
-
-    # Strip leading whitespace before passing url to urlparse()
-    url = url.lstrip()
-    # Extract hostname component
-    parsed_url = urlparse(url).netloc
-    # If credentials are in this URL, we need to strip those.
-    if parsed_url.count("@") > 0:
-        # credentials.
-        parsed_url = parsed_url[parsed_url.rindex("@") + 1 :]
-    # Percent encoded colons and other characters will not be resolved as such
-    # so we don't have to either.
-
-    # Sometimes the netloc will contain the port which is not desired, so we
-    # need to extract that.
-    port = None
-    # However, it could ALSO be an IPv6 address they've supplied.
-    if ":" in parsed_url:
-        # IPv6 addresses have colons in them already (it seems like always more than two)
-        if parsed_url.count(":") >= 2:
-            # Since IPv6 already use colons extensively, they wrap it in
-            # brackets when there is a port, e.g. http://[2001:db8:1f70::999:de8:7648:6e8]:100/
-            # However if it ends with a ']' then there is no port after it and
-            # they've wrapped it in brackets just for fun.
-            if "]" in parsed_url and not parsed_url.endswith("]"):
-                # If this +1 throws a range error, we don't care, their url
-                # shouldn't end with a colon.
-                idx = parsed_url.rindex(":")
-                # We parse as an int and let this fail ungracefully if parsing
-                # fails because we desire to fail closed rather than open.
-                port = int(parsed_url[idx + 1 :])
-                parsed_url = parsed_url[:idx]
-            else:
-                # Plain ipv6 without port
-                pass
-        else:
-            # This should finally be ipv4 with port. It cannot be IPv6 as that
-            # was caught by earlier cases, and it cannot be due to credentials.
-            idx = parsed_url.rindex(":")
-            port = int(parsed_url[idx + 1 :])
-            parsed_url = parsed_url[:idx]
-
-    # safe to log out, no credentials/request path, just an IP + port
-    log.debug("parsed url, port: %s : %s", parsed_url, port)
-    # Call getaddrinfo to resolve hostname into tuples containing IPs.
-    addrinfo = socket.getaddrinfo(parsed_url, port)
-    # Get the IP addresses that this entry resolves to (uniquely)
-    # We drop:
-    #   AF_* family: It will resolve to AF_INET or AF_INET6, getaddrinfo(3) doesn't even mention AF_UNIX,
-    #   socktype: We don't care if a stream/dgram/raw protocol
-    #   protocol: we don't care if it is tcp or udp.
-    addrinfo_results = {info[4][0] for info in addrinfo}
-    # There may be multiple (e.g. IPv4 + IPv6 or DNS round robin). Any one of these
-    # could resolve to a local addresses (and could be returned by chance),
-    # therefore we must check them all.
-    for raw_ip in addrinfo_results:
-        # Convert to an IP object so we can tell if it is in private space.
-        ip = ipaddress.ip_address(unicodify(raw_ip))
-        # If this is a private address
-        if ip.is_private:
-            results = []
-            # If this IP is not anywhere in the allowlist
-            for allowlisted in ip_allowlist:
-                # If it's an IP address range (rather than a single one...)
-                if hasattr(allowlisted, "subnets"):
-                    results.append(ip in allowlisted)
-                else:
-                    results.append(ip == allowlisted)
-
-            if any(results):
-                # If we had any True, then THIS (and ONLY THIS) IP address that
-                # that specific DNS entry resolved to is in allowlisted and
-                # safe to access. But we cannot exit here, we must ensure that
-                # all IPs that that DNS entry resolves to are likewise safe.
-                pass
-            else:
-                # Otherwise, we deny access.
-                raise ConfigDoesNotAllowException("Access to this address in not permitted by server configuration")
-    return url
 
 
 def persist_uploads(params, trans):
@@ -144,7 +56,7 @@ def persist_uploads(params, trans):
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
                 upload_dataset["file_data"] = dict(filename=f.filename, local_filename=local_filename)
-            elif type(f) == dict and "local_filename" not in f:
+            elif isinstance(f, dict) and "local_filename" not in f:
                 raise Exception("Uploaded file was encoded in a way not understood by Galaxy.")
             if (
                 "url_paste" in upload_dataset
@@ -152,7 +64,7 @@ def persist_uploads(params, trans):
                 and upload_dataset["url_paste"].strip() != ""
             ):
                 upload_dataset["url_paste"] = stream_to_file(
-                    StringIO(validate_url(upload_dataset["url_paste"], trans.app.config.fetch_url_allowlist_ips)),
+                    StringIO(validate_non_local(upload_dataset["url_paste"], trans.app.config.fetch_url_allowlist_ips)),
                     prefix="strio_url_paste_",
                 )
             else:
@@ -174,8 +86,9 @@ class LibraryParams:
 
 
 def handle_library_params(
-    trans, params, folder_id: str, replace_dataset: Optional[LibraryDataset] = None
+    trans, params, folder_id: int, replace_dataset: Optional[LibraryDataset] = None
 ) -> LibraryParams:
+    session = trans.sa_session
     # FIXME: the received params has already been parsed by util.Params() by the time it reaches here,
     # so no complex objects remain.  This is not good because it does not allow for those objects to be
     # manipulated here.  The received params should be the original kwd from the initial request.
@@ -183,12 +96,12 @@ def handle_library_params(
     # See if we have any template field contents
     template_field_contents = {}
     template_id = params.get("template_id", None)
-    folder = trans.sa_session.query(LibraryFolder).get(trans.security.decode_id(folder_id))
+    folder = session.get(LibraryFolder, folder_id)
     # We are inheriting the folder's info_association, so we may have received inherited contents or we may have redirected
     # here after the user entered template contents ( due to errors ).
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
-        template = trans.sa_session.query(FormDefinition).get(template_id)
+        template = session.get(FormDefinition, template_id)
         assert template
         for field in template.fields:
             field_name = field["name"]
@@ -197,7 +110,7 @@ def handle_library_params(
                 template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
-        role = trans.sa_session.query(Role).get(role_id)
+        role = session.get(Role, role_id)
         roles.append(role)
     tags = params.get("tags", None)
     return LibraryParams(
@@ -227,11 +140,13 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
         hda.state = state
     else:
         hda.state = hda.states.QUEUED
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey, quota=False)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
-    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
-    trans.sa_session.flush()
+    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     return hda
 
 
@@ -256,7 +171,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
                 new_folder.genome_build = trans.app.genome_builds.default_value
                 folder.add_folder(new_folder)
                 trans.sa_session.add(new_folder)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 trans.app.security_agent.copy_library_permissions(trans, folder, new_folder)
                 folder = new_folder
     if library_bunch.replace_dataset:
@@ -264,7 +180,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         ld = trans.app.model.LibraryDataset(folder=folder, name=uploaded_dataset.name)
         trans.sa_session.add(ld)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.app.security_agent.copy_library_permissions(trans, folder, ld)
     ldda = trans.app.model.LibraryDatasetDatasetAssociation(
         name=uploaded_dataset.name,
@@ -279,8 +196,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
         tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag_from_filename, flush=False)
 
-    tags_list = uploaded_dataset.get("tags", False)
-    if tags_list:
+    if tags_list := uploaded_dataset.get("tags", False):
         for tag in tags_list:
             tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag, flush=False)
 
@@ -290,7 +206,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         ldda.state = ldda.states.QUEUED
     ldda.message = library_bunch.message
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
     trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
     if library_bunch.replace_dataset:
@@ -301,14 +218,16 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     else:
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions(
-            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user)
+            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), new=True
         )
         folder.add_library_dataset(ld, genome_build=uploaded_dataset.dbkey)
         trans.sa_session.add(folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
     ld.library_dataset_dataset_association_id = ldda.id
     trans.sa_session.add(ld)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     # Handle template included in the upload form, if any.  If the upload is not asynchronous ( e.g., URL paste ),
     # then the template and contents will be included in the library_bunch at this point.  If the upload is
     # asynchronous ( e.g., uploading a file ), then the template and contents will be included in the library_bunch
@@ -320,7 +239,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         # Create a new FormValues object, using the template we previously retrieved
         form_values = trans.app.model.FormValues(library_bunch.template, library_bunch.template_field_contents)
         trans.sa_session.add(form_values)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Create a new info_association between the current ldda and form_values
         # TODO: Currently info_associations at the ldda level are not inheritable to the associated LibraryDataset,
         # we need to figure out if this is optimal
@@ -328,7 +248,8 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
             ldda, library_bunch.template, form_values
         )
         trans.sa_session.add(info_association)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
     # If roles were selected upon upload, restrict access to the Dataset to those roles
     if library_bunch.roles:
         for role in library_bunch.roles:
@@ -336,12 +257,15 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
                 trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role
             )
             trans.sa_session.add(dp)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
     return ldda
 
 
-def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
-    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
+def new_upload(
+    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None
+):
+    tag_handler = trans.tag_handler
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(
             trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state
@@ -385,7 +309,8 @@ def create_paramfile(trans, uploaded_datasets):
             for meta_name, meta_value in uploaded_dataset.metadata.items():
                 setattr(data.metadata, meta_name, meta_value)
             trans.sa_session.add(data)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             params = dict(
                 file_type=uploaded_dataset.file_type,
                 dataset_id=data.dataset.id,
@@ -467,7 +392,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
-    if type(galaxy_session) == trans.model.GalaxySession:
+    if isinstance(galaxy_session, trans.model.GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id
@@ -512,10 +437,11 @@ def active_folders(trans, folder):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
-    return (
-        trans.sa_session.query(LibraryFolder)
+    stmt = (
+        select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
-        .options(joinedload("actions"))
-        .order_by(LibraryFolder.table.c.name)
-        .all()
+        .options(joinedload(LibraryFolder.actions))
+        .unique()
+        .order_by(LibraryFolder.name)
     )
+    return trans.sa_session.scalars(stmt).all()

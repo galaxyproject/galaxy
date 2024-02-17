@@ -1,2 +1,0 @@
-include *.rst *.txt LICENSE
-include galaxy/datatypes/display_applications/configs/*/*.xml

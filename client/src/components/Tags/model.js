@@ -9,76 +9,55 @@ import { keyedColorScheme } from "utils/color";
 // separated by a period, and then an optional value after a colon.
 export const VALID_TAG_RE = /^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$/;
 
-function TagModel(props = {}) {
-    this.text = "";
+export class TagModel {
+    /**
+     * @param {string || object} data
+     */
+    constructor(data) {
+        let props = {};
 
-    // special handling for name:thing tags
-    if (props.text && props.text.startsWith("#")) {
-        props.text = props.text.replace("#", "name:");
+        switch (typeof data) {
+            case "string":
+                props = { text: data };
+                break;
+            case "object":
+                props = data;
+                break;
+        }
+
+        Object.assign(this, props);
+
+        this.text = props.text ?? "";
+        this.label = this.text.replace(/^name:/, "#");
+        this.text = this.text.replace(/^#/, "name:");
+        this.style = "";
+
+        if (this.text.startsWith("name:")) {
+            this.style += "font-weight: bold;";
+        }
+
+        const { primary, darker } = keyedColorScheme(this.text);
+
+        this.style += `background-color: ${primary};`;
+        this.style += "color: black;";
+        this.style += `border-color: ${darker};`;
+
+        this.valid = VALID_TAG_RE.test(this.text);
     }
 
-    Object.assign(this, props);
+    equals(otherTag) {
+        return this.text === otherTag.text;
+    }
 
-    // Need to do Object.defineProperty instead of a class getter to make
-    // style enumerable for vue-tags-input
-    Object.defineProperty(this, "style", {
-        enumerable: true,
-        get: function () {
-            if (this.text.startsWith("name:")) {
-                const { primary, contrasting, darker } = keyedColorScheme(this.text);
-
-                const styles = {
-                    "background-color": primary,
-                    color: contrasting,
-                    "border-color": darker,
-                };
-
-                return Object.keys(styles)
-                    .map((prop) => `${prop}: ${styles[prop]}`)
-                    .join(";");
-            }
-            return "";
-        },
-    });
-
-    // Changes name:foo to #foo
-    Object.defineProperty(this, "label", {
-        enumerable: true,
-        get: function () {
-            return this.text.startsWith("name:") ? this.text.replace("name:", "#") : this.text;
-        },
-    });
-
-    // valid flag
-    Object.defineProperty(this, "valid", {
-        enumerable: false,
-        get: function () {
-            return VALID_TAG_RE.test(this.text);
-        },
-    });
+    toString() {
+        return this.text;
+    }
 }
-
-TagModel.prototype.equals = function (otherTag) {
-    return this.text == otherTag.text;
-};
-
-TagModel.prototype.toString = function () {
-    return this.text;
-};
 
 // Public factory
 
 export function createTag(data) {
-    let props = {};
-    switch (typeof data) {
-        case "string":
-            props = { text: data };
-            break;
-        case "object":
-            props = Object.assign({}, data);
-            break;
-    }
-    return new TagModel(props);
+    return new TagModel(data);
 }
 
 // Returns tags in "newTags" that aren't present in "existingTags"

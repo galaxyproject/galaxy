@@ -1,6 +1,9 @@
 import contextlib
 import os
 import threading
+from typing import Union
+
+from sqlalchemy.orm.scoping import scoped_session
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -10,9 +13,12 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     User,
 )
+from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.objectstore.unittest_utils import Config as TestConfig
-from galaxy.objectstore.unittest_utils import DISK_TEST_CONFIG
+from galaxy.objectstore.unittest_utils import (
+    Config as TestConfig,
+    DISK_TEST_CONFIG,
+)
 from galaxy.util import ExecutionTimer
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -32,7 +38,9 @@ def test_history_dataset_copy(num_datasets=NUM_DATASETS, include_metadata_file=I
             hda_path = test_config.write("moo", "test_metadata_original_%d" % i)
             _create_hda(model, object_store, old_history, hda_path, include_metadata_file=include_metadata_file)
 
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
 
         history_copy_timer = ExecutionTimer()
         new_history = old_history.copy(target_user=old_history.user)
@@ -73,7 +81,10 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
             history_dataset_collection.user = old_history.user
             model.context.add(history_dataset_collection)
 
-            model.context.flush()
+            session = model.context
+            with transaction(session):
+                session.commit()
+
             old_history.add_dataset_collection(history_dataset_collection)
             history_dataset_collection.add_item_annotation(
                 model.context,
@@ -82,7 +93,10 @@ def test_history_collection_copy(list_size=NUM_DATASETS):
                 "annotation #%d" % history_dataset_collection.hid,
             )
 
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
+
         annotation_str = history_dataset_collection.get_item_annotation_str(
             model.context, old_history.user, history_dataset_collection
         )
@@ -127,28 +141,42 @@ def _setup_mapping_and_user():
         u = User(email="historycopy@example.com", password="password")
         h1 = History(name="HistoryCopyHistory1", user=u)
         model.context.add_all([u, h1])
-        model.context.flush()
+        session = model.context
+        with transaction(session):
+            session.commit()
         yield test_config, object_store, model, h1
 
 
-def _create_hda(model, object_store, history, path, visible=True, include_metadata_file=False):
-    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=model.context)
+def _create_hda(
+    has_session: Union[mapping.GalaxyModelMapping, scoped_session],
+    object_store,
+    history,
+    path,
+    visible=True,
+    include_metadata_file=False,
+):
+    if hasattr(has_session, "context"):
+        sa_session = has_session.context
+    else:
+        sa_session = has_session
+    hda = HistoryDatasetAssociation(extension="bam", create_dataset=True, sa_session=sa_session)
     hda.visible = visible
-    model.context.add(hda)
-    model.context.flush([hda])
+    sa_session.add(hda)
+    with transaction(sa_session):
+        sa_session.commit()
     object_store.update_from_file(hda, file_name=path, create=True)
     if include_metadata_file:
         hda.metadata.from_JSON_dict(json_dict={"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": path})})
         _check_metadata_file(hda)
     hda.set_size()
     history.add_dataset(hda)
-    hda.add_item_annotation(model.context, history.user, hda, "annotation #%d" % hda.hid)
+    hda.add_item_annotation(sa_session, history.user, hda, "annotation #%d" % hda.hid)
     return hda
 
 
 def _check_metadata_file(hda):
     assert hda.metadata.bam_index.id
-    copied_index = hda.metadata.bam_index.file_name
+    copied_index = hda.metadata.bam_index.get_file_name()
     assert os.path.exists(copied_index)
     with open(copied_index) as f:
         assert f.read() == "moo"

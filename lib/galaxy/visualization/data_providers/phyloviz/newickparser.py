@@ -137,7 +137,6 @@ class Newick_Parser(Base_Parser):
                 i = bracketStack.pop()
 
                 if len(bracketStack) == 0:  # is child of current node
-
                     InternalNode = None
 
                     # First flat call to make nodes of the same depth but from the preceeding string.

@@ -1,5 +1,5 @@
 <template>
-    <div id="columns" class="workflow-client">
+    <div v-if="isCanvas" id="columns" class="d-flex">
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -13,221 +13,220 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <MarkdownEditor
-            v-if="!isCanvas"
-            :markdown-text="markdownText"
-            :markdown-config="markdownConfig"
-            :title="'Workflow Report: ' + name"
-            :get-manager="getManager"
-            @onUpdate="onReportUpdate">
-            <template v-slot:buttons>
-                <b-button
-                    id="workflow-canvas-button"
-                    v-b-tooltip.hover.bottom
-                    title="Return to Workflow"
-                    variant="link"
-                    role="button"
-                    @click="onEdit">
-                    <span class="fa fa-times" />
-                </b-button>
-            </template>
-        </MarkdownEditor>
-        <div v-show="isCanvas">
-            <SidePanel id="left" side="left">
-                <template v-slot:panel>
-                    <ProviderAwareToolBoxWorkflow
-                        :module-sections="moduleSections"
-                        :data-managers="dataManagers"
-                        :workflows="workflows"
-                        @onInsertTool="onInsertTool"
-                        @onInsertModule="onInsertModule"
-                        @onInsertWorkflow="onInsertWorkflow"
-                        @onInsertWorkflowSteps="onInsertWorkflowSteps" />
-                </template>
-            </SidePanel>
-            <div id="center" class="workflow-center">
+        <b-modal
+            v-model="showSaveAsModal"
+            title="Save As a New Workflow"
+            ok-title="Save"
+            cancel-title="Cancel"
+            @ok="doSaveAs(false)">
+            <b-form-group label="Name">
+                <b-form-input v-model="saveAsName" />
+            </b-form-group>
+            <b-form-group label="Annotation">
+                <b-form-textarea v-model="saveAsAnnotation" />
+            </b-form-group>
+        </b-modal>
+        <FlexPanel side="left">
+            <ToolPanel
+                workflow
+                :module-sections="moduleSections"
+                :data-managers="dataManagers"
+                :editor-workflows="workflows"
+                @onInsertTool="onInsertTool"
+                @onInsertModule="onInsertModule"
+                @onInsertWorkflow="onInsertWorkflow"
+                @onInsertWorkflowSteps="onInsertWorkflowSteps" />
+        </FlexPanel>
+        <div id="center" class="workflow-center">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <span class="sr-only">Workflow Editor</span>
+                    <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
+                    <i v-else>Create New Workflow</i>
+                </div>
+            </div>
+            <WorkflowGraph
+                v-if="!datatypesMapperLoading"
+                :steps="steps"
+                :datatypes-mapper="datatypesMapper"
+                :highlight-id="highlightId"
+                :scroll-to-id="scrollToId"
+                @scrollTo="scrollToId = null"
+                @transform="(value) => (transform = value)"
+                @graph-offset="(value) => (graphOffset = value)"
+                @onUpdate="onUpdate"
+                @onClone="onClone"
+                @onCreate="onInsertTool"
+                @onChange="onChange"
+                @onConnect="onConnect"
+                @onRemove="onRemove"
+                @onUpdateStep="onUpdateStep"
+                @onUpdateStepPosition="onUpdateStepPosition">
+            </WorkflowGraph>
+        </div>
+        <FlexPanel side="right">
+            <div class="unified-panel bg-white">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
-                        <span class="sr-only">Workflow Editor</span>
-                        {{ name }}
+                        <WorkflowOptions
+                            :is-new-temp-workflow="isNewTempWorkflow"
+                            :has-changes="hasChanges"
+                            :has-invalid-connections="hasInvalidConnections"
+                            @onSave="onSave"
+                            @onCreate="onCreate"
+                            @onSaveAs="onSaveAs"
+                            @onRun="onRun"
+                            @onDownload="onDownload"
+                            @onReport="onReport"
+                            @onLayout="onLayout"
+                            @onEdit="onEdit"
+                            @onAttributes="onAttributes"
+                            @onLint="onLint"
+                            @onUpgrade="onUpgrade" />
                     </div>
                 </div>
-                <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-                    <ZoomControl v-if="!checkWheeled" :zoom-level="zoomLevel" @onZoom="onZoom" />
-                    <b-button
-                        v-else
-                        v-b-tooltip.hover
-                        class="reset-wheel"
-                        variant="light"
-                        title="Show Zoom Buttons"
-                        size="sm"
-                        aria-label="Show Zoom Buttons"
-                        @click="resetWheel">
-                        Zoom Controls
-                    </b-button>
-                    <div id="canvas-viewport">
-                        <div id="canvas-container" ref="canvas">
-                            <WorkflowNode
-                                v-for="(step, key) in steps"
-                                :id="key"
-                                :key="key"
-                                :name="step.name"
-                                :type="step.type"
-                                :content-id="step.content_id"
-                                :step="step"
-                                :datatypes-mapper="datatypesMapper"
-                                :get-manager="getManager"
-                                :get-canvas-manager="getCanvasManager"
-                                @onAdd="onAdd"
-                                @onUpdate="onUpdate"
-                                @onClone="onClone"
-                                @onCreate="onInsertTool"
-                                @onChange="onChange"
-                                @onActivate="onActivate"
-                                @onRemove="onRemove" />
-                        </div>
-                    </div>
-                    <div class="workflow-overview" aria-hidden="true">
-                        <div class="workflow-overview-body">
-                            <div id="overview-container">
-                                <canvas id="overview-canvas" width="0" height="0" />
-                                <div id="overview-viewport" />
-                            </div>
-                        </div>
+                <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                    <div v-if="!initialLoading">
+                        <FormTool
+                            v-if="hasActiveNodeTool"
+                            :key="activeStep.id"
+                            :step="activeStep"
+                            :datatypes="datatypes"
+                            @onChangePostJobActions="onChangePostJobActions"
+                            @onAnnotation="onAnnotation"
+                            @onLabel="onLabel"
+                            @onUpdateStep="onUpdateStep"
+                            @onSetData="onSetData" />
+                        <FormDefault
+                            v-else-if="hasActiveNodeDefault"
+                            :step="activeStep"
+                            :datatypes="datatypes"
+                            @onAnnotation="onAnnotation"
+                            @onLabel="onLabel"
+                            @onEditSubworkflow="onEditSubworkflow"
+                            @onAttemptRefactor="onAttemptRefactor"
+                            @onUpdateStep="onUpdateStep"
+                            @onSetData="onSetData" />
+                        <WorkflowAttributes
+                            v-else-if="showAttributes"
+                            :id="id"
+                            :tags="tags"
+                            :parameters="parameters"
+                            :annotation-current.sync="annotation"
+                            :annotation="annotation"
+                            :name-current.sync="name"
+                            :name="name"
+                            :version="version"
+                            :versions="versions"
+                            :license="license"
+                            :creator="creator"
+                            @onVersion="onVersion"
+                            @onTags="onTags"
+                            @onLicense="onLicense"
+                            @onCreator="onCreator" />
+                        <WorkflowLint
+                            v-else-if="showLint"
+                            :untyped-parameters="parameters"
+                            :annotation="annotation"
+                            :creator="creator"
+                            :license="license"
+                            :steps="steps"
+                            :datatypes-mapper="datatypesMapper"
+                            @onAttributes="onAttributes"
+                            @onHighlight="onHighlight"
+                            @onUnhighlight="onUnhighlight"
+                            @onRefactor="onAttemptRefactor"
+                            @onScrollTo="onScrollTo" />
                     </div>
                 </div>
             </div>
-            <SidePanel id="right" side="right">
-                <template v-slot:panel>
-                    <div class="unified-panel workflow-panel">
-                        <div class="unified-panel-header" unselectable="on">
-                            <div class="unified-panel-header-inner">
-                                <WorkflowOptions
-                                    :has-changes="hasChanges"
-                                    @onSave="onSave"
-                                    @onSaveAs="onSaveAs"
-                                    @onRun="onRun"
-                                    @onDownload="onDownload"
-                                    @onReport="onReport"
-                                    @onLayout="onLayout"
-                                    @onEdit="onEdit"
-                                    @onAttributes="onAttributes"
-                                    @onLint="onLint"
-                                    @onUpgrade="onUpgrade" />
-                            </div>
-                        </div>
-                        <div ref="right-panel" class="unified-panel-body workflow-right">
-                            <div class="m-2">
-                                <FormTool
-                                    v-if="hasActiveNodeTool"
-                                    :key="activeNodeId"
-                                    :get-manager="getManager"
-                                    :get-node="getNode"
-                                    :datatypes="datatypes"
-                                    @onAnnotation="onAnnotation"
-                                    @onLabel="onLabel"
-                                    @onSetData="onSetData" />
-                                <FormDefault
-                                    v-else-if="hasActiveNodeDefault"
-                                    :get-manager="getManager"
-                                    :get-node="getNode"
-                                    :datatypes="datatypes"
-                                    @onAnnotation="onAnnotation"
-                                    @onLabel="onLabel"
-                                    @onEditSubworkflow="onEditSubworkflow"
-                                    @onAttemptRefactor="onAttemptRefactor"
-                                    @onSetData="onSetData" />
-                                <WorkflowAttributes
-                                    v-else-if="showAttributes"
-                                    :id="id"
-                                    :tags="tags"
-                                    :parameters="parameters"
-                                    :annotation-current.sync="annotation"
-                                    :annotation="annotation"
-                                    :name-current.sync="name"
-                                    :name="name"
-                                    :version="version"
-                                    :versions="versions"
-                                    :license="license"
-                                    :creator="creator"
-                                    @onVersion="onVersion"
-                                    @onLicense="onLicense"
-                                    @onCreator="onCreator" />
-                                <WorkflowLint
-                                    v-else-if="showLint"
-                                    :untyped-parameters="parameters"
-                                    :annotation="annotation"
-                                    :creator="creator"
-                                    :license="license"
-                                    :get-manager="getManager"
-                                    @onAttributes="onAttributes"
-                                    @onHighlight="onHighlight"
-                                    @onUnhighlight="onUnhighlight"
-                                    @onRefactor="onAttemptRefactor"
-                                    @onScrollTo="onScrollTo" />
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </SidePanel>
-        </div>
+        </FlexPanel>
     </div>
+    <MarkdownEditor
+        v-else
+        :markdown-text="markdownText"
+        :markdown-config="markdownConfig"
+        mode="report"
+        :title="'Workflow Report: ' + name"
+        :steps="steps"
+        @onUpdate="onReportUpdate">
+        <template v-slot:buttons>
+            <b-button
+                id="workflow-canvas-button"
+                v-b-tooltip.hover.bottom
+                title="Return to Workflow"
+                variant="link"
+                role="button"
+                @click="onEdit">
+                <span class="fa fa-times" />
+            </b-button>
+        </template>
+    </MarkdownEditor>
 </template>
 
 <script>
-import { LastQueue } from "utils/promise-queue";
-import { getDatatypesMapper } from "components/Datatypes";
+import { Toast } from "composables/toast";
+import { storeToRefs } from "pinia";
+import Vue, { computed, onUnmounted, ref, unref } from "vue";
+
+import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { ConfirmDialog } from "@/composables/confirmDialog";
+import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useUid } from "@/composables/utils/uid";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import { hide_modal } from "@/layout/modal";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useScopePointerStore } from "@/stores/scopePointerStore";
+import { LastQueue } from "@/utils/lastQueue";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { Services } from "../services";
+import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
-import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
-import { getUntypedWorkflowParameters } from "./modules/parameters";
-import { getStateUpgradeMessages, copyIntoWorkflow, saveAs } from "./modules/utilities";
-import WorkflowCanvas from "./modules/canvas";
-import WorkflowOptions from "./Options";
-import FormDefault from "./Forms/FormDefault";
-import FormTool from "./Forms/FormTool";
-import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import ProviderAwareToolBoxWorkflow from "components/Panels/ProviderAwareToolBoxWorkflow";
-import SidePanel from "components/Panels/SidePanel";
-import { getAppRoot } from "onload/loadConfig";
+import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
+import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
-import WorkflowLint from "./Lint";
-import StateUpgradeModal from "./StateUpgradeModal";
-import RefactorConfirmationModal from "./RefactorConfirmationModal";
-import MessagesModal from "./MessagesModal";
-import { hide_modal } from "layout/modal";
-import WorkflowAttributes from "./Attributes";
-import ZoomControl from "./ZoomControl";
-import WorkflowNode from "./Node";
-import Vue from "vue";
+
+import WorkflowAttributes from "./Attributes.vue";
+import WorkflowLint from "./Lint.vue";
+import MessagesModal from "./MessagesModal.vue";
+import WorkflowOptions from "./Options.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
+import WorkflowGraph from "./WorkflowGraph.vue";
+import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
 export default {
     components: {
         MarkdownEditor,
-        SidePanel,
+        FlexPanel,
         StateUpgradeModal,
-        ProviderAwareToolBoxWorkflow,
+        ToolPanel,
         FormDefault,
         FormTool,
         WorkflowOptions,
         WorkflowAttributes,
-        ZoomControl,
-        WorkflowNode,
         WorkflowLint,
         RefactorConfirmationModal,
         MessagesModal,
+        WorkflowGraph,
     },
     props: {
-        id: {
+        workflowId: {
             type: String,
-            required: true,
+            default: undefined,
         },
         initialVersion: {
             type: Number,
-            required: true,
+            default: undefined,
         },
-        tags: {
+        workflowTags: {
             type: Array,
-            required: true,
+            default: () => [],
         },
         moduleSections: {
             type: Array,
@@ -242,6 +241,72 @@ export default {
             required: true,
         },
     },
+    setup(props, { emit }) {
+        const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
+
+        const uid = unref(useUid("workflow-editor-"));
+        const id = ref(props.workflowId || uid);
+
+        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id);
+
+        const { comments } = storeToRefs(commentStore);
+        const { getStepIndex, steps } = storeToRefs(stepStore);
+        const { activeNodeId } = storeToRefs(stateStore);
+        const activeStep = computed(() => {
+            if (activeNodeId.value !== null) {
+                return stepStore.getStep(activeNodeId.value);
+            }
+            return null;
+        });
+
+        const hasChanges = ref(false);
+        const initialLoading = ref(true);
+        const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
+
+        stepStore.$subscribe((_mutation, _state) => {
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
+        });
+
+        commentStore.$subscribe((_mutation, _state) => {
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
+        });
+
+        function resetStores() {
+            hasChanges.value = false;
+            connectionStore.$reset();
+            stepStore.$reset();
+            stateStore.$reset();
+            commentStore.$reset();
+        }
+
+        onUnmounted(() => {
+            resetStores();
+            emit("update:confirmation", false);
+        });
+
+        return {
+            id,
+            connectionStore,
+            hasChanges,
+            hasInvalidConnections,
+            stepStore,
+            steps,
+            comments,
+            nodeIndex: getStepIndex,
+            datatypes,
+            activeStep,
+            activeNodeId,
+            datatypesMapper,
+            datatypesMapperLoading,
+            stateStore,
+            resetStores,
+            initialLoading,
+        };
+    },
     data() {
         return {
             isCanvas: true,
@@ -249,30 +314,29 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            zoomLevel: 7,
-            steps: {},
-            hasChanges: false,
-            nodeIndex: 0,
-            nodes: {},
-            datatypesMapper: null,
-            datatypes: [],
             report: {},
-            activeNode: null,
             labels: {},
             license: null,
             creator: null,
             annotation: null,
-            name: null,
+            name: "Unnamed Workflow",
+            tags: this.workflowTags,
+            services: null,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
+            scrollToId: null,
+            highlightId: null,
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
             version: this.initialVersion,
             showInPanel: "attributes",
-            isWheeled: false,
-            canvasManager: null,
+            saveAsName: null,
+            saveAsAnnotation: null,
+            showSaveAsModal: false,
+            transform: { x: 0, y: 0, k: 1 },
+            graphOffset: { left: 0, top: 0, width: 0, height: 0 },
         };
     },
     computed: {
@@ -282,74 +346,61 @@ export default {
         showLint() {
             return this.showInPanel == "lint";
         },
-        activeNodeId() {
-            return this.activeNode && this.activeNode.id;
+        activeNodeType() {
+            return this.activeStep?.type;
         },
         hasActiveNodeDefault() {
-            return this.activeNode && this.activeNode.type != "tool";
+            return this.activeStep && this.activeStep?.type != "tool";
         },
         hasActiveNodeTool() {
-            return this.activeNode && this.activeNode.type == "tool";
+            return this.activeStep?.type == "tool";
         },
-        checkWheeled() {
-            if (this.canvasManager != null) {
-                return this.canvasManager.isWheeled;
-            }
-            return this.isWheeled;
+        isNewTempWorkflow() {
+            return !this.workflowId;
         },
     },
     watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation) {
+        id(newId, oldId) {
+            if (oldId) {
+                this._loadCurrent(newId);
+            }
+        },
+        annotation(newAnnotation, oldAnnotation) {
+            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
-        name: function (newName, oldName) {
-            if (newName != oldName) {
+        name(newName, oldName) {
+            if (newName != oldName && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
-        steps: function (newSteps, oldSteps) {
-            this.hasChanges = true;
+        hasChanges() {
+            this.$emit("update:confirmation", this.hasChanges);
         },
-        nodes: function (newNodes, oldNodes) {
-            this.hasChanges = true;
+        initialVersion(newVal, oldVal) {
+            if (newVal != oldVal && oldVal === undefined) {
+                this.version = this.initialVersion;
+            }
         },
     },
-    created() {
+    async created() {
+        this.services = new Services();
         this.lastQueue = new LastQueue();
-        getDatatypesMapper(false).then((mapper) => {
-            this.datatypesMapper = mapper;
-            this.datatypes = mapper.datatypes;
-
-            // canvas overview management
-            this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
-            this._loadCurrent(this.id, this.version);
-        });
-
-        // Notify user if workflow has not been saved yet
-        window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
+        await this._loadCurrent(this.id, this.version);
         hide_modal();
+        this.initialLoading = false;
     },
     methods: {
-        onActivate(node) {
-            if (this.activeNode != node) {
-                this.onDeactivate();
-                node.makeActive();
-                this.activeNode = node;
-                this.canvasManager.drawOverview();
-                this.$refs["right-panel"].scrollTop = 0;
-            }
+        onUpdateStep(step) {
+            this.stepStore.updateStep(step);
         },
-        onDeactivate() {
-            if (this.activeNode) {
-                this.activeNode.makeInactive();
-                this.activeNode = null;
-            }
+        onUpdateStepPosition(stepId, position) {
+            const step = { ...this.steps[stepId], position };
+            this.onUpdateStep(step);
+        },
+        onConnect(connection) {
+            this.connectionStore.addConnection(connection);
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -394,123 +445,218 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
-            await fromSimple(this, response.workflow);
+            this.resetStores();
+            await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
         },
-        onAdd(node) {
-            this.nodes[node.id] = node;
-        },
-        onUpdate(node) {
-            getModule({
-                type: node.type,
-                content_id: node.contentId,
-                _: "true",
-            }).then((response) => {
-                const newData = Object.assign({}, response, node.step);
-                newData.workflow_outputs = newData.outputs.map((o) => {
-                    return {
-                        output_name: o.name,
-                        label: o.label,
-                    };
+        onUpdate(step) {
+            getModule(
+                {
+                    type: step.type,
+                    content_id: step.contentId,
+                    _: "true",
+                },
+                this.id,
+                this.stateStore.setLoadingState
+            ).then((response) => {
+                this.onUpdateStep({
+                    ...this.steps[step.id],
+                    config_form: response.config_form,
+                    content_id: response.content_id,
+                    errors: response.errors,
+                    inputs: response.inputs,
+                    outputs: response.outputs,
+                    tool_state: response.tool_state,
+                    tool_version: response.tool_version,
                 });
-                node.setNode(newData);
             });
         },
         onChange() {
             this.hasChanges = true;
         },
-        onRemove(node) {
-            delete this.nodes[node.id];
-            Vue.delete(this.steps, node.id);
-            this.canvasManager.drawOverview();
-            this.onDeactivate();
+        onChangePostJobActions(nodeId, postJobActions) {
+            const updatedStep = { ...this.steps[nodeId], post_job_actions: postJobActions };
+            this.stepStore.updateStep(updatedStep);
+            this.onChange();
+        },
+        onRemove(nodeId) {
+            this.stepStore.removeStep(nodeId);
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
-        async onClone(node) {
-            const newId = this.nodeIndex++;
-            const stepCopy = JSON.parse(JSON.stringify(node.step));
-            await Vue.set(this.steps, newId, {
+        async onClone(stepId) {
+            const sourceStep = this.steps[parseInt(stepId)];
+            const stepCopy = JSON.parse(JSON.stringify(sourceStep));
+            const { id } = this.stepStore.addStep({
                 ...stepCopy,
-                id: newId,
+                id: null,
                 uuid: null,
                 label: null,
-                config_form: JSON.parse(JSON.stringify(node.config_form)),
-                annotation: JSON.parse(JSON.stringify(node.annotation)),
-                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
-                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+                position: defaultPosition(this.graphOffset, this.transform),
             });
-            this.canvasManager.drawOverview();
-            node = this.nodes[newId];
-            this.onActivate(node);
+            this.stateStore.activeNodeId = id;
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
         },
         onInsertModule(module_id, module_name) {
-            this._insertStep(null, module_name, module_id);
+            this._insertStep(module_name, module_name, module_id);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
-        onInsertWorkflowSteps(workflow_id, step_count) {
+        copyIntoWorkflow(id) {
+            // Load workflow definition
+            this.onWorkflowMessage("Importing workflow", "progress");
+            loadWorkflow({ id }).then((data) => {
+                fromSimple(this.id, data, true, defaultPosition(this.graphOffset, this.transform));
+                // Determine if any parameters were 'upgraded' and provide message
+                const insertedStateMessages = getStateUpgradeMessages(data);
+                this.onInsertedStateMessages(insertedStateMessages);
+            });
+        },
+        async onInsertWorkflowSteps(workflowId, stepCount) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            copyIntoWorkflow(this, workflow_id, step_count);
+            if (stepCount < 10) {
+                this.copyIntoWorkflow(workflowId);
+            } else {
+                const confirmed = await ConfirmDialog.confirm(
+                    `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
+                );
+                if (confirmed) {
+                    this.copyIntoWorkflow(workflowId);
+                }
+            }
         },
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
+        async doSaveAs() {
+            if (!this.saveAsName && !this.nameValidate()) {
+                return;
+            }
+            const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
+            const rename_annotation = this.saveAsAnnotation ?? "";
+
+            try {
+                const newSaveAsWf = { ...this, name: rename_name, annotation: rename_annotation };
+                const { id, name, number_of_steps } = await this.services.createWorkflow(newSaveAsWf);
+                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
+                this.hasChanges = false;
+                await this.routeToWorkflow(id);
+                Toast.success(message);
+            } catch (e) {
+                const errorHeading = `Saving workflow as '${rename_name}' failed`;
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
+                    Ok: () => {
+                        this.hideModal();
+                    },
+                });
+            }
+        },
         onSaveAs() {
-            saveAs(this);
+            this.showSaveAsModal = true;
         },
         onLayout() {
-            this.canvasManager.drawOverview();
-            this.canvasManager.scrollToNodes();
-            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.js").then((layout) => {
-                layout.autoLayout(this);
+            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
+                layout.autoLayout(this.id, this.steps).then((newSteps) => {
+                    newSteps.map((step) => this.onUpdateStep(step));
+                });
             });
         },
         onAttributes() {
             this._ensureParametersSet();
-            this.onDeactivate();
+            this.stateStore.activeNodeId = null;
+            this.showInPanel = "attributes";
+        },
+        onWorkflowTextEditor() {
+            this.stateStore.activeNodeId = null;
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
-            const node = this.nodes[nodeId];
-            node.setAnnotation(newAnnotation);
+            const step = { ...this.steps[nodeId], annotation: newAnnotation };
+            this.onUpdateStep(step);
         },
-        onSetData(nodeId, newData) {
-            const node = this.nodes[nodeId];
-            this.lastQueue.enqueue(getModule, newData).then((data) => {
-                node.setData(data);
-            });
+        async routeToWorkflow(id) {
+            // map scoped stores to existing stores, before updating the id
+            const { addScopePointer } = useScopePointerStore();
+            addScopePointer(id, this.id);
+
+            this.id = id;
+            await this.onSave();
+            this.hasChanges = false;
+            this.$router.replace({ query: { id } });
+        },
+        async onCreate() {
+            if (!this.nameValidate()) {
+                return;
+            }
+            try {
+                const { id, name, number_of_steps } = await this.services.createWorkflow(this);
+                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
+                this.hasChanges = false;
+                await this.routeToWorkflow(id);
+                Toast.success(message);
+            } catch (e) {
+                this.onWorkflowError(
+                    "Creating workflow failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    }
+                );
+            }
+        },
+        nameValidate() {
+            if (!this.name) {
+                Toast.error("Please provide a name for your workflow.");
+                this.onAttributes();
+                return false;
+            }
+            return true;
+        },
+        onSetData(stepId, newData) {
+            this.lastQueue
+                .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
+                .then((data) => {
+                    const step = {
+                        ...this.steps[stepId],
+                        content_id: data.content_id,
+                        inputs: data.inputs,
+                        outputs: data.outputs,
+                        config_form: data.config_form,
+                        tool_state: data.tool_state,
+                        tool_version: data.tool_version,
+                        errors: data.errors,
+                    };
+                    this.onUpdateStep(step);
+                });
         },
         onLabel(nodeId, newLabel) {
-            const node = this.nodes[nodeId];
-            node.setLabel(newLabel);
+            const step = { ...this.steps[nodeId], label: newLabel };
+            this.onUpdateStep(step);
         },
-        onScrollTo(nodeId) {
-            const node = this.nodes[nodeId];
-            this.canvasManager.scrollToNode(node);
-            node.onScrollTo();
+        onScrollTo(stepId) {
+            this.scrollToId = stepId;
+            this.onHighlight(stepId);
         },
-        onHighlight(nodeId) {
-            const node = this.nodes[nodeId];
-            node.onHighlight();
+        onHighlight(stepId) {
+            this.highlightId = stepId;
         },
-        onUnhighlight(nodeId) {
-            const node = this.nodes[nodeId];
-            node.onUnhighlight();
+        onUnhighlight(stepId) {
+            this.highlightId = null;
         },
         onLint() {
             this._ensureParametersSet();
-            this.onDeactivate();
+            this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
         },
         onUpgrade() {
@@ -528,30 +674,23 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url, force = false) {
-            if (!force && this.hasChanges) {
-                this.onSave(true).then(() => {
-                    window.location = url;
-                });
+        async onNavigate(url) {
+            if (this.isNewTempWorkflow) {
+                await this.onCreate();
             } else {
-                if (this.hasChanges) {
-                    window.onbeforeunload = false;
-                    this.hideModal();
-                }
-                window.location = url;
+                await this.onSave(true);
             }
-        },
-        onZoom(zoomLevel) {
-            this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
-        },
-        resetWheel() {
-            this.zoomLevel = this.canvasManager.zoomLevel;
-            this.canvasManager.isWheeled = false;
+
+            this.hasChanges = false;
+            this.$router.push(url);
         },
         onSave(hideProgress = false) {
+            if (!this.nameValidate()) {
+                return;
+            }
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {
@@ -583,20 +722,44 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getUntypedWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.steps);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
                 this.isCanvas = true;
                 return;
             }
-            Vue.set(this.steps, this.nodeIndex++, {
-                name: name,
-                content_id: contentId,
-                type: type,
-            });
+            const stepData = this.stepStore.insertNewStep(
+                contentId,
+                name,
+                type,
+                defaultPosition(this.graphOffset, this.transform)
+            );
+
+            getModule({ name, type, content_id: contentId }, stepData.id, this.stateStore.setLoadingState).then(
+                (response) => {
+                    this.stepStore.updateStep({
+                        ...stepData,
+                        tool_state: response.tool_state,
+                        inputs: response.inputs,
+                        outputs: response.outputs,
+                        config_form: response.config_form,
+                    });
+                    this.stateStore.activeNodeId = stepData.id;
+                }
+            );
         },
         async _loadEditorData(data) {
+            if (data.name !== undefined) {
+                this.name = data.name;
+            }
+            if (data.annotation !== undefined) {
+                this.annotation = data.annotation;
+            }
+            if (data.version !== undefined) {
+                this.version = data.version;
+            }
+
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
@@ -610,19 +773,26 @@ export default {
                 this.versions = versions;
             });
             await Vue.nextTick();
-            this.canvasManager.drawOverview();
-            this.canvasManager.scrollToNodes();
             this.hasChanges = has_changes;
         },
-        _loadCurrent(id, version) {
-            this.onWorkflowMessage("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
-                .then((data) => {
-                    this._loadEditorData(data);
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Loading workflow failed...", response);
-                });
+        async _loadCurrent(id, version) {
+            if (!this.isNewTempWorkflow) {
+                this.resetStores();
+                this.onWorkflowMessage("Loading workflow...", "progress");
+
+                try {
+                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    await fromSimple(id, data);
+                    await this._loadEditorData(data);
+                } catch (e) {
+                    this.onWorkflowError("Loading workflow failed...", e);
+                }
+            }
+        },
+        onTags(tags) {
+            if (this.tags != tags) {
+                this.tags = tags;
+            }
         },
         onLicense(license) {
             if (this.license != license) {
@@ -636,14 +806,8 @@ export default {
                 this.creator = creator;
             }
         },
-        getManager() {
-            return this;
-        },
-        getCanvasManager() {
-            return this.canvasManager;
-        },
-        getNode() {
-            return this.activeNode;
+        onActiveNode(nodeId) {
+            this.$refs["right-panel"].scrollTop = 0;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;
@@ -658,14 +822,20 @@ export default {
 };
 </script>
 <style scoped>
-.workflow-markdown-editor {
-    right: 0px !important;
-}
 .reset-wheel {
     position: absolute;
     left: 1rem;
     bottom: 1rem;
     cursor: pointer;
-    z-index: 1002;
+    z-index: 2000;
+}
+
+.workflow-center {
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: auto;
+    width: 100%;
 }
 </style>

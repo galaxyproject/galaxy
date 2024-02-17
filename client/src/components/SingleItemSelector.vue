@@ -1,10 +1,10 @@
 <template>
     <div>
         <LoadingSpan v-if="loading" :message="loadingMessage" />
-        <multiselect
+        <Multiselect
             v-if="items"
             v-model="selectedItem"
-            deselect-label="Can't remove this value"
+            :deselect-label="null"
             track-by="id"
             label="text"
             :options="items"
@@ -15,8 +15,8 @@
 </template>
 
 <script>
-import Multiselect from "vue-multiselect";
 import LoadingSpan from "components/LoadingSpan";
+import Multiselect from "vue-multiselect";
 
 /** A simple item selector that allows searching/filtering of the available items.
  * The items must have {id, text} properties. The `id` will be used for selection

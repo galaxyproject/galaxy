@@ -11,17 +11,18 @@
             :per-page="perPage"
             :current-page="currentPage"
             :busy.sync="isBusy"
+            primary-key="id"
             @row-clicked="clicked"
             @filtered="filtered">
             <template v-slot:head(select_icon)="">
-                <font-awesome-icon
+                <FontAwesomeIcon
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
                     :icon="selectionIcon(selectAllIcon)"
                     @click="$emit('toggleSelectAll')" />
             </template>
             <template v-slot:cell(select_icon)="data">
-                <font-awesome-icon :icon="selectionIcon(data.item._rowVariant)" />
+                <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
             </template>
             <template v-slot:cell(label)="data">
                 <div style="cursor: pointer">
@@ -34,7 +35,7 @@
                             <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
                         <div v-else @click.stop="open(data.item)">
-                            <font-awesome-icon icon="folder" />
+                            <FontAwesomeIcon icon="folder" />
                             <b-link :title="`label-${data.item.labelTitle}`">{{
                                 data.value ? data.value : "-"
                             }}</b-link>
@@ -71,13 +72,13 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);

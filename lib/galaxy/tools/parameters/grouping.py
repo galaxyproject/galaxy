@@ -1,6 +1,7 @@
 """
 Constructs for grouping tool parameters
 """
+
 import io
 import logging
 import os
@@ -15,14 +16,12 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes import (
-    data,
-    sniff,
-)
+from galaxy.datatypes import data
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
 )
+from galaxy.files.uris import stream_to_file
 from galaxy.util import (
     asbool,
     inflector,
@@ -38,12 +37,14 @@ if TYPE_CHECKING:
     from galaxy.tools.parameter.basic import ToolParameter
 
 log = logging.getLogger(__name__)
-URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
+URI_PREFIXES = [
+    f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp", "drs"]
+]
 
 
 class Group(Dictifiable):
-
     dict_collection_visible_keys = ["name", "type"]
+    type: str
 
     def __init__(self):
         self.name = None
@@ -78,7 +79,6 @@ class Group(Dictifiable):
 
 
 class Repeat(Group):
-
     dict_collection_visible_keys = ["name", "type", "title", "help", "default", "min", "max"]
     type = "repeat"
 
@@ -103,6 +103,7 @@ class Repeat(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Repeat ({self.title})"
 
@@ -170,7 +171,6 @@ class Repeat(Group):
 
 
 class Section(Group):
-
     dict_collection_visible_keys = ["name", "type", "title", "help", "expanded"]
     type = "section"
 
@@ -185,6 +185,7 @@ class Section(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Section ({self.title})"
 
@@ -412,8 +413,7 @@ class UploadDataset(Group):
                 return Bunch(type=None, path=None, name=None)
 
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
-            url_paste_file = group_incoming.get("url_paste", None)
-            if url_paste_file is not None:
+            if (url_paste_file := group_incoming.get("url_paste", None)) is not None:
                 url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):
@@ -656,7 +656,7 @@ class UploadDataset(Group):
             dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == "auto_primary_file":
                 # replace sniff here with just creating an empty file
-                temp_name = sniff.stream_to_file(
+                temp_name = stream_to_file(
                     io.StringIO(d_type.generate_primary_file(dataset)), prefix="upload_auto_primary_file"
                 )
                 dataset.primary_file = temp_name
@@ -721,11 +721,11 @@ class UploadDataset(Group):
 
 class Conditional(Group):
     type = "conditional"
-    value_from: Callable[["Conditional", ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
+    value_from: Callable[[ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param: Optional["ToolParameter"] = None
+        self.test_param: Optional[ToolParameter] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False

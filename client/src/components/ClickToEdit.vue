@@ -12,18 +12,17 @@
                 :editing="editing"
                 :placeholder="placeholder"
                 :state-validator="stateValidator">
-                <debounced-input v-model="localValue" :delay="debounceDelay">
+                <DebouncedInput v-model="localValue" :delay="debounceDelay">
                     <template v-slot="{ value: debouncedValue, input }">
                         <b-form-input
                             ref="clickToEditInput"
                             :value="debouncedValue"
-                            :autofocus="true"
                             :placeholder="placeholder"
                             :state="stateValidator(debouncedValue, localValue)"
                             @input="input"
                             @blur="toggleEdit(false)" />
                     </template>
-                </debounced-input>
+                </DebouncedInput>
             </slot>
         </component>
     </div>

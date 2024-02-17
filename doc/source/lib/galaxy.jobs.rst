@@ -12,7 +12,6 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   galaxy.job_execution.actions
    galaxy.jobs.rules
    galaxy.jobs.runners
    galaxy.jobs.splitters
@@ -72,14 +71,6 @@ galaxy.jobs.stock\_rules module
 -------------------------------
 
 .. automodule:: galaxy.jobs.stock_rules
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.jobs.transfer\_manager module
-------------------------------------
-
-.. automodule:: galaxy.jobs.transfer_manager
    :members:
    :undoc-members:
    :show-inheritance:

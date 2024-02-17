@@ -42,13 +42,11 @@ def selectwrapper(tool, value, multiple=False, optional=False):
     optional = 'optional="true"' if optional else ""
     multiple = 'multiple="true"' if multiple else ""
     xml = XML(
-        """<param name="blah" type="select" {} {}>
+        f"""<param name="blah" type="select" {multiple} {optional}>
         <option value="x">I am X</option>
         <option value="y" selected="true">I am Y</option>
         <option value="z">I am Z</option>
-    </param>""".format(
-            multiple, optional
-        )
+    </param>"""
     )
     parameter = SelectToolParameter(tool, xml)
     return SelectToolParameterWrapper(parameter, value)
@@ -160,10 +158,12 @@ def test_input_value_wrapper_comparison(tool):
     assert bool(wrapper) is True, wrapper
     assert str(wrapper) == "truevalue"
     assert wrapper == "truevalue"
+    assert wrapper == "true"
     wrapper = valuewrapper(tool, False, "boolean")
     assert bool(wrapper) is False, wrapper
     assert str(wrapper) == "falsevalue"
     assert wrapper == "falsevalue"
+    assert wrapper == "false"
 
 
 @with_mock_tool
@@ -185,7 +185,7 @@ def test_input_value_wrapper_comparison_optional(tool):
     assert wrapper != 1
     assert str(wrapper) == ""
     assert wrapper == None  # noqa: E711
-    wrapper = valuewrapper(tool, None, "boolean")
+    wrapper = valuewrapper(tool, None, "boolean", optional=True)
     assert bool(wrapper) is False, wrapper
     assert str(wrapper) == "falsevalue"
 
@@ -246,7 +246,10 @@ def test_dataset_false_extra_files_path():
     new_path = "/new/path/dataset_123.dat"
     dataset_path = DatasetPath(123, MOCK_DATASET_PATH, false_path=new_path)
     wrapper = DatasetFilenameWrapper(
-        dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(dataset_path))
+        dataset,
+        compute_environment=cast(
+            ComputeEnvironment, MockComputeEnvironment(dataset_path, MOCK_DATASET_EXTRA_FILES_PATH)
+        ),
     )
     # Setting false_path is not enough to override
     assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
@@ -305,16 +308,19 @@ MOCK_DATASET_EXT = "bam"
 class MockDataset:
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
-        self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
         self.tags = []
+
+    def get_file_name(self, sync_cache=True):
+        return MOCK_DATASET_PATH
 
 
 class MockTool:
     def __init__(self, app):
         self.app = app
         self.options = Mock(sanitize=False)
+        self.profile = 23.0
 
 
 class MockApp:

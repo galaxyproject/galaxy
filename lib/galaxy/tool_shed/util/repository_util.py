@@ -2,6 +2,15 @@ import logging
 import os
 import re
 import shutil
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.error import HTTPError
 
 from markupsafe import escape
@@ -12,32 +21,39 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util
+from galaxy.model.base import transaction
+from galaxy.model.scoped_session import install_model_scoped_session
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
 from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
 )
+from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
-def check_for_updates(app, model, repository_id=None):
+def check_for_updates(
+    tool_shed_registry: Registry,
+    install_model_context: install_model_scoped_session,
+    repository_id: Optional[int] = None,
+) -> Tuple[str, str]:
     message = ""
     status = "ok"
     if repository_id is None:
         success_count = 0
         repository_names_not_updated = []
         updated_count = 0
-        for repository in model.context.query(model.ToolShedRepository).filter(
-            model.ToolShedRepository.table.c.deleted == false()
+        for repository in install_model_context.query(ToolShedRepository).filter(
+            ToolShedRepository.table.c.deleted == false()
         ):
-            ok, updated = check_or_update_tool_shed_status_for_installed_repository(app, repository)
+            ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
+                tool_shed_registry, install_model_context, repository
+            )
             if ok:
                 success_count += 1
             else:
@@ -50,8 +66,10 @@ def check_for_updates(app, model, repository_id=None):
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)
     else:
-        repository = get_tool_shed_repository_by_id(app, repository_id)
-        ok, updated = check_or_update_tool_shed_status_for_installed_repository(app, repository)
+        repository = install_model_context.get(ToolShedRepository, repository_id)
+        ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
+            tool_shed_registry, install_model_context, repository
+        )
         if ok:
             if updated:
                 message = f"The tool shed status for repository <b>{escape(str(repository.name))}</b> has been updated."
@@ -67,15 +85,20 @@ def check_for_updates(app, model, repository_id=None):
     return message, status
 
 
-def check_or_update_tool_shed_status_for_installed_repository(app, repository):
+def _check_or_update_tool_shed_status_for_installed_repository(
+    tool_shed_registry: Registry, install_model_context: install_model_scoped_session, repository: ToolShedRepository
+) -> Tuple[bool, bool]:
     updated = False
-    tool_shed_status_dict = get_tool_shed_status_for_installed_repository(app, repository)
+    tool_shed_status_dict = get_tool_shed_status_for(tool_shed_registry, repository)
     if tool_shed_status_dict:
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            app.install_model.context.add(repository)
-            app.install_model.context.flush()
+            session = install_model_context
+            session.add(repository)
+            with transaction(session):
+                session.commit()
+
             updated = True
     else:
         ok = False
@@ -114,7 +137,6 @@ def create_or_update_tool_shed_repository(
     tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
     if not owner:
         owner = get_repository_owner_from_clone_url(repository_clone_url)
-    includes_datatypes = "datatypes" in metadata_dict
     if status in [app.install_model.ToolShedRepository.installation_status.DEACTIVATED]:
         deleted = True
         uninstalled = False
@@ -137,7 +159,6 @@ def create_or_update_tool_shed_repository(
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata_ = metadata_dict
-        tool_shed_repository.includes_datatypes = includes_datatypes
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
@@ -154,14 +175,14 @@ def create_or_update_tool_shed_repository(
             changeset_revision=current_changeset_revision,
             ctx_rev=ctx_rev,
             metadata_=metadata_dict,
-            includes_datatypes=includes_datatypes,
             dist_to_shed=dist_to_shed,
             deleted=deleted,
             uninstalled=uninstalled,
             status=status,
         )
     context.add(tool_shed_repository)
-    context.flush()
+    with transaction(context):
+        context.commit()
     return tool_shed_repository
 
 
@@ -205,6 +226,8 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
     items = tmp_url.split("/repos/")
     tool_shed_url = items[0]
+    if len(items) == 1:
+        raise Exception(f"Processing an invalid tool shed clone URL {repository_clone_url} - tmp_url {tmp_url}")
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
     return "/".join((tool_shed_url, "repos", repo_path, changeset_revision))
@@ -335,9 +358,16 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
     return prior_import_or_install_required_dict
 
 
-def get_repo_info_tuple_contents(repo_info_tuple):
+ToolDependenciesDictT = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+OldRepositoryTupleT = Tuple[str, str, str, str, str, ToolDependenciesDictT]
+RepositoryTupleT = Tuple[str, str, str, str, str, Optional[Any], ToolDependenciesDictT]
+AnyRepositoryTupleT = Union[OldRepositoryTupleT, RepositoryTupleT]
+
+
+def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> RepositoryTupleT:
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len(repo_info_tuple) == 6:
+        old_repo_info = cast(OldRepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -345,9 +375,10 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             ctx_rev,
             repository_owner,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = old_repo_info
         repository_dependencies = None
     elif len(repo_info_tuple) == 7:
+        repo_info = cast(RepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -356,7 +387,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             repository_owner,
             repository_dependencies,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = repo_info
     return (
         description,
         repository_clone_url,
@@ -563,14 +594,6 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     return prior_tsr_ids
 
 
-def get_repository_in_tool_shed(app, id, eagerload_columns=None):
-    """Get a repository on the tool shed side from the database via id."""
-    q = get_repository_query(app)
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.get(app.security.decode_id(id))
-
-
 def get_repository_owner(cleaned_repository_url):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split("/repos/")
@@ -605,29 +628,20 @@ def get_tool_shed_from_clone_url(repository_clone_url):
     return tmp_url.split("/repos/")[0].rstrip("/")
 
 
-def get_tool_shed_repository_by_id(app, repository_id):
+def get_tool_shed_repository_by_id(app, repository_id) -> ToolShedRepository:
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
-    return (
-        app.install_model.context.query(app.install_model.ToolShedRepository)
-        .filter(app.install_model.ToolShedRepository.table.c.id == app.security.decode_id(repository_id))
-        .first()
-    )
+    return app.install_model.context.get(ToolShedRepository, app.security.decode_id(repository_id))
 
 
-def get_tool_shed_status_for_installed_repository(app, repository):
-    """
-    Send a request to the tool shed to retrieve information about newer installable repository revisions,
-    current revision updates, whether the repository revision is the latest downloadable revision, and
-    whether the repository has been deprecated in the tool shed.  The received repository is a ToolShedRepository
-    object from Galaxy.
-    """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, str(repository.tool_shed))
+def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedRepository):
+    tool_shed_url = tool_shed_registry.get_tool_shed_url(str(repository.tool_shed))
+    assert tool_shed_url
     params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
     pathspec = ["repository", "status_for_installed_repository"]
     try:
         encoded_tool_shed_status_dict = util.url_get(
-            tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+            tool_shed_url, auth=tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
         )
         tool_shed_status_dict = encoding_util.tool_shed_decode(encoded_tool_shed_status_dict)
         return tool_shed_status_dict
@@ -635,15 +649,16 @@ def get_tool_shed_status_for_installed_repository(app, repository):
         # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
         # using a boolean value.
         log.debug(
-            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n"
-            % (str(repository.name), str(e))
+            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n",
+            repository.name,
+            e,
         )
         pathspec = ["repository", "check_for_updates"]
         params["from_update_manager"] = True
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get(
-                tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+                tool_shed_url, auth=tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
             )
             return dict(revision_update=text)
         except Exception:
@@ -652,6 +667,17 @@ def get_tool_shed_status_for_installed_repository(app, repository):
     except Exception:
         log.exception("Error attempting to get tool shed status for installed repository %s", str(repository.name))
         return {}
+
+
+def get_tool_shed_status_for_installed_repository(app, repository: ToolShedRepository):
+    """
+    Send a request to the tool shed to retrieve information about newer installable repository revisions,
+    current revision updates, whether the repository revision is the latest downloadable revision, and
+    whether the repository has been deprecated in the tool shed.  The received repository is a ToolShedRepository
+    object from Galaxy.
+    """
+    tool_shed_registry = app.tool_shed_registry
+    return get_tool_shed_status_for(tool_shed_registry, repository)
 
 
 def is_tool_shed_client(app):
@@ -697,7 +723,6 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
     params = dict(
-        galaxy_url=web.url_for("/", qualified=True),
         name=repository_name,
         owner=repository_owner,
         changeset_revision=changeset_revision,
@@ -736,13 +761,15 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
     repository.status = status
     repository.deleted = deleted
     repository.uninstalled = uninstalled
-    app.install_model.context.add(repository)
-    app.install_model.context.flush()
+
+    session = app.install_model.context
+    session.add(repository)
+    with transaction(session):
+        session.commit()
 
 
 __all__ = (
     "check_for_updates",
-    "check_or_update_tool_shed_status_for_installed_repository",
     "create_or_update_tool_shed_repository",
     "extract_components_from_tuple",
     "generate_tool_shed_repository_install_dir",
@@ -760,7 +787,6 @@ __all__ = (
     "get_repository_dependency_types",
     "get_repository_for_dependency_relationship",
     "get_repository_ids_requiring_prior_import_or_install",
-    "get_repository_in_tool_shed",
     "get_repository_owner",
     "get_repository_owner_from_clone_url",
     "get_repository_query",

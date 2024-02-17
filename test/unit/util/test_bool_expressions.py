@@ -1,4 +1,5 @@
 import pytest
+from pyparsing.exceptions import ParseException
 
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
@@ -12,7 +13,7 @@ TOKEN_FORMAT = DEFAULT_TOKEN_FORMAT
 
 # The set of tokens that will be evaluated to True using the TokenContainedEvaluator the rest
 # of the *valid tokens* (those that match the TOKEN_FORMAT) will be evaluated to False.
-TOKENS_THAT_ARE_TRUE = {"T1", "token_2"}
+TOKENS_THAT_ARE_TRUE = {"T1", "token_2", "valid quoted str"}
 
 VALID_EXPRESSIONS_TESTS = [
     ("T1", True),
@@ -26,12 +27,13 @@ VALID_EXPRESSIONS_TESTS = [
     ("not T3 or (T3 AND token_2)", True),
     ("T1 and (T3 OR token_2)", True),
     ("(T3 OR T1) and not (T3 OR valid_token)", True),
+    ("'some quoted str' and T1", False),
+    ("'valid quoted str' and T1", True),
 ]
 
 INVALID_EXPRESSIONS_TESTS = [
     "",
     "23 45",
-    "'some quoted str' and not T1",
     "invalid expression",
     "T1 and and T2",
     "T1 not and T3",
@@ -60,7 +62,7 @@ def test_expression_evaluates_as_expected(expr: str, expected: bool, contained_e
 
 @pytest.mark.parametrize("expr", INVALID_EXPRESSIONS_TESTS)
 def test_invalid_expression_raises_exception(expr: str, contained_evaluator: BooleanExpressionEvaluator):
-    with pytest.raises(Exception):
+    with pytest.raises(ParseException):
         contained_evaluator.evaluate_expression(expr)
 
 

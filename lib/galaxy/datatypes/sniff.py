@@ -10,11 +10,11 @@ import os
 import re
 import shutil
 import struct
-import sys
 import tempfile
-import urllib.request
 import zipfile
+from functools import partial
 from typing import (
+    Callable,
     Dict,
     IO,
     NamedTuple,
@@ -25,18 +25,18 @@ from typing import (
 from typing_extensions import Protocol
 
 from galaxy import util
-from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
     file_reader,
     is_binary,
-    stream_to_open_named_file,
 )
 from galaxy.util.checkers import (
     check_html,
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
+from galaxy.util.path import StrPath
 
 import pylibmagic  # noqa: F401  # isort:skip
 import magic  # isort:skip
@@ -63,28 +63,7 @@ def sniff_with_cls(cls, fname):
         return False
 
 
-def stream_url_to_file(path: str, file_sources: Optional[ConfiguredFileSources] = None):
-    prefix = "url_paste"
-    if file_sources and file_sources.looks_like_uri(path):
-        file_source_path = file_sources.get_file_source_path(path)
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
-            temp_name = temp.name
-        file_source_path.file_source.realize_to(file_source_path.path, temp_name)
-        return temp_name
-    else:
-        page = urllib.request.urlopen(
-            path, timeout=util.DEFAULT_SOCKET_TIMEOUT
-        )  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(
-            page, prefix=prefix, source_encoding=util.get_charset_from_http_headers(page.headers)
-        )
-        return temp_name
-
-
-def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
-    """Writes a stream to a temporary file, returns the temporary file's name"""
-    fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
-    return stream_to_open_named_file(stream, fd, temp_name, **kwd)
+stream_url_to_file = partial(files_stream_url_to_file, prefix="gx_url_paste")
 
 
 def handle_composite_file(datatype, src_path, extra_files, name, is_binary, tmp_dir, tmp_prefix, upload_opts):
@@ -112,8 +91,7 @@ class ConvertResult(NamedTuple):
 class ConvertFunction(Protocol):
     def __call__(
         self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
-    ) -> ConvertResult:
-        ...
+    ) -> ConvertResult: ...
 
 
 def convert_newlines(
@@ -321,6 +299,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
+    >>> fname = get_test_fname('1.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
+    >>> fname = get_test_fname('2.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
@@ -423,6 +407,18 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.extxyz')
     >>> guess_ext(fname, sniff_order)
     'extxyz'
+    >>> fname = get_test_fname('Si.castep')
+    >>> guess_ext(fname, sniff_order)
+    'castep'
+    >>> fname = get_test_fname('test.fits')
+    >>> guess_ext(fname, sniff_order)
+    'fits'
+    >>> fname = get_test_fname('Si.param')
+    >>> guess_ext(fname, sniff_order)
+    'param'
+    >>> fname = get_test_fname('Si.den_fmt')
+    >>> guess_ext(fname, sniff_order)
+    'den_fmt'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
@@ -559,6 +555,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     if is_column_based(file_prefix, "\t", 1):
         return "tabular"  # default tabular data type file extension
     return "txt"  # default text data type file extension
+
+
+def guess_ext_from_file_name(fname, registry, requested_ext="auto"):
+    if requested_ext != "auto":
+        return requested_ext
+    return registry.get_datatype_from_filename(fname).file_ext
 
 
 class FilePrefix:
@@ -723,11 +725,12 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
     return file_ext
 
 
-def zip_single_fileobj(path):
+def zip_single_fileobj(path: StrPath) -> IO[bytes]:
     z = zipfile.ZipFile(path)
     for name in z.namelist():
         if not name.endswith("/"):
             return z.open(name)
+    raise ValueError("No file present in the zip file")
 
 
 def build_sniff_from_prefix(klass):
@@ -939,19 +942,8 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-class Decompress(Protocol):
-    def __call__(self, path: str) -> IO[bytes]:
-        ...
-
-
-DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

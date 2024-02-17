@@ -4,7 +4,9 @@
             <slot name="search"> </slot>
         </template>
         <slot name="helper"> </slot>
-        <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
+        <b-alert v-if="errorMessage" variant="danger" show>
+            {{ errorMessage }}
+        </b-alert>
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
@@ -19,7 +21,7 @@
                 </div>
                 <div v-else>
                     <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
-                        <font-awesome-icon :icon="['fas', 'caret-left']" />
+                        <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
                     </b-btn>
                     <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
@@ -32,9 +34,9 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

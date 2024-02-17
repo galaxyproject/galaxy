@@ -16,10 +16,12 @@ def initialize_fast_app(gx_webapp):
             "It aims to provide data about users, jobs, workflows, disk space, and much more."
         ),
         docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
     add_exception_handler(app)
     add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.reports.api")
     wsgi_handler = WSGIMiddleware(gx_webapp)
-    app.mount("/", wsgi_handler)
+    # https://github.com/abersheeran/a2wsgi/issues/44
+    app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     return app

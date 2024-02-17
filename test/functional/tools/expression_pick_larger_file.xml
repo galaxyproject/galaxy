@@ -35,7 +35,7 @@
         </test>
         <test>
             <param name="input1" value_json="null" />
-            <param name="input2" value_json="simple_line.txt" />
+            <param name="input2" value_json="&quot;simple_line.txt&quot;" />
             <output name="larger_file" file="simple_line.txt"/>
         </test>
     </tests>

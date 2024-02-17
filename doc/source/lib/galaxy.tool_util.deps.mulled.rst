@@ -49,6 +49,14 @@ galaxy.tool\_util.deps.mulled.mulled\_build\_tool module
    :undoc-members:
    :show-inheritance:
 
+galaxy.tool\_util.deps.mulled.mulled\_hash module
+-------------------------------------------------
+
+.. automodule:: galaxy.tool_util.deps.mulled.mulled_hash
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.tool\_util.deps.mulled.mulled\_list module
 -------------------------------------------------
 

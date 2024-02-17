@@ -19,6 +19,7 @@ from pyparsing import (
     opAssoc,
     ParseException,
     ParserElement,
+    QuotedString,
     Word,
 )
 
@@ -35,6 +36,7 @@ FALSE = Keyword("False")
 NOT_OP = CaselessKeyword("not")
 AND_OP = CaselessKeyword("and")
 OR_OP = CaselessKeyword("or")
+QUOTED_STRING = QuotedString("'")
 
 
 class TokenEvaluator:
@@ -79,7 +81,7 @@ class BoolBinaryOperation:
         return f"({sep.join(map(str, self.args))})"
 
     def __bool__(self):
-        return self.evalop(bool(a) for a in self.args)
+        return self.evalop(bool(a) for a in self.args)  # type: ignore[misc,call-arg]
 
     __nonzero__ = __bool__
 
@@ -127,13 +129,14 @@ class BooleanExpressionEvaluator:
 
         :param evaluator: The custom TokenEvaluator used to transform any token into a boolean.
         :type evaluator:  TokenEvaluator
+
         :param token_format: A string of all allowed characters used to form a valid token, defaults to None.
-                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are [A-Za-z0-9_-@.].
+                             The default value (None) will use DEFAULT_TOKEN_FORMAT which means the allowed characters are ``[A-Za-z0-9_-@.]``.
         :type token_format:  Optional[str]
         """
         action = BoolOperand
         action.evaluator = evaluator
-        boolOperand = TRUE | FALSE | Word(token_format or DEFAULT_TOKEN_FORMAT)
+        boolOperand = TRUE | FALSE | QUOTED_STRING | Word(token_format or DEFAULT_TOKEN_FORMAT)
         boolOperand.setParseAction(action)
         self.boolExpr: ParserElement = infixNotation(
             boolOperand,

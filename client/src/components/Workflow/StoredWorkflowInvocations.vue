@@ -1,30 +1,32 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <StoredWorkflowDetailsProvider :storedWorkflowId="storedWorkflowId" v-slot="{ result: item, loading }">
-            <Invocations
-                v-if="!loading && user.id"
-                :user-id="user.id"
-                :stored-workflow-id="item.id"
-                :stored-workflow-name="item.name" />
-        </StoredWorkflowDetailsProvider>
-    </CurrentUser>
+    <StoredWorkflowDetailsProvider v-slot="{ result: item, loading }" :stored-workflow-id="storedWorkflowId">
+        <InvocationsList
+            v-if="!loading && currentUser.id"
+            :user-id="currentUser.id"
+            :stored-workflow-id="item.id"
+            :stored-workflow-name="item.name" />
+    </StoredWorkflowDetailsProvider>
 </template>
 <script>
-import Invocations from "components/Workflow/Invocations";
-import CurrentUser from "components/providers/CurrentUser";
 import { StoredWorkflowDetailsProvider } from "components/providers/StoredWorkflowsProvider";
+import InvocationsList from "components/Workflow/InvocationsList";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
+    components: {
+        InvocationsList,
+        StoredWorkflowDetailsProvider,
+    },
     props: {
         storedWorkflowId: {
             type: String,
             required: true,
         },
     },
-    components: {
-        CurrentUser,
-        Invocations,
-        StoredWorkflowDetailsProvider,
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
     },
 };
 </script>

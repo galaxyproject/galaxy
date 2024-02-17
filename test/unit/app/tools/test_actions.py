@@ -1,16 +1,23 @@
 import string
-import unittest
+from typing import (
+    cast,
+    Optional,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.model.base import transaction
+from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
     on_text_for_names,
 )
 from galaxy.util import XML
+from galaxy.util.unittest import TestCase
 
 # I cannot think of a saner way to test if data is being wrapped than use a
 # data param in the output label - though you would probably never want to do
@@ -56,17 +63,19 @@ def test_on_text_for_names():
     assert_on_text_is("data 1 and data 2", "data 1", "data 1", "data 2")
 
 
-class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
+class TestDefaultToolAction(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
         history = model.History()
         self.history = history
         self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(history)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
-        self.app.object_store = MockObjectStore()
+        self.app.object_store = cast(BaseObjectStore, MockObjectStore())
 
     def test_output_created(self):
         _, output = self._simple_execute()
@@ -75,7 +84,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
 
     def test_output_label(self):
         _, output = self._simple_execute()
-        self.assertEqual(output["out1"].name, "Output (moo)")
+        assert output["out1"].name == "Output (moo)"
 
     def test_output_label_data(self):
         hda1 = self.__add_dataset()
@@ -90,12 +99,12 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        self.assertEqual(output["out1"].name, "Test Tool on data 2 and data 1")
+        assert output["out1"].name == "Test Tool on data 2 and data 1"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
-        self.assertEqual(output["out1"].name, "Output (moo)")
-        self.assertEqual(output["out2"].name, "Output 2 (moo)")
+        assert output["out1"].name == "Output (moo)"
+        assert output["out2"].name == "Output 2 (moo)"
 
     def test_params_wrapped(self):
         hda1 = self.__add_dataset()
@@ -104,7 +113,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
             incoming=dict(repeat1=[dict(param1=hda1)]),
         )
         # Again this is a stupid way to ensure data parameters are wrapped.
-        self.assertEqual(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
+        assert output["out1"].name == f"Output ({hda1.dataset.get_file_name()})"
 
     def test_inactive_user_job_create_failure(self):
         self.trans.user_is_active = False
@@ -120,7 +129,9 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
         hda.dataset.state = "ok"
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return hda
 
     def _simple_execute(self, contents=None, incoming=None):
@@ -129,7 +140,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _, = self.action.execute(
+        job, out_data, _ = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
@@ -226,14 +237,16 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
-def quick_output(format, format_source=None, change_format_xml=None):
+def quick_output(
+    format: str, format_source: Optional[str] = None, change_format_xml: Optional[str] = None
+) -> ToolOutput:
     test_output = ToolOutput("test_output")
     test_output.format = format
     test_output.format_source = format_source
     if change_format_xml:
-        test_output.change_format = XML(change_format_xml)
+        test_output.change_format = parse_change_format(XML(change_format_xml).findall("change_format"))
     else:
-        test_output.change_format = None
+        test_output.change_format = []
     return test_output
 
 
@@ -246,6 +259,10 @@ class MockTrans:
         self.model = app.model
         self._user_is_active = True
         self.user_is_admin = False
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def get_user_is_active(self):
         # NOTE: the real user_is_active also checks whether activation is enabled in the config

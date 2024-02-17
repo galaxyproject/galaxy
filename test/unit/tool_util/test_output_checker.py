@@ -1,4 +1,3 @@
-from unittest import TestCase
 from unittest.mock import Mock
 
 from galaxy.tool_util.output_checker import (
@@ -9,9 +8,10 @@ from galaxy.tool_util.parser.stdio import (
     StdioErrorLevel,
     ToolStdioRegex,
 )
+from galaxy.util.unittest import TestCase
 
 
-class OutputCheckerTestCase(TestCase):
+class TestOutputChecker(TestCase):
     def setUp(self):
         self.tool = Mock(
             stdio_regexes=[],

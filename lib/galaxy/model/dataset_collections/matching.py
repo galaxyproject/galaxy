@@ -1,3 +1,5 @@
+from typing import Optional
+
 from galaxy import exceptions
 from galaxy.util import bunch
 from .structure import (
@@ -37,7 +39,7 @@ class MatchingCollections:
     overkill but I suspect in the future plugins will be subtypable for
     instance so matching collections will need to make heavy use of the
     dataset collection type registry managed by the dataset collections
-    sevice - hence the complexity now.
+    service - hence the complexity now.
     """
 
     def __init__(self):
@@ -46,6 +48,7 @@ class MatchingCollections:
         self.collections = {}
         self.subcollection_types = {}
         self.action_tuples = {}
+        self.when_values = None
 
     def __attempt_add_to_linked_match(self, input_name, hdca, collection_type_description, subcollection_type):
         structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
@@ -60,6 +63,7 @@ class MatchingCollections:
             self.subcollection_types[input_name] = subcollection_type
 
     def slice_collections(self):
+        self.linked_structure.when_values = self.when_values
         return self.linked_structure.walk_collections(self.collections)
 
     def subcollection_mapping_type(self, input_name):
@@ -75,6 +79,7 @@ class MatchingCollections:
         if linked_structure is None:
             linked_structure = leaf
         effective_structure = effective_structure.multiply(linked_structure)
+        effective_structure.when_values = self.when_values
         return None if effective_structure.is_leaf else effective_structure
 
     def map_over_action_tuples(self, input_name):
@@ -87,7 +92,7 @@ class MatchingCollections:
         return input_name in self.collections
 
     @staticmethod
-    def for_collections(collections_to_match, collection_type_descriptions):
+    def for_collections(collections_to_match, collection_type_descriptions) -> Optional["MatchingCollections"]:
         if not collections_to_match.has_collections():
             return None
 

@@ -3,7 +3,7 @@
 printf 'Summary' > '$out_file1'
     ]]></command>
     <inputs>
-        <param name="input1" type="data" format="bam" multiple="true" min="1" label="BAM Inputs">
+        <param name="input1" type="data" format="unsorted.bam" multiple="true" min="1" label="BAM Inputs">
             <validator check="bam_index" message="Metadata missing, click the pencil icon in the history item and use the auto-detect feature to correct this issue." type="metadata" />
         </param>
         <param name="reference" type="data" format="fasta" label="Fasta Input"/>

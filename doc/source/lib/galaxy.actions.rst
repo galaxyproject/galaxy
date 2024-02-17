@@ -9,14 +9,6 @@ galaxy.actions package
 Submodules
 ----------
 
-galaxy.actions.admin module
----------------------------
-
-.. automodule:: galaxy.actions.admin
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.actions.library module
 -----------------------------
 

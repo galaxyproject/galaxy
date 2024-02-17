@@ -1,5 +1,5 @@
 galaxy:
-  master_api_key: changethis
+  bootstrap_admin_api_key: changethis
   config_dir: 'false'
   helpsite_url: 'https://help.galaxyproject.org/'
   job_config:

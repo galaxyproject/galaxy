@@ -1,5 +1,14 @@
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 
+// util class to make pointer cursor
+.cursor-pointer {
+    cursor: pointer;
+    -webkit-user-select: none; /* Chrome all / Safari all */
+    -moz-user-select: none; /* Firefox all */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Likely future */
+}
+
 // prevents highlighting i.e. text selection on double click
 .no-highlight {
     -webkit-user-select: none; /* webkit (safari, chrome) browsers */
@@ -29,6 +38,16 @@
 // utility class from: https://github.com/twbs/bootstrap/pull/27268
 .overflow-auto {
     overflow: auto !important;
+}
+
+// utility class to set word wrap to normal
+.word-wrap-normal {
+    word-wrap: normal;
+}
+
+// utility class to set white space wrapping to normal
+.white-space-normal {
+    white-space: normal;
 }
 
 // default margins
@@ -93,92 +112,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
-// thumbnails
-.ui-thumbnails {
-    .ui-thumbnails-item {
-        cursor: pointer;
-        .ui-thumbnails-image {
-            padding: 10px;
-            width: 100px;
-            height: 86px;
-        }
-        .ui-thumbnails-icon {
-            width: 100px;
-            height: 86px;
-            font-size: 4em;
-            padding: 20px 26px;
-            color: $text-color;
-        }
-        .ui-thumbnails-text {
-            word-wrap: break-word;
-        }
-    }
-    .ui-thumbnails-item:hover {
-        .ui-thumbnails-title {
-            text-decoration: underline;
-        }
-        .ui-thumbnails-text {
-            text-decoration: underline;
-        }
-    }
-}
-
-// table form elements
-.ui-form-element {
-    margin-top: $ui-margin-vertical;
-    margin-bottom: $ui-margin-vertical;
-    overflow: visible;
-    clear: both;
-    .ui-form-title {
-        word-wrap: break-word;
-        font-weight: bold;
-        .icon {
-            cursor: pointer;
-            font-size: 1.2em;
-        }
-    }
-    .ui-form-field {
-        position: relative;
-        margin-top: $ui-margin-vertical;
-        .ui-form-wp-source {
-            border-left-width: 10px;
-        }
-        .ui-form-wp-target {
-            box-shadow: none;
-            border-top: none;
-            border-bottom: none;
-            border-right: none;
-            border-left-width: 5px;
-            font-style: italic;
-        }
-        .ui-form-backdrop {
-            z-index: 10;
-            position: absolute;
-            top: 0px;
-            width: 100%;
-            height: 100%;
-            background: $white;
-            display: block;
-            opacity: 0;
-            cursor: default;
-        }
-    }
-    .ui-form-preview {
-        @extend .ui-input;
-        margin-top: $ui-margin-vertical;
-        border-color: transparent !important;
-        box-shadow: none !important;
-        height: auto !important;
-    }
-}
-
-.ui-form-element-disabled {
-    @extend .ui-form-element;
-    .ui-form-title {
-        font-weight: normal;
-    }
-}
-
 .ui-form-composite {
     height: 100%;
     flex-direction: column;
@@ -205,8 +138,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
         }
         .portlet-operations {
             button {
-                @extend .ml-1;
-                @extend .py-0;
+                margin-left: 0.25rem;
+                padding-top: 0;
+                padding-bottom: 0;
             }
         }
     }
@@ -220,16 +154,17 @@ $ui-margin-horizontal-large: $margin-v * 2;
         @extend .card-body;
         @extend .p-0;
     }
-    .portlet-backdrop {
-        display: none;
-        z-index: 10;
-        position: absolute;
-        opacity: 0;
-        top: 0px;
-        width: 100%;
-        height: 100%;
-        cursor: wait;
-    }
+}
+
+.portlet-backdrop {
+    display: none;
+    z-index: 10;
+    position: absolute;
+    opacity: 0;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    cursor: wait;
 }
 
 .ui-portlet-section {
@@ -237,7 +172,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .mb-2;
     border: none;
     border-left: solid 3px $portlet-bg-color;
-    border-radius: $border-radius-large;
+    border-radius: $border-radius-large $border-radius-large $border-radius-large 0;
+    &:focus-within {
+        border-left: solid 3px $portlet-focus-color;
+    }
+
     .portlet-header:first-child {
         @extend .rounded-0;
         @extend .p-2;
@@ -410,29 +349,130 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-dragover {
+.ui-dragover-warning {
+    @extend .rounded;
     @extend .p-1;
-    border-radius: $border-radius-base;
-    border: 2px solid $state-warning-bg;
     background: lighten($state-warning-bg, 10%);
+    border: 2px solid $state-warning-bg;
 }
 
 .ui-dragover-danger {
-    @extend .ui-dragover;
-    border: 2px solid $state-danger-bg;
+    @extend .rounded;
+    @extend .p-1;
     background: lighten($state-danger-bg, 10%);
+    border: 2px solid $state-danger-bg;
 }
 
 .ui-dragover-success {
-    @extend .ui-dragover;
-    border: 2px solid $state-success-bg;
+    @extend .rounded;
+    @extend .p-1;
     background: lighten($state-success-bg, 10%);
+    border: 2px solid $state-success-bg;
 }
-// util class to make pointer cursor
-.cursor-pointer {
-    cursor: pointer;
-    -webkit-user-select: none; /* Chrome all / Safari all */
-    -moz-user-select: none; /* Firefox all */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Likely future */
+
+/* Used for tree in tool recommendations */
+.ui-tool-recommendation {
+    .node {
+        cursor: pointer;
+        circle {
+            fill: $brand-primary;
+            stroke: $brand-primary;
+        }
+        text {
+            font-size: 0.4rem;
+        }
+    }
+
+    .tree-size {
+        width: 100%;
+    }
+
+    .link {
+        fill: none;
+        stroke: $brand-primary;
+        stroke-width: 1;
+    }
+}
+
+/* Gap utility for flexbox. Bootstrap Gap ony works for grid */
+.flex-gapx-1 {
+    column-gap: 0.25rem;
+}
+
+.flex-gapy-1 {
+    row-gap: 0.25rem;
+}
+
+/* Heading Sizes */
+.h-xl {
+    font-size: $h1-font-size;
+}
+
+.h-lg {
+    font-size: $h2-font-size;
+}
+
+.h-md {
+    font-size: $h3-font-size;
+}
+
+.h-sm {
+    font-size: $h4-font-size;
+}
+
+.h-text {
+    font-size: $font-size-base;
+}
+
+// makes a button element look like a link
+.ui-link {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    color: $brand-primary;
+    display: inline;
+    line-height: unset;
+    vertical-align: unset;
+    user-select: text;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.overflow-x-hidden {
+    overflow-x: hidden !important;
+}
+
+// TODO: move this to component library, once that exists
+.inline-icon-button {
+    border: none;
+    background-color: transparent;
+    color: $brand-primary;
+    display: inline;
+
+    padding: 0 0.1rem;
+
+    &:hover {
+        background-color: $brand-primary;
+        color: $brand-light;
+    }
+}
+
+.outline-badge {
+    border: 1px solid $brand-primary;
+    color: $brand-primary;
+    background-color: transparent;
+
+    &:hover {
+        background-color: $brand-primary !important;
+        color: white !important;
+    }
+}
+
+.card-container {
+    padding: 0.7rem;
+    margin-bottom: 0.5rem;
+    border-radius: 0.5rem;
+    border: 0.1rem solid $brand-secondary;
 }

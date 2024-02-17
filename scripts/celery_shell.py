@@ -4,6 +4,7 @@ Run this script from galaxy's root with
 ipython -i scripts/celery_shell.py -- -c config/galaxy.yml
 ```
 """
+
 import logging
 import os
 
@@ -26,7 +27,7 @@ tasks are collected in task module.
 
 To run recalculate_user_disk_usage for user 1 in a celery worker
 type
->>> tasks.recalculate_user_disk_usage.deley(user_id=1)
+>>> tasks.recalculate_user_disk_usage.delay(user_id=1)
 """
 
 app = get_galaxy_app()

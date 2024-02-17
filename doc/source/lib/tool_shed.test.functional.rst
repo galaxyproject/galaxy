@@ -441,26 +441,10 @@ tool\_shed.test.functional.test\_1410\_update\_manager module
    :undoc-members:
    :show-inheritance:
 
-tool\_shed.test.functional.test\_1420\_tool\_dependency\_environment\_inheritance module
-----------------------------------------------------------------------------------------
-
-.. automodule:: tool_shed.test.functional.test_1420_tool_dependency_environment_inheritance
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 tool\_shed.test.functional.test\_1430\_repair\_installed\_repository module
 ---------------------------------------------------------------------------
 
 .. automodule:: tool_shed.test.functional.test_1430_repair_installed_repository
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tool\_shed.test.functional.test\_1440\_missing\_env\_sh\_files module
----------------------------------------------------------------------
-
-.. automodule:: tool_shed.test.functional.test_1440_missing_env_sh_files
    :members:
    :undoc-members:
    :show-inheritance:

@@ -4,6 +4,7 @@ Use this as the import interface for cwltool and just call
 :func:`ensure_cwltool_available` before using any of the imported
 functionality at runtime.
 """
+
 import re
 import warnings
 
@@ -88,6 +89,11 @@ except ImportError:
     sourceline = None  # type: ignore[assignment]
     yaml_no_ts = None  # type: ignore[assignment]
 
+try:
+    from ruamel.yaml.comments import CommentedMap
+except ImportError:
+    CommentedMap = None  # type: ignore[assignment,misc]
+
 needs_shell_quoting = re.compile(r"""(^$|[\s|&;()<>\'"$@])""").search
 
 # if set to True, file format checking is not performed.
@@ -115,6 +121,7 @@ def ensure_cwltool_available():
 
 
 __all__ = (
+    "CommentedMap",
     "default_loader",
     "ensure_cwltool_available",
     "getdefault",

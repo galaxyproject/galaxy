@@ -18,16 +18,21 @@ env:
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
 concurrency:
-  group: selenium-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  setup-selenium:
+    uses: ./.github/workflows/setup_selenium.yaml
+  build-client:
+    uses: ./.github/workflows/build_client.yaml
   test:
     name: Test
+    needs: [setup-selenium, build-client]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
         chunk: [0, 1, 2]
     services:
       postgres:
@@ -46,13 +51,18 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
         id: full-python-version
         shell: bash
-        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache pip dir
         uses: actions/cache@v3
         with:
@@ -63,14 +73,15 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-selenium
-      - uses: mvdbeek/gha-yarn-cache@master
+      - name: Restore client cache
+        uses: actions/cache@v3
         with:
-          yarn-lock-file: 'galaxy root/client/yarn.lock'
-      - uses: nanasess/setup-chromedriver@v1
+          key: galaxy-static-${{ needs.build-client.outputs.commit-id }}
+          path: 'galaxy root/static'
       - name: Run tests
         run: ./run_tests.sh --coverage -selenium lib/galaxy_test/selenium -- --num-shards=3 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           flags: selenium
           working-directory: 'galaxy root'

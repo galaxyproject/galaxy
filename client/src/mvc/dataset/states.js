@@ -30,6 +30,8 @@ var STATES = {
     NOT_VIEWABLE: "noPermission",
     /** deleted while uploading */
     DISCARDED: "discarded",
+    /** remote dataset not ingested yet */
+    DEFERRED: "deferred",
     /** the tool producing this dataset failed */
     ERROR: "error",
 };
@@ -40,6 +42,7 @@ STATES.READY_STATES = [
     STATES.PAUSED,
     STATES.FAILED_METADATA,
     STATES.NOT_VIEWABLE,
+    STATES.DEFERRED,
     STATES.DISCARDED,
     STATES.ERROR,
 ];

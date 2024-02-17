@@ -1,9 +1,11 @@
 """
 Triple format classes
 """
+
 import logging
 import re
 
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -30,16 +32,16 @@ class Triples(data.Data):
     edam_format = "format_2376"
     file_ext = "triples"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Triple data"
         else:
             dataset.peek = "file does not exist"
@@ -55,16 +57,16 @@ class NTriples(data.Text, Triples):
     edam_format = "format_3256"
     file_ext = "nt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # <http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
         if re.compile(r"<[^>]*>\s<[^>]*>\s<[^>]*>\s\.").search(file_prefix.contents_header):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "N-Triples triple data"
         else:
             dataset.peek = "file does not exist"
@@ -79,16 +81,16 @@ class N3(data.Text, Triples):
     edam_format = "format_3257"
     file_ext = "n3"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Notation-3 Triple data"
         else:
             dataset.peek = "file does not exist"
@@ -104,7 +106,7 @@ class Turtle(data.Text, Triples):
     edam_format = "format_3255"
     file_ext = "ttl"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if file_prefix.search(TURTLE_PREFIX_PATTERN):
             return True
@@ -113,10 +115,10 @@ class Turtle(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Turtle triple data"
         else:
             dataset.peek = "file does not exist"
@@ -133,7 +135,7 @@ class Rdf(xml.GenericXml, Triples):
     edam_format = "format_3261"
     file_ext = "rdf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
         match = re.compile(r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"').search(
             file_prefix.contents_header
@@ -142,10 +144,10 @@ class Rdf(xml.GenericXml, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "RDF/XML triple data"
         else:
             dataset.peek = "file does not exist"
@@ -162,16 +164,16 @@ class Jsonld(text.Json, Triples):
     edam_format = "format_3464"
     file_ext = "jsonld"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         if self._looks_like_json(file_prefix):
             if '"@id"' in file_prefix.contents_header or '"@context"' in file_prefix.contents_header:
                 return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "JSON-LD triple data"
         else:
             dataset.peek = "file does not exist"
@@ -186,15 +188,16 @@ class HDT(binary.Binary, Triples):
     edam_format = "format_2376"
     file_ext = "hdt"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         with open(filename, "rb") as f:
             if f.read(4) == b"$HDT":
                 return True
+        return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "HDT triple data"
         else:
             dataset.peek = "file does not exist"

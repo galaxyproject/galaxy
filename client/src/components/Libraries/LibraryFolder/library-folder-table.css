@@ -3,15 +3,15 @@ th:focus {
 }
 
 .pagination-input-field {
-    max-width: 60px
+    max-width: 60px;
 }
 
 .pagination-total-pages-text {
-    margin-left: .25rem;
+    margin-left: 0.25rem;
 }
 
 .more-text-btn {
-    margin-left: .25rem;
+    margin-left: 0.25rem;
     font-size: 60%;
     color: grey;
 }
@@ -19,7 +19,6 @@ th:focus {
 .description-field {
     width: 40rem;
 }
-
 
 .empty-folder-message {
     text-align: center;
@@ -34,5 +33,5 @@ th:focus {
 }
 
 .lib-btn {
-    margin-bottom: 2%
+    margin-bottom: 2%;
 }

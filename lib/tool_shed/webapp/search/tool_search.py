@@ -1,12 +1,13 @@
 """Module for searching the toolshed tools within all repositories"""
+
 import logging
 import os
 
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import (
+    ID,
     Schema,
-    STORED,
     TEXT,
 )
 from whoosh.qparser import MultifieldParser
@@ -26,12 +27,12 @@ schema = Schema(
     version=TEXT(stored=True),
     repo_name=TEXT(stored=True),
     repo_owner_username=TEXT(stored=True),
-    repo_id=STORED,
+    repo_id=ID(stored=True),
 )
 
 
 class ToolSearch:
-    def search(self, trans, search_term, page, page_size, boosts):
+    def search(self, app, search_term, page, page_size, boosts):
         """
         Perform the search on the given search_term
 
@@ -39,7 +40,7 @@ class ToolSearch:
 
         :returns results: dictionary containing number of hits, hits themselves and matched terms for each
         """
-        tool_index_dir = os.path.join(trans.app.config.whoosh_index_dir, "tools")
+        tool_index_dir = os.path.join(app.config.whoosh_index_dir, "tools")
         index_exists = whoosh.index.exists_in(tool_index_dir)
         if index_exists:
             index = whoosh.index.open_dir(tool_index_dir)

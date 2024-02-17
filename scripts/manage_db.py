@@ -1,8 +1,9 @@
 """
-This script is legacy and should not be used directly. It is intended to be
-used by the ansible galaxy and toolshed roles.  For managing the database, please
-consult manage_db.sh.
+This script should not be used directly. It is intended to be used by the
+ansible galaxy and toolshed roles.  For managing the database, please consult
+manage_db.sh.
 """
+
 import logging
 import os.path
 import sys

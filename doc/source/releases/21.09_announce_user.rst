@@ -189,7 +189,7 @@ A special thanks to the release testing team for testing many of the new feature
 Release Notes
 ===========================================================
 
-Please see the `full release notes <21.09_announce.html>`_ for more details.
+Please see the :doc:`full release notes <21.09_announce>` for more details.
 
 .. include:: 21.09_prs.rst
 

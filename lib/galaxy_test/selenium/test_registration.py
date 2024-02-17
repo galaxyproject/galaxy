@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class RegistrationTestCase(SeleniumTestCase):
+class TestRegistration(SeleniumTestCase):
     @selenium_test
     def test_landing(self):
         # loading galaxy homepage
@@ -16,6 +16,15 @@ class RegistrationTestCase(SeleniumTestCase):
     def test_registration(self):
         self.home()
         self.register()
+
+    @selenium_test
+    def test_registration_accessibility(self):
+        self.home()
+        self.components.masthead.register_or_login.wait_for_and_click()
+        registration = self.components.registration
+        registration.toggle.wait_for_and_click()
+        registration.form.wait_for_visible()
+        registration.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
 
     @selenium_test
     def test_logout(self):
@@ -54,7 +63,7 @@ class RegistrationTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_bad_emails(self):
-        bad_emails = ["bob", "bob@", "bob@idontwanttocleanup", "bob.cantmakeme"]
+        bad_emails = ["bob", "bob@", "bob.cantmakeme"]
         good_email = self._get_random_email()
         password = self.default_password
         confirm = password

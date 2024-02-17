@@ -11,6 +11,7 @@ from galaxy.datatypes._schema import (
     DatatypeConverterList,
     DatatypeDetails,
     DatatypesCombinedMap,
+    DatatypesEDAMDetailsDict,
     DatatypesMap,
 )
 from galaxy.datatypes.data import Data
@@ -77,7 +78,7 @@ def view_sniffers(datatypes_registry: Registry) -> List[str]:
 
 def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     converters = []
-    for (source_type, targets) in datatypes_registry.datatype_converters.items():
+    for source_type, targets in datatypes_registry.datatype_converters.items():
         for target_type in targets:
             converters.append(
                 {
@@ -89,10 +90,43 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     return parse_obj_as(DatatypeConverterList, converters)
 
 
+def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]) -> Dict[str, Dict]:
+    details_dict = {}
+    for format, edam_iri in edam_ids.items():
+        edam_details = datatypes_registry.edam.get(edam_iri, {})
+
+        details_dict[format] = {
+            "prefix_IRI": edam_iri,
+            "label": edam_details.get("label", None),
+            "definition": edam_details.get("definition", None),
+        }
+
+    return details_dict
+
+
+def view_edam_formats(
+    datatypes_registry: Registry, detailed: Optional[bool] = False
+) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
+    if detailed:
+        return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
+    else:
+        return datatypes_registry.edam_formats
+
+
+def view_edam_data(
+    datatypes_registry: Registry, detailed: Optional[bool] = False
+) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
+    if detailed:
+        return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
+    else:
+        return datatypes_registry.edam_data
+
+
 __all__ = (
     "DatatypeConverterList",
     "DatatypeDetails",
     "DatatypesCombinedMap",
+    "DatatypesEDAMDetailsDict",
     "DatatypesMap",
     "view_index",
     "view_mapping",

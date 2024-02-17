@@ -7,7 +7,7 @@ import sys
 
 
 def check_python():
-    if sys.version_info[:2] >= (3, 7):
+    if sys.version_info[:2] >= (3, 8):  # noqa: UP036
         # supported
         return
     else:
@@ -15,7 +15,7 @@ def check_python():
         msg = (
             """\
 ERROR: Your Python version is: %s
-Galaxy is currently supported on Python >=3.7 .
+Galaxy is currently supported on Python >=3.8 .
 To run Galaxy, please install a supported Python version.
 If a supported version is already installed but is not your default,
 https://docs.galaxyproject.org/en/latest/admin/python.html contains instructions

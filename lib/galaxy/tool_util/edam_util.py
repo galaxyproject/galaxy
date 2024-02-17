@@ -16,19 +16,19 @@ ROOT_OPERATION = "operation_0004"
 ROOT_TOPIC = "topic_0003"
 
 
-def load_edam_tree(path: Optional[str] = None):
+def load_edam_tree(path: Optional[str] = None, *included_terms: str):
     if path is not None:
         assert os.path.exists(path), f"Failed to load EDAM tabular data at [{path}] path does not exist."
         handle = open(path)
     else:
         assert (
             tabular_stream is not None
-        ), "Failed to load optional import from edam-onotology package, install using [pip install edam-ontology]."
+        ), "Failed to load optional import from edam-ontology package, install using [pip install edam-ontology]."
         handle = tabular_stream()
-    return load_edam_tree_from_tsv_stream(handle)
+    return load_edam_tree_from_tsv_stream(handle, *included_terms)
 
 
-def load_edam_tree_from_tsv_stream(tsv_stream: TextIO):
+def load_edam_tree_from_tsv_stream(tsv_stream: TextIO, *included_terms: str):
     edam: Dict[str, Dict] = {}
 
     def _recurse_edam_parents(term, path=None):
@@ -47,7 +47,7 @@ def load_edam_tree_from_tsv_stream(tsv_stream: TextIO):
                 columns[field] = i
             is_first = False
 
-            defintion_column = columns["http://www.geneontology.org/formats/oboInOwl#hasDefinition"]
+            definition_column = columns["http://www.geneontology.org/formats/oboInOwl#hasDefinition"]
             term_column = columns["Class ID"]
             label_column = columns["Preferred Label"]
             parents_column = columns["Parents"]
@@ -59,14 +59,14 @@ def load_edam_tree_from_tsv_stream(tsv_stream: TextIO):
 
         term_id = term[len(EDAM_PREFIX) :]
 
-        # Only care about formats and operations
-        if not (term_id.startswith("operation_") or term_id.startswith("topic_")):
+        # Only care about included terms
+        if included_terms and not (term_id.startswith(included_terms)):
             continue
 
         parents = fields[parents_column].split("|")
         edam[term_id] = {
-            "label": fields[label_column],
-            "definition": fields[defintion_column].strip('"'),
+            "label": fields[label_column].strip('"'),
+            "definition": fields[definition_column].strip('"'),
             "parents": [x[len(EDAM_PREFIX) :] for x in parents if x.startswith(EDAM_PREFIX)],
         }
 
