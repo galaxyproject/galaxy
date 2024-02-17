@@ -1461,6 +1461,7 @@ class PageIndexQueryPayload(Model):
     deleted: bool = False
     limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
     offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+    show_own: Optional[bool] = None
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
     search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")

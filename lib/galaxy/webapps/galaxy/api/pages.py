@@ -52,6 +52,8 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     title="Encoded user ID to restrict query to, must be own id if not an admin user",
 )
 
+ShowOwnQueryParam: bool = Query(default=True, title="Show pages owned by user.", description="")
+
 ShowPublishedQueryParam: bool = Query(default=True, title="Include published pages.", description="")
 
 ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared with authenticated user.", description="")
@@ -108,6 +110,7 @@ class FastAPIPages:
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
         search: Optional[str] = SearchQueryParam,
+        show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: PageSortByEnum = SortByQueryParam,
@@ -120,6 +123,7 @@ class FastAPIPages:
             limit=limit,
             offset=offset,
             search=search,
+            show_own=show_own,
             show_published=show_published,
             show_shared=show_shared,
             sort_by=sort_by,
