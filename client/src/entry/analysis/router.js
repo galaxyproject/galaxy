@@ -10,6 +10,7 @@ import FormGeneric from "components/Form/FormGeneric";
 import historiesGridConfig from "components/Grid/configs/histories";
 import historiesPublishedGridConfig from "components/Grid/configs/historiesPublished";
 import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
+import pagesGridConfig from "components/Grid/configs/pages";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
@@ -372,6 +373,13 @@ export function getRouter(Galaxy) {
                             pluralName: "Pages",
                             modelClass: "Page",
                         }),
+                    },
+                    {
+                        path: "pages/list",
+                        component: GridList,
+                        props: {
+                            gridConfig: pagesGridConfig,
+                        },
                     },
                     {
                         path: "pages/:actionId",
