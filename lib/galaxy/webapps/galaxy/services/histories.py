@@ -548,7 +548,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         def to_model(tool_request: ToolRequest) -> ToolRequestModel:
             as_dict = {
-                "id": Security.secure.encode_id(tool_request.id),
+                "id": Security.security.encode_id(tool_request.id),
                 "request": tool_request.request,
                 "state": tool_request.state,
                 "state_message": tool_request.state_message,

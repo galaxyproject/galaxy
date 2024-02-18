@@ -249,7 +249,7 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
         return ToolTestCaseList(root=[ToolTestCase(**t) for t in response.json()])
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List["ToolTestDescriptionDict"]:
         return [test_case_to_dict(m) for m in self.get_tool_tests_model(tool_id, tool_version).root]
 
     def verify_output_collection(
@@ -1423,18 +1423,14 @@ def verify_tool(
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
-    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
+    _tool_test_dicts: Optional[List["ToolTestDescriptionDict"]] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
     tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
-    tool_test_dict = tool_test_dicts[test_index]
-    if "test_index" not in tool_test_dict:
-        tool_test_dict["test_index"] = test_index
-    if "tool_id" not in tool_test_dict:
-        tool_test_dict["tool_id"] = tool_id
+    tool_test_dict: ToolTestDescriptionDict = tool_test_dicts[test_index]
     if tool_version is None and "tool_version" in tool_test_dict:
         tool_version = tool_test_dict.get("tool_version")
 
@@ -1467,7 +1463,12 @@ def verify_tool(
     if not use_legacy_api:
         structured_inputs = galaxy_interactor.get_tool_inputs(tool_id, tool_version=tool_version)
         assert structured_inputs
-    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
+    testdef = ToolTestDescription.from_dict(
+        tool_test_dict,
+        tool_id,
+        test_index,
+        maxseconds
+    )
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1764,6 +1765,7 @@ class ToolTestDescriptionDict(TypedDict):
     tool_version: Optional[str]
     test_index: int
     exception: Optional[str]
+    maxseconds: Optional[int]
 
 
 class Assertion(BaseModel):
@@ -1823,6 +1825,53 @@ class ToolTestDescription:
     expect_failure: bool
     expect_test_failure: bool
     exception: Optional[str]
+
+    @staticmethod
+    def from_dict(raw_dict: ToolTestDescriptionDict, tool_id: str, test_index: int, maxseconds: int):
+        error = raw_dict["error"]
+        processed_test_dict: ToolTestDict
+        tool_version = raw_dict["tool_version"]
+        assert tool_version
+        if error:
+            exception = raw_dict["exception"]
+            assert exception is not None
+            processed_test_dict = InvalidToolTestDict(
+                error=True,
+                tool_id=raw_dict.get("tool_id") or tool_id,
+                tool_version=tool_version,
+                test_index=raw_dict.get("test_index") or test_index,
+                inputs=raw_dict["inputs"],
+                exception=exception,
+                maxseconds=maxseconds
+            )
+        else:
+            processed_test_dict = ValidToolTestDict(
+                error=False,
+                tool_id=raw_dict.get("tool_id") or tool_id,
+                tool_version=tool_version,
+                test_index=raw_dict.get("test_index") or test_index,
+                inputs=raw_dict["inputs"],
+                outputs=raw_dict["outputs"],
+                output_collections=raw_dict["output_collections"],
+                stdout=raw_dict["stdout"],
+                stderr=raw_dict["stderr"],
+                expect_failure=raw_dict["expect_failure"],
+                expect_test_failure=raw_dict["expect_test_failure"],
+                command_line=raw_dict["command_line"],
+                command_version=raw_dict["command_version"],
+                required_files=raw_dict["required_files"],
+                required_data_tables=raw_dict["required_data_tables"],
+                required_loc_files=raw_dict["required_loc_files"],
+                maxseconds=maxseconds,
+            )
+            expect_exit_code = raw_dict["expect_exit_code"]
+            if expect_exit_code is not None:
+                processed_test_dict["expect_exit_code"] = expect_exit_code
+            num_outputs = raw_dict["num_outputs"]
+            if num_outputs is not None:
+                processed_test_dict["num_outputs"] = num_outputs
+
+        return ToolTestDescription(processed_test_dict)
 
     def __init__(self, processed_test_dict: ToolTestDict):
         assert (
@@ -1920,8 +1969,8 @@ class ToolTestDescription:
         return test_case_to_dict(self.to_model())
 
 
-def test_case_to_dict(model: ToolTestCase) -> ToolTestDict:
-    return cast(ToolTestDict, model.dict())
+def test_case_to_dict(model: ToolTestCase) -> ToolTestDescriptionDict:
+    return cast(ToolTestDescriptionDict, model.model_dump())
 
 
 def test_data_iter(required_files):

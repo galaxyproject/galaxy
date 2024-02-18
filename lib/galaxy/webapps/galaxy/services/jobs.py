@@ -255,7 +255,7 @@ class JobsService(ServiceBase):
         result = queue_jobs.delay(request=task_request)
         return JobCreateResponse(
             **{
-                "tool_request_id": Security.security.encode(tool_request_id),
+                "tool_request_id": Security.security.encode_id(tool_request_id),
                 "task_result": async_task_summary(result),
             }
         )

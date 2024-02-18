@@ -383,7 +383,7 @@ class FastAPIJobs:
     ) -> List[Union[JobOutputAssociation, JobOutputCollectionAssociation]]:
         job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-        output_associations = []
+        output_associations: List[Union[JobOutputAssociation, JobOutputCollectionAssociation]] = []
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
 

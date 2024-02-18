@@ -349,7 +349,7 @@ class FastAPIHistories:
     )
     def tool_requests(
         self,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> List[ToolRequestModel]:
         return self.service.tool_requests(trans, history_id)
