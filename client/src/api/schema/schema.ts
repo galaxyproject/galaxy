@@ -7389,13 +7389,13 @@ export interface components {
         InvokeWorkflowPayload: {
             /**
              * Allow tool state corrections
-             * @description TODO
+             * @description Indicates if tool state corrections are allowed for workflow invocation.
              * @default false
              */
             allow_tool_state_corrections?: boolean | null;
             /**
              * Batch
-             * @description TODO
+             * @description Indicates if the workflow is invoked as a batch.
              * @default false
              */
             batch?: boolean | null;
@@ -7411,22 +7411,17 @@ export interface components {
              * Effective Outputs
              * @description TODO
              */
-            effective_outputs?: boolean | null;
+            effective_outputs?: Record<string, never> | null;
             /**
              * History
-             * @description TODO
+             * @description The encoded history id - passed exactly like this 'hist_id=...' -  into which to import. Or the name of the new history into which to import.
              */
             history?: string | null;
             /**
              * History ID
-             * @description TODO
+             * @description The encoded history id into which to import.
              */
             history_id?: string | null;
-            /**
-             * History Name
-             * @description TODO
-             */
-            history_name?: string | null;
             /**
              * Inputs
              * @description TODO
@@ -7434,7 +7429,7 @@ export interface components {
             inputs?: Record<string, never> | null;
             /**
              * Inputs By
-             * @description TODO
+             * @description How inputs maps to inputs (datasets/collections) to workflows steps.
              */
             inputs_by?: string | null;
             /**
@@ -7445,36 +7440,36 @@ export interface components {
             instance?: boolean | null;
             /**
              * Legacy
-             * @description TODO
+             * @description Indicating if to use legacy workflow invocation.
              * @default false
              */
             legacy?: boolean | null;
             /**
              * New History Name
-             * @description TODO
+             * @description The name of the new history into which to import.
              */
             new_history_name?: string | null;
             /**
              * No Add to History
-             * @description TODO
+             * @description Indicates if the workflow invocation should not be added to the history.
              * @default false
              */
             no_add_to_history?: boolean | null;
             /**
              * Parameters
-             * @description TODO
+             * @description The raw parameters for the workflow invocation.
              * @default {}
              */
             parameters?: Record<string, never> | null;
             /**
              * Parameters Normalized
-             * @description TODO
+             * @description Indicates if parameters are already normalized for workflow invocation.
              * @default false
              */
             parameters_normalized?: boolean | null;
             /**
              * Preferred Intermediate Object Store ID
-             * @description TODO
+             * @description The ID of the ? object store that should be used to store ? datasets in this history.
              */
             preferred_intermediate_object_store_id?: string | null;
             /**
@@ -7484,7 +7479,7 @@ export interface components {
             preferred_object_store_id?: string | null;
             /**
              * Preferred Outputs Object Store ID
-             * @description TODO
+             * @description The ID of the object store that should be used to store ? datasets in this history.
              */
             preferred_outputs_object_store_id?: string | null;
             /**
@@ -7495,7 +7490,7 @@ export interface components {
             replacement_params?: Record<string, never> | null;
             /**
              * Require Exact Tool Versions
-             * @description TODO
+             * @description If true, exact tool versions are required for workflow invocation.
              * @default true
              */
             require_exact_tool_versions?: boolean | null;
@@ -7507,7 +7502,7 @@ export interface components {
             resource_params?: Record<string, never> | null;
             /**
              * Scheduler
-             * @description TODO
+             * @description Scheduler to use for workflow invocation.
              */
             scheduler?: string | null;
             /**
@@ -7517,7 +7512,7 @@ export interface components {
             step_parameters?: Record<string, never> | null;
             /**
              * Use cached job
-             * @description TODO
+             * @description Indicated whether to use a cached job for workflow invocation.
              * @default false
              */
             use_cached_job?: boolean | null;
@@ -21916,8 +21911,9 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
+            /** @description The database identifier - UUID or encoded - of the Workflow.. */
             path: {
-                workflow_id: string;
+                workflow_id: string | string | string;
             };
         };
         requestBody: {
@@ -22624,8 +22620,9 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
+            /** @description The database identifier - UUID or encoded - of the Workflow.. */
             path: {
-                workflow_id: string;
+                workflow_id: string | string | string;
             };
         };
         requestBody: {
