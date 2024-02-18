@@ -141,6 +141,11 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStore
+from galaxy.objectstore.templates import (
+    ObjectStoreConfiguration,
+    ObjectStoreTemplate,
+    template_to_configuration,
+)
 from galaxy.schema.invocation import (
     InvocationCancellationUserRequest,
     InvocationState,
@@ -718,6 +723,7 @@ class User(Base, Dictifiable, RepresentById):
     galaxy_sessions = relationship(
         "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
+    object_stores = relationship("UserObjectStore", back_populates="user")
     quotas = relationship("UserQuotaAssociation", back_populates="user")
     quota_source_usages = relationship("UserQuotaSourceUsage", back_populates="user")
     social_auth = relationship("UserAuthnzToken", back_populates="user")
@@ -10648,6 +10654,54 @@ class UserPreference(Base, RepresentById):
         # AssociationProxy to which 2 args are passed.
         self.name = name
         self.value = value
+
+
+class UserObjectStore(Base, RepresentById):
+    __tablename__ = "user_object_store"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    create_time = Column(DateTime, default=now)
+    update_time = Column(DateTime, default=now, onupdate=now, index=True)
+    # user specified name of the instance they've created
+    name = Column(String(255), index=True)
+    # user specified description of the instance they've created
+    description = Column(Text)
+    # the template store id
+    object_store_template_id = Column(String(255), index=True)
+    # the template store version (0, 1, ...)
+    object_store_template_version = Column(Integer, index=True)
+    # Full template from object_store_templates.yml catalog.
+    # For tools we just store references, so here we could easily just use
+    # the id/version and not record the definition... as the templates change
+    # over time this choice has some big consequences despite being easy to swap
+    # implementations.
+    object_store_template_definition = Column(JSONType)
+    # Big JSON blob of the variable name -> value mapping defined for the store's
+    # variables by the user.
+    object_store_template_variables = Column(JSONType)
+    # Track a list of secrets that were defined for this object store at creation
+    object_store_template_secrets = Column(JSONType)
+
+    user = relationship("User", back_populates="object_stores")
+
+    @property
+    def template(self) -> ObjectStoreTemplate:
+        return ObjectStoreTemplate(**self.object_store_template_definition)
+
+    def object_store_configuration(self, secrets: Dict[str, Any]) -> ObjectStoreConfiguration:
+        user = self.user
+        user_details = {
+            "username": user.username,
+            "email": user.email,
+            "id": user.id,
+        }
+        return template_to_configuration(
+            self.template,
+            variables=self.object_store_template_variables,
+            secrets=secrets,
+            user_details=user_details,
+        )
 
 
 class UserAction(Base, RepresentById):

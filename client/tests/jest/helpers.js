@@ -12,6 +12,7 @@ import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
 
 import _short from "@/components/plugins/short";
+import VueRouter from "vue-router";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -262,4 +263,13 @@ export function mockModule(storeModule, state = {}) {
         actions,
         namespaced: true,
     };
+}
+
+/**
+ * Return a new mocked out router attached the specified localVue instance.
+ */
+export function injectTestRouter(localVue) {
+    localVue.use(VueRouter);
+    const router = new VueRouter();
+    return router;
 }
