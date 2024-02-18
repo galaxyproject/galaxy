@@ -41,7 +41,7 @@ const mutations = {
                 const id = item.id;
                 if (state.items[id]) {
                     const localItem = state.items[id];
-                    Object.keys(localItem).forEach((key) => {
+                    Object.keys(item).forEach((key) => {
                         localItem[key] = item[key];
                     });
                 }
