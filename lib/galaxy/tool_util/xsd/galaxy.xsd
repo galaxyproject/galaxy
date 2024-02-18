@@ -2251,9 +2251,14 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="Bytes" use="optional">
+    <xs:attribute name="size" type="Bytes" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An outdated synonym for `size`</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="Bytes" use="optional">
