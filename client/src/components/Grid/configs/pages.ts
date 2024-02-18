@@ -77,7 +77,7 @@ const fields: FieldArray = [
                 },
             },
             {
-                title: "Edit Content",
+                title: "Edit Attributes",
                 icon: faEdit,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: (data: PageEntry) => {
