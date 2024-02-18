@@ -71,7 +71,6 @@ const fields: FieldArray = [
             {
                 title: "View",
                 icon: faEye,
-                condition: (data: PageEntry) => !data.deleted,
                 handler: (data: PageEntry) => {
                     emit(`/published/page?id=${data.id}`);
                 },

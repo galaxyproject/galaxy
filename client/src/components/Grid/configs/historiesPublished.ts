@@ -45,7 +45,6 @@ const fields: FieldArray = [
             {
                 title: "View",
                 icon: faEye,
-                condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
                     emit(`/histories/view?id=${data.id}`);
                 },
