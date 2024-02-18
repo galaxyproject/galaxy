@@ -1828,13 +1828,7 @@ export interface paths {
     "/api/workflows/{workflow_id}/invocations": {
         /** Get the list of a user's workflow invocations. */
         get: operations["index_invocations_api_workflows__workflow_id__invocations_get"];
-        /**
-         * Schedule the workflow specified by `workflow_id` to run.
-         * @description .. note:: This method takes the same arguments as
-         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-         *
-         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
-         */
+        /** Schedule the workflow specified by `workflow_id` to run. */
         post: operations["Invoke_workflow_api_workflows__workflow_id__invocations_post"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
@@ -1896,6 +1890,10 @@ export interface paths {
          */
         put: operations["publish_api_workflows__workflow_id__publish_put"];
     };
+    "/api/workflows/{workflow_id}/refactor": {
+        /** Updates the workflow stored with the given ID. */
+        put: operations["refactor_api_workflows__workflow_id__refactor_put"];
+    };
     "/api/workflows/{workflow_id}/share_with_users": {
         /**
          * Share this item with specific users.
@@ -1951,10 +1949,6 @@ export interface paths {
         /**
          * Schedule the workflow specified by `workflow_id` to run.
          * @deprecated
-         * @description .. note:: This method takes the same arguments as
-         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-         *
-         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
          */
         post: operations["Invoke_workflow_api_workflows__workflow_id__usage_post"];
     };
@@ -2113,6 +2107,63 @@ export interface components {
              * @description The link to be opened when the button is clicked.
              */
             link: string;
+        };
+        /** AddInputAction */
+        AddInputAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "add_input";
+            /** Collection Type */
+            collection_type?: string | null;
+            /** Default */
+            default?: Record<string, never> | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Optional
+             * @default false
+             */
+            optional?: boolean | null;
+            position?: components["schemas"]["Position"] | null;
+            /** Restrict On Connections */
+            restrict_on_connections?: boolean | null;
+            /** Restrictions */
+            restrictions?: string[] | null;
+            /** Suggestions */
+            suggestions?: string[] | null;
+            /** Type */
+            type: string;
+        };
+        /**
+         * AddStepAction
+         * @description Add a new action to the workflow.
+         *
+         * After the workflow is updated, an order_index will be assigned
+         * and this step may cause other steps to have their output_index
+         * adjusted.
+         */
+        AddStepAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "add_step";
+            /**
+             * Label
+             * @description A unique label for the step being added, must be distinct from the labels already present in the workflow.
+             */
+            label?: string | null;
+            /** @description The location of the step in the Galaxy workflow editor. */
+            position?: components["schemas"]["Position"] | null;
+            /** Tool State */
+            tool_state?: Record<string, never> | null;
+            /**
+             * Type
+             * @description Module type of the step to add, see galaxy.workflow.modules for available types.
+             */
+            type: string;
         };
         /** AnonUserModel */
         AnonUserModel: {
@@ -2972,6 +3023,20 @@ export interface components {
              * @description The quota source label corresponding to the object store the dataset is stored in (or would be stored in)
              */
             source: string | null;
+        };
+        /** ConnectAction */
+        ConnectAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "connect";
+            /** Input */
+            input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
+            /** Output */
+            output:
+                | components["schemas"]["OutputReferenceByOrderIndex"]
+                | components["schemas"]["OutputReferenceByLabel"];
         };
         /** ContentsObject */
         ContentsObject: {
@@ -4283,6 +4348,20 @@ export interface components {
              */
             username: string;
         };
+        /** DisconnectAction */
+        DisconnectAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "disconnect";
+            /** Input */
+            input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
+            /** Output */
+            output:
+                | components["schemas"]["OutputReferenceByOrderIndex"]
+                | components["schemas"]["OutputReferenceByLabel"];
+        };
         /**
          * DisplayApp
          * @description Basic linked information about an application that can display certain datatypes.
@@ -4739,6 +4818,32 @@ export interface components {
          * @enum {string}
          */
         ExtraFilesEntryClass: "Directory" | "File";
+        /** ExtractInputAction */
+        ExtractInputAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "extract_input";
+            /** Input */
+            input: components["schemas"]["InputReferenceByOrderIndex"] | components["schemas"]["InputReferenceByLabel"];
+            /** Label */
+            label?: string | null;
+            position?: components["schemas"]["Position"] | null;
+        };
+        /** ExtractUntypedParameter */
+        ExtractUntypedParameter: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "extract_untyped_parameter";
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            position?: components["schemas"]["Position"] | null;
+        };
         /** FavoriteObject */
         FavoriteObject: {
             /**
@@ -4831,6 +4936,14 @@ export interface components {
              * @default false
              */
             to_posix_lines?: boolean;
+        };
+        /** FileDefaultsAction */
+        FileDefaultsAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "fill_defaults";
         };
         /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
@@ -4942,6 +5055,16 @@ export interface components {
             | components["schemas"]["BrowsableFilesSourcePlugin"]
             | components["schemas"]["FilesSourcePlugin"]
         )[];
+        /** FillStepDefaultsAction */
+        FillStepDefaultsAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "fill_step_defaults";
+            /** Step */
+            step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+        };
         /** FolderLibraryFolderItem */
         FolderLibraryFolderItem: {
             /** Can Manage */
@@ -6691,6 +6814,32 @@ export interface components {
              */
             to_posix_lines?: "Yes" | boolean | null;
         };
+        /** InputReferenceByLabel */
+        InputReferenceByLabel: {
+            /**
+             * Input Name
+             * @description The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input').
+             */
+            input_name: string;
+            /**
+             * Label
+             * @description The unique label of the step being referenced.
+             */
+            label: string;
+        };
+        /** InputReferenceByOrderIndex */
+        InputReferenceByOrderIndex: {
+            /**
+             * Input Name
+             * @description The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input').
+             */
+            input_name: string;
+            /**
+             * Order Index
+             * @description The order_index of the step being referenced. The order indices of a workflow start at 0.
+             */
+            order_index: number;
+        };
         /** InstalledRepositoryToolShedStatus */
         InstalledRepositoryToolShedStatus: {
             /**
@@ -7434,7 +7583,7 @@ export interface components {
             inputs_by?: string | null;
             /**
              * Is instance
-             * @description TODO
+             * @description True when fetching by Workflow ID, False when fetching by StoredWorkflow ID
              * @default false
              */
             instance?: boolean | null;
@@ -9083,6 +9232,34 @@ export interface components {
              */
             url: string;
         };
+        /** OutputReferenceByLabel */
+        OutputReferenceByLabel: {
+            /**
+             * Label
+             * @description The unique label of the step being referenced.
+             */
+            label: string;
+            /**
+             * Output Name
+             * @description The output name as defined by the workflow module corresponding to the step being referenced. The default is 'output', corresponding to the output defined by input step types.
+             * @default output
+             */
+            output_name?: string | null;
+        };
+        /** OutputReferenceByOrderIndex */
+        OutputReferenceByOrderIndex: {
+            /**
+             * Order Index
+             * @description The order_index of the step being referenced. The order indices of a workflow start at 0.
+             */
+            order_index: number;
+            /**
+             * Output Name
+             * @description The output name as defined by the workflow module corresponding to the step being referenced. The default is 'output', corresponding to the output defined by input step types.
+             * @default output
+             */
+            output_name?: string | null;
+        };
         /**
          * PageContentFormat
          * @enum {string}
@@ -9396,6 +9573,13 @@ export interface components {
          * @enum {string}
          */
         PluginKind: "rfs" | "drs" | "rdm" | "stock";
+        /** Position */
+        Position: {
+            /** Left */
+            left: number;
+            /** Top */
+            top: number;
+        };
         /** PrepareStoreDownloadPayload */
         PrepareStoreDownloadPayload: {
             /**
@@ -9569,6 +9753,146 @@ export interface components {
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
+        /** RefactorActionExecution */
+        RefactorActionExecution: {
+            /** Action */
+            action:
+                | components["schemas"]["AddInputAction"]
+                | components["schemas"]["AddStepAction"]
+                | components["schemas"]["ConnectAction"]
+                | components["schemas"]["DisconnectAction"]
+                | components["schemas"]["ExtractInputAction"]
+                | components["schemas"]["ExtractUntypedParameter"]
+                | components["schemas"]["FileDefaultsAction"]
+                | components["schemas"]["FillStepDefaultsAction"]
+                | components["schemas"]["UpdateAnnotationAction"]
+                | components["schemas"]["UpdateCreatorAction"]
+                | components["schemas"]["UpdateNameAction"]
+                | components["schemas"]["UpdateLicenseAction"]
+                | components["schemas"]["UpdateOutputLabelAction"]
+                | components["schemas"]["UpdateReportAction"]
+                | components["schemas"]["UpdateStepLabelAction"]
+                | components["schemas"]["UpdateStepPositionAction"]
+                | components["schemas"]["UpgradeSubworkflowAction"]
+                | components["schemas"]["UpgradeToolAction"]
+                | components["schemas"]["UpgradeAllStepsAction"]
+                | components["schemas"]["RemoveUnlabeledWorkflowOutputs"];
+            /** Messages */
+            messages: components["schemas"]["RefactorActionExecutionMessage"][];
+        };
+        /** RefactorActionExecutionMessage */
+        RefactorActionExecutionMessage: {
+            /**
+             * From Order Index
+             * @description For dropped connections these optional attributes refer to the output
+             * side of the connection that was dropped.
+             */
+            from_order_index?: number | null;
+            /**
+             * From Step Label
+             * @description For dropped connections these optional attributes refer to the output
+             * side of the connection that was dropped.
+             */
+            from_step_label?: string | null;
+            /**
+             * Input Name
+             * @description If this message is about an input to a step,
+             * this field describes the target input name. $The input name as defined by the workflow module corresponding to the step being referenced. For Galaxy tool steps these inputs should be normalized using '|' (e.g. 'cond|repeat_0|input').
+             */
+            input_name?: string | null;
+            /** Message */
+            message: string;
+            message_type: components["schemas"]["RefactorActionExecutionMessageTypeEnum"];
+            /**
+             * Order Index
+             * @description Reference to the step the message refers to. $
+             *
+             * Messages don't have to be bound to a step, but if they are they will
+             * have a step_label and order_index included in the execution message.
+             * These are the label and order_index before applying the refactoring,
+             * the result of applying the action may change one or both of these.
+             * If connections are dropped this step reference will refer to the
+             * step with the previously connected input.
+             */
+            order_index?: number | null;
+            /**
+             * Output Label
+             * @description If the message_type is workflow_output_drop_forced, this is the output label dropped.
+             */
+            output_label?: string | null;
+            /**
+             * Output Name
+             * @description If this message is about an output to a step,
+             * this field describes the target output name. The output name as defined by the workflow module corresponding to the step being referenced.
+             */
+            output_name?: string | null;
+            /**
+             * Step Label
+             * @description Reference to the step the message refers to. $
+             *
+             * Messages don't have to be bound to a step, but if they are they will
+             * have a step_label and order_index included in the execution message.
+             * These are the label and order_index before applying the refactoring,
+             * the result of applying the action may change one or both of these.
+             * If connections are dropped this step reference will refer to the
+             * step with the previously connected input.
+             */
+            step_label?: string | null;
+        };
+        /**
+         * RefactorActionExecutionMessageTypeEnum
+         * @enum {string}
+         */
+        RefactorActionExecutionMessageTypeEnum:
+            | "tool_version_change"
+            | "tool_state_adjustment"
+            | "connection_drop_forced"
+            | "workflow_output_drop_forced";
+        /** RefactorRequest */
+        RefactorRequest: {
+            /** Actions */
+            actions: (
+                | components["schemas"]["AddInputAction"]
+                | components["schemas"]["AddStepAction"]
+                | components["schemas"]["ConnectAction"]
+                | components["schemas"]["DisconnectAction"]
+                | components["schemas"]["ExtractInputAction"]
+                | components["schemas"]["ExtractUntypedParameter"]
+                | components["schemas"]["FileDefaultsAction"]
+                | components["schemas"]["FillStepDefaultsAction"]
+                | components["schemas"]["UpdateAnnotationAction"]
+                | components["schemas"]["UpdateCreatorAction"]
+                | components["schemas"]["UpdateNameAction"]
+                | components["schemas"]["UpdateLicenseAction"]
+                | components["schemas"]["UpdateOutputLabelAction"]
+                | components["schemas"]["UpdateReportAction"]
+                | components["schemas"]["UpdateStepLabelAction"]
+                | components["schemas"]["UpdateStepPositionAction"]
+                | components["schemas"]["UpgradeSubworkflowAction"]
+                | components["schemas"]["UpgradeToolAction"]
+                | components["schemas"]["UpgradeAllStepsAction"]
+                | components["schemas"]["RemoveUnlabeledWorkflowOutputs"]
+            )[];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Style
+             * @default export
+             */
+            style?: string;
+        };
+        /** RefactorResponse */
+        RefactorResponse: {
+            /** Action Executions */
+            action_executions: components["schemas"]["RefactorActionExecution"][];
+            /** Dry Run */
+            dry_run: boolean;
+            /** Workflow */
+            workflow: string;
+        };
         /** ReloadFeedback */
         ReloadFeedback: {
             /** Failed */
@@ -9651,6 +9975,19 @@ export interface components {
              * @description Email of the user
              */
             remote_user_email: string;
+        };
+        /** RemoveUnlabeledWorkflowOutputs */
+        RemoveUnlabeledWorkflowOutputs: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "remove_unlabeled_workflow_outputs";
+        };
+        /** Report */
+        Report: {
+            /** Markdown */
+            markdown: string;
         };
         /** ReportJobErrorPayload */
         ReportJobErrorPayload: {
@@ -10321,6 +10658,22 @@ export interface components {
          * @enum {string}
          */
         Src: "url" | "pasted" | "files" | "path" | "composite" | "ftp_import" | "server_dir";
+        /** StepReferenceByLabel */
+        StepReferenceByLabel: {
+            /**
+             * Label
+             * @description The unique label of the step being referenced.
+             */
+            label: string;
+        };
+        /** StepReferenceByOrderIndex */
+        StepReferenceByOrderIndex: {
+            /**
+             * Order Index
+             * @description The order_index of the step being referenced. The order indices of a workflow start at 0.
+             */
+            order_index: number;
+        };
         /** StorageItemCleanupError */
         StorageItemCleanupError: {
             /** Error */
@@ -10649,6 +11002,16 @@ export interface components {
              */
             ids: string[];
         };
+        /** UpdateAnnotationAction */
+        UpdateAnnotationAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_annotation";
+            /** Annotation */
+            annotation: string;
+        };
         /**
          * UpdateCollectionAttributePayload
          * @description Contains attributes that can be updated for all elements in a dataset collection.
@@ -10676,6 +11039,16 @@ export interface components {
              */
             id: string;
             [key: string]: unknown | undefined;
+        };
+        /** UpdateCreatorAction */
+        UpdateCreatorAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_creator";
+            /** Creator */
+            creator?: Record<string, never>;
         };
         /**
          * UpdateHistoryContentsBatchPayload
@@ -10765,6 +11138,26 @@ export interface components {
              */
             synopsis?: string | null;
         };
+        /** UpdateLicenseAction */
+        UpdateLicenseAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_license";
+            /** License */
+            license: string;
+        };
+        /** UpdateNameAction */
+        UpdateNameAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_name";
+            /** Name */
+            name: string;
+        };
         /** UpdateObjectStoreIdPayload */
         UpdateObjectStoreIdPayload: {
             /**
@@ -10772,6 +11165,20 @@ export interface components {
              * @description Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.
              */
             object_store_id: string;
+        };
+        /** UpdateOutputLabelAction */
+        UpdateOutputLabelAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_output_label";
+            /** Output */
+            output:
+                | components["schemas"]["OutputReferenceByOrderIndex"]
+                | components["schemas"]["OutputReferenceByLabel"];
+            /** Output Label */
+            output_label: string;
         };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
@@ -10812,6 +11219,47 @@ export interface components {
              */
             operation?: components["schemas"]["QuotaOperation"];
         };
+        /** UpdateReportAction */
+        UpdateReportAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_report";
+            report: components["schemas"]["Report"];
+        };
+        /** UpdateStepLabelAction */
+        UpdateStepLabelAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_step_label";
+            /**
+             * Label
+             * @description The unique label of the step being referenced.
+             */
+            label: string;
+            /**
+             * Step
+             * @description The target step for this action.
+             */
+            step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+        };
+        /** UpdateStepPositionAction */
+        UpdateStepPositionAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "update_step_position";
+            position_shift: components["schemas"]["Position"];
+            /**
+             * Step
+             * @description The target step for this action.
+             */
+            step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+        };
         /**
          * UpdateUserNotificationPreferencesRequest
          * @description Contains the new notification preferences of a user.
@@ -10824,6 +11272,44 @@ export interface components {
             preferences: {
                 [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
             };
+        };
+        /** UpgradeAllStepsAction */
+        UpgradeAllStepsAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "upgrade_all_steps";
+        };
+        /** UpgradeSubworkflowAction */
+        UpgradeSubworkflowAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "upgrade_subworkflow";
+            /** Content Id */
+            content_id?: string | null;
+            /**
+             * Step
+             * @description The target step for this action.
+             */
+            step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+        };
+        /** UpgradeToolAction */
+        UpgradeToolAction: {
+            /**
+             * Action Type
+             * @constant
+             */
+            action_type: "upgrade_tool";
+            /**
+             * Step
+             * @description The target step for this action.
+             */
+            step: components["schemas"]["StepReferenceByOrderIndex"] | components["schemas"]["StepReferenceByLabel"];
+            /** Tool Version */
+            tool_version?: string | null;
         };
         /** UrlDataElement */
         UrlDataElement: {
@@ -21899,13 +22385,7 @@ export interface operations {
         };
     };
     Invoke_workflow_api_workflows__workflow_id__invocations_post: {
-        /**
-         * Schedule the workflow specified by `workflow_id` to run.
-         * @description .. note:: This method takes the same arguments as
-         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-         *
-         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
-         */
+        /** Schedule the workflow specified by `workflow_id` to run. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -22245,6 +22725,41 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refactor_api_workflows__workflow_id__refactor_put: {
+        /** Updates the workflow stored with the given ID. */
+        parameters: {
+            query?: {
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefactorRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RefactorResponse"];
                 };
             };
             /** @description Validation Error */
@@ -22610,10 +23125,6 @@ export interface operations {
         /**
          * Schedule the workflow specified by `workflow_id` to run.
          * @deprecated
-         * @description .. note:: This method takes the same arguments as
-         *     :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-         *
-         * :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
