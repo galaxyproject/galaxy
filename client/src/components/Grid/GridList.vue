@@ -259,7 +259,7 @@ watch(operationMessage, () => {
                 </div>
             </div>
             <FilterMenu
-                class="py-2"
+                :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="gridConfig.filtering"

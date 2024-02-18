@@ -22,27 +22,23 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <div>
-        <div class="mb-2">
-            <div class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
-                <div>
-                    <BButton size="sm" variant="outline-primary" to="/histories/import">
-                        <Icon :icon="faPlus" />
-                        <span v-localize>Import History</span>
-                    </BButton>
-                </div>
+    <div class="d-flex flex-column">
+        <div class="d-flex">
+            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
+            <div>
+                <BButton size="sm" variant="outline-primary" to="/histories/import">
+                    <Icon :icon="faPlus" />
+                    <span v-localize>Import History</span>
+                </BButton>
             </div>
-            <BNav pills justified class="mb-2">
-                <BNavItem :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
-                <BNavItem :active="activeList === 'shared'" to="/histories/list_shared"> Shared with Me </BNavItem>
-                <BNavItem :active="activeList === 'published'" to="/histories/list_published">
-                    Public Histories
-                </BNavItem>
-            </BNav>
-            <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
-            <GridList v-else-if="activeList === 'shared'" :grid-config="historiesSharedGridConfig" embedded />
-            <GridList v-else :grid-config="historiesPublishedGridConfig" embedded />
         </div>
+        <BNav pills justified class="mb-2">
+            <BNavItem :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
+            <BNavItem :active="activeList === 'shared'" to="/histories/list_shared"> Shared with Me </BNavItem>
+            <BNavItem :active="activeList === 'published'" to="/histories/list_published"> Public Histories </BNavItem>
+        </BNav>
+        <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
+        <GridList v-else-if="activeList === 'shared'" :grid-config="historiesSharedGridConfig" embedded />
+        <GridList v-else :grid-config="historiesPublishedGridConfig" embedded />
     </div>
 </template>

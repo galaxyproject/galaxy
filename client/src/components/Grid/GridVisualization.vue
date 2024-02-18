@@ -21,25 +21,23 @@ withDefaults(defineProps<Props>(), {
 </script>
 
 <template>
-    <div>
-        <div class="mb-2">
-            <div class="d-flex">
-                <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Visualizations</Heading>
-                <div>
-                    <BButton size="sm" variant="outline-primary" to="/visualizations">
-                        <Icon :icon="faPlus" />
-                        <span v-localize>Create Visualization</span>
-                    </BButton>
-                </div>
+    <div class="d-flex flex-column">
+        <div class="d-flex">
+            <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Visualizations</Heading>
+            <div>
+                <BButton size="sm" variant="outline-primary" to="/visualizations">
+                    <Icon :icon="faPlus" />
+                    <span v-localize>Create Visualization</span>
+                </BButton>
             </div>
-            <BNav pills justified class="mb-2">
-                <BNavItem :active="activeList === 'my'" to="/visualizations/list"> My Visualizations </BNavItem>
-                <BNavItem :active="activeList === 'published'" to="/visualizations/list_published">
-                    Public Visualizations
-                </BNavItem>
-            </BNav>
-            <GridList v-if="activeList === 'my'" :grid-config="visualizationsGridConfig" embedded />
-            <GridList v-else :grid-config="visualizationsPublishedGridConfig" embedded />
         </div>
+        <BNav pills justified class="mb-2">
+            <BNavItem :active="activeList === 'my'" to="/visualizations/list"> My Visualizations </BNavItem>
+            <BNavItem :active="activeList === 'published'" to="/visualizations/list_published">
+                Public Visualizations
+            </BNavItem>
+        </BNav>
+        <GridList v-if="activeList === 'my'" :grid-config="visualizationsGridConfig" embedded />
+        <GridList v-else :grid-config="visualizationsPublishedGridConfig" embedded />
     </div>
 </template>
