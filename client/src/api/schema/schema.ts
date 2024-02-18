@@ -1793,6 +1793,10 @@ export interface paths {
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
     };
+    "/api/workflows/{workflow_id}/counts": {
+        /** Get state counts for accessible workflow. */
+        get: operations["workflows__invocation_counts"];
+    };
     "/api/workflows/{workflow_id}/disable_link_access": {
         /**
          * Makes this item inaccessible by a URL link.
@@ -9558,6 +9562,10 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /** RootModel[Dict[str, int]] */
+        RootModel_Dict_str__int__: {
+            [key: string]: number | undefined;
         };
         /** SearchJobsPayload */
         SearchJobsPayload: {
@@ -21493,6 +21501,37 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflows__invocation_counts: {
+        /** Get state counts for accessible workflow. */
+        parameters: {
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            query?: {
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RootModel_Dict_str__int__"];
                 };
             };
             /** @description Validation Error */

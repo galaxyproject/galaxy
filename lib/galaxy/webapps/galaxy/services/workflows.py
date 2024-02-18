@@ -15,7 +15,11 @@ from galaxy.managers.workflows import (
     WorkflowSerializer,
     WorkflowsManager,
 )
-from galaxy.schema.schema import WorkflowIndexQueryPayload
+from galaxy.model import StoredWorkflow
+from galaxy.schema.schema import (
+    InvocationsStateCounts,
+    WorkflowIndexQueryPayload,
+)
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -111,14 +115,20 @@ class WorkflowsService(ServiceBase):
         self._workflows_manager.check_security(trans, workflow_to_undelete)
         self._workflows_manager.undelete(workflow_to_undelete)
 
-    def get_versions(self, trans, workflow_id, instance):
-        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+    def get_versions(self, trans, workflow_id, instance: bool):
+        stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
             trans, workflow_id, by_stored_id=not instance
         )
         return [
             {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
+
+    def invocation_counts(self, trans, workflow_id, instance: bool) -> InvocationsStateCounts:
+        stored_workflow: StoredWorkflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        return stored_workflow.invocation_counts()
 
     def get_workflow_menu(self, trans, payload):
         ids_in_menu = [x.stored_workflow_id for x in trans.user.stored_workflow_menu_entries]
