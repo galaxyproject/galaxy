@@ -3424,7 +3424,9 @@ $attribute_list:data_ref,dynamic_options,display,multiple:5
 
 #### ``data_column``
 
-This parameter type is used to select columns from a parameter.
+This parameter type is used to select columns from a data parameter.
+It uses the ``column_names`` metadata if present (only since 24.0)
+and as a fallback the tab separated values of the first line.
 
 $attribute_list:force_select,numerical,use_header_name,multiple:5
 
