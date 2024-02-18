@@ -192,6 +192,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                     elif key == "user":
                         stmt = append_user_filter(stmt, Page, term)
                     elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
                         if q == "published":
                             stmt = stmt.where(Page.published == true())
                         if q == "importable":
