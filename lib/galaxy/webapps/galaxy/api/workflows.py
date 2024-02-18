@@ -46,7 +46,10 @@ from galaxy.managers.context import (
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
+    RefactorResponse,
+    WorkflowContentsManager,
     WorkflowCreateOptions,
+    WorkflowsManager,
     WorkflowUpdateOptions,
 )
 from galaxy.model.base import transaction
@@ -559,26 +562,6 @@ class WorkflowsAPIController(
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style="instance")
 
     @expose_api
-    def refactor(self, trans, id, payload, **kwds):
-        """
-        * PUT /api/workflows/{id}/refactor
-            updates the workflow stored with ``id``
-
-        :type   id:      str
-        :param  id:      the encoded id of the workflow to update
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-        :type   payload: dict
-        :param  payload: a dictionary containing list of actions to apply.
-        :rtype:     dict
-        :returns:   serialized version of the workflow
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwds)
-        refactor_request = RefactorRequest(**payload)
-        return self.workflow_contents_manager.refactor(trans, stored_workflow, refactor_request)
-
-    @expose_api
     def build_module(self, trans: GalaxyWebTransaction, payload=None):
         """
         POST /api/workflows/build_module
@@ -919,10 +902,21 @@ InvokeWorkflowBody = Annotated[
     ),
 ]
 
+RefactorWorkflowBody = Annotated[
+    RefactorRequest,
+    Body(
+        default=...,
+        title="Refactor workflow",
+        description="The values to refactor a workflow.",
+    ),
+]
+
 
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    manager: WorkflowsManager = depends(WorkflowsManager)
+    contents_manager: WorkflowContentsManager = depends(WorkflowContentsManager)
 
     @router.get(
         "/api/workflows",
@@ -998,6 +992,20 @@ class FastAPIWorkflows:
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, workflow_id)
+
+    @router.put(
+        "/api/workflows/{workflow_id}/refactor",
+        summary="Updates the workflow stored with the given ID.",
+    )
+    def refactor(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        payload: RefactorWorkflowBody,
+        instance: InstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> RefactorResponse:
+        stored_workflow = self.manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        return self.contents_manager.refactor(trans, stored_workflow, payload)
 
     @router.put(
         "/api/workflows/{workflow_id}/publish",
