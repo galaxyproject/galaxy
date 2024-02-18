@@ -120,18 +120,15 @@ class WorkflowsService(ServiceBase):
         payload: InvokeWorkflowPayload,
     ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
         # Get workflow + accessibility check.
-        # by_stored_id = not payload.get("instance", False)
         by_stored_id = not payload.instance
         stored_workflow = self._workflows_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id)
         workflow = stored_workflow.latest_workflow
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
-        # is_batch = payload.get("batch")
         if not is_batch and len(run_configs) != 1:
             raise HTTPException(status_code=400, detail="Must specify 'batch' to use batch parameters.")
 
         require_exact_tool_versions = payload.require_exact_tool_versions
-        # require_exact_tool_versions = util.string_as_bool(payload.get("require_exact_tool_versions", "true"))
         tools = self._workflow_contents_manager.get_all_tools(workflow)
         missing_tools = [
             tool
@@ -162,7 +159,6 @@ class WorkflowsService(ServiceBase):
         invocations = []
         for run_config in run_configs:
             workflow_scheduler_id = payload.scheduler
-            # workflow_scheduler_id = payload.get("scheduler", None)
             # TODO: workflow scheduler hints
             work_request_params = dict(scheduler=workflow_scheduler_id)
             workflow_invocation = queue_invoke(

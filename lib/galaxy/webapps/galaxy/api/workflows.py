@@ -81,8 +81,6 @@ from galaxy.schema.schema import (
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import InvokeWorkflowPayload
-
-# from galaxy.schema.workflows import InvokeWorkflowPayload
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
@@ -1097,16 +1095,9 @@ class FastAPIWorkflows:
     def invoke(
         self,
         payload: InvokeWorkflowBody,
-        # workflow_id: str = Path(...),
         workflow_id: MultiTypeWorkflowIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Union[WorkflowInvocationResponse, List[WorkflowInvocationResponse]]:
-        """
-        .. note:: This method takes the same arguments as
-            :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
-
-        :raises: exceptions.MessageException, exceptions.RequestParameterInvalidException
-        """
         return self.service.invoke_workflow(trans, workflow_id, payload)
 
     @router.get(
