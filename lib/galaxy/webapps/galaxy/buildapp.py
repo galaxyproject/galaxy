@@ -593,9 +593,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
-    webapp.mapper.connect(
-        "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
-    )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
