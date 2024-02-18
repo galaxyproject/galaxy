@@ -75,7 +75,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
     instance: Optional[bool] = Field(
         False,
         title="Is instance",
-        description="TODO",
+        description="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID",
     )
     scheduler: Optional[str] = Field(
         None,
