@@ -17463,6 +17463,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
+            /** @description The encoded database identifier of the History. */
             path: {
                 history_id: string;
             };
