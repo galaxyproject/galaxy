@@ -387,9 +387,7 @@ class FastAPIJobs:
         for association in associations:
             output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
 
-        output_associations.extend(
-            self.service.dictify_output_collection_associations(trans, job)
-        )
+        output_associations.extend(self.service.dictify_output_collection_associations(trans, job))
         return output_associations
 
     @router.get(

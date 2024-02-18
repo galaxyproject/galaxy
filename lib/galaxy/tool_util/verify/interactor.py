@@ -1463,12 +1463,7 @@ def verify_tool(
     if not use_legacy_api:
         structured_inputs = galaxy_interactor.get_tool_inputs(tool_id, tool_version=tool_version)
         assert structured_inputs
-    testdef = ToolTestDescription.from_dict(
-        tool_test_dict,
-        tool_id,
-        test_index,
-        maxseconds
-    )
+    testdef = ToolTestDescription.from_dict(tool_test_dict, tool_id, test_index, maxseconds)
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1842,7 +1837,7 @@ class ToolTestDescription:
                 test_index=raw_dict.get("test_index") or test_index,
                 inputs=raw_dict["inputs"],
                 exception=exception,
-                maxseconds=maxseconds
+                maxseconds=maxseconds,
             )
         else:
             processed_test_dict = ValidToolTestDict(
