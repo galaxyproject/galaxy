@@ -793,6 +793,27 @@ class User(Base, Dictifiable, RepresentById):
         self.active = False
         self.username = username
 
+    def get_user_data_tables(self, data_table: str):
+        session = object_session(self)
+        assert session
+        metadata_select = (
+            select(HistoryDatasetAssociation)
+            .join(Dataset)
+            .join(History)
+            .where(
+                HistoryDatasetAssociation.deleted == false(),
+                HistoryDatasetAssociation.extension == "data_manager_json",
+                History.user_id == self.id,
+                Dataset.state == "ok",
+                # excludes data manager runs that actually populated tables.
+                # maybe track this formally by creating a different datatype for bundles ?
+                Dataset.total_size != Dataset.file_size,
+                HistoryDatasetAssociation._metadata.contains(data_table),
+            )
+            .order_by(HistoryDatasetAssociation.id)
+        )
+        return session.execute(metadata_select).scalars().all()
+
     @property
     def extra_preferences(self):
         data = defaultdict(lambda: None)

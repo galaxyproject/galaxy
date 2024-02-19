@@ -214,14 +214,17 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
             self._input = input
             self._value = value
             self._other_values = other_values
-            self._fields: Dict[str, str] = {}
+            self._fields: Dict[str, List[str]] = {}
             self._compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:
             if name not in self._fields:
-                self._fields[name] = self._input.options.get_field_by_name_for_value(
-                    name, self._value, None, self._other_values
-                )
+                if isinstance(self._value, DatasetInstance):
+                    self._fields[name] = [self._input.options.get_option_from_dataset(self._value)[name]]
+                else:
+                    self._fields[name] = self._input.options.get_field_by_name_for_value(
+                        name, self._value, None, self._other_values
+                    )
             values = map(str, self._fields[name])
             if name in PATH_ATTRIBUTES and self._compute_environment:
                 # If we infer this is a path, rewrite it if needed.
