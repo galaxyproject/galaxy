@@ -12,9 +12,9 @@ import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { fetchAllHistoriesSizeSummary, type ItemSizeSummary, purgeHistoryById, undeleteHistoryById } from "./service";
 
 import BarChart from "./Charts/BarChart.vue";
+import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const historyStore = useHistoryStore();
@@ -151,9 +151,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
 }
 </script>
 <template>
-    <div class="mx-3">
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <Heading h1 bold class="my-3"> Histories Storage Overview </Heading>
+    <OverviewPage title="Histories Storage Overview">
         <p class="text-justify">
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
         </p>
@@ -230,5 +228,5 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 </template>
             </BarChart>
         </div>
-    </div>
+    </OverviewPage>
 </template>

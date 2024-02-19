@@ -17,9 +17,9 @@ import {
 } from "./service";
 
 import BarChart from "./Charts/BarChart.vue";
+import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
@@ -27,12 +27,11 @@ const { success: successToast, error: errorToast } = useToast();
 const { confirm } = useConfirmDialog();
 const { getHistoryNameById } = useHistoryStore();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    historyId: string;
+}
+
+const props = defineProps<Props>();
 
 const datasetsSizeSummaryMap = new Map<string, ItemSizeSummary>();
 const topTenDatasetsBySizeData = ref<DataValuePoint[] | null>(null);
@@ -149,9 +148,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
 }
 </script>
 <template>
-    <div class="mx-3 history-storage-overview">
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <Heading h1 bold class="my-3"> History Storage Overview </Heading>
+    <OverviewPage class="history-storage-overview" title="History Storage Overview">
         <p class="text-justify">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ getHistoryNameById(props.historyId) }}</b
@@ -231,5 +228,5 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 </template>
             </BarChart>
         </div>
-    </div>
+    </OverviewPage>
 </template>
