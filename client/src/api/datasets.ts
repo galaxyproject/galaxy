@@ -49,25 +49,21 @@ export async function fetchDatasetDetails(params: { id: string }): Promise<Datas
     return data as unknown as DatasetDetails;
 }
 
-const updateHistoryDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
+const updateDataset = fetcher.path("/api/datasets/{dataset_id}").method("put").create();
 
-export async function undeleteHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await updateHistoryDataset({
-        history_id: historyId,
-        id: datasetId,
+export async function undeleteHistoryDataset(datasetId: string) {
+    const { data } = await updateDataset({
+        dataset_id: datasetId,
         type: "dataset",
         deleted: false,
     });
     return data;
 }
 
-const deleteHistoryDataset = fetcher
-    .path("/api/histories/{history_id}/contents/{type}s/{id}")
-    .method("delete")
-    .create();
+const deleteDataset = fetcher.path("/api/datasets/{dataset_id}").method("delete").create();
 
-export async function purgeHistoryDataset(historyId: string, datasetId: string) {
-    const { data } = await deleteHistoryDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
+export async function purgeHistoryDataset(datasetId: string) {
+    const { data } = await deleteDataset({ dataset_id: datasetId, purge: true });
     return data;
 }
 
