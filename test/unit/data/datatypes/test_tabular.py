@@ -32,7 +32,7 @@ def test_tabular_set_meta_empty():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.set_file_name(test_file.name)
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(dataset)  # type: ignore [arg-type]
         # data and comment lines are not stored if more than MAX_DATA_LINES
         assert dataset.metadata.data_lines == 0
         assert dataset.metadata.comment_lines == 0
@@ -52,7 +52,7 @@ def test_tabular_set_meta_nearly_empty():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.set_file_name(test_file.name)
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(dataset)  # type: ignore [arg-type]
         # data and comment lines are not stored if more than MAX_DATA_LINES
         assert dataset.metadata.data_lines == 0
         assert dataset.metadata.comment_lines == 1
@@ -77,7 +77,7 @@ def test_tabular_column_types():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.set_file_name(test_file.name)
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(dataset)  # type: ignore [arg-type]
         # data and comment lines are not stored if more than MAX_DATA_LINES
         assert dataset.metadata.data_lines == 2
         assert dataset.metadata.comment_lines == 0
@@ -104,7 +104,7 @@ def test_tabular_column_types_override():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.set_file_name(test_file.name)
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(dataset)  # type: ignore [arg-type]
         # data and comment lines are not stored if more than MAX_DATA_LINES
         assert dataset.metadata.data_lines == 3
         assert dataset.metadata.comment_lines == 0
