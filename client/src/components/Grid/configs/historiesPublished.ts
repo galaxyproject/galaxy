@@ -46,7 +46,7 @@ const fields: FieldArray = [
                 title: "View",
                 icon: faEye,
                 handler: (data: HistoryEntry) => {
-                    emit(`/histories/view?id=${data.id}`);
+                    emit(`/published/history?id=${data.id}`);
                 },
             },
         ],
