@@ -1139,7 +1139,7 @@ def commaify(amount):
         return commaify(new)
 
 
-def trailing_zeros_to_powerof10(amount):
+def trailing_zeros_to_powerof10(amount: int):
     """
     >>> trailing_zeros_to_powerof10(23000)
     '23000'
@@ -1168,7 +1168,7 @@ def trailing_zeros_to_powerof10(amount):
         return f"{amount[: i+1]}\u22C510^{zeros}"
 
 
-def roundify(amount, sfs=2):
+def roundify(amount: int, sfs: int = 2):
     """
     Take a number and round it to 'sfs' significant figures.
 
