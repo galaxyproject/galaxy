@@ -89,9 +89,6 @@ watch(
         if (!scrollable && !allLoaded.value) {
             loadMore();
         }
-    },
-    {
-        immediate: true,
     }
 );
 
