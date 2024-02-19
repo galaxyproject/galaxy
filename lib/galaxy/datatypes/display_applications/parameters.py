@@ -274,8 +274,7 @@ class DisplayParameterValueWrapper:
             base_url = f"http{base_url[5:]}"
         return "{}{}".format(
             base_url,
-            self.trans.app.legacy_url_for(
-                mapper=self.trans.app.legacy_mapper,
+            self.trans.app.url_for(
                 controller="dataset",
                 action="display_application",
                 dataset_id=self._dataset_hash,
@@ -284,7 +283,6 @@ class DisplayParameterValueWrapper:
                 link_name=quote_plus(self.parameter.link.id),
                 app_action=self.action_name,
                 action_param=self._url,
-                environ=self.trans.request.environ,
             ),
         )
 
