@@ -190,7 +190,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
-                    :is-active="isActiveSideBar('notifications')"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
