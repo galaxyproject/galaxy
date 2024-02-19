@@ -41,7 +41,7 @@ export function fetchMenu(options = {}) {
     }
 
     //
-    // 'Shared Items' or Libraries tab.
+    // 'Data Items' or Libraries tab.
     //
     if (Galaxy.config.single_user) {
         // Single user can still use libraries, especially as we may grow that
@@ -52,12 +52,12 @@ export function fetchMenu(options = {}) {
             url: "/libraries",
             id: "libraries",
         });
-    } else {
+    } else if (Galaxy.user.id) {
         menu.push({
             id: "resources",
             title: _l("Data"),
             url: "javascript:void(0)",
-            tooltip: _l("Access published resources"),
+            tooltip: _l("Access resources"),
             menu: [
                 {
                     title: _l("Data Libraries"),
@@ -83,6 +83,40 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Workflows"),
                     url: "/workflows/list",
+                },
+            ],
+        });
+    } else {
+        menu.push({
+            id: "resources",
+            title: _l("Data"),
+            url: "javascript:void(0)",
+            tooltip: _l("Access published resources"),
+            menu: [
+                {
+                    title: _l("Data Libraries"),
+                    url: "/libraries",
+                    target: "_top",
+                },
+                {
+                    title: _l("Datasets"),
+                    url: "/datasets/list_published",
+                },
+                {
+                    title: _l("Histories"),
+                    url: "/histories/list_published",
+                },
+                {
+                    title: _l("Pages"),
+                    url: "/pages/list_published",
+                },
+                {
+                    title: _l("Visualizations"),
+                    url: "/visualizations/list_published",
+                },
+                {
+                    title: _l("Workflows"),
+                    url: "/workflows/list_published",
                 },
             ],
         });

@@ -375,6 +375,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "pages/list_published",
@@ -490,6 +491,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "my",
                         },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations/list_published",

@@ -153,7 +153,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        if not user:
+        if not user and not show_published:
             message = "Requires user to log in."
             raise exceptions.RequestParameterInvalidException(message)
 

@@ -6,9 +6,13 @@ import { BNav, BNavItem } from "bootstrap-vue";
 import historiesGridConfig from "@/components/Grid/configs/histories";
 import historiesPublishedGridConfig from "@/components/Grid/configs/historiesPublished";
 import historiesSharedGridConfig from "@/components/Grid/configs/historiesShared";
+import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
+import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
+
+const userStore = useUserStore();
 
 library.add(faPlus);
 
@@ -33,9 +37,24 @@ withDefaults(defineProps<Props>(), {
             </div>
         </div>
         <BNav pills justified class="mb-2">
-            <BNavItem id="histories-my-tab" :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
-            <BNavItem id="histories-shared-tab" :active="activeList === 'shared'" to="/histories/list_shared">
+            <BNavItem
+                id="histories-my-tab"
+                :active="activeList === 'my'"
+                :disabled="userStore.isAnonymous"
+                to="/histories/list">
+                My Histories
+                <LoginRequired v-if="userStore.isAnonymous" target="histories-my-tab" title="Manage your Histories" />
+            </BNavItem>
+            <BNavItem
+                id="histories-shared-tab"
+                :active="activeList === 'shared'"
+                :disabled="userStore.isAnonymous"
+                to="/histories/list_shared">
                 Shared with Me
+                <LoginRequired
+                    v-if="userStore.isAnonymous"
+                    target="histories-shared-tab"
+                    title="Manage your Histories" />
             </BNavItem>
             <BNavItem id="histories-published-tab" :active="activeList === 'published'" to="/histories/list_published">
                 Public Histories

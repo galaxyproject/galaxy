@@ -582,6 +582,7 @@ tool_form:
 workflows:
   selectors:
     shared_with_me_tab: '#shared-with-me'
+    published_tab: '#published a'
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'

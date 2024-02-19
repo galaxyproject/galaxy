@@ -1201,6 +1201,12 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_data()
         self.components.masthead.pages.wait_for_and_click()
 
+    def navigate_to_published_workflows(self):
+        self.home()
+        self.click_masthead_data()
+        self.components.masthead.workflows.wait_for_and_click()
+        self.components.workflows.published_tab.wait_for_and_click()
+
     def navigate_to_published_histories(self):
         self.home()
         self.click_masthead_data()

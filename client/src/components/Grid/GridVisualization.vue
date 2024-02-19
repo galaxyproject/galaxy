@@ -5,9 +5,13 @@ import { BNav, BNavItem } from "bootstrap-vue";
 
 import visualizationsGridConfig from "@/components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "@/components/Grid/configs/visualizationsPublished";
+import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
+import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
+
+const userStore = useUserStore();
 
 library.add(faPlus);
 
@@ -32,7 +36,17 @@ withDefaults(defineProps<Props>(), {
             </div>
         </div>
         <BNav pills justified class="mb-2">
-            <BNavItem :active="activeList === 'my'" to="/visualizations/list"> My Visualizations </BNavItem>
+            <BNavItem
+                id="visualizations-my-tab"
+                :active="activeList === 'my'"
+                :disabled="userStore.isAnonymous"
+                to="/visualizations/list">
+                My Visualizations
+                <LoginRequired
+                    v-if="userStore.isAnonymous"
+                    target="visualizations-my-tab"
+                    title="Manage your Visualizations" />
+            </BNavItem>
             <BNavItem :active="activeList === 'published'" to="/visualizations/list_published">
                 Public Visualizations
             </BNavItem>

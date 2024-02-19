@@ -82,7 +82,7 @@ class VisualizationManager(sharable.SharableModelManager):
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if not user:
+        if not user and not show_published:
             message = "Requires user to log in."
             raise exceptions.RequestParameterInvalidException(message)
 

@@ -5,9 +5,13 @@ import { BNav, BNavItem } from "bootstrap-vue";
 
 import pagesGridConfig from "@/components/Grid/configs/pages";
 import pagesPublishedGridConfig from "@/components/Grid/configs/pagesPublished";
+import { useUserStore } from "@/stores/userStore";
 
 import Heading from "@/components/Common/Heading.vue";
+import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
+
+const userStore = useUserStore();
 
 library.add(faPlus);
 
@@ -32,7 +36,14 @@ withDefaults(defineProps<Props>(), {
             </div>
         </div>
         <BNav pills justified class="mb-2">
-            <BNavItem :active="activeList === 'my'" to="/pages/list"> My Pages </BNavItem>
+            <BNavItem
+                id="pages-my-tab"
+                :active="activeList === 'my'"
+                :disabled="userStore.isAnonymous"
+                to="/pages/list">
+                My Pages
+                <LoginRequired v-if="userStore.isAnonymous" target="pages-my-tab" title="Manage your Pages" />
+            </BNavItem>
             <BNavItem :active="activeList === 'published'" to="/pages/list_published"> Public Pages </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="pagesGridConfig" embedded />
