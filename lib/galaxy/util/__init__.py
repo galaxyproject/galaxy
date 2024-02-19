@@ -1144,9 +1144,9 @@ def trailing_zeros_to_powerof10(amount):
     >>> trailing_zeros_to_powerof10(23000)
     '23000'
     >>> trailing_zeros_to_powerof10(2300000)
-    '23 10^5'
+    '23\u22C510^5'
     >>> trailing_zeros_to_powerof10(23000000)
-    '23 10^6'
+    '23\u22C510^6'
     >>> trailing_zeros_to_powerof10(1)
     '1'
     >>> trailing_zeros_to_powerof10(0)
@@ -1162,10 +1162,10 @@ def trailing_zeros_to_powerof10(amount):
     while i >= 0 and amount[i] == "0":
         zeros += 1
         i -= 1
-    if len(amount) < len(f"{amount[:i+1]} 10^{zeros}"):
+    if len(amount) < len(f"{amount[: i+1]}\u22C510^{zeros}"):
         return amount
     else:
-        return f"{amount[:i+1]} 10^{zeros}"
+        return f"{amount[: i+1]}\u22C510^{zeros}"
 
 
 def roundify(amount, sfs=2):
