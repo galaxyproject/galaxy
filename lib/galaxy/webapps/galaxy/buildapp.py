@@ -580,12 +580,6 @@ def populate_api_routes(webapp, app):
         controller="container_resolution",
         conditions=dict(method=["POST"]),
     )
-    webapp.mapper.connect(
-        "/api/workflows/get_tool_predictions",
-        action="get_tool_predictions",
-        controller="workflows",
-        conditions=dict(method=["POST"]),
-    )
 
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
