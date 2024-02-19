@@ -160,7 +160,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         stmt = select(self.model_class)
 
         filters = []
-        if show_own or (not show_published and not is_admin):
+        if show_own or (not show_published and not show_shared and not is_admin):
             filters = [self.model_class.user == user]
         if show_published:
             filters.append(self.model_class.published == true())
@@ -223,7 +223,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                         )
                     )
 
-        if show_published and not is_admin:
+        if (show_published or show_shared) and not is_admin:
             show_deleted = False
 
         stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false())).distinct()

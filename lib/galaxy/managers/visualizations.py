@@ -89,7 +89,7 @@ class VisualizationManager(sharable.SharableModelManager):
         query = trans.sa_session.query(self.model_class)
 
         filters = []
-        if show_own or (not show_published and not is_admin):
+        if show_own or (not show_published and not show_shared and not is_admin):
             filters = [self.model_class.user == user]
         if show_published:
             filters.append(self.model_class.published == true())
@@ -152,7 +152,7 @@ class VisualizationManager(sharable.SharableModelManager):
                         )
                     )
 
-        if show_published and not is_admin:
+        if (show_published or show_shared) and not is_admin:
             show_deleted = False
 
         query = query.filter(self.model_class.deleted == (true() if show_deleted else false())).distinct()

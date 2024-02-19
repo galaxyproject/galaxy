@@ -196,7 +196,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         )
                     )
 
-        if show_published and not is_admin:
+        if (show_published or show_shared) and not is_admin:
             show_deleted = False
             show_purged = False
 
