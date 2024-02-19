@@ -237,6 +237,18 @@ export default {
 
             if (event.key === "Enter" || event.key === " ") {
                 this.onClick();
+            } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+                event.preventDefault();
+                this.$emit("shift-select", event.key);
+            } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+                this.$emit("arrow-navigate", event.key);
+            } else if (event.key === "Delete") {
+                event.preventDefault();
+                this.onDelete(event.shiftKey);
+            } else if (event.key === "Escape") {
+                event.preventDefault();
+                this.$emit("hide-selection");
             }
         },
         onClick() {

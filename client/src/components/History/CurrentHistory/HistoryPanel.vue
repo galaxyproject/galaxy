@@ -73,6 +73,13 @@ const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
+const contentItemRefs = computed(() => {
+    return historyItems.value.reduce((acc: any, item) => {
+        // TODO: type `any` properly
+        acc[`item-${item.hid}`] = ref(null);
+        return acc;
+    }, {});
+});
 
 const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
@@ -342,6 +349,28 @@ onMounted(async () => {
     }
     await loadHistoryItems();
 });
+
+function nextSelections(item: HistoryItem, eventKey: string) {
+    const nextItem = arrowNavigate(item, eventKey);
+    return {
+        item,
+        nextItem,
+        eventKey,
+    };
+}
+
+function arrowNavigate(item: HistoryItem, eventKey: string) {
+    let nextItem = null;
+    if (eventKey === "ArrowDown") {
+        nextItem = historyItems.value[historyItems.value.indexOf(item) + 1];
+    } else if (eventKey === "ArrowUp") {
+        nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
+    }
+    if (nextItem) {
+        contentItemRefs.value[`item-${nextItem.hid}`].value.$el.focus();
+    }
+    return nextItem;
+}
 </script>
 
 <template>
@@ -359,6 +388,8 @@ onMounted(async () => {
                 selectAllInCurrentQuery,
                 isSelected,
                 setSelected,
+                shiftSelect,
+                initKeySelection,
                 resetSelection,
             }"
             :scope-key="queryKey"
@@ -475,6 +506,7 @@ onMounted(async () => {
                                 <ContentItem
                                     v-if="!invisibleHistoryItems[item.hid]"
                                     :id="item.hid"
+                                    :ref="contentItemRefs[`item-${item.hid}`]"
                                     is-history-item
                                     :item="item"
                                     :name="item.name"
@@ -485,6 +517,12 @@ onMounted(async () => {
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
+                                    @arrow-navigate="
+                                        arrowNavigate(item, $event);
+                                        initKeySelection();
+                                    "
+                                    @hide-selection="setShowSelection(false)"
+                                    @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"
