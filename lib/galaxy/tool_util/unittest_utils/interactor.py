@@ -67,6 +67,8 @@ class MockGalaxyInteractor:
                     "tool_version": this_tool_version or "0.1.1-default",
                     "name": tool_id,
                     "test_index": index,
+                    "inputs": [],
+                    "outputs": [],
                 }
                 test_defs.append(ToolTestCase(**test_def))
 
