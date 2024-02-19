@@ -963,9 +963,9 @@
     <datatype extension="storm.check" type="galaxy.datatypes.text:StormCheck" display_in_upload="true"/>
     <datatype extension="ctl.result" type="galaxy.datatypes.text:CTLresult" display_in_upload="true"/>
     <!-- CASTEP types -->
-    <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
-    <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
-    <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
+    <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true" description="numerical output of a CASTEP job in ASCII format" description_url="https://www.tcm.phy.cam.ac.uk/castep/documentation/WebHelp/content/modules/castep/expcastepfilecastep.htm"/>
+    <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true" description="the param file contains all the input control parameters required to run a CASTEP job. Consists of lines containing keywords and associated values" description_url="https://www.tcm.phy.cam.ac.uk/castep/documentation/WebHelp/content/modules/castep/expcastepfileparam.htm"/>
+    <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true" description="formatted electronic density file output by CASTEP containing value of electron density for a grid of points"/>
     <!-- Larch types -->
     <datatype extension="prj" type="galaxy.datatypes.larch:AthenaProject" display_in_upload="true" description="Athena project file."/>
     <datatype extension="inp" type="galaxy.datatypes.larch:FEFFInput" display_in_upload="true" description="FEFF input file."/>
