@@ -114,7 +114,7 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
-                    internal_url = "%s" % app.url_for(
+                    internal_url = app.url_for(
                         controller="dataset",
                         dataset_id=dataset.id,
                         action="display_at",
