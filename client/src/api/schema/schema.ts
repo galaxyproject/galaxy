@@ -1799,6 +1799,10 @@ export interface paths {
          */
         get: operations["index_api_workflows_get"];
     };
+    "/api/workflows/get_tool_predictions": {
+        /** Fetch predicted tools for a workflow */
+        post: operations["get_tool_predictions_api_workflows_get_tool_predictions_post"];
+    };
     "/api/workflows/menu": {
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
@@ -5184,6 +5188,19 @@ export interface components {
             src: "ftp_import";
             /** Tags */
             tags?: string[] | null;
+        };
+        /** GetToolPredictionsPayload */
+        GetToolPredictionsPayload: {
+            /**
+             * Remote Model URL
+             * @description Path to the deep learning model
+             */
+            remote_model_url?: Record<string, never> | null;
+            /**
+             * Tool Sequence
+             * @description comma separated sequence of tool ids
+             */
+            tool_sequence: Record<string, never>;
         };
         /**
          * GroupCreatePayload
@@ -22172,6 +22189,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tool_predictions_api_workflows_get_tool_predictions_post: {
+        /** Fetch predicted tools for a workflow */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GetToolPredictionsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
