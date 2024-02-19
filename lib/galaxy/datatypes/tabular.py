@@ -405,7 +405,11 @@ class Tabular(TabularData):
     file_ext = "tabular"
 
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
-        return None
+        if first_line.startswith("#"):
+            # TODO this should use the delimiter, but this seems to be stored at the dataset
+            return first_line[1:].split()
+        else:
+            return None
 
     def set_meta(
         self,
@@ -507,7 +511,8 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
-        column_types: List = []
+        column_types = []
+        first_line = ""
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
@@ -516,7 +521,7 @@ class Tabular(TabularData):
                 for line in iter(dataset_fh.readline, ""):
                     line = line.rstrip("\r\n")
                     if i == 0:
-                        column_names = self.get_column_names(first_line=line)
+                        first_line = line
                     if i < skip or not line or line.startswith("#"):
                         # We'll call blank lines comments
                         comment_lines += 1
@@ -575,8 +580,13 @@ class Tabular(TabularData):
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len(column_types)
         dataset.metadata.delimiter = "\t"
-        if column_names is not None:
-            dataset.metadata.column_names = column_names
+
+        # determine columns names from first line if it is
+        # - starting with # and has the same number of columns as the table
+        if first_line:
+            column_names = self.get_column_names(first_line)
+            if column_names is not None and len(column_names) == dataset.metadata.columns:
+                dataset.metadata.column_names = column_names
 
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
         return open(dataset.get_file_name(), "rb")
