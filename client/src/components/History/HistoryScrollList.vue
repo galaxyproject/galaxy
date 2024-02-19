@@ -80,6 +80,21 @@ onUnmounted(() => {
     useInfiniteScroll(scrollableDiv.value, () => {});
 });
 
+/** if screen size is as such that a scroller is not rendered,
+ * we load enough histories so that a scroller is rendered
+ */
+watch(
+    () => isScrollable.value,
+    (scrollable: boolean) => {
+        if (!scrollable && !allLoaded.value) {
+            loadMore();
+        }
+    },
+    {
+        immediate: true,
+    }
+);
+
 watch(
     () => props.filter,
     async (newVal: string, oldVal: string) => {
