@@ -3,8 +3,8 @@
 from abc import abstractmethod
 from typing import (
     Any,
-    cast,
     Callable,
+    cast,
     Dict,
     Iterable,
     List,

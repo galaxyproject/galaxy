@@ -38,7 +38,6 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     Security,
 )
-
 from galaxy.schema.jobs import (
     JobAssociation,
     JobOutputCollectionAssociation,
