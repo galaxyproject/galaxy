@@ -29,7 +29,7 @@ withDefaults(defineProps<Props>(), {
     <div class="d-flex flex-column">
         <div class="d-flex">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Histories</Heading>
-            <div>
+            <div v-if="!userStore.isAnonymous">
                 <BButton size="sm" variant="outline-primary" to="/histories/import">
                     <Icon :icon="faPlus" />
                     <span v-localize>Import History</span>

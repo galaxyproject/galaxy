@@ -28,7 +28,7 @@ withDefaults(defineProps<Props>(), {
     <div class="d-flex flex-column">
         <div class="d-flex">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Pages</Heading>
-            <div>
+            <div v-if="!userStore.isAnonymous">
                 <BButton id="page-create" size="sm" variant="outline-primary" to="/pages/create">
                     <Icon :icon="faPlus" />
                     <span v-localize>Create Page</span>
