@@ -973,7 +973,6 @@
     <datatype extension="gds" type="galaxy.datatypes.tabular:CSV" subclass="true" description="CSV representing GDS parameters."/>
     <datatype extension="feff" type="galaxy.datatypes.tabular:CSV" subclass="true" description="CSV representing summary of FEFF paths."/>
     <datatype extension="feffit" type="galaxy.datatypes.data:Text" subclass="true" description="Report of Artemis FEFFIT."/>
-    <datatype extension="magres" type="galaxy.datatypes.text:Magres" display_in_upload="true"/>
     <!-- ECOLOGY types -->
     <datatype extension="bil" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="ENVI file with band interleave by line (BIL) format"/>
     <datatype extension="hdr" type="galaxy.datatypes.data:Text" mimetype="text/plain" display_in_upload="true" subclass="true" description="ENVI metadata header file"/>
