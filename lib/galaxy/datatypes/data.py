@@ -1100,7 +1100,7 @@ class Text(Data):
                     else:
                         est_lines = self.estimate_file_lines(dataset)
                         if est_lines is not None:
-                            dataset.blurb = f"~{util.trailing_zeros_to_powerof10(util.roundify(str(est_lines)))} {inflector.cond_plural(est_lines, self.line_class)}"
+                            dataset.blurb = f"~{util.trailing_zeros_to_powerof10(util.roundify(est_lines))} {inflector.cond_plural(est_lines, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot estimate lines in dataset"
             else:
