@@ -70,6 +70,19 @@ class GetTargetHistoryPayload(Model):
     )
 
 
+class GetToolPredictionsPayload(Model):
+    tool_sequence: Any = Field(
+        ...,
+        title="Tool Sequence",
+        description="comma separated sequence of tool ids",
+    )
+    remote_model_url: Optional[Any] = Field(
+        None,
+        title="Remote Model URL",
+        description="Path to the deep learning model",
+    )
+
+
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
     # TODO - Are the descriptions correct?
     instance: Optional[bool] = Field(
