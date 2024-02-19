@@ -18,6 +18,21 @@ export async function updateToolFormData(tool_id, tool_version, history_id, inpu
     }
 }
 
+export async function getToolInputs(tool_id, tool_version) {
+    let url = "";
+    url = `${getAppRoot()}api/tools/${tool_id}/inputs`;
+    if (tool_version) {
+        url += `?tool_version=${tool_version}`;
+    }
+    // request tool data
+    try {
+        const { data } = await axios.get(url);
+        return data;
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
 /** Tools data request helper **/
 export async function getToolFormData(tool_id, tool_version, job_id, history_id) {
     let url = "";
@@ -57,5 +72,11 @@ export async function getToolFormData(tool_id, tool_version, job_id, history_id)
 export async function submitJob(jobDetails) {
     const url = `${getAppRoot()}api/tools`;
     const { data } = await axios.post(url, jobDetails);
+    return data;
+}
+
+export async function submitToolRequest(toolRequest) {
+    const url = `${getAppRoot()}api/jobs`;
+    const { data } = await axios.post(url, toolRequest);
     return data;
 }

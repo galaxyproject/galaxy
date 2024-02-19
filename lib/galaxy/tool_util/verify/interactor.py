@@ -26,6 +26,10 @@ from typing import (
 
 import requests
 from packaging.version import Version
+from pydantic import (
+    BaseModel,
+    RootModel,
+)
 from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
@@ -36,6 +40,10 @@ from typing_extensions import (
 )
 
 from galaxy import util
+from galaxy.tool_util.parameters import (
+    input_models_from_json,
+    ToolParameterBundle,
+)
 from galaxy.tool_util.parser.interface import (
     AssertionList,
     TestCollectionDef,
@@ -225,12 +233,24 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+    def get_tool_inputs(self, tool_id: str, tool_version: Optional[str] = None) -> ToolParameterBundle:
+        url = f"tools/{tool_id}/inputs"
+        params = {"tool_version": tool_version} if tool_version else None
+        response = self._get(url, data=params)
+        assert response.status_code == 200, f"Non 200 response from tool inputs API. [{response.content}]"
+        raw_inputs_array = response.json()
+        tool_parameter_bundle = input_models_from_json(raw_inputs_array)
+        return tool_parameter_bundle
+
+    def get_tool_tests_model(self, tool_id: str, tool_version: Optional[str] = None) -> "ToolTestCaseList":
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
         assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
-        return response.json()
+        return ToolTestCaseList(root=[ToolTestCase(**t) for t in response.json()])
+
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> List["ToolTestDescriptionDict"]:
+        return [test_case_to_dict(m) for m in self.get_tool_tests_model(tool_id, tool_version).root]
 
     def verify_output_collection(
         self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
@@ -388,9 +408,22 @@ class GalaxyInteractorApi:
     def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
+    def wait_on_tool_request(self, tool_request_id: str):
+        def state():
+            state_response = self._get(f"tool_requests/{tool_request_id}/state")
+            state_response.raise_for_status()
+            return state_response.json()
+
+        def is_ready():
+            is_complete = state() in ["submitted", "failed"]
+            return True if is_complete else None
+
+        self.wait_for(is_ready, "waiting for tool request to submit")
+        return state() == "submitted"
+
     def wait_for(self, func, what="tool test run", **kwd):
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
-        wait_on(func, what, walltime_exceeded)
+        return wait_on(func, what, walltime_exceeded)
 
     def get_job_stdio(self, job_id):
         job_stdio = self.__get_job_stdio(job_id).json()
@@ -581,8 +614,9 @@ class GalaxyInteractorApi:
             else:
                 file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
                 files = {"files_0|file_data": file_content}
+        # upload1 will always be the legacy API...
         submit_response_object = self.__submit_tool(
-            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files
+            history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files, use_legacy_api=True
         )
         submit_response = ensure_tool_run_response_okay(submit_response_object, f"upload dataset {name}")
         assert (
@@ -607,38 +641,45 @@ class GalaxyInteractorApi:
             raise ValueError(f"Invalid `location` URL: `{location}`")
         return location
 
-    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
+    def run_tool(self, testdef, history_id, resource_parameters=None, use_legacy_api=True) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
-        inputs_tree = testdef.inputs.copy()
-        for key, value in inputs_tree.items():
-            values = [value] if not isinstance(value, list) else value
-            new_values = []
-            for value in values:
-                if isinstance(value, TestCollectionDef):
-                    hdca_id = self._create_collection(history_id, value)
-                    new_values = [dict(src="hdca", id=hdca_id)]
-                elif value in self.uploads:
-                    new_values.append(self.uploads[value])
-                else:
-                    new_values.append(value)
-            inputs_tree[key] = new_values
+        if use_legacy_api:
+            inputs_tree = testdef.inputs.copy()
+            for key, value in inputs_tree.items():
+                values = [value] if not isinstance(value, list) else value
+                new_values = []
+                for value in values:
+                    if isinstance(value, TestCollectionDef):
+                        hdca_id = self._create_collection(history_id, value)
+                        new_values = [dict(src="hdca", id=hdca_id)]
+                    elif value in self.uploads:
+                        new_values.append(self.uploads[value])
+                    else:
+                        new_values.append(value)
+                inputs_tree[key] = new_values
 
-        if resource_parameters:
-            inputs_tree["__job_resource|__job_resource__select"] = "yes"
-            for key, value in resource_parameters.items():
-                inputs_tree[f"__job_resource|{key}"] = value
+            if resource_parameters:
+                inputs_tree["__job_resource|__job_resource__select"] = "yes"
+                for key, value in resource_parameters.items():
+                    inputs_tree[f"__job_resource|{key}"] = value
 
-        # HACK: Flatten single-value lists. Required when using expand_grouping
-        for key, value in inputs_tree.items():
-            if isinstance(value, list) and len(value) == 1:
-                inputs_tree[key] = value[0]
+            # HACK: Flatten single-value lists. Required when using expand_grouping
+            for key, value in inputs_tree.items():
+                if isinstance(value, list) and len(value) == 1:
+                    inputs_tree[key] = value[0]
+        else:
+            pass
 
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
-                history_id, tool_id=testdef.tool_id, tool_input=inputs_tree, tool_version=testdef.tool_version
+                history_id,
+                tool_id=testdef.tool_id,
+                tool_input=inputs_tree,
+                tool_version=testdef.tool_version,
+                use_legacy_api=use_legacy_api,
             )
             if _are_tool_inputs_not_ready(submit_response):
                 print("Tool inputs not ready yet")
@@ -647,12 +688,30 @@ class GalaxyInteractorApi:
             else:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
+        if not use_legacy_api:
+            tool_request_id = submit_response_object["tool_request_id"]
+            self.wait_on_tool_request(tool_request_id)
+            jobs = self.jobs_for_tool_request(tool_request_id)
+            outputs = OutputsDict()
+            output_collections = {}
+            assert len(jobs) == 1
+            job_id = jobs[0]["id"]
+            job_outputs = self.job_outputs(job_id)
+            for job_output in job_outputs:
+                if "dataset" in job_output:
+                    outputs[job_output["name"]] = job_output["dataset"]
+                else:
+                    output_collections[job_output["name"]] = job_output["dataset_collection_instance"]
+        else:
+            outputs = self.__dictify_outputs(submit_response_object)
+            output_collections = self.__dictify_output_collections(submit_response_object)
+            jobs = submit_response_object["jobs"]
         try:
             return RunToolResponse(
                 inputs=inputs_tree,
-                outputs=self.__dictify_outputs(submit_response_object),
-                output_collections=self.__dictify_output_collections(submit_response_object),
-                jobs=submit_response_object["jobs"],
+                outputs=outputs,
+                output_collections=output_collections,
+                jobs=jobs,
             )
         except KeyError:
             message = (
@@ -790,13 +849,23 @@ class GalaxyInteractorApi:
         contents = "\n".join(f"{prefix}{line.strip()}" for line in io.StringIO(blob).readlines() if line.rstrip("\n\r"))
         return contents or f"{prefix}*{empty_message}*"
 
-    def _dataset_provenance(self, history_id, id):
+    def _dataset_provenance(self, history_id: str, id: str):
         provenance = self._get(f"histories/{history_id}/contents/{id}/provenance").json()
         return provenance
 
-    def _dataset_info(self, history_id, id):
+    def _dataset_info(self, history_id: str, id: str):
         dataset_json = self._get(f"histories/{history_id}/contents/{id}").json()
         return dataset_json
+
+    def jobs_for_tool_request(self, tool_request_id: str) -> List[Dict[str, Any]]:
+        job_list_response = self._get("jobs", data={"tool_request_id": tool_request_id})
+        job_list_response.raise_for_status()
+        return job_list_response.json()
+
+    def job_outputs(self, job_id: str) -> List[Dict[str, Any]]:
+        outputs = self._get(f"jobs/{job_id}/outputs")
+        outputs.raise_for_status()
+        return outputs.json()
 
     def __contents(self, history_id):
         history_contents_response = self._get(f"histories/{history_id}/contents")
@@ -814,12 +883,26 @@ class GalaxyInteractorApi:
             )
         return None
 
-    def __submit_tool(self, history_id, tool_id, tool_input, extra_data=None, files=None, tool_version=None):
+    def __submit_tool(
+        self, history_id, tool_id, tool_input, extra_data=None, files=None, tool_version=None, use_legacy_api=True
+    ):
         extra_data = extra_data or {}
-        data = dict(
-            history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
-        )
-        return self._post("tools", files=files, data=data)
+        if use_legacy_api:
+            data = dict(
+                history_id=history_id,
+                tool_id=tool_id,
+                inputs=dumps(tool_input),
+                tool_version=tool_version,
+                **extra_data,
+            )
+            return self._post("tools", files=files, data=data)
+        else:
+            assert files is None
+            data = dict(
+                history_id=history_id, tool_id=tool_id, inputs=tool_input, tool_version=tool_version, **extra_data
+            )
+            submit_tool_request_response = self._post("jobs", data=data, json=True)
+            return submit_tool_request_response
 
     def ensure_user_with_email(self, email, password=None):
         admin_key = self.master_api_key
@@ -1330,6 +1413,7 @@ def verify_tool(
     register_job_data: Optional[JobDataCallbackT] = None,
     test_index: int = 0,
     tool_version: Optional[str] = None,
+    use_legacy_api: bool = True,
     quiet: bool = False,
     test_history: Optional[str] = None,
     no_history_cleanup: bool = False,
@@ -1339,18 +1423,14 @@ def verify_tool(
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
-    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
+    _tool_test_dicts: Optional[List["ToolTestDescriptionDict"]] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
     tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
-    tool_test_dict = tool_test_dicts[test_index]
-    if "test_index" not in tool_test_dict:
-        tool_test_dict["test_index"] = test_index
-    if "tool_id" not in tool_test_dict:
-        tool_test_dict["tool_id"] = tool_id
+    tool_test_dict: ToolTestDescriptionDict = tool_test_dicts[test_index]
     if tool_version is None and "tool_version" in tool_test_dict:
         tool_version = tool_test_dict.get("tool_version")
 
@@ -1380,7 +1460,10 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
+    if not use_legacy_api:
+        structured_inputs = galaxy_interactor.get_tool_inputs(tool_id, tool_version=tool_version)
+        assert structured_inputs
+    testdef = ToolTestDescription.from_dict(tool_test_dict, tool_id, test_index, maxseconds)
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1415,7 +1498,9 @@ def verify_tool(
             input_staging_exception = e
             raise
         try:
-            tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
+            tool_response = galaxy_interactor.run_tool(
+                testdef, test_history, resource_parameters=resource_parameters, use_legacy_api=use_legacy_api
+            )
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
             data_collection_list = tool_response.output_collections
         except RunToolException as e:
@@ -1675,6 +1760,44 @@ class ToolTestDescriptionDict(TypedDict):
     tool_version: Optional[str]
     test_index: int
     exception: Optional[str]
+    maxseconds: Optional[int]
+
+
+class Assertion(BaseModel):
+    tag: str
+    attributes: Dict[str, Any]
+    children: Optional[List[Dict[str, Any]]]
+
+
+AssertionModelList = Optional[List[Assertion]]
+
+
+class ToolTestCase(BaseModel):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Dict[str, Any]] = []
+    stdout: AssertionModelList = []
+    stderr: AssertionModelList = []
+    expect_exit_code: Optional[int] = None
+    expect_failure: bool = False
+    expect_test_failure: bool = False
+    maxseconds: Optional[int] = None
+    num_outputs: Optional[int] = None
+    command_line: AssertionModelList = []
+    command_version: AssertionModelList = []
+    required_files: List[Any] = []
+    required_data_tables: List[Any] = []
+    required_loc_files: List[str] = []
+    error: bool = False
+    exception: Optional[str] = None
+    name: str
+    tool_id: str
+    tool_version: str
+    test_index: int
+
+
+class ToolTestCaseList(RootModel):
+    root: List[ToolTestCase]
 
 
 class ToolTestDescription:
@@ -1698,6 +1821,53 @@ class ToolTestDescription:
     expect_test_failure: bool
     exception: Optional[str]
 
+    @staticmethod
+    def from_dict(raw_dict: ToolTestDescriptionDict, tool_id: str, test_index: int, maxseconds: int):
+        error = raw_dict["error"]
+        processed_test_dict: ToolTestDict
+        tool_version = raw_dict["tool_version"]
+        assert tool_version
+        if error:
+            exception = raw_dict["exception"]
+            assert exception is not None
+            processed_test_dict = InvalidToolTestDict(
+                error=True,
+                tool_id=raw_dict.get("tool_id") or tool_id,
+                tool_version=tool_version,
+                test_index=raw_dict.get("test_index") or test_index,
+                inputs=raw_dict["inputs"],
+                exception=exception,
+                maxseconds=maxseconds,
+            )
+        else:
+            processed_test_dict = ValidToolTestDict(
+                error=False,
+                tool_id=raw_dict.get("tool_id") or tool_id,
+                tool_version=tool_version,
+                test_index=raw_dict.get("test_index") or test_index,
+                inputs=raw_dict["inputs"],
+                outputs=raw_dict["outputs"],
+                output_collections=raw_dict["output_collections"],
+                stdout=raw_dict["stdout"],
+                stderr=raw_dict["stderr"],
+                expect_failure=raw_dict["expect_failure"],
+                expect_test_failure=raw_dict["expect_test_failure"],
+                command_line=raw_dict["command_line"],
+                command_version=raw_dict["command_version"],
+                required_files=raw_dict["required_files"],
+                required_data_tables=raw_dict["required_data_tables"],
+                required_loc_files=raw_dict["required_loc_files"],
+                maxseconds=maxseconds,
+            )
+            expect_exit_code = raw_dict["expect_exit_code"]
+            if expect_exit_code is not None:
+                processed_test_dict["expect_exit_code"] = expect_exit_code
+            num_outputs = raw_dict["num_outputs"]
+            if num_outputs is not None:
+                processed_test_dict["num_outputs"] = num_outputs
+
+        return ToolTestDescription(processed_test_dict)
+
     def __init__(self, processed_test_dict: ToolTestDict):
         assert (
             "test_index" in processed_test_dict
@@ -1713,7 +1883,6 @@ class ToolTestDescription:
             processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
             maxseconds = DEFAULT_TOOL_TEST_WAIT
             output_collections = []
-
         self.test_index = test_index
         assert (
             "tool_id" in processed_test_dict
@@ -1756,7 +1925,7 @@ class ToolTestDescription:
         """
         return test_data_iter(self.required_files)
 
-    def to_dict(self) -> ToolTestDescriptionDict:
+    def to_model(self) -> ToolTestCase:
         inputs_dict = {}
         for key, value in self.inputs.items():
             if hasattr(value, "to_dict"):
@@ -1764,28 +1933,39 @@ class ToolTestDescription:
             else:
                 inputs_dict[key] = value
 
-        return {
-            "inputs": inputs_dict,
-            "outputs": self.outputs,
-            "output_collections": [_.to_dict() for _ in self.output_collections],
-            "num_outputs": self.num_outputs,
-            "command_line": self.command_line,
-            "command_version": self.command_version,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-            "expect_exit_code": self.expect_exit_code,
-            "expect_failure": self.expect_failure,
-            "expect_test_failure": self.expect_test_failure,
-            "name": self.name,
-            "test_index": self.test_index,
-            "tool_id": self.tool_id,
-            "tool_version": self.tool_version,
-            "required_files": self.required_files,
-            "required_data_tables": self.required_data_tables,
-            "required_loc_files": self.required_loc_files,
-            "error": self.error,
-            "exception": self.exception,
-        }
+        return ToolTestCase(
+            **{
+                "inputs": inputs_dict,
+                "outputs": self.outputs,
+                "output_collections": [_.to_dict() for _ in self.output_collections],
+                "num_outputs": self.num_outputs,
+                "command_line": self.command_line,
+                "command_version": self.command_version,
+                "stdout": self.stdout,
+                "stderr": self.stderr,
+                "expect_exit_code": self.expect_exit_code,
+                "expect_failure": self.expect_failure,
+                "expect_test_failure": self.expect_test_failure,
+                "name": self.name,
+                "test_index": self.test_index,
+                "tool_id": self.tool_id,
+                "tool_version": self.tool_version,
+                "required_files": self.required_files,
+                "required_data_tables": self.required_data_tables,
+                "required_loc_files": self.required_loc_files,
+                "error": self.error,
+                "exception": self.exception,
+            }
+        )
+
+    def to_dict(self) -> ToolTestDescriptionDict:
+        # For backward compatibility maintain a dict version - if
+        # this comment got merged the converter tests failed without this.
+        return test_case_to_dict(self.to_model())
+
+
+def test_case_to_dict(model: ToolTestCase) -> ToolTestDescriptionDict:
+    return cast(ToolTestDescriptionDict, model.model_dump())
 
 
 def test_data_iter(required_files):
