@@ -33,9 +33,13 @@ withDefaults(defineProps<Props>(), {
             </div>
         </div>
         <BNav pills justified class="mb-2">
-            <BNavItem :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
-            <BNavItem :active="activeList === 'shared'" to="/histories/list_shared"> Shared with Me </BNavItem>
-            <BNavItem :active="activeList === 'published'" to="/histories/list_published"> Public Histories </BNavItem>
+            <BNavItem id="histories-my-tab" :active="activeList === 'my'" to="/histories/list"> My Histories </BNavItem>
+            <BNavItem id="histories-shared-tab" :active="activeList === 'shared'" to="/histories/list_shared">
+                Shared with Me
+            </BNavItem>
+            <BNavItem id="histories-published-tab" :active="activeList === 'published'" to="/histories/list_published">
+                Public Histories
+            </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
         <GridList v-else-if="activeList === 'shared'" :grid-config="historiesSharedGridConfig" embedded />

@@ -106,11 +106,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         return self.components.published_histories.histories.all()
 
-    def navigate_to_published_histories(self):
-        self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
-
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)

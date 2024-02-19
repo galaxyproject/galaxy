@@ -25,7 +25,7 @@ withDefaults(defineProps<Props>(), {
         <div class="d-flex">
             <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Pages</Heading>
             <div>
-                <BButton size="sm" variant="outline-primary" to="/pages/create">
+                <BButton id="page-create" size="sm" variant="outline-primary" to="/pages/create">
                     <Icon :icon="faPlus" />
                     <span v-localize>Create Page</span>
                 </BButton>

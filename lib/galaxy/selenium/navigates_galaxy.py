@@ -1176,14 +1176,15 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_histories_page(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.histories.wait_for_and_click()
         self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
-        self.click_masthead_user()
-        self.components.masthead.histories_shared_with_me.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.shared_histories.tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
@@ -1197,22 +1198,18 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_pages(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.pages.wait_for_and_click()
 
-    def navigate_to_published_workflows(self):
+    def navigate_to_published_histories(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_workflows.wait_for_and_click()
-
-    def navigate_to_published_histories_page(self):
-        self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.published_histories.tab.wait_for_and_click()
 
     def navigate_to_published_pages(self):
         self.home()
-        self.click_masthead_shared_data()
+        self.click_masthead_data()
         self.components.masthead.published_pages.wait_for_and_click()
 
     def admin_open(self):
@@ -1265,7 +1262,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.click_masthead_shared_data()
+        self.click_masthead_data()
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
@@ -1274,11 +1271,10 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
-    def page_open_and_screenshot(self, screenshot_name):
+    def page_open_and_screenshot(self, page_name, screenshot_name):
         self.home()
         self.navigate_to_pages()
-        self.components.pages.drop.wait_for_and_click()
-        self.components.pages.drop_view.wait_for_and_click()
+        self.select_grid_operation(page_name, "View")
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)
@@ -1600,9 +1596,7 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.components.pages.drop.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.pages.drop_edit.wait_for_and_click()
+        self.select_grid_operation(name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
@@ -1654,8 +1648,8 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_user(self):
         self.components.masthead.user.wait_for_and_click()
 
-    def click_masthead_shared_data(self):
-        self.components.masthead.shared_data.wait_for_and_click()
+    def click_masthead_data(self):
+        self.components.masthead.data.wait_for_and_click()
 
     def click_masthead_workflow(self):
         self.components.masthead.workflow.wait_for_and_click()
