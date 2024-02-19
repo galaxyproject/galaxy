@@ -786,6 +786,7 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
             "channels": self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             "hash_func": self.hash_func,
             "command": "build-and-test",
+            "namespace": "local",
             "singularity": True,
             "singularity_image_dir": self.cache_directory.path,
             "use_mamba": True,
