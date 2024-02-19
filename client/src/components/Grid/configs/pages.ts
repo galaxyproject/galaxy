@@ -3,6 +3,7 @@ import { useEventBus } from "@vueuse/core";
 
 import { fetcher } from "@/api/schema";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
@@ -98,17 +99,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
-                    try {
-                        await deletePage({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.title}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
-                        };
+                    if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
+                        try {
+                            await deletePage({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.title}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
+                            };
+                        }
                     }
                 },
             },

@@ -515,9 +515,6 @@ pages:
     create_title_input: '#form-element-title input'
     create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
-    index_table: "#page-table"
-    index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
-    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
 
   editor:
     selectors:

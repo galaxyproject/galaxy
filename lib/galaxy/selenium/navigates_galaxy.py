@@ -540,6 +540,17 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    @retry_during_transitions
+    def get_grid_entry_names(self, selector):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector(selector)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            name = td[1].text if td[0].text == "" else td[0].text
+            names.append(name)
+        return names
+
     def select_grid_operation(self, item_name, option_label):
         target_item = None
         grid = self.components.grids.body.wait_for_visible()
@@ -1390,11 +1401,6 @@ class NavigatesGalaxy(HasDriver):
         pages.index_table.wait_for_visible()
         return pages.index_rows.all()
 
-    def page_index_click_option(self, option_title, page_id):
-        self.components.pages.dropdown(id=page_id).wait_for_and_click()
-        if not self.select_dropdown_item(option_title):
-            raise AssertionError(f"Failed to find page action option with title [{option_title}]")
-
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
@@ -1736,17 +1742,6 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = "#standard-search .advanced-search-toggle"
         self.wait_for_and_click_selector(search_selector)
-
-    @retry_during_transitions
-    def histories_get_history_names(self, selector="#histories-grid"):
-        self.sleep_for(self.wait_types.UX_RENDER)
-        names = []
-        grid = self.wait_for_selector(selector)
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            name = td[1].text if td[0].text == "" else td[0].text
-            names.append(name)
-        return names
 
     @edit_details
     def history_panel_add_tags(self, tags):

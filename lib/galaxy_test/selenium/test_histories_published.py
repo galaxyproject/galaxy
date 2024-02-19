@@ -85,7 +85,7 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
 
     @retry_assertion_during_transitions
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
-        present_histories = self.histories_get_history_names(selector="#histories-published-grid")
+        present_histories = self.get_grid_entry_names("#histories-published-grid")
         assert len(present_histories) == len(expected_histories)
         for index, history_name in enumerate(present_histories):
             if not sort_by_matters:
