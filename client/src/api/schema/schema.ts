@@ -132,6 +132,18 @@ export interface paths {
          * To get more information please check the source code.
          */
         get: operations["show_api_datasets__dataset_id__get"];
+        /**
+         * Updates the values for the history dataset (HDA) item with the given ``ID``.
+         * @description Updates the values for the history content item with the given ``ID``.
+         */
+        put: operations["datasets__update_dataset"];
+        /**
+         * Delete the history dataset content with the given ``ID``.
+         * @description Delete the history content with the given ``ID`` and path specified type.
+         *
+         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         */
+        delete: operations["datasets__delete"];
     };
     "/api/datasets/{dataset_id}/content/{content_type}": {
         /** Retrieve information about the content of a dataset. */
@@ -1704,6 +1716,10 @@ export interface paths {
     "/api/users/{user_id}/favorites/{object_type}/{object_id}": {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
+    };
+    "/api/users/{user_id}/objectstore_usage": {
+        /** Return the user's object store usage summary broken down by object store ID */
+        get: operations["get_user_objectstore_usage_api_users__user_id__objectstore_usage_get"];
     };
     "/api/users/{user_id}/recalculate_disk_usage": {
         /** Triggers a recalculation of the current user disk usage. */
@@ -12459,6 +12475,13 @@ export interface components {
              */
             notification_ids: string[];
         };
+        /** UserObjectstoreUsage */
+        UserObjectstoreUsage: {
+            /** Object Store Id */
+            object_store_id: string;
+            /** Total Disk Usage */
+            total_disk_usage: number;
+        };
         /** UserQuota */
         UserQuota: {
             /**
@@ -13589,6 +13612,116 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    datasets__update_dataset: {
+        /**
+         * Updates the values for the history dataset (HDA) item with the given ``ID``.
+         * @description Updates the values for the history content item with the given ``ID``.
+         */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the item (`HDA`/`HDCA`) */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHistoryContentsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HDACustom"]
+                        | components["schemas"]["HDADetailed"]
+                        | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDCADetailed"]
+                        | components["schemas"]["HDCASummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    datasets__delete: {
+        /**
+         * Delete the history dataset content with the given ``ID``.
+         * @description Delete the history content with the given ``ID`` and path specified type.
+         *
+         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         */
+        parameters: {
+            /**
+             * @deprecated
+             * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
+             */
+            /**
+             * @deprecated
+             * @description When deleting a dataset collection, whether to also delete containing datasets.
+             */
+            /**
+             * @deprecated
+             * @description Whether to stop the creating job if all outputs of the job have been deleted.
+             */
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                purge?: boolean | null;
+                recursive?: boolean | null;
+                stop_job?: boolean | null;
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the item (`HDA`/`HDCA`) */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteHistoryContentPayload"];
+            };
+        };
+        responses: {
+            /** @description Request has been executed. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                };
+            };
+            /** @description Request accepted, processing will finish later. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Validation Error */
@@ -22565,6 +22698,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
+        /** Return the user's object store usage summary broken down by object store ID */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            path: {
+                user_id: string | "current";
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
             };
             /** @description Validation Error */
