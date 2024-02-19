@@ -149,6 +149,10 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         is_admin = trans.user_is_admin
         user = trans.user
 
+        if show_shared and show_deleted and not is_admin:
+            message = "show_shared and show_deleted cannot both be specified as true"
+            raise exceptions.RequestParameterInvalidException(message)
+
         if not user:
             message = "Requires user to log in."
             raise exceptions.RequestParameterInvalidException(message)
