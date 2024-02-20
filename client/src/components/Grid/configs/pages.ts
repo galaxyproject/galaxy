@@ -1,4 +1,4 @@
-import { faEdit, faEye, faPlus, faShareAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { fetcher } from "@/api/schema";
@@ -80,7 +80,7 @@ const fields: FieldArray = [
             },
             {
                 title: "Edit Content",
-                icon: faEdit,
+                icon: faPen,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: (data: PageEntry) => {
                     emit(`/pages/editor?id=${data.id}`);
@@ -99,7 +99,7 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
+                    if (confirm(_l(`Are you sure that you want to delete the selected page?`))) {
                         try {
                             await deletePage({ id: String(data.id) });
                             return {
