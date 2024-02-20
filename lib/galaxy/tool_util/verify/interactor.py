@@ -591,11 +591,11 @@ class GalaxyInteractorApi:
         outputs = submit_response["outputs"]
         assert len(outputs) > 0, f"Invalid response from server [{submit_response}], expecting an output dataset."
         dataset = outputs[0]
-        hid = dataset["id"]
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
-        assert (
-            "jobs" in submit_response
-        ), f"Invalid response from server [{submit_response}], expecting jobs in response."
+        hid = dataset['id']
+        self.uploads[name] = {"src": "hda", "id": hid}
+        if fname:
+            self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name]
+        assert "jobs" in submit_response, f"Invalid response from server [{submit_response}], expecting jobs in response."
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
@@ -610,12 +610,15 @@ class GalaxyInteractorApi:
     def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
+        log.error(f"run_tool self.uploads {self.uploads}")
+        log.error(f"run_tool testdef.inputs {testdef.inputs}")
         resource_parameters = resource_parameters or {}
         inputs_tree = testdef.inputs.copy()
         for key, value in inputs_tree.items():
             values = [value] if not isinstance(value, list) else value
             new_values = []
             for value in values:
+                log.error(f"run_tool value {value} tcd {isinstance(value, TestCollectionDef)} in uploads {value in self.uploads}")
                 if isinstance(value, TestCollectionDef):
                     hdca_id = self._create_collection(history_id, value)
                     new_values = [dict(src="hdca", id=hdca_id)]
@@ -624,17 +627,20 @@ class GalaxyInteractorApi:
                 else:
                     new_values.append(value)
             inputs_tree[key] = new_values
-
+        log.error(f"run_tool inputs_tree {inputs_tree}")
         if resource_parameters:
             inputs_tree["__job_resource|__job_resource__select"] = "yes"
             for key, value in resource_parameters.items():
                 inputs_tree[f"__job_resource|{key}"] = value
+        log.error(f"run_tool inputs_tree {inputs_tree}")
 
         # HACK: Flatten single-value lists. Required when using expand_grouping
         for key, value in inputs_tree.items():
+            log.error(f"run_tool hack key {key} {value}")
             if isinstance(value, list) and len(value) == 1:
                 inputs_tree[key] = value[0]
 
+        log.error(f"run_tool inputs_tree {inputs_tree}")
         submit_response = None
         for _ in range(DEFAULT_TOOL_TEST_WAIT):
             submit_response = self.__submit_tool(
@@ -819,6 +825,7 @@ class GalaxyInteractorApi:
         data = dict(
             history_id=history_id, tool_id=tool_id, inputs=dumps(tool_input), tool_version=tool_version, **extra_data
         )
+        log.error(f"__submit_tool files {files} data {data}")
         return self._post("tools", files=files, data=data)
 
     def ensure_user_with_email(self, email, password=None):
@@ -936,6 +943,7 @@ class GalaxyInteractorApi:
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
         kwd["timeout"] = kwd.pop("timeout", util.DEFAULT_SOCKET_TIMEOUT)
+        log.error(f"_post url {url} kwd {kwd}")
         return requests.post(url, **kwd)
 
     def _delete(self, path, data=None, key=None, headers=None, admin=False, anon=False, json=False):
