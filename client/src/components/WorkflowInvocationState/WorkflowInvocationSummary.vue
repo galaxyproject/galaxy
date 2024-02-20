@@ -18,13 +18,13 @@ import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMe
 const getUrl = (path: any) => getRootFromIndexLink() + path;
 
 const { config } = useConfig(true);
-const carbonIntensity = (config.value.carbon_intensity) ?? worldwideCarbonIntensity;
-const geographicalServerLocationName = (config.value.geographical_server_location_name) ?? "GLOBAL";
+const carbonIntensity = config.value.carbon_intensity ?? worldwideCarbonIntensity;
+const geographicalServerLocationName = config.value.geographical_server_location_name ?? "GLOBAL";
 
 const energyUsage = ref<WorkflowInvocationEnergyUsage>({
-  total_energy_needed_cpu_kwh: 0,
-  total_energy_needed_memory_kwh: 0,
-  total_energy_needed_kwh: 0,
+    total_energy_needed_cpu_kwh: 0,
+    total_energy_needed_memory_kwh: 0,
+    total_energy_needed_kwh: 0,
 });
 
 const props = defineProps({
@@ -50,10 +50,9 @@ const props = defineProps({
         required: false,
         default: null,
     },
-})
-const stepStatesInterval = null;
-const jobStatesInterval = null;
-const reportTooltip =  "View report for this workflow invocation";
+});
+
+const reportTooltip = "View report for this workflow invocation";
 const generatePdfTooltip = "Generate PDF report for this workflow invocation";
 
 const invocationId = computed(() => {
@@ -69,18 +68,18 @@ const indexStr = computed(() => {
 
 const invocationState = computed(() => {
     return props.invocation?.state || "new";
-})
+});
 
 const invocationStateSuccess = computed(() => {
     return invocationState.value === "scheduled" && runningCount.value === 0 && props.invocationAndJobTerminal;
-})
+});
 
 const disabledReportTooltip = computed(() => {
     const state = invocationState.value;
     const runCount = runningCount.value;
 
     if (invocationState.value != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is  ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`
+        return `This workflow is not currently scheduled. The current state is  ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
     }
 
     if (runCount != 0) {
@@ -112,15 +111,15 @@ const stepStates = computed(() => {
 
 const invocationLink = computed(() => {
     return getUrl(`workflows/invocations/report?id=${invocationId.value}`);
-})
+});
 
 const invocationPdfLink = computed(() => {
     return getUrl(`api/invocations/${invocationId.value}/report.pdf`);
-})
+});
 
 const stepStatesStr = computed(() => {
     return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
-})
+});
 
 const jobCount = computed(() => {
     return !props.jobStatesSummary ? null : props.jobStatesSummary.jobCount();
@@ -132,25 +131,25 @@ const jobStatesStr = computed(() => {
         jobStr += " (total number of jobs will change until all steps fully scheduled)";
     }
     return `${jobStr}.`;
-})
+});
 
 const runningCount = computed(() => {
     return countStates(["running"]);
-})
+});
 const okCount = computed(() => {
     return countStates(["ok", "skipped"]);
-})
+});
 const errorCount = computed(() => {
     return countStates(["error", "deleted"]);
-})
+});
 const newCount = computed(() => {
     return jobCount.value - okCount.value - runningCount.value - errorCount.value;
-})
+});
 
-const emit = defineEmits(['invocation-cancelled']);
+const emit = defineEmits(["invocation-cancelled"]);
 
 function onCancel() {
-    emit('invocation-cancelled');
+    emit("invocation-cancelled");
 }
 
 function countStates(states: string[]) {
@@ -164,13 +163,13 @@ function countStates(states: string[]) {
 }
 
 async function fetchEnergyUsageData() {
-  const res = await fetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").create()({
-      invocation_id: props.invocation?.id
-  });
+    const res = await fetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").create()({
+        invocation_id: props.invocation?.id,
+    });
 
-  if (res.ok) {
-      energyUsage.value = res.data;
-  }
+    if (res.ok) {
+        energyUsage.value = res.data;
+    }
 }
 
 onMounted(() => {
@@ -261,56 +260,56 @@ watch(
             class="jobs-progress" />
 
         <div>
-          <strong>Carbon Emissions:</strong>
+            <strong>Carbon Emissions:</strong>
 
-          <CarbonEmissions
-              :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
-              :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
-              :total-energy-needed="energyUsage.total_energy_needed_kwh"
-              :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
-              <template v-slot:header>
-                  <p>
-                      Here is an estimated summary of the total carbon footprint of this workflow invocation.
+            <CarbonEmissions
+                :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
+                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
+                :total-energy-needed="energyUsage.total_energy_needed_kwh"
+                :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
+                <template v-slot:header>
+                    <p>
+                        Here is an estimated summary of the total carbon footprint of this workflow invocation.
 
-                      <router-link
-                          to="/carbon_emissions_calculations"
-                          title="Learn about how we estimate carbon emissions"
-                          class="align-self-start mt-2">
-                          <span>
-                              Click here to learn more about how we calculate your carbon emissions data.
-                              <FontAwesomeIcon icon="fa-question-circle" />
-                          </span>
-                      </router-link>
-                  </p>
-              </template>
+                        <router-link
+                            to="/carbon_emissions_calculations"
+                            title="Learn about how we estimate carbon emissions"
+                            class="align-self-start mt-2">
+                            <span>
+                                Click here to learn more about how we calculate your carbon emissions data.
+                                <FontAwesomeIcon icon="fa-question-circle" />
+                            </span>
+                        </router-link>
+                    </p>
+                </template>
 
-              <template v-slot:footer>
-                  <p class="p-0 m-0">
-                      <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
-                          <strong>1.</strong> Based off of the global carbon intensity value of
-                          {{ worldwideCarbonIntensity }}.
-                      </span>
-                      <span v-else id="location-explanation">
-                          <strong>1.</strong> based off of this galaxy instance's configured location of
-                          <strong>{{ geographicalServerLocationName }}</strong
-                          >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
-                      </span>
+                <template v-slot:footer>
+                    <p class="p-0 m-0">
+                        <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
+                            <strong>1.</strong> Based off of the global carbon intensity value of
+                            {{ worldwideCarbonIntensity }}.
+                        </span>
+                        <span v-else id="location-explanation">
+                            <strong>1.</strong> based off of this galaxy instance's configured location of
+                            <strong>{{ geographicalServerLocationName }}</strong
+                            >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
+                        </span>
 
-                      <br />
+                        <br />
 
-                      <span id="pue">
-                          <strong>2.</strong> Using the global default power usage effectiveness value of
-                          {{ worldwidePowerUsageEffectiveness }}.
-                      </span>
+                        <span id="pue">
+                            <strong>2.</strong> Using the global default power usage effectiveness value of
+                            {{ worldwidePowerUsageEffectiveness }}.
+                        </span>
 
-                      <br />
+                        <br />
 
-                      <strong>3.</strong> based off of the closest AWS EC2 instance comparable to the server that ran this
-                      job. Estimates depend on the core count, allocated memory and the job runtime. The closest estimate
-                      is a <strong>TODO</strong> instance.
-                  </p>
-              </template>
-          </CarbonEmissions>
+                        <strong>3.</strong> based off of the closest AWS EC2 instance comparable to the server that ran
+                        this job. Estimates depend on the core count, allocated memory and the job runtime. The closest
+                        estimate is a <strong>TODO</strong> instance.
+                    </p>
+                </template>
+            </CarbonEmissions>
         </div>
     </div>
 </template>

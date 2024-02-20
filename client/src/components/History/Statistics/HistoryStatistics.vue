@@ -17,7 +17,8 @@ const { getHistoryNameById } = useHistoryStore();
 
             <p>
                 Here is a summary of the statistics of the history
-                <strong>{{ getHistoryNameById(props.historyId) }}</strong>.
+                <strong>{{ getHistoryNameById(props.historyId) }}</strong
+                >.
             </p>
 
             <p>
