@@ -7611,8 +7611,9 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
 
     def invocation_counts(self) -> InvocationsStateCounts:
         sa_session = object_session(self)
+        assert sa_session
         stmt = (
-            select([WorkflowInvocation.state, func.count(WorkflowInvocation.state)])
+            select(WorkflowInvocation.state, func.count(WorkflowInvocation.state))
             .select_from(StoredWorkflow)
             .join(Workflow, Workflow.stored_workflow_id == StoredWorkflow.id)
             .join(WorkflowInvocation, WorkflowInvocation.workflow_id == Workflow.id)
@@ -7620,7 +7621,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
             .where(StoredWorkflow.id == self.id)
         )
         rows = sa_session.execute(stmt).all()
-        rows_as_dict = dict(r for r in rows if r[0] is not None)
+        rows_as_dict = dict(r for r in rows if r[0] is not None)  # type:ignore[arg-type, var-annotated]
         return InvocationsStateCounts(rows_as_dict)
 
     def to_dict(self, view="collection", value_mapper=None):
