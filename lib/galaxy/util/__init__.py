@@ -379,7 +379,7 @@ def parse_xml(
     if remove_comments and LXML_AVAILABLE:
         # If using stdlib etree comments are always removed,
         # but lxml doesn't do this by default
-        parser = etree.XMLParser(remove_comments=remove_comments)
+        parser = etree.XMLParser(remove_comments=remove_comments, resolve_entities=True)
 
     if LXML_AVAILABLE and schemafname:
         with open(str(schemafname), "rb") as schema_file:
