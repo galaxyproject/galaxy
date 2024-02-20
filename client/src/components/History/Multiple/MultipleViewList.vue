@@ -17,7 +17,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
 
-// @ts-ignore bad library types
 library.add(faCheckSquare, faPlus);
 
 const historyStore = useHistoryStore();
