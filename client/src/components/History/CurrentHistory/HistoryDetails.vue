@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BBadge } from "bootstrap-vue";
+
 import type { HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -47,10 +49,10 @@ function onSave(newDetails: HistorySummary) {
                 no-expand />
         </template>
         <template v-if="summarized" v-slot:update-time>
-            <b-badge v-b-tooltip pill>
+            <BBadge v-b-tooltip pill>
                 <span v-localize>last edited </span>
                 <UtcDate v-if="history.update_time" :date="history.update_time" mode="elapsed" />
-            </b-badge>
+            </BBadge>
         </template>
     </DetailsLayout>
 </template>

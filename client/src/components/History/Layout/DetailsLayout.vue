@@ -186,6 +186,7 @@ function selectText() {
 .summarized-details {
     min-height: 8.5em;
     margin: 1rem 1rem 0 1rem;
+    max-width: 15rem;
 
     .tags {
         min-height: 2rem;

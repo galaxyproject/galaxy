@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faListAlt } from "@fortawesome/free-regular-svg-icons";
-import { faArrowDown, faCheckSquare, faColumns, faSignInAlt, faSquare } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faListAlt, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BOverlay } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import type { HistoryDetailed, HistorySummary } from "@/api";
@@ -27,14 +27,24 @@ import UtcDate from "@/components/UtcDate.vue";
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
 
-const props = defineProps({
-    multiple: { type: Boolean, default: false },
-    selectedHistories: { type: Array as PropType<PinnedHistory[]>, default: () => [] },
-    additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
-    showModal: { type: Boolean, default: false },
-    inModal: { type: Boolean, default: false },
-    filter: { type: String, default: "" },
-    loading: { type: Boolean, default: false },
+interface Props {
+    multiple?: boolean;
+    selectedHistories?: PinnedHistory[];
+    additionalOptions?: AdditionalOptions[];
+    showModal?: boolean;
+    inModal?: boolean;
+    filter: string;
+    loading: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    multiple: false,
+    selectedHistories: () => [],
+    additionalOptions: () => [],
+    showModal: false,
+    inModal: false,
+    filter: "",
+    loading: false,
 });
 
 const emit = defineEmits<{
@@ -48,7 +58,7 @@ library.add(faColumns, faSignInAlt, faListAlt, faArrowDown, faCheckSquare, faSqu
 
 const busy = ref(false);
 const showAdvanced = ref(false);
-const scrollableDiv: Ref<HTMLElement | null> = ref(null);
+const scrollableDiv = ref<HTMLElement | null>(null);
 
 const historyStore = useHistoryStore();
 const { currentHistoryId, histories, totalHistoryCount, pinnedHistories } = storeToRefs(historyStore);
@@ -109,7 +119,7 @@ watch(
 );
 
 /** `historyStore` histories for current user */
-const historiesProxy: Ref<HistorySummary[]> = ref([]);
+const historiesProxy = ref<HistorySummary[]>([]);
 watch(
     () => histories.value as HistoryDetailed[],
     (h: HistoryDetailed[]) => {
@@ -122,7 +132,7 @@ watch(
     }
 );
 
-const filtered: Ref<HistorySummary[]> = computed(() => {
+const filtered = computed<HistorySummary[]>(() => {
     let filteredHistories: HistorySummary[] = [];
     if (!validFilter.value) {
         filteredHistories = historiesProxy.value;
@@ -215,7 +225,7 @@ async function loadMore(noScroll = false) {
             <BBadge v-if="props.filter && !validFilter" class="alert-danger w-100 mb-2">
                 Search string too short!
             </BBadge>
-            <b-alert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</b-alert>
+            <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
         </div>
 
         <div
@@ -303,7 +313,7 @@ async function loadMore(noScroll = false) {
                                         variant="link"
                                         class="p-0 px-1"
                                         @click.stop="() => setCurrentHistory(history)">
-                                        <FontAwesomeIcon icon="fa-sign-in-alt" />
+                                        <FontAwesomeIcon :icon="faSignInAlt" />
                                     </BButton>
 
                                     <BButton
@@ -313,7 +323,7 @@ async function loadMore(noScroll = false) {
                                         variant="link"
                                         class="p-0 px-1"
                                         @click.stop="() => openInMulti(history)">
-                                        <FontAwesomeIcon icon="fa-columns" />
+                                        <FontAwesomeIcon :icon="faColumns" />
                                     </BButton>
 
                                     <BButton
@@ -323,14 +333,14 @@ async function loadMore(noScroll = false) {
                                         variant="link"
                                         class="p-0 px-1"
                                         @click.stop="() => setCenterPanelHistory(history)">
-                                        <FontAwesomeIcon icon="far fa-list-alt" />
+                                        <FontAwesomeIcon :icon="faListAlt" />
                                     </BButton>
                                 </BButtonGroup>
                             </div>
                         </div>
                         <div v-if="isMultiviewPanel">
-                            <FontAwesomeIcon v-if="isActiveItem(history)" :icon="['far', 'check-square']" size="lg" />
-                            <FontAwesomeIcon v-else :icon="['far', 'square']" size="lg" />
+                            <FontAwesomeIcon v-if="isActiveItem(history)" :icon="faCheckSquare" size="lg" />
+                            <FontAwesomeIcon v-else :icon="faSquare" size="lg" />
                         </div>
                     </BListGroupItem>
                     <div>
@@ -338,7 +348,7 @@ async function loadMore(noScroll = false) {
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
                             <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
                         </div>
-                        <b-overlay :show="busy" opacity="0.5" />
+                        <BOverlay :show="busy" opacity="0.5" />
                     </div>
                 </BListGroup>
             </div>
@@ -359,7 +369,7 @@ async function loadMore(noScroll = false) {
                     :title="localize('Load More')"
                     variant="link"
                     @click="loadMore()">
-                    <FontAwesomeIcon icon="fa-arrow-down" />
+                    <FontAwesomeIcon :icon="faArrowDown" />
                 </BButton>
             </div>
 

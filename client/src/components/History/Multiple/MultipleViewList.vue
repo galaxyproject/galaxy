@@ -127,7 +127,7 @@ async function onKeyDown(evt: KeyboardEvent) {
                 :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
                 :extra-props="{ filter }"
-                :item-style="{ width: '15rem' }"
+                :item-style="{ width: '100%', minWidth: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
@@ -145,7 +145,7 @@ async function onKeyDown(evt: KeyboardEvent) {
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="createAndPin">
-                        <FontAwesomeIcon icon="plus" class="mr-1" />
+                        <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                         {{ localize("Create and pin new history") }}
                     </div>
                     <div
@@ -153,7 +153,7 @@ async function onKeyDown(evt: KeyboardEvent) {
                         tabindex="0"
                         @keydown="onKeyDown"
                         @click.stop="emit('update:show-modal', true)">
-                        <FontAwesomeIcon icon="check-square" class="mr-1" />
+                        <FontAwesomeIcon :icon="faCheckSquare" class="mr-1" />
                         {{ localize("Select histories") }}
                     </div>
                 </span>

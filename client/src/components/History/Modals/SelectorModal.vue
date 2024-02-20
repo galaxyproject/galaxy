@@ -3,7 +3,7 @@ import { BButton, BFormGroup, BModal } from "bootstrap-vue";
 import { orderBy } from "lodash";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
-import { computed, type PropType, type Ref, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
@@ -17,12 +17,20 @@ import HistoryList from "@/components/History/HistoryScrollList.vue";
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
 
-const props = defineProps({
-    multiple: { type: Boolean, default: false },
-    title: { type: String, default: "Switch to history" },
-    histories: { type: Array as PropType<HistorySummary[]>, default: () => [] },
-    additionalOptions: { type: Array as PropType<AdditionalOptions[]>, default: () => [] },
-    showModal: { type: Boolean, default: false },
+interface Props {
+    multiple?: boolean;
+    title?: string;
+    histories: HistorySummary[];
+    additionalOptions?: AdditionalOptions[];
+    showModal: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    multiple: false,
+    title: "Switch to history",
+    histories: () => [],
+    additionalOptions: () => [],
+    showModal: false,
 });
 
 const emit = defineEmits<{
@@ -40,11 +48,11 @@ const propShowModal = computed({
     },
 });
 
-const selectedHistories: Ref<PinnedHistory[]> = ref([]);
+const selectedHistories = ref<PinnedHistory[]>([]);
 const filter = ref("");
 const busy = ref(false);
 const showAdvanced = ref(false);
-const modal: Ref<BModal | null> = ref(null);
+const modal = ref<BModal | null>(null);
 
 const { pinnedHistories } = storeToRefs(useHistoryStore());
 

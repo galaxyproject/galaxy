@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faClock, faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -115,34 +116,34 @@ function showRecent() {
 
             <div class="d-flex justify-content-between">
                 <div>
-                    <b-button-group v-b-tooltip.hover.noninteractive :title="showRecentTitle">
-                        <b-button
+                    <BButtonGroup v-b-tooltip.hover.noninteractive :title="showRecentTitle">
+                        <BButton
                             size="sm"
                             data-description="show recent histories"
                             variant="outline-primary"
                             :disabled="!hasPinnedHistories"
                             @click="showRecent">
-                            <FontAwesomeIcon v-if="hasPinnedHistories" icon="undo" />
-                            <FontAwesomeIcon v-else icon="clock" />
+                            <FontAwesomeIcon v-if="hasPinnedHistories" :icon="faUndo" />
+                            <FontAwesomeIcon v-else :icon="faClock" />
                             <span v-localize>Recent</span>
-                        </b-button>
-                    </b-button-group>
-                    <b-button
+                        </BButton>
+                    </BButtonGroup>
+                    <BButton
                         v-b-tooltip.hover.noninteractive
                         :title="localize('Open modal to select/deselect histories')"
                         size="sm"
                         data-description="open select histories modal"
                         variant="outline-primary"
                         @click="showSelectModal = true">
-                        <FontAwesomeIcon icon="fa-check-square" />
+                        <FontAwesomeIcon :icon="faCheckSquare" />
                         <span v-localize>Select</span>
-                    </b-button>
+                    </BButton>
                 </div>
             </div>
         </div>
-        <b-alert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
+        <BAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </b-alert>
+        </BAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <FilterMenu
                 name="History Multiview"
@@ -158,9 +159,9 @@ function showRecent() {
                 :selected-histories="selectedHistories"
                 :show-modal.sync="showSelectModal" />
         </div>
-        <b-alert v-else-if="!histories.length" class="m-2" variant="danger" show>
+        <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </b-alert>
+        </BAlert>
         <SelectorModal
             v-show="showSelectModal"
             :multiple="true"

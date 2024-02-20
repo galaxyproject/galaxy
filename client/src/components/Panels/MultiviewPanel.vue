@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faColumns, faPlus, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
@@ -97,8 +98,8 @@ function userTitle(title: string) {
 <template>
     <ActivityPanel title="Select Histories">
         <template v-slot:header-buttons>
-            <b-button-group>
-                <b-button
+            <BButtonGroup>
+                <BButton
                     v-b-tooltip.bottom.hover
                     data-description="create new history for multiview"
                     size="sm"
@@ -107,8 +108,8 @@ function userTitle(title: string) {
                     :disabled="isAnonymous"
                     @click="createAndPin">
                     <FontAwesomeIcon :icon="faPlus" fixed-width />
-                </b-button>
-            </b-button-group>
+                </BButton>
+            </BButtonGroup>
         </template>
 
         <template v-slot:header>
@@ -121,7 +122,7 @@ function userTitle(title: string) {
                 :loading="historiesLoading || loading"
                 :show-advanced.sync="showAdvanced" />
             <section v-if="!showAdvanced">
-                <b-button
+                <BButton
                     v-if="route.path !== '/histories/view_multiple'"
                     v-b-tooltip.hover.noninteractive.bottom
                     :aria-label="userTitle('Open History Multiview in center panel')"
@@ -132,27 +133,27 @@ function userTitle(title: string) {
                     @click="router.push('/histories/view_multiple')">
                     <FontAwesomeIcon :icon="faColumns" class="mr-1" />
                     <span v-localize>Open History Multiview</span>
-                </b-button>
-                <b-button-group
+                </BButton>
+                <BButtonGroup
                     v-else
                     v-b-tooltip.hover.noninteractive.bottom
                     class="w-100"
                     :aria-label="pinRecentTitle"
                     :title="pinRecentTitle">
-                    <b-button size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">
+                    <BButton size="sm" :disabled="!pinnedHistoryCount" @click="pinRecent">
                         <span class="position-relative">
                             <FontAwesomeIcon v-if="pinnedHistoryCount" :icon="faUndo" class="mr-1" />
                             <b>{{ pinRecentText }}</b>
                         </span>
-                    </b-button>
-                </b-button-group>
+                    </BButton>
+                </BButtonGroup>
             </section>
         </template>
 
         <div v-if="isAnonymous">
-            <b-badge class="alert-info w-100 mx-2">
+            <BBadge class="alert-info w-100 mx-2">
                 Please <a :href="withPrefix('/login')">log in or register</a> to create multiple histories.
-            </b-badge>
+            </BBadge>
         </div>
 
         <HistoryList v-show="!showAdvanced" multiple :filter="filter" :loading.sync="loading" @setFilter="setFilter" />
