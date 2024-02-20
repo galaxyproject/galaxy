@@ -100,7 +100,7 @@ class PagesService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
-    def delete(self, trans, id: DecodedDatabaseIdField):
+    def undelete(self, trans, id: DecodedDatabaseIdField):
         """
         Undelete page
 
