@@ -36,15 +36,15 @@ const text = computed(() =>
 
 <template>
     <div>
-        <component :is="props.component" v-if="props.oneLineSummary" class="one-line-summary">{{
-            props.description
-        }}</component>
+        <component :is="props.component" v-if="props.oneLineSummary" class="one-line-summary">
+            {{ props.description }}
+        </component>
         <span v-else>{{ text }}</span>
         <span
             v-if="!noExpand && textTooLong"
             v-b-tooltip.hover
             class="info-icon cursor-pointer"
-            :title="textTooLong ? 'Show more' : 'Show less'"
+            :title="showDetails ? 'Show less' : 'Show more'"
             role="button"
             tabindex="0"
             @keyup.enter="showDetails = !showDetails"
