@@ -138,10 +138,7 @@ from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.web import (
-    legacy_url_for,
-    url_for,
-)
+from galaxy.web import url_for
 from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.short_term_storage import (
@@ -798,7 +795,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Inject url_for for components to more easily optionally depend
         # on url_for.
         self.url_for = url_for
-        self.legacy_url_for = legacy_url_for
 
         self.server_starttime = server_starttime  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup

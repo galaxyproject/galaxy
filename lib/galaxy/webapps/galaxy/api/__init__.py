@@ -41,6 +41,10 @@ from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
 from pydantic import ValidationError
 from pydantic.main import BaseModel
+from routes import (
+    Mapper,
+    request_config,
+)
 from starlette.datastructures import Headers
 from starlette.routing import (
     Match,
@@ -306,6 +310,15 @@ def get_current_history_from_session(galaxy_session: Optional[model.GalaxySessio
     return None
 
 
+def fix_url_for(mapper: Mapper, galaxy_request: GalaxyASGIRequest):
+    rc = request_config()
+    rc.environ = galaxy_request.environ
+    rc.mapper = mapper
+    if hasattr(rc, "using_request_local"):
+        rc.request_local = lambda: rc
+        rc = request_config()
+
+
 def get_trans(
     request: Request,
     response: Response,
@@ -316,6 +329,9 @@ def get_trans(
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
     galaxy_response = GalaxyASGIResponse(response)
+    mapper = getattr(app, "legacy_mapper", None)
+    if mapper:
+        fix_url_for(mapper, galaxy_request)
     return SessionRequestContext(
         app=app,
         user=user,
