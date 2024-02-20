@@ -67,12 +67,12 @@ masthead:
 
     # user menu
     logout: 'Sign Out'
-    invocations: 'Workflow Invocations'
     preferences: 'Preferences'
 
     # data menu
     libraries: 'Data Libraries'
     histories: 'Histories'
+    invocations: 'Workflow Invocations'
     pages: 'Pages'
     workflows: 'Workflows'
 

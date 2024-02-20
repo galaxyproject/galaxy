@@ -84,6 +84,10 @@ export function fetchMenu(options = {}) {
                     title: _l("Workflows"),
                     url: "/workflows/list",
                 },
+                {
+                    title: _l("Workflow Invocations"),
+                    url: "/workflows/invocations",
+                },
             ],
         });
     } else {
@@ -253,10 +257,6 @@ export function fetchMenu(options = {}) {
                 url: "/user/notifications",
             });
         }
-        userTab.menu.push({
-            title: _l("Workflow Invocations"),
-            url: "/workflows/invocations",
-        });
         userTab.menu.push({ divider: true });
         userTab.menu.push({
             title: _l("Preferences"),

@@ -1204,7 +1204,7 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_invocations(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.invocations.wait_for_and_click()
 
     def navigate_to_pages(self):
