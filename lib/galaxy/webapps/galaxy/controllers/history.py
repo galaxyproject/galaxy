@@ -47,27 +47,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def index(self, trans):
         return ""
 
-    @web.expose
-    def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
-        """
-        Return a history in xml format.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template("/no_access.mako", message="Please log in to access Galaxy histories.")
-
-        if id:
-            history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        else:
-            history = trans.get_history(most_recent=True, create=True)
-
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template_mako(
-            "history/as_xml.mako",
-            history=history,
-            show_deleted=string_as_bool(show_deleted),
-            show_hidden=string_as_bool(show_hidden),
-        )
-
     @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
