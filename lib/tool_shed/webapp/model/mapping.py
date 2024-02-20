@@ -45,4 +45,9 @@ def init(
 
     result.security_agent = CommunityRBACAgent(result)
     result.shed_counter = shed_statistics.ShedCounter(result)
+
+    session = result.session()
+    with session.begin():
+        result.shed_counter.generate_statistics(session)
+
     return result
