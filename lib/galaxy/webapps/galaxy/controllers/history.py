@@ -48,12 +48,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return ""
 
     @web.expose
-    def list_as_xml(self, trans):
-        """XML history list for functional tests"""
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template("/history/list_as_xml.mako")
-
-    @web.expose
     def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
         """
         Return a history in xml format.
