@@ -204,21 +204,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
         }
 
-    @web.expose
-    def adjust_hidden(self, trans, id=None, **kwd):
-        """THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
-        regression in history-wide actions, and will be removed in the first
-        release after 17.01"""
-        action = kwd.get("user_action", None)
-        if action == "delete":
-            for hda in trans.history.datasets:
-                if not hda.visible:
-                    hda.mark_deleted()
-        elif action == "unhide":
-            trans.history.unhide_datasets()
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-
     # ......................................................................... actions/orig. async
 
     @web.expose
