@@ -482,6 +482,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "url",
                 "create_time",
                 "update_time",
+                "object_store_id",
+                "quota_source_label",
             ],
         )
         self.add_view(
@@ -595,6 +597,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "api_type": lambda item, key, **context: "file",
             "type": lambda item, key, **context: "file",
             "created_from_basename": lambda item, key, **context: item.created_from_basename,
+            "object_store_id": lambda item, key, **context: item.object_store_id,
+            "quota_source_label": lambda item, key, **context: item.dataset.quota_source_label,
             "hashes": lambda item, key, **context: [h.to_dict() for h in item.hashes],
             "sources": lambda item, key, **context: [s.to_dict() for s in item.sources],
             "drs_id": lambda item, key, **context: f"hda-{self.app.security.encode_id(item.id, kind='drs')}",

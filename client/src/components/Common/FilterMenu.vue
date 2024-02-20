@@ -13,6 +13,8 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
+import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
+import FilterMenuQuotaSource from "@/components/Common/FilterMenuQuotaSource.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
 
 library.add(faAngleDoubleUp, faQuestion, faRedo, faSearch);
@@ -201,6 +203,19 @@ watch(
                         @on-esc="onToggle" />
                     <FilterMenuMultiTags
                         v-else-if="validFilters[filter]?.type == 'MultiTags'"
+                        :name="filter"
+                        :filter="validFilters[filter]"
+                        :filters="filters"
+                        :identifier="identifier"
+                        @change="onOption" />
+                    <FilterMenuObjectStore
+                        v-else-if="validFilters[filter]?.type == 'ObjectStore'"
+                        :name="filter"
+                        :filter="validFilters[filter]"
+                        :filters="filters"
+                        @change="onOption" />
+                    <FilterMenuQuotaSource
+                        v-else-if="validFilters[filter]?.type == 'QuotaSource'"
                         :name="filter"
                         :filter="validFilters[filter]"
                         :filters="filters"
