@@ -10,7 +10,10 @@ from typing import (
 
 from fastapi import HTTPException
 
-from galaxy import web
+from galaxy import (
+    exceptions,
+    web,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
@@ -226,6 +229,26 @@ class WorkflowsService(ServiceBase):
             payload,
         )
         return {"ids_in_menu": ids_in_menu, "workflows": workflows}
+
+    def show_workflow(self, trans, workflow_id, instance, legacy, version):
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
+            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
+            if wf_count == 0:
+                message = "Workflow is neither importable, nor owned by or shared with current user"
+                raise exceptions.ItemAccessibilityException(message)
+        if legacy:
+            style = "legacy"
+        else:
+            style = "instance"
+        if version is None and instance:
+            # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
+            # This figures out the correct version so that we return the correct Workflow and version.
+            for i, workflow in enumerate(reversed(stored_workflow.workflows)):
+                if workflow.id == workflow_id:
+                    version = i
+                    break
+        return self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     def _get_workflows_list(
         self,
