@@ -683,12 +683,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect(
         "/api/workflows/{encoded_workflow_id}",
         controller="workflows",
-        action="show",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "/api/workflows/{encoded_workflow_id}",
-        controller="workflows",
         action="update",
         conditions=dict(method=["PUT"]),
     )
