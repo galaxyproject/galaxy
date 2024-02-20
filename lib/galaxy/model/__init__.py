@@ -9526,11 +9526,12 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     @classmethod
     def store(cls, server_url, association):
-        try:
+        def get_or_create():
             stmt = select(PSAAssociation).filter_by(server_url=server_url, handle=association.handle).limit(1)
             assoc = cls.sa_session.scalars(stmt).first()
-        except IndexError:
-            assoc = cls(server_url=server_url, handle=association.handle)
+            return assoc or cls(server_url=server_url, handle=association.handle)
+
+        assoc = get_or_create()
         assoc.secret = base64.encodebytes(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
