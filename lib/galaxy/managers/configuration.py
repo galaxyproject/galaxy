@@ -18,6 +18,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.structured_app import StructuredApp
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +56,14 @@ class ConfigurationManager:
             encoded_id = encoded_id[1:]
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
+
+    def encode_id(
+        self,
+        decoded_id: int,
+    ) -> Dict[str, str]:
+        # Handle the special case for library folders
+        encoded_id = unicodify(self._app.security.encode_id(decoded_id))
+        return {"encoded_id": encoded_id}
 
     def tool_lineages(self) -> List[Dict[str, Dict]]:
         rval = []
