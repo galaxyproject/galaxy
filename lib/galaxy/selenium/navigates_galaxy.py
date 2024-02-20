@@ -1227,7 +1227,7 @@ class NavigatesGalaxy(HasDriver):
     def navigate_to_published_pages(self):
         self.home()
         self.click_masthead_data()
-        self.components.masthead.published_pages.wait_for_and_click()
+        self.components.masthead.pages.wait_for_and_click()
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
