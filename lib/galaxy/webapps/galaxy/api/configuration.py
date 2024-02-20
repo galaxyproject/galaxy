@@ -42,7 +42,7 @@ EncodedIdPathParam = Path(
 DecodedIdPathParam = Path(
     ...,
     title="Decoded id",
-    description="Decoded id to be Encoded",
+    description="Decoded id to be encoded",
 )
 
 @router.cbv
