@@ -32,10 +32,6 @@ from datetime import (
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
-from math import (
-    floor,
-    log10,
-)
 from os.path import relpath
 from typing import (
     Any,
@@ -1139,14 +1135,14 @@ def commaify(amount):
         return commaify(new)
 
 
-def trailing_zeros_to_powerof10(amount: int):
+def trailing_zeros_to_powerof10(amount: int) -> str:
     """
     >>> trailing_zeros_to_powerof10(23000)
-    '23000'
+    '23K'
     >>> trailing_zeros_to_powerof10(2300000)
-    '23\u00d710^5'
+    '2.3M'
     >>> trailing_zeros_to_powerof10(23000000)
-    '23\u00d710^6'
+    '23M'
     >>> trailing_zeros_to_powerof10(1)
     '1'
     >>> trailing_zeros_to_powerof10(0)
@@ -1156,32 +1152,13 @@ def trailing_zeros_to_powerof10(amount: int):
     >>> trailing_zeros_to_powerof10(-100)
     '-100'
     """
-    amount = str(amount)
-    zeros = 0
-    i = len(amount) - 1
-    while i >= 0 and amount[i] == "0":
-        zeros += 1
-        i -= 1
-    if len(amount) < len(f"{amount[: i+1]}\u00d710^{zeros}"):
-        return amount
+    m, prefix = metric_prefix(amount, 1000)
+    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
+    exp = f"{m_str}{prefix}"
+    if len(exp) <= len(str(amount)):
+        return exp
     else:
-        return f"{amount[: i+1]}\u00d710^{zeros}"
-
-
-def roundify(amount: int, sfs: int = 2):
-    """
-    Take a number and round it to 'sfs' significant figures.
-
-    >>> roundify(99)
-    99
-    >>> roundify(-99)
-    -99
-    >>> roundify(1111)
-    1100
-    >>> roundify(1999)
-    2000
-    """
-    return round(amount, -int(floor(log10(abs(amount)))) + sfs - 1)
+        return str(amount)
 
 
 @overload
@@ -1509,7 +1486,43 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def nice_size(size):
+def metric_prefix(number: Union[int, float], base: int, text: bool = True) -> Tuple[float, str]:
+    """
+    >>> metric_prefix(100, 1000)
+    (100.0, '')
+    >>> metric_prefix(999, 1000)
+    (999.0, '')
+    >>> metric_prefix(1000, 1000)
+    (1.0, 'K')
+    >>> metric_prefix(999, 1000, False)
+    (999.0, '0')
+    >>> metric_prefix(1000, 1000, False)
+    (1.0, '3')
+    >>> metric_prefix(1001, 1000)
+    (1.001, 'K')
+    >>> metric_prefix(1000000, 1000)
+    (1.0, 'M')
+    >>> metric_prefix(1000**10, 1000)
+    (1.0, 'Q')
+    >>> metric_prefix(1000**11, 1000)
+    (1000.0, 'Q')
+    """
+    prefixes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]
+    if number < 0:
+        number = abs(number)
+        sign = -1
+    else:
+        sign = 1
+
+    for i, prefix in enumerate(prefixes):
+        if number < base:
+            return sign * float(number), prefix if text else str(i * 3)
+        number /= base
+    else:
+        return sign * float(number) * base, prefix if text else str(i * 3)
+
+
+def nice_size(size: Union[float, int, str]) -> str:
     """
     Returns a readably formatted string with the size
 
@@ -1522,23 +1535,15 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-    prefix = ""
     try:
         size = float(size)
-        if size < 0:
-            size = abs(size)
-            prefix = "-"
-    except Exception:
+    except ValueError:
         return "??? bytes"
-    for ind, word in enumerate(words):
-        step = 1024 ** (ind + 1)
-        if step > size:
-            size = size / float(1024**ind)
-            if word == "bytes":  # No decimals for bytes
-                return "%s%d bytes" % (prefix, size)
-            return f"{prefix}{size:.1f} {word}"
-    return "??? bytes"
+    size, prefix = metric_prefix(size, 1024)
+    if prefix == "":
+        return "%d bytes" % size
+    else:
+        return f"{size:.1f} {prefix}B"
 
 
 def size_to_bytes(size):
