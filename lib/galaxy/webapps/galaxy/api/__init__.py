@@ -312,9 +312,8 @@ def get_current_history_from_session(galaxy_session: Optional[model.GalaxySessio
 
 def fix_url_for(mapper: Mapper, galaxy_request: GalaxyASGIRequest):
     rc = request_config()
-    environ = galaxy_request.environ
+    rc.environ = galaxy_request.environ
     rc.mapper = mapper
-    rc.environ = environ
     if hasattr(rc, "using_request_local"):
         rc.request_local = lambda: rc
         rc = request_config()
