@@ -161,6 +161,20 @@ class FastAPIPages:
         self.service.delete(trans, id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @router.put(
+        "/api/pages/{id}/undelete",
+        summary="Undelete the specific Page.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def undelete(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Marks the Page with the given ID as undeleted."""
+        self.service.undelete(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
     @router.get(
         "/api/pages/{id}.pdf",
         summary="Return a PDF document of the last revision of the Page.",

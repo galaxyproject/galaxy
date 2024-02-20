@@ -100,6 +100,18 @@ class PagesService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
+    def delete(self, trans, id: DecodedDatabaseIdField):
+        """
+        Undelete page
+
+        :param  id:    ID of the page to be undeleted
+        """
+        page = base.get_object(trans, id, "Page", check_ownership=True)
+
+        page.deleted = False
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
     def show(self, trans, id: DecodedDatabaseIdField) -> PageDetails:
         """View a page summary and the content of the latest revision
 

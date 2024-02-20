@@ -1361,6 +1361,13 @@ export interface paths {
          */
         put: operations["set_slug_api_pages__id__slug_put"];
     };
+    "/api/pages/{id}/undelete": {
+        /**
+         * Undelete the specific Page.
+         * @description Marks the Page with the given ID as undeleted.
+         */
+        put: operations["undelete_api_pages__id__undelete_put"];
+    };
     "/api/pages/{id}/unpublish": {
         /**
          * Removes this item from the published list.
@@ -18976,6 +18983,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetSlugPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_pages__id__undelete_put: {
+        /**
+         * Undelete the specific Page.
+         * @description Marks the Page with the given ID as undeleted.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the Page. */
+            path: {
+                id: string;
             };
         };
         responses: {
