@@ -73,7 +73,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
         return job_details
 
     @abc.abstractmethod
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(
@@ -289,7 +289,7 @@ class InteractorStaging(StagingInterface):
         assert response.status_code == 200, response.text
         return response.json()
 
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         self.galaxy_interactor.wait_for_job(job_response["id"])
         return self.galaxy_interactor.get_job_stdio(job_response["id"])
 
