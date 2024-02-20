@@ -32,10 +32,7 @@ from galaxy.model.item_attrs import (
     UsesItemRatings,
 )
 from galaxy.structured_app import StructuredApp
-from galaxy.util import (
-    inflector,
-    sanitize_text,
-)
+from galaxy.util import sanitize_text
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web import form_builder
