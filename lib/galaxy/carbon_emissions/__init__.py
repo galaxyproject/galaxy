@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 import os
 
@@ -10,6 +11,20 @@ log = logging.getLogger(__name__)
 class CarbonIntensityEntry(TypedDict):
     location_name: str
     carbon_intensity: float
+
+
+class AWSInstanceCPU(TypedDict):
+    cpu_model: str
+    tdp: int
+    core_count: int
+    source: str
+
+
+class AWSInstance(TypedDict):
+    name: str
+    mem: float
+    v_cpu_count: int
+    cpu: list[AWSInstanceCPU]
 
 
 def get_carbon_intensity_entry(geographical_server_location_code: str) -> CarbonIntensityEntry:
@@ -33,6 +48,15 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
     log.warning("No corresponding location name exists for location code: %s.", geographical_server_location_code)
     log.info("Using global default values for location name and carbon intensity...")
     return {"location_name": "GLOBAL", "carbon_intensity": 475.0}
+
+
+def load_aws_ec2_reference_data_json() -> list[AWSInstance]:
+    """
+    Load the AWS EC2 reference data from the specified file.
+    """
+    aws_ec2_reference_data_dir = os.path.join(os.path.dirname(__file__), "aws_ec2_reference_data.json")
+    with open(aws_ec2_reference_data_dir, "r") as f:
+        return json.load(f)
 
 
 def _load_locations(path: str):

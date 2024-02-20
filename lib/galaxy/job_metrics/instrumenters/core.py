@@ -1,12 +1,19 @@
 """The module describes the ``core`` job metrics plugin."""
 import logging
 import time
+from os import confstr
 from typing import (
     Any,
     Dict,
     List,
+    Optional,
+    Union,
 )
 
+from lib.galaxy.carbon_emissions import (
+    AWSInstance,
+    load_aws_ec2_reference_data_json,
+)
 from . import InstrumentPlugin
 from ..formatting import (
     FormattedMetric,
@@ -19,6 +26,7 @@ log = logging.getLogger(__name__)
 
 GALAXY_SLOTS_KEY = "galaxy_slots"
 GALAXY_MEMORY_MB_KEY = "galaxy_memory_mb"
+
 START_EPOCH_KEY = "start_epoch"
 END_EPOCH_KEY = "end_epoch"
 RUNTIME_SECONDS_KEY = "runtime_seconds"
@@ -42,7 +50,7 @@ class CorePluginFormatter(JobMetricFormatter):
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
-            return FormattedMetric(title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(value)))
+            return FormattedMetric(title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(value))))
 
     def __format_energy_needed_text(self, energy_needed_kwh: float) -> str:
         adjustedEnergyNeeded = energy_needed_kwh
@@ -92,16 +100,18 @@ class CorePlugin(InstrumentPlugin):
         return commands
 
     def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+        properties: Dict[str, Union[int, float, str]] = {}
+
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
 
-        properties: Dict[str, Any] = {}
-
         allocated_cpu_cores = self.__read_integer(galaxy_slots_file)
-        properties[GALAXY_SLOTS_KEY] = allocated_cpu_cores
+        if allocated_cpu_cores is not None:
+            properties[GALAXY_SLOTS_KEY] = allocated_cpu_cores
 
         allocated_memory_mebibyte = self.__read_integer(galaxy_memory_mb_file)
-        properties[GALAXY_MEMORY_MB_KEY] = allocated_memory_mebibyte
+        if allocated_memory_mebibyte is not None:
+            properties[GALAXY_MEMORY_MB_KEY] = allocated_memory_mebibyte
 
         start_time_seconds = self.__read_seconds_since_epoch(job_directory, "start")
         end_time_seconds = self.__read_seconds_since_epoch(job_directory, "end")
@@ -113,29 +123,40 @@ class CorePlugin(InstrumentPlugin):
             properties[RUNTIME_SECONDS_KEY] = end_time_seconds - start_time_seconds
 
             if allocated_cpu_cores is not None:
-                tdp_per_ore = 115 / 10
-                normalized_tdp_per_core = tdp_per_ore * allocated_cpu_cores
-
-                memory_power_usage_constant = 0.3725
-                memory_allocated_in_gibibyte = (allocated_memory_mebibyte or 0) / 1024  # Convert to gibibyte
-
-                power_usage_effectiveness = 1.67
-
-                runtime_hours = runtime_seconds / (60 * 60)  # Convert to hours
-
-                power_needed_watts_cpu = power_usage_effectiveness * normalized_tdp_per_core
-                power_needed_watts_memory = (
-                    power_usage_effectiveness * memory_allocated_in_gibibyte * memory_power_usage_constant
+                estimated_server_instance = self.__get_estimated_server_instance(
+                    allocated_cpu_cores, allocated_memory_mebibyte or 0
                 )
+                if estimated_server_instance is not None:
+                    cpu_info = estimated_server_instance["cpu"][0]
+                    tdp_per_ore = cpu_info["tdp"] / cpu_info["core_count"]
+                    normalized_tdp_per_core = tdp_per_ore * allocated_cpu_cores
 
-                energy_needed_cpu_kwh = (runtime_hours * power_needed_watts_cpu) / 1000
-                energy_needed_memory_kwh = (runtime_hours * power_needed_watts_memory) / 1000
+                    # NOTE: The memory_power_usage_constant value does not change
+                    # source: (in W/GB) http://dl.acm.org/citation.cfm?doid=3076113.3076117
+                    # and https://www.tomshardware.com/uk/reviews/intel-core-i7-5960x-haswell-e-cpu,3918-13.html
+                    memory_power_usage_constant = 0.3725
+                    memory_allocated_in_gibibyte = (allocated_memory_mebibyte or 0) / 1024  # Convert to gibibyte
 
-                # Some jobs do not report memory usage, so a default value of 0 is used in this case
-                if energy_needed_memory_kwh != 0:
-                    properties[ENERGY_NEEDED_MEMORY_KEY] = energy_needed_memory_kwh
+                    # NOTE: Currently there is no way to get the PUE value from the environment
+                    # so we use the global constant value
+                    # source: https://journal.uptimeinstitute.com/is-pue-actually-going-up/
+                    power_usage_effectiveness = 1.67
 
-                properties[ENERGY_NEEDED_CPU_KEY] = energy_needed_cpu_kwh
+                    runtime_hours = runtime_seconds / (60 * 60)  # Convert to hours
+
+                    power_needed_watts_cpu = power_usage_effectiveness * normalized_tdp_per_core
+                    power_needed_watts_memory = (
+                        power_usage_effectiveness * memory_allocated_in_gibibyte * memory_power_usage_constant
+                    )
+
+                    energy_needed_cpu_kwh = (runtime_hours * power_needed_watts_cpu) / 1000
+                    energy_needed_memory_kwh = (runtime_hours * power_needed_watts_memory) / 1000
+
+                    # Some jobs do not report memory usage, so a default value of 0 is used in this case
+                    if energy_needed_memory_kwh != 0:
+                        properties[ENERGY_NEEDED_MEMORY_KEY] = energy_needed_memory_kwh
+
+                    properties[ENERGY_NEEDED_CPU_KEY] = energy_needed_cpu_kwh
 
         return properties
 
@@ -168,6 +189,32 @@ class CorePlugin(InstrumentPlugin):
         except Exception:
             pass
         return value
+
+    def __get_estimated_server_instance(
+        self, allocated_cpu_cores: int, allocated_memory_mebibyte=0
+    ) -> Optional[AWSInstance]:
+        adjusted_memory = allocated_memory_mebibyte / 1024 if allocated_memory_mebibyte is not None else 0
+        server_instance = None
+
+        for aws_instance in load_aws_ec2_reference_data_json():
+            # Exclude memory from search criteria
+            if adjusted_memory == 0 and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
+                server_instance = aws_instance
+                break
+
+            # Search by all criteria
+            if aws_instance["mem"] >= adjusted_memory and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
+                server_instance = aws_instance
+                break
+
+        if server_instance is None:
+            return None
+
+        cpu = server_instance["cpu"][0]
+        if cpu is None:
+            return None
+
+        return server_instance
 
 
 __all__ = ("CorePlugin",)
