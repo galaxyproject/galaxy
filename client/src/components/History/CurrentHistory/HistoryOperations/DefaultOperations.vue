@@ -12,7 +12,6 @@ import {
     purgeAllDeletedContent,
     unhideAllHiddenContent,
 } from "@/components/History/model/crud";
-import { iframeRedirect } from "@/components/plugins/legacyNavigation";
 
 library.add(faCog);
 
@@ -25,10 +24,6 @@ const props = defineProps<Props>();
 const emit = defineEmits(["update:operation-running"]);
 
 const { numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
-
-function onCopy() {
-    iframeRedirect("/dataset/copy_datasets");
-}
 
 function unhideAll() {
     runOperation(() => unhideAllHiddenContent(props.history));
@@ -67,10 +62,6 @@ async function runOperation(operation: () => Promise<HistorySummary>) {
             <BDropdownText id="history-op-all-content">
                 <span v-localize>With entire history...</span>
             </BDropdownText>
-
-            <BDropdownItem data-description="copy datasets" @click="onCopy">
-                <span v-localize>Copy Datasets</span>
-            </BDropdownItem>
 
             <BDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
