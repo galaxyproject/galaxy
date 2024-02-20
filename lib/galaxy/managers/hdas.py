@@ -643,7 +643,10 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         display_link_fn = hda.datatype.get_display_links
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = display_link_fn(
-                hda, display_app, self.app, trans.request.base, request=trans.request
+                hda,
+                display_app,
+                self.app,
+                trans.request.base,
             )
 
             if len(display_links) > 0:
