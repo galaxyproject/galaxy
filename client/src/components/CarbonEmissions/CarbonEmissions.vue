@@ -1,81 +1,53 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import type { GetComponentPropTypes } from "types/utilityTypes";
-import { computed, ref, unref } from "vue";
+import { GetComponentPropTypes } from "types/utilityTypes";
+import { computed, unref } from "vue";
 
-import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
+import { worldwideCarbonIntensity } from "@/components/CarbonEmissions/carbonEmissionConstants";
+import * as carbonEmissionsConstants from "@/components/CarbonEmissions/carbonEmissionConstants.js";
+import { useConfig } from "@/composables/config";
 
-import BarChart from "./BarChart.vue";
-import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
-import Heading from "@/components/Common/Heading.vue";
+import CarbonEmissionsCard from "@/components/CarbonEmissions/CarbonEmissionCard.vue";
 
-library.add(faQuestionCircle);
+const props = defineProps<{
+    energyNeededCPU: number;
+    energyNeededMemory: number;
+    totalEnergyNeeded: number;
+    totalCarbonEmissions: number;
+}>();
 
-interface CarbonEmissionsProps {
-    jobRuntimeInSeconds: number;
-    coresAllocated: number;
-    powerUsageEffectiveness: number;
-    geographicalServerLocationName: string;
-    memoryAllocatedInMebibyte?: number;
-    carbonIntensity: number;
-    showHeader: boolean;
-    showCarbonEmissionsCalculationsLink: boolean;
-}
+const { config } = useConfig(true);
 
-const props = withDefaults(defineProps<CarbonEmissionsProps>(), {
-    memoryAllocatedInMebibyte: 0,
-    showHeader: false,
-    showCarbonEmissionsCalculationsLink: false,
+const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
+
+const canShowMemory = computed(() => {
+    return props.energyNeededMemory && props.energyNeededMemory !== 0;
+});
+
+const canShowMoreThanOneMetric = computed(() => {
+    return unref(canShowMemory);
 });
 
 const carbonEmissions = computed(() => {
-    if (!estimatedServerInstance.value) {
-        return;
-    }
-
-    const memoryPowerUsed = carbonEmissionsConstants.memoryPowerUsage;
-    const runtimeInHours = props.jobRuntimeInSeconds / (60 * 60); // Convert to hours
-    const memoryAllocatedInGibibyte = props.memoryAllocatedInMebibyte / 1024; // Convert to gibibyte
-
-    const cpuInfo = estimatedServerInstance.value.cpuInfo;
-    const tdpPerCore = cpuInfo.tdp / cpuInfo.totalAvailableCores;
-    const normalizedTdpPerCore = tdpPerCore * props.coresAllocated;
-
-    // Power needed in Watt
-    const powerNeededCpu = props.powerUsageEffectiveness * normalizedTdpPerCore;
-    const powerNeededMemory = props.powerUsageEffectiveness * memoryAllocatedInGibibyte * memoryPowerUsed;
-    const totalPowerNeeded = powerNeededCpu + powerNeededMemory;
-
-    // Energy needed. Convert Watt to kWh
-    const energyNeededCPU = (runtimeInHours * powerNeededCpu) / 1000;
-    const energyNeededMemory = (runtimeInHours * powerNeededMemory) / 1000;
-    const totalEnergyNeeded = (runtimeInHours * totalPowerNeeded) / 1000;
+    const { energyNeededCPU, energyNeededMemory } = props;
 
     // Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
-    const carbonIntensity = props.carbonIntensity;
     const cpuCarbonEmissions = energyNeededCPU * carbonIntensity;
     const memoryCarbonEmissions = energyNeededMemory * carbonIntensity;
-    const totalCarbonEmissions = totalEnergyNeeded * carbonIntensity;
+    const totalCarbonEmissions = cpuCarbonEmissions + memoryCarbonEmissions;
 
     return {
         cpuCarbonEmissions,
         memoryCarbonEmissions,
         totalCarbonEmissions,
 
-        energyNeededCPU,
-        energyNeededMemory,
-        totalEnergyNeeded,
+        energyNeededCPU: energyNeededCPU,
+        energyNeededMemory: energyNeededMemory,
+        totalEnergyNeeded: energyNeededCPU + energyNeededMemory,
     };
 });
 
 const carbonEmissionsComparisons = computed(() => {
-    if (!carbonEmissions.value) {
-        return;
-    }
-
-    const { totalCarbonEmissions, totalEnergyNeeded } = carbonEmissions.value;
+    const { totalCarbonEmissions, totalEnergyNeeded } = unref(carbonEmissions);
 
     const {
         averagePassengerCarEmissionsEU,
@@ -161,14 +133,6 @@ const carbonEmissionsComparisons = computed(() => {
     return [drivingInEU, drivingInUS, gasolineConsumed, lightbulbsRunning, smartphonesCharged, treeMonths];
 });
 
-const canShowMemory = computed(() => {
-    return props.memoryAllocatedInMebibyte && props.memoryAllocatedInMebibyte !== 0;
-});
-
-const canShowMoreThanOneMetric = computed(() => {
-    return unref(canShowMemory);
-});
-
 const barChartData = computed(() => {
     const values = carbonEmissions.value;
     if (!values) {
@@ -191,45 +155,6 @@ const barChartData = computed(() => {
     }
 
     return data;
-});
-
-const estimatedServerInstance = computed(() => {
-    const ec2 = unref(ec2Instances);
-    if (!ec2) {
-        return;
-    }
-
-    const memory = props.memoryAllocatedInMebibyte;
-    const adjustedMemory = memory ? memory / 1024 : 0;
-    const cores = props.coresAllocated;
-
-    const serverInstance = ec2.find((instance) => {
-        if (adjustedMemory === 0) {
-            // Exclude memory from search criteria
-            return instance.vCpuCount >= cores;
-        }
-
-        // Search by all criteria
-        return instance.mem >= adjustedMemory && instance.vCpuCount >= cores;
-    });
-
-    if (!serverInstance) {
-        return;
-    }
-
-    const cpu = serverInstance.cpu[0];
-    if (!cpu) {
-        return;
-    }
-
-    return {
-        name: serverInstance.name,
-        cpuInfo: {
-            modelName: cpu.cpuModel,
-            totalAvailableCores: cpu.coreCount,
-            tdp: cpu.tdp,
-        },
-    };
 });
 
 function prettyPrintValue({
@@ -305,28 +230,13 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
     const roundedValue = Math.round(adjustedEnergyNeeded);
     return `${roundedValue === 0 ? "< 1" : roundedValue} ${unitMagnitude}`;
 }
-
-const ec2Instances = ref<EC2[]>();
-import("@/components/JobMetrics/awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
-
-type EC2 = {
-    name: string;
-    mem: number;
-    price: number;
-    priceUnit: string;
-    vCpuCount: number;
-    cpu: {
-        cpuModel: string;
-        tdp: number;
-        coreCount: number;
-        source: string;
-    }[];
-};
 </script>
 
 <template>
-    <div v-if="carbonEmissions && carbonEmissionsComparisons && estimatedServerInstance" class="mt-4">
-        <Heading v-if="props.showHeader" h2 separator inline bold> Carbon Footprint </Heading>
+    <div>
+        <div>
+            <slot name="header"></slot>
+        </div>
 
         <section class="carbon-emission-values my-4">
             <div class="emissions-grid">
@@ -390,51 +300,10 @@ type EC2 = {
                     </tbody>
                 </table>
 
-                <p class="p-0 m-0">
-                    <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
-                        <strong>1.</strong> Based off of the global carbon intensity value of
-                        {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
-                    </span>
-                    <span v-else id="location-explanation">
-                        <strong>1.</strong> based off of this galaxy instance's configured location of
-                        <strong>{{ geographicalServerLocationName }}</strong
-                        >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
-                    </span>
-
-                    <br />
-
-                    <span
-                        v-if="powerUsageEffectiveness === carbonEmissionsConstants.worldwidePowerUsageEffectiveness"
-                        id="pue">
-                        <strong>2.</strong> Using the global default power usage effectiveness value of
-                        {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
-                    </span>
-                    <span v-else id="pue">
-                        <strong>2.</strong> using the galaxy instance's configured power usage effectiveness ratio value
-                        of of {{ powerUsageEffectiveness }}.
-                    </span>
-
-                    <br />
-
-                    <strong>3.</strong> based off of the closest AWS EC2 instance comparable to the server that ran this
-                    job. Estimates depend on the core count, allocated memory and the job runtime. The closest estimate
-                    is a <strong>{{ estimatedServerInstance.name }}</strong> instance.
-                </p>
-
-                <router-link
-                    v-if="props.showCarbonEmissionsCalculationsLink"
-                    to="/carbon_emissions_calculations"
-                    title="Learn about how we estimate carbon emissions"
-                    class="align-self-start mt-2">
-                    <span>
-                        Learn more about how we calculate your carbon emissions data.
-                        <FontAwesomeIcon icon="fa-question-circle" />
-                    </span>
-                </router-link>
+                <slot name="footer"></slot>
             </div>
         </section>
     </div>
-    <div v-else>Carbon emissions could not be computed at this time.</div>
 </template>
 
 <style scoped>

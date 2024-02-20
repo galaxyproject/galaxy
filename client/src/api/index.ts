@@ -18,14 +18,14 @@ export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 export type HistoryContentItemBase = components["schemas"]["EncodedHistoryContentItem"];
 
 /**
- * Contains information about the aggregated metrics of all jobs in a history.
+ * Contains information about the energy usage of a History.
  */
-export type HistoryMetrics = components["schemas"]["HistoryMetrics"];
+export type HistoryEnergyUsage = components["schemas"]["HistoryEnergyUsage"];
 
 /**
- * Contains information about the carbon emissions of a history.
+ * Contains information about the energy usage of a given workflow invocation.
  */
-export type HistoryEmissions = components["schemas"]["HistoryEmissions"];
+export type WorkflowInvocationEnergyUsage = components["schemas"]["WorkflowInvocationEnergyUsage"];
 
 /**
  * Contains summary information about a HistoryDatasetAssociation.

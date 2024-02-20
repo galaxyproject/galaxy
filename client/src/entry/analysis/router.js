@@ -13,7 +13,6 @@ import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
-import HistoryMetrics from "components/History/CurrentHistory/HistoryMetrics";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
@@ -70,9 +69,9 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryStatistics from "@/components/History/Statistics/HistoryStatistics.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
-import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -327,12 +326,6 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "histories/:historyId/metrics",
-                        name: "HistoryMetrics",
-                        component: HistoryMetrics,
-                        props: true,
-                    },
-                    {
                         path: "interactivetool_entry_points/list",
                         component: InteractiveTools,
                     },
@@ -384,13 +377,13 @@ export function getRouter(Galaxy) {
                         path: "pages/:actionId",
                         component: PageList,
                         props: (route) => ({
-                            published: route.params.actionId == "list_published" ? true : false,
+                            published: route.params.actionId === "list_published" ? true : false,
                         }),
                     },
                     {
-                        path: "storage/history/:historyId",
-                        name: "HistoryOverviewInAnalysis",
-                        component: HistoryStorageOverview,
+                        path: "statistics/history/:historyId",
+                        name: "HistoryStatistics",
+                        component: HistoryStatistics,
                         props: true,
                     },
                     {
@@ -535,7 +528,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/list_published",
                         component: WorkflowList,
-                        props: (route) => ({
+                        props: (_) => ({
                             published: true,
                         }),
                     },
@@ -544,9 +537,9 @@ export function getRouter(Galaxy) {
                         component: WorkflowList,
                         redirect: redirectAnon(),
                         props: (route) => ({
-                            importMessage: route.query["message"],
-                            importStatus: route.query["status"],
-                            query: route.query["query"],
+                            importMessage: route.query.message,
+                            importStatus: route.query.status,
+                            query: route.query.query,
                         }),
                     },
                     {
@@ -574,7 +567,7 @@ export function getRouter(Galaxy) {
                             queryTrsId: route.query.trs_id,
                             queryTrsVersionId: route.query.trs_version,
                             queryTrsUrl: route.query.trs_url,
-                            isRun: route.query.run_form == "true",
+                            isRun: route.query.run_form === "true",
                         }),
                     },
                     {
@@ -611,7 +604,7 @@ export function getRouter(Galaxy) {
         return false;
     }
 
-    router.beforeEach(async (to, from, next) => {
+    router.beforeEach(async (to, _, next) => {
         // TODO: merge anon redirect functionality here for more standard handling
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);

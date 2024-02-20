@@ -8,7 +8,7 @@ import {
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
 import AwsEstimate from "./AwsEstimate.vue";
-import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
+import JobCarbonEmissions from "./JobCarbonEmissions.vue";
 
 const props = defineProps({
     datasetFilesize: {
@@ -55,39 +55,6 @@ const props = defineProps({
 
 const jobMetricsStore = useJobMetricsStore();
 
-async function getJobMetrics() {
-    if (props.jobId) {
-        await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
-    } else {
-        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
-    }
-}
-
-watch(
-    props,
-    () => {
-        getJobMetrics();
-    },
-    { immediate: true }
-);
-
-const ec2Instances = ref<EC2[]>();
-import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
-
-type EC2 = {
-    name: string;
-    mem: number;
-    price: number;
-    priceUnit: string;
-    vCpuCount: number;
-    cpu: {
-        cpuModel: string;
-        tdp: number;
-        coreCount: number;
-        source: string;
-    }[];
-};
-
 const jobMetrics = computed(() => {
     if (props.jobId) {
         return jobMetricsStore.getJobMetricsByJobId(props.jobId);
@@ -100,6 +67,11 @@ const jobMetricsGroupedByPluginType = computed(() => {
     const pluginGroups: Record<string, any> = {};
 
     for (const metric of jobMetrics.value) {
+        // Ignore showing carbon emissions data
+        if (["energy_needed_total", "energy_needed_cpu", "energy_needed_memory"].includes(metric.name)) {
+            continue;
+        }
+
         // new group found
         if (!(metric.plugin in pluginGroups)) {
             pluginGroups[metric.plugin] = {};
@@ -138,6 +110,39 @@ const memoryAllocatedInMebibyte = computed(() => {
 
     return memoryUsage ? parseInt(memoryUsage) : undefined;
 });
+
+const ec2Instances = ref<EC2[]>();
+import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
+
+type EC2 = {
+    name: string;
+    mem: number;
+    price: number;
+    priceUnit: string;
+    vCpuCount: number;
+    cpu: {
+        cpuModel: string;
+        tdp: number;
+        coreCount: number;
+        source: string;
+    }[];
+};
+
+async function getJobMetrics() {
+    if (props.jobId) {
+        await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
+    } else {
+        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+    }
+}
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
@@ -167,12 +172,10 @@ const memoryAllocatedInMebibyte = computed(() => {
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
-        <CarbonEmissions
+        <JobCarbonEmissions
             v-if="shouldShowCarbonEmissionsEstimates && jobRuntimeInSeconds && coresAllocated"
             show-carbon-emissions-calculations-link
-            :carbon-intensity="carbonIntensity"
-            :geographical-server-location-name="geographicalServerLocationName"
-            :power-usage-effectiveness="powerUsageEffectiveness"
+            show-header
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />

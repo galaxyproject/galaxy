@@ -537,13 +537,9 @@ export interface paths {
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
     };
-    "/api/histories/{history_id}/metrics": {
-        /** Returns the cumulative metrics for all jobs in a given history with ``history_id``. */
-        get: operations["history_api_histories__history_id__metrics_get"];
-    };
-    "/api/histories/{history_id}/emissions": {
-        /** Returns the cumulative metrics for all jobs in a given history with ``history_id``. */
-        get: operations["history_api_histories__history_id__emissions_get"];
+    "/api/histories/{history_id}/energy_usage": {
+        /** Returns the energy usage of all jobs in a given history with the given ID. */
+        get: operations["history_api_histories__history_id__energy_usage_get"];
     };
     "/api/histories/{history_id}/archive": {
         /**
@@ -1027,6 +1023,10 @@ export interface paths {
     "/api/invocations/{invocation_id}/write_store": {
         /** Prepare a workflow invocation export-style download and write to supplied URI. */
         post: operations["write_store_api_invocations__invocation_id__write_store_post"];
+    };
+    "/api/invocations/{invocation_id}/energy_usage": {
+        /** Returns the energy usage of all jobs in a workflow invocation with the given ID. */
+        get: operations["invocation_energy_usage_api_invocations__invocation_id__energy_usage_get"];
     };
     "/api/job_lock": {
         /**
@@ -6546,68 +6546,24 @@ export interface components {
          * History Metrics
          * @description The accumulated metrics of all jobs in a history.
          */
-        HistoryMetrics: {
+        HistoryEnergyUsage: {
             /**
-              Total Jobs Count
-              @description The total number of jobs in the history.
-            */
-            total_jobs_in_history: number;
-            /**
-              Total Runtime in Seconds
-              @description The total amount of compute runtime used by all jobs in the history.
-            */
-            total_runtime_in_seconds: number;
-            /**
-              Total Cores Allocated
-              @description The total numbers of cores allocated for all jobs in a history.
-            */
-            total_cores_allocated: number;
-            /**
-              Total Memory Allocated
-              @description The total amount of memory used and alloceated for all jobs in a history.
-            */
-            total_memory_allocated_in_mebibyte: number;
-        };
-        /**
-         * History Emissions
-         * @description The carbon emissions of a history.
-         */
-        HistoryEmissions: {
-            /**
-              NAME
-              @description DESC
-            */
-            cpu_carbon_emissions: number;
+             * Total Energy Needed CPU (kWh)
+             * @description The total energy used by the CPU for all jobs in the history in kilowatt hours.
+             */
+            total_energy_needed_cpu_kwh: number;
 
             /**
-              NAME
-              @description DESC
-            */
-            memory_carbon_emissions: number;
+             * Total Energy Needed Memory (kWh)
+             * @description The total energy used by memory for all jobs in the history in kilowatt hours.
+             */
+            total_energy_needed_memory_kwh: number;
 
             /**
-              NAME
-              @description DESC
-            */
-            total_carbon_emissions: number;
-
-            /**
-              NAME
-              @description DESC
-            */
-            energy_needed_cpu: number;
-
-            /**
-              NAME
-              @description DESC
-            */
-            energy_needed_memory: number;
-
-            /**
-              NAME
-              @description DESC
-            */
-            total_energy_needed: number;
+             * Total Energy Needed (kWh)
+             * @description The total energy needed to run all jobs in the history in kilowatt hours.
+             */
+            total_energy_needed_kwh: number;
         };
         /**
          * Hyperlink
@@ -7413,6 +7369,25 @@ export interface components {
              * @description Whether to take action on the invocation step.
              */
             action: boolean;
+        };
+        WorkflowInvocationEnergyUsage: {
+            /**
+             * Total Energy Needed CPU (kWh)
+             * @description The total energy used by the CPU for all jobs in the workflow invocation in kilowatt hours.
+             */
+            total_energy_needed_cpu_kwh: number;
+
+            /**
+             * Total Energy Needed Memory (kWh)
+             * @description The total energy used by memory for all jobs in the workflow invocation in kilowatt hours.
+             */
+            total_energy_needed_memory_kwh: number;
+
+            /**
+             * Total Energy Needed (kWh)
+             * @description The total energy needed to run all jobs in the workflow invocation in kilowatt hours.
+             */
+            total_energy_needed_kwh: number;
         };
         /**
          * ItemTagsCreatePayload
@@ -14482,7 +14457,7 @@ export interface operations {
             };
         };
     };
-    history_api_histories__history_id__metrics_get: {
+    history_api_histories__history_id__energy_usage_get: {
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -14497,33 +14472,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HistoryMetrics"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    history_api_histories__history_id__emissions_get: {
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                history_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["HistoryEmissions"];
+                    "application/json": components["schemas"]["HistoryEnergyUsage"];
                 };
             };
             /** @description Validation Error */
@@ -17142,6 +17091,32 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invocation_energy_usage_api_invocations__invocation_id__energy_usage_get: {
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["WorkflowInvocationEnergyUsage"];
                 };
             };
             /** @description Validation Error */

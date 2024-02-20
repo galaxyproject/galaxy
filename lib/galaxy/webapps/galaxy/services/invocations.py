@@ -7,6 +7,7 @@ from typing import (
     Tuple,
 )
 
+import sqlalchemy as sa
 from pydantic import Field
 
 from galaxy.celery.tasks import (
@@ -25,6 +26,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
+    JobMetricNumeric,
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
@@ -133,6 +135,41 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     def show(self, trans, invocation_id, serialization_params, eager=False):
         wfi = self._workflows_manager.get_invocation(trans, invocation_id, eager)
         return self.serialize_workflow_invocation(wfi, serialization_params)
+
+    def get_energy_usage(
+        self,
+        trans,
+        invocation_id: DecodedDatabaseIdField,
+    ):
+        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        job_ids = [step.job_id for step in workflow_invocation.steps if step.job_id is not None]
+
+        total_energy_needed_cpu_kwh = (
+            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_cpu"))
+            .filter(
+                JobMetricNumeric.metric_name == "energy_needed_cpu",
+                JobMetricNumeric.job_id.in_(job_ids),
+            )
+            .scalar()
+        )
+
+        total_energy_needed_memory_kwh = (
+            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_memory"))
+            .filter(
+                JobMetricNumeric.metric_name == "energy_needed_memory",
+                JobMetricNumeric.job_id.in_(job_ids),
+            )
+            .scalar()
+            or 0.0
+        )
+
+        total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
+
+        return {
+            "total_energy_needed_cpu_kwh": total_energy_needed_cpu_kwh,
+            "total_energy_needed_memory_kwh": total_energy_needed_memory_kwh,
+            "total_energy_needed_kwh": total_energy_needed_kwh,
+        }
 
     def cancel(self, trans, invocation_id, serialization_params):
         wfi = self._workflows_manager.request_invocation_cancellation(trans, invocation_id)

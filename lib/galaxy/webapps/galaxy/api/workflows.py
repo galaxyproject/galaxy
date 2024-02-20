@@ -1800,3 +1800,14 @@ class FastAPIInvocations:
             merge_history_metadata=merge_history_metadata or False,
         )
         return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/energy_usage",
+        summary="Get the energy usage of a workflow invocation.",
+    )
+    def get_energy_usage(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        return self.invocations_service.get_energy_usage(trans, invocation_id)
