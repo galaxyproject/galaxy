@@ -21,7 +21,6 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 const route = useRoute();
 const router = useRouter();
 
-// @ts-ignore bad library types
 library.add(faColumns, faPlus, faUndo);
 
 const filter = ref("");
