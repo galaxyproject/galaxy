@@ -1,4 +1,4 @@
-import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { fetcher } from "@/api/schema";
@@ -15,6 +15,7 @@ const { emit } = useEventBus<string>("grid-router-push");
  */
 const getPages = fetcher.path("/api/pages").method("get").create();
 const deletePage = fetcher.path("/api/pages/{id}").method("delete").create();
+const undeletePage = fetcher.path("/api/pages/{id}/undelete").method("put").create();
 
 /**
  * Local types
@@ -110,6 +111,27 @@ const fields: FieldArray = [
                             return {
                                 status: "danger",
                                 message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
+                            };
+                        }
+                    }
+                },
+            },
+            {
+                title: "Restore",
+                icon: faTrashRestore,
+                condition: (data: PageEntry) => !!data.deleted,
+                handler: async (data: PageEntry) => {
+                    if (confirm(_l(`Are you sure that you want to restore the selected page?`))) {
+                        try {
+                            await undeletePage({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.title}' has been restored.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to restore '${data.title}': ${errorMessageAsString(e)}.`,
                             };
                         }
                     }
