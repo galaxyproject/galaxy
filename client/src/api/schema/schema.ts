@@ -1807,6 +1807,10 @@ export interface paths {
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
     };
+    "/api/workflows/{encoded_workflow_id}": {
+        /** Displays information needed to run a workflow. */
+        get: operations["show_workflow_api_workflows__encoded_workflow_id__get"];
+    };
     "/api/workflows/{workflow_id}": {
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
@@ -22243,6 +22247,40 @@ export interface operations {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_workflow_api_workflows__encoded_workflow_id__get: {
+        /** Displays information needed to run a workflow. */
+        parameters: {
+            /** @description Use the legacy workflow format. */
+            /** @description The version of the workflow to fetch. */
+            query?: {
+                instance?: boolean | null;
+                legacy?: boolean | null;
+                version?: number | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                encoded_workflow_id: string;
             };
         };
         responses: {
