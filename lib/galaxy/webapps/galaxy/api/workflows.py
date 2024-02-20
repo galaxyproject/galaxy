@@ -93,7 +93,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -190,38 +189,6 @@ class WorkflowsAPIController(
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
-
-    @expose_api_anonymous_and_sessionless
-    def show(self, trans: GalaxyWebTransaction, id, **kwd):
-        """
-        GET /api/workflows/{encoded_workflow_id}
-
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-
-        Displays information needed to run a workflow.
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
-            if wf_count == 0:
-                message = "Workflow is neither importable, nor owned by or shared with current user"
-                raise exceptions.ItemAccessibilityException(message)
-        if kwd.get("legacy", False):
-            style = "legacy"
-        else:
-            style = "instance"
-        version = kwd.get("version")
-        if version is None and util.string_as_bool(kwd.get("instance", "false")):
-            # A Workflow instance may not be the latest workflow version attached to StoredWorkflow.
-            # This figures out the correct version so that we return the correct Workflow and version.
-            workflow_id = self.decode_id(id)
-            for i, workflow in enumerate(reversed(stored_workflow.workflows)):
-                if workflow.id == workflow_id:
-                    version = i
-                    break
-        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -841,6 +808,22 @@ InstanceQueryParam = Annotated[
     ),
 ]
 
+LegacyQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Legacy",
+        description="Use the legacy workflow format.",
+    ),
+]
+
+VersionQueryParam = Annotated[
+    Optional[int],
+    Query(
+        title="Version",
+        description="The version of the workflow to fetch.",
+    ),
+]
+
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
     IndexQueryTag(
@@ -1150,6 +1133,21 @@ class FastAPIWorkflows:
             trans,
             payload=payload,
         )
+
+    @router.get(
+        "/api/workflows/{encoded_workflow_id}",
+        summary="Displays information needed to run a workflow.",
+        name="show_workflow",
+    )
+    def show_workflow(
+        self,
+        encoded_workflow_id: StoredWorkflowIDPathParam,
+        instance: InstanceQueryParam = False,
+        legacy: LegacyQueryParam = False,
+        version: VersionQueryParam = None,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        return self.service.show_workflow(trans, encoded_workflow_id, instance, legacy, version)
 
 
 StepDetailQueryParam = Annotated[
