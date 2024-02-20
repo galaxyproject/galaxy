@@ -4,7 +4,7 @@ import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref, watch } from "vue";
 
-import { HistoryEnergyUsage } from "@/api";
+import { EnergyUsageSummary } from "@/api";
 import { fetcher } from "@/api/schema";
 import {
     worldwideCarbonIntensity,
@@ -23,7 +23,7 @@ const { config } = useConfig(true);
 const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
 
-const energyUsage = ref<HistoryEnergyUsage>({
+const energyUsage = ref<EnergyUsageSummary>({
     total_energy_needed_cpu_kwh: 0,
     total_energy_needed_memory_kwh: 0,
     total_energy_needed_kwh: 0,

@@ -6543,25 +6543,25 @@ export interface components {
             [key: string]: unknown | undefined;
         };
         /**
-         * History Metrics
-         * @description The accumulated metrics of all jobs in a history.
+         * Energy Usage Summary Metrics
+         * @description The summary of energy usage for all jobs in a given history or a workflow invocation.
          */
-        HistoryEnergyUsage: {
+        EnergyUsageSummary: {
             /**
              * Total Energy Needed CPU (kWh)
-             * @description The total energy used by the CPU for all jobs in the history in kilowatt hours.
+             * @description The total energy used by the CPU in kilowatt hours.
              */
             total_energy_needed_cpu_kwh: number;
 
             /**
              * Total Energy Needed Memory (kWh)
-             * @description The total energy used by memory for all jobs in the history in kilowatt hours.
+             * @description The total energy used by memory in kilowatt hours.
              */
             total_energy_needed_memory_kwh: number;
 
             /**
              * Total Energy Needed (kWh)
-             * @description The total energy needed to run all jobs in the history in kilowatt hours.
+             * @description The total energy needed to run all jobs in kilowatt hours.
              */
             total_energy_needed_kwh: number;
         };
@@ -7369,25 +7369,6 @@ export interface components {
              * @description Whether to take action on the invocation step.
              */
             action: boolean;
-        };
-        WorkflowInvocationEnergyUsage: {
-            /**
-             * Total Energy Needed CPU (kWh)
-             * @description The total energy used by the CPU for all jobs in the workflow invocation in kilowatt hours.
-             */
-            total_energy_needed_cpu_kwh: number;
-
-            /**
-             * Total Energy Needed Memory (kWh)
-             * @description The total energy used by memory for all jobs in the workflow invocation in kilowatt hours.
-             */
-            total_energy_needed_memory_kwh: number;
-
-            /**
-             * Total Energy Needed (kWh)
-             * @description The total energy needed to run all jobs in the workflow invocation in kilowatt hours.
-             */
-            total_energy_needed_kwh: number;
         };
         /**
          * ItemTagsCreatePayload
@@ -14472,7 +14453,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HistoryEnergyUsage"];
+                    "application/json": components["schemas"]["EnergyUsageSummary"];
                 };
             };
             /** @description Validation Error */
@@ -17116,7 +17097,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["WorkflowInvocationEnergyUsage"];
+                    "application/json": components["schemas"]["EnergyUsageSummary"];
                 };
             };
             /** @description Validation Error */

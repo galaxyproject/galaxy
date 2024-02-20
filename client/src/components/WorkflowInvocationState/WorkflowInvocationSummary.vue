@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 
-import { WorkflowInvocationEnergyUsage } from "@/api";
+import { EnergyUsageSummary } from "@/api";
 import { fetcher } from "@/api/schema";
 import {
     worldwideCarbonIntensity,
@@ -21,7 +21,7 @@ const { config } = useConfig(true);
 const carbonIntensity = config.value.carbon_intensity ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = config.value.geographical_server_location_name ?? "GLOBAL";
 
-const energyUsage = ref<WorkflowInvocationEnergyUsage>({
+const energyUsage = ref<EnergyUsageSummary>({
     total_energy_needed_cpu_kwh: 0,
     total_energy_needed_memory_kwh: 0,
     total_energy_needed_kwh: 0,

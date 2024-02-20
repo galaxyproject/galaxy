@@ -40,6 +40,7 @@ from galaxy.schema.invocation import (
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
+    InvocationStepState,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
@@ -151,7 +152,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 JobMetricNumeric.job_id.in_(job_ids),
             )
             .scalar()
-        )
+        ) or 0.0
 
         total_energy_needed_memory_kwh = (
             trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_memory"))
@@ -160,8 +161,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
                 JobMetricNumeric.job_id.in_(job_ids),
             )
             .scalar()
-            or 0.0
-        )
+        ) or 0.0
 
         total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
 

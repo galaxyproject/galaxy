@@ -18,14 +18,9 @@ export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 export type HistoryContentItemBase = components["schemas"]["EncodedHistoryContentItem"];
 
 /**
- * Contains information about the energy usage of a History.
+ * Contains information about the energy usage of a history or an workflow invocation.
  */
-export type HistoryEnergyUsage = components["schemas"]["HistoryEnergyUsage"];
-
-/**
- * Contains information about the energy usage of a given workflow invocation.
- */
-export type WorkflowInvocationEnergyUsage = components["schemas"]["WorkflowInvocationEnergyUsage"];
+export type EnergyUsageSummary = components["schemas"]["EnergyUsageSummary"];
 
 /**
  * Contains summary information about a HistoryDatasetAssociation.
