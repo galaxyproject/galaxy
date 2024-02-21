@@ -61,7 +61,7 @@ class ConfigurationManager:
         self,
         decoded_id: int,
     ) -> Dict[str, str]:
-        encoded_id = unicodify(self._app.security.encode_id(decoded_id))
+        encoded_id = self._app.security.encode_id(decoded_id)
         return {"encoded_id": encoded_id}
 
     def tool_lineages(self) -> List[Dict[str, Dict]]:
