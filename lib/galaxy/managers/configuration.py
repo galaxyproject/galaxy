@@ -61,7 +61,6 @@ class ConfigurationManager:
         self,
         decoded_id: int,
     ) -> Dict[str, str]:
-        # Handle the special case for library folders
         encoded_id = unicodify(self._app.security.encode_id(decoded_id))
         return {"encoded_id": encoded_id}
 
