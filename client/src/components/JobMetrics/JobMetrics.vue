@@ -45,8 +45,17 @@ const jobMetrics = computed(() => {
 
 const jobMetricsGroupedByPluginType = computed(() => {
     const pluginGroups: Record<string, any> = {};
+    const ignoredMetrics = [
+        "energy_needed_cpu",
+        "energy_needed_memory",
+        "estimated_server_instance_name",
+    ];
 
     for (const metric of jobMetrics.value) {
+        if (ignoredMetrics.includes(metric.name)) {
+          continue;
+        }
+
         // new group found
         if (!(metric.plugin in pluginGroups)) {
             pluginGroups[metric.plugin] = {};
