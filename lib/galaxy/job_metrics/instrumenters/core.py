@@ -34,6 +34,8 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 ENERGY_NEEDED_MEMORY_KEY = "energy_needed_memory"
 ENERGY_NEEDED_CPU_KEY = "energy_needed_cpu"
 
+ESTIMATED_SERVER_INSTANCE_NAME_KEY = "estimated_server_instance_name"
+
 
 class CorePluginFormatter(JobMetricFormatter):
     def format(self, key: str, value: Any) -> FormattedMetric:
@@ -47,6 +49,8 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("CPU Energy Usage", self.__format_energy_needed_text(float(value)))
         elif key == ENERGY_NEEDED_MEMORY_KEY:
             return FormattedMetric("Memory Energy Usage", self.__format_energy_needed_text(float(value)))
+        elif key == ESTIMATED_SERVER_INSTANCE_NAME_KEY:
+            return FormattedMetric("Estimated Server Instance", str(value))
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
@@ -157,6 +161,7 @@ class CorePlugin(InstrumentPlugin):
                         properties[ENERGY_NEEDED_MEMORY_KEY] = energy_needed_memory_kwh
 
                     properties[ENERGY_NEEDED_CPU_KEY] = energy_needed_cpu_kwh
+                    properties[ESTIMATED_SERVER_INSTANCE_NAME_KEY] = estimated_server_instance["name"]
 
         return properties
 
@@ -197,12 +202,12 @@ class CorePlugin(InstrumentPlugin):
         server_instance = None
 
         for aws_instance in load_aws_ec2_reference_data_json():
-            # Exclude memory from search criteria
+            # Use only core count in search criteria
             if adjusted_memory == 0 and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
                 server_instance = aws_instance
                 break
 
-            # Search by all criteria
+            # Use both core count and allocated memory in search criteria
             if aws_instance["mem"] >= adjusted_memory and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
                 server_instance = aws_instance
                 break

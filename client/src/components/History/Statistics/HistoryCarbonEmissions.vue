@@ -99,12 +99,6 @@ watch(
                         <strong>2.</strong> Using the global default power usage effectiveness value of
                         {{ worldwidePowerUsageEffectiveness }}.
                     </span>
-
-                    <br />
-
-                    <strong>3.</strong> based off of the closest AWS EC2 instance comparable to the server that ran this
-                    job. Estimates depend on the core count, allocated memory and the job runtime. The closest estimate
-                    is a <strong>TODO</strong> instance.
                 </p>
             </template>
         </CarbonEmissions>
