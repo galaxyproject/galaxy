@@ -45,6 +45,7 @@ DecodedIdPathParam = Path(
     description="Decoded id to be encoded",
 )
 
+
 @router.cbv
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
