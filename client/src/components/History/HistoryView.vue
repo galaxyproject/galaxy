@@ -33,8 +33,8 @@
         <HistoryPanel
             v-else
             :history="history"
-            :writable="canEditHistory"
-            :show-controls="false"
+            :can-edit-history="canEditHistory"
+            :should-show-controls="false"
             filterable
             @view-collection="onViewCollection" />
         <CopyModal id="copy-history-modal" :history="history" />

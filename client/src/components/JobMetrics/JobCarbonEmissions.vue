@@ -2,7 +2,6 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref } from "vue";
 
 import { worldwideCarbonIntensity } from "@/components/CarbonEmissions/carbonEmissionConstants";
 import * as carbonEmissionsConstants from "@/components/CarbonEmissions/carbonEmissionConstants";
@@ -24,17 +23,13 @@ const props = defineProps<{
 const { config } = useConfig(true);
 const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
-
-const totalEnergyNeeded = ref(props.energyUsage.energyNeededCPU + props.energyUsage.energyNeededMemory);
 </script>
 
 <template>
     <div class="mt-4">
         <CarbonEmissions
-            :energy-needed-memory="energyUsage.energyNeededMemory"
-            :energy-needed-c-p-u="energyUsage.energyNeededCPU"
-            :total-energy-needed="totalEnergyNeeded"
-            :total-carbon-emissions="() => totalEnergyNeeded * carbonIntensity">
+            :energy-needed-memory="props.energyUsage.energyNeededMemory"
+            :energy-needed-c-p-u="props.energyUsage.energyNeededCPU">
             <template v-slot:header>
                 <Heading h2 separator inline bold> Carbon Footprint </Heading>
             </template>

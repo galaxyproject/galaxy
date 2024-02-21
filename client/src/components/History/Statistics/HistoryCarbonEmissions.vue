@@ -19,7 +19,6 @@ library.add(faQuestionCircle);
 const props = defineProps<{ historyId: string }>();
 
 const { config } = useConfig(true);
-const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
 
 const energyUsage = ref<EnergyUsageSummary>({
@@ -57,9 +56,7 @@ watch(
     <div>
         <CarbonEmissions
             :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
-            :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
-            :total-energy-needed="energyUsage.total_energy_needed_kwh"
-            :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
+            :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh">
             <template v-slot:header>
                 <p>
                     Here is an estimated summary of the total carbon footprint of all datasets and jobs in the current

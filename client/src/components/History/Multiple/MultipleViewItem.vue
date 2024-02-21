@@ -15,7 +15,7 @@
             v-else
             :history="getHistory"
             :filter="filter"
-            :show-controls="false"
+            :should-show-controls="false"
             @view-collection="onViewCollection" />
         <hr class="w-100 m-2" />
         <div class="flex-row flex-grow-0">

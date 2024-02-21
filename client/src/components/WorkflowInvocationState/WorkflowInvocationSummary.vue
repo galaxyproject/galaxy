@@ -264,9 +264,7 @@ watch(
 
             <CarbonEmissions
                 :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
-                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
-                :total-energy-needed="energyUsage.total_energy_needed_kwh"
-                :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
+                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh">
                 <template v-slot:header>
                     <p>
                         Here is an estimated summary of the total carbon footprint of this workflow invocation.

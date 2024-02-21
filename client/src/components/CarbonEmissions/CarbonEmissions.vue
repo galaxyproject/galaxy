@@ -2,22 +2,19 @@
 import { GetComponentPropTypes } from "types/utilityTypes";
 import { computed, unref } from "vue";
 
-import { worldwideCarbonIntensity } from "@/components/CarbonEmissions/carbonEmissionConstants";
-import * as carbonEmissionsConstants from "@/components/CarbonEmissions/carbonEmissionConstants.js";
 import { useConfig } from "@/composables/config";
 
-import CarbonEmissionsCard from "@/components/CarbonEmissions/CarbonEmissionCard.vue";
+import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
+
+import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
 
 const props = defineProps<{
     energyNeededCPU: number;
     energyNeededMemory: number;
-    totalEnergyNeeded: number;
-    totalCarbonEmissions: number;
 }>();
 
 const { config } = useConfig(true);
-
-const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
+const carbonIntensity = (config.value.carbon_intensity as number) ?? carbonEmissionsConstants.worldwideCarbonIntensity;
 
 const canShowMemory = computed(() => {
     return props.energyNeededMemory && props.energyNeededMemory !== 0;
