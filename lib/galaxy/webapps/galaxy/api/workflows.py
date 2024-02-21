@@ -83,6 +83,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     GetToolPredictionsPayload,
     InvokeWorkflowPayload,
+    StoredWorkflowDetailed,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -1146,7 +1147,7 @@ class FastAPIWorkflows:
         legacy: LegacyQueryParam = False,
         version: VersionQueryParam = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> StoredWorkflowDetailed:
         return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
 
 

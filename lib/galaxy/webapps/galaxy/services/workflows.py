@@ -28,7 +28,10 @@ from galaxy.schema.schema import (
     InvocationsStateCounts,
     WorkflowIndexQueryPayload,
 )
-from galaxy.schema.workflows import InvokeWorkflowPayload  # GetToolPredictionsPayload,
+from galaxy.schema.workflows import (  # GetToolPredictionsPayload,
+    InvokeWorkflowPayload,
+    StoredWorkflowDetailed,
+)
 from galaxy.tools import recommendations
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -230,7 +233,7 @@ class WorkflowsService(ServiceBase):
         )
         return {"ids_in_menu": ids_in_menu, "workflows": workflows}
 
-    def show_workflow(self, trans, workflow_id, instance, legacy, version):
+    def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
@@ -248,7 +251,10 @@ class WorkflowsService(ServiceBase):
                 if workflow.id == workflow_id:
                     version = i
                     break
-        return self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
+        detailed_workflow = StoredWorkflowDetailed(
+            **self._workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
+        )
+        return detailed_workflow
 
     def _get_workflows_list(
         self,
