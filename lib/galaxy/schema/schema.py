@@ -2112,10 +2112,12 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Published",
         description="Whether this workflow is currently publicly available to all users.",
     )
-    annotations: List[str] = Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
-        ...,
-        title="Annotations",
-        description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+    annotations: Optional[List[str]] = (
+        Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
+            None,
+            title="Annotations",
+            description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+        )
     )
     tags: TagCollection
     deleted: bool = Field(
@@ -2138,13 +2140,13 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Latest workflow UUID",
         description="TODO",
     )
-    number_of_steps: int = Field(
-        ...,
+    number_of_steps: Optional[int] = Field(
+        None,
         title="Number of Steps",
         description="The number of steps that make up this workflow.",
     )
-    show_in_tool_panel: bool = Field(
-        ...,
+    show_in_tool_panel: Optional[bool] = Field(
+        None,
         title="Show in Tool Panel",
         description="Whether to display this workflow in the Tools Panel.",
     )
