@@ -107,7 +107,7 @@ class JobMetrics:
                 safety = DEFAULT_SAFETY
             return DictifiableMetric(
                 title,
-                str(value),
+                value,
                 str(metric_value),
                 metric_name,
                 metric_plugin,
