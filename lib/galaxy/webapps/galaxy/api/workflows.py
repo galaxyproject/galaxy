@@ -1135,19 +1135,19 @@ class FastAPIWorkflows:
         )
 
     @router.get(
-        "/api/workflows/{encoded_workflow_id}",
+        "/api/workflows/{workflow_id}",
         summary="Displays information needed to run a workflow.",
         name="show_workflow",
     )
     def show_workflow(
         self,
-        encoded_workflow_id: StoredWorkflowIDPathParam,
+        workflow_id: StoredWorkflowIDPathParam,
         instance: InstanceQueryParam = False,
         legacy: LegacyQueryParam = False,
         version: VersionQueryParam = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
-        return self.service.show_workflow(trans, encoded_workflow_id, instance, legacy, version)
+        return self.service.show_workflow(trans, workflow_id, instance, legacy, version)
 
 
 StepDetailQueryParam = Annotated[
