@@ -2,7 +2,9 @@ import json
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -11,8 +13,19 @@ from pydantic import (
 )
 
 from galaxy.schema.schema import (
+    AnnotationField,
+    InputDataCollectionStep,
+    InputDataStep,
+    InputParameterStep,
     Model,
+    Organization,
+    PauseStep,
+    Person,
     PreferredObjectStoreIdField,
+    StoredWorkflowSummary,
+    SubworkflowStep,
+    ToolStep,
+    WorkflowInput,
 )
 
 # class WorkflowExtractionParams(Model):
@@ -201,3 +214,32 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
         description="The ID of the object store that should be used to store ? datasets in this history.",
     )
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
+
+
+class StoredWorkflowDetailed(StoredWorkflowSummary):
+    annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
+    license: Optional[str] = Field(
+        None, title="License", description="SPDX Identifier of the license associated with this workflow."
+    )
+    version: int = Field(
+        ..., title="Version", description="The version of the workflow represented by an incremental number."
+    )
+    inputs: Dict[int, WorkflowInput] = Field(
+        {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
+    )
+    creator: Optional[List[Union[Person, Organization]]] = Field(
+        None,
+        title="Creator",
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
+    )
+    steps: Dict[
+        int,
+        Union[
+            InputDataStep,
+            InputDataCollectionStep,
+            InputParameterStep,
+            PauseStep,
+            ToolStep,
+            SubworkflowStep,
+        ],
+    ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
