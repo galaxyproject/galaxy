@@ -47,6 +47,13 @@ export interface paths {
          */
         get: operations["dynamic_tool_confs_api_configuration_dynamic_tool_confs_get"];
     };
+    "/api/configuration/encode/{decoded_id}": {
+        /**
+         * Encode a given id
+         * @description Decode a given id.
+         */
+        get: operations["encode_id_api_configuration_encode__decoded_id__get"];
+    };
     "/api/configuration/tool_lineages": {
         /**
          * Return tool lineages for tools that have them
@@ -11508,6 +11515,38 @@ export interface operations {
                     "application/json": {
                         [key: string]: string | undefined;
                     }[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    encode_id_api_configuration_encode__decoded_id__get: {
+        /**
+         * Encode a given id
+         * @description Decode a given id.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description Decoded id to be encoded */
+            path: {
+                decoded_id: number;
+            };
+        };
+        responses: {
+            /** @description Encoded id */
+            200: {
+                content: {
+                    "application/json": {
+                        [key: string]: string | undefined;
+                    };
                 };
             };
             /** @description Validation Error */
