@@ -15,7 +15,7 @@ MEMINFO_TITLES = {"memtotal": "Total System Memory", "swaptotal": "Total System 
 
 
 class MemInfoFormatter(formatting.JobMetricFormatter):
-    def format(self, key: str, value: Any):
+    def format(self, key: str, value: Any) -> formatting.FormattedMetric:
         title = MEMINFO_TITLES.get(key, key)
         return formatting.FormattedMetric(title, util.nice_size(value * 1000))  # kB = *1000, KB = *1024 - wikipedia
 
