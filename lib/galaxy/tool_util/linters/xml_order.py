@@ -42,6 +42,7 @@ TAG_ORDER = [
 DATASOURCE_TAG_ORDER = [
     "description",
     "macros",
+    "requirements",
     "command",
     "configfiles",
     "inputs",
@@ -62,7 +63,7 @@ class XMLOrder(Linter):
             return
         tool_root = tool_xml.getroot()
 
-        if tool_root.attrib.get("tool_type", "") == "data_source":
+        if tool_root.attrib.get("tool_type", "") in ["data_source", "data_source_async"]:
             tag_ordering = DATASOURCE_TAG_ORDER
         else:
             tag_ordering = TAG_ORDER
