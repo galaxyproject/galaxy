@@ -243,3 +243,24 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
             SubworkflowStep,
         ],
     ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
+    # TODO - Check descriptions of newly added fields
+    importable: Optional[bool] = Field(
+        ...,
+        title="Importable",
+        description="Indicates if the workflow is importable by ?.",
+    )
+    email_hash: Optional[str] = Field(
+        ...,
+        title="Email Hash",
+        description="The hash of the email of ?",
+    )
+    slug: Optional[str] = Field(
+        ...,
+        title="Slug",
+        description="The slug of the workflow.",
+    )
+    source_metadata: Optional[str] = Field(
+        ...,
+        title="Source Metadata",
+        description="The source metadata of the workflow.",
+    )
