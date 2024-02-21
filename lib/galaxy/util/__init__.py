@@ -1135,32 +1135,6 @@ def commaify(amount):
         return commaify(new)
 
 
-def trailing_zeros_to_powerof10(amount: int) -> str:
-    """
-    >>> trailing_zeros_to_powerof10(23000)
-    '23K'
-    >>> trailing_zeros_to_powerof10(2300000)
-    '2.3M'
-    >>> trailing_zeros_to_powerof10(23000000)
-    '23M'
-    >>> trailing_zeros_to_powerof10(1)
-    '1'
-    >>> trailing_zeros_to_powerof10(0)
-    '0'
-    >>> trailing_zeros_to_powerof10(100)
-    '100'
-    >>> trailing_zeros_to_powerof10(-100)
-    '-100'
-    """
-    m, prefix = metric_prefix(amount, 1000)
-    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
-    exp = f"{m_str}{prefix}"
-    if len(exp) <= len(str(amount)):
-        return exp
-    else:
-        return str(amount)
-
-
 @overload
 def unicodify(  # type: ignore[misc]
     value: Literal[None],
@@ -1486,7 +1460,7 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def metric_prefix(number: Union[int, float], base: int, text: bool = True) -> Tuple[float, str]:
+def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
     """
     >>> metric_prefix(100, 1000)
     (100.0, '')
@@ -1494,10 +1468,6 @@ def metric_prefix(number: Union[int, float], base: int, text: bool = True) -> Tu
     (999.0, '')
     >>> metric_prefix(1000, 1000)
     (1.0, 'K')
-    >>> metric_prefix(999, 1000, False)
-    (999.0, '0')
-    >>> metric_prefix(1000, 1000, False)
-    (1.0, '3')
     >>> metric_prefix(1001, 1000)
     (1.001, 'K')
     >>> metric_prefix(1000000, 1000)
@@ -1514,12 +1484,38 @@ def metric_prefix(number: Union[int, float], base: int, text: bool = True) -> Tu
     else:
         sign = 1
 
-    for i, prefix in enumerate(prefixes):
+    for prefix in prefixes:
         if number < base:
-            return sign * float(number), prefix if text else str(i * 3)
+            return sign * float(number), prefix
         number /= base
     else:
-        return sign * float(number) * base, prefix if text else str(i * 3)
+        return sign * float(number) * base, prefix
+
+
+def shorten_with_metric_prefix(amount: int) -> str:
+    """
+    >>> shorten_with_metric_prefix(23000)
+    '23K'
+    >>> shorten_with_metric_prefix(2300000)
+    '2.3M'
+    >>> shorten_with_metric_prefix(23000000)
+    '23M'
+    >>> shorten_with_metric_prefix(1)
+    '1'
+    >>> shorten_with_metric_prefix(0)
+    '0'
+    >>> shorten_with_metric_prefix(100)
+    '100'
+    >>> shorten_with_metric_prefix(-100)
+    '-100'
+    """
+    m, prefix = metric_prefix(amount, 1000)
+    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
+    exp = f"{m_str}{prefix}"
+    if len(exp) <= len(str(amount)):
+        return exp
+    else:
+        return str(amount)
 
 
 def nice_size(size: Union[float, int, str]) -> str:
