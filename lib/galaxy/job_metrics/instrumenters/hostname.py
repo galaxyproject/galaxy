@@ -1,7 +1,6 @@
 """The module describes the ``hostname`` job metrics plugin."""
 
 import logging
-from typing import Any
 
 from . import InstrumentPlugin
 
