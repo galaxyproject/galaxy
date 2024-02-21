@@ -115,7 +115,7 @@ class FastAPIConfiguration:
         summary="Encode a given id",
         response_description="Encoded id",
     )
-    def encode_id(self, decoded_id: str = DecodedIdPathParam) -> Dict[str, str]:
+    def encode_id(self, decoded_id: int = DecodedIdPathParam) -> Dict[str, str]:
         """Decode a given id."""
         return self.configuration_manager.encode_id(decoded_id)
 
