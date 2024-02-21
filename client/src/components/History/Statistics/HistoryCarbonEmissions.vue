@@ -19,7 +19,6 @@ library.add(faQuestionCircle);
 const props = defineProps<{ historyId: string }>();
 
 const { config } = useConfig(true);
-
 const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
 

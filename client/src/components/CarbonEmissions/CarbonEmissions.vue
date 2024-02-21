@@ -300,7 +300,9 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
                     </tbody>
                 </table>
 
-                <slot name="footer"></slot>
+                <div class="footer">
+                    <slot name="footer"></slot>
+                </div>
             </div>
         </section>
     </div>
@@ -324,5 +326,9 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     grid-gap: 1rem;
+}
+
+.footer {
+    align-self: flex-start;
 }
 </style>

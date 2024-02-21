@@ -13,21 +13,19 @@ import Heading from "@/components/Common/Heading.vue";
 
 library.add(faQuestionCircle);
 
-interface JobCarbonEmissionsProps {
+const props = defineProps<{
     energyUsage: {
         energyNeededCPU: number;
         energyNeededMemory: number;
     };
     estimatedServerInstanceName: string;
-}
-
-const props = defineProps<JobCarbonEmissionsProps>();
-
-const totalEnergyNeeded = ref(props.energyUsage.energyNeededCPU + props.energyUsage.energyNeededMemory);
+}>();
 
 const { config } = useConfig(true);
 const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
 const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
+
+const totalEnergyNeeded = ref(props.energyUsage.energyNeededCPU + props.energyUsage.energyNeededMemory);
 </script>
 
 <template>
@@ -67,15 +65,16 @@ const geographicalServerLocationName = (config.value.geographical_server_locatio
                     is a <strong>{{ estimatedServerInstanceName }}</strong> instance.
                 </p>
 
-                <router-link
-                    to="/carbon_emissions_calculations"
-                    title="Learn about how we estimate carbon emissions"
-                    class="align-self-start mt-2">
-                    <span>
-                        Learn more about how we calculate your carbon emissions data.
-                        <FontAwesomeIcon icon="fa-question-circle" />
-                    </span>
-                </router-link>
+                <div class="mt-2">
+                    <router-link
+                        to="/carbon_emissions_calculations"
+                        title="Learn about how we estimate carbon emissions">
+                        <span>
+                            Learn more about how we calculate your carbon emissions data.
+                            <FontAwesomeIcon icon="fa-question-circle" />
+                        </span>
+                    </router-link>
+                </div>
             </template>
         </CarbonEmissions>
     </div>
