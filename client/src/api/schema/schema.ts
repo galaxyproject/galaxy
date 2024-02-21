@@ -1807,11 +1807,9 @@ export interface paths {
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
     };
-    "/api/workflows/{encoded_workflow_id}": {
-        /** Displays information needed to run a workflow. */
-        get: operations["show_workflow_api_workflows__encoded_workflow_id__get"];
-    };
     "/api/workflows/{workflow_id}": {
+        /** Displays information needed to run a workflow. */
+        get: operations["show_workflow_api_workflows__workflow_id__get"];
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
     };
@@ -6835,6 +6833,129 @@ export interface components {
              */
             to_posix_lines?: "Yes" | boolean | null;
         };
+        /** InputDataCollectionStep */
+        InputDataCollectionStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default data_collection_input
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
+        };
+        /** InputDataStep */
+        InputDataStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default data_input
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
+        };
+        /** InputParameterStep */
+        InputParameterStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default parameter_input
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
+        };
         /** InputReferenceByLabel */
         InputReferenceByLabel: {
             /**
@@ -6860,6 +6981,19 @@ export interface components {
              * @description The order_index of the step being referenced. The order indices of a workflow start at 0.
              */
             order_index: number;
+        };
+        /** InputStep */
+        InputStep: {
+            /**
+             * Source Step
+             * @description The identifier of the workflow step connected to this particular input.
+             */
+            source_step: number;
+            /**
+             * Step Output
+             * @description The name of the output generated by the source step.
+             */
+            step_output: string;
         };
         /** InstalledRepositoryToolShedStatus */
         InstalledRepositoryToolShedStatus: {
@@ -9239,20 +9373,6 @@ export interface components {
              */
             up_to_date: boolean;
         };
-        /** Organization */
-        Organization: {
-            /**
-             * Name
-             * @description Name of the organization responsible for the service
-             */
-            name: string;
-            /**
-             * Url
-             * Format: uri
-             * @description URL of the website of the organization (RFC 3986 format)
-             */
-            url: string;
-        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -9580,6 +9700,80 @@ export interface components {
              * @default false
              */
             to_posix_lines?: boolean;
+        };
+        /** PauseStep */
+        PauseStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default pause
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
+        };
+        /** Person */
+        Person: {
+            /** Address */
+            address?: string | null;
+            /** Alternate Name */
+            alternateName?: string | null;
+            /**
+             * Class
+             * @default Person
+             */
+            class?: string;
+            /** Email */
+            email?: string | null;
+            /** Family Name */
+            familyName?: string | null;
+            /** Fax Number */
+            faxNumber?: string | null;
+            /** Given Name */
+            givenName?: string | null;
+            /**
+             * Honorific Prefix
+             * @description Honorific Prefix (e.g. Dr/Mrs/Mr)
+             */
+            honorificPrefix?: string | null;
+            /**
+             * Honorific Suffix
+             * @description Honorific Suffix (e.g. M.D.)
+             */
+            honorificSuffix?: string | null;
+            /**
+             * Identifier
+             * @description Identifier (typically an orcid.org ID)
+             */
+            identifier?: string | null;
+            /** Image URL */
+            image?: string | null;
+            /** Job Title */
+            jobTitle?: string | null;
+            /**
+             * Name
+             * @description The name of the creator.
+             */
+            name: string;
+            /** Telephone */
+            telephone?: string | null;
+            /** URL */
+            url?: string | null;
         };
         /**
          * PersonalNotificationCategory
@@ -10227,7 +10421,7 @@ export interface components {
              */
             name: string;
             /** @description Organization providing the service */
-            organization: components["schemas"]["Organization"];
+            organization: components["schemas"]["galaxy__schema__drs__Organization"];
             type: components["schemas"]["ServiceType"];
             /**
              * Updatedat
@@ -10768,6 +10962,184 @@ export interface components {
          * @enum {string}
          */
         StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
+        /** StoredWorkflowDetailed */
+        StoredWorkflowDetailed: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * Annotations
+             * @description An list of annotations to provide details or to help understand the purpose and usage of this workflow.
+             */
+            annotations?: string[] | null;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Creator
+             * @description Additional information about the creator (or multiple creators) of this workflow.
+             */
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Email Hash
+             * @description The hash of the email of ?
+             */
+            email_hash: string | null;
+            /**
+             * Hidden
+             * @description TODO
+             */
+            hidden: boolean;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Indicates if the workflow is importable by ?.
+             */
+            importable: boolean | null;
+            /**
+             * Inputs
+             * @description A dictionary containing information about all the inputs of the workflow.
+             * @default {}
+             */
+            inputs?: {
+                [key: string]: components["schemas"]["WorkflowInput"] | undefined;
+            };
+            /**
+             * Latest workflow UUID
+             * Format: uuid4
+             * @description TODO
+             */
+            latest_workflow_uuid: string;
+            /**
+             * License
+             * @description SPDX Identifier of the license associated with this workflow.
+             */
+            license?: string | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "StoredWorkflow";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Number of Steps
+             * @description The number of steps that make up this workflow.
+             */
+            number_of_steps?: number | null;
+            /**
+             * Owner
+             * @description The name of the user who owns this workflow.
+             */
+            owner: string;
+            /**
+             * Published
+             * @description Whether this workflow is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Show in Tool Panel
+             * @description Whether to display this workflow in the Tools Panel.
+             */
+            show_in_tool_panel?: boolean | null;
+            /**
+             * Slug
+             * @description The slug of the workflow.
+             */
+            slug: string | null;
+            /**
+             * Source Metadata
+             * @description The source metadata of the workflow.
+             */
+            source_metadata: string | null;
+            /**
+             * Steps
+             * @description A dictionary with information about all the steps of the workflow.
+             * @default {}
+             */
+            steps?: {
+                [key: string]:
+                    | (
+                          | components["schemas"]["InputDataStep"]
+                          | components["schemas"]["InputDataCollectionStep"]
+                          | components["schemas"]["InputParameterStep"]
+                          | components["schemas"]["PauseStep"]
+                          | components["schemas"]["ToolStep"]
+                          | components["schemas"]["SubworkflowStep"]
+                      )
+                    | undefined;
+            };
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * Version
+             * @description The version of the workflow represented by an incremental number.
+             */
+            version: number;
+        };
+        /** SubworkflowStep */
+        SubworkflowStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default subworkflow
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
+            /**
+             * Workflow ID
+             * @description The encoded ID of the workflow that will be run on this step.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
+        };
         /** SuitableConverter */
         SuitableConverter: {
             /**
@@ -10910,6 +11282,47 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolStep */
+        ToolStep: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Steps
+             * @description A dictionary containing information about the inputs connected to this workflow step.
+             */
+            input_steps: {
+                [key: string]: components["schemas"]["InputStep"] | undefined;
+            };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of workflow module.
+             * @default tool
+             */
+            type?: components["schemas"]["WorkflowModuleType"];
         };
         /** Tour */
         Tour: {
@@ -11706,6 +12119,25 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** WorkflowInput */
+        WorkflowInput: {
+            /**
+             * Label
+             * @description Label of the input.
+             */
+            label: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the input.
+             */
+            uuid: string;
+            /**
+             * Value
+             * @description TODO
+             */
+            value: string;
+        };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
             /**
@@ -11890,6 +12322,18 @@ export interface components {
                 [key: string]: number | undefined;
             };
         };
+        /**
+         * WorkflowModuleType
+         * @description Available types of modules that represent a step in a Workflow.
+         * @enum {string}
+         */
+        WorkflowModuleType:
+            | "data_input"
+            | "data_collection_input"
+            | "parameter_input"
+            | "subworkflow"
+            | "tool"
+            | "pause";
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
             /**
@@ -12007,6 +12451,52 @@ export interface components {
              * @description External resource vendor prefix
              */
             namespace: string;
+        };
+        /** Organization */
+        galaxy__schema__drs__Organization: {
+            /**
+             * Name
+             * @description Name of the organization responsible for the service
+             */
+            name: string;
+            /**
+             * Url
+             * Format: uri
+             * @description URL of the website of the organization (RFC 3986 format)
+             */
+            url: string;
+        };
+        /** Organization */
+        galaxy__schema__schema__Organization: {
+            /** Address */
+            address?: string | null;
+            /** Alternate Name */
+            alternateName?: string | null;
+            /**
+             * Class
+             * @default Organization
+             */
+            class?: string;
+            /** Email */
+            email?: string | null;
+            /** Fax Number */
+            faxNumber?: string | null;
+            /**
+             * Identifier
+             * @description Identifier (typically an orcid.org ID)
+             */
+            identifier?: string | null;
+            /** Image URL */
+            image?: string | null;
+            /**
+             * Name
+             * @description The name of the creator.
+             */
+            name: string;
+            /** Telephone */
+            telephone?: string | null;
+            /** URL */
+            url?: string | null;
         };
     };
     responses: never;
@@ -22264,7 +22754,7 @@ export interface operations {
             };
         };
     };
-    show_workflow_api_workflows__encoded_workflow_id__get: {
+    show_workflow_api_workflows__workflow_id__get: {
         /** Displays information needed to run a workflow. */
         parameters: {
             /** @description Use the legacy workflow format. */
@@ -22280,14 +22770,14 @@ export interface operations {
             };
             /** @description The encoded database identifier of the Stored Workflow. */
             path: {
-                encoded_workflow_id: string;
+                workflow_id: string;
             };
         };
         responses: {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["StoredWorkflowDetailed"];
                 };
             };
             /** @description Validation Error */
