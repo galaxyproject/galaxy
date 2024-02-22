@@ -3,7 +3,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
 
 library.add(faPlay);
 
@@ -14,13 +13,7 @@ interface Props {
     disabled?: boolean;
 }
 
-const props = defineProps<Props>();
-
-const router = useRouter();
-
-function ExecuteWorkflow() {
-    router.push(`/workflows/run?id=${props.id}`);
-}
+defineProps<Props>();
 </script>
 
 <template>
@@ -32,8 +25,9 @@ function ExecuteWorkflow() {
         variant="primary"
         size="sm"
         :disabled="disabled"
-        @click.stop="ExecuteWorkflow">
-        <FontAwesomeIcon :icon="faPlay" />
+        :to="`/workflows/run?id=${id}`">
+        <FontAwesomeIcon :icon="faPlay" fixed-width />
+
         <span v-if="full" v-localize>Run</span>
     </BButton>
 </template>
