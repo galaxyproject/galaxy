@@ -25,7 +25,6 @@ from sqlalchemy.orm import (
     Session,
 )
 from sqlalchemy.sql import select
-from typing_extensions import List
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -846,7 +845,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     return rval
 
 
-def summarize_job_metrics(trans, job) -> List[JobMetric]:
+def summarize_job_metrics(trans, job) -> typing.List[JobMetric]:
     """Produce a dict-ified version of job metrics ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user

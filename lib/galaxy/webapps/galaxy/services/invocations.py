@@ -40,7 +40,6 @@ from galaxy.schema.invocation import (
     InvocationSerializationParams,
     InvocationSerializationView,
     InvocationStep,
-    InvocationStepState,
     WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (

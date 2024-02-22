@@ -101,7 +101,6 @@ from galaxy.schema.schema import (
     HistoryContentsResult,
     HistoryContentsWithStatsResult,
     HistoryContentType,
-    JobMetric,
     JobSourceType,
     MaterializeDatasetInstanceRequest,
     Model,
