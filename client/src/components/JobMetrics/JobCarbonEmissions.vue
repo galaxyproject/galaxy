@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import * as carbonEmissionsConstants from "@/components/CarbonEmissions/carbonEmissionConstants";
+import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "@/components/CarbonEmissions/carbonEmissionConstants";
 import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
@@ -16,7 +16,6 @@ const props = defineProps<{
         energyNeededCPU: number;
         energyNeededMemory: number;
     };
-    estimatedServerInstanceName: string;
 }>();
 
 const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
@@ -35,7 +34,7 @@ const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions()
                 <p class="p-0 m-0">
                     <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
                         <strong>1.</strong> Based off of the global carbon intensity value of
-                        {{ carbonEmissionsConstants.worldwideCarbonIntensity }}.
+                        {{ worldwideCarbonIntensity }}.
                     </span>
                     <span v-else id="location-explanation">
                         <strong>1.</strong> based off of this galaxy instance's configured location of
@@ -47,7 +46,7 @@ const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions()
 
                     <span id="pue">
                         <strong>2.</strong> Using the global default power usage effectiveness value of
-                        {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
+                        {{ worldwidePowerUsageEffectiveness }}.
                     </span>
                 </p>
 

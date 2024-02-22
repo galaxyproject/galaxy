@@ -45,9 +45,10 @@ const jobMetrics = computed(() => {
 
 const jobMetricsGroupedByPluginType = computed(() => {
     const pluginGroups: Record<string, any> = {};
-    const ignoredMetrics = ["energy_needed_cpu", "energy_needed_memory", "estimated_server_instance_name"];
+    const ignoredMetrics = ["energy_needed_cpu", "energy_needed_memory"];
 
     for (const metric of jobMetrics.value) {
+        // Ignore specified metrics so they are excluded from the UI
         if (ignoredMetrics.includes(metric.name)) {
             continue;
         }
@@ -114,13 +115,6 @@ const memoryAllocatedInMebibyte = computed(() => {
     return memoryUsage ? parseInt(memoryUsage) : undefined;
 });
 
-const estimatedServerInstanceName = computed(() => {
-    const key = "estimated_server_instance_name";
-    const name = unref(jobMetrics).find(({ name }) => name === key)?.raw_value;
-
-    return name ? name : undefined;
-});
-
 async function fetchJobMetrics() {
     if (props.jobId) {
         await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
@@ -161,8 +155,7 @@ watch(
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <JobCarbonEmissions
-            v-if="shouldShowCarbonEmissionsEstimates && energyUsage && estimatedServerInstanceName"
-            :energy-usage="energyUsage"
-            :estimated-server-instance-name="estimatedServerInstanceName" />
+            v-if="shouldShowCarbonEmissionsEstimates && energyUsage"
+            :energy-usage="energyUsage" />
     </div>
 </template>

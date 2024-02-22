@@ -34,7 +34,13 @@ RUNTIME_SECONDS_KEY = "runtime_seconds"
 ENERGY_NEEDED_MEMORY_KEY = "energy_needed_memory"
 ENERGY_NEEDED_CPU_KEY = "energy_needed_cpu"
 
-ESTIMATED_SERVER_INSTANCE_NAME_KEY = "estimated_server_instance_name"
+# source: (in W/GB) http://dl.acm.org/citation.cfm?doid=3076113.3076117
+# and https://www.tomshardware.com/uk/reviews/intel-core-i7-5960x-haswell-e-cpu,3918-13.html
+MEMORY_POWER_USAGE_CONSTANT = 0.3725
+
+# NOTE: Currently there is no way to get the PUE value from the galaxy config # so we use the
+# global constant value # source: https://journal.uptimeinstitute.com/is-pue-actually-going-up/
+POWER_USAGE_EFFECTIVENESS_CONSTANT = 1.67
 
 
 class CorePluginFormatter(JobMetricFormatter):
@@ -49,8 +55,6 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("CPU Energy Usage", self.__format_energy_needed_text(float(value)))
         elif key == ENERGY_NEEDED_MEMORY_KEY:
             return FormattedMetric("Memory Energy Usage", self.__format_energy_needed_text(float(value)))
-        elif key == ESTIMATED_SERVER_INSTANCE_NAME_KEY:
-            return FormattedMetric("Estimated Server Instance", str(value))
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
@@ -135,22 +139,13 @@ class CorePlugin(InstrumentPlugin):
                     tdp_per_ore = cpu_info["tdp"] / cpu_info["core_count"]
                     normalized_tdp_per_core = tdp_per_ore * allocated_cpu_cores
 
-                    # NOTE: The memory_power_usage_constant value does not change
-                    # source: (in W/GB) http://dl.acm.org/citation.cfm?doid=3076113.3076117
-                    # and https://www.tomshardware.com/uk/reviews/intel-core-i7-5960x-haswell-e-cpu,3918-13.html
-                    memory_power_usage_constant = 0.3725
                     memory_allocated_in_gibibyte = (allocated_memory_mebibyte or 0) / 1024  # Convert to gibibyte
-
-                    # NOTE: Currently there is no way to get the PUE value from the environment
-                    # so we use the global constant value
-                    # source: https://journal.uptimeinstitute.com/is-pue-actually-going-up/
-                    power_usage_effectiveness = 1.67
 
                     runtime_hours = runtime_seconds / (60 * 60)  # Convert to hours
 
-                    power_needed_watts_cpu = power_usage_effectiveness * normalized_tdp_per_core
+                    power_needed_watts_cpu = POWER_USAGE_EFFECTIVENESS_CONSTANT * normalized_tdp_per_core
                     power_needed_watts_memory = (
-                        power_usage_effectiveness * memory_allocated_in_gibibyte * memory_power_usage_constant
+                        POWER_USAGE_EFFECTIVENESS_CONSTANT * memory_allocated_in_gibibyte * MEMORY_POWER_USAGE_CONSTANT
                     )
 
                     energy_needed_cpu_kwh = (runtime_hours * power_needed_watts_cpu) / 1000
@@ -161,7 +156,6 @@ class CorePlugin(InstrumentPlugin):
                         properties[ENERGY_NEEDED_MEMORY_KEY] = energy_needed_memory_kwh
 
                     properties[ENERGY_NEEDED_CPU_KEY] = energy_needed_cpu_kwh
-                    properties[ESTIMATED_SERVER_INSTANCE_NAME_KEY] = estimated_server_instance["name"]
 
         return properties
 
