@@ -7,6 +7,7 @@
             :redirect="redirect"
             :registration-warning-message="registrationWarningMessage"
             :session-csrf-token="sessionCsrfToken"
+            :show-as-box="showAsBox"
             :show-welcome-with-login="showWelcomeWithLogin"
             :terms-url="termsUrl"
             :welcome-url="welcomeUrl"
@@ -77,6 +78,10 @@ export default {
             required: true,
         },
         serverMailConfigured: {
+            type: Boolean,
+            default: false,
+        },
+        showAsBox: {
             type: Boolean,
             default: false,
         },

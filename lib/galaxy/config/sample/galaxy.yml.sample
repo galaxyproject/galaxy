@@ -2014,6 +2014,9 @@ galaxy:
   # page (even if require_login is true).
   #show_welcome_with_login: false
 
+  # Renders a login header on top of the center panel for most routes.
+  #show_login_on_header: false
+
   # Controls the order of the login page to prefer Custos-based login
   # and registration.
   #prefer_custos_login: false

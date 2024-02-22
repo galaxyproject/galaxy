@@ -5,11 +5,12 @@
         </b-alert>
         <b-form id="externalLogin">
             <!-- OIDC login-->
-            <hr class="my-4" />
+            <hr v-if="!indexedView" class="my-4" />
             <div v-if="cilogonListShow" class="cilogon">
-                <div v-if="login_page">
+                <!-- If we are in non indexed, typical login page OR indexed view and either custos/cilogon key -->
+                <div v-if="login_page && (!indexedView || providerKey === 'custos' || providerKey === 'cilogon')">
                     <!--Only Display if CILogon/Custos is configured-->
-                    <b-form-group label="Use existing institutional login">
+                    <b-form-group :label="!indexedView ? 'Use existing institutional login' : null">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -26,7 +27,7 @@
                     </b-form-group>
 
                     <b-button
-                        v-if="cilogon_enabled"
+                        v-if="cilogon_enabled && (!indexedView || providerKey === 'cilogon')"
                         :disabled="loading || selected === null"
                         @click="submitCILogon('cilogon')">
                         <LoadingSpan v-if="loading" message="Signing In" />
@@ -34,7 +35,10 @@
                     </b-button>
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
                     <b-button
-                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
+                        v-if="
+                            Object.prototype.hasOwnProperty.call(oidc_idps, 'custos') &&
+                            (!indexedView || providerKey === 'custos')
+                        "
                         :disabled="loading || selected === null"
                         @click="submitCILogon('custos')">
                         <LoadingSpan v-if="loading" message="Signing In" />
@@ -42,7 +46,7 @@
                     </b-button>
                 </div>
 
-                <div v-else>
+                <div v-else-if="!login_page">
                     <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')">
                         Sign in with Institutional Credentials*
                     </b-button>
@@ -67,7 +71,7 @@
                     </b-form-group>
                 </div>
 
-                <p class="mt-3">
+                <p v-if="!indexedView" class="mt-3">
                     <small class="text-muted">
                         * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
                         'Sign In', you agree to the
@@ -77,17 +81,33 @@
                 </p>
             </div>
 
-            <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
-                <span v-if="idp_info['icon']">
-                    <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                        <img :src="idp_info['icon']" height="45" :alt="idp" />
+            <span v-if="!indexedView">
+                <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
+                    <span v-if="idp_info['icon']">
+                        <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                            <img :src="idp_info['icon']" height="45" :alt="idp" />
+                        </b-button>
+                    </span>
+                    <span v-else>
+                        <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                            <i :class="oidc_idps[idp]" />
+                            Sign in with
+                            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                        </b-button>
+                    </span>
+                </div>
+            </span>
+            <div v-else-if="filtered_oidc_idps[providerKey]">
+                <span v-if="filtered_oidc_idps[providerKey]['icon']">
+                    <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(providerKey)">
+                        <img :src="filtered_oidc_idps[providerKey]['icon']" height="45" :alt="idp" />
                     </b-button>
                 </span>
                 <span v-else>
-                    <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                        <i :class="oidc_idps[idp]" />
+                    <b-button class="d-block mt-3" @click="submitOIDCLogin(providerKey)">
+                        <i :class="oidc_idps[providerKey]" />
                         Sign in with
-                        {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                        {{ providerKey.charAt(0).toUpperCase() + providerKey.slice(1) }}
                     </b-button>
                 </span>
             </div>
@@ -119,6 +139,18 @@ export default {
         exclude_idps: {
             type: Array,
             required: false,
+        },
+        /** A version of `ExternalLogin` where only one provider is shown
+         * at a time and the provider is specified by `providerKey`
+         */
+        indexedView: {
+            type: Boolean,
+            required: false,
+        },
+        /** If `indexedView` is true, the provider to show */
+        providerKey: {
+            type: String,
+            default: null,
         },
     },
     data() {

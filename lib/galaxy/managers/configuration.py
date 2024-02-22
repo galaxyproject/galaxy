@@ -143,6 +143,7 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_oidc": _use_config,
             "oidc": _use_config,
             "prefer_custos_login": _use_config,
+            "show_login_on_header": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
             "post_user_logout_href": _use_config,

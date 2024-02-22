@@ -2653,6 +2653,13 @@ mapping:
           Show the site's welcome page (see welcome_url) alongside the login page
           (even if require_login is true).
 
+      show_login_on_header:
+        type: bool
+        default: false
+        required: False
+        desc: |
+          Renders a login header on top of the center panel for most routes.
+
       prefer_custos_login:
         type: bool
         default: false

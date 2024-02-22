@@ -3642,6 +3642,15 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
+``show_login_on_header``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Renders a login header on top of the center panel for most routes.
+:Default: ``false``
+:Type: bool
+
+~~~~~~~~~~~~~~~~~~~~~~~
 ``prefer_custos_login``
 ~~~~~~~~~~~~~~~~~~~~~~~
 

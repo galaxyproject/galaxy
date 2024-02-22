@@ -1,7 +1,7 @@
 <template>
-    <div class="overflow-auto m-3">
+    <div :class="!showAsBox && 'overflow-auto m-3'">
         <ChangePassword
-            v-if="hasToken"
+            v-if="!showAsBox && hasToken"
             :expired-user="$route.query.expired_user"
             :message-text="$route.query.message"
             :message-variant="$route.query.status"
@@ -14,6 +14,7 @@
             :prefer-custos-login="config.prefer_custos_login"
             :redirect="$route.query.redirect"
             :registration-warning-message="config.registration_warning_message"
+            :show-as-box="showAsBox"
             :server-mail-configured="config.server_mail_configured"
             :session-csrf-token="sessionCsrfToken"
             :show-welcome-with-login="config.show_welcome_with_login"
@@ -32,6 +33,12 @@ export default {
     components: {
         ChangePassword,
         LoginIndex,
+    },
+    props: {
+        showAsBox: {
+            type: Boolean,
+            default: false,
+        },
     },
     computed: {
         config() {
