@@ -9,7 +9,7 @@ from typing import (
     Union,
 )
 
-from galaxy.carbon_emissions import load_aws_ec2_reference_data_json
+from ...carbon_emissions import load_aws_ec2_reference_data_json
 from . import InstrumentPlugin
 from ..formatting import (
     FormattedMetric,
