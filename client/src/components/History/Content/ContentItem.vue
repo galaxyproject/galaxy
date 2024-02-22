@@ -113,7 +113,7 @@ import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
-import { clearDrag } from "@/utils/setDrag.js";
+import { clearDrag } from "@/utils/setDrag.ts";
 
 import CollectionDescription from "./Collection/CollectionDescription";
 import { JobStateSummary } from "./Collection/JobStateSummary";

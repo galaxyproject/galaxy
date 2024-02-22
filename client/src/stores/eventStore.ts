@@ -28,7 +28,6 @@ export const useEventStore = defineStore("eventStore", () => {
 
     return {
         multipleDragData,
-        dragData,
         clearDragData,
         getDragData,
         setDragData,
