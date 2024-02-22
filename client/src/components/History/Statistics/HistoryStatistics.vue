@@ -27,13 +27,13 @@ const { getHistoryNameById } = useHistoryStore();
             </p>
         </header>
 
-        <section>
-            <Heading h2 bold separator class="mt-3"> Carbon Emissions </Heading>
+        <section class="mt-3">
+            <Heading h2 bold separator> Carbon Emissions </Heading>
             <HistoryCarbonEmissions :history-id="props.historyId" />
         </section>
 
-        <section>
-            <Heading h2 bold separator class="mt-3"> Storage Overview </Heading>
+        <section class="mt-3">
+            <Heading h2 bold separator> Storage Overview </Heading>
             <HistoriesStorageOverview />
         </section>
     </div>

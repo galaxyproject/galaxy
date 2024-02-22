@@ -33,8 +33,10 @@ const props = defineProps({
 const jobMetricsStore = useJobMetricsStore();
 
 const { config } = useConfig(true);
-const shouldShowAwsEstimate = computed(() => (config.value?.aws_estimate as boolean) ?? false)
-const shouldShowCarbonEmissionsEstimates = computed(() => (config.value?.carbon_emissions_estimates as boolean) ?? true)
+const shouldShowAwsEstimate = computed(() => (config.value?.aws_estimate as boolean) ?? false);
+const shouldShowCarbonEmissionsEstimates = computed(
+    () => (config.value?.carbon_emissions_estimates as boolean) ?? true
+);
 
 const jobMetrics = computed(() => {
     if (props.jobId) {
@@ -125,7 +127,7 @@ async function fetchJobMetrics() {
 watch(
     () => [props.datasetType, props.datasetId, props.jobId],
     () => fetchJobMetrics(),
-    { immediate: true, }
+    { immediate: true }
 );
 </script>
 
@@ -154,8 +156,6 @@ watch(
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
-        <JobCarbonEmissions
-            v-if="shouldShowCarbonEmissionsEstimates && energyUsage"
-            :energy-usage="energyUsage" />
+        <JobCarbonEmissions v-if="shouldShowCarbonEmissionsEstimates && energyUsage" :energy-usage="energyUsage" />
     </div>
 </template>

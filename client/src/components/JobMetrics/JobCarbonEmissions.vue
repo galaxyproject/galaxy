@@ -3,7 +3,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "@/components/CarbonEmissions/carbonEmissionConstants";
+import {
+    worldwideCarbonIntensity,
+    worldwidePowerUsageEffectiveness,
+} from "@/components/CarbonEmissions/carbonEmissionConstants";
 import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";

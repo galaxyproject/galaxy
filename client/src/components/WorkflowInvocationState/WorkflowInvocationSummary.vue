@@ -126,9 +126,9 @@ import CarbonEmissions from "components/CarbonEmissions/CarbonEmissions";
 import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import ProgressBar from "components/ProgressBar";
-import { RouterLink } from "vue-router";
 import { getRootFromIndexLink } from "onload";
 import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { fetcher } from "@/api/schema";
 import {
