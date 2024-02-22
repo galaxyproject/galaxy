@@ -83,6 +83,17 @@ export const Activities = [
         visible: true,
     },
     {
+        description: "Displays the history selector panel and opens History Multiview in the center panel.",
+        icon: "fa-columns",
+        id: "multiview",
+        mutable: false,
+        optional: true,
+        title: "History Multiview",
+        tooltip: "Select histories to show in History Multiview",
+        to: "/histories/view_multiple",
+        visible: true,
+    },
+    {
         description: "Displays all of your datasets across all histories.",
         icon: "fa-folder",
         id: "datasets",

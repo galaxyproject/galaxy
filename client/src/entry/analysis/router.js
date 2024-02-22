@@ -280,6 +280,7 @@ export function getRouter(Galaxy) {
                         path: "histories/view_multiple",
                         component: HistoryMultipleView,
                         props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list_published",

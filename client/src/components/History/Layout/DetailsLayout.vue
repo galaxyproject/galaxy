@@ -9,6 +9,7 @@ import { computed, ref } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
 
+import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 library.add(faPen, faSave, faUndo);
@@ -19,6 +20,7 @@ interface Props {
     writeable?: boolean;
     annotation?: string;
     showAnnotation?: boolean;
+    summarized?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,6 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
     writeable: true,
     annotation: undefined,
     showAnnotation: true,
+    summarized: false,
 });
 
 const emit = defineEmits(["save"]);
@@ -87,7 +90,10 @@ function selectText() {
 </script>
 
 <template>
-    <section class="m-3 details" data-description="edit details">
+    <section
+        class="details"
+        :class="summarized && !editing ? 'summarized-details' : 'm-3'"
+        data-description="edit details">
         <BButton
             :disabled="isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
@@ -103,9 +109,27 @@ function selectText() {
         <slot name="name" />
 
         <div v-if="!editing">
-            <div v-if="annotation" v-short="annotation" class="mt-2" data-description="annotation value" />
-
-            <StatelessTags v-if="tags" class="tags mt-2" :value="tags" :disabled="true" />
+            <div
+                v-if="annotation && !summarized"
+                v-short="annotation"
+                class="mt-2"
+                data-description="annotation value" />
+            <div v-else-if="summarized" style="min-height: 2rem">
+                <TextSummary
+                    v-if="annotation"
+                    :description="annotation"
+                    data-description="annotation value"
+                    one-line-summary
+                    no-expand />
+            </div>
+            <StatelessTags
+                v-if="tags"
+                class="tags"
+                :class="!summarized && 'mt-2'"
+                :value="tags"
+                disabled
+                :max-visible-tags="summarized ? 1 : 5" />
+            <slot v-if="summarized" name="update-time" />
         </div>
 
         <div v-else class="mt-3" data-description="edit form">
@@ -157,3 +181,15 @@ function selectText() {
         </div>
     </section>
 </template>
+
+<style lang="scss" scoped>
+.summarized-details {
+    min-height: 8.5em;
+    margin: 1rem 1rem 0 1rem;
+    max-width: 15rem;
+
+    .tags {
+        min-height: 2rem;
+    }
+}
+</style>

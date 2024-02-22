@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -19,7 +19,11 @@ interface Props {
 const props = defineProps<Props>();
 
 const historyStore = useHistoryStore();
-const { currentHistoryId } = storeToRefs(historyStore);
+const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
+
+onMounted(() => {
+    historyStore.loadHistoryById(props.source.id);
+});
 
 const selectedCollections = ref<any[]>([]);
 
@@ -55,6 +59,7 @@ function onViewCollection(collection: object) {
             :history="getHistory"
             :filter="filter"
             :show-controls="false"
+            is-multi-view-item
             @view-collection="onViewCollection" />
 
         <hr class="w-100 m-2" />
@@ -69,13 +74,13 @@ function onViewCollection(collection: object) {
                 @click="historyStore.setCurrentHistory(source.id)">
                 {{ sameToCurrent ? "Current History" : "Switch to" }}
             </BButton>
-
             <BButton
+                v-if="Object.keys(pinnedHistories).length > 0"
                 size="sm"
                 class="my-1"
                 variant="outline-danger"
                 title="Hide this history from the list"
-                @click="historyStore.unpinHistory(source.id)">
+                @click="historyStore.unpinHistories([source.id])">
                 Hide
             </BButton>
         </div>
