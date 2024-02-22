@@ -84,6 +84,7 @@ from galaxy.schema.workflows import (
     GetToolPredictionsPayload,
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    ToolPredictionsSummary,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -936,7 +937,7 @@ class FastAPIWorkflows:
         self,
         payload: GetToolPredictionsBody,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> Union[dict, ToolPredictionsSummary]:
         return self.service.get_tool_predictions(trans, payload.model_dump(exclude_unset=True))
 
     @router.get(

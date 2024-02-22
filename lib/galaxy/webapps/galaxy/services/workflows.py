@@ -31,6 +31,7 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (  # GetToolPredictionsPayload,
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    ToolPredictionsSummary,
 )
 from galaxy.tools import recommendations
 from galaxy.util.tool_shed.tool_shed_registry import Registry
@@ -74,7 +75,7 @@ class WorkflowsService(ServiceBase):
         tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
             trans, tool_sequence, remote_model_url
         )
-        return {"current_tool": tool_sequence, "predicted_data": recommended_tools}
+        return ToolPredictionsSummary(current_tool=tool_sequence, recommended_tools=recommended_tools)
 
     def index(
         self,
