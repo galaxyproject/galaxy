@@ -9543,7 +9543,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     @classmethod
     def get(cls, *args, **kwargs):
         stmt = select(PSAAssociation).filter_by(*args, **kwargs)
-        return cls.sa_session.scalars(stmt)
+        return cls.sa_session.scalars(stmt).all()
 
     @classmethod
     def remove(cls, ids_to_delete):
