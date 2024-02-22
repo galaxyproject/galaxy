@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { GetComponentPropTypes } from "types/utilityTypes";
 import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
+import type { HistorySummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -44,7 +44,7 @@ interface BackendFilterError {
 
 interface Props {
     listOffset?: number;
-    history: Record<string, any> & GetComponentPropTypes<typeof HistoryCounter>["history"];
+    history: HistorySummary;
     filter?: string;
     canEditHistory?: boolean;
     shouldShowControls?: boolean;
