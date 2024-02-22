@@ -82,7 +82,7 @@ patchRouterPush(VueRouter);
 function redirectAnon() {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy.user || !Galaxy.user.id) {
-        return "/";
+        return "/login/start";
     }
 }
 
