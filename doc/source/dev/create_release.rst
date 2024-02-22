@@ -31,7 +31,7 @@ The script has 2 important arguments:
     - `--new-version` is the new version as it will appear for PyPI packages and in lib/galaxy/version.py
     - `--last-commit` indicates the first commit from which changes are to be included in the changelog.
 
-Before starting make sure local branches (all release branches and dev) are up to date and clean, and all release branches have been merged forward,
+Before starting, make sure local branches (all release branches and dev) are up to date and clean, and all release branches have been merged forward,
 and that you have configured your remotes so that you can push to the configured upstream (https://github.com/galaxyproject/galaxy by default).
 The script should abort gracefully if that is not the case.
 
@@ -43,7 +43,7 @@ Follow these steps:
     5. `GITHUB_AUTH=$YOUR_PAT_FROM_STEP_3 galaxy-release-util create-release --new-version 23.0.1 --last-commit v23.0`
     6. Follow along the prompts and make sure the proposed changes look correct
 
-When the script is finished you should find a new tag in the GitHub interface, as well as updated release and dev branches.
+When the script is finished, you should find a new tag in the GitHub interface, as well as updated release and dev branches.
 From the `Releases Interface on GitHub <https://github.com/galaxyproject/galaxy/releases>`_ you can create a new pre-release
 associated with the newly created tag. The pre-release event will trigger a github workflow that uploads packages to the `test PyPI instance <https://test.pypi.org/>`_.
-If this all looks good you can promote the pre-release to a release and that will trigger the upload to the `main PyPI instance <https://pypi.org/>`_.
+If this all looks good, you can promote the pre-release to a release and that will trigger the upload to the `main PyPI instance <https://pypi.org/>`_.
