@@ -2,25 +2,27 @@ import csv
 import json
 import logging
 import os
-
-from typing_extensions import TypedDict
+from dataclasses import dataclass
 
 log = logging.getLogger(__name__)
 
 
-class CarbonIntensityEntry(TypedDict):
+@dataclass
+class CarbonIntensityEntry:
     location_name: str
     carbon_intensity: float
 
 
-class AWSInstanceCPU(TypedDict):
+@dataclass
+class AWSInstanceCPU:
     cpu_model: str
     tdp: int
     core_count: int
     source: str
 
 
-class AWSInstance(TypedDict):
+@dataclass
+class AWSInstance:
     name: str
     mem: float
     v_cpu_count: int
@@ -63,3 +65,6 @@ def _load_locations(path: str):
     with open(path, newline="") as f:
         csv_reader = csv.reader(f, delimiter=",")
         yield from csv_reader
+
+
+__all__ = ("get_carbon_intensity_entry", "load_aws_ec2_reference_data_json")

@@ -6,14 +6,10 @@ from typing import (
     Any,
     Dict,
     List,
-    Optional,
     Union,
 )
 
-from lib.galaxy.carbon_emissions import (
-    AWSInstance,
-    load_aws_ec2_reference_data_json,
-)
+from galaxy.carbon_emissions import load_aws_ec2_reference_data_json
 from . import InstrumentPlugin
 from ..formatting import (
     FormattedMetric,
@@ -189,9 +185,7 @@ class CorePlugin(InstrumentPlugin):
             pass
         return value
 
-    def __get_estimated_server_instance(
-        self, allocated_cpu_cores: int, allocated_memory_mebibyte=0
-    ) -> Optional[AWSInstance]:
+    def __get_estimated_server_instance(self, allocated_cpu_cores: int, allocated_memory_mebibyte=0):
         adjusted_memory = allocated_memory_mebibyte / 1024 if allocated_memory_mebibyte is not None else 0
         server_instance = None
 
