@@ -451,9 +451,9 @@ export function getRouter(Galaxy) {
                         path: "user/permissions",
                         component: UserDatasetPermissions,
                         redirect: redirectAnon(),
-                        props: (route) => ({
+                        props: {
                             userId: Galaxy.user.id,
-                        }),
+                        },
                     },
                     {
                         path: "user/:formId",
