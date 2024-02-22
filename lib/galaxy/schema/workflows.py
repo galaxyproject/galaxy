@@ -96,6 +96,19 @@ class GetToolPredictionsPayload(Model):
     )
 
 
+class ToolPredictionsSummary(Model):
+    current_tool: Optional[Any] = Field(
+        None,
+        title="Current Tools",
+        description="A comma separated sequence of the current tool ids",
+    )
+    predicted_data: Optional[Any] = Field(
+        None,
+        title="Recommended Tools",
+        description="List of predictions",
+    )
+
+
 class InvokeWorkflowPayload(GetTargetHistoryPayload):
     # TODO - Are the descriptions correct?
     instance: Optional[bool] = Field(
