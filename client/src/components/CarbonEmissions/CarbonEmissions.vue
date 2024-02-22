@@ -6,6 +6,7 @@ import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
+import BarChart from "./BarChart.vue";
 import CarbonEmissionsCard from "./CarbonEmissionCard.vue";
 
 const props = defineProps<{
