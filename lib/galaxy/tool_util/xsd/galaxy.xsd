@@ -6688,6 +6688,7 @@ Examples are included in the test tools directory including:
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
+      <xs:enumeration value="position" />
       <xs:enumeration value="description" />
       <xs:enumeration value="name" />
       <xs:enumeration value="info" />
