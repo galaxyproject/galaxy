@@ -55,7 +55,7 @@ def load_aws_ec2_reference_data_json() -> list[AWSInstance]:
     Load the AWS EC2 reference data from the specified file.
     """
     aws_ec2_reference_data_dir = os.path.join(os.path.dirname(__file__), "aws_ec2_reference_data.json")
-    with open(aws_ec2_reference_data_dir, "r") as f:
+    with open(aws_ec2_reference_data_dir) as f:
         return json.load(f)
 
 
