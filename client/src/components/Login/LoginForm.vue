@@ -2,6 +2,7 @@
 import axios from "axios";
 import { capitalize } from "lodash";
 import { computed, ref } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 const urlParams = new URLSearchParams(window.location.search);
 
 const { config } = useConfig();
+const route = useRoute();
 
 const login = ref<string | null>(null);
 const password = ref<string | null>(null);
@@ -83,7 +85,7 @@ function submitLogin(formLogin: string | null, formPassword: string | null) {
     if (localStorage.getItem("redirect_url")) {
         redirect = localStorage.getItem("redirect_url")!;
     }
-    const currentPath = window.location.pathname;
+    const currentPath = route.fullPath;
     axios
         .post(withPrefix("/user/login"), {
             login: login.value,
