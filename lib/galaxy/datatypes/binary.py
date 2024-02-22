@@ -4538,3 +4538,53 @@ class FITS(Binary):
             return dataset.peek
         except Exception:
             return f"Binary FITS file size ({nice_size(dataset.get_size())})"
+
+@build_sniff_from_prefix
+class Numpy(Binary):
+    """
+    Class defining a numpy data file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.npy')
+    >>> Numpy().sniff(fname)
+    True
+    """
+
+    file_ext = "npy"
+
+    MetadataElement(
+        name="version",
+        default="",
+        param=DictParameter,
+        desc="Version string for the numpy file format",
+        readonly=True,
+        visible=True,
+        no_value={},
+        optional=True
+    )
+    def _numpy_version_string(self, filename):
+        magic_string = open(filename, "rb").read(8)
+        version_str = str(magic_string[6])+"."+str(magic_string[7])
+        return version_str
+    
+    def set_meta(self, dataset: DatasetProtocol, *, overwrite: TYPE_CHECKING = True, **kwd) -> None:
+        dataset.metadata.version_dict = self._numpy_version_string(dataset.get_file_name())
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # The first 6 bytes of any numpy file is '\x93NUMPY', with following bytes for version 
+        # number of file formats, and info about header data. The rest of the file contains binary data.
+        return file_prefix.startswith_bytes(b"\x93NUMPY")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary numpy file version %s" % dataset.metadata.version_str
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary numpy file (%s)" % (nice_size(dataset.get_size()))
