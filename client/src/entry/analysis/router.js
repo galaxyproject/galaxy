@@ -524,6 +524,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/invocations",
                         component: UserInvocations,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/invocations/report",
