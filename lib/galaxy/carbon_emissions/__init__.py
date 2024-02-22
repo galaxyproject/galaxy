@@ -65,6 +65,3 @@ def _load_locations(path: str):
     with open(path, newline="") as f:
         csv_reader = csv.reader(f, delimiter=",")
         yield from csv_reader
-
-
-__all__ = ("get_carbon_intensity_entry", "load_aws_ec2_reference_data_json")
