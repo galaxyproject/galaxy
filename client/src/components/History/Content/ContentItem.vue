@@ -113,7 +113,7 @@ import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
-import { clearDrag, setDrag } from "@/utils/setDrag.js";
+import { clearDrag } from "@/utils/setDrag.js";
 
 import CollectionDescription from "./Collection/CollectionDescription";
 import { JobStateSummary } from "./Collection/JobStateSummary";
@@ -287,9 +287,9 @@ export default {
             this.$emit("delete", this.item, recursive);
         },
         onDragStart(evt) {
-            setDrag(evt, this.item);
+            this.$emit("drag-start", evt);
         },
-        onDragEnd: function () {
+        onDragEnd() {
             clearDrag();
         },
         onEdit() {

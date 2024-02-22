@@ -11,9 +11,11 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { Toast } from "@/composables/toast";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
+import { useEventStore } from "@/stores/eventStore";
 import { type HistoryItem, useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
+import { setDrag } from "@/utils/setDrag";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -305,26 +307,45 @@ function onDragLeave(e: DragEvent) {
 }
 
 async function onDrop(evt: any) {
+    const eventStore = useEventStore();
     showDropZone.value = false;
-    let data;
+    let data: HistoryItem[] | undefined;
+    let historyId: string | undefined;
+    const multiple = eventStore.multipleDragData;
     try {
-        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+        if (multiple) {
+            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            // set historyId to the first history_id in the multiple drag data
+            const firstItem = Object.values(dragData)[0];
+            if (firstItem) {
+                historyId = firstItem.history_id;
+            }
+            data = Object.values(dragData);
+        } else {
+            data = [eventStore.getDragData() as HistoryItem];
+            if (data[0]) {
+                historyId = data[0].history_id;
+            }
+        }
     } catch (error) {
         // this was not a valid object for this dropzone, ignore
     }
 
-    if (!data || data.history_id === props.history.id) {
+    if (!data || historyId === props.history.id) {
         return;
     }
 
     try {
-        const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
-        await copyDataset(data.id, props.history.id, data.history_content_type, dataSource);
+        // iterate over the data array and copy each item to the current history
+        for (const item of data) {
+            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
+            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
 
-        if (data.history_content_type === "dataset") {
-            Toast.info("Dataset copied to history");
-        } else {
-            Toast.info("Collection copied to history");
+            if (item.history_content_type === "dataset") {
+                Toast.info("Dataset copied to history");
+            } else {
+                Toast.info("Collection copied to history");
+            }
         }
 
         historyStore.loadHistoryById(props.history.id);
@@ -370,6 +391,24 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
         contentItemRefs.value[`item-${nextItem.hid}`].value.$el.focus();
     }
     return nextItem;
+}
+
+function setItemDragstart(
+    item: HistoryItem,
+    showSelection: boolean,
+    selectedItems: Map<string, HistoryItem>,
+    selectionSize: number,
+    event: DragEvent
+) {
+    if (showSelection && selectionSize > 1) {
+        const selectedItemsObj: any = {};
+        for (const [key, value] of selectedItems) {
+            selectedItemsObj[key] = value;
+        }
+        setDrag(event, selectedItemsObj, true);
+    } else {
+        setDrag(event, item as any);
+    }
 }
 </script>
 
@@ -520,6 +559,9 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
                                     @arrow-navigate="
                                         arrowNavigate(item, $event);
                                         initKeySelection();
+                                    "
+                                    @drag-start="
+                                        setItemDragstart(item, showSelection, selectedItems, selectionSize, $event)
                                     "
                                     @hide-selection="setShowSelection(false)"
                                     @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
