@@ -59,7 +59,7 @@ dparse = "*"
 edam-ontology = "*"
 fastapi = ">=0.108"
 fs = "*"
-future = { git = "https://github.com/nsoranzo/python-future.git", branch = "python312-imp-module_past" }
+future = ">=1.0.0"  # Python 3.12 support
 galaxy_sequence_utils = "*"
 graphene-sqlalchemy = "3.0.0rc1"  # need a beta release to be compat. with starlette plugin
 gravity = ">=1.0.4"
