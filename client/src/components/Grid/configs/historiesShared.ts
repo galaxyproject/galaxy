@@ -1,7 +1,7 @@
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { historiesQuery } from "@/api/histories";
+import { historiesFetcher } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
@@ -21,7 +21,7 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await historiesQuery({
+    const { data, headers } = await historiesFetcher({
         limit,
         offset,
         search,

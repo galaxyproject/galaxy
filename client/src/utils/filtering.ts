@@ -40,7 +40,7 @@ export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | typeof Date | "MultiTags";
+    type?: typeof String | typeof Number | typeof Boolean | typeof Date | "MultiTags" | "ObjectStore" | "QuotaSource";
     /** If type: Boolean:
      * - booleanType: 'default' creates: `filter:true|false|any`
      * - booleanType: 'is' creates: `is:filter`
@@ -125,7 +125,7 @@ export function getOperatorForAlias(alias: Alias): Operator {
     return operatorForAlias[alias];
 }
 
-type HandlerReturn<T> = {
+export type HandlerReturn<T> = {
     attribute: string;
     converter?: Converter<T>;
     query: string;
@@ -149,6 +149,25 @@ export function equals<T>(attribute: string, query?: string, converter?: Convert
                 q = converter(q);
             }
             return toLower(v) === toLower(q);
+        },
+    };
+}
+
+export function quotaSourceFilter<T>(attribute: string, converter: Converter<T>): HandlerReturn<T> {
+    return {
+        attribute: attribute,
+        converter: converter,
+        query: `${attribute}-eq`,
+        handler: (v: T, q: T) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
+            function handleNullConversion(v: T) {
+                const lowerV = toLower(v);
+                return lowerV == "__null__" ? "null" : lowerV;
+            }
+            return handleNullConversion(v) === handleNullConversion(q);
         },
     };
 }

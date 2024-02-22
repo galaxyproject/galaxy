@@ -13,7 +13,6 @@ export interface Props {
     title: string;
     icon: string;
     isActive: boolean;
-    to: string;
 }
 
 defineProps<Props>();
@@ -37,6 +36,5 @@ const tooltip = computed(() =>
         :is-active="isActive"
         :title="title"
         :tooltip="tooltip"
-        :to="to"
         @click="emit('click')" />
 </template>

@@ -142,11 +142,6 @@ export default {
                             route: "/admin/toolbox_dependencies",
                         },
                         {
-                            id: "admin-link-tool-versions",
-                            title: "View Lineage",
-                            route: "/admin/tool_versions",
-                        },
-                        {
                             id: "admin-link-error-stack",
                             title: "View Error Logs",
                             route: "/admin/error_stack",

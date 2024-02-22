@@ -2,7 +2,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-const props = defineProps<{
+interface Props {
     h1?: boolean;
     h2?: boolean;
     h3?: boolean;
@@ -14,7 +14,9 @@ const props = defineProps<{
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
-}>();
+}
+
+const props = defineProps<Props>();
 
 const sizeClass = computed(() => {
     return `h-${props.size ?? "lg"}`;

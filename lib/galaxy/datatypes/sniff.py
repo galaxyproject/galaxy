@@ -91,8 +91,7 @@ class ConvertResult(NamedTuple):
 class ConvertFunction(Protocol):
     def __call__(
         self, fname: str, in_place: bool = True, tmp_dir: Optional[str] = None, tmp_prefix: Optional[str] = "gxupload"
-    ) -> ConvertResult:
-        ...
+    ) -> ConvertResult: ...
 
 
 def convert_newlines(
@@ -420,6 +419,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.den_fmt')
     >>> guess_ext(fname, sniff_order)
     'den_fmt'
+    >>> fname = get_test_fname('ethanol.magres')
+    >>> guess_ext(fname, sniff_order)
+    'magres'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'

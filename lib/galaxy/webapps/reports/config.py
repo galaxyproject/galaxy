@@ -1,4 +1,5 @@
 """Universe configuration builder."""
+
 import logging
 import os
 import re

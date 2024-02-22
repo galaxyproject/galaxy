@@ -19,9 +19,9 @@ class TestDisplayApplicationTestCase(ContainerizedIntegrationTestCase):
         for display_app_url in self._setup_igv_datasets(history_id=history_id, instance_url=instance_url):
             # wait for eventual conversion to finish
             wait_on(
-                lambda display_app_url=display_app_url: True
-                if self._get(display_app_url, allow_redirects=False).status_code == 302
-                else None,
+                lambda display_app_url=display_app_url: (
+                    True if self._get(display_app_url, allow_redirects=False).status_code == 302 else None
+                ),
                 "display application to become ready",
                 timeout=60,
             )

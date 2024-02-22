@@ -171,6 +171,10 @@ export interface paths {
          */
         get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
     };
+    "/api/datasets/{dataset_id}/object_store_id": {
+        /** Update an object store ID for a dataset you own. */
+        put: operations["datasets__update_object_store_id"];
+    };
     "/api/datasets/{dataset_id}/parameters_display": {
         /**
          * Resolve parameters as a list for nested display.
@@ -476,7 +480,7 @@ export interface paths {
         get: operations["search_forum_api_help_forum_search_get"];
     };
     "/api/histories": {
-        /** Returns histories for the current user. */
+        /** Returns histories available to the current user. */
         get: operations["index_api_histories_get"];
         /**
          * Creates a new history.
@@ -492,6 +496,14 @@ export interface paths {
          * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
          */
         get: operations["get_archived_histories_api_histories_archived_get"];
+    };
+    "/api/histories/batch/delete": {
+        /** Marks several histories with the given IDs as deleted. */
+        put: operations["batch_delete_api_histories_batch_delete_put"];
+    };
+    "/api/histories/batch/undelete": {
+        /** Marks several histories with the given IDs as undeleted. */
+        put: operations["batch_undelete_api_histories_batch_undelete_put"];
     };
     "/api/histories/count": {
         /** Returns number of histories for the current user. */
@@ -520,10 +532,6 @@ export interface paths {
     "/api/histories/published": {
         /** Return all histories that are published. */
         get: operations["published_api_histories_published_get"];
-    };
-    "/api/histories/query": {
-        /** Returns histories available to the current user. */
-        get: operations["query_api_histories_query_get"];
     };
     "/api/histories/shared_with_me": {
         /** Return all histories that are shared with the current user. */
@@ -1793,6 +1801,10 @@ export interface paths {
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
     };
+    "/api/workflows/{workflow_id}/counts": {
+        /** Get state counts for accessible workflow. */
+        get: operations["workflows__invocation_counts"];
+    };
     "/api/workflows/{workflow_id}/disable_link_access": {
         /**
          * Makes this item inaccessible by a URL link.
@@ -2238,6 +2250,11 @@ export interface components {
              * @description The encoded ID of the user that owns this History.
              */
             user_id?: string | null;
+            /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
             /**
              * Username and slug
              * @description The relative URL in the form of /u/{username}/h/{slug}
@@ -2910,6 +2927,8 @@ export interface components {
             badges: components["schemas"]["BadgeDict"][];
             /** Description */
             description?: string | null;
+            /** Device */
+            device?: string | null;
             /** Name */
             name?: string | null;
             /** Object Store Id */
@@ -2917,6 +2936,19 @@ export interface components {
             /** Private */
             private: boolean;
             quota: components["schemas"]["QuotaModel"];
+        };
+        /** ConcreteObjectStoreQuotaSourceDetails */
+        ConcreteObjectStoreQuotaSourceDetails: {
+            /**
+             * Enabled
+             * @description Whether the object store tracks quota on the data (independent of Galaxy's configuration)
+             */
+            enabled: boolean;
+            /**
+             * Source
+             * @description The quota source label corresponding to the object store the dataset is stored in (or would be stored in)
+             */
+            source: string | null;
         };
         /** ContentsObject */
         ContentsObject: {
@@ -3768,9 +3800,9 @@ export interface components {
         DatasetStorageDetails: {
             /**
              * Badges
-             * @description A mapping of object store labels to badges describing object store properties.
+             * @description A list of badges describing object store properties for concrete object store dataset is stored in.
              */
-            badges: Record<string, never>[];
+            badges: components["schemas"]["BadgeDict"][];
             /**
              * Dataset State
              * @description The model state of the supplied dataset instance.
@@ -3801,11 +3833,13 @@ export interface components {
              * @description The percentage indicating how full the store is.
              */
             percent_used: number | null;
+            /** @description Information about quota sources around dataset storage. */
+            quota: components["schemas"]["ConcreteObjectStoreQuotaSourceDetails"];
             /**
-             * Quota
-             * @description Information about quota sources around dataset storage.
+             * Relocatable
+             * @description Indicator of whether the objectstore for this dataset can be switched by this user.
              */
-            quota: Record<string, never>;
+            relocatable: boolean;
             /**
              * Shareable
              * @description Is this dataset shareable.
@@ -4049,6 +4083,20 @@ export interface components {
              * @description The number of datasets successfully processed.
              */
             success_count: number;
+        };
+        /** DeleteHistoriesPayload */
+        DeleteHistoriesPayload: {
+            /**
+             * IDs
+             * @description List of history IDs to be deleted.
+             */
+            ids: string[];
+            /**
+             * Purge
+             * @description Whether to definitely remove this history from disk.
+             * @default false
+             */
+            purge?: boolean;
         };
         /** DeleteHistoryContentPayload */
         DeleteHistoryContentPayload: {
@@ -4518,6 +4566,23 @@ export interface components {
              * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
              */
             user_email?: string | null;
+        };
+        /** EncodedJobParameterHistoryItem */
+        EncodedJobParameterHistoryItem: {
+            /** Hid */
+            hid?: number | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
+             */
+            src: components["schemas"]["DataItemSourceType"];
         };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
@@ -6390,6 +6455,11 @@ export interface components {
              */
             user_id?: string | null;
             /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
              * Username and slug
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
@@ -6416,61 +6486,6 @@ export interface components {
             user_id?: string | null;
             [key: string]: unknown | undefined;
         };
-        /** HistoryQueryResult */
-        HistoryQueryResult: {
-            /**
-             * Annotation
-             * @description The annotation of this History.
-             */
-            annotation?: string | null;
-            /**
-             * Create Time
-             * @description The time and date this item was created.
-             */
-            create_time: string | null;
-            /**
-             * Deleted
-             * @description Whether this History has been deleted.
-             */
-            deleted: boolean;
-            /**
-             * ID
-             * @description Encoded ID of the History.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Importable
-             * @description Whether this History can be imported.
-             */
-            importable: boolean;
-            /**
-             * Name
-             * @description The name of the History.
-             */
-            name: string;
-            /**
-             * Published
-             * @description Whether this History has been published.
-             */
-            published: boolean;
-            /**
-             * Tags
-             * @description A list of tags to add to this item.
-             */
-            tags: components["schemas"]["TagCollection"] | null;
-            /**
-             * Update Time
-             * @description The last time and date this item was updated.
-             */
-            update_time: string | null;
-            [key: string]: unknown | undefined;
-        };
-        /**
-         * HistoryQueryResultList
-         * @default []
-         */
-        HistoryQueryResultList: components["schemas"]["HistoryQueryResult"][];
         /**
          * HistorySummary
          * @description History summary information.
@@ -7772,7 +7787,13 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value?: Record<string, never> | null;
+            value?:
+                | components["schemas"]["EncodedJobParameterHistoryItem"][]
+                | number
+                | number
+                | boolean
+                | string
+                | null;
         };
         /**
          * JobSourceType
@@ -9596,6 +9617,10 @@ export interface components {
              */
             url: string;
         };
+        /** RootModel[Dict[str, int]] */
+        RootModel_Dict_str__int__: {
+            [key: string]: number | undefined;
+        };
         /** SearchJobsPayload */
         SearchJobsPayload: {
             /**
@@ -10484,6 +10509,14 @@ export interface components {
              */
             title?: string | null;
         };
+        /** UndeleteHistoriesPayload */
+        UndeleteHistoriesPayload: {
+            /**
+             * IDs
+             * @description List of history IDs to be undeleted.
+             */
+            ids: string[];
+        };
         /**
          * UpdateCollectionAttributePayload
          * @description Contains attributes that can be updated for all elements in a dataset collection.
@@ -10599,6 +10632,14 @@ export interface components {
              * @description A short text describing the contents of the Library. Leave unset to keep the existing.
              */
             synopsis?: string | null;
+        };
+        /** UpdateObjectStoreIdPayload */
+        UpdateObjectStoreIdPayload: {
+            /**
+             * Object Store Id
+             * @description Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.
+             */
+            object_store_id: string;
         };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
@@ -12217,6 +12258,38 @@ export interface operations {
             };
         };
     };
+    datasets__update_object_store_id: {
+        /** Update an object store ID for a dataset you own. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the History Dataset. */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateObjectStoreIdPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
         /**
          * Resolve parameters as a list for nested display.
@@ -13824,8 +13897,45 @@ export interface operations {
         };
     };
     index_api_histories_get: {
-        /** Returns histories for the current user. */
+        /** Returns histories available to the current user. */
         parameters?: {
+            /** @description The maximum number of items to return. */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Sort index by this specified attribute */
+            /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `name`
+             * : The history's name.
+             *
+             * `annotation`
+             * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Historys: `title`, `description`, `slug`, `tag`.
+             */
             /** @description Whether all histories from other users in this Galaxy should be included. Only admins are allowed to query all histories. */
             /**
              * @deprecated
@@ -13833,18 +13943,22 @@ export interface operations {
              */
             /** @description Generally a property name to filter by followed by an (often optional) hyphen and operator string. */
             /** @description The value to filter by. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
             /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
+                limit?: number | null;
+                offset?: number | null;
+                show_own?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+                sort_by?: "create_time" | "name" | "update_time" | "username";
+                sort_desc?: boolean;
+                search?: string | null;
                 all?: boolean | null;
                 deleted?: boolean | null;
                 q?: string[] | null;
                 qv?: string[] | null;
-                offset?: number | null;
-                limit?: number | null;
                 order?: string | null;
                 view?: string | null;
                 keys?: string | null;
@@ -13951,6 +14065,83 @@ export interface operations {
                         | components["schemas"]["ArchivedHistorySummary"]
                         | components["schemas"]["ArchivedHistoryDetailed"]
                         | Record<string, never>
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_delete_api_histories_batch_delete_put: {
+        /** Marks several histories with the given IDs as deleted. */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                purge?: boolean;
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteHistoriesPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryMinimal"]
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_undelete_api_histories_batch_undelete_put: {
+        /** Marks several histories with the given IDs as undeleted. */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UndeleteHistoriesPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -14196,76 +14387,6 @@ export interface operations {
                         | components["schemas"]["HistorySummary"]
                         | components["schemas"]["HistoryMinimal"]
                     )[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    query_api_histories_query_get: {
-        /** Returns histories available to the current user. */
-        parameters?: {
-            /** @description The maximum number of items to return. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description Sort index by this specified attribute */
-            /** @description Sort in descending order? */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `name`
-             * : The history's name.
-             *
-             * `annotation`
-             * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Historys: `title`, `description`, `slug`, `tag`.
-             */
-            query?: {
-                limit?: number | null;
-                offset?: number | null;
-                show_own?: boolean;
-                show_published?: boolean;
-                show_shared?: boolean;
-                sort_by?: "create_time" | "name" | "update_time" | "username";
-                sort_desc?: boolean;
-                search?: string | null;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["HistoryQueryResultList"];
                 };
             };
             /** @description Validation Error */
@@ -21486,6 +21607,37 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflows__invocation_counts: {
+        /** Get state counts for accessible workflow. */
+        parameters: {
+            /** @description Is provided workflow id for Workflow instead of StoredWorkflow? */
+            query?: {
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RootModel_Dict_str__int__"];
                 };
             };
             /** @description Validation Error */

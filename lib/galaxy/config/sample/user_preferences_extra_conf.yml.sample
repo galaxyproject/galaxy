@@ -93,6 +93,8 @@ preferences:
             - name: password
               label: Password
               type:  password
+              # for storing the password in a vault (instead of plaintext in the DB)
+              # store: vault
               required: False
 
     invenio:

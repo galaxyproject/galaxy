@@ -9,13 +9,13 @@ import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import historiesGridConfig from "components/Grid/configs/histories";
+import historiesPublishedGridConfig from "components/Grid/configs/historiesPublished";
 import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
 import visualizationsGridConfig from "components/Grid/configs/visualizations";
 import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
 import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
-import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryView from "components/History/HistoryView";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import { HistoryExport } from "components/HistoryExport/index";
@@ -46,6 +46,7 @@ import TrsSearch from "components/Workflow/Import/TrsSearch";
 import InvocationReport from "components/Workflow/InvocationReport";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import UserInvocations from "components/Workflow/UserInvocations";
+import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
@@ -69,9 +70,11 @@ import { patchRouterPush } from "./router-push";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import HistoryStatistics from "@/components/History/Statistics/HistoryStatistics.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
+import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -261,10 +264,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/permissions",
-                        component: FormGeneric,
+                        component: HistoryDatasetPermissions,
                         props: (route) => ({
-                            url: `/history/permissions?id=${route.query.id}`,
-                            redirect: "/histories/list",
+                            historyId: route.query.id,
                         }),
                     },
                     {
@@ -281,11 +283,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list_published",
-                        component: HistoryPublishedList,
-                        props: (route) => {
-                            return {
-                                ...route.query,
-                            };
+                        component: GridList,
+                        props: {
+                            gridConfig: historiesPublishedGridConfig,
                         },
                     },
                     {
@@ -443,6 +443,14 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
+                        path: "user/permissions",
+                        component: UserDatasetPermissions,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            userId: Galaxy.user.id,
+                        }),
+                    },
+                    {
                         path: "user/:formId",
                         component: UserPreferencesForm,
                         props: true,
@@ -493,15 +501,8 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/create",
-                        component: FormGeneric,
-                        props: {
-                            url: "/workflow/create",
-                            redirect: "/workflows/edit",
-                            active_tab: "workflow",
-                            submitTitle: "Create",
-                            submitIcon: "fa-check",
-                            cancelRedirect: "/workflows/list",
-                        },
+                        component: WorkflowCreate,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/export",
@@ -526,20 +527,25 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "workflows/list_published",
-                        component: WorkflowList,
-                        props: (_) => ({
-                            published: true,
-                        }),
-                    },
-                    {
                         path: "workflows/list",
                         component: WorkflowList,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "workflows/list_published",
+                        component: WorkflowList,
                         props: (route) => ({
-                            importMessage: route.query.message,
-                            importStatus: route.query.status,
-                            query: route.query.query,
+                            activeList: "published",
+                            query: { ...route.query },
+                        }),
+                    },
+                    {
+                        path: "workflows/list_shared_with_me",
+                        component: WorkflowList,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            activeList: "shared_with_me",
+                            query: { ...route.query },
                         }),
                     },
                     {

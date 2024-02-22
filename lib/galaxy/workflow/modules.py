@@ -1,6 +1,7 @@
 """
 Modules used in building workflows
 """
+
 import json
 import logging
 import re
@@ -17,7 +18,6 @@ from typing import (
     Union,
 )
 
-from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -58,6 +58,7 @@ from galaxy.tools.execute import (
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -79,13 +80,13 @@ from galaxy.tools.parameters.basic import (
     runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
-    workflow_building_modes,
 )
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import (
     listify,
@@ -225,10 +226,6 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             as_cwl_value = do_eval(
                 when_expression,
                 step_state,
-                [{"class": "InlineJavascriptRequirement"}],
-                None,
-                None,
-                {},
             )
         except Exception:
             # Exception contains script and traceback, which could be helpful for debugging workflows,

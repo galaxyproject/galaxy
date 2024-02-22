@@ -18,6 +18,10 @@ _:  # global stuff
     right_panel_collapse: '.collapse-button.right'
     by_attribute: '${scope} [${name}="${value}"]'
 
+    confirm_button:
+      type: xpath
+      selector: '//button[contains(text(), "${name}")]'
+
   messages:
     selectors:
       all: '[class*="alert"]'
@@ -237,7 +241,7 @@ history_panel:
       toggle: '${_} .toggle-link'
       display: '${_} .tag span'
       input: '${_} input'
-      tag_area: '${_} .multiselect__tags'
+      tag_area: '${_} .interactive-tags'
       tag_close_btn: '${_} .tag-delete-button'
 
   multi_operations:
@@ -262,8 +266,8 @@ history_panel:
       title_input: '.dataset-collection-panel .controls .title input'
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
-      tag_area_button: '.details .stateless-tags .multiselect button'
-      tag_area_input: '.details .stateless-tags .multiselect input'
+      tag_area_button: '.details .stateless-tags .toggle-button'
+      tag_area_input: '.details .stateless-tags .headless-multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
       back_to_history: svg[data-description="back to history"]
 
@@ -276,11 +280,11 @@ history_panel:
       selector: 'name input'
       type: data-description
     contents: '.history-index .content-item'
-    empty_message: '.empty-message'
+    empty_message: '#empty-history-message'
     size: '.history-size'
     tag_area: '.details .stateless-tags'
-    tag_area_button: '.details .stateless-tags .multiselect button'
-    tag_area_input: '.details .stateless-tags .multiselect input'
+    tag_area_button: '.details .stateless-tags .toggle-button'
+    tag_area_input: '.details .stateless-tags .headless-multiselect input'
     tag_close_btn: '.tags-display .tag-delete-button'
     tags: '.tag span'
 
@@ -381,7 +385,7 @@ multi_history_panel:
     current_label: '.details .name'
     switch_history: '.switch-to'
     current_history_check: '#history-column-${history_id} .details .name'
-    empty_message_check: '.empty-message'
+    empty_message_check: '#empty-history-message'
     switch_button: '#history-column-${history_id} .switch-to'
   history_dropdown_menu:
     selectors:
@@ -397,14 +401,13 @@ multi_history_panel:
 
 published_histories:
   selectors:
-    histories: '#published-histories-table tbody tr'
-    search_input: '#published-histories input.search-query[data-description="filter text input"]'
-    advanced_search_toggle: '#published-histories [data-description="toggle advanced search"]'
-    advanced_search_name_input: '#published-histories-advanced-filter-name'
-    advanced_search_tag_input: '#published-histories-advanced-filter-tag'
-    advanced_search_submit: '#published-histories-advanced-filter-submit'
-    tag_content: '#published-histories-table tbody tr .tag span'
-    column_header: '#published-histories-table thead tr th:nth-child(${column_number})'
+    histories: '#grid-histories-published tbody tr'
+    advanced_search_name_input: '#histories-advanced-filter-name'
+    advanced_search_tag_area: '#histories-advanced-filter-tag .stateless-tags button'
+    advanced_search_tag_input: '#histories-advanced-filter-tag .stateless-tags input'
+    advanced_search_toggle: '#histories-published-grid [data-description="toggle advanced search"]'
+    advanced_search_submit: '#histories-advanced-filter-submit'
+    search_input: '#histories-published-grid input.search-query[data-description="filter text input"]'
 
 shared_histories:
   selectors:
@@ -583,6 +586,7 @@ tool_form:
 
 workflows:
   selectors:
+    shared_with_me_tab: '#shared-with-me'
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
@@ -592,8 +596,12 @@ workflows:
     advanced_search_name_input: '#workflows-advanced-filter-name'
     advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
     advanced_search_submit: '#workflows-advanced-filter-submit'
-    workflow_table: "#workflow-table"
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    workflows_list: '#workflows-list'
+    workflows_list_empty: '#workflow-list-empty'
+    workflow_not_found_message: '#no-workflow-found'
+    workflow_card: '.workflow-card'
+    workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
     pager: '.gx-workflows-grid-pager'
@@ -603,9 +611,19 @@ workflows:
     pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
-    dropdown: '[data-workflow-dropdown*="${id}"]'
-    run_button: '[data-workflow-run*="${id}"]'
-    bookmark_link: '.workflow-bookmark-link'
+    dropdown: '[data-workflow-actions-dropdown="${id}"]'
+    share_button: '#workflow-share-button'
+    download_button: '#workflow-download-button'
+    run_button: '[data-workflow-run]'
+    edit_button: '.workflow-edit-button'
+    rename_input: '#workflow-name-input'
+    workflow_drop_down: '[data-workflow-actions-dropdown]'
+    delete_button: '.workflow-delete-button'
+    view_button: '.workflow-view-button'
+    workflow_preview_container: '.workflow-preview-container'
+    workflow_preview_information: '.workflow-information'
+    view_external_link: ".workflow-view-external-link-button"
+    bookmark_link: '.workflow-bookmark-button-${action}'
     import_file: '.workflow-import-file'
     import_trs_search: '.workflow-import-trs-search'
     import_trs_id: '.workflow-import-trs-id'

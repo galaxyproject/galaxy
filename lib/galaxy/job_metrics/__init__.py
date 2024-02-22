@@ -10,6 +10,7 @@ Each :class:`JobInstrumenter` plugin object describes how to inject a bits
 of shell code into a job scripts (before and after tool commands run) and then
 collect the output of these from a job directory.
 """
+
 import collections
 import logging
 import os

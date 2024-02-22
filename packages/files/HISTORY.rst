@@ -4,10 +4,34 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* pin fs.dropboxfs to >=1 by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16451 <https://github.com/galaxyproject/galaxy/pull/16451>`_
+* Write to a temp filename in posix file source plugin by `@natefoo <https://github.com/natefoo>`_ in `#17350 <https://github.com/galaxyproject/galaxy/pull/17350>`_
+* Set webdav file source to use temp files by default by `@davelopez <https://github.com/davelopez>`_ in `#17388 <https://github.com/galaxyproject/galaxy/pull/17388>`_
+* More defensive access of extra props in filesources by `@nuwang <https://github.com/nuwang>`_ in `#17445 <https://github.com/galaxyproject/galaxy/pull/17445>`_
+
+============
+Enhancements
+============
+
+* Add Invenio RDM repository integration by `@davelopez <https://github.com/davelopez>`_ in `#16381 <https://github.com/galaxyproject/galaxy/pull/16381>`_
+* Refactor FilesDialog + Remote Files API schema improvements by `@davelopez <https://github.com/davelopez>`_ in `#16420 <https://github.com/galaxyproject/galaxy/pull/16420>`_
+*  Use fs.onedatarestfs for Onedata files source plugin implementation by `@lopiola <https://github.com/lopiola>`_ in `#16690 <https://github.com/galaxyproject/galaxy/pull/16690>`_
+* Remove record access handling for Invenio RDM plugin by `@davelopez <https://github.com/davelopez>`_ in `#16900 <https://github.com/galaxyproject/galaxy/pull/16900>`_
+* Enhance Invenio RDM integration by `@davelopez <https://github.com/davelopez>`_ in `#16964 <https://github.com/galaxyproject/galaxy/pull/16964>`_
 
 -------------------
 23.1.4 (2024-01-04)
@@ -46,8 +70,6 @@ Bug fixes
 Bug fixes
 =========
 
-* 
-* 
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Fix filesource file url support by `@nuwang <https://github.com/nuwang>`_ in `#15794 <https://github.com/galaxyproject/galaxy/pull/15794>`_
 * Fix unittest mocks to support us checking geturl()  by `@dannon <https://github.com/dannon>`_ in `#16726 <https://github.com/galaxyproject/galaxy/pull/16726>`_
@@ -92,9 +114,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Fix dropbox import to support newer versions by `@nuwang <https://github.com/nuwang>`_ in `#16239 <https://github.com/galaxyproject/galaxy/pull/16239>`_
 
 -------------------

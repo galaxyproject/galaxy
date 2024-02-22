@@ -10,14 +10,14 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteHistory, historiesQuery, undeleteHistory } from "@/api/histories";
+import { deleteHistories, deleteHistory, historiesFetcher, undeleteHistories, undeleteHistory } from "@/api/histories";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, FieldArray, GridConfig } from "./types";
+import type { ActionArray, BatchOperationArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -31,7 +31,7 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await historiesQuery({
+    const { data, headers } = await historiesFetcher({
         limit,
         offset,
         search,
@@ -53,6 +53,76 @@ const actions: ActionArray = [
         icon: faPlus,
         handler: () => {
             emit("/histories/import");
+        },
+    },
+];
+
+// Batch operation
+const batch: BatchOperationArray = [
+    {
+        title: "Delete",
+        icon: faTrash,
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => x.deleted),
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l(`Are you sure that you want to delete the selected histories?`))) {
+                try {
+                    const historyIds = data.map((x) => String(x.id));
+                    await deleteHistories({ ids: historyIds });
+                    return {
+                        status: "success",
+                        message: `Deleted ${data.length} histories.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to delete histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
+        },
+    },
+    {
+        title: "Restore",
+        icon: faTrashRestore,
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => !x.deleted || x.purged),
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l(`Are you sure that you want to restore the selected histories?`))) {
+                try {
+                    const historyIds = data.map((x) => String(x.id));
+                    await undeleteHistories({ ids: historyIds });
+                    return {
+                        status: "success",
+                        message: `Restored ${data.length} histories.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to restore histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
+        },
+    },
+    {
+        title: "Purge",
+        icon: faTrash,
+        condition: (data: Array<HistoryEntry>) => !data.some((x) => x.purged),
+        handler: async (data: Array<HistoryEntry>) => {
+            if (confirm(_l(`Are you sure that you want to permanently delete the selected histories?`))) {
+                try {
+                    const historyIds = data.map((x) => String(x.id));
+                    await deleteHistories({ ids: historyIds, purge: true });
+                    return {
+                        status: "success",
+                        message: `Purged ${data.length} histories.`,
+                    };
+                } catch (e) {
+                    return {
+                        status: "danger",
+                        message: `Failed to delete histories: ${errorMessageAsString(e)}`,
+                    };
+                }
+            }
         },
     },
 ];
@@ -258,6 +328,7 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
+    batch: batch,
     plural: "Histories",
     sortBy: "update_time",
     sortDesc: true,

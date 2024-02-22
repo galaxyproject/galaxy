@@ -114,12 +114,6 @@
                 </strong>
                 - Select on which repositories you want to reset metadata.
             </li>
-            <li>
-                <strong>
-                    <router-link to="/admin/tool_versions">View Lineage</router-link>
-                </strong>
-                - A view of a version lineages for all installed tools. Useful for debugging.
-            </li>
         </ul>
     </div>
 </template>

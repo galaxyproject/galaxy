@@ -524,13 +524,13 @@ def test_badges_parsing_conflicts():
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
     <backends>
-        <backend id="files1" type="disk" weight="2">
+        <backend id="files1" type="disk" weight="2" device="primary_disk">
             <quota source="1files" />
             <files_dir path="${temp_directory}/files1"/>
             <extra_dir type="temp" path="${temp_directory}/tmp1"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
         </backend>
-        <backend id="files2" type="disk" weight="1">
+        <backend id="files2" type="disk" weight="1" device="primary_disk">
             <quota source="2files" />
             <files_dir path="${temp_directory}/files2"/>
             <extra_dir type="temp" path="${temp_directory}/tmp2"/>
@@ -549,6 +549,7 @@ backends:
        source: 1files
      type: disk
      weight: 2
+     device: primary_disk
      files_dir: "${temp_directory}/files1"
      extra_dirs:
      - type: temp
@@ -560,6 +561,7 @@ backends:
        source: 2files
      type: disk
      weight: 1
+     device: primary_disk
      files_dir: "${temp_directory}/files2"
      extra_dirs:
      - type: temp
@@ -597,6 +599,12 @@ def test_distributed_store():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+            device_source_map = object_store.get_device_source_map()
+            assert device_source_map
+            print(device_source_map.backends)
+            assert device_source_map.get_device_id("files1") == "primary_disk"
+            assert device_source_map.get_device_id("files2") == "primary_disk"
 
 
 def test_distributed_store_empty_cache_targets():

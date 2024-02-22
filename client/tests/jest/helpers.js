@@ -10,7 +10,8 @@ import { PiniaVuePlugin } from "pinia";
 import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
-import Vuex from "vuex";
+
+import _short from "@/components/plugins/short";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -184,7 +185,6 @@ export function getLocalVue(instrumentLocalization = false) {
         bind() {},
     };
     localVue.use(PiniaVuePlugin);
-    localVue.use(Vuex);
     localVue.use(BootstrapVue);
     const l = instrumentLocalization ? testLocalize : _l;
     localVue.use(localizationPlugin, l);

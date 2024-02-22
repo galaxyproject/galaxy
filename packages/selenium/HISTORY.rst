@@ -4,10 +4,28 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Vueify Data Uploader by `@guerler <https://github.com/guerler>`_ in `#16472 <https://github.com/galaxyproject/galaxy/pull/16472>`_
+* Create reusable `FilterMenu` with advanced options by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16522 <https://github.com/galaxyproject/galaxy/pull/16522>`_
+* Implement datatype upload warnings by `@jmchilton <https://github.com/jmchilton>`_ in `#16564 <https://github.com/galaxyproject/galaxy/pull/16564>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#16577 <https://github.com/galaxyproject/galaxy/pull/16577>`_
+* Vueify Tool Form Data Selector by `@guerler <https://github.com/guerler>`_ in `#16578 <https://github.com/galaxyproject/galaxy/pull/16578>`_
+* Workflow Comments 💬 by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#16612 <https://github.com/galaxyproject/galaxy/pull/16612>`_
+* Workflow Embed by `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`_ in `#16657 <https://github.com/galaxyproject/galaxy/pull/16657>`_
+* Remove "Create Workflow" form and allow workflow creation in editor by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16938 <https://github.com/galaxyproject/galaxy/pull/16938>`_
 
 -------------------
 23.1.4 (2024-01-04)
@@ -92,9 +110,6 @@ No recorded changes since last release
 Enhancements
 ============
 
-* 
-* 
-* 
 * Port selenium setup to non-deprecated selenium options by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16215 <https://github.com/galaxyproject/galaxy/pull/16215>`_
 
 -------------------
@@ -106,14 +121,6 @@ Enhancements
 Enhancements
 ============
 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
-* 
 * Add support for launching workflows via Tutorial Mode by `@hexylena <https://github.com/hexylena>`_ in `#15684 <https://github.com/galaxyproject/galaxy/pull/15684>`_
 
 -------------------

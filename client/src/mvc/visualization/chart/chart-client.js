@@ -1,14 +1,15 @@
 import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
-import Ui from "mvc/ui/ui-misc";
 import Modal from "mvc/ui/ui-modal";
-import Chart from "mvc/visualization/chart/components/model";
-import Editor from "mvc/visualization/chart/views/editor";
-import Menu from "mvc/visualization/chart/views/menu";
-import Viewer from "mvc/visualization/chart/views/viewer";
 import { getAppRoot } from "onload/loadConfig";
 import Deferred from "utils/deferred";
+
+import Chart from "./components/model";
+import Editor from "./views/editor";
+import Menu from "./views/menu";
+import Ui from "./views/misc";
+import Viewer from "./views/viewer";
 
 /** Get boolean as string */
 function asBoolean(value) {

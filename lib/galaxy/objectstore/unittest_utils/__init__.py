@@ -1,4 +1,5 @@
 """Utilities for configuring and using objectstores in unit tests."""
+
 import os
 from io import StringIO
 from shutil import rmtree

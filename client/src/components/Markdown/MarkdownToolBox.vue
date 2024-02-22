@@ -105,7 +105,7 @@ export default {
         return {
             selectedArgumentName: null,
             selectedType: null,
-            selectedLabels: null,
+            selectedLabels: undefined,
             selectedShow: false,
             selectedPayload: null,
             visualizationIndex: {},

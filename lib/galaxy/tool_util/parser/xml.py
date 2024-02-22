@@ -93,7 +93,6 @@ def destroy_tree(tree):
 def parse_change_format(change_format: Iterable[Element]) -> List[ChangeFormatModel]:
     change_models: List[ChangeFormatModel] = []
     for change_elem in change_format:
-        change_elem = cast(Element, change_elem)
         for when_elem in change_elem.findall("when"):
             when_elem = cast(Element, when_elem)
             value: Optional[str] = when_elem.get("value", None)
@@ -123,7 +122,6 @@ class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
     language = "xml"
-    root: Element
 
     def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree

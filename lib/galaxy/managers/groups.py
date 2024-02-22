@@ -110,19 +110,22 @@ class GroupsManager:
             trans.sa_session.commit()
 
     def purge(self, trans: ProvidesAppContext, group_id: int):
-        group = self._get_group(trans.sa_session, group_id)
+        sa_session = trans.sa_session
+        group = self._get_group(sa_session, group_id)
         if not group.deleted:
             raise RequestParameterInvalidException(
                 f"Group '{group.name}' has not been deleted, so it cannot be purged."
             )
         # Delete UserGroupAssociations
         for uga in group.users:
-            trans.sa_session.delete(uga)
+            sa_session.delete(uga)
         # Delete GroupRoleAssociations
         for gra in group.roles:
-            trans.sa_session.delete(gra)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+            sa_session.delete(gra)
+        # Delete the group
+        sa_session.delete(group)
+        with transaction(sa_session):
+            sa_session.commit()
 
     def undelete(self, trans: ProvidesAppContext, group_id: int):
         group = self._get_group(trans.sa_session, group_id)

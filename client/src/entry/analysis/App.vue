@@ -2,44 +2,49 @@
     <div id="app" :style="theme">
         <div id="everything">
             <div id="background" />
-            <Masthead
-                v-if="showMasthead"
-                id="masthead"
-                :brand="config.brand"
-                :logo-url="config.logo_url"
-                :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
-                :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
-                :tabs="tabs"
-                :window-tab="windowTab"
-                @open-url="openUrl" />
-            <Alert
-                v-if="showAlerts && config.message_box_visible && config.message_box_content"
-                id="messagebox"
-                class="rounded-0 m-0 p-2"
-                :variant="config.message_box_class || 'info'">
-                <span class="fa fa-fw mr-1 fa-exclamation" />
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="config.message_box_content"></span>
-            </Alert>
-            <Alert
-                v-if="showAlerts && config.show_inactivity_warning && config.inactivity_box_content"
-                id="inactivebox"
-                class="rounded-0 m-0 p-2"
-                variant="warning">
-                <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
-                <span>{{ config.inactivity_box_content }}</span>
-                <span>
-                    <a class="ml-1" :href="resendUrl">Resend Verification</a>
-                </span>
-            </Alert>
+            <template v-if="!embedded">
+                <Masthead
+                    v-if="showMasthead"
+                    id="masthead"
+                    :brand="config.brand"
+                    :logo-url="config.logo_url"
+                    :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                    :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
+                    :tabs="tabs"
+                    :window-tab="windowTab"
+                    @open-url="openUrl" />
+                <Alert
+                    v-if="config.message_box_visible && config.message_box_content"
+                    id="messagebox"
+                    class="rounded-0 m-0 p-2"
+                    :variant="config.message_box_class || 'info'">
+                    <span class="fa fa-fw mr-1 fa-exclamation" />
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-html="config.message_box_content"></span>
+                </Alert>
+                <Alert
+                    v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                    id="inactivebox"
+                    class="rounded-0 m-0 p-2"
+                    variant="warning">
+                    <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
+                    <span>{{ config.inactivity_box_content }}</span>
+                    <span>
+                        <a class="ml-1" :href="resendUrl">Resend Verification</a>
+                    </span>
+                </Alert>
+            </template>
+
             <router-view @update:confirmation="confirmation = $event" />
         </div>
-        <div id="dd-helper" />
-        <Toast ref="toastRef" />
-        <ConfirmDialog ref="confirmDialogRef" />
-        <UploadModal ref="uploadModal" />
-        <BroadcastsOverlay v-if="showBroadcasts" />
-        <DragGhost />
+        <template v-if="!embedded">
+            <div id="dd-helper" />
+            <Toast ref="toastRef" />
+            <ConfirmDialog ref="confirmDialogRef" />
+            <UploadModal ref="uploadModal" />
+            <BroadcastsOverlay />
+            <DragGhost />
+        </template>
     </div>
 </template>
 <script>
@@ -56,8 +61,9 @@ import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
-import { computed, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
+import short from "@/components/plugins/short";
 import { useRouteQueryBool } from "@/composables/route";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -79,6 +85,9 @@ export default {
         UploadModal,
         BroadcastsOverlay,
     },
+    directives: {
+        short,
+    },
     setup() {
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
@@ -94,8 +103,6 @@ export default {
         setGlobalUploadModal(uploadModal);
 
         const embedded = useRouteQueryBool("embed");
-        const showBroadcasts = computed(() => !embedded.value);
-        const showAlerts = computed(() => !embedded.value);
 
         watch(
             () => embedded.value,
@@ -116,8 +123,6 @@ export default {
             currentTheme,
             currentHistory,
             embedded,
-            showBroadcasts,
-            showAlerts,
         };
     },
     data() {
@@ -125,7 +130,7 @@ export default {
             config: getGalaxyInstance().config,
             confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
-            windowManager: new WindowManager(),
+            windowManager: null,
         };
     },
     computed: {
@@ -133,10 +138,6 @@ export default {
             return fetchMenu(this.config);
         },
         showMasthead() {
-            if (this.embedded) {
-                return false;
-            }
-
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
                 return masthead.toLowerCase() != "true";
@@ -170,25 +171,31 @@ export default {
         },
     },
     mounted() {
-        this.Galaxy = getGalaxyInstance();
-        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        this.Galaxy.modal = new Modal.View();
-        this.Galaxy.frame = this.windowManager;
-        if (this.Galaxy.config.enable_notification_system) {
-            this.startNotificationsPolling();
+        if (!this.embedded) {
+            this.Galaxy = getGalaxyInstance();
+            this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
+            this.Galaxy.modal = new Modal.View();
+            this.Galaxy.frame = this.windowManager;
+            if (this.Galaxy.config.enable_notification_system) {
+                this.startWatchingNotifications();
+            }
         }
     },
     created() {
-        window.onbeforeunload = () => {
-            if (this.confirmation || this.windowManager.beforeUnload()) {
-                return "Are you sure you want to leave the page?";
-            }
-        };
+        if (!this.embedded) {
+            this.windowManager = new WindowManager();
+
+            window.onbeforeunload = () => {
+                if (this.confirmation || this.windowManager.beforeUnload()) {
+                    return "Are you sure you want to leave the page?";
+                }
+            };
+        }
     },
     methods: {
-        startNotificationsPolling() {
+        startWatchingNotifications() {
             const notificationsStore = useNotificationsStore();
-            notificationsStore.startPollingNotifications();
+            notificationsStore.startWatchingNotifications();
         },
         openUrl(urlObj) {
             if (!urlObj.target) {

@@ -10,7 +10,7 @@ import requests
 import yaml
 
 from galaxy.tools.parameters import populate_state
-from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.workflow.modules import module_factory
 

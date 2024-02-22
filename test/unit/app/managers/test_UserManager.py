@@ -3,6 +3,7 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
+
 from datetime import datetime
 from unittest.mock import patch
 

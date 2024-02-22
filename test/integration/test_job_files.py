@@ -14,6 +14,7 @@ As a result this test is highly coupled with internals in a way most
 integration tests avoid - but @jmchilton's fear of not touching this
 API has gone too far.
 """
+
 import io
 import os
 import tempfile
@@ -137,7 +138,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         uploader.upload()
         upload_session_url = uploader.url
         assert upload_session_url
-        tus_session_id = upload_session_url.rsplit("/", 1)[1]
+        tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
         data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
         post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)

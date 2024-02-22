@@ -105,14 +105,18 @@ class PosixFilesSource(BaseFilesSource):
             target_native_path = os.path.normpath(target_native_path)
             assert target_native_path.startswith(os.path.normpath(effective_root))
 
-        target_native_path_parent = os.path.dirname(target_native_path)
+        target_native_path_parent, target_native_path_name = os.path.split(target_native_path)
         if not os.path.exists(target_native_path_parent):
             if self.allow_subdir_creation:
                 os.makedirs(target_native_path_parent)
             else:
                 raise Exception("Parent directory does not exist.")
 
-        shutil.copyfile(native_path, target_native_path)
+        # Use a temporary name while writing so anything that consumes written files can detect when they've completed,
+        # and identify interrupted writes
+        target_native_path_part = os.path.join(target_native_path_parent, f"_{target_native_path_name}.part")
+        shutil.copyfile(native_path, target_native_path_part)
+        os.rename(target_native_path_part, target_native_path)
 
     def _to_native_path(self, source_path: str, user_context=None):
         source_path = os.path.normpath(source_path)

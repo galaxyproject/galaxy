@@ -1,6 +1,7 @@
 """
 Interval datatypes
 """
+
 import logging
 import sys
 import tempfile
@@ -315,7 +316,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -337,9 +338,7 @@ class Interval(Tabular):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = app.legacy_url_for(
-                mapper=app.legacy_mapper,
-                environ=request.environ,
+            internal_url = app.url_for(
                 controller="dataset",
                 dataset_id=dataset.id,
                 action="display_at",
@@ -349,7 +348,7 @@ class Interval(Tabular):
                 "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
                 % (
                     base_url,
-                    app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                    app.url_for(controller="root"),
                     dataset.id,
                     type,
                 )
@@ -768,20 +767,26 @@ class Bed12(BedStrict):
 
 class _RemoteCallMixin:
     def _get_remote_call_url(
-        self, redirect_url: str, site_name: str, dataset: HasId, type: str, app, base_url: str, request
+        self,
+        redirect_url: str,
+        site_name: str,
+        dataset: HasId,
+        type: str,
+        app,
+        base_url: str,
     ) -> str:
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = f"{app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
+        internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename=f'{type}_{site_name}')}"
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus(
             "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
             % (
                 base_url,
-                app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                app.url_for(controller="root"),
                 dataset.id,
                 type,
             )
@@ -969,7 +974,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -978,11 +983,11 @@ class Gff(Tabular, _RemoteCallMixin):
                     redirect_url = quote_plus(
                         f"{site_url}db={dataset.dbkey}&position={seqid}:{start}-{stop}&hgt.customText=%s"
                     )
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
-    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -991,7 +996,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     if seqid.startswith("chr") and len(seqid) > 3:
                         seqid = seqid[3:]
                     redirect_url = quote_plus(f"{site_url}/?q={seqid}:{start}..{stop}&eurl=%s")
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1371,7 +1376,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1380,11 +1385,11 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     if chrom.startswith("chr") and len(chrom) > 3:
                         chrom = chrom[3:]
                     redirect_url = quote_plus(f"{site_url}/?q={chrom}:{start}..{stop}&eurl=%s")
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1393,7 +1398,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     redirect_url = quote_plus(
                         f"{site_url}db={dataset.dbkey}&position={chrom}:{start}-{stop}&hgt.customText=%s"
                     )
-                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url, request)
+                    link = self._get_remote_call_url(redirect_url, site_name, dataset, type, app, base_url)
                     ret_val.append((site_name, link))
         return ret_val
 
@@ -1553,18 +1558,18 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
-                    internal_url = f"{app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
+                    internal_url = f"{app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)}"
                     display_url = quote_plus(
                         "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at"
                         % (
                             base_url,
-                            app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                            app.url_for(controller="root"),
                             dataset.id,
                             type,
                         )

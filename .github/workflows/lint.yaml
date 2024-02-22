@@ -55,6 +55,4 @@ jobs:
       - name: Run mypy checks
         run: tox -e mypy
       - uses: psf/black@stable
-        with:
-          version: "23.3.0"
       - uses: isort/isort-action@master

@@ -2,6 +2,7 @@
 API operations allowing clients to determine Tool Shed instance's
 capabilities and configuration settings.
 """
+
 import logging
 
 from galaxy.web import expose_api_anonymous_and_sessionless

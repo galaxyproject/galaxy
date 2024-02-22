@@ -1,6 +1,7 @@
 """
 API operations on Group objects.
 """
+
 import logging
 
 from fastapi import (

@@ -1,6 +1,7 @@
 """
 Mock infrastructure for testing ModelManagers.
 """
+
 import os
 import shutil
 import tempfile

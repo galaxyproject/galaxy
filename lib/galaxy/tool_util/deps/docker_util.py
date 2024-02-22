@@ -2,6 +2,7 @@
 
 ...using common defaults and configuration mechanisms.
 """
+
 import os
 import shlex
 import sys
@@ -109,7 +110,7 @@ def build_docker_run_command(
     auto_rm: bool = DEFAULT_AUTO_REMOVE,
     set_user: Optional[str] = DEFAULT_SET_USER,
     host: Optional[str] = DEFAULT_HOST,
-    guest_ports: Union[bool, List[str]] = False,
+    guest_ports: Union[bool, str, List[str]] = False,
     container_name: Optional[str] = None,
 ) -> str:
     env_directives = env_directives or []

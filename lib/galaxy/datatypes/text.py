@@ -133,6 +133,19 @@ class Json(Text):
             return f"JSON file ({nice_size(dataset.get_size())})"
 
 
+class DataManagerJson(Json):
+    file_ext = "data_manager_json"
+    MetadataElement(
+        name="data_tables", default=None, desc="Data tables represented by this dataset", readonly=True, visible=True
+    )
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        with open(dataset.get_file_name()) as fh:
+            data_tables = json.load(fh)["data_tables"]
+        dataset.metadata.data_tables = data_tables
+
+
 class ExpressionJson(Json):
     """Represents the non-data input or output to a tool or workflow."""
 
@@ -1113,7 +1126,6 @@ class Yaml(Text):
                 return True
             except yaml.YAMLError:
                 return False
-            return False
 
 
 @build_sniff_from_prefix

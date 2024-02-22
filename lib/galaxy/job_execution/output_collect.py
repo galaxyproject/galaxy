@@ -1,5 +1,6 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
+
 import logging
 import operator
 import os

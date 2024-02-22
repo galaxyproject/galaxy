@@ -1,6 +1,7 @@
 """
 Determine if installed tool shed repositories have updates available in their respective tool sheds.
 """
+
 import logging
 import threading
 from typing import NamedTuple

@@ -2,6 +2,7 @@ name: Update dependencies
 on:
   schedule:
     - cron: '0 3 * * 6'  # Run every saturday at 3 am.
+  workflow_dispatch:
 jobs:
   update_dependencies:
     name: Update dependencies

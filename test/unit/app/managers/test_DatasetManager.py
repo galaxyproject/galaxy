@@ -1,5 +1,6 @@
 """
 """
+
 from unittest import mock
 
 import sqlalchemy

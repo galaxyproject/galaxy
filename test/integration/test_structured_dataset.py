@@ -39,7 +39,7 @@ class TestStructuredDataset(integration_util.IntegrationTestCase):
         response = self._get(f"datasets/{dataset_id}/content/meta")
         self._assert_status_code_is(response, 200)
         hvals = response.json()
-        self._assert_has_keys(hvals, "attributes", "name", "type")
+        self._assert_has_keys(hvals, "attributes", "name", "kind")
 
     def test_api_attr(self):
         dataset = self.dataset_populator.new_dataset(

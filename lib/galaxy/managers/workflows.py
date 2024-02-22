@@ -92,8 +92,8 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
-    workflow_building_modes,
 )
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
@@ -229,7 +229,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             stmt = stmt.where(StoredWorkflow.importable == true())
                         elif q == "deleted":
                             stmt = stmt.where(StoredWorkflow.deleted == true())
-                            show_deleted = true
+                            show_deleted = True
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -1267,9 +1267,9 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["workflow_outputs"] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
-                upgrade_message_dict[
-                    "output_label_duplicate"
-                ] = f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                upgrade_message_dict["output_label_duplicate"] = (
+                    f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                )
             if upgrade_message_dict:
                 data["upgrade_messages"][step.order_index] = upgrade_message_dict
 

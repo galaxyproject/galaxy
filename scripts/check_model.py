@@ -3,6 +3,7 @@ Check for db indexes defined in mapping.py but missing in the database.
 Note: pass '-c /path/to/galaxy.yml' to use the database_connection set in galaxy.yml.
 Otherwise the default sqlite database will be used.
 """
+
 import json
 import os
 import sys

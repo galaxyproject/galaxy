@@ -39,7 +39,7 @@ DEFAULT_TEST_DATA_RESOLVER = TestDataResolver()
 def verify(
     item_label: str,
     output_content: bytes,
-    attributes: Dict[str, Any],
+    attributes: Optional[Dict[str, Any]],
     filename: Optional[str] = None,
     get_filecontent: Optional[Callable[[str], bytes]] = None,
     get_filename: Optional[Callable[[str], str]] = None,
@@ -51,6 +51,7 @@ def verify(
 
     Throw an informative assertion error if any of these tests fail.
     """
+    attributes = attributes or {}
     if get_filename is None:
         get_filecontent_: Callable[[str], bytes]
         if get_filecontent is None:
@@ -67,9 +68,9 @@ def verify(
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
-    if attributes is not None and assertions is not None:
+    if assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress"))
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress", False))
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
@@ -94,9 +95,6 @@ def verify(
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
             raise AssertionError(errmsg)
-
-    if attributes is None:
-        attributes = {}
 
     # expected object might be None, so don't pull unless available
     has_expected_object = "object" in attributes

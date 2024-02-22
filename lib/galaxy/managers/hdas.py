@@ -4,6 +4,7 @@ Manager and Serializer for HDAs.
 HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
+
 import gettext
 import logging
 import os
@@ -481,6 +482,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "url",
                 "create_time",
                 "update_time",
+                "object_store_id",
+                "quota_source_label",
             ],
         )
         self.add_view(
@@ -594,6 +597,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "api_type": lambda item, key, **context: "file",
             "type": lambda item, key, **context: "file",
             "created_from_basename": lambda item, key, **context: item.created_from_basename,
+            "object_store_id": lambda item, key, **context: item.object_store_id,
+            "quota_source_label": lambda item, key, **context: item.dataset.quota_source_label,
             "hashes": lambda item, key, **context: [h.to_dict() for h in item.hashes],
             "sources": lambda item, key, **context: [s.to_dict() for s in item.sources],
             "drs_id": lambda item, key, **context: f"hda-{self.app.security.encode_id(item.id, kind='drs')}",
@@ -642,7 +647,10 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         display_link_fn = hda.datatype.get_display_links
         for display_app in hda.datatype.get_display_types():
             target_frame, display_links = display_link_fn(
-                hda, display_app, self.app, trans.request.base, request=trans.request
+                hda,
+                display_app,
+                self.app,
+                trans.request.base,
             )
 
             if len(display_links) > 0:

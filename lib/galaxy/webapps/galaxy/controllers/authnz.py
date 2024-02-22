@@ -2,7 +2,6 @@
 OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 """
 
-
 import datetime
 import json
 import logging

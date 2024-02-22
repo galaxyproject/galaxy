@@ -22,8 +22,7 @@ OperationT = Callable[[Dict[str, Any]], Response]
 class UsesShedApi:
     @property
     @abc.abstractmethod
-    def galaxy_interactor(self) -> GalaxyInteractorApi:
-        ...
+    def galaxy_interactor(self) -> GalaxyInteractorApi: ...
 
     def delete_repo_request(self, payload: Dict[str, Any]) -> Response:
         return self.galaxy_interactor._delete("tool_shed_repositories", data=payload, admin=True)

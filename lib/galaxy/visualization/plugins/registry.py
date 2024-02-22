@@ -4,6 +4,7 @@ Lower level of visualization framework which does three main things:
     - create urls to visualizations based on some target object(s)
     - unpack a query string into the desired objects needed for rendering
 """
+
 import logging
 import os
 import weakref

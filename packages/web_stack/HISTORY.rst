@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Tweak tool memory use and optimize shared memory when using preload by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`_
 
 -------------------
 23.1.4 (2024-01-04)
@@ -67,9 +78,6 @@ No recorded changes since last release
 Bug fixes
 =========
 
-* 
-* 
-* 
 * Don't attempt to call a bool when using mem-self handler assignment. by `@natefoo <https://github.com/natefoo>`_ in `#16359 <https://github.com/galaxyproject/galaxy/pull/16359>`_
 
 -------------------

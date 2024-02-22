@@ -129,7 +129,7 @@ def assert_xml_element(
         if attribute is None or attribute == "":
             content = occ.text
         else:
-            content = occ.attrib[attribute]
+            content = occ.attrib[attribute]  # type: ignore[assignment] # https://github.com/lxml/lxml-stubs/pull/99
         try:
             verify_assertions_function(content, children)
         except AssertionError as e:

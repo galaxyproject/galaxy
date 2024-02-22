@@ -10,6 +10,7 @@ greater reuse of the DRM specific hooks you'll need to write. Ideally this plugi
 have been written to target that framework, but we don't have the bandwidth to rewrite
 it at this time.
 """
+
 import logging
 import os
 import subprocess

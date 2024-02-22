@@ -3,6 +3,7 @@
 This file defines the baked in resource mapper types, and this package contains an
 example of a more open, pluggable approach with greater control.
 """
+
 import functools
 import logging
 import os

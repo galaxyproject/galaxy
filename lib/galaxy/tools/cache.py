@@ -271,23 +271,13 @@ class ToolHash:
             self.hash  # noqa: B018
 
     def modtime_less_than(self, other_modtime: float):
-        if self._modtime is None:
-            # For the purposes of the tool cache,
-            # if we haven't seen the modtime we consider it not equal
-            return True
         return self._modtime < other_modtime
 
     def hash_equals(self, other_hash: Optional[str]):
-        if self._tool_hash is None or other_hash is None:
-            # For the purposes of the tool cache,
-            # if we haven't seen the hash yet we consider it not equal
-            return False
         return self.hash == other_hash
 
     @property
     def modtime(self) -> float:
-        if self._modtime is None:
-            self._modtime = os.path.getmtime(self.path)
         return self._modtime
 
     @modtime.setter

@@ -1,6 +1,4 @@
 import { mount } from "@vue/test-utils";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -69,16 +67,6 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
-    let axiosMock: MockAdapter;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(async () => {
-        axiosMock.reset();
-    });
-
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -115,7 +103,7 @@ describe("DiskUsageSummary.vue", () => {
             },
         ];
         mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: updatedFakeQuotaUsages });
-        axiosMock.onGet(`/api/tasks/${FAKE_TASK_ID}/state`).reply(200, "SUCCESS");
+        mockFetcher.path("/api/tasks/{task_id}/state").method("get").mock({ data: "SUCCESS" });
         const refreshButton = wrapper.find("#refresh-disk-usage");
         await refreshButton.trigger("click");
         const refreshingAlert = wrapper.find(".refreshing-alert");

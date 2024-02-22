@@ -4,10 +4,27 @@ History
 .. to_doc
 
 ---------
-23.3.dev0
+24.0.dev0
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add support for Cgroupsv2 by `@natefoo <https://github.com/natefoo>`_ in `#17169 <https://github.com/galaxyproject/galaxy/pull/17169>`_
+
+============
+Enhancements
+============
+
+* Support configuring job metrics inline, update documentation by `@natefoo <https://github.com/natefoo>`_ in `#17178 <https://github.com/galaxyproject/galaxy/pull/17178>`_
 
 -------------------
 23.1.4 (2024-01-04)

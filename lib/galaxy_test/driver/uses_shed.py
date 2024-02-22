@@ -38,8 +38,7 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 class UsesShed(UsesShedApi):
     @property
     @abc.abstractmethod
-    def _app(self) -> UniverseApplication:
-        ...
+    def _app(self) -> UniverseApplication: ...
 
     shed_tools_dir: ClassVar[str]
     shed_tool_data_dir: ClassVar[str]

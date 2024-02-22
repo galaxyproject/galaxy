@@ -50,7 +50,7 @@
                     clickable
                     :value="row.item.tags"
                     :index="row.index"
-                    :disabled="published"
+                    :disabled="published || !currentUserOwnsItem(row.item)"
                     @input="(tags) => onTags(tags, row.index)"
                     @tag-click="(tag) => applyFilter('tag', tag, true)" />
             </template>
@@ -100,11 +100,13 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
 import { getAppRoot } from "onload/loadConfig";
+import { storeToRefs } from "pinia";
 import Filtering, { contains, equals, expandNameTag, toBool } from "utils/filtering";
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
 import { updateTags } from "@/api/tags";
+import { useUserStore } from "@/stores/userStore";
 import { absPath } from "@/utils/redirect";
 
 import PageDropdown from "./PageDropdown";
@@ -224,8 +226,10 @@ export default {
     },
     setup() {
         const router = useRouter();
+        const { currentUser } = storeToRefs(useUserStore());
         return {
             router,
+            currentUser,
         };
     },
     data() {
@@ -303,6 +307,9 @@ export default {
         },
         shareLink: function (item) {
             this.router.push(`sharing?id=${item.id}`);
+        },
+        currentUserOwnsItem: function (item) {
+            return item.username === this.currentUser.username;
         },
         decorateData(page) {
             const Galaxy = getGalaxyInstance();

@@ -2,7 +2,9 @@ import axios from "axios";
 
 import { getAppRoot } from "@/onload";
 
-import { ApiResponse } from "./schema";
+import { ApiResponse, fetcher } from "./schema";
+
+export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
 
 // TODO: Replace these interfaces with real schema models after https://github.com/galaxyproject/galaxy/pull/16707 is merged
 export interface WorkflowInvocation {

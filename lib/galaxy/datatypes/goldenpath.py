@@ -365,7 +365,6 @@ class AGPLine(metaclass=abc.ABCMeta):
 
 
 class AGPSeqLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequences.
     """
@@ -462,7 +461,6 @@ class AGPSeqLine(AGPLine):
 
 
 class AGPGapLine(AGPLine):
-
     """
     A subclass of AGPLine specifically for AGP lines that represent sequence gaps.
     """

@@ -38,6 +38,8 @@ export async function getDatasets(options: GetDatasetsOptions = {}) {
 
 export const fetchDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
 
+export const fetchDatasetStorage = fetcher.path("/api/datasets/{dataset_id}/storage").method("get").create();
+
 export async function fetchDatasetDetails(params: { id: string }): Promise<DatasetDetails> {
     const { data } = await fetchDataset({ dataset_id: params.id, view: "detailed" });
     // We know that the server will return a DatasetDetails object because of the view parameter

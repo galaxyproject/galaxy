@@ -1,6 +1,7 @@
 """
 API operations on annotations.
 """
+
 import logging
 from abc import abstractmethod
 

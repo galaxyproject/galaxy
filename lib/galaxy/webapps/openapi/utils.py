@@ -1,6 +1,7 @@
 """
 Copy of https://github.com/tiangolo/fastapi/blob/master/fastapi/openapi/utils.py with changes from https://github.com/tiangolo/fastapi/pull/10903
 """
+
 from typing import (
     Any,
     Dict,

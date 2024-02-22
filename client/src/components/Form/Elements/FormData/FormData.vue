@@ -101,7 +101,7 @@ const currentValue = computed({
                 return value;
             }
         }
-        if (!props.optional && formattedOptions.value.length > 0) {
+        if (!currentVariant.value?.multiple && !props.optional && formattedOptions.value.length > 0) {
             const firstEntry = formattedOptions.value && formattedOptions.value[0];
             if (firstEntry && firstEntry.value) {
                 value.push(firstEntry.value);
@@ -111,6 +111,17 @@ const currentValue = computed({
         return undefined;
     },
     set: (val) => {
+        if (val && Array.isArray(val) && val.length > 0) {
+            val.sort((a, b) => {
+                const aHid = a.hid;
+                const bHid = b.hid;
+                if (aHid && bHid) {
+                    return aHid - bHid;
+                } else {
+                    return 0;
+                }
+            });
+        }
         $emit("input", createValue(val));
     },
 });
@@ -491,7 +502,7 @@ const noOptionsWarningMessage = computed(() => {
             v-model="currentValue"
             class="align-self-start"
             :multiple="currentVariant.multiple"
-            :optional="optional"
+            :optional="currentVariant.multiple || optional"
             :options="formattedOptions"
             :placeholder="`Select a ${placeholder}`">
             <template v-slot:no-options>

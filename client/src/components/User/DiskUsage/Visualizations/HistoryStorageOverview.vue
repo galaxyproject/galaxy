@@ -176,7 +176,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 v-if="topTenDatasetsBySizeData"
                 :description="
                     localize(
-                        'These are the 10 datasets that take the most space in this history. Click on a bar to see more information about the dataset.'
+                        `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
                     )
                 "
                 :enable-selection="true"

@@ -303,8 +303,7 @@ class ContainerResolverTestProtocol(Protocol):
 
     # The remaining methods are implemented in IntegrationTestCase
     @property
-    def dataset_populator(self) -> DatasetPopulator:
-        ...
+    def dataset_populator(self) -> DatasetPopulator: ...
 
     def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None:
         """

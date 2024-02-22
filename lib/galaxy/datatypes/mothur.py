@@ -1,6 +1,7 @@
 """
 Mothur Metagenomics Datatypes
 """
+
 import logging
 import re
 from typing import (

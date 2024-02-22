@@ -75,6 +75,12 @@
                         title="Attempt to re-use jobs with identical parameters?"
                         help="This may skip executing jobs that you have already run."
                         type="boolean" />
+                    <FormSelect
+                        v-if="formConfig.model_class === 'DataManagerTool'"
+                        id="data_manager_mode"
+                        v-model="dataManagerMode"
+                        :options="bundleOptions"
+                        title="Create dataset bundle instead of adding data table to loc file ?"></FormSelect>
                 </div>
             </template>
             <template v-slot:header-buttons>
@@ -120,6 +126,8 @@ import { getToolFormData, submitJob, updateToolFormData } from "./services";
 import ToolCard from "./ToolCard";
 import { allowCachedJobs } from "./utilities";
 
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
+
 export default {
     components: {
         ButtonSpinner,
@@ -127,6 +135,7 @@ export default {
         FormDisplay,
         ToolCard,
         FormElement,
+        FormSelect,
         ToolEntryPoints,
         ToolRecommendation,
         Heading,
@@ -175,6 +184,7 @@ export default {
             useCachedJobs: false,
             useEmail: false,
             useJobRemapping: false,
+            dataManagerMode: "populate",
             entryPoints: [],
             jobDef: {},
             jobResponse: {},
@@ -182,6 +192,10 @@ export default {
             validationScrollTo: null,
             currentVersion: this.version,
             preferredObjectStoreId: null,
+            bundleOptions: [
+                { label: "populate", value: "populate" },
+                { label: "bundle", value: "bundle" },
+            ],
         };
     },
     computed: {
@@ -325,6 +339,9 @@ export default {
             }
             if (this.preferredObjectStoreId) {
                 jobDef.preferred_object_store_id = this.preferredObjectStoreId;
+            }
+            if (this.dataManagerMode === "bundle") {
+                jobDef.data_manager_mode = this.dataManagerMode;
             }
             console.debug("toolForm::onExecute()", jobDef);
             const prevRoute = this.$route.fullPath;

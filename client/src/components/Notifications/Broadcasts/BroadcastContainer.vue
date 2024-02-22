@@ -191,6 +191,7 @@ function dismiss() {
 $margin: 1rem;
 
 .broadcast-container {
+    z-index: 999999;
     position: fixed;
     bottom: $margin;
     left: 50%;

@@ -2,63 +2,39 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
-
-const props = defineProps({
-    description: {
-        type: String,
-        required: true,
-    },
-    showDetails: {
-        type: Boolean,
-        default: false,
-    },
-    maxLength: {
-        type: Number,
-        default: 150,
-    },
-});
-
-const emit = defineEmits<{
-    (e: "update:show-details", showDetails: boolean): void;
-}>();
-
-const propShowDetails = computed({
-    get: () => {
-        return props.showDetails;
-    },
-    set: (val) => {
-        emit("update:show-details", val);
-    },
-});
+import { computed, ref } from "vue";
 
 library.add(faChevronUp, faChevronDown);
-const collapsedEnableIcon = "fas fa-chevron-down";
-const collapsedDisableIcon = "fas fa-chevron-up";
 
-// summarized length
-const x = Math.round(props.maxLength - props.maxLength / 2);
+interface Props {
+    maxLength?: number;
+    description: string;
+}
 
-const summary = computed(() => props.description.length > props.maxLength);
+const props = withDefaults(defineProps<Props>(), {
+    maxLength: 150,
+});
+
+const showDetails = ref(false);
+
+const textTooLong = computed(() => props.description.length > props.maxLength);
 const text = computed(() =>
-    props.description.length > props.maxLength ? props.description.slice(0, x) : props.description
+    textTooLong.value && !showDetails.value
+        ? props.description.slice(0, Math.round(props.maxLength - props.maxLength / 2)) + "..."
+        : props.description
 );
 </script>
 
 <template>
     <div>
         {{ text }}
-        <span v-if="summary">
-            <a
-                v-if="!propShowDetails"
-                class="text-summary-expand"
-                href="javascript:void(0)"
-                @click.stop="propShowDetails = true">
-                ... <FontAwesomeIcon :icon="collapsedEnableIcon" />
-            </a>
-            <a v-else href="javascript:void(0)" @click.stop="propShowDetails = false">
-                ... <FontAwesomeIcon :icon="collapsedDisableIcon" />
-            </a>
+        <span
+            v-if="textTooLong"
+            v-b-tooltip.hover
+            class="info-icon cursor-pointer"
+            :title="textTooLong ? 'Show more' : 'Show less'"
+            @click="showDetails = !showDetails">
+            <FontAwesomeIcon :icon="showDetails ? 'chevron-up' : 'chevron-down'" />
         </span>
     </div>
 </template>

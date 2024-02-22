@@ -661,6 +661,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 section = ToolSection(elem)
                 for section_elem in elem:
                     section_id = section_elem.get("id")
+                    assert (
+                        section_id
+                    ), f"Element '{etree.tostring(section_elem, encoding='unicode')}' did not specify 'id' attribute"
                     if section_elem.tag == "tool":
                         section.elems.stub_tool(section_id)
                     elif section_elem.tag == "workflow":
@@ -760,9 +763,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""
-        if tool_id is None:
-            # This is not a tool ID.
-            return False
         if "repos" not in tool_id:
             # This is not a shed tool.
             return False
@@ -1386,8 +1386,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
     @abc.abstractmethod
-    def _looks_like_a_tool(self, path: str) -> bool:
-        ...
+    def _looks_like_a_tool(self, path: str) -> bool: ...
 
 
 def _filter_for_panel(item, item_type, filters, context):

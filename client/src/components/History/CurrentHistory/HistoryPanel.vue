@@ -9,7 +9,7 @@ import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { Toast } from "@/composables/toast";
-import { rewatchHistory } from "@/store/historyStore/model/watchHistory";
+import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
 import { type HistoryItem, useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
@@ -277,7 +277,7 @@ async function onUnhide(item: HistoryItem) {
 }
 
 function reloadContents() {
-    rewatchHistory();
+    startWatchingHistory();
 }
 
 function setInvisible(item: HistoryItem) {

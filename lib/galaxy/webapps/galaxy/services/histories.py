@@ -51,10 +51,7 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.history import (
-    HistoryIndexQueryPayload,
-    HistoryQueryResultList,
-)
+from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -220,15 +217,16 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans,
         payload: HistoryIndexQueryPayload,
         include_total_count: bool = False,
-    ) -> Tuple[HistoryQueryResultList, int]:
+    ) -> Tuple[List[AnyHistoryView], int]:
         """Return a list of History accessible by the user
 
         :rtype:     list
         :returns:   dictionaries containing History details
         """
+        serialization_params = SerializationParams(default_view="detailed")
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            HistoryQueryResultList(root=[entry.to_dict(view="element") for entry in entries]),
+            [self._serialize_history(trans, entry, serialization_params) for entry in entries],
             total_matches,
         )
 
@@ -267,9 +265,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
             job = self.manager.queue_history_import(trans, archive_type=archive_type, archive_source=archive_source)
             job_dict = job.to_dict()
-            job_dict[
-                "message"
-            ] = f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            job_dict["message"] = (
+                f"Importing history from source '{archive_source}'. This history will be visible when the import is complete."
+            )
             return JobImportHistoryResponse(**job_dict)
 
         new_history = None

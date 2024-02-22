@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
@@ -21,9 +21,24 @@ const quotaSourceLabel = computed(() => props.storageInfo.quota?.source);
 const isPrivate = computed(() => props.storageInfo.private);
 const badges = computed(() => props.storageInfo.badges);
 
+const quotaUsageProvider = ref(null);
+
+watch(props, async () => {
+    if (quotaUsageProvider.value) {
+        // @ts-ignore
+        quotaUsageProvider.value.update({ quotaSourceLabel: quotaSourceLabel.value });
+    }
+});
+
 defineExpose({
     isPrivate,
 });
+</script>
+
+<script lang="ts">
+export default {
+    name: "DescribeObjectStore",
+};
 </script>
 
 <template>
@@ -45,6 +60,7 @@ defineExpose({
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
         <QuotaSourceUsageProvider
             v-if="storageInfo.quota && storageInfo.quota.enabled"
+            ref="quotaUsageProvider"
             v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
             :quota-source-label="quotaSourceLabel">
             <b-spinner v-if="isLoadingUsage" />

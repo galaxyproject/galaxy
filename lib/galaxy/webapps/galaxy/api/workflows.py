@@ -67,6 +67,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     InvocationSortByEnum,
+    InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -77,7 +78,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
-from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
@@ -391,9 +392,9 @@ class WorkflowsAPIController(
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers[
-                "Content-Disposition"
-            ] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            trans.response.headers["Content-Disposition"] = (
+                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            )
             trans.response.set_content_type("application/galaxy-archive")
 
         if style == "format2" and download_format != "json-download":
@@ -883,6 +884,14 @@ WorkflowInvocationStepIDPathParam = Annotated[
     ),
 ]
 
+InvocationsInstanceQueryParam = Annotated[
+    Optional[bool],
+    Query(
+        title="Instance",
+        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
+    ),
+]
+
 DeletedQueryParam: bool = Query(
     default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
 )
@@ -1125,7 +1134,21 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         instance: InstanceQueryParam = False,
     ):
-        return self.service.get_versions(trans, workflow_id, instance)
+        return self.service.get_versions(trans, workflow_id, instance or False)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/counts",
+        summary="Get state counts for accessible workflow.",
+        name="invocation_state_counts",
+        operation_id="workflows__invocation_counts",
+    )
+    def invocation_counts(
+        self,
+        workflow_id: StoredWorkflowIDPathParam,
+        instance: InvocationsInstanceQueryParam = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> InvocationsStateCounts:
+        return self.service.invocation_counts(trans, workflow_id, instance or False)
 
     @router.get(
         "/api/workflows/menu",
@@ -1247,14 +1270,6 @@ InvocationsOffsetQueryParam = Annotated[
     ),
 ]
 
-
-InvocationsInstanceQueryParam = Annotated[
-    Optional[bool],
-    Query(
-        title="Instance",
-        description="Is provided workflow id for Workflow instead of StoredWorkflow?",
-    ),
-]
 
 CreateInvocationsFromStoreBody = Annotated[
     CreateInvocationsFromStorePayload,
@@ -1648,11 +1663,15 @@ class FastAPIInvocations:
         """
         step_jobs_summary = self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
         return [
-            InvocationStepJobsResponseStepModel(**summary)
-            if summary["model"] == "WorkflowInvocationStep"
-            else InvocationStepJobsResponseJobModel(**summary)
-            if summary["model"] == "Job"
-            else InvocationStepJobsResponseCollectionJobsModel(**summary)
+            (
+                InvocationStepJobsResponseStepModel(**summary)
+                if summary["model"] == "WorkflowInvocationStep"
+                else (
+                    InvocationStepJobsResponseJobModel(**summary)
+                    if summary["model"] == "Job"
+                    else InvocationStepJobsResponseCollectionJobsModel(**summary)
+                )
+            )
             for summary in step_jobs_summary
         ]
 

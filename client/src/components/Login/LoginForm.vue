@@ -40,7 +40,7 @@
                                             v-model="password"
                                             name="password"
                                             type="password" />
-                                        <b-form-text>
+                                        <b-form-text v-if="showResetLink">
                                             <span v-localize>Forgot password?</span>
                                             <a
                                                 v-localize
@@ -141,6 +141,10 @@ export default {
         showWelcomeWithLogin: {
             type: Boolean,
             default: false,
+        },
+        showResetLink: {
+            type: Boolean,
+            default: true,
         },
         termsUrl: {
             type: String,

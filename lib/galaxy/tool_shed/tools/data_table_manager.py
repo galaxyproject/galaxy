@@ -9,7 +9,10 @@ from typing import (
 
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util import hg_util
-from galaxy.util import etree
+from galaxy.util import (
+    Element,
+    SubElement,
+)
 from galaxy.util.tool_shed import xml_util
 
 if TYPE_CHECKING:
@@ -29,24 +32,24 @@ class ShedToolDataTableManager:
 
     def generate_repository_info_elem(
         self, tool_shed: str, repository_name: str, changeset_revision: str, owner: str, parent_elem=None, **kwd
-    ) -> etree.Element:
+    ) -> Element:
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
-            elem = etree.Element("tool_shed_repository")
+            elem = Element("tool_shed_repository")
         else:
-            elem = etree.SubElement(parent_elem, "tool_shed_repository")
-        tool_shed_elem = etree.SubElement(elem, "tool_shed")
+            elem = SubElement(parent_elem, "tool_shed_repository")
+        tool_shed_elem = SubElement(elem, "tool_shed")
         tool_shed_elem.text = tool_shed
-        repository_name_elem = etree.SubElement(elem, "repository_name")
+        repository_name_elem = SubElement(elem, "repository_name")
         repository_name_elem.text = repository_name
-        repository_owner_elem = etree.SubElement(elem, "repository_owner")
+        repository_owner_elem = SubElement(elem, "repository_owner")
         repository_owner_elem.text = owner
-        changeset_revision_elem = etree.SubElement(elem, "installed_changeset_revision")
+        changeset_revision_elem = SubElement(elem, "installed_changeset_revision")
         changeset_revision_elem.text = changeset_revision
         # add additional values
         # TODO: enhance additional values to allow e.g. use of dict values that will recurse
         for key, value in kwd.items():
-            new_elem = etree.SubElement(elem, key)
+            new_elem = SubElement(elem, key)
             new_elem.text = value
         return elem
 

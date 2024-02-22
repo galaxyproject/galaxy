@@ -112,7 +112,7 @@ const showRegular = computed(() => !props.formats || hasRegularExtension);
 const showRules = computed(() => !props.formats || props.multiple);
 
 function immediateUpload(files) {
-    regular.value?.addFiles(files);
+    regular.value?.addFiles(files, true);
 }
 
 function toData(items, history_id, composite = false) {

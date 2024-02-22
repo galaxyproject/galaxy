@@ -1,6 +1,7 @@
 """
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
+
 import datetime
 import os
 import time
@@ -620,7 +621,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                             )
                         ),
                         input_association.deleted == true(),
-                        input_association._state == input_association.states.FAILED_METADATA,
+                        input_association._state.in_(
+                            (input_association.states.FAILED_METADATA, input_association.states.SETTING_METADATA)
+                        ),
                     )
                 )
                 .all()

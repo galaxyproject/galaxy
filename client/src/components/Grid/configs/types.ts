@@ -17,6 +17,7 @@ export interface GridConfig {
     fields: FieldArray;
     filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
+    batch?: BatchOperationArray;
     plural: string;
     sortBy: string;
     sortKeys: Array<string>;
@@ -39,6 +40,15 @@ export interface FieldEntry {
 
 export type FieldHandler = (data: RowData) => void;
 
+export interface BatchOperation {
+    title: string;
+    icon: IconDefinition;
+    condition?: (data: Array<RowData>) => boolean;
+    handler: (data: Array<RowData>) => OperationHandlerReturn;
+}
+
+export type BatchOperationArray = Array<BatchOperation>;
+
 export interface Operation {
     title: string;
     icon: IconDefinition;
@@ -51,7 +61,7 @@ interface OperationHandlerMessage {
     status: string;
 }
 
-type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
+type OperationHandlerReturn = Promise<OperationHandlerMessage | undefined> | void;
 
 export type RowData = Record<string, unknown>;
 

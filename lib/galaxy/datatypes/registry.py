@@ -356,9 +356,9 @@ class Registry:
                             compressed_datatype_instance = compressed_datatype_class()
                             self.datatypes_by_extension[compressed_extension] = compressed_datatype_instance
                             for suffix in infer_from_suffixes:
-                                self.datatypes_by_suffix_inferences[
-                                    f"{suffix}.{auto_compressed_type}"
-                                ] = compressed_datatype_instance
+                                self.datatypes_by_suffix_inferences[f"{suffix}.{auto_compressed_type}"] = (
+                                    compressed_datatype_instance
+                                )
                             if display_in_upload and compressed_extension not in self.upload_file_formats:
                                 self.upload_file_formats.append(compressed_extension)
                             self.datatype_info_dicts.append(

@@ -5,6 +5,7 @@ Revises: c39f1de47a04
 Create Date: 2023-03-07 15:06:55.682273
 
 """
+
 from galaxy.model.database_object_names import build_index_name
 from galaxy.model.migrations.util import (
     create_index,

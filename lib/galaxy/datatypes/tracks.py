@@ -1,6 +1,7 @@
 """
 Datatype classes for tracks/track views within galaxy.
 """
+
 import logging
 
 from galaxy.datatypes.protocols import (

@@ -2,6 +2,7 @@
 API operations allowing clients to determine Galaxy instance's capabilities
 and configuration settings.
 """
+
 import logging
 from typing import (
     Any,

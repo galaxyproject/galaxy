@@ -197,10 +197,11 @@ def set_metadata(
             hda_manager.overwrite_metadata(dataset_instance)
         dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
-        dataset_instance.dataset.state = dataset_instance.dataset.states.OK
+        # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
+        dataset_instance.set_metadata_success_state()
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
-        dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+        dataset_instance.state = dataset_instance.states.FAILED_METADATA
     with transaction(sa_session):
         sa_session.commit()
 

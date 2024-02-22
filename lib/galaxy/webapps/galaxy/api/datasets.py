@@ -1,6 +1,7 @@
 """
 API operations on the contents of a history dataset.
 """
+
 import logging
 from io import (
     BytesIO,
@@ -68,6 +69,7 @@ from galaxy.webapps.galaxy.services.datasets import (
     DeleteDatasetBatchPayload,
     DeleteDatasetBatchResult,
     RequestDataType,
+    UpdateObjectStoreIdPayload,
 )
 
 log = logging.getLogger(__name__)
@@ -484,3 +486,16 @@ class FastAPIDatasets:
         payload: ComputeDatasetHashPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         return self.service.compute_hash(trans, dataset_id, payload, hda_ldda=hda_ldda)
+
+    @router.put(
+        "/api/datasets/{dataset_id}/object_store_id",
+        summary="Update an object store ID for a dataset you own.",
+        operation_id="datasets__update_object_store_id",
+    )
+    def update_object_store_id(
+        self,
+        dataset_id: HistoryDatasetIDPathParam,
+        trans=DependsOnTrans,
+        payload: UpdateObjectStoreIdPayload = Body(...),
+    ) -> None:
+        self.service.update_object_store_id(trans, dataset_id, payload)

@@ -1,4 +1,5 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
+
 import errno
 import os.path
 from abc import (

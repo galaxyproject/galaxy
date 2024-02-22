@@ -2,6 +2,7 @@
 Original implementation by David Montague (@dmontagu)
 https://github.com/dmontagu/fastapi-utils
 """
+
 from __future__ import annotations
 
 import inspect

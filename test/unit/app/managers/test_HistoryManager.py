@@ -267,7 +267,7 @@ class TestHistoryManager(BaseTestCase):
         assert len(self.history_manager.get_share_assocs(item1, user=non_owner)) == 1
         assert isinstance(item1.slug, str)
 
-        self.log("should be able to unshare with specific users")
+        self.log("should be able to unshare with specific users")  # type: ignore[unreachable]
         share_assoc = self.history_manager.unshare_with(item1, non_owner)
         assert isinstance(share_assoc, model.HistoryUserShareAssociation)
         assert not self.history_manager.is_accessible(item1, non_owner)

@@ -1,6 +1,7 @@
 """
 API operations related to tagging items.
 """
+
 import logging
 
 from fastapi import (

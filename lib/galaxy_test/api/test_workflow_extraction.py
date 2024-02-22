@@ -117,7 +117,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             "Mapping connection for copied collections not yet implemented in history import/export"
         )
 
-        old_history_id = self.dataset_populator.new_history()
+        old_history_id = self.dataset_populator.new_history()  # type: ignore[unreachable]
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_singleton(old_history_id)
 
         old_contents = self._history_contents(old_history_id)

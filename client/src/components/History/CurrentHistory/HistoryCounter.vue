@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { BButton, BButtonGroup,BModal } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BButtonGroup, BModal } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
 import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import type { HistorySummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
-import { useDetailedHistory } from "./usesDetailedHistory.js";
+import { useDetailedHistory } from "./usesDetailedHistory";
 
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 
-interface HistoryBase {
-    id: string;
-    preferred_object_store_id: string;
-}
+library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
 const props = withDefaults(
     defineProps<{
-        history: HistoryBase;
+        history: HistorySummary;
         isWatching?: boolean;
         lastChecked: Date;
         filterText?: string;
@@ -36,26 +37,20 @@ const props = withDefaults(
     }
 );
 
+const emit = defineEmits(["update:filter-text", "reloadContents"]);
+
 const router = useRouter();
 const { config } = useConfig();
 const { currentUser } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
 
-const reloadButtonCls = ref("fa fa-sync");
+const reloadButtonLoading = ref(false);
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
-
-const emit = defineEmits(["update:filter-text", "reloadContents"]);
-
-onMounted(async () => {
-    updateTime();
-    // update every second
-    setInterval(updateTime, 1000);
-});
 
 function onClickStatistics() {
     router.push({ name: "HistoryStatistics", params: { historyId: props.history.id } });
@@ -99,19 +94,25 @@ function updateTime() {
 
 async function reloadContents() {
     emit("reloadContents");
-    reloadButtonCls.value = "fa fa-sync fa-spin";
+    reloadButtonLoading.value = true;
     setTimeout(() => {
-        reloadButtonCls.value = "fa fa-sync";
+        reloadButtonLoading.value = false;
     }, 1000);
 }
 
-function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
+function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string | null) {
     showPreferredObjectStoreModal.value = false;
     // ideally this would be pushed back to the history object somehow
     // and tracked there... but for now this is only component using
     // this information.
     historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
+
+onMounted(() => {
+    updateTime();
+    // update every second
+    setInterval(updateTime, 1000);
+});
 </script>
 
 <template>
@@ -125,7 +126,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             :disabled="!showControls"
             data-description="statistics dashboard button"
             @click="onClickStatistics">
-            <icon icon="database" />
+            <FontAwesomeIcon :icon="faDatabase" />
             <span>{{ niceHistorySize }}</span>
         </BButton>
 
@@ -138,7 +139,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="showPreferredObjectStoreModal = true">
-                <icon icon="hdd" />
+                <FontAwesomeIcon :icon="faHdd" />
             </BButton>
 
             <PreferredStorePopover
@@ -157,7 +158,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     class="rounded-0 text-decoration-none"
                     data-description="show active items button"
                     @click="setFilter('')">
-                    <span class="fa fa-map-marker" />
+                    <FontAwesomeIcon :icon="faMapMarker" />
                     <span>{{ numItemsActive }}</span>
                 </BButton>
 
@@ -171,7 +172,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     :pressed="getCurrentFilterVal('deleted') !== false"
                     data-description="include deleted items button"
                     @click="setFilter('deleted')">
-                    <icon icon="trash" />
+                    <FontAwesomeIcon :icon="faTrash" />
                     <span>{{ numItemsDeleted }}</span>
                 </BButton>
 
@@ -185,7 +186,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     :pressed="getCurrentFilterVal('visible') !== true"
                     data-description="include hidden items button"
                     @click="setFilter('visible')">
-                    <icon icon="eye-slash" />
+                    <FontAwesomeIcon :icon="faEyeSlash" />
                     <span>{{ numItemsHidden }}</span>
                 </BButton>
 
@@ -196,7 +197,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     size="sm"
                     class="rounded-0 text-decoration-none history-refresh-button"
                     @click="reloadContents()">
-                    <span :class="reloadButtonCls" />
+                    <FontAwesomeIcon :icon="faSync" :spin="reloadButtonLoading" />
                 </BButton>
             </BButtonGroup>
 

@@ -1,5 +1,6 @@
 """Provide a consistent interface into and utilities for importlib file resources.
 """
+
 import sys
 
 if sys.version_info >= (3, 9):

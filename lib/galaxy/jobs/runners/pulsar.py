@@ -2,6 +2,7 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
+
 import copy
 import errno
 import logging

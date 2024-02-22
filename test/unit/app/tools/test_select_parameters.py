@@ -68,6 +68,7 @@ class TestSelectToolParameter(BaseParameterTestCase):
             get_current_user_roles=lambda: [],
             workflow_building_mode=False,
             webapp=Mock(name="galaxy"),
+            user=None,
         )
         self.type = "select"
         self.set_data_ref = False

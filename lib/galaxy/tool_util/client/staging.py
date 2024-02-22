@@ -3,6 +3,7 @@
 Implement as a connector to serve a bridge between galactic_job_json
 utility and a Galaxy API library.
 """
+
 import abc
 import json
 import logging

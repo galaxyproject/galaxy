@@ -5,6 +5,7 @@ and it has dependencies from across the app. This mock application and config is
 more appropriate for testing galaxy-data functionality and will be included with
 galaxy-data.
 """
+
 import os
 import shutil
 import tempfile

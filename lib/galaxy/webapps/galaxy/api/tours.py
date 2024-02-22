@@ -1,6 +1,7 @@
 """
 API Controller providing Galaxy Tours
 """
+
 import logging
 
 from galaxy.tours import (

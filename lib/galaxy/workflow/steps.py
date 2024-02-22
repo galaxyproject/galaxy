@@ -1,6 +1,7 @@
 """ This module contains utility methods for reasoning about and ordering
 workflow steps.
 """
+
 import math
 
 from galaxy.util.topsort import (
@@ -79,7 +80,7 @@ def order_workflow_steps(steps, comments):
         for step in steps:
             step.position = {
                 "left": step.position["left"] - min_left,
-                "top": step.position["top"] - min_top
+                "top": step.position["top"] - min_top,
                 # other position attributes can be discarded if present
             }
 

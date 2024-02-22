@@ -3,6 +3,7 @@ API operations on a history.
 
 .. seealso:: :class:`galaxy.model.History`
 """
+
 import logging
 from typing import (
     Any,
@@ -22,6 +23,7 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
+from typing_extensions import Annotated
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -34,7 +36,6 @@ from galaxy.schema import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
-    HistoryQueryResultList,
     HistorySortByEnum,
 )
 from galaxy.schema.schema import (
@@ -139,6 +140,17 @@ class DeleteHistoryPayload(BaseModel):
     )
 
 
+class DeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[DecodedDatabaseIdField], Field(title="IDs", description="List of history IDs to be deleted.")]
+    purge: Annotated[
+        bool, Field(default=False, title="Purge", description="Whether to definitely remove this history from disk.")
+    ]
+
+
+class UndeleteHistoriesPayload(BaseModel):
+    ids: Annotated[List[DecodedDatabaseIdField], Field(title="IDs", description="List of history IDs to be undeleted.")]
+
+
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
@@ -150,11 +162,20 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories",
-        summary="Returns histories for the current user.",
+        summary="Returns histories available to the current user.",
     )
     def index(
         self,
+        response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        show_own: bool = ShowOwnQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: HistorySortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         all: Optional[bool] = AllHistoriesQueryParam,
@@ -165,40 +186,24 @@ class FastAPIHistories:
             deprecated=True,  # Marked as deprecated as it seems just like '/api/histories/deleted'
         ),
     ) -> List[AnyHistoryView]:
-        return self.service.index(
-            trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
-        )
-
-    @router.get(
-        "/api/histories/query",
-        summary="Returns histories available to the current user.",
-    )
-    def query(
-        self,
-        response: Response,
-        trans: ProvidesUserContext = DependsOnTrans,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        show_own: bool = ShowOwnQueryParam,
-        show_published: bool = ShowPublishedQueryParam,
-        show_shared: bool = ShowSharedQueryParam,
-        sort_by: HistorySortByEnum = SortByQueryParam,
-        sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
-    ) -> HistoryQueryResultList:
-        payload = HistoryIndexQueryPayload.construct(
-            show_own=show_own,
-            show_published=show_published,
-            show_shared=show_shared,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
-        )
-        entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
-        response.headers["total_matches"] = str(total_matches)
-        return entries
+        if search is None:
+            return self.service.index(
+                trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
+            )
+        else:
+            payload = HistoryIndexQueryPayload.construct(
+                show_own=show_own,
+                show_published=show_published,
+                show_shared=show_shared,
+                sort_by=sort_by,
+                sort_desc=sort_desc,
+                limit=limit,
+                offset=offset,
+                search=search,
+            )
+            entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+            response.headers["total_matches"] = str(total_matches)
+            return entries
 
     @router.get(
         "/api/histories/count",
@@ -375,6 +380,25 @@ class FastAPIHistories:
             purge = payload.purge
         return self.service.delete(trans, history_id, serialization_params, purge)
 
+    @router.put(
+        "/api/histories/batch/delete",
+        summary="Marks several histories with the given IDs as deleted.",
+    )
+    def batch_delete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: bool = Query(default=False),
+        payload: DeleteHistoriesPayload = Body(...),
+    ) -> List[AnyHistoryView]:
+        if payload:
+            purge = payload.purge
+        results = []
+        for history_id in payload.ids:
+            result = self.service.delete(trans, history_id, serialization_params, purge)
+            results.append(result)
+        return results
+
     @router.post(
         "/api/histories/deleted/{history_id}/undelete",
         summary="Restores a deleted history with the given ID (that hasn't been purged).",
@@ -386,6 +410,22 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.undelete(trans, history_id, serialization_params)
+
+    @router.put(
+        "/api/histories/batch/undelete",
+        summary="Marks several histories with the given IDs as undeleted.",
+    )
+    def batch_undelete(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UndeleteHistoriesPayload = Body(...),
+    ) -> List[AnyHistoryView]:
+        results = []
+        for history_id in payload.ids:
+            result = self.service.undelete(trans, history_id, serialization_params)
+            results.append(result)
+        return results
 
     @router.put(
         "/api/histories/{history_id}",

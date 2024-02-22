@@ -1,4 +1,5 @@
 """The module describes the ``core`` job metrics plugin."""
+
 import logging
 import time
 from os import confstr

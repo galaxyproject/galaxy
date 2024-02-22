@@ -15,6 +15,7 @@ from sqlalchemy import (
     select,
 )
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import text
 
 import galaxy.model
 from galaxy.model import (
@@ -633,6 +634,24 @@ class GalaxyRBACAgent(RBACAgent):
 
     def can_manage_library_item(self, roles, item):
         return self.allow_action(roles, self.permitted_actions.LIBRARY_MANAGE, item)
+
+    def can_change_object_store_id(self, user, dataset):
+        # prevent update if dataset shared with anyone but the current user
+        # private object stores would prevent this but if something has been
+        # kept private in a sharable object store still allow the swap
+        if dataset.library_associations:
+            return False
+        else:
+            query = text(
+                """
+SELECT COUNT(*)
+FROM history
+INNER JOIN
+    history_dataset_association on history_dataset_association.history_id = history.id
+WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :dataset_id
+"""
+            ).bindparams(dataset_id=dataset.id, user_id=user.id if user else None)
+            return self.sa_session.scalars(query).first() == 0
 
     def get_item_actions(self, action, item):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation

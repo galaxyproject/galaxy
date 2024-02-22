@@ -84,6 +84,7 @@
             :elements-datatypes="item.elements_datatypes" />
         <StatelessTags
             v-if="!tagsDisabled || hasTags"
+            class="px-2 pb-2"
             :value="tags"
             :disabled="tagsDisabled"
             :clickable="filterable"
@@ -91,7 +92,7 @@
             @input="onTags"
             @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <b-collapse :visible="expandDataset">
+        <b-collapse :visible="expandDataset" class="px-2 pb-2">
             <DatasetDetails
                 v-if="expandDataset && item.id"
                 :id="item.id"

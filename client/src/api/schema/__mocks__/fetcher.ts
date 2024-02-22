@@ -48,7 +48,8 @@ function getMockReturn(path: Path, method: Method, args: any[]) {
         }
     }
 
-    return null;
+    // if no mock has been setup, never resolve API request
+    return new Promise(() => {});
 }
 
 function setMockReturn(path: Path | RegExp, method: Method, value: any) {

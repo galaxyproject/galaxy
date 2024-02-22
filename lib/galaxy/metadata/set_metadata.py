@@ -10,6 +10,7 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
+
 import glob
 import json
 import logging

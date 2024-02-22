@@ -165,7 +165,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
@@ -179,9 +178,11 @@ import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { LastQueue } from "@/utils/lastQueue";
+import { errorMessageAsString } from "@/utils/simple-error";
 
+import { Services } from "../services";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import { fromSimple, toSimple } from "./modules/model";
+import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import reportDefault from "./reportDefault";
@@ -275,6 +276,7 @@ export default {
         });
 
         function resetStores() {
+            hasChanges.value = false;
             connectionStore.$reset();
             stepStore.$reset();
             stateStore.$reset();
@@ -319,6 +321,7 @@ export default {
             annotation: null,
             name: "Unnamed Workflow",
             tags: this.workflowTags,
+            services: null,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
@@ -382,6 +385,7 @@ export default {
         },
     },
     async created() {
+        this.services = new Services();
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version);
         hide_modal();
@@ -533,30 +537,27 @@ export default {
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
-        async doSaveAs(create = false) {
-            const rename_name = create ? this.name : this.saveAsName ?? `SavedAs_${this.name}`;
-            const rename_annotation = create ? this.annotation || "" : this.saveAsAnnotation ?? "";
-
-            // This is an old web controller endpoint that wants form data posted...
-            const formData = new FormData();
-            formData.append("workflow_name", rename_name);
-            formData.append("workflow_annotation", rename_annotation);
-            formData.append("from_tool_form", true);
-            formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
+        async doSaveAs() {
+            if (!this.saveAsName && !this.nameValidate()) {
+                return;
+            }
+            const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
+            const rename_annotation = this.saveAsAnnotation ?? "";
 
             try {
-                const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
-                const newId = response.data;
-
-                if (!create) {
-                    this.name = rename_name;
-                    this.annotation = rename_annotation;
-                }
-
+                const newSaveAsWf = { ...this, name: rename_name, annotation: rename_annotation };
+                const { id, name, number_of_steps } = await this.services.createWorkflow(newSaveAsWf);
+                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
                 this.hasChanges = false;
-                await this.routeToWorkflow(newId);
+                await this.routeToWorkflow(id);
+                Toast.success(message);
             } catch (e) {
-                this.onWorkflowError("Saving workflow failed, please contact an administrator.");
+                const errorHeading = `Saving workflow as '${rename_name}' failed`;
+                this.onWorkflowError(errorHeading, errorMessageAsString(e) || "Please contact an administrator.", {
+                    Ok: () => {
+                        this.hideModal();
+                    },
+                });
             }
         },
         onSaveAs() {
@@ -597,34 +598,21 @@ export default {
                 return;
             }
             try {
-                // if nothing other than payload vars changed, just use `create` endpoint
-                if (!this.hasChanges) {
-                    const payload = {
-                        workflow_name: this.name,
-                        workflow_annotation: this.annotation || "",
-                        workflow_tags: this.tags,
-                    };
-                    const { data } = await axios.put(`${getAppRoot()}workflow/create`, payload);
-                    const { id, message } = data;
-
-                    await this.routeToWorkflow(id);
-                    Toast.success(message);
-                } else {
-                    // otherwise, use `save_as` endpoint to include steps, etc.
-                    await this.doSaveAs(true);
-                    const stepCount = Object.keys(this.steps).length;
-                    Toast.success(
-                        `Created workflow ${this.name} with ${stepCount} ${stepCount === 1 ? "step" : "steps"}.`
-                    );
-                }
+                const { id, name, number_of_steps } = await this.services.createWorkflow(this);
+                const message = `Created new workflow '${name}' with ${number_of_steps} steps.`;
+                this.hasChanges = false;
+                await this.routeToWorkflow(id);
+                Toast.success(message);
             } catch (e) {
-                this.onWorkflowError("Creating workflow failed"),
-                    e || "Please contact an administrator.",
+                this.onWorkflowError(
+                    "Creating workflow failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
                     {
                         Ok: () => {
                             this.hideModal();
                         },
-                    };
+                    }
+                );
             }
         },
         nameValidate() {
@@ -689,11 +677,15 @@ export default {
             const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url) {
-            this.onSave(true).then(() => {
-                this.hasChanges = false;
-                this.$router.push(url);
-            });
+        async onNavigate(url) {
+            if (this.isNewTempWorkflow) {
+                await this.onCreate();
+            } else {
+                await this.onSave(true);
+            }
+
+            this.hasChanges = false;
+            this.$router.push(url);
         },
         onSave(hideProgress = false) {
             if (!this.nameValidate()) {

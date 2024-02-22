@@ -52,11 +52,8 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        expect(wrapper.text()).toContain(
-            `${capitalizeFirstLetter(notification.content.item_type)} shared with you by ${
-                notification.content.owner_name
-            }`
-        );
+        expect(wrapper.text()).toContain(`${capitalizeFirstLetter(notification.content.item_type)}`);
+        expect(wrapper.text()).toContain(`shared with you by ${notification.content.owner_name}`);
 
         expect(wrapper.find("#notification-message").text()).toContain(
             `The user ${notification.content.owner_name} shared`

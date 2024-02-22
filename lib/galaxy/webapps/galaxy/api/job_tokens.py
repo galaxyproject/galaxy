@@ -1,5 +1,6 @@
 """ API asynchronous job running mechanisms can use to get a fresh OIDC token.
 """
+
 import logging
 
 from fastapi import Query

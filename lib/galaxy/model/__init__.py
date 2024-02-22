@@ -4,6 +4,7 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
+
 import abc
 import base64
 import errno
@@ -111,6 +112,7 @@ from sqlalchemy.sql import exists
 from typing_extensions import (
     Literal,
     Protocol,
+    TypeAlias,
     TypedDict,
 )
 
@@ -148,6 +150,7 @@ from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetState,
     DatasetValidatedState,
+    InvocationsStateCounts,
     JobState,
 )
 from galaxy.schema.workflow.comments import WorkflowCommentModel
@@ -790,6 +793,27 @@ class User(Base, Dictifiable, RepresentById):
         self.active = False
         self.username = username
 
+    def get_user_data_tables(self, data_table: str):
+        session = object_session(self)
+        assert session
+        metadata_select = (
+            select(HistoryDatasetAssociation)
+            .join(Dataset)
+            .join(History)
+            .where(
+                HistoryDatasetAssociation.deleted == false(),
+                HistoryDatasetAssociation.extension == "data_manager_json",
+                History.user_id == self.id,
+                Dataset.state == "ok",
+                # excludes data manager runs that actually populated tables.
+                # maybe track this formally by creating a different datatype for bundles ?
+                Dataset.total_size != Dataset.file_size,
+                HistoryDatasetAssociation._metadata.contains(data_table),
+            )
+            .order_by(HistoryDatasetAssociation.id)
+        )
+        return session.execute(metadata_select).scalars().all()
+
     @property
     def extra_preferences(self):
         data = defaultdict(lambda: None)
@@ -1380,7 +1404,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
-    states = JobState
+    states: TypeAlias = JobState
 
     # states that are not expected to change, except through admin action or re-scheduling
     terminal_states = [states.OK, states.ERROR, states.DELETED]
@@ -4024,6 +4048,16 @@ class Dataset(Base, StorableObject, Serializable):
         quota_source_map = self.object_store.get_quota_source_map()
         return quota_source_map.get_quota_source_info(object_store_id)
 
+    @property
+    def device_source_label(self):
+        return self.device_source_info.label
+
+    @property
+    def device_source_info(self):
+        object_store_id = self.object_store_id
+        device_source_map = self.object_store.get_quota_source_map()
+        return device_source_map.get_device_source_info(object_store_id)
+
     def set_file_name(self, filename):
         if not filename:
             self.external_filename = None
@@ -4091,12 +4125,10 @@ class Dataset(Base, StorableObject, Serializable):
         return self.object_store.size(self)
 
     @overload
-    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int:
-        ...
+    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
 
     @overload
-    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str:
-        ...
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str: ...
 
     def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
@@ -4341,7 +4373,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
-    _state: str
+    _state: Optional[str]
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
@@ -4426,32 +4458,39 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     @property
     def has_deferred_data(self):
-        return self.get_dataset_state() == Dataset.states.DEFERRED
+        return self.dataset.state == Dataset.states.DEFERRED
 
-    def get_dataset_state(self):
-        # self._state is currently only used when setting metadata externally
-        # leave setting the state as-is, we'll currently handle this specially in the external metadata code
+    @property
+    def state(self):
+        # self._state holds state that should only affect this particular dataset association, not the dataset state itself
         if self._state:
             return self._state
         return self.dataset.state
 
-    def raw_set_dataset_state(self, state):
-        if state != self.dataset.state:
-            self.dataset.state = state
-            return True
-        else:
-            return False
+    @state.setter
+    def state(self, state: Optional[DatasetState]):
+        if state != self.state:
+            if state in (DatasetState.FAILED_METADATA, DatasetState.SETTING_METADATA):
+                self._state = state
+            else:
+                self.set_metadata_success_state()
+                sa_session = object_session(self)
+                if sa_session:
+                    sa_session.add(self.dataset)
+                self.dataset.state = state
 
-    def set_dataset_state(self, state):
-        if self.raw_set_dataset_state(state):
-            sa_session = object_session(self)
-            if sa_session:
-                object_session(self).add(self.dataset)
-                session = object_session(self)
-                with transaction(session):
-                    session.commit()  # flush here, because hda.flush() won't flush the Dataset object
+    def set_metadata_success_state(self):
+        self._state = None
 
-    state = property(get_dataset_state, set_dataset_state)
+    def get_object_store_id(self):
+        return self.dataset.object_store_id
+
+    object_store_id = property(get_object_store_id)
+
+    def get_quota_source_label(self):
+        return self.dataset.quota_source_label
+
+    quota_source_label = property(get_quota_source_label)
 
     def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
@@ -4706,12 +4745,14 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
                 ).values()
             )
         )
+        return self.attach_implicitly_converted_dataset(trans.sa_session, new_dataset, target_ext)
+
+    def attach_implicitly_converted_dataset(self, session, new_dataset, target_ext: str):
         new_dataset.name = self.name
         self.copy_attributes(new_dataset)
         assoc = ImplicitlyConvertedDatasetAssociation(
             parent=self, file_type=target_ext, dataset=new_dataset, metadata_safe=False
         )
-        session = trans.sa_session
         session.add(new_dataset)
         session.add(assoc)
         with transaction(session):
@@ -6048,7 +6089,7 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
         return True  # always allow inheriting, used for replacement
 
 
-class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
+class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
     __tablename__ = "implicitly_converted_dataset_association"
 
     id = Column(Integer, primary_key=True)
@@ -6086,7 +6127,15 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
     )
 
     def __init__(
-        self, id=None, parent=None, dataset=None, file_type=None, deleted=False, purged=False, metadata_safe=True
+        self,
+        id=None,
+        parent=None,
+        dataset=None,
+        file_type=None,
+        deleted=False,
+        purged=False,
+        metadata_safe=True,
+        for_import=False,
     ):
         self.id = id
         add_object_to_object_session(self, dataset)
@@ -6094,14 +6143,18 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
             self.dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
             self.dataset_ldda = dataset
-        else:
+        elif not for_import:
             raise AttributeError(f"Unknown dataset type provided for dataset: {type(dataset)}")
+            # else if for import - these connections might not have been included in the store,
+            # recover the data we can?
         if isinstance(parent, HistoryDatasetAssociation):
             self.parent_hda = parent
         elif isinstance(parent, LibraryDatasetDatasetAssociation):
             self.parent_ldda = parent
-        else:
+        elif not for_import:
             raise AttributeError(f"Unknown dataset type provided for parent: {type(parent)}")
+            # else if for import - these connections might not have been included in the store,
+            # recover the data we can?
         self.type = file_type
         self.deleted = deleted
         self.purged = purged
@@ -6120,6 +6173,18 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
                 os.unlink(self.get_file_name())
             except Exception as e:
                 log.error(f"Failed to purge associated file ({self.get_file_name()}) from disk: {unicodify(e)}")
+
+    def _serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            file_type=self.type,
+        )
+        if self.parent_hda:
+            rval["parent_hda"] = serialization_options.get_identifier(id_encoder, self.parent_hda)
+        if self.dataset:
+            rval["hda"] = serialization_options.get_identifier(id_encoder, self.dataset)
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -6836,9 +6901,9 @@ class HistoryDatasetCollectionAssociation(
             copied_from_history_dataset_collection_association_chain.append(
                 serialization_options.get_identifier(id_encoder, src_hdca)
             )
-        rval[
-            "copied_from_history_dataset_collection_association_id_chain"
-        ] = copied_from_history_dataset_collection_association_chain
+        rval["copied_from_history_dataset_collection_association_id_chain"] = (
+            copied_from_history_dataset_collection_association_chain
+        )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
@@ -7442,6 +7507,20 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
+
+    def invocation_counts(self) -> InvocationsStateCounts:
+        sa_session = object_session(self)
+        stmt = (
+            select([WorkflowInvocation.state, func.count(WorkflowInvocation.state)])
+            .select_from(StoredWorkflow)
+            .join(Workflow, Workflow.stored_workflow_id == StoredWorkflow.id)
+            .join(WorkflowInvocation, WorkflowInvocation.workflow_id == Workflow.id)
+            .group_by(WorkflowInvocation.state)
+            .where(StoredWorkflow.id == self.id)
+        )
+        rows = sa_session.execute(stmt).all()
+        rows_as_dict = dict(r for r in rows if r[0] is not None)
+        return InvocationsStateCounts(rows_as_dict)
 
     def to_dict(self, view="collection", value_mapper=None):
         rval = super().to_dict(view=view, value_mapper=value_mapper)
@@ -8654,9 +8733,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for output_assoc in self.output_dataset_collections:
                 label = output_assoc.workflow_output.label
                 if not label:
-                    label = (
-                        label
-                    ) = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
+                    label = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
 
                 output_collections[label] = {
                     "src": "hdca",
@@ -9033,9 +9110,11 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
                 outputs[name] = {
                     "src": "hda",
                     "id": output_assoc.dataset.id,
-                    "uuid": str(output_assoc.dataset.dataset.uuid)
-                    if output_assoc.dataset.dataset.uuid is not None
-                    else None,
+                    "uuid": (
+                        str(output_assoc.dataset.dataset.uuid)
+                        if output_assoc.dataset.dataset.uuid is not None
+                        else None
+                    ),
                 }
 
             output_collections = {}
@@ -9568,11 +9647,12 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     @classmethod
     def store(cls, server_url, association):
-        try:
+        def get_or_create():
             stmt = select(PSAAssociation).filter_by(server_url=server_url, handle=association.handle).limit(1)
             assoc = cls.sa_session.scalars(stmt).first()
-        except IndexError:
-            assoc = cls(server_url=server_url, handle=association.handle)
+            return assoc or cls(server_url=server_url, handle=association.handle)
+
+        assoc = get_or_create()
         assoc.secret = base64.encodebytes(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
@@ -9584,7 +9664,7 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     @classmethod
     def get(cls, *args, **kwargs):
         stmt = select(PSAAssociation).filter_by(*args, **kwargs)
-        return cls.sa_session.scalars(stmt)
+        return cls.sa_session.scalars(stmt).all()
 
     @classmethod
     def remove(cls, ids_to_delete):

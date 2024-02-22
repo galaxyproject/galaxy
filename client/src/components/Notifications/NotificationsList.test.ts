@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
@@ -22,9 +22,12 @@ async function mountNotificationsList() {
     const notificationsStore = useNotificationsStore(pinia);
     notificationsStore.notifications = mergeObjectListsById(FAKE_NOTIFICATIONS, []);
 
-    const wrapper = shallowMount(NotificationsList, {
+    const wrapper = mount(NotificationsList, {
         localVue,
         pinia,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
     });
 
     await flushPromises();
@@ -34,9 +37,10 @@ async function mountNotificationsList() {
 describe("NotificationsList", () => {
     it("render and count unread notifications", async () => {
         const wrapper = await mountNotificationsList();
+
         expect(wrapper.findAll(".notification-card")).toHaveLength(messageCount + sharedItemCount);
 
-        const unreadNotification = wrapper.findAll(".unread-status");
+        const unreadNotification = wrapper.findAll(".unread-notification");
         expect(unreadNotification).toHaveLength(FAKE_NOTIFICATIONS.filter((n) => !n.seen_time).length);
     });
 

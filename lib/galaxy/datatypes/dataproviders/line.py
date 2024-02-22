@@ -1,6 +1,7 @@
 """
 Dataproviders that iterate over lines from their sources.
 """
+
 import collections
 import logging
 import re

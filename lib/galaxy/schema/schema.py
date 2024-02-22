@@ -1306,6 +1306,11 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         title="Slug",
         description="Part of the URL to uniquely identify this History by link in a readable way.",
     )
+    username: Optional[str] = Field(
+        None,
+        title="Username",
+        description="Owner of the history",
+    )
     username_and_slug: Optional[str] = Field(
         None,
         title="Username and slug",
@@ -1960,6 +1965,11 @@ class EncodedDataItemSourceId(Model):
     )
 
 
+class EncodedJobParameterHistoryItem(EncodedDataItemSourceId):
+    hid: Optional[int] = None
+    name: str
+
+
 class DatasetJobInfo(DatasetSourceId):
     uuid: UuidField
 
@@ -2397,6 +2407,9 @@ class WorkflowStepLayoutPosition(Model):
     y: int = Field(..., title="Y", description="Vertical pixel coordinate of the top right corner of the box.")
     height: int = Field(..., title="Height", description="Height of the box in pixels.")
     width: int = Field(..., title="Width", description="Width of the box in pixels.")
+
+
+InvocationsStateCounts = RootModel[Dict[str, int]]
 
 
 class WorkflowStepToExportBase(Model):

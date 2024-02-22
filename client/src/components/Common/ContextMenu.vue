@@ -53,7 +53,7 @@ watch(
 
 .context-menu {
     position: fixed;
-    z-index: 11;
+    z-index: 200;
 }
 
 .context-menu-overlay {

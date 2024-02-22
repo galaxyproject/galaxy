@@ -1,6 +1,10 @@
 import abc
 import os
 import time
+from dataclasses import (
+    dataclass,
+    field,
+)
 from enum import Enum
 from typing import (
     Any,
@@ -88,19 +92,20 @@ class FilesSourceProperties(TypedDict):
     browsable: NotRequired[bool]
 
 
+@dataclass
 class FilesSourceOptions:
     """Options to control behavior of file source operations, such as realize_to, write_from and list."""
 
     # Indicates access to the FS operation with intent to write.
     # Even if a file source is "writeable" some directories (or elements) may be restricted or read-only
     # so those should be skipped while browsing with writeable=True.
-    writeable: Optional[bool]
+    writeable: Optional[bool] = False
 
     # Property overrides for values initially configured through the constructor. For example
     # the HTTPFilesSource passes in additional http_headers through these properties, which
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
-    extra_props: Optional[FilesSourceProperties]
+    extra_props: Optional[FilesSourceProperties] = field(default_factory=lambda: FilesSourceProperties())
 
 
 class EntryData(TypedDict):

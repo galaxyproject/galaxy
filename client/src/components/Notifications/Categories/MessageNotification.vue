@@ -2,13 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { type MessageNotification } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 
-import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 
 library.add(faInbox);
@@ -42,16 +40,26 @@ const notificationVariant = computed(() => {
 </script>
 
 <template>
-    <BCol>
-        <BRow align-v="center">
-            <Heading size="md" :bold="!props.options.notification.seen_time" class="mb-0">
-                <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
+    <div class="notification-container">
+        <div class="notification-header">
+            <div :class="!props.options.notification.seen_time ? 'font-weight-bold' : ''" class="notification-title">
+                <FontAwesomeIcon :class="`text-${notificationVariant}`" :icon="faInbox" fixed-width size="sm" />
                 {{ props.options.notification?.content?.subject }}
-            </Heading>
-            <NotificationActions v-if="!props.options.previewMode" :notification="props.options.notification" />
-        </BRow>
-        <BRow>
-            <span id="notification-message" v-html="renderMarkdown(props.options.notification.content.message)" />
-        </BRow>
-    </BCol>
+            </div>
+        </div>
+
+        <NotificationActions
+            v-if="!props.options.previewMode"
+            class="notification-actions"
+            :notification="props.options.notification" />
+
+        <span
+            id="notification-message"
+            class="notification-message"
+            v-html="renderMarkdown(props.options.notification.content.message)" />
+    </div>
 </template>
+
+<style scoped lang="scss">
+@import "style.scss";
+</style>
