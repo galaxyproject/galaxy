@@ -94,7 +94,7 @@ describe("History center panel View", () => {
         expect(tags.text()).toContain("tag_1");
         expect(tags.text()).toContain("tag_2");
         // HistoryCounter
-        expect(wrapper.find("[data-description='storage dashboard button']").attributes("disabled")).toBeTruthy();
+        expect(wrapper.find("[data-description='statistics dashboard button']").attributes("disabled")).toBeTruthy();
         expect(wrapper.find("[data-description='show active items button']").text()).toEqual("8");
         expect(wrapper.find("[data-description='include deleted items button']").text()).toEqual("1");
         expect(wrapper.find("[data-description='include hidden items button']").text()).toEqual("2");
