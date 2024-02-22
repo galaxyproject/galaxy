@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import { EnergyUsageSummary } from "@/api";
 import { fetcher } from "@/api/schema";
@@ -56,7 +57,7 @@ watch(
                 </p>
 
                 <p>
-                    <router-link
+                    <RouterLink
                         to="/carbon_emissions_calculations"
                         title="Learn about how we estimate carbon emissions"
                         class="align-self-start mt-2">
@@ -64,7 +65,7 @@ watch(
                             Click here to learn more about how we calculate your carbon emissions data.
                             <FontAwesomeIcon icon="fa-question-circle" />
                         </span>
-                    </router-link>
+                    </RouterLink>
                 </p>
             </template>
 

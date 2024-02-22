@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { BFormSelect } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
+import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -152,7 +154,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
 
 <template>
     <div>
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Go to Storage Dashboard") }}</router-link>
+        <RouterLink :to="{ name: 'StorageDashboard' }">{{ localize("Go to Storage Dashboard") }}</RouterLink>
 
         <p class="mt-2 text-justify">
             Here you can find various graphs displaying the storage size taken by <b>all your histories</b>.
@@ -162,7 +164,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
             Note: these graphs include <b>deleted histories</b>. Remember that, even if you delete histories, they still
             take up storage space. However, you can free up the storage space by permanently deleting them from the
             <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
+            <RouterLink :to="{ name: 'StorageManager' }"><b>Storage Manager</b></RouterLink> page or by selecting them
             individually in the graph and clicking the <b>Permanently Delete</b> button.
         </p>
 
@@ -182,8 +184,9 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:title>
-                    <b>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</b>
-                    <b-form-select
+                    <strong>{{ localize(`Top ${numberOfHistoriesToDisplay} Histories by Size`) }}</strong>
+
+                    <BFormSelect
                         v-model="numberOfHistoriesToDisplay"
                         :options="numberOfHistoriesToDisplayOptions"
                         :disabled="isLoading"
@@ -191,8 +194,9 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         class="float-right w-auto"
                         size="sm"
                         @change="buildGraphsData()">
-                    </b-form-select>
+                    </BFormSelect>
                 </template>
+
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
                         v-if="data"
@@ -200,6 +204,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)" />
                 </template>
+
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
                         :data="data"

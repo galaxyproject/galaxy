@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BButton, BButtonGroup,BModal } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
@@ -115,7 +116,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <b-button
+        <BButton
             v-b-tooltip.hover
             title="History Statistics"
             variant="link"
@@ -126,10 +127,10 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             @click="onClickStatistics">
             <icon icon="database" />
             <span>{{ niceHistorySize }}</span>
-        </b-button>
+        </BButton>
 
-        <b-button-group v-if="currentUser">
-            <b-button
+        <BButtonGroup v-if="currentUser">
+            <BButton
                 v-if="config && config.object_store_allows_id_selection"
                 :id="`history-storage-${history.id}`"
                 title="Manage Preferred History Storage"
@@ -138,7 +139,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 class="rounded-0 text-decoration-none"
                 @click="showPreferredObjectStoreModal = true">
                 <icon icon="hdd" />
-            </b-button>
+            </BButton>
 
             <PreferredStorePopover
                 v-if="config && config.object_store_allows_id_selection"
@@ -147,8 +148,8 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                 :user="currentUser">
             </PreferredStorePopover>
 
-            <b-button-group>
-                <b-button
+            <BButtonGroup>
+                <BButton
                     v-b-tooltip.hover
                     title="Show active"
                     variant="link"
@@ -158,9 +159,9 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     @click="setFilter('')">
                     <span class="fa fa-map-marker" />
                     <span>{{ numItemsActive }}</span>
-                </b-button>
+                </BButton>
 
-                <b-button
+                <BButton
                     v-if="numItemsDeleted"
                     v-b-tooltip.hover
                     title="Include deleted"
@@ -172,9 +173,9 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     @click="setFilter('deleted')">
                     <icon icon="trash" />
                     <span>{{ numItemsDeleted }}</span>
-                </b-button>
+                </BButton>
 
-                <b-button
+                <BButton
                     v-if="numItemsHidden"
                     v-b-tooltip.hover
                     title="Include hidden"
@@ -186,9 +187,9 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     @click="setFilter('visible')">
                     <icon icon="eye-slash" />
                     <span>{{ numItemsHidden }}</span>
-                </b-button>
+                </BButton>
 
-                <b-button
+                <BButton
                     v-b-tooltip.hover
                     :title="reloadButtonTitle"
                     :variant="reloadButtonVariant"
@@ -196,10 +197,10 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     class="rounded-0 text-decoration-none history-refresh-button"
                     @click="reloadContents()">
                     <span :class="reloadButtonCls" />
-                </b-button>
-            </b-button-group>
+                </BButton>
+            </BButtonGroup>
 
-            <b-modal
+            <BModal
                 v-model="showPreferredObjectStoreModal"
                 title="History Preferred Object Store"
                 modal-class="history-preferred-object-store-modal"
@@ -210,7 +211,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
                     :user-preferred-object-store-id="currentUser.preferred_object_store_id"
                     :history="history"
                     @updated="onUpdatePreferredObjectStoreId" />
-            </b-modal>
-        </b-button-group>
+            </BModal>
+        </BButtonGroup>
     </div>
 </template>

@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { RouterLink } from "vue-router";
 
 import {
     worldwideCarbonIntensity,
@@ -54,14 +55,14 @@ const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions()
                 </p>
 
                 <div class="mt-2">
-                    <router-link
+                    <RouterLink
                         to="/carbon_emissions_calculations"
                         title="Learn about how we estimate carbon emissions">
                         <span>
                             Learn more about how we calculate your carbon emissions data.
                             <FontAwesomeIcon icon="fa-question-circle" />
                         </span>
-                    </router-link>
+                    </RouterLink>
                 </div>
             </template>
         </CarbonEmissions>
