@@ -470,9 +470,8 @@ class TestObjectStoreSelectionWithPreferredObjectStoresIntegration(BaseObjectSto
     def _storage_info(self, hda):
         return self.dataset_populator.dataset_storage_info(hda["id"])
 
-    def _set_user_preferred_object_store_id(self, store_id: Optional[str]):
-        user_properties = self.dataset_populator.update_user({"preferred_object_store_id": store_id})
-        assert user_properties["preferred_object_store_id"] == store_id
+    def _set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+        self.dataset_populator.set_user_preferred_object_store_id(store_id)
 
     def _reset_user_preferred_object_store_id(self):
         self._set_user_preferred_object_store_id(None)
