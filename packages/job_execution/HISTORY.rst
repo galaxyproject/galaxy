@@ -8,6 +8,21 @@ History
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Replace file_name property with get_file_name function by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#16783 <https://github.com/galaxyproject/galaxy/pull/16783>`_
+* Enable some flake8-logging-format rules in ruff by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16915 <https://github.com/galaxyproject/galaxy/pull/16915>`_
+* Move and re-use persist_extra_files by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16955 <https://github.com/galaxyproject/galaxy/pull/16955>`_
+* optimize object store cache operations by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#17025 <https://github.com/galaxyproject/galaxy/pull/17025>`_
+
 -------------------
 23.1.4 (2024-01-04)
 -------------------
