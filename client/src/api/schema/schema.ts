@@ -5202,7 +5202,7 @@ export interface components {
              * Tool Sequence
              * @description comma separated sequence of tool ids
              */
-            tool_sequence: Record<string, never>;
+            tool_sequence?: Record<string, never> | null;
         };
         /**
          * GroupCreatePayload
@@ -11282,6 +11282,19 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolPredictionsSummary */
+        ToolPredictionsSummary: {
+            /**
+             * Current Tools
+             * @description A comma separated sequence of the current tool ids
+             */
+            current_tool?: Record<string, never> | null;
+            /**
+             * Recommended Tools
+             * @description List of predictions
+             */
+            predicted_data?: Record<string, never> | null;
         };
         /** ToolStep */
         ToolStep: {
@@ -22710,7 +22723,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": Record<string, never> | components["schemas"]["ToolPredictionsSummary"];
                 };
             };
             /** @description Validation Error */
