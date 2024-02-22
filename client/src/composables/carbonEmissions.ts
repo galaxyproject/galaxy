@@ -1,49 +1,16 @@
-export type EstimatedServerInstance = {
-    name: string;
-    cpuInfo: {
-        modelName: string;
-        totalAvailableCores: number;
-        tdp: number;
-    };
-};
+import { computed } from "vue";
 
-export async function estimateServerInstance(allocatedCores?: number, allocatedMemory?: number) {
-    if (!allocatedCores) {
-        return;
-    }
+import { worldwideCarbonIntensity } from "@/components/CarbonEmissions/carbonEmissionConstants";
 
-    const adjustedMemory = allocatedMemory ? allocatedMemory / 1024 : 0;
+import { useConfig } from "./config";
 
-    const ec2 = (await import("@/components/JobMetrics/awsEc2ReferenceData.js")).ec2Instances;
-    if (!ec2) {
-        return;
-    }
-
-    const serverInstance = ec2.find((instance) => {
-        if (adjustedMemory === 0) {
-            // Exclude memory from search criteria
-            return instance.vCpuCount >= allocatedCores;
-        }
-
-        // Search by all criteria
-        return instance.mem >= adjustedMemory && instance.vCpuCount >= allocatedCores;
-    });
-
-    if (!serverInstance) {
-        return;
-    }
-
-    const cpu = serverInstance.cpu[0];
-    if (!cpu) {
-        return;
-    }
+export function useCarbonEmissions() {
+    const { config } = useConfig(true);
+    const carbonIntensity = computed(() => config.value?.carbon_intensity ?? worldwideCarbonIntensity);
+    const geographicalServerLocationName = computed(() => config.value?.geographical_server_location_name ?? "GLOBAL");
 
     return {
-        name: serverInstance.name,
-        cpuInfo: {
-            modelName: cpu.cpuModel,
-            totalAvailableCores: cpu.coreCount,
-            tdp: cpu.tdp,
-        },
+        carbonIntensity,
+        geographicalServerLocationName,
     };
 }

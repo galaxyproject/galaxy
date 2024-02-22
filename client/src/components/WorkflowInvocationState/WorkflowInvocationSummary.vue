@@ -1,192 +1,3 @@
-<script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-
-import { EnergyUsageSummary } from "@/api";
-import { fetcher } from "@/api/schema";
-import {
-    worldwideCarbonIntensity,
-    worldwidePowerUsageEffectiveness,
-} from "@/components/CarbonEmissions/carbonEmissionConstants";
-import { useConfig } from "@/composables/config";
-import { getRootFromIndexLink } from "@/onload";
-
-import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import ProgressBar from "@/components/ProgressBar.vue";
-import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
-
-const getUrl = (path: any) => getRootFromIndexLink() + path;
-
-const { config } = useConfig(true);
-const carbonIntensity = config.value.carbon_intensity ?? worldwideCarbonIntensity;
-const geographicalServerLocationName = config.value.geographical_server_location_name ?? "GLOBAL";
-
-const energyUsage = ref<EnergyUsageSummary>({
-    total_energy_needed_cpu_kwh: 0,
-    total_energy_needed_memory_kwh: 0,
-    total_energy_needed_kwh: 0,
-});
-
-const props = defineProps({
-    invocation: {
-        type: Object,
-        required: true,
-    },
-    invocationAndJobTerminal: {
-        type: Boolean,
-        required: true,
-    },
-    invocationSchedulingTerminal: {
-        type: Boolean,
-        required: true,
-    },
-    jobStatesSummary: {
-        type: Object,
-        required: false,
-        default: null,
-    },
-    index: {
-        type: Number,
-        required: false,
-        default: null,
-    },
-});
-
-const reportTooltip = "View report for this workflow invocation";
-const generatePdfTooltip = "Generate PDF report for this workflow invocation";
-
-const invocationId = computed(() => {
-    return props.invocation?.id;
-});
-
-const indexStr = computed(() => {
-    if (!props.index) {
-        return "";
-    }
-    return `${props.index + 1}`;
-});
-
-const invocationState = computed(() => {
-    return props.invocation?.state || "new";
-});
-
-const invocationStateSuccess = computed(() => {
-    return invocationState.value === "scheduled" && runningCount.value === 0 && props.invocationAndJobTerminal;
-});
-
-const disabledReportTooltip = computed(() => {
-    const state = invocationState.value;
-    const runCount = runningCount.value;
-
-    if (invocationState.value != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is  ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
-    }
-
-    if (runCount != 0) {
-        return `The workflow invocation still contains ${runCount} running job(s). Once these jobs have completed this option will become available.`;
-    }
-
-    return "Steps for this workflow are still running. A report will be available once complete.";
-});
-
-const stepCount = computed(() => {
-    return props.invocation?.steps.length;
-});
-
-const stepStates = computed(() => {
-    const stepStates: any = {};
-    if (!props.invocation) {
-        return {};
-    }
-
-    for (const step of props.invocation.steps) {
-        if (!stepStates[step.state]) {
-            stepStates[step.state] = 1;
-        } else {
-            stepStates[step.state] += 1;
-        }
-    }
-    return stepStates;
-});
-
-const invocationLink = computed(() => {
-    return getUrl(`workflows/invocations/report?id=${invocationId.value}`);
-});
-
-const invocationPdfLink = computed(() => {
-    return getUrl(`api/invocations/${invocationId.value}/report.pdf`);
-});
-
-const stepStatesStr = computed(() => {
-    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
-});
-
-const jobCount = computed(() => {
-    return !props.jobStatesSummary ? null : props.jobStatesSummary.jobCount();
-});
-
-const jobStatesStr = computed(() => {
-    let jobStr = `${props.jobStatesSummary?.numTerminal() || 0} of ${jobCount.value} jobs complete`;
-    if (!props.invocationSchedulingTerminal) {
-        jobStr += " (total number of jobs will change until all steps fully scheduled)";
-    }
-    return `${jobStr}.`;
-});
-
-const runningCount = computed(() => {
-    return countStates(["running"]);
-});
-const okCount = computed(() => {
-    return countStates(["ok", "skipped"]);
-});
-const errorCount = computed(() => {
-    return countStates(["error", "deleted"]);
-});
-const newCount = computed(() => {
-    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
-});
-
-const emit = defineEmits(["invocation-cancelled"]);
-
-function onCancel() {
-    emit("invocation-cancelled");
-}
-
-function countStates(states: string[]) {
-    let count = 0;
-    if (props.jobStatesSummary && props.jobStatesSummary.hasDetails()) {
-        for (const state of states) {
-            count += props.jobStatesSummary.states()[state] || 0;
-        }
-    }
-    return count;
-}
-
-async function fetchEnergyUsageData() {
-    const res = await fetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").create()({
-        invocation_id: props.invocation?.id,
-    });
-
-    if (res.ok) {
-        energyUsage.value = res.data;
-    }
-}
-
-onMounted(() => {
-    fetchEnergyUsageData();
-});
-
-watch(
-    () => props.invocation,
-    () => {
-        fetchEnergyUsageData();
-    },
-    {
-        deep: true,
-    }
-);
-</script>
-
 <template>
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
@@ -264,12 +75,14 @@ watch(
 
             <CarbonEmissions
                 :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
-                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh">
+                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
+                :total-energy-needed="energyUsage.total_energy_needed_kwh"
+                :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
                 <template v-slot:header>
                     <p>
                         Here is an estimated summary of the total carbon footprint of this workflow invocation.
 
-                        <router-link
+                        <RouterLink
                             to="/carbon_emissions_calculations"
                             title="Learn about how we estimate carbon emissions"
                             class="align-self-start mt-2">
@@ -277,7 +90,7 @@ watch(
                                 Click here to learn more about how we calculate your carbon emissions data.
                                 <FontAwesomeIcon icon="fa-question-circle" />
                             </span>
-                        </router-link>
+                        </RouterLink>
                     </p>
                 </template>
 
@@ -305,3 +118,184 @@ watch(
         </div>
     </div>
 </template>
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import CarbonEmissions from "components/CarbonEmissions/CarbonEmissions";
+import mixin from "components/JobStates/mixin";
+import LoadingSpan from "components/LoadingSpan";
+import ProgressBar from "components/ProgressBar";
+import { RouterLink } from "vue-router";
+import { getRootFromIndexLink } from "onload";
+import { computed, ref, watch } from "vue";
+
+import { fetcher } from "@/api/schema";
+import {
+    worldwideCarbonIntensity,
+    worldwidePowerUsageEffectiveness,
+} from "@/components/CarbonEmissions/carbonEmissionConstants";
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
+
+import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
+
+library.add(faQuestionCircle);
+
+const getUrl = (path) => getRootFromIndexLink() + path;
+
+export default {
+    components: {
+        CarbonEmissions,
+        FontAwesomeIcon,
+        InvocationMessage,
+        LoadingSpan,
+        ProgressBar,
+        RouterLink,
+    },
+    mixins: [mixin],
+    props: {
+        invocation: {
+            type: Object,
+            required: true,
+        },
+        invocationAndJobTerminal: {
+            type: Boolean,
+            required: true,
+        },
+        invocationSchedulingTerminal: {
+            type: Boolean,
+            required: true,
+        },
+        jobStatesSummary: {
+            type: Object,
+            required: false,
+            default: null,
+        },
+        index: {
+            type: Number,
+            required: false,
+            default: null,
+        },
+    },
+    setup(props) {
+        const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
+
+        const invocationId = computed(() => props.invocation?.id);
+
+        const energyUsage = ref({
+            total_energy_needed_cpu_kwh: 0,
+            total_energy_needed_memory_kwh: 0,
+            total_energy_needed_kwh: 0,
+        });
+
+        async function fetchEnergyUsageData() {
+            const res = await fetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").create()({
+                invocation_id: invocationId.value,
+            });
+
+            if (res.ok) {
+                energyUsage.value = res.data;
+            }
+        }
+
+        watch(
+            () => invocationId.value,
+            () => {
+                if (invocationId.value) {
+                    fetchEnergyUsageData();
+                }
+            },
+            { immediate: true }
+        );
+
+        return {
+            carbonIntensity,
+            energyUsage,
+            geographicalServerLocationName,
+            invocationId,
+            worldwideCarbonIntensity,
+            worldwidePowerUsageEffectiveness,
+        };
+    },
+    data() {
+        return {
+            stepStatesInterval: null,
+            jobStatesInterval: null,
+            reportTooltip: "View report for this workflow invocation",
+            generatePdfTooltip: "Generate PDF report for this workflow invocation",
+        };
+    },
+    computed: {
+        indexStr() {
+            if (this.index == null) {
+                return "";
+            } else {
+                return `${this.index + 1}`;
+            }
+        },
+        invocationState: function () {
+            return this.invocation?.state || "new";
+        },
+        invocationStateSuccess: function () {
+            return this.invocationState == "scheduled" && this.runningCount === 0 && this.invocationAndJobTerminal;
+        },
+        disabledReportTooltip: function () {
+            const state = this.invocationState;
+            const runCount = this.runningCount;
+            if (this.invocationState != "scheduled") {
+                return (
+                    "This workflow is not currently scheduled. The current state is ",
+                    state,
+                    ". Once the workflow is fully scheduled and jobs have complete this option will become available."
+                );
+            } else if (runCount != 0) {
+                return (
+                    "The workflow invocation still contains ",
+                    runCount,
+                    " running job(s). Once these jobs have completed this option will become available. "
+                );
+            } else {
+                return "Steps for this workflow are still running. A report will be available once complete.";
+            }
+        },
+        stepCount: function () {
+            return this.invocation?.steps.length;
+        },
+        stepStates: function () {
+            const stepStates = {};
+            if (!this.invocation) {
+                return {};
+            }
+            for (const step of this.invocation.steps) {
+                if (!stepStates[step.state]) {
+                    stepStates[step.state] = 1;
+                } else {
+                    stepStates[step.state] += 1;
+                }
+            }
+            return stepStates;
+        },
+        invocationLink: function () {
+            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
+        },
+        invocationPdfLink: function () {
+            return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
+        },
+        stepStatesStr: function () {
+            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
+        },
+        jobStatesStr: function () {
+            let jobStr = `${this.jobStatesSummary?.numTerminal() || 0} of ${this.jobCount} jobs complete`;
+            if (!this.invocationSchedulingTerminal) {
+                jobStr += " (total number of jobs will change until all steps fully scheduled)";
+            }
+            return `${jobStr}.`;
+        },
+    },
+    methods: {
+        onCancel() {
+            this.$emit("invocation-cancelled");
+        },
+    },
+};
+</script>

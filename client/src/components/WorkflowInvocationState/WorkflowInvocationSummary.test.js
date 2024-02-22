@@ -1,10 +1,24 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/api/schema/__mocks__";
+
 import invocationData from "../Workflow/test/json/invocation.json";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary";
 
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia } from "pinia";
+
 const localVue = getLocalVue();
+
+jest.mock("@/api/schema");
+mockFetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").mock({
+    total_energy_needed_cpu_kwh: 0,
+    total_energy_needed_memory_kwh: 0,
+    total_energy_needed_kwh: 0,
+});
+
+const pinia = createTestingPinia();
 
 describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
     let wrapper;
@@ -18,6 +32,7 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
         };
         wrapper = shallowMount(WorkflowInvocationSummary, {
             propsData,
+            pinia,
             localVue,
         });
     });
@@ -45,6 +60,7 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
         };
         wrapper = shallowMount(WorkflowInvocationSummary, {
             store,
+            pinia,
             propsData,
             localVue,
         });

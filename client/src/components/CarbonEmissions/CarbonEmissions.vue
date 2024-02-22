@@ -2,7 +2,7 @@
 import { GetComponentPropTypes } from "types/utilityTypes";
 import { computed, unref } from "vue";
 
-import { useConfig } from "@/composables/config";
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import * as carbonEmissionsConstants from "./carbonEmissionConstants.js";
 
@@ -13,8 +13,7 @@ const props = defineProps<{
     energyNeededMemory: number;
 }>();
 
-const { config } = useConfig(true);
-const carbonIntensity = (config.value.carbon_intensity as number) ?? carbonEmissionsConstants.worldwideCarbonIntensity;
+const { carbonIntensity } = useCarbonEmissions();
 
 const canShowMemory = computed(() => {
     return props.energyNeededMemory && props.energyNeededMemory !== 0;
@@ -25,11 +24,9 @@ const canShowMoreThanOneMetric = computed(() => {
 });
 
 const carbonEmissions = computed(() => {
-    const { energyNeededCPU, energyNeededMemory } = props;
-
     // Carbon emissions (carbon intensity is in grams/kWh so emissions results are in grams of CO2)
-    const cpuCarbonEmissions = energyNeededCPU * carbonIntensity;
-    const memoryCarbonEmissions = energyNeededMemory * carbonIntensity;
+    const cpuCarbonEmissions = props.energyNeededCPU * carbonIntensity.value;
+    const memoryCarbonEmissions = props.energyNeededMemory * carbonIntensity.value;
     const totalCarbonEmissions = cpuCarbonEmissions + memoryCarbonEmissions;
 
     return {
@@ -37,9 +34,9 @@ const carbonEmissions = computed(() => {
         memoryCarbonEmissions,
         totalCarbonEmissions,
 
-        energyNeededCPU: energyNeededCPU,
-        energyNeededMemory: energyNeededMemory,
-        totalEnergyNeeded: energyNeededCPU + energyNeededMemory,
+        energyNeededCPU: props.energyNeededCPU,
+        energyNeededMemory: props.energyNeededMemory,
+        totalEnergyNeeded: props.energyNeededCPU + props.energyNeededMemory,
     };
 });
 

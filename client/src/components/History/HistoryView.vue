@@ -3,6 +3,7 @@
         <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
             {{ historyStateInfoMessage }}
         </b-alert>
+
         <div class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
@@ -14,6 +15,7 @@
                 @click="setCurrentHistory(history.id)">
                 Switch to this history
             </b-button>
+
             <b-button
                 v-if="canImportHistory"
                 v-b-modal:copy-history-modal
@@ -24,12 +26,14 @@
                 Import this history
             </b-button>
         </div>
+
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
             :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
+
         <HistoryPanel
             v-else
             :history="history"
@@ -37,6 +41,7 @@
             :should-show-controls="false"
             filterable
             @view-collection="onViewCollection" />
+
         <CopyModal id="copy-history-modal" :history="history" />
     </div>
 </template>

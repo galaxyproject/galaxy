@@ -2,7 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onMounted, ref, watch } from "vue";
+import { ref, watch } from "vue";
 
 import { EnergyUsageSummary } from "@/api";
 import { fetcher } from "@/api/schema";
@@ -10,7 +10,7 @@ import {
     worldwideCarbonIntensity,
     worldwidePowerUsageEffectiveness,
 } from "@/components/CarbonEmissions/carbonEmissionConstants";
-import { useConfig } from "@/composables/config";
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
 
@@ -18,8 +18,7 @@ library.add(faQuestionCircle);
 
 const props = defineProps<{ historyId: string }>();
 
-const { config } = useConfig(true);
-const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
+const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
 
 const energyUsage = ref<EnergyUsageSummary>({
     total_energy_needed_cpu_kwh: 0,
@@ -37,18 +36,10 @@ async function fetchEnergyUsageData() {
     }
 }
 
-onMounted(() => {
-    fetchEnergyUsageData();
-});
-
 watch(
     () => props.historyId,
-    () => {
-        fetchEnergyUsageData();
-    },
-    {
-        deep: true,
-    }
+    () => fetchEnergyUsageData(),
+    { immediate: true }
 );
 </script>
 

@@ -3,9 +3,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import { worldwideCarbonIntensity } from "@/components/CarbonEmissions/carbonEmissionConstants";
 import * as carbonEmissionsConstants from "@/components/CarbonEmissions/carbonEmissionConstants";
-import { useConfig } from "@/composables/config";
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import CarbonEmissions from "@/components/CarbonEmissions/CarbonEmissions.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -20,9 +19,7 @@ const props = defineProps<{
     estimatedServerInstanceName: string;
 }>();
 
-const { config } = useConfig(true);
-const carbonIntensity = (config.value.carbon_intensity as number) ?? worldwideCarbonIntensity;
-const geographicalServerLocationName = (config.value.geographical_server_location_name as string) ?? "GLOBAL";
+const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
 </script>
 
 <template>
@@ -52,12 +49,6 @@ const geographicalServerLocationName = (config.value.geographical_server_locatio
                         <strong>2.</strong> Using the global default power usage effectiveness value of
                         {{ carbonEmissionsConstants.worldwidePowerUsageEffectiveness }}.
                     </span>
-
-                    <br />
-
-                    <strong>3.</strong> based off of the closest AWS EC2 instance comparable to the server that ran this
-                    job. Estimates depend on the core count, allocated memory and the job runtime. The closest estimate
-                    is a <strong>{{ estimatedServerInstanceName }}</strong> instance.
                 </p>
 
                 <div class="mt-2">

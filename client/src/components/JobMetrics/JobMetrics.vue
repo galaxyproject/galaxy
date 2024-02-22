@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, unref, watch } from "vue";
+import { computed, unref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
@@ -33,8 +33,8 @@ const props = defineProps({
 const jobMetricsStore = useJobMetricsStore();
 
 const { config } = useConfig(true);
-const shouldShowAwsEstimate = (config.value.aws_estimate as boolean) ?? false;
-const shouldShowCarbonEmissionsEstimates = (config.value.carbon_emissions_estimates as boolean) ?? true;
+const shouldShowAwsEstimate = computed(() => (config.value?.aws_estimate as boolean) ?? false)
+const shouldShowCarbonEmissionsEstimates = computed(() => (config.value?.carbon_emissions_estimates as boolean) ?? true)
 
 const jobMetrics = computed(() => {
     if (props.jobId) {
@@ -89,8 +89,8 @@ const pluginsSortedByPluginType = computed(() => {
     return Object.keys(jobMetricsGroupedByPluginType.value).sort();
 });
 
-const hasPluginsToDisplay = computed(() => {
-    return pluginsSortedByPluginType.value.length > 0;
+const hasMetricsToDisplay = computed(() => {
+    return jobMetrics.value.length > 0;
 });
 
 const jobRuntimeInSeconds = computed(() => {
@@ -128,23 +128,15 @@ async function fetchJobMetrics() {
     await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
 }
 
-onMounted(() => {
-    fetchJobMetrics();
-});
-
 watch(
-    props,
-    () => {
-        fetchJobMetrics();
-    },
-    {
-        immediate: true,
-    }
+    () => [props.datasetType, props.datasetId, props.jobId],
+    () => fetchJobMetrics(),
+    { immediate: true, }
 );
 </script>
 
 <template>
-    <div v-if="hasPluginsToDisplay">
+    <div v-if="hasMetricsToDisplay">
         <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
 
         <div v-for="pluginType in pluginsSortedByPluginType" :key="pluginType" class="metrics_plugin">
