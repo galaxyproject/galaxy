@@ -9526,6 +9526,11 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     @classmethod
     def store(cls, server_url, association):
+        """
+        Create an Association instance
+        (Required by social_core.storage.AssociationMixin interface)
+        """
+
         def get_or_create():
             stmt = select(PSAAssociation).filter_by(server_url=server_url, handle=association.handle).limit(1)
             assoc = cls.sa_session.scalars(stmt).first()
@@ -9542,11 +9547,19 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     @classmethod
     def get(cls, *args, **kwargs):
+        """
+        Get an Association instance
+        (Required by social_core.storage.AssociationMixin interface)
+        """
         stmt = select(PSAAssociation).filter_by(*args, **kwargs)
         return cls.sa_session.scalars(stmt).all()
 
     @classmethod
     def remove(cls, ids_to_delete):
+        """
+        Remove an Association instance
+        (Required by social_core.storage.AssociationMixin interface)
+        """
         stmt = (
             delete(PSAAssociation)
             .where(PSAAssociation.id.in_(ids_to_delete))
@@ -9577,6 +9590,9 @@ class PSACode(Base, CodeMixin, RepresentById):
 
     @classmethod
     def get_code(cls, code):
+        """
+        (Required by social_core.storage.CodeMixin interface)
+        """
         stmt = select(PSACode).where(PSACode.code == code).limit(1)
         return cls.sa_session.scalars(stmt).first()
 
@@ -9604,6 +9620,10 @@ class PSANonce(Base, NonceMixin, RepresentById):
 
     @classmethod
     def use(cls, server_url, timestamp, salt):
+        """
+        Create a Nonce instance
+        (Required by social_core.storage.NonceMixin interface)
+        """
         try:
             stmt = select(PSANonce).where(server_url=server_url, timestamp=timestamp, salt=salt).limit(1)
             return cls.sa_session.scalars(stmt).first()
@@ -9640,11 +9660,17 @@ class PSAPartial(Base, PartialMixin, RepresentById):
 
     @classmethod
     def load(cls, token):
+        """
+        (Required by social_core.storage.PartialMixin interface)
+        """
         stmt = select(PSAPartial).where(PSAPartial.token == token).limit(1)
         return cls.sa_session.scalars(stmt).first()
 
     @classmethod
     def destroy(cls, token):
+        """
+        (Required by social_core.storage.PartialMixin interface)
+        """
         partial = cls.load(token)
         if partial:
             session = cls.sa_session
