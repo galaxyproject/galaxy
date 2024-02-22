@@ -84,8 +84,8 @@ class GetTargetHistoryPayload(Model):
 
 
 class GetToolPredictionsPayload(Model):
-    tool_sequence: Any = Field(
-        ...,
+    tool_sequence: Optional[Any] = Field(
+        None,
         title="Tool Sequence",
         description="comma separated sequence of tool ids",
     )
