@@ -523,6 +523,7 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
                                     "
                                     @hide-selection="setShowSelection(false)"
                                     @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
+                                    @select-all="selectAllInCurrentQuery(historyItems)"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"
