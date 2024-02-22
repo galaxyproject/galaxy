@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
-import { onMounted, ref, toRef } from "vue";
+import prettyBytes from "pretty-bytes";
+import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
@@ -37,13 +38,15 @@ const props = withDefaults(
 const router = useRouter();
 const { config } = useConfig();
 const { currentUser } = storeToRefs(useUserStore());
-const { numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
+const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
 
 const reloadButtonCls = ref("fa fa-sync");
 const reloadButtonTitle = ref("");
 const reloadButtonVariant = ref("link");
 const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
+
+const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
@@ -122,6 +125,7 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             data-description="statistics dashboard button"
             @click="onClickStatistics">
             <icon icon="database" />
+            <span>{{ niceHistorySize }}</span>
         </b-button>
 
         <b-button-group v-if="currentUser">
