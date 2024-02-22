@@ -91,8 +91,14 @@ class ToolRunner(BaseUIController):
             if "URL" not in test_params:
                 error("Execution of `data_source` tools requires a `URL` parameter")
             # preserve original params sent by the remote server as extra dict
-            # before in-place translation happens
+            # before in-place translation happens, then clean the incoming params
             params.update({"incoming_request_params": params.copy()})
+            if tool.input_translator:
+                for k in list(params.keys()):
+                    if k not in tool.input_translator.vocabulary and k not in ("URL", "incoming_request_params"):
+                        # the remote server has sent a param
+                        # that the tool is not expecting -> drop it
+                        del params[k]
         else:
             if "runtool_btn" not in test_params:
                 error("Tool execution through the `tool_runner` requires a `runtool_btn` flag")
