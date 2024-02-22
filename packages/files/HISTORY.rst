@@ -3,11 +3,29 @@ History
 
 .. to_doc
 
----------
-23.2.dev0
----------
+-------------------
+23.2.1 (2024-02-21)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* pin fs.dropboxfs to >=1 by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16451 <https://github.com/galaxyproject/galaxy/pull/16451>`_
+* Write to a temp filename in posix file source plugin by `@natefoo <https://github.com/natefoo>`_ in `#17350 <https://github.com/galaxyproject/galaxy/pull/17350>`_
+* Set webdav file source to use temp files by default by `@davelopez <https://github.com/davelopez>`_ in `#17388 <https://github.com/galaxyproject/galaxy/pull/17388>`_
+* More defensive access of extra props in filesources by `@nuwang <https://github.com/nuwang>`_ in `#17445 <https://github.com/galaxyproject/galaxy/pull/17445>`_
+
+============
+Enhancements
+============
+
+* Add Invenio RDM repository integration by `@davelopez <https://github.com/davelopez>`_ in `#16381 <https://github.com/galaxyproject/galaxy/pull/16381>`_
+* Refactor FilesDialog + Remote Files API schema improvements by `@davelopez <https://github.com/davelopez>`_ in `#16420 <https://github.com/galaxyproject/galaxy/pull/16420>`_
+*  Use fs.onedatarestfs for Onedata files source plugin implementation by `@lopiola <https://github.com/lopiola>`_ in `#16690 <https://github.com/galaxyproject/galaxy/pull/16690>`_
+* Remove record access handling for Invenio RDM plugin by `@davelopez <https://github.com/davelopez>`_ in `#16900 <https://github.com/galaxyproject/galaxy/pull/16900>`_
+* Enhance Invenio RDM integration by `@davelopez <https://github.com/davelopez>`_ in `#16964 <https://github.com/galaxyproject/galaxy/pull/16964>`_
 
 -------------------
 23.1.4 (2024-01-04)

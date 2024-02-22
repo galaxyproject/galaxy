@@ -3,11 +3,49 @@ History
 
 .. to_doc
 
----------
-23.2.dev0
----------
+-------------------
+23.2.1 (2024-02-21)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Never consider `_galaxy_` conda env as unused by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16460 <https://github.com/galaxyproject/galaxy/pull/16460>`_
+* chore: fix typos by `@afuetterer <https://github.com/afuetterer>`_ in `#16851 <https://github.com/galaxyproject/galaxy/pull/16851>`_
+* Ruff and flake8 fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16884 <https://github.com/galaxyproject/galaxy/pull/16884>`_
+* Quote singularity env parameters by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17055 <https://github.com/galaxyproject/galaxy/pull/17055>`_
+* Remove duplicates when copying sections for tool panel view by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17117 <https://github.com/galaxyproject/galaxy/pull/17117>`_
+* Display application fixes and tests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17233 <https://github.com/galaxyproject/galaxy/pull/17233>`_
+
+============
+Enhancements
+============
+
+* Implement default locations for data and collection parameters. by `@jmchilton <https://github.com/jmchilton>`_ in `#14955 <https://github.com/galaxyproject/galaxy/pull/14955>`_
+* Add framework test for profile behavior of `format="input"` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15482 <https://github.com/galaxyproject/galaxy/pull/15482>`_
+* Tool Shed 2.0 by `@jmchilton <https://github.com/jmchilton>`_ in `#15639 <https://github.com/galaxyproject/galaxy/pull/15639>`_
+* Add ability to assert metadata properties on input dataset parameters by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15825 <https://github.com/galaxyproject/galaxy/pull/15825>`_
+* Migrate a part of the users API to Fast API by `@heisner-tillman <https://github.com/heisner-tillman>`_ in `#16341 <https://github.com/galaxyproject/galaxy/pull/16341>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#16436 <https://github.com/galaxyproject/galaxy/pull/16436>`_
+* Tweak tool memory use and optimize shared memory when using preload by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`_
+* Document that required text parameters need a validator by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16538 <https://github.com/galaxyproject/galaxy/pull/16538>`_
+* Include `regex` when linting validators by `@davelopez <https://github.com/davelopez>`_ in `#16684 <https://github.com/galaxyproject/galaxy/pull/16684>`_
+* Refactor Tool Panel views structures and combine ToolBox and ToolBoxWorkflow into one component by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16739 <https://github.com/galaxyproject/galaxy/pull/16739>`_
+* Replace file_name property with get_file_name function by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#16783 <https://github.com/galaxyproject/galaxy/pull/16783>`_
+* Updated path-based interactive tools with entry point path injection, support for ITs with relative links, shortened URLs, doc and config updates including Podman job_conf by `@sveinugu <https://github.com/sveinugu>`_ in `#16795 <https://github.com/galaxyproject/galaxy/pull/16795>`_
+* Remove remaining legacy backbone form input elements by `@guerler <https://github.com/guerler>`_ in `#16834 <https://github.com/galaxyproject/galaxy/pull/16834>`_
+* Change `api/tool_panel` to `api/tool_panels/...` by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16928 <https://github.com/galaxyproject/galaxy/pull/16928>`_
+* optimize object store cache operations by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#17025 <https://github.com/galaxyproject/galaxy/pull/17025>`_
+* Enhance xsd schema and allow simpler assertion lists by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17134 <https://github.com/galaxyproject/galaxy/pull/17134>`_
+
+=============
+Other changes
+=============
+
+* Merge 23.1 into dev by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16534 <https://github.com/galaxyproject/galaxy/pull/16534>`_
+* Explicitly document default of multiple by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16625 <https://github.com/galaxyproject/galaxy/pull/16625>`_
 
 -------------------
 23.1.4 (2024-01-04)

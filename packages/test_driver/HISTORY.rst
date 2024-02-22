@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
----------
-23.2.dev0
----------
+-------------------
+23.2.1 (2024-02-21)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Tool Shed 2.0 fixes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16825 <https://github.com/galaxyproject/galaxy/pull/16825>`_
+
+============
+Enhancements
+============
+
+* Limit number of celery task executions per second per user by `@claudiofr <https://github.com/claudiofr>`_ in `#16232 <https://github.com/galaxyproject/galaxy/pull/16232>`_
+* Tweak tool memory use and optimize shared memory when using preload by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16536 <https://github.com/galaxyproject/galaxy/pull/16536>`_
 
 -------------------
 23.1.4 (2024-01-04)
