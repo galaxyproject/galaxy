@@ -86,7 +86,7 @@ watch(
 
         <div v-else class="workflow-preview-container">
             <div class="w-100">
-                <span class="d-flex mb-2">
+                <span class="d-flex mb-2 flex-gapx-1">
                     <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0"> Workflow Preview </Heading>
 
                     <WorkflowRunButton :id="props.id" full />
