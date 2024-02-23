@@ -2864,6 +2864,8 @@ class ExpressionTool(Tool):
             if val.output_type == "data":
                 with open(out_data[key].get_file_name()) as f:
                     src = json.load(f)
+                if src is None:
+                    continue
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
                 dataset_id = src["id"]
                 copy_object = None
