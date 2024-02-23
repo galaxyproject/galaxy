@@ -8,8 +8,6 @@ from typing import (
     Union,
 )
 
-from fastapi import HTTPException
-
 from galaxy import (
     exceptions,
     web,
@@ -133,7 +131,7 @@ class WorkflowsService(ServiceBase):
         run_configs = build_workflow_run_configs(trans, workflow, payload.model_dump(exclude_unset=True))
         is_batch = payload.batch
         if not is_batch and len(run_configs) != 1:
-            raise HTTPException(status_code=400, detail="Must specify 'batch' to use batch parameters.")
+            raise exceptions.RequestParameterInvalidException("Must specify 'batch' to use batch parameters.")
 
         require_exact_tool_versions = payload.require_exact_tool_versions
         tools = self._workflow_contents_manager.get_all_tools(workflow)
@@ -152,16 +150,7 @@ class WorkflowsService(ServiceBase):
                 )
             else:
                 missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-            raise HTTPException(status_code=400, detail=missing_tools_message)
-        # if missing_tools:
-        #     missing_tools_message = "Workflow was not invoked; the following required tools are not installed: "
-        #     if require_exact_tool_versions:
-        #         missing_tools_message += ", ".join(
-        #             [f"{tool['tool_id']} (version {tool['tool_version']})" for tool in missing_tools]
-        #         )
-        #     else:
-        #         missing_tools_message += ", ".join([tool["tool_id"] for tool in missing_tools])
-        #     raise exceptions.MessageException(missing_tools_message)
+            raise exceptions.MessageException(missing_tools_message)
 
         invocations = []
         for run_config in run_configs:
