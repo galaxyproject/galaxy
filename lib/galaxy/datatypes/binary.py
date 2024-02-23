@@ -4553,13 +4553,13 @@ class Numpy(Binary):
     file_ext = "npy"
 
     MetadataElement(
-        name="version",
+        name="version_str",
         default="",
-        param=DictParameter,
+        param=MetadataParameter,
         desc="Version string for the numpy file format",
         readonly=True,
         visible=True,
-        no_value={},
+        no_value=0,
         optional=True
     )
     def _numpy_version_string(self, filename):
@@ -4568,7 +4568,11 @@ class Numpy(Binary):
         return version_str
     
     def set_meta(self, dataset: DatasetProtocol, *, overwrite: TYPE_CHECKING = True, **kwd) -> None:
-        dataset.metadata.version_dict = self._numpy_version_string(dataset.get_file_name())
+        try:
+            dataset.metadata.version_str = self._numpy_version_string(dataset.get_file_name())
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 6 bytes of any numpy file is '\x93NUMPY', with following bytes for version 
