@@ -81,10 +81,8 @@ from galaxy.schema.schema import (
     WorkflowSortByEnum,
 )
 from galaxy.schema.workflows import (
-    GetToolPredictionsPayload,
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
-    ToolPredictionsSummary,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -559,6 +557,26 @@ class WorkflowsAPIController(
             step_dict["tool_version"] = module.get_version()
         return step_dict
 
+    @expose_api
+    def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
+        """
+        POST /api/workflows/get_tool_predictions
+        Fetch predicted tools for a workflow
+        :type   payload: dict
+        :param  payload:
+            a dictionary containing two parameters
+            'tool_sequence' - comma separated sequence of tool ids
+            'remote_model_url' - (optional) path to the deep learning model
+        """
+        remote_model_url = payload.get("remote_model_url", trans.app.config.tool_recommendation_model_path)
+        tool_sequence = payload.get("tool_sequence", "")
+        if "tool_sequence" not in payload or remote_model_url is None:
+            return
+        tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
+            trans, tool_sequence, remote_model_url
+        )
+        return {"current_tool": tool_sequence, "predicted_data": recommended_tools}
+
     #
     # -- Helper methods --
     #
@@ -874,15 +892,6 @@ RefactorWorkflowBody = Annotated[
     ),
 ]
 
-GetToolPredictionsBody = Annotated[
-    GetToolPredictionsPayload,
-    Body(
-        default=...,
-        title="Get tool predictions",
-        description="The values to get tool predictions for a workflow.",
-    ),
-]
-
 
 @router.cbv
 class FastAPIWorkflows:
@@ -928,17 +937,6 @@ class FastAPIWorkflows:
         workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return workflows
-
-    @router.post(
-        "/api/workflows/get_tool_predictions",
-        summary="Fetch predicted tools for a workflow",
-    )
-    def get_tool_predictions(
-        self,
-        payload: GetToolPredictionsBody,
-        trans: ProvidesUserContext = DependsOnTrans,
-    ) -> Union[dict, ToolPredictionsSummary]:
-        return self.service.get_tool_predictions(trans, payload.model_dump(exclude_unset=True))
 
     @router.get(
         "/api/workflows/{workflow_id}/sharing",
