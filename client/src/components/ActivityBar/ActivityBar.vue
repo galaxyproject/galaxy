@@ -114,7 +114,7 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string, to: string | null = null) {
+function onToggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
     if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
@@ -169,7 +169,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
+                                :to="activity.to || ''"
                                 @click="onToggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else-if="activity.to"
@@ -185,16 +185,15 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <NotificationItem
-                    v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
+                    v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
-                    v-if="!isAnonymous"
                     id="activity-settings"
                     icon="cog"
                     :is-active="isActiveSideBar('settings')"
