@@ -1,3 +1,4 @@
+import json
 import os
 import string
 import subprocess
@@ -45,6 +46,18 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
 """
 )
 
+ONEDATA_DEMO_SPACE_NAME = "demo-space"
+ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
+<object_store type="onedata">
+    <auth access_token="${access_token}" />
+    <connection onezone_domain="${onezone_domain}" insecure="True"/>
+    <space name="${space_name}" />
+    <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory_onedata"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp_onedata"/>
+</object_store>
+"""
+)
 
 def start_minio(container_name):
     minio_start_args = [
@@ -102,10 +115,6 @@ def start_rucio(container_name):
     wait_rucio_ready(container_name)
 
 
-def stop_docker(container_name):
-    subprocess.check_call(["docker", "rm", "-f", container_name])
-
-
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase, integration_util.ConfiguresObjectStores):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
@@ -123,6 +132,10 @@ def get_files(directory):
 
 def files_count(directory):
     return sum(1 for _ in get_files(directory))
+
+
+def stop_docker(container_name):
+    subprocess.check_call(["docker", "rm", "-f", container_name])
 
 
 @integration_util.skip_unless_docker()
@@ -242,3 +255,136 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     @classmethod
     def updateCacheData(cls):
         return True
+
+
+@integration_util.skip_unless_docker()
+class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+    object_store_cache_path: str
+
+    @classmethod
+    def setUpClass(cls):
+        cls.oz_container_name = f"{cls.__name__}_oz_container"
+        cls.op_container_name = f"{cls.__name__}_op_container"
+
+        start_onezone(cls.oz_container_name)
+
+        oz_ip_address = get_onezone_ip_address(cls.oz_container_name)
+        start_oneprovider(cls.op_container_name, oz_ip_address)
+        await_oneprovider(cls.op_container_name)
+
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        # stop_docker(cls.op_container_name)
+        # stop_docker(cls.oz_container_name)
+
+        super().tearDownClass()
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+
+        print('\n\n222\n\n', config, '\n\n444\n\n')
+
+        temp_directory = cls._test_driver.mkdtemp()
+        cls.object_stores_parent = temp_directory
+        cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
+        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        config["object_store_store_by"] = "uuid"
+        config["metadata_strategy"] = "extended"
+        config["outputs_to_working_directory"] = True
+        config["retry_metadata_internally"] = False
+        with open(config_path, "w") as f:
+            # qwe = ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
+            #     {
+            #         "temp_directory": "temp_directory",
+            #         "access_token": "xs",
+            #         "onezone_domain": "zx",
+            #         "space_name": "demo-space",
+            #         "cache_updated_data": "dupa",
+            #     }
+            # )
+            qwe = ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
+                {
+                    "temp_directory": temp_directory,
+                    "access_token": get_onedata_access_token(cls.oz_container_name),
+                    "onezone_domain": get_onezone_ip_address(cls.oz_container_name),
+                    "space_name": ONEDATA_DEMO_SPACE_NAME,
+                    "cache_updated_data": cls.updateCacheData(),
+                }
+            )
+
+            print('\n\n211\n\n', qwe, '\n\n444\n\n')
+
+            f.write(qwe)
+
+        config["object_store_config_file"] = config_path
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def updateCacheData(cls):
+        return True
+
+
+def start_onezone(oz_container_name):
+    cmd = [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        oz_container_name,
+        "--rm",
+        "docker.onedata.org/onezone-dev:develop",  # TODO docker
+        "demo"
+    ]
+    subprocess.check_call(cmd)
+
+
+def get_onezone_ip_address(oz_container_name):
+    cmd = [
+        "docker",
+        "inspect",
+        '-f',
+        '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}',
+        oz_container_name,
+    ]
+    return subprocess.check_output(cmd).decode('utf-8').strip()
+
+
+def start_oneprovider(op_container_name, oz_ip_address):
+    cmd = [
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        op_container_name,
+        "--rm",
+        "docker.onedata.org/oneprovider-dev:develop",  # TODO docker
+        "demo",
+        oz_ip_address
+    ]
+    subprocess.check_call(cmd)
+
+
+def await_oneprovider(op_container_name):
+    cmd = [
+        "docker",
+        "exec",
+        op_container_name,
+        "await-demo"
+    ]
+    subprocess.check_call(cmd)
+
+
+def get_onedata_access_token(oz_container_name):
+    cmd = [
+        "docker",
+        "exec",
+        oz_container_name,
+        "demo-access-token"
+    ]
+    return subprocess.check_output(cmd).decode('utf-8').strip()
