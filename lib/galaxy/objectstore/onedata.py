@@ -59,8 +59,6 @@ def _parse_config_xml(config_xml):
         extra_dirs = [{attr: elem.get(attr) for attr in ("type", "path")} 
                       for elem in _get_config_xml_elements(config_xml, "extra_dir")]
 
-        print('\n\n!!22!!\n\n', config_xml, '\n\n\n\n')
-
         return {
             "auth": {
                 "access_token": access_token
@@ -106,8 +104,6 @@ class OnedataObjectStore(ConcreteObjectStore):
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
         self.cache_monitor = None
-
-        print('\n\n444\n\n', config_dict, '\n\n444\n\n')
 
         auth_dict = config_dict["auth"]
         self.access_token = auth_dict["access_token"]

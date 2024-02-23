@@ -284,9 +284,6 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-
-        print('\n\n222\n\n', config, '\n\n444\n\n')
-
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = f"{temp_directory}/object_store_cache"
@@ -296,16 +293,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         with open(config_path, "w") as f:
-            # qwe = ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
-            #     {
-            #         "temp_directory": "temp_directory",
-            #         "access_token": "xs",
-            #         "onezone_domain": "zx",
-            #         "space_name": "demo-space",
-            #         "cache_updated_data": "dupa",
-            #     }
-            # )
-            qwe = ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
+            f.write(ONEDATA_OBJECT_STORE_CONFIG.safe_substitute(
                 {
                     "temp_directory": temp_directory,
                     "access_token": get_onedata_access_token(cls.oz_container_name),
@@ -313,11 +301,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
                     "space_name": ONEDATA_DEMO_SPACE_NAME,
                     "cache_updated_data": cls.updateCacheData(),
                 }
-            )
-
-            print('\n\n211\n\n', qwe, '\n\n444\n\n')
-
-            f.write(qwe)
+            ))
 
         config["object_store_config_file"] = config_path
 
