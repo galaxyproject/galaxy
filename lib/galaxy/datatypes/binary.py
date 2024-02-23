@@ -4561,7 +4561,7 @@ class Numpy(Binary):
         readonly=True,
         visible=True,
         no_value=0,
-        optional=True
+        optional=True,
     )
 
     def _numpy_version_string(self, filename):
