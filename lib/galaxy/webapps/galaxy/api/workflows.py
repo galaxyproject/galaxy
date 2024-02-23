@@ -47,9 +47,7 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
     RefactorResponse,
-    WorkflowContentsManager,
     WorkflowCreateOptions,
-    WorkflowsManager,
     WorkflowUpdateOptions,
 )
 from galaxy.model.base import transaction
@@ -778,7 +776,7 @@ MultiTypeWorkflowIDPathParam = Annotated[
     Path(
         ...,
         title="Workflow ID",
-        description="The database identifier - UUID or encoded - of the Workflow..",
+        description="The database identifier - UUID or encoded - of the Workflow.",
     ),
 ]
 
@@ -896,8 +894,6 @@ RefactorWorkflowBody = Annotated[
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
-    manager: WorkflowsManager = depends(WorkflowsManager)
-    contents_manager: WorkflowContentsManager = depends(WorkflowContentsManager)
 
     @router.get(
         "/api/workflows",
@@ -985,8 +981,7 @@ class FastAPIWorkflows:
         instance: InstanceQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> RefactorResponse:
-        stored_workflow = self.manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
-        return self.contents_manager.refactor(trans, stored_workflow, payload)
+        return self.service.refactor(trans, workflow_id, payload, instance or False)
 
     @router.put(
         "/api/workflows/{workflow_id}/publish",

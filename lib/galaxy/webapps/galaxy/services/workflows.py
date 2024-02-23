@@ -17,6 +17,7 @@ from galaxy import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
+    RefactorResponse,
     WorkflowContentsManager,
     WorkflowSerializer,
     WorkflowsManager,
@@ -216,6 +217,16 @@ class WorkflowsService(ServiceBase):
             payload,
         )
         return {"ids_in_menu": ids_in_menu, "workflows": workflows}
+
+    def refactor(
+        self,
+        trans,
+        workflow_id,
+        payload,
+        instance: bool,
+    ) -> RefactorResponse:
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
 
     def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
