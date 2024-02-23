@@ -10,6 +10,8 @@ library.add(faPlay);
 interface Props {
     id: string;
     full?: boolean;
+    title?: string;
+    disabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -25,10 +27,11 @@ function ExecuteWorkflow() {
     <BButton
         id="workflow-run-button"
         v-b-tooltip.hover.top.noninteractive
-        title="Run workflow"
+        :title="title ?? 'Run workflow'"
         :data-workflow-run="id"
         variant="primary"
         size="sm"
+        :disabled="disabled"
         @click.stop="ExecuteWorkflow">
         <FontAwesomeIcon :icon="faPlay" />
         <span v-if="full" v-localize>Run</span>
