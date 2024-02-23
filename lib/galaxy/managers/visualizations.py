@@ -82,14 +82,14 @@ class VisualizationManager(sharable.SharableModelManager):
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if not user:
+        if not user and not show_published:
             message = "Requires user to log in."
             raise exceptions.RequestParameterInvalidException(message)
 
         query = trans.sa_session.query(self.model_class)
 
         filters = []
-        if show_own or (not show_published and not is_admin):
+        if show_own or (not show_published and not show_shared and not is_admin):
             filters = [self.model_class.user == user]
         if show_published:
             filters.append(self.model_class.published == true())
@@ -152,10 +152,10 @@ class VisualizationManager(sharable.SharableModelManager):
                         )
                     )
 
-        if show_published and not is_admin:
+        if (show_published or show_shared) and not is_admin:
             show_deleted = False
 
-        query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
+        query = query.filter(self.model_class.deleted == (true() if show_deleted else false())).distinct()
 
         if include_total_count:
             total_matches = query.count()

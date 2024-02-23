@@ -57,27 +57,24 @@ masthead:
 
   labels:
     # top-level menus
+    admin: 'Admin'
     analyze: 'Analyze Data'
-    workflow: 'Workflow'
-    shared_data: 'Shared Data'
-    visualization: 'Visualization'
+    data: 'Data'
     help: 'Help'
     user: 'User'
-    admin: 'Admin'
+    visualization: 'Visualization'
+    workflow: 'Workflow'
 
     # user menu
     logout: 'Sign Out'
     preferences: 'Preferences'
+
+    # data menu
+    libraries: 'Data Libraries'
     histories: 'Histories'
     invocations: 'Workflow Invocations'
     pages: 'Pages'
-    histories_shared_with_me: 'Histories shared with me'
-
-    # Shared data
-    libraries: 'Data Libraries'
-    published_workflows: 'Workflows'
-    published_histories: 'Histories'
-    published_pages: 'Pages'
+    workflows: 'Workflows'
 
 preferences:
   selectors:
@@ -408,11 +405,13 @@ published_histories:
     advanced_search_toggle: '#histories-published-grid [data-description="toggle advanced search"]'
     advanced_search_submit: '#histories-advanced-filter-submit'
     search_input: '#histories-published-grid input.search-query[data-description="filter text input"]'
+    tab: '#histories-published-tab'
 
 shared_histories:
   selectors:
     _: '#histories-shared-grid'
     histories: '.grid-table tr'
+    tab: '#histories-shared-tab'
 
 history_copy_elements:
   selectors:
@@ -513,16 +512,9 @@ pages:
   selectors:
     create: '#page-create'
     submit: '#submit'
-    drop: '.page-dropdown'
-    drop_edit: '.dropdown-item-edit'
-    drop_view: '.dropdown-item-view'
     create_title_input: '#form-element-title input'
     create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
-    dropdown: '[data-page-dropdown*="${id}"]'
-    index_table: "#page-table"
-    index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
-    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
 
   editor:
     selectors:
@@ -587,6 +579,7 @@ tool_form:
 workflows:
   selectors:
     shared_with_me_tab: '#shared-with-me'
+    published_tab: '#published a'
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'

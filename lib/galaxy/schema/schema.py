@@ -1454,19 +1454,20 @@ class InvocationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
 
 
-PageSortByEnum = Literal["update_time", "title", "username"]
+PageSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
-    show_published: Optional[bool] = None
-    show_shared: Optional[bool] = None
-    user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
-    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
-    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
     limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
     offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+    show_own: Optional[bool] = None
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    user_id: Optional[DecodedDatabaseIdField] = None
 
 
 class CreateHistoryPayload(Model):
