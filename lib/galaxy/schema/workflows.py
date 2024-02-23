@@ -28,38 +28,6 @@ from galaxy.schema.schema import (
     WorkflowInput,
 )
 
-# class WorkflowExtractionParams(Model):
-#     from_history_id: str = Field(..., title="From History ID", description="Id of history to extract a workflow from.")
-#     job_ids: Optional[str] = Field(
-#         None,
-#         title="Job IDs",
-#         description="List of jobs to include when extracting a workflow from history",
-#     )
-
-#     @field_validator("dataset_ids", mode="before", check_fields=False)
-#     @classmethod
-#     def inputs_string_to_json(cls, v):
-#         if isinstance(v, str):
-#             return json.loads(v)
-#         return v
-
-#     dataset_ids: Optional[str] = Field(
-#         None,
-#         title="Dataset IDs",
-#         description="List of HDA 'hid's corresponding to workflow inputs when extracting a workflow from history",
-#         alias="ds_map",
-#     )
-#     dataset_collection_ids: Optional[str] = Field(
-#         None,
-#         title="Dataset Collection IDs",
-#         description="List of HDCA 'hid's corresponding to workflow inputs when extracting a workflow from history",
-#     )
-#     workflow_name: Optional[str] = Field(
-#         None,
-#         title="Workflow Name",
-#         description="Name of the workflow to create when extracting a workflow from history",
-#     )
-
 
 class GetTargetHistoryPayload(Model):
     # TODO - Are the descriptions correct?
