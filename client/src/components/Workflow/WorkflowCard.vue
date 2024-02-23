@@ -106,7 +106,7 @@ async function onTagClick(tag: string) {
                             {{ workflow.name }}
                             <BButton
                                 v-if="!shared && !workflow.deleted"
-                                v-b-tooltip.hover
+                                v-b-tooltip.hover.noninteractive
                                 :data-workflow-rename="workflow.id"
                                 class="inline-icon-button workflow-rename"
                                 variant="link"
@@ -156,7 +156,7 @@ async function onTagClick(tag: string) {
                     <div class="workflow-edit-run-buttons">
                         <BButton
                             v-if="!shared"
-                            v-b-tooltip.hover
+                            v-b-tooltip.hover.noninteractive
                             :disabled="workflow.deleted"
                             size="sm"
                             class="workflow-edit-button"
@@ -173,7 +173,7 @@ async function onTagClick(tag: string) {
 
                         <AsyncButton
                             v-else
-                            v-b-tooltip.hover
+                            v-b-tooltip.hover.noninteractive
                             size="sm"
                             title="Import this workflow to edit"
                             :icon="faUpload"
