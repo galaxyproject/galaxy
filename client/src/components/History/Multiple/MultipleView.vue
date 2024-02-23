@@ -38,6 +38,7 @@ const selectedHistories = computed<PinnedHistory[]>(() => {
     } else {
         // get the latest four histories
         return [...histories.value]
+            .filter((h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id))
             .sort((a, b) => {
                 if (a.update_time < b.update_time) {
                     return 1;
