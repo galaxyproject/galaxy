@@ -10,6 +10,8 @@ import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
+import { useEventStore } from "@/stores/eventStore";
+import type { HistoryItem } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -66,35 +68,69 @@ async function createAndPin() {
 const showDropZone = ref(false);
 const processingDrop = ref(false);
 async function onDrop(evt: any) {
+    const eventStore = useEventStore();
     if (processingDrop.value) {
         showDropZone.value = false;
         return;
     }
     processingDrop.value = true;
     showDropZone.value = false;
-    let data: any;
+    let data: HistoryItem[] | undefined;
+    let originalHistoryId: string | undefined;
+    const multiple = eventStore.multipleDragData;
     try {
-        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+        if (multiple) {
+            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            // set originalHistoryId to the first history_id in the multiple drag data
+            const firstItem = Object.values(dragData)[0];
+            if (firstItem) {
+                originalHistoryId = firstItem.history_id;
+            }
+            data = Object.values(dragData);
+        } else {
+            data = [eventStore.getDragData() as HistoryItem];
+            if (data[0]) {
+                originalHistoryId = data[0].history_id;
+            }
+        }
     } catch (error) {
         // this was not a valid object for this dropzone, ignore
     }
-    if (data) {
-        const originalHistoryId = data.history_id;
+
+    if (data && originalHistoryId) {
         await historyStore.createNewHistory();
         const currentHistoryId = historyStore.currentHistoryId;
-        const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+
+        let datasetCount = 0;
+        let collectionCount = 0;
         if (currentHistoryId) {
-            await copyDataset(data.id, currentHistoryId, data.history_content_type, dataSource)
-                .then(() => {
-                    if (data.history_content_type === "dataset") {
-                        Toast.info(localize("Dataset copied to new history"));
-                    } else {
-                        Toast.info(localize("Collection copied to new history"));
-                    }
-                })
-                .catch((error) => {
-                    Toast.error(errorMessageAsString(error));
-                });
+            // iterate over the data array and copy each item to the new history
+            for (const item of data) {
+                const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
+                await copyDataset(item.id, currentHistoryId, item.history_content_type, dataSource)
+                    .then(() => {
+                        if (item.history_content_type === "dataset") {
+                            datasetCount++;
+                            if (!multiple) {
+                                Toast.info(localize("Dataset copied to new history"));
+                            }
+                        } else {
+                            collectionCount++;
+                            if (!multiple) {
+                                Toast.info(localize("Collection copied to new history"));
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        Toast.error(errorMessageAsString(error));
+                    });
+            }
+            if (multiple && datasetCount > 0) {
+                Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
+            }
+            if (multiple && collectionCount > 0) {
+                Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
+            }
             // pin the newly created history via the drop
             historyStore.pinHistory(currentHistoryId);
             // also pin the original history where the item came from

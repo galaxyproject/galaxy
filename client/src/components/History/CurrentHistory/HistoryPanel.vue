@@ -335,6 +335,8 @@ async function onDrop(evt: any) {
         return;
     }
 
+    let datasetCount = 0;
+    let collectionCount = 0;
     try {
         // iterate over the data array and copy each item to the current history
         for (const item of data) {
@@ -342,12 +344,24 @@ async function onDrop(evt: any) {
             await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
 
             if (item.history_content_type === "dataset") {
-                Toast.info("Dataset copied to history");
+                datasetCount++;
+                if (!multiple) {
+                    Toast.info("Dataset copied to history");
+                }
             } else {
-                Toast.info("Collection copied to history");
+                collectionCount++;
+                if (!multiple) {
+                    Toast.info("Collection copied to history");
+                }
             }
         }
 
+        if (multiple && datasetCount > 0) {
+            Toast.info(`${datasetCount} datasets copied to history`);
+        }
+        if (multiple && collectionCount > 0) {
+            Toast.info(`${collectionCount} collections copied to history`);
+        }
         historyStore.loadHistoryById(props.history.id);
     } catch (error) {
         Toast.error(`${error}`);
@@ -395,12 +409,12 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
 
 function setItemDragstart(
     item: HistoryItem,
-    showSelection: boolean,
+    itemIsSelected: boolean,
     selectedItems: Map<string, HistoryItem>,
     selectionSize: number,
     event: DragEvent
 ) {
-    if (showSelection && selectionSize > 1) {
+    if (itemIsSelected && selectionSize > 1) {
         const selectedItemsObj: any = {};
         for (const [key, value] of selectedItems) {
             selectedItemsObj[key] = value;
@@ -561,7 +575,13 @@ function setItemDragstart(
                                         initKeySelection();
                                     "
                                     @drag-start="
-                                        setItemDragstart(item, showSelection, selectedItems, selectionSize, $event)
+                                        setItemDragstart(
+                                            item,
+                                            showSelection && isSelected(item),
+                                            selectedItems,
+                                            selectionSize,
+                                            $event
+                                        )
                                     "
                                     @hide-selection="setShowSelection(false)"
                                     @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
