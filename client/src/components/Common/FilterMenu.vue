@@ -234,7 +234,7 @@ watch(
             </div>
 
             <!-- Perform search or cancel out (or open help modal for whole Menu if exists) -->
-            <div class="mt-3">
+            <div class="mb-3 mt-1">
                 <BButton
                     :id="`${identifier}-advanced-filter-submit`"
                     class="mr-1"
