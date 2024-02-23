@@ -143,7 +143,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
-                        <div v-if="activity.visible">
+                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
@@ -194,6 +194,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
+                    v-if="!isAnonymous"
                     id="activity-settings"
                     icon="cog"
                     :is-active="isActiveSideBar('settings')"
