@@ -131,10 +131,13 @@ async function onDrop(evt: any) {
             if (multiple && collectionCount > 0) {
                 Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
             }
-            // pin the newly created history via the drop
-            historyStore.pinHistory(currentHistoryId);
-            // also pin the original history where the item came from
-            historyStore.pinHistory(originalHistoryId);
+
+            if (historyStore.pinnedHistories.length > 0) {
+                // pin the newly created history via the drop
+                historyStore.pinHistory(currentHistoryId);
+                // also pin the original history where the item came from
+                historyStore.pinHistory(originalHistoryId);
+            }
         }
         processingDrop.value = false;
     }
