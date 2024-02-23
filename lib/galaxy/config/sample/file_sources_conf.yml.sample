@@ -213,3 +213,4 @@
   doc: Your Onedata files - configure an access token via user preferences
   accessToken: ${user.preferences['onedata|access_token']}
   onezoneDomain: ${user.preferences['onedata|onezone_domain']}
+  insecure: ${user.preferences['onedata|insecure']}
