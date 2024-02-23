@@ -80,7 +80,7 @@ function onViewUserPublished() {
     <div>
         <BButton
             v-if="workflow.published"
-            v-b-tooltip
+            v-b-tooltip.noninteractive
             size="sm"
             class="workflow-published-icon inline-icon-button"
             to="/workflows/list_published"
@@ -90,7 +90,7 @@ function onViewUserPublished() {
 
         <BButton
             v-if="sourceType.includes('trs')"
-            v-b-tooltip
+            v-b-tooltip.noninteractive
             size="sm"
             class="workflow-trs-icon inline-icon-button"
             :title="sourceTitle">
@@ -99,7 +99,7 @@ function onViewUserPublished() {
 
         <BButton
             v-if="sourceType == 'url'"
-            v-b-tooltip
+            v-b-tooltip.noninteractive
             size="sm"
             class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
@@ -115,7 +115,7 @@ function onViewUserPublished() {
 
         <BBadge
             v-if="shared && !publishedView"
-            v-b-tooltip
+            v-b-tooltip.noninteractive
             class="outline-badge cursor-pointer mx-1"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
             @click="onViewMySharedByUser">
@@ -125,7 +125,7 @@ function onViewUserPublished() {
 
         <BBadge
             v-if="publishedView"
-            v-b-tooltip
+            v-b-tooltip.noninteractive
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
             @click="onViewUserPublished">

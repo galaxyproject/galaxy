@@ -24,7 +24,7 @@ function ExecuteWorkflow() {
 <template>
     <BButton
         id="workflow-run-button"
-        v-b-tooltip.hover.top
+        v-b-tooltip.hover.top.noninteractive
         title="Run workflow"
         :data-workflow-run="id"
         variant="primary"

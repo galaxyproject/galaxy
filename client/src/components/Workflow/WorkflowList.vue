@@ -221,7 +221,7 @@ onMounted(() => {
 <template>
     <div id="workflows-list" class="workflows-list">
         <div id="workflows-list-header" class="workflows-list-header mb-2">
-            <div class="d-flex">
+            <div class="d-flex flex-gapx-1">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
                 <WorkflowListActions />

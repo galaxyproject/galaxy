@@ -215,7 +215,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         <div v-for="action in actions" :key="action.class">
             <AsyncButton
                 v-if="action.condition && action.component === 'async'"
-                v-b-tooltip.hover
+                v-b-tooltip.hover.noninteractive
                 :class="action.class"
                 class="inline-icon-button mr-1"
                 :variant="action.variant"
@@ -226,7 +226,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 
             <BButton
                 v-else-if="action.condition && action.component === 'button'"
-                v-b-tooltip.hover
+                v-b-tooltip.hover.noninteractive
                 :class="action.class"
                 class="inline-icon-button mr-1"
                 :variant="action.variant"
@@ -239,7 +239,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         </div>
 
         <BDropdown
-            v-b-tooltip.top
+            v-b-tooltip.top.noninteractive
             :data-workflow-actions-dropdown="workflow.id"
             right
             no-caret
