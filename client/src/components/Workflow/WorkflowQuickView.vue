@@ -77,14 +77,14 @@ watch(
 </script>
 
 <template>
-    <div class="workflow-quick-view">
+    <div class="workflow-quick-view h-100">
         <div v-if="loading" class="w-100">
             <BAlert class="w-100" show variant="info">
                 <LoadingSpan message="Loading workflow preview" />
             </BAlert>
         </div>
 
-        <div v-else class="workflow-preview-container">
+        <div v-else class="workflow-preview-container h-100">
             <div class="w-100">
                 <span class="d-flex mb-2 flex-gapx-1">
                     <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0"> Workflow Preview </Heading>
@@ -93,29 +93,28 @@ watch(
                 </span>
             </div>
 
-            <div class="d-flex w-100">
-                <div v-if="errored" class="w-100">
+            <div class="w-100 h-100 d-flex">
+                <template v-if="errored">
                     <BAlert v-if="errorMessage" show variant="danger">
                         Failed to load workflow:
                         {{ errorMessage }}
                     </BAlert>
 
                     <BAlert v-else show variant="danger"> Unknown Error </BAlert>
-                </div>
+                </template>
 
-                <div v-else-if="!loading && workflowInfo" class="workflow-preview d-flex flex-column">
-                    <BCard class="workflow-graph">
-                        <WorkflowGraph
-                            v-if="workflow && datatypesMapper"
-                            :steps="workflow.steps"
-                            :datatypes-mapper="datatypesMapper"
-                            readonly />
-                    </BCard>
-                </div>
+                <BCard v-else-if="!loading && workflowInfo" class="workflow-preview-card">
+                    <WorkflowGraph
+                        v-if="workflow && datatypesMapper"
+                        :steps="workflow.steps"
+                        :datatypes-mapper="datatypesMapper"
+                        readonly />
+                </BCard>
 
-                <div v-if="!loading && !errored && workflowInfo" class="pl-2">
-                    <WorkflowInformation :workflow-info="workflowInfo" />
-                </div>
+                <WorkflowInformation
+                    v-if="!loading && !errored && workflowInfo"
+                    class="pl-2"
+                    :workflow-info="workflowInfo" />
             </div>
         </div>
     </div>
@@ -127,21 +126,11 @@ watch(
 .workflow-quick-view {
     .workflow-preview-container {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         width: 100%;
-    }
 
-    .workflow-preview {
-        flex-grow: 1;
-
-        display: flex;
-        flex-grow: 1;
-        gap: 1rem;
-        height: 100%;
-
-        .workflow-graph {
-            flex-grow: 1;
-            min-width: 500px;
+        .workflow-preview-card {
+            flex-grow: 2;
         }
 
         &:deep(.workflow-information) {
