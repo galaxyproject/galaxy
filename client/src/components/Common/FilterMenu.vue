@@ -153,7 +153,6 @@ watch(
         <DelayedInput
             v-if="props.menuType !== 'standalone'"
             v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
-            :class="props.filterText && 'font-weight-bold'"
             :query="props.filterText"
             :delay="props.debounceDelay"
             :loading="props.loading"
