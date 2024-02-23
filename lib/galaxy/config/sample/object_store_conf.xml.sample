@@ -155,6 +155,22 @@
 -->
 
 <!--
+    Sample Onedata Object Store
+
+    The "size" attribute of <cache> is in gigabytes.
+-->
+<!--
+<object_store type="onedata">
+    <auth access_token="..." />
+    <connection onezone_domain="demo.onedata.org" insecure="True"/>
+    <space name="krk-p" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+    <extra_dir type="job_work" path="database/job_working_directory_onedata"/>
+    <extra_dir type="temp" path="database/tmp_onedata"/>
+</object_store>
+-->
+
+<!--
     Sample iRODS Object Store
 -->
 <!--

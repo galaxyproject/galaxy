@@ -263,7 +263,7 @@ class ConditionalDependencies:
         return "googlecloudstorage" in self.file_sources
 
     def check_fs_onedatarestfs(self):
-        return "onedata" in self.file_sources
+        return "onedata" in self.file_sources or "onedata" in self.object_stores
 
     def check_fs_basespace(self):
         return "basespace" in self.file_sources
