@@ -4569,7 +4569,7 @@ class Numpy(Binary):
         version_str = str(magic_string[6]) + "." + str(magic_string[7])
         return version_str
 
-    def set_meta(self, dataset: DatasetProtocol, *, overwrite: TYPE_CHECKING = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         try:
             dataset.metadata.version_str = self._numpy_version_string(dataset.get_file_name())
         except Exception as e:
