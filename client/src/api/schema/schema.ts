@@ -10977,7 +10977,7 @@ export interface components {
             deleted: boolean;
             /**
              * Email Hash
-             * @description The hash of the email of ?
+             * @description The hash of the email of the creator of this workflow
              */
             email_hash: string | null;
             /**
@@ -10992,7 +10992,7 @@ export interface components {
             id: string;
             /**
              * Importable
-             * @description Indicates if the workflow is importable by ?.
+             * @description Indicates if the workflow is importable by the current user.
              */
             importable: boolean | null;
             /**
@@ -22919,7 +22919,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The database identifier - UUID or encoded - of the Workflow.. */
+            /** @description The database identifier - UUID or encoded - of the Workflow. */
             path: {
                 workflow_id: string | string | string;
             };
@@ -23659,7 +23659,7 @@ export interface operations {
             header?: {
                 "run-as"?: string | null;
             };
-            /** @description The database identifier - UUID or encoded - of the Workflow.. */
+            /** @description The database identifier - UUID or encoded - of the Workflow. */
             path: {
                 workflow_id: string | string | string;
             };
