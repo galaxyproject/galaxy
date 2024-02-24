@@ -2895,6 +2895,13 @@ class DataSourceTool(OutputParameterJSONTool):
     tool_type = "data_source"
     default_tool_action = DataSourceToolAction
 
+    @property
+    def wants_params_cleaned(self):
+        """Indicates whether received, but undeclared request params should be cleaned."""
+        if self.profile < 24.0:
+            return False
+        return True
+
     def _build_GALAXY_URL_parameter(self):
         return ToolParameter.build(
             self, XML(f'<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id={self.id}" />')
