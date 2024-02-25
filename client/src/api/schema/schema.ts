@@ -47,6 +47,13 @@ export interface paths {
          */
         get: operations["dynamic_tool_confs_api_configuration_dynamic_tool_confs_get"];
     };
+    "/api/configuration/encode/{decoded_id}": {
+        /**
+         * Encode a given id
+         * @description Decode a given id.
+         */
+        get: operations["encode_id_api_configuration_encode__decoded_id__get"];
+    };
     "/api/configuration/tool_lineages": {
         /**
          * Return tool lineages for tools that have them
@@ -1368,6 +1375,13 @@ export interface paths {
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
         put: operations["set_slug_api_pages__id__slug_put"];
+    };
+    "/api/pages/{id}/undelete": {
+        /**
+         * Undelete the specific Page.
+         * @description Marks the Page with the given ID as undeleted.
+         */
+        put: operations["undelete_api_pages__id__undelete_put"];
     };
     "/api/pages/{id}/unpublish": {
         /**
@@ -11549,6 +11563,38 @@ export interface operations {
             };
         };
     };
+    encode_id_api_configuration_encode__decoded_id__get: {
+        /**
+         * Encode a given id
+         * @description Decode a given id.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description Decoded id to be encoded */
+            path: {
+                decoded_id: number;
+            };
+        };
+        responses: {
+            /** @description Encoded id */
+            200: {
+                content: {
+                    "application/json": {
+                        [key: string]: string | undefined;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     tool_lineages_api_configuration_tool_lineages_get: {
         /**
          * Return tool lineages for tools that have them
@@ -18684,8 +18730,6 @@ export interface operations {
          */
         parameters?: {
             /** @description Whether to include deleted pages in the result. */
-            /** @description Sort page index by this specified attribute on the page model */
-            /** @description Sort in descending order? */
             /**
              * @description A mix of free text and GitHub-style tags used to filter the index operation.
              *
@@ -18722,16 +18766,19 @@ export interface operations {
              * Free text search terms will be searched against the following attributes of the
              * Pages: `title`, `slug`, `tag`, `user`.
              */
+            /** @description Sort page index by this specified attribute on the page model */
+            /** @description Sort in descending order? */
             query?: {
                 deleted?: boolean;
-                user_id?: string | null;
-                show_published?: boolean;
-                show_shared?: boolean;
-                sort_by?: "update_time" | "title" | "username";
-                sort_desc?: boolean;
                 limit?: number;
                 offset?: number;
                 search?: string | null;
+                show_own?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+                sort_by?: "create_time" | "title" | "update_time" | "username";
+                sort_desc?: boolean;
+                user_id?: string | null;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -19081,6 +19128,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SetSlugPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_pages__id__undelete_put: {
+        /**
+         * Undelete the specific Page.
+         * @description Marks the Page with the given ID as undeleted.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the Page. */
+            path: {
+                id: string;
             };
         };
         responses: {

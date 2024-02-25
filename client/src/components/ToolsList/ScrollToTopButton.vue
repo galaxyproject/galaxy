@@ -35,6 +35,7 @@ export default {
     position: absolute;
     opacity: 0;
     transition: opacity 0.4s;
+    z-index: 1000;
 
     &.show {
         opacity: 1;

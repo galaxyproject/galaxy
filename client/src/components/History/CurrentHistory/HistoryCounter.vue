@@ -28,12 +28,14 @@ const props = withDefaults(
         lastChecked: Date;
         filterText?: string;
         showControls?: boolean;
+        hideReload?: boolean;
     }>(),
     {
         isWatching: false,
         lastChecked: () => new Date(),
         filterText: "",
         showControls: false,
+        hideReload: false,
     }
 );
 
@@ -191,6 +193,7 @@ onMounted(() => {
                 </BButton>
 
                 <BButton
+                    v-if="!hideReload"
                     v-b-tooltip.hover
                     :title="reloadButtonTitle"
                     :variant="reloadButtonVariant"
@@ -216,3 +219,9 @@ onMounted(() => {
         </BButtonGroup>
     </div>
 </template>
+
+<style lang="scss" scoped>
+.btn {
+    white-space: nowrap;
+}
+</style>

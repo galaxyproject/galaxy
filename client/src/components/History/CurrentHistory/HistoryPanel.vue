@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { GetComponentPropTypes } from "types/utilityTypes";
-import { computed, onMounted, PropType, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
 
+import type { HistorySummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -41,31 +42,23 @@ interface BackendFilterError {
     ValueError?: string;
 }
 
-const props = defineProps({
-    listOffset: {
-        type: Number,
-        default: 0,
-    },
-    history: {
-        type: Object as PropType<Record<string, any> & GetComponentPropTypes<typeof HistoryCounter>["history"]>,
-        required: true,
-    },
-    filter: {
-        type: String,
-        default: "",
-    },
-    canEditHistory: {
-        type: Boolean,
-        default: true,
-    },
-    shouldShowControls: {
-        type: Boolean,
-        default: true,
-    },
-    filterable: {
-        type: Boolean,
-        default: false,
-    },
+interface Props {
+    listOffset?: number;
+    history: HistorySummary;
+    filter?: string;
+    canEditHistory?: boolean;
+    shouldShowControls?: boolean;
+    filterable?: boolean;
+    isMultiViewItem?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    listOffset: 0,
+    filter: "",
+    canEditHistory: true,
+    shouldShowControls: true,
+    filterable: false,
+    isMultiViewItem: false,
 });
 
 const filterClass = HistoryFilters;
@@ -76,7 +69,7 @@ const offsetQueryParam = ref(0);
 const searchError = ref<BackendFilterError | undefined>(undefined);
 const showAdvanced = ref(false);
 const showDropZone = ref(false);
-const operationRunning = ref(null);
+const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
@@ -88,7 +81,7 @@ const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 
 const historyUpdateTime = computed(() => {
-    return props.history.update_time as Date;
+    return props.history.update_time;
 });
 
 const queryKey = computed(() => {
@@ -397,6 +390,7 @@ onMounted(async () => {
                     <HistoryDetails
                         :history="history"
                         :writeable="canEditHistory"
+                        :summarized="isMultiViewItem"
                         @update:history="historyStore.updateHistory($event)" />
 
                     <HistoryMessages :history="history" />
@@ -407,6 +401,7 @@ onMounted(async () => {
                         :last-checked="lastCheckedTime"
                         :show-controls="shouldShowControls"
                         :filter-text.sync="filterText"
+                        :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
@@ -452,25 +447,23 @@ onMounted(async () => {
                     <HistoryDropZone v-if="showDropZone" />
                     <div>
                         <div v-if="isLoading && historyItems && historyItems.length === 0">
-                            <b-alert class="m-2" variant="info" show>
+                            <BAlert class="m-2" variant="info" show>
                                 <LoadingSpan message="Loading History" />
-                            </b-alert>
+                            </BAlert>
                         </div>
-                        <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
+                        <BAlert v-else-if="isProcessing" class="m-2" variant="info" show>
                             <LoadingSpan message="Processing operation" />
-                        </b-alert>
+                        </BAlert>
                         <div v-else-if="historyItems.length === 0">
                             <HistoryEmpty v-if="queryDefault" :writable="canEditHistory" class="m-2" />
 
-                            <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                            <BAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                                 Error in filter:
                                 <a href="javascript:void(0)" @click="showAdvanced = true">
                                     {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
                                 </a>
-                            </b-alert>
-                            <b-alert v-else class="m-2" variant="info" show>
-                                No data found for selected filter.
-                            </b-alert>
+                            </BAlert>
+                            <BAlert v-else class="m-2" variant="info" show> No data found for selected filter. </BAlert>
                         </div>
                         <ListingLayout
                             v-else

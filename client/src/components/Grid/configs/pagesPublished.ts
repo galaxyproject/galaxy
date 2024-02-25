@@ -1,27 +1,29 @@
-import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { useEventBus } from "@vueuse/core";
 
 import { fetcher } from "@/api/schema";
-import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
-import { withPrefix } from "@/utils/redirect";
+import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 
-import type { FieldArray, GridConfig } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
+
+const { emit } = useEventBus<string>("grid-router-push");
 
 /**
  * Api endpoint handlers
  */
-const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
+const getPages = fetcher.path("/api/pages").method("get").create();
 
 /**
  * Local types
  */
 type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
-type VisualizationEntry = Record<string, unknown>;
+type PageEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getVisualizations({
+    const { data, headers } = await getPages({
         limit,
         offset,
         search,
@@ -36,6 +38,19 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
 }
 
 /**
+ * Actions are grid-wide operations
+ */
+const actions: ActionArray = [
+    {
+        title: "Create",
+        icon: faPlus,
+        handler: () => {
+            emit("/pages/create");
+        },
+    },
+];
+
+/**
  * Declare columns to be displayed
  */
 const fields: FieldArray = [
@@ -48,36 +63,26 @@ const fields: FieldArray = [
             {
                 title: "View",
                 icon: faEye,
-                handler: (data: VisualizationEntry) => {
-                    if (data.type === "trackster") {
-                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
-                    } else {
-                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-                    }
+                handler: (data: PageEntry) => {
+                    emit(`/published/page?id=${data.id}`);
                 },
             },
         ],
     },
     {
-        key: "annotation",
-        title: "Annotation",
-        type: "text",
-    },
-    {
-        key: "username",
-        title: "Owner",
-        type: "text",
-    },
-    {
-        key: "tags",
-        title: "Tags",
-        type: "tags",
-        disabled: true,
+        key: "create_time",
+        title: "Created",
+        type: "date",
     },
     {
         key: "update_time",
         title: "Updated",
         type: "date",
+    },
+    {
+        key: "username",
+        title: "Owner",
+        type: "text",
     },
 ];
 
@@ -87,27 +92,22 @@ const fields: FieldArray = [
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
     slug: { handler: contains("slug"), menuItem: false },
-    tag: {
-        placeholder: "tag(s)",
-        type: "MultiTags",
-        handler: contains("tag", "tag", expandNameTag),
-        menuItem: true,
-    },
 };
 
 /**
  * Grid configuration
  */
 const gridConfig: GridConfig = {
-    id: "visualizations-published-grid",
+    id: "pages-published-grid",
+    actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Visualizations",
+    plural: "Pages",
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Published Visualizations",
+    title: "Published Pages",
 };
 
 export default gridConfig;

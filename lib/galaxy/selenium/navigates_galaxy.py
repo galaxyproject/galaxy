@@ -540,6 +540,17 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    @retry_during_transitions
+    def get_grid_entry_names(self, selector):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector(selector)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            name = td[1].text if td[0].text == "" else td[0].text
+            names.append(name)
+        return names
+
     def select_grid_operation(self, item_name, option_label):
         target_item = None
         grid = self.components.grids.body.wait_for_visible()
@@ -1176,14 +1187,15 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_histories_page(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.histories.wait_for_and_click()
         self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
-        self.click_masthead_user()
-        self.components.masthead.histories_shared_with_me.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.shared_histories.tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
@@ -1192,28 +1204,30 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_invocations(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.invocations.wait_for_and_click()
 
     def navigate_to_pages(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.pages.wait_for_and_click()
 
     def navigate_to_published_workflows(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_workflows.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.workflows.wait_for_and_click()
+        self.components.workflows.published_tab.wait_for_and_click()
 
-    def navigate_to_published_histories_page(self):
+    def navigate_to_published_histories(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.published_histories.tab.wait_for_and_click()
 
     def navigate_to_published_pages(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_pages.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.pages.wait_for_and_click()
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
@@ -1265,7 +1279,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.click_masthead_shared_data()
+        self.click_masthead_data()
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
@@ -1274,11 +1288,10 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
-    def page_open_and_screenshot(self, screenshot_name):
+    def page_open_and_screenshot(self, page_name, screenshot_name):
         self.home()
         self.navigate_to_pages()
-        self.components.pages.drop.wait_for_and_click()
-        self.components.pages.drop_view.wait_for_and_click()
+        self.select_grid_operation(page_name, "View")
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)
@@ -1387,11 +1400,6 @@ class NavigatesGalaxy(HasDriver):
         pages = self.components.pages
         pages.index_table.wait_for_visible()
         return pages.index_rows.all()
-
-    def page_index_click_option(self, option_title, page_id):
-        self.components.pages.dropdown(id=page_id).wait_for_and_click()
-        if not self.select_dropdown_item(option_title):
-            raise AssertionError(f"Failed to find page action option with title [{option_title}]")
 
     def workflow_index_open(self):
         self.home()
@@ -1600,9 +1608,7 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.components.pages.drop.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.pages.drop_edit.wait_for_and_click()
+        self.select_grid_operation(name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
@@ -1654,8 +1660,8 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_user(self):
         self.components.masthead.user.wait_for_and_click()
 
-    def click_masthead_shared_data(self):
-        self.components.masthead.shared_data.wait_for_and_click()
+    def click_masthead_data(self):
+        self.components.masthead.data.wait_for_and_click()
 
     def click_masthead_workflow(self):
         self.components.masthead.workflow.wait_for_and_click()
@@ -1736,17 +1742,6 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = "#standard-search .advanced-search-toggle"
         self.wait_for_and_click_selector(search_selector)
-
-    @retry_during_transitions
-    def histories_get_history_names(self, selector="#histories-grid"):
-        self.sleep_for(self.wait_types.UX_RENDER)
-        names = []
-        grid = self.wait_for_selector(selector)
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            name = td[1].text if td[0].text == "" else td[0].text
-            names.append(name)
-        return names
 
     @edit_details
     def history_panel_add_tags(self, tags):

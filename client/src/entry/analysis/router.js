@@ -8,12 +8,6 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
-import historiesGridConfig from "components/Grid/configs/histories";
-import historiesPublishedGridConfig from "components/Grid/configs/historiesPublished";
-import historiesSharedGridConfig from "components/Grid/configs/historiesShared";
-import visualizationsGridConfig from "components/Grid/configs/visualizations";
-import visualizationsPublishedGridConfig from "components/Grid/configs/visualizationsPublished";
-import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryView from "components/History/HistoryView";
@@ -23,7 +17,6 @@ import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
-import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -63,11 +56,14 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+import GridHistory from "@/components/Grid/GridHistory";
+import GridPage from "@/components/Grid/GridPage";
 import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
+import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
@@ -280,12 +276,13 @@ export function getRouter(Galaxy) {
                         path: "histories/view_multiple",
                         component: HistoryMultipleView,
                         props: true,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list_published",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesPublishedGridConfig,
+                            activeList: "published",
                         },
                     },
                     {
@@ -294,17 +291,17 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/list",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesGridConfig,
+                            activeList: "my",
                         },
                         redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list_shared",
-                        component: GridList,
+                        component: GridHistory,
                         props: {
-                            gridConfig: historiesSharedGridConfig,
+                            activeList: "shared",
                         },
                         redirect: redirectAnon(),
                     },
@@ -374,11 +371,19 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "pages/:actionId",
-                        component: PageList,
-                        props: (route) => ({
-                            published: route.params.actionId === "list_published" ? true : false,
-                        }),
+                        path: "pages/list",
+                        component: GridPage,
+                        props: {
+                            activeList: "my",
+                        },
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "pages/list_published",
+                        component: GridPage,
+                        props: {
+                            activeList: "published",
+                        },
                     },
                     {
                         path: "statistics/history/:historyId",
@@ -483,16 +488,17 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "visualizations/list",
-                        component: GridList,
+                        component: GridVisualization,
                         props: {
-                            gridConfig: visualizationsGridConfig,
+                            activeList: "my",
                         },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "visualizations/list_published",
-                        component: GridList,
+                        component: GridVisualization,
                         props: {
-                            gridConfig: visualizationsPublishedGridConfig,
+                            activeList: "published",
                         },
                     },
                     {

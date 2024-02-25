@@ -106,7 +106,7 @@ async function onTagClick(tag: string) {
                             {{ workflow.name }}
                             <BButton
                                 v-if="!shared && !workflow.deleted"
-                                v-b-tooltip.hover
+                                v-b-tooltip.hover.noninteractive
                                 :data-workflow-rename="workflow.id"
                                 class="inline-icon-button workflow-rename"
                                 variant="link"
@@ -156,7 +156,7 @@ async function onTagClick(tag: string) {
                     <div class="workflow-edit-run-buttons">
                         <BButton
                             v-if="!shared"
-                            v-b-tooltip.hover
+                            v-b-tooltip.hover.noninteractive
                             :disabled="workflow.deleted"
                             size="sm"
                             class="workflow-edit-button"
@@ -173,7 +173,7 @@ async function onTagClick(tag: string) {
 
                         <AsyncButton
                             v-else
-                            v-b-tooltip.hover
+                            v-b-tooltip.hover.noninteractive
                             size="sm"
                             title="Import this workflow to edit"
                             :icon="faUpload"
@@ -199,14 +199,23 @@ async function onTagClick(tag: string) {
                 ok-only
                 size="xl"
                 hide-header
-                modal-class="workflow-preview-modal"
-                dialog-class="workflow-preview-modal w-auto"
+                dialog-class="workflow-card-preview-modal w-auto"
                 centered>
                 <WorkflowQuickView :id="workflow.id" :show="showPreview" @ok="toggleShowPreview(false)" />
             </BModal>
         </div>
     </div>
 </template>
+
+<style lang="scss">
+.workflow-card-preview-modal {
+    max-width: min(1400px, calc(100% - 200px));
+
+    .modal-content {
+        height: min(800px, calc(100vh - 80px));
+    }
+}
+</style>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
@@ -251,10 +260,6 @@ async function onTagClick(tag: string) {
         .workflow-name {
             font-size: 1rem;
             font-weight: bold;
-        }
-
-        .workflow-preview-modal {
-            min-width: max-content;
         }
 
         .workflow-card-actions {

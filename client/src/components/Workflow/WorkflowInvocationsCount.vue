@@ -42,7 +42,7 @@ function onInvocations() {
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
         <BBadge
             v-if="count != undefined"
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             pill
             :title="localize('View workflow invocations')"
             class="outline-badge cursor-pointer list-view"
@@ -57,7 +57,7 @@ function onInvocations() {
 
         <BButton
             v-else
-            v-b-tooltip.hover
+            v-b-tooltip.hover.noninteractive
             :title="localize('View workflow invocations')"
             class="inline-icon-button"
             variant="link"
