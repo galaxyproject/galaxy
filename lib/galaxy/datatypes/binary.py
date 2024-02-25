@@ -4566,7 +4566,7 @@ class Numpy(Binary):
 
     def _numpy_version_string(self, filename):
         magic_string = open(filename, "rb").read(8)
-        version_str = str(magic_string[6]) + "." + str(magic_string[7])
+        version_str = f"{magic_string[6]}.{magic_string[7]}"
         return version_str
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
@@ -4582,7 +4582,7 @@ class Numpy(Binary):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Binary numpy file version %s" % dataset.metadata.version_str
+            dataset.peek = f"Binary numpy file version {dataset.metadata.version_str}"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
