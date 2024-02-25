@@ -4,7 +4,7 @@
             class="job-metrics"
             :job-id="args.job_id"
             :should-show-aws-estimate="false"
-            :should-show-carbon-emissions-estimates="false"
+            :should-show-carbon-emission-estimates="false"
             :include-title="false" />
     </b-card>
 </template>
