@@ -13,8 +13,8 @@ extend-exclude = '''
 isort = true
 
 [tool.poetry]
+package-mode = false
 name = "galaxy"
-version = "22.01.dev0"
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = ["Galaxy Contributors"]
 license = "AFL-3.0"
@@ -24,12 +24,12 @@ repository = "https://github.com/galaxyproject/galaxy/"
 documentation = "https://docs.galaxyproject.org/"
 
 [[tool.poetry.source]]
-name = "PyPI"
-priority = "default"
-
-[[tool.poetry.source]]
 name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "PyPI"
 priority = "primary"
 
 [tool.poetry.dependencies]
