@@ -506,10 +506,3 @@ onMounted(async () => {
         </SelectedItems>
     </ExpandedItems>
 </template>
-
-<style scoped lang="scss">
-.history-item-list {
-    overflow-y: auto;
-    height: 100%;
-}
-</style>
