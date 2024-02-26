@@ -3683,3 +3683,9 @@ class DatasetSummary(Model):
     file_size: int
     total_size: int
     uuid: UuidField
+
+
+class EnergyUsageSummary(Model):
+    total_energy_needed_cpu_kwh: float
+    total_energy_needed_memory_kwh: float
+    total_energy_needed_kwh: float

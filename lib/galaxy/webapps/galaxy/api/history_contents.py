@@ -42,6 +42,7 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
+    EnergyUsageSummary,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
@@ -1029,6 +1030,6 @@ class FastAPIHistoryContents:
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> EnergyUsageSummary:
         """Get the energy usage data of a history with ``history_id``."""
         return self.service.get_energy_usage(trans, history_id)

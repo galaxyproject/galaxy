@@ -552,10 +552,6 @@ export interface paths {
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
     };
-    "/api/histories/{history_id}/energy_usage": {
-        /** Returns the energy usage of all jobs in a given history with the given ID. */
-        get: operations["history_api_histories__history_id__energy_usage_get"];
-    };
     "/api/histories/{history_id}/archive": {
         /**
          * Archive a history.
@@ -815,6 +811,13 @@ export interface paths {
          */
         put: operations["enable_link_access_api_histories__history_id__enable_link_access_put"];
     };
+    "/api/histories/{history_id}/energy_usage": {
+        /**
+         * Returns the energy usage of a given history.
+         * @description Get the energy usage data of a history with ``history_id``.
+         */
+        get: operations["get_energy_usage_api_histories__history_id__energy_usage_get"];
+    };
     "/api/histories/{history_id}/exports": {
         /**
          * Get previous history exports.
@@ -994,6 +997,10 @@ export interface paths {
          */
         get: operations["download_invocation_bco_api_invocations__invocation_id__biocompute_download_get"];
     };
+    "/api/invocations/{invocation_id}/energy_usage": {
+        /** Get the energy usage of a workflow invocation. */
+        get: operations["get_energy_usage_api_invocations__invocation_id__energy_usage_get"];
+    };
     "/api/invocations/{invocation_id}/jobs_summary": {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -1038,10 +1045,6 @@ export interface paths {
     "/api/invocations/{invocation_id}/write_store": {
         /** Prepare a workflow invocation export-style download and write to supplied URI. */
         post: operations["write_store_api_invocations__invocation_id__write_store_post"];
-    };
-    "/api/invocations/{invocation_id}/energy_usage": {
-        /** Returns the energy usage of all jobs in a workflow invocation with the given ID. */
-        get: operations["invocation_energy_usage_api_invocations__invocation_id__energy_usage_get"];
     };
     "/api/job_lock": {
         /**
@@ -4598,6 +4601,15 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
+        /** EnergyUsageSummary */
+        EnergyUsageSummary: {
+            /** Total Energy Needed Cpu Kwh */
+            total_energy_needed_cpu_kwh: number;
+            /** Total Energy Needed Kwh */
+            total_energy_needed_kwh: number;
+            /** Total Energy Needed Memory Kwh */
+            total_energy_needed_memory_kwh: number;
+        };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
@@ -6570,29 +6582,6 @@ export interface components {
              */
             url: string;
             [key: string]: unknown | undefined;
-        };
-        /**
-         * Energy Usage Summary Metrics
-         * @description The summary of energy usage for all jobs in a given history or a workflow invocation.
-         */
-        EnergyUsageSummary: {
-            /**
-             * Total Energy Needed CPU (kWh)
-             * @description The total energy used by the CPU in kilowatt hours.
-             */
-            total_energy_needed_cpu_kwh: number;
-
-            /**
-             * Total Energy Needed Memory (kWh)
-             * @description The total energy used by memory in kilowatt hours.
-             */
-            total_energy_needed_memory_kwh: number;
-
-            /**
-             * Total Energy Needed (kWh)
-             * @description The total energy needed to run all jobs in kilowatt hours.
-             */
-            total_energy_needed_kwh: number;
         };
         /**
          * Hyperlink
@@ -14605,32 +14594,6 @@ export interface operations {
             };
         };
     };
-    history_api_histories__history_id__energy_usage_get: {
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                history_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["EnergyUsageSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     archive_history_api_histories__history_id__archive_post: {
         /**
          * Archive a history.
@@ -16223,6 +16186,36 @@ export interface operations {
             };
         };
     };
+    get_energy_usage_api_histories__history_id__energy_usage_get: {
+        /**
+         * Returns the energy usage of a given history.
+         * @description Get the energy usage data of a history with ``history_id``.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["EnergyUsageSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_history_exports_api_histories__history_id__exports_get: {
         /**
          * Get previous history exports.
@@ -17065,6 +17058,33 @@ export interface operations {
             };
         };
     };
+    get_energy_usage_api_invocations__invocation_id__energy_usage_get: {
+        /** Get the energy usage of a workflow invocation. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["EnergyUsageSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -17239,32 +17259,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["InvocationStep"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    invocation_energy_usage_api_invocations__invocation_id__energy_usage_get: {
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                invocation_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["EnergyUsageSummary"];
                 };
             };
             /** @description Validation Error */

@@ -66,6 +66,7 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    EnergyUsageSummary,
     InvocationSortByEnum,
     InvocationsStateCounts,
     SetSlugPayload,
@@ -1828,5 +1829,5 @@ class FastAPIInvocations:
         self,
         invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> EnergyUsageSummary:
         return self.invocations_service.get_energy_usage(trans, invocation_id)

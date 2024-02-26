@@ -92,6 +92,7 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     EncodedHistoryContentItem,
+    EnergyUsageSummary,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentItem,
@@ -864,7 +865,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         self,
         trans,
         history_id: DecodedDatabaseIdField,
-    ):
+    ) -> EnergyUsageSummary:
         """Get the energy usage of the history with ``history_id``.
 
         :param  history_id:     the encoded id of the history whose energy usage is to be calculated
@@ -893,11 +894,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
 
-        return {
-            "total_energy_needed_cpu_kwh": total_energy_needed_cpu_kwh,
-            "total_energy_needed_memory_kwh": total_energy_needed_memory_kwh,
-            "total_energy_needed_kwh": total_energy_needed_kwh,
-        }
+        return EnergyUsageSummary(
+            total_energy_needed_cpu_kwh=total_energy_needed_cpu_kwh,
+            total_energy_needed_memory_kwh=total_energy_needed_memory_kwh,
+            total_energy_needed_kwh=total_energy_needed_kwh,
+        )
 
     def __delete_dataset(
         self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams

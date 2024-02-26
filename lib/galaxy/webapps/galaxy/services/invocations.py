@@ -46,6 +46,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
+    EnergyUsageSummary,
     InvocationIndexQueryPayload,
     StoreExportPayload,
     WriteStoreToPayload,
@@ -140,7 +141,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         self,
         trans,
         invocation_id: DecodedDatabaseIdField,
-    ):
+    ) -> EnergyUsageSummary:
         workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
         job_ids = [step.job_id for step in workflow_invocation.steps if step.job_id is not None]
 
@@ -164,11 +165,11 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
 
         total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
 
-        return {
-            "total_energy_needed_cpu_kwh": total_energy_needed_cpu_kwh,
-            "total_energy_needed_memory_kwh": total_energy_needed_memory_kwh,
-            "total_energy_needed_kwh": total_energy_needed_kwh,
-        }
+        return EnergyUsageSummary(
+            total_energy_needed_cpu_kwh=total_energy_needed_cpu_kwh,
+            total_energy_needed_memory_kwh=total_energy_needed_memory_kwh,
+            total_energy_needed_kwh=total_energy_needed_kwh,
+        )
 
     def cancel(self, trans, invocation_id, serialization_params):
         wfi = self._workflows_manager.request_invocation_cancellation(trans, invocation_id)
