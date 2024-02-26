@@ -10,9 +10,13 @@ from typing import (
 
 from galaxy import (
     exceptions,
+    model,
     web,
 )
-from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.workflows import (
     RefactorResponse,
     WorkflowContentsManager,
@@ -28,6 +32,8 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
+    SetWorkflowMenuPayload,
+    SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
@@ -220,6 +226,41 @@ class WorkflowsService(ServiceBase):
     ) -> RefactorResponse:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
         return self._workflow_contents_manager.refactor(trans, stored_workflow, payload)
+
+    def set_workflow_menu(
+        self,
+        payload: Union[SetWorkflowMenuPayload, None],
+        trans: ProvidesHistoryContext,
+    ) -> SetWorkflowMenuSummary:
+        user = trans.user
+        if payload:
+            workflow_ids = payload.workflow_ids
+            if not isinstance(workflow_ids, list):
+                workflow_ids = [workflow_ids]
+        else:
+            workflow_ids = []
+        session = trans.sa_session
+        # This explicit remove seems like a hack, need to figure out
+        # how to make the association do it automatically.
+        for m in user.stored_workflow_menu_entries:
+            session.delete(m)
+        user.stored_workflow_menu_entries = []
+        # To ensure id list is unique
+        seen_workflow_ids = set()
+        for wf_id in workflow_ids:
+            if wf_id in seen_workflow_ids:
+                continue
+            else:
+                seen_workflow_ids.add(wf_id)
+            m = model.StoredWorkflowMenuEntry()
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
+            user.stored_workflow_menu_entries.append(m)
+        with transaction(session):
+            session.commit()
+        message = "Menu updated."
+        trans.set_message(message)
+        return SetWorkflowMenuSummary(message=message, status="done")
 
     def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
         stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
