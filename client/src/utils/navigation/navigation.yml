@@ -656,7 +656,7 @@ trs_search:
     import_version: '[data-version-name*="${version}"]'
     select_server:
       type: xpath
-      selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+      selector: "//a[contains(@class, 'dropdown-item') and normalize-space(text()) = '${server}']"
 
 trs_import:
   selectors:
