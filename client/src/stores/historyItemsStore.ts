@@ -11,7 +11,7 @@ import Vue, { computed, ref } from "vue";
 import type { DatasetSummary, HDCASummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
-import { LastQueue } from "@/utils/lastQueue";
+import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
 export type HistoryItem = DatasetSummary | HDCASummary;
@@ -19,7 +19,7 @@ export type HistoryItem = DatasetSummary | HDCASummary;
 const limit = 100;
 
 type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItem[] };
-const queue = new LastQueue<typeof urlData>();
+const queue = new LastQueue<typeof urlData>(1000, true);
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
     const items = ref<Record<string, HistoryItem[]>>({});
@@ -59,13 +59,19 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
         const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
         const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
-        return await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId).then((data) => {
+
+        try {
+            const data = await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId);
             const stats = (data as ExpectedReturn).stats;
             totalMatchesCount.value = stats.total_matches;
             const payload = (data as ExpectedReturn).contents;
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
             saveHistoryItems(historyId, payload, relatedHid);
-        });
+        } catch (e) {
+            if (!(e instanceof ActionSkippedError)) {
+                throw e;
+            }
+        }
     }
 
     function saveHistoryItems(historyId: string, payload: HistoryItem[], relatedHid = null) {
