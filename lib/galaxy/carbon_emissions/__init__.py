@@ -2,7 +2,10 @@ import csv
 import json
 import logging
 import os
-from typing import TypedDict
+from typing import (
+    List,
+    TypedDict,
+)
 
 log = logging.getLogger(__name__)
 
@@ -49,14 +52,13 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
     return {"location_name": "GLOBAL", "carbon_intensity": 475.0}
 
 
-def load_aws_ec2_reference_data_json():
+def load_aws_ec2_reference_data_json() -> List[AWSInstance]:
     """
     Load the AWS EC2 reference data from the specified file.
     """
     aws_ec2_reference_data_dir = os.path.join(os.path.dirname(__file__), "aws_ec2_reference_data.json")
     with open(aws_ec2_reference_data_dir) as f:
-        data: list[AWSInstance] = json.load(f)
-        return data
+        return json.load(f)
 
 
 def _load_locations(path: str):
