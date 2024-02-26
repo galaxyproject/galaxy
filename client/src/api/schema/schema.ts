@@ -4825,68 +4825,6 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
-        /** ExecuteToolPayload */
-        ExecuteToolPayload: {
-            /**
-             * Action
-             * @description The action to perform
-             */
-            action?: string | null;
-            /**
-             * Data Manager Mode
-             * @description The mode of the data manager
-             */
-            data_manager_mode?: string | null;
-            /**
-             * History ID
-             * @description The ID of the history
-             */
-            history_id?: string | null;
-            /**
-             * Input Format
-             * @description The format of the input
-             * @default legacy
-             */
-            input_format?: string | null;
-            /**
-             * Inputs
-             * @description The input data
-             * @default {}
-             */
-            inputs?: Record<string, never>;
-            /**
-             * Preferred Object Store ID
-             * @description The ID of the preferred object store
-             */
-            preferred_object_store_id?: string | null;
-            /**
-             * Send Email Notification
-             * @description Flag indicating whether to send email notification
-             */
-            send_email_notification?: boolean | null;
-            /**
-             * Tool ID
-             * @description The ID of the tool to execute.
-             */
-            tool_id?: Record<string, never> | null;
-            /**
-             * Tool UUID
-             * @description The UUID of the tool to execute.
-             */
-            tool_uuid?: Record<string, never> | null;
-            /**
-             * Tool Version
-             * @description The version of the tool
-             */
-            tool_version?: string | null;
-            /**
-             * Use Cached Job
-             * @description Flag indicating whether to use a cached job
-             * @default false
-             */
-            use_cached_job?: boolean | null;
-            [key: string]: unknown | undefined;
-        };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
