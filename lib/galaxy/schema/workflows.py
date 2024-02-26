@@ -12,6 +12,7 @@ from pydantic import (
     field_validator,
 )
 
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnnotationField,
     InputDataCollectionStep,
@@ -227,4 +228,25 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         ...,
         title="Source Metadata",
         description="The source metadata of the workflow.",
+    )
+
+
+class SetWorkflowMenuPayload(Model):
+    workflow_ids: Union[List[DecodedDatabaseIdField], DecodedDatabaseIdField] = Field(
+        ...,
+        title="Workflow IDs",
+        description="The list of workflow IDs to set the menu entry for.",
+    )
+
+
+class SetWorkflowMenuSummary(Model):
+    message: Optional[Any] = Field(
+        ...,
+        title="Message",
+        description="The message of the operation.",
+    )
+    status: str = Field(
+        ...,
+        title="Status",
+        description="The status of the operation.",
     )
