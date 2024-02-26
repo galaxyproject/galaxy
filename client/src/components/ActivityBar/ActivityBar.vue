@@ -45,7 +45,6 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
-
 // sync built-in activities with cached activities
 activityStore.sync();
 
