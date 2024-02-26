@@ -60,7 +60,6 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     JobIndexQueryPayload,
     JobIndexSortByEnum,
-    JobMetric,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
@@ -845,7 +844,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source):
     return rval
 
 
-def summarize_job_metrics(trans, job) -> typing.List[JobMetric]:
+def summarize_job_metrics(trans, job):
     """Produce a dict-ified version of job metrics ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user

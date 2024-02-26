@@ -6,10 +6,8 @@ from typing import (
     Any,
     Dict,
     List,
-    Union,
 )
 
-from ...carbon_emissions import load_aws_ec2_reference_data_json
 from . import InstrumentPlugin
 from ..formatting import (
     FormattedMetric,
@@ -17,6 +15,7 @@ from ..formatting import (
     seconds_to_str,
 )
 from ..safety import Safety
+from ...carbon_emissions import load_aws_ec2_reference_data_json
 
 log = logging.getLogger(__name__)
 
@@ -57,26 +56,26 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric(title, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(float(value))))
 
     def __format_energy_needed_text(self, energy_needed_kwh: float) -> str:
-        adjustedEnergyNeeded = energy_needed_kwh
+        adjusted_energy_needed = energy_needed_kwh
         unit_magnitude = "kW⋅h"
 
         if energy_needed_kwh == 0:
             return "0 kW⋅h"
 
         if energy_needed_kwh >= 1e3:
-            adjustedEnergyNeeded /= 1000
+            adjusted_energy_needed /= 1000
             unit_magnitude = "MW⋅h"
         elif energy_needed_kwh >= 1 and energy_needed_kwh <= 999:
             unit_magnitude = "W⋅h"
         elif energy_needed_kwh < 1 and energy_needed_kwh > 1e-4:
-            adjustedEnergyNeeded *= 1000
+            adjusted_energy_needed *= 1000
             unit_magnitude = "mW⋅h"
         else:
-            adjustedEnergyNeeded *= 1e6
+            adjusted_energy_needed *= 1e6
             unit_magnitude = "µW⋅h"
 
-        rounded_value = round(adjustedEnergyNeeded) == 0 and "< 1" or round(adjustedEnergyNeeded)
-        return f"{rounded_value} {unit_magnitude}"
+        rounded_value = round(adjusted_energy_needed)
+        return f"{'< 1' if rounded_value == 0 else rounded_value} {unit_magnitude}"
 
 
 class CorePlugin(InstrumentPlugin):
@@ -104,7 +103,7 @@ class CorePlugin(InstrumentPlugin):
         return commands
 
     def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
-        properties: Dict[str, Union[int, float, str]] = {}
+        properties = {}
 
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
@@ -201,10 +200,6 @@ class CorePlugin(InstrumentPlugin):
                 break
 
         if server_instance is None:
-            return None
-
-        cpu = server_instance["cpu"][0]
-        if cpu is None:
             return None
 
         return server_instance

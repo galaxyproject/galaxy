@@ -893,10 +893,25 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
 
+        foo = (
+            trans.sa_session.query(
+                sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_cpu"),
+                sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_memory"),
+            )
+            .group_by(JobMetricNumeric.metric_name, JobMetricNumeric.job_id)
+            .having(JobMetricNumeric.job_id.in_(decoded_job_ids))
+            .filter(
+                JobMetricNumeric.metric_name.in_(["energy_needed_cpu", "energy_needed_memory"]),
+                JobMetricNumeric.job_id.in_(decoded_job_ids),
+            )
+            .all()
+        )
+
         return {
             "total_energy_needed_cpu_kwh": total_energy_needed_cpu_kwh,
             "total_energy_needed_memory_kwh": total_energy_needed_memory_kwh,
             "total_energy_needed_kwh": total_energy_needed_kwh,
+            "foo": foo,
         }
 
     def __delete_dataset(
