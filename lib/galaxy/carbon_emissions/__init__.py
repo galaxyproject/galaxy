@@ -26,7 +26,7 @@ class AWSInstance(TypedDict):
     name: str
     mem: float
     v_cpu_count: int
-    cpu: list[AWSInstanceCPU]
+    cpu: List[AWSInstanceCPU]
 
 
 def get_carbon_intensity_entry(geographical_server_location_code: str) -> CarbonIntensityEntry:
