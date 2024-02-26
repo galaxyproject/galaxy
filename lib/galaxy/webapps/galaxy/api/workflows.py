@@ -78,6 +78,8 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
+    SetWorkflowMenuPayload,
+    SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
 )
 from galaxy.structured_app import StructuredApp
@@ -144,46 +146,6 @@ class WorkflowsAPIController(
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
-
-    @expose_api
-    def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
-        """
-        Save workflow menu to be shown in the tool panel
-        PUT /api/workflows/menu
-        """
-        payload = payload or {}
-        user = trans.user
-        workflow_ids = payload.get("workflow_ids")
-        if workflow_ids is None:
-            workflow_ids = []
-        elif not isinstance(workflow_ids, list):
-            workflow_ids = [workflow_ids]
-        workflow_ids_decoded = []
-        # Decode the encoded workflow ids
-        for ids in workflow_ids:
-            workflow_ids_decoded.append(trans.security.decode_id(ids))
-        session = trans.sa_session
-        # This explicit remove seems like a hack, need to figure out
-        # how to make the association do it automatically.
-        for m in user.stored_workflow_menu_entries:
-            session.delete(m)
-        user.stored_workflow_menu_entries = []
-        # To ensure id list is unique
-        seen_workflow_ids = set()
-        for wf_id in workflow_ids_decoded:
-            if wf_id in seen_workflow_ids:
-                continue
-            else:
-                seen_workflow_ids.add(wf_id)
-            m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
-
-            user.stored_workflow_menu_entries.append(m)
-        with transaction(session):
-            session.commit()
-        message = "Menu updated."
-        trans.set_message(message)
-        return {"message": message, "status": "done"}
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -905,6 +867,15 @@ RefactorWorkflowBody = Annotated[
     ),
 ]
 
+SetWorkflowMenuBody = Annotated[
+    Optional[SetWorkflowMenuPayload],
+    Body(
+        default=None,
+        title="Set workflow menu",
+        description="The values to set a workflow menu.",
+    ),
+]
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1021,6 +992,17 @@ class FastAPIWorkflows:
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, workflow_id)
+
+    @router.put(
+        "/api/workflows/menu",
+        summary="Save workflow menu to be shown in the tool panel",
+    )
+    def set_workflow_menu(
+        self,
+        payload: SetWorkflowMenuBody,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> SetWorkflowMenuSummary:
+        return self.service.set_workflow_menu(payload, trans)
 
     @router.put(
         "/api/workflows/{workflow_id}/share_with_users",
