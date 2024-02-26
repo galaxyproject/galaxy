@@ -107,7 +107,7 @@ function filterMetadata(jobMessages) {
                     <td>Job Messages</td>
                     <td>
                         <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
-                            <div v-for="(message, m) in filterMetadata(job.job_messages)" :key="m">
+                            <div v-for="(message, m) in filterMetadata(job.job_messages)" :key="m" class="job-message">
                                 <div v-if="job.job_messages.length > 1">
                                     <u>Job Message {{ m + 1 }}:</u>
                                 </div>
