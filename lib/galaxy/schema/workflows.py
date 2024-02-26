@@ -213,7 +213,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
         title="Slug",
         description="The slug of the workflow.",
     )
-    source_metadata: Optional[str] = Field(
+    source_metadata: Optional[Dict[str, Any]] = Field(
         ...,
         title="Source Metadata",
         description="The source metadata of the workflow.",
