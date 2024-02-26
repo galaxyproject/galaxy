@@ -10,12 +10,16 @@ import os.path
 import re
 import shutil
 import tempfile
+import math
 from typing import (
     Any,
     Callable,
     Dict,
     Optional,
 )
+
+import imageio
+import numpy
 
 try:
     import pysam
@@ -171,6 +175,8 @@ def verify(
                 files_delta(local_name, temp_name, attributes=attributes)
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
+            elif compare == "image_diff":
+                files_image_diff(local_name, temp_name, attributes=attributes)
             else:
                 raise Exception(f"Unimplemented Compare type: {compare}")
         except AssertionError as err:
@@ -432,3 +438,33 @@ def files_contains(file1, file2, attributes=None):
             line_diff_count += 1
         if line_diff_count > lines_diff:
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
+
+
+def get_image_metric(attributes):
+    attributes = attributes or {}
+    metrics = {
+        "mse": lambda im1, im2: (im1 - im2).square().mean(),
+        "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
+        "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
+    }
+    return metrics[attributes.get("metric")]
+
+
+def files_image_diff(file1, file2, attributes=None):
+    """Check the pixel data of 2 image files for differences."""
+    attributes = attributes or {}
+
+    im1 = imageio.imread(file1)
+    im2 = imageio.imread(file2)
+
+    if im1.dtype != im2.dtype:
+        raise AssertionError(f"Image data types did not match ({im1.dtype}, {im2.dtype}).")
+
+    if im1.shape != im2.shape:
+        raise AssertionError(f"Image dimensions did not match ({im1.shape}, {im2.shape}).")
+
+    distance = get_image_metric(attributes)(im1, im2)
+    distance_eps = attributes.get("eps", 0.)
+    if distance > distance_eps:
+        raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
+
