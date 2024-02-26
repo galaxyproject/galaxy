@@ -108,7 +108,7 @@ async function onRestore() {
             </BButton>
 
             <BButton
-                v-if="!shared && !workflow.deleted"
+                v-if="!isAnonymous && !shared && !workflow.deleted"
                 id="workflow-share-button"
                 v-b-tooltip.hover.noninteractive
                 :size="buttonSize"
