@@ -103,6 +103,10 @@ const historyItems = computed(() => {
     return historyItemsStore.getHistoryItems(props.history.id, filterText.value);
 });
 
+const visibleHistoryItems = computed(() => {
+    return historyItems.value.filter((item) => !invisibleHistoryItems.value[item.hid]);
+});
+
 const formattedSearchError = computed(() => {
     const newError = unref(searchError);
     if (!newError) {
@@ -368,7 +372,7 @@ onMounted(async () => {
             @query-selection-break="querySelectionBreak = true">
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <section
-                class="history-layout d-flex flex-column w-100"
+                class="history-layout d-flex flex-column w-100 h-100"
                 @drop.prevent="onDrop"
                 @dragenter.prevent="onDragEnter"
                 @dragover.prevent
@@ -443,9 +447,9 @@ onMounted(async () => {
                         @hide="operationError = null" />
                 </section>
 
-                <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
+                <section v-show="!showAdvanced" class="position-relative flex-grow-1 scroller overflow-hidden">
                     <HistoryDropZone v-if="showDropZone" />
-                    <div>
+                    <div class="h-100">
                         <div v-if="isLoading && historyItems && historyItems.length === 0">
                             <BAlert class="m-2" variant="info" show>
                                 <LoadingSpan message="Loading History" />
@@ -468,12 +472,12 @@ onMounted(async () => {
                         <ListingLayout
                             v-else
                             :offset="listOffset"
-                            :items="historyItems"
+                            :items="visibleHistoryItems"
                             :query-key="queryKey"
+                            data-key="hid"
                             @scroll="onScroll">
                             <template v-slot:item="{ item, currentOffset }">
                                 <ContentItem
-                                    v-if="!invisibleHistoryItems[item.hid]"
                                     :id="item.hid"
                                     is-history-item
                                     :item="item"
@@ -502,3 +506,10 @@ onMounted(async () => {
         </SelectedItems>
     </ExpandedItems>
 </template>
+
+<style scoped lang="scss">
+.history-item-list {
+    overflow-y: auto;
+    height: 100%;
+}
+</style>
