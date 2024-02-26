@@ -11,6 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -67,6 +68,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const userStore = useUserStore();
+const { isAnonymous } = storeToRefs(userStore);
 const { confirm } = useConfirmDialog();
 
 const shared = computed(() => {
@@ -164,7 +166,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
 const menuActions: ComputedRef<BAction[]> = computed(() => {
     return [
         {
-            condition: !shared.value && !props.workflow.deleted,
+            condition: !isAnonymous.value && !shared.value && !props.workflow.deleted,
             class: "workflow-delete-button",
             component: "button",
             title: "Delete workflow",
