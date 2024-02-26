@@ -11054,7 +11054,7 @@ export interface components {
              * Source Metadata
              * @description The source metadata of the workflow.
              */
-            source_metadata: string | null;
+            source_metadata: Record<string, never> | null;
             /**
              * Steps
              * @description A dictionary with information about all the steps of the workflow.
