@@ -85,6 +85,10 @@ class TestsAssertsHasNQuant(Linter):
 
 
 class TestsAssertsHasSizeQuant(Linter):
+    """
+    has_size needs at least one of size (or value), min, max
+    """
+
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         tool_xml = getattr(tool_source, "xml_tree", None)
@@ -97,9 +101,34 @@ class TestsAssertsHasSizeQuant(Linter):
             ):
                 if a.tag != "has_size":
                     continue
-                if len(set(a.attrib) & set(["value", "min", "max"])) == 0:
+                if len(set(a.attrib) & set(["value", "size", "min", "max"])) == 0:
                     lint_ctx.error(
-                        f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'",
+                        f"Test {test_idx}: '{a.tag}' needs to specify 'size', 'min', or 'max'",
+                        linter=cls.name(),
+                        node=a,
+                    )
+
+
+class TestsAssertsHasSizeOrValueQuant(Linter):
+    """
+    has_size should not have size and value
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        tests = tool_xml.findall("./tests/test")
+        for test_idx, test in enumerate(tests, start=1):
+            for a in test.xpath(
+                ".//*[self::assert_contents or self::assert_stdout or self::assert_stderr or self::assert_command]//*"
+            ):
+                if a.tag != "has_size":
+                    continue
+                if "value" in a.attrib and "size" in a.attrib:
+                    lint_ctx.error(
+                        f"Test {test_idx}: '{a.tag}' must not specify 'value' and 'size'",
                         linter=cls.name(),
                         node=a,
                     )
