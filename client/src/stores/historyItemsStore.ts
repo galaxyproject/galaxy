@@ -6,7 +6,7 @@
 
 import { reverse } from "lodash";
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, ref, set } from "vue";
 
 import type { DatasetSummary, HDCASummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
@@ -82,7 +82,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
             payload.forEach((item: HistoryItem) => {
                 // current `item.hid` is related to item with hid = `relatedHid`
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
-                Vue.set(relatedItems.value, relationKey, true);
+                set(relatedItems.value, relationKey, true);
             });
         }
     }
