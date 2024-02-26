@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
@@ -25,14 +26,14 @@ const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
 const userStore = useUserStore();
+
+const { hashedUserId } = useHashedUserId();
+
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
-
-// sync built-in activities with cached activities
-activityStore.sync();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
@@ -122,6 +123,13 @@ function onToggleSidebar(toggle: string = "", to: string | null = null) {
     }
     userStore.toggleSideBar(toggle);
 }
+
+watch(
+    () => hashedUserId.value,
+    () => {
+        activityStore.sync();
+    }
+);
 </script>
 
 <template>

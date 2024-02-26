@@ -35,6 +35,9 @@ export interface Activity {
 export const useActivityStore = defineStore("activityStore", () => {
     const activities: Ref<Array<Activity>> = useUserLocalStorage("activity-store-activities", []);
 
+    // sync built-in activities with cached activities
+    sync();
+
     /**
      * The set of built-in activities is defined in activitySetup.js.
      * This helper function applies changes of the built-in activities,
