@@ -4,15 +4,17 @@ For more information on the IUC standard for XML block order see -
 https://github.com/galaxy-iuc/standards.
 """
 
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.tool_util.lint import Linter
+from ._util import is_datasource
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser.interface import ToolSource
-
-from typing import Optional
 
 # https://github.com/galaxy-iuc/standards
 # https://github.com/galaxy-iuc/standards/pull/7/files
@@ -42,6 +44,7 @@ TAG_ORDER = [
 DATASOURCE_TAG_ORDER = [
     "description",
     "macros",
+    "requirements",
     "command",
     "configfiles",
     "inputs",
@@ -62,7 +65,7 @@ class XMLOrder(Linter):
             return
         tool_root = tool_xml.getroot()
 
-        if tool_root.attrib.get("tool_type", "") == "data_source":
+        if is_datasource(tool_xml):
             tag_ordering = DATASOURCE_TAG_ORDER
         else:
             tag_ordering = TAG_ORDER

@@ -86,7 +86,7 @@ class ASync(BaseUIController):
                     translator.galaxy_name for translator in tool.input_translator.param_trans_dict.values()
                 }
                 for param in params:
-                    if param in tool_declared_params:
+                    if param in tool_declared_params or not tool.wants_params_cleaned:
                         params_dict[param] = params.get(param, None)
             params = params_dict
 
