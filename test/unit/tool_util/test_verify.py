@@ -49,7 +49,7 @@ F6 = _encode_image(
             [1.0, 0.9, 1.0],
             [1.0, 1.0, 1.0],
         ],
-        dtype=float
+        dtype=float,
     ),
     format="PNG",
 )
