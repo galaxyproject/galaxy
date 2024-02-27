@@ -55,7 +55,7 @@ F7 = _encode_image(numpy.array(
         [1.0, 1.0, 1.0],
     ],
     dtype=float), format="TIFF")
-F8 = _encode_image((F5 * 0xFF).astype(np.uint8), format="PNG")
+F8 = _encode_image((F6 * 0xFF).astype(numpy.uint8), format="PNG")
 
 
 def _test_file_list():
