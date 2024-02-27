@@ -1809,6 +1809,8 @@ export interface paths {
     "/api/workflows/menu": {
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
+        /** Save workflow menu to be shown in the tool panel */
+        put: operations["set_workflow_menu_api_workflows_menu_put"];
     };
     "/api/workflows/{workflow_id}": {
         /** Displays information needed to run a workflow. */
@@ -11132,6 +11134,27 @@ export interface components {
              * @description The slug that will be used to access this shared item.
              */
             new_slug: string;
+        };
+        /** SetWorkflowMenuPayload */
+        SetWorkflowMenuPayload: {
+            /**
+             * Workflow IDs
+             * @description The list of workflow IDs to set the menu entry for.
+             */
+            workflow_ids: string[] | string;
+        };
+        /** SetWorkflowMenuSummary */
+        SetWorkflowMenuSummary: {
+            /**
+             * Message
+             * @description The message of the operation.
+             */
+            message: Record<string, never> | null;
+            /**
+             * Status
+             * @description The status of the operation.
+             */
+            status: string;
         };
         /** ShareHistoryExtra */
         ShareHistoryExtra: {
@@ -24025,6 +24048,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_workflow_menu_api_workflows_menu_put: {
+        /** Save workflow menu to be shown in the tool panel */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetWorkflowMenuPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["SetWorkflowMenuSummary"];
                 };
             };
             /** @description Validation Error */
