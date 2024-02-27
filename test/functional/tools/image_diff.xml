@@ -15,11 +15,11 @@
     </test>
     <test>
       <param name="in" value="im1_uint8.tif" />
-      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mse" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mse" eps="0" />
     </test>
     <test>
       <param name="in" value="im1_uint8.png" />
-      <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" eps="0" />
     </test>
     <test>
       <param name="in" value="im2_a.png" />
