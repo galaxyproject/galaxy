@@ -445,11 +445,11 @@ def multiobject_intersection_over_union(mask1, mask2, background=0, repeat_rever
     for label1 in mask1.unique():
         if label1 == background:
             continue
-        cc1 = (mask1 == label1)
+        cc1 = mask1 == label1
         for label2 in mask2[cc1].unique():
             if label2 == background:
                 continue
-            cc2 = (mask2 == label2)
+            cc2 = mask2 == label2
             iou_list.append(intersection_over_union(cc1, cc2))
     if repeat_reverse:
         iou_list += intersection_over_union(mask2, mask1, background, repeat_reverse=False)
@@ -490,6 +490,6 @@ def files_image_diff(file1, file2, attributes=None):
         raise AssertionError(f"Image dimensions did not match ({im1.shape}, {im2.shape}).")
 
     distance = get_image_metric(attributes)(im1, im2)
-    distance_eps = attributes.get("eps", 0.)
+    distance_eps = attributes.get("eps", 0.0)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")

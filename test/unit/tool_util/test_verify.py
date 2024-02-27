@@ -42,20 +42,28 @@ def _encode_image(im, **kwargs):
     return buf.getvalue()
 
 
-F6 = _encode_image(numpy.array(
-    [
-        [1.0, 1.0, 1.0],
-        [1.0, 0.9, 1.0],
-        [1.0, 1.0, 1.0],
-    ],
-    dtype=float), format="PNG")
-F7 = _encode_image(numpy.array(
-    [
-        [1.0, 1.0, 1.0],
-        [1.0, 0.8, 1.0],
-        [1.0, 1.0, 1.0],
-    ],
-    dtype=float), format="TIFF")
+F6 = _encode_image(
+    numpy.array(
+        [
+            [1.0, 1.0, 1.0],
+            [1.0, 0.9, 1.0],
+            [1.0, 1.0, 1.0],
+        ],
+        dtype=float
+    ),
+    format="PNG",
+)
+F7 = _encode_image(
+    numpy.array(
+        [
+            [1.0, 1.0, 1.0],
+            [1.0, 0.8, 1.0],
+            [1.0, 1.0, 1.0],
+        ],
+        dtype=float,
+    ),
+    format="TIFF",
+)
 F8 = _encode_image((F6 * 0xFF).astype(numpy.uint8), format="PNG")
 
 
@@ -128,20 +136,12 @@ def generate_tests_image_diff():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
     metrics = ["mad", "mse", "rms", "fro", "iou"]
     # tests for equal files (float)
-    tests: List[TestDef] = [
-        (f6, f6, {"metric": metric}, None) for metric in metrics
-    ]
+    tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (uint8)
-    tests += [
-        (f8, f8, {"metric": metric}, None) for metric in metrics
-    ]
+    tests += [(f8, f8, {"metric": metric}, None) for metric in metrics]
     # tests for two different files
-    tests += [
-        (f6, f8, {"metric": metric}, AssertionError) for metric in metrics
-    ]
-    tests += [
-        (f7, f8, {"metric": metric}, AssertionError) for metric in metrics
-    ]
+    tests += [(f6, f8, {"metric": metric}, AssertionError) for metric in metrics]
+    tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]
     tests += [
         (f6, f7, {"metric": "iou"}, None),
         (f6, f7, {"metric": "mad", "eps": 0.1 / 9}, None),
