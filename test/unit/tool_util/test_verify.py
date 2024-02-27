@@ -41,6 +41,7 @@ def _encode_image(im, **kwargs):
     pil_im.save(buf, **kwargs)
     return buf.getvalue()
 
+
 F6 = _encode_image(numpy.array(
     [
         [1.0, 1.0, 1.0],

@@ -493,4 +493,3 @@ def files_image_diff(file1, file2, attributes=None):
     distance_eps = attributes.get("eps", 0.)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
-
