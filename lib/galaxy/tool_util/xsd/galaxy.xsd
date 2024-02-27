@@ -1659,7 +1659,7 @@ Different methods can be chosen for the comparison with the local file specified
 by ``file`` using the ``compare`` attribute:
 
 - ``diff``: uses diff to compare the history data set and the file provided by
-  ``file``. Compressed files are decompressed before the compariopm if
+  ``file``. Compressed files are decompressed before the comparison if
   ``decompress`` is set to ``true``. BAM files are converted to SAM before the
   comparision and for pdf some special rules are implemented. The number of
   allowed differences can be set with ``lines_diff``.  If ``sort="true"`` history
@@ -1677,6 +1677,10 @@ by ``file`` using the ``compare`` attribute:
 - ``sim_size``: compares the size of the history dataset and the ``file`` subject to
   the values of the ``delta`` and ``delta_frac`` attributes. Note that a ``has_size``
   content assertion should be preferred, because this avoids storing the test file.
+- ``image_diff``: compares the pixel data of the history data set and the file
+  provided by ``file``. The difference of the images is quantified according to their
+  pixel-wise distance with respect to a specific ``metric``. The check passes if the
+  distance is not larger than the value set for ``eps``. Only 2-D images can be used.
 
         ]]></xs:documentation>
     </xs:annotation>
@@ -1811,6 +1815,13 @@ download the file pointed by `location` using the same name as in `file` (or `va
 - Specifiying the `location` without a `file` (or `value`), it will download the file and use it as an alias of `file`. The name of the file
 will be infered from the last component of the location URL. For example, `location="https://my_url/my_file.txt"` will be equivalent to `file="my_file.txt"`.
 If you specify a `checksum`, it will be also used to check the integrity of the download.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metric" type="TestOutputMetricType" default="mae">
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the maximum allowed distance between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute, with distances computed with respect to the specified ``metric``. Default value is 0.01.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -7450,8 +7461,9 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">Type of comparison to use when comparing
 test generated output files to expected output files. Currently valid value are
-``diff`` (the default), ``re_match``, ``re_match_multiline``,
-and ``contains``. In addition there is ``sim_size`` which is discouraged in favour of a ``has_size`` assertion.</xs:documentation>
+``diff`` (the default), ``re_match``, ``re_match_multiline``, ``contains``,
+and ``image_diff``. In addition there is ``sim_size`` which is discouraged in
+favour of a ``has_size`` assertion.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
@@ -7459,6 +7471,18 @@ and ``contains``. In addition there is ``sim_size`` which is discouraged in favo
       <xs:enumeration value="sim_size"/>
       <xs:enumeration value="re_match_multiline"/>
       <xs:enumeration value="contains"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="TestOutputMetricType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the metric used to compute the distance between images for quantification of their difference. For intensity images, possible metrics are *mean absolute error* (``mae``, the default), *mean squared error* (``mse``), *root mean squared* error (``rms``), and the *Frobenius norm* (``fro``). In addition, for binary images and label maps (with multiple objects), ``iou`` can be used to compute *one minus* the *intersection of the union* (IoU). Object correspondances are established by taking the pair of objects, for which the IoU is highest, and the distance of the images is the worst value determined for any pair of corresponding objects.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="mae"/>
+      <xs:enumeration value="mse"/>
+      <xs:enumeration value="rms"/>
+      <xs:enumeration value="fro"/>
+      <xs:enumeration value="iou"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="PermissiveBoolean">
