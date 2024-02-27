@@ -442,10 +442,10 @@ def files_contains(file1, file2, attributes=None):
 
 def _multiobject_intersection_over_union(mask1, mask2, repeat_reverse=True):
     iou_list = list()
-    for label1 in mask1.unique():
+    for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
         cc1_iou_list = list()
-        for label2 in mask2[cc1].unique():
+        for label2 in numpy.unique(mask2[cc1]):
             cc2 = mask2 == label2
             cc1_iou_list.append(intersection_over_union(cc1, cc2))
         iou_list.append(max(cc1_iou_list))
