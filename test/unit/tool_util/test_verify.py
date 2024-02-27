@@ -48,7 +48,7 @@ F6 = _encode_image(
             [255, 200, 255],
             [255, 255, 255],
         ],
-        dtype=np.uint8,
+        dtype=numpy.uint8,
     ),
     format="PNG",
 )
@@ -59,7 +59,7 @@ F7 = _encode_image(
             [255, 100, 255],
             [255, 255, 255],
         ],
-        dtype=np.uint8,
+        dtype=numpy.uint8,
     ),
     format="TIFF",
 )
