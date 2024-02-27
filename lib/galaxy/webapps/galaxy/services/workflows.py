@@ -229,7 +229,7 @@ class WorkflowsService(ServiceBase):
 
     def set_workflow_menu(
         self,
-        payload: Union[SetWorkflowMenuPayload, None],
+        payload: Optional[SetWorkflowMenuPayload],
         trans: ProvidesHistoryContext,
     ) -> SetWorkflowMenuSummary:
         user = trans.user
@@ -259,7 +259,8 @@ class WorkflowsService(ServiceBase):
         with transaction(session):
             session.commit()
         message = "Menu updated."
-        trans.set_message(message)
+        # TODO - It seems like this populates a mako template, is it necessary?
+        # trans.set_message(message)
         return SetWorkflowMenuSummary(message=message, status="done")
 
     def show_workflow(self, trans, workflow_id, instance, legacy, version) -> StoredWorkflowDetailed:
