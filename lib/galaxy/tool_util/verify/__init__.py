@@ -459,7 +459,7 @@ def intersection_over_union(mask1, mask2):
     assert mask1.ndim == mask2.ndim == 2
     assert mask1.shape == mask2.shape
     if mask1.dtype == bool:
-        return numpy.logical_and(mask1, mask2) / numpy.logical_or(mask1, mask2)
+        return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
     else:
         return min(_multiobject_intersection_over_union(mask1, mask2))
 
