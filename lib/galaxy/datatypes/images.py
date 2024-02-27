@@ -91,10 +91,6 @@ class Png(Image):
 class Tiff(Image):
     edam_format = "format_3591"
     file_ext = "tiff"
-
-
-class OMETiff(Tiff):
-    file_ext = "ome.tiff"
     MetadataElement(
         name="offsets",
         desc="Offsets File",
@@ -119,6 +115,10 @@ class OMETiff(Tiff):
         with open(offsets_file.get_file_name(), "w") as f:
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
+
+
+class OMETiff(Tiff):
+    file_ext = "ome.tiff"
 
     def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename) as tif:
