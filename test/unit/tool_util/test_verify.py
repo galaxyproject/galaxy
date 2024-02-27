@@ -71,7 +71,8 @@ F8 = _encode_image(
             [255, 255, 255],
         ],
         dtype=float,
-    ) / 0xFF,
+    )
+    / 0xFF,
     format="TIFF",
 )
 
