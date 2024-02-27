@@ -1,0 +1,29 @@
+<tool id="image_diff" name="image_diff" version="0.1.0">
+  <command><![CDATA[
+    cp '$in' '$out'
+  ]]></command>
+  <inputs>
+    <param name="in" type="data" format="data"/>
+  </inputs>
+  <outputs>
+    <data name="out" format="data"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="in" value="im1_uint8.png" />
+      <output name="out" value="im1_uint8.png" compare="img_diff" metric="mae" />
+    </test>
+    <test>
+      <param name="in" value="im1_uint8.tif" />
+      <output name="out" value="im1_uint8.png" compare="img_diff" metric="mse" />
+    </test>
+    <test>
+      <param name="in" value="im1_uint8.png" />
+      <output name="out" value="im1_uint8.png" compare="img_diff" metric="rms" />
+    </test>
+    <test>
+      <param name="in" value="im2_a.png" />
+      <output name="out" value="im2_b.png" compare="img_diff" metric="mae" eps="0.25" />
+    </test>
+  </tests>
+</tool>
