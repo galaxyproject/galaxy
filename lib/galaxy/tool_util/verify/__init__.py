@@ -19,7 +19,7 @@ from typing import (
 )
 
 import numpy
-import PIL
+from PIL import Image
 
 try:
     import pysam
@@ -440,7 +440,7 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
-def multiobject_intersection_over_union(mask1, mask2, background=0, repeat_reverse=True):
+def _multiobject_intersection_over_union(mask1, mask2, background=0, repeat_reverse=True):
     iou_list = list()
     for label1 in mask1.unique():
         if label1 == background:
@@ -458,10 +458,12 @@ def multiobject_intersection_over_union(mask1, mask2, background=0, repeat_rever
 
 def intersection_over_union(mask1, mask2, background=0):
     assert mask1.dtype == mask2.dtype
+    assert mask1.ndim == mask2.ndim == 2
+    assert mask1.shape == mask2.shape
     if mask1.dtype == numpy.bool:
         return numpy.logical_and(mask1, mask2) / numpy.logical_or(mask1, mask2)
     else:
-        return min(multiobject_intersection_over_union(mask1, mask2, background))
+        return min(_multiobject_intersection_over_union(mask1, mask2, background))
 
 
 def get_image_metric(attributes):
@@ -480,8 +482,8 @@ def files_image_diff(file1, file2, attributes=None):
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
-    im1 = numpy.array(PIL.Image.open(file1))
-    im2 = numpy.array(PIL.Image.open(file2))
+    im1 = numpy.array(Image.open(file1))
+    im2 = numpy.array(Image.open(file2))
 
     if im1.dtype != im2.dtype:
         raise AssertionError(f"Image data types did not match ({im1.dtype}, {im2.dtype}).")

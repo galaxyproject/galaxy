@@ -12,7 +12,7 @@ from typing import (
 )
 
 import numpy
-import PIL
+from PIL import Image
 import pytest
 
 from galaxy.tool_util.verify import (
@@ -36,7 +36,7 @@ TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionE
 
 def _encode_image(im, **kwargs):
     buf = io.BytesIO()
-    pil_im = PIL.Image.fromarray(im)
+    pil_im = Image.fromarray(im)
     pil_im.save(buf, **kwargs)
     return buf.getvalue()
 
