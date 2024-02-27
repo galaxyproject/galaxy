@@ -1158,7 +1158,7 @@ WorkflowIdQueryParam = Annotated[
     ),
 ]
 
-HistoryIdQueryParam = Annotated[
+InvocationsHistoryIdQueryParam = Annotated[
     Optional[DecodedDatabaseIdField],
     Query(
         title="History ID",
@@ -1267,7 +1267,7 @@ class FastAPIInvocations:
         self,
         response: Response,
         workflow_id: WorkflowIdQueryParam = None,
-        history_id: HistoryIdQueryParam = None,
+        history_id: InvocationsHistoryIdQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
@@ -1321,7 +1321,7 @@ class FastAPIInvocations:
         self,
         response: Response,
         workflow_id: StoredWorkflowIDPathParam,
-        history_id: HistoryIdQueryParam = None,
+        history_id: InvocationsHistoryIdQueryParam = None,
         job_id: JobIdQueryParam = None,
         user_id: UserIdQueryParam = None,
         sort_by: InvocationsSortByQueryParam = None,
