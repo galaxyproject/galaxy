@@ -12,8 +12,8 @@ from typing import (
 )
 
 import numpy
-from PIL import Image
 import pytest
+from PIL import Image
 
 from galaxy.tool_util.verify import (
     files_contains,
