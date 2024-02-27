@@ -1,0 +1,24 @@
+{
+    "name": "tiff-visualization",
+    "version": "0.1.0",
+    "description": "A visualization for Tiff files based on react-tiff package",
+    "keywords": [
+        "galaxy",
+        "visualization",
+        "Tiff"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "react-tiff": "^0.0.8"
+    },
+    "scripts": {
+        "build": "parcel build src/script.js --dist-dir static"
+    },
+    "devDependencies": {
+        "buffer": "^5.5.0||^6.0.0",
+        "parcel": "^2.9.3",
+        "process": "^0.11.10"
+    }
+}
