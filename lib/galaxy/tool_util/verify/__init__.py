@@ -467,6 +467,7 @@ def intersection_over_union(mask1, mask2):
 
 
 def get_image_metric(attributes):
+    metric_name = attributes.get("metric", DEFAULT_METRIC)
     attributes = attributes or {}
     metrics = {
         "mae": lambda im1, im2: numpy.abs(im1 - im2).mean(),
@@ -475,7 +476,10 @@ def get_image_metric(attributes):
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
         "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2),
     }
-    return metrics[attributes.get("metric", DEFAULT_METRIC)]
+    try:
+        return metrics[metric_name]
+    except KeyError:
+        raise ValueError(f"No such metric: \"{metric_name}\"")
 
 
 def files_image_diff(file1, file2, attributes=None):
