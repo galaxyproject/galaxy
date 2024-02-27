@@ -44,26 +44,26 @@ def _encode_image(im, **kwargs):
 F6 = _encode_image(
     numpy.array(
         [
-            [1.0, 1.0, 1.0],
-            [1.0, 0.9, 1.0],
-            [1.0, 1.0, 1.0],
+            [255, 255, 255],
+            [255, 200, 255],
+            [255, 255, 255],
         ],
-        dtype=float,
+        dtype=np.uint8,
     ),
     format="PNG",
 )
 F7 = _encode_image(
     numpy.array(
         [
-            [1.0, 1.0, 1.0],
-            [1.0, 0.8, 1.0],
-            [1.0, 1.0, 1.0],
+            [255, 255, 255],
+            [255, 100, 255],
+            [255, 255, 255],
         ],
-        dtype=float,
+        dtype=np.uint8,
     ),
     format="TIFF",
 )
-F8 = _encode_image((F6 * 0xFF).astype(numpy.uint8), format="PNG")
+F8 = _encode_image(F6 / 0xFF, format="TIFF")
 
 
 def _test_file_list():
@@ -77,7 +77,7 @@ def _test_file_list():
         (F1, ".txt.gz"),
         (F6, ".png"),
         (F7, ".tiff"),
-        (F8, ".png"),
+        (F8, ".tiff"),
     ]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
             if ext == ".txt.gz":
@@ -134,17 +134,19 @@ def generate_tests_sim_size():
 def generate_tests_image_diff():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
     metrics = ["mad", "mse", "rms", "fro", "iou"]
-    # tests for equal files (float)
+    # tests for equal files (uint8, PNG)
     tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
-    # tests for equal files (uint8)
+    # tests for equal files (uint8, TIFF)
+    tests += [(f7, f7, {"metric": metric}, None) for metric in metrics]
+    # tests for equal files (float, TIFF)
     tests += [(f8, f8, {"metric": metric}, None) for metric in metrics]
-    # tests for two different files
-    tests += [(f6, f8, {"metric": metric}, AssertionError) for metric in metrics]
-    tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]
+    # tests for pairs of different files
+    tests += [(f6, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
+    tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
     tests += [
         (f6, f7, {"metric": "iou"}, None),
-        (f6, f7, {"metric": "mad", "eps": 0.1 / 9}, None),
-        (f6, f7, {"metric": "mad", "eps": (0.1 / 9) * 0.99}, AssertionError),
+        (f6, f7, {"metric": "mad", "eps": 100 / 9 + 1e-4}, None),
+        (f6, f7, {"metric": "mad", "eps": 100 / 9 - 1e-4}, AssertionError),
     ]
     return tests
 
