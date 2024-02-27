@@ -440,42 +440,40 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
-def _multiobject_intersection_over_union(mask1, mask2, background=0, repeat_reverse=True):
+def _multiobject_intersection_over_union(mask1, mask2, repeat_reverse=True):
     iou_list = list()
     for label1 in mask1.unique():
-        if label1 == background:
-            continue
         cc1 = mask1 == label1
+        cc1_iou_list = list()
         for label2 in mask2[cc1].unique():
-            if label2 == background:
-                continue
             cc2 = mask2 == label2
-            iou_list.append(intersection_over_union(cc1, cc2))
+            cc1_iou_list.append(intersection_over_union(cc1, cc2))
+        iou_list.append(max(cc1_iou_list))
     if repeat_reverse:
-        iou_list += intersection_over_union(mask2, mask1, background, repeat_reverse=False)
+        iou_list += intersection_over_union(mask2, mask1, repeat_reverse=False)
     return iou_list
 
 
-def intersection_over_union(mask1, mask2, background=0):
+def intersection_over_union(mask1, mask2):
     assert mask1.dtype == mask2.dtype
     assert mask1.ndim == mask2.ndim == 2
     assert mask1.shape == mask2.shape
-    if mask1.dtype == numpy.bool:
+    if mask1.dtype == bool:
         return numpy.logical_and(mask1, mask2) / numpy.logical_or(mask1, mask2)
     else:
-        return min(_multiobject_intersection_over_union(mask1, mask2, background))
+        return min(_multiobject_intersection_over_union(mask1, mask2))
 
 
 def get_image_metric(attributes):
     attributes = attributes or {}
     metrics = {
-        "mad": lambda im1, im2: numpy.abs(im1 - im2).mean(),
+        "mae": lambda im1, im2: numpy.abs(im1 - im2).mean(),
         "mse": lambda im1, im2: (im1 - im2).square().mean(),
         "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
-        "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2, attributes.get("background", 0)),
+        "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2),
     }
-    return metrics[attributes.get("metric")]
+    return metrics[attributes.get("metric", "mae")]
 
 
 def files_image_diff(file1, file2, attributes=None):

@@ -143,7 +143,7 @@ def generate_tests_sim_size():
 
 def generate_tests_image_diff():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
-    metrics = ["mad", "mse", "rms", "fro", "iou"]
+    metrics = ["mae", "mse", "rms", "fro", "iou"]
     # tests for equal files (uint8, PNG)
     tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (uint8, TIFF)
@@ -155,8 +155,8 @@ def generate_tests_image_diff():
     tests += [(f7, f8, {"metric": metric}, AssertionError) for metric in metrics]  # uint8 vs float
     tests += [
         (f6, f7, {"metric": "iou"}, None),
-        (f6, f7, {"metric": "mad", "eps": 100 / 9 + 1e-4}, None),
-        (f6, f7, {"metric": "mad", "eps": 100 / 9 - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "mae", "eps": 100 / 9 + 1e-4}, None),
+        (f6, f7, {"metric": "mae", "eps": 100 / 9 - 1e-4}, AssertionError),
     ]
     return tests
 
