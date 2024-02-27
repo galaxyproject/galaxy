@@ -871,33 +871,27 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :param  history_id:     the encoded id of the history whose energy usage is to be calculated
         """
         history = self._get_history(trans, history_id)
-        decoded_job_ids: List[int] = [job.id for job in history.jobs]
+        job_ids = [job.id for job in history.jobs]
 
-        total_energy_needed_cpu_kwh = (
-            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_cpu"))
-            .filter(
-                JobMetricNumeric.metric_name == "energy_needed_cpu",
-                JobMetricNumeric.job_id.in_(decoded_job_ids),
-            )
-            .scalar()
-        )
+        totals_query = trans.sa_session.query(
+            sa.func.sum(
+                sa.case(
+                    [(JobMetricNumeric.metric_name == "energy_needed_cpu", JobMetricNumeric.metric_value)], else_=0.0
+                )
+            ).label("total_energy_needed_cpu_kwh"),
+            sa.func.sum(
+                sa.case(
+                    [(JobMetricNumeric.metric_name == "energy_needed_memory", JobMetricNumeric.metric_value)], else_=0.0
+                )
+            ).label("total_energy_needed_memory_kwh"),
+        ).filter(JobMetricNumeric.job_id.in_(job_ids))
 
-        total_energy_needed_memory_kwh = (
-            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_memory"))
-            .filter(
-                JobMetricNumeric.metric_name == "energy_needed_memory",
-                JobMetricNumeric.job_id.in_(decoded_job_ids),
-            )
-            .scalar()
-            or 0.0
-        )
-
-        total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
+        total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh = totals_query.one()
 
         return EnergyUsageSummary(
             total_energy_needed_cpu_kwh=total_energy_needed_cpu_kwh,
             total_energy_needed_memory_kwh=total_energy_needed_memory_kwh,
-            total_energy_needed_kwh=total_energy_needed_kwh,
+            total_energy_needed_kwh=total_energy_needed_cpu_kwh + total_energy_needed_memory_kwh,
         )
 
     def __delete_dataset(

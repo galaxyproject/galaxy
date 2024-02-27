@@ -145,30 +145,25 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
         job_ids = [step.job_id for step in workflow_invocation.steps if step.job_id is not None]
 
-        total_energy_needed_cpu_kwh = (
-            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_cpu"))
-            .filter(
-                JobMetricNumeric.metric_name == "energy_needed_cpu",
-                JobMetricNumeric.job_id.in_(job_ids),
-            )
-            .scalar()
-        ) or 0.0
+        totals_query = trans.sa_session.query(
+            sa.func.sum(
+                sa.case(
+                    [(JobMetricNumeric.metric_name == "energy_needed_cpu", JobMetricNumeric.metric_value)], else_=0.0
+                )
+            ).label("total_energy_needed_cpu_kwh"),
+            sa.func.sum(
+                sa.case(
+                    [(JobMetricNumeric.metric_name == "energy_needed_memory", JobMetricNumeric.metric_value)], else_=0.0
+                )
+            ).label("total_energy_needed_memory_kwh"),
+        ).filter(JobMetricNumeric.job_id.in_(job_ids))
 
-        total_energy_needed_memory_kwh = (
-            trans.sa_session.query(sa.func.sum(JobMetricNumeric.metric_value).label("energy_needed_memory"))
-            .filter(
-                JobMetricNumeric.metric_name == "energy_needed_memory",
-                JobMetricNumeric.job_id.in_(job_ids),
-            )
-            .scalar()
-        ) or 0.0
-
-        total_energy_needed_kwh = float(total_energy_needed_cpu_kwh) + float(total_energy_needed_memory_kwh)
+        total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh = totals_query.one()
 
         return EnergyUsageSummary(
             total_energy_needed_cpu_kwh=total_energy_needed_cpu_kwh,
             total_energy_needed_memory_kwh=total_energy_needed_memory_kwh,
-            total_energy_needed_kwh=total_energy_needed_kwh,
+            total_energy_needed_kwh=total_energy_needed_cpu_kwh + total_energy_needed_memory_kwh,
         )
 
     def cancel(self, trans, invocation_id, serialization_params):
