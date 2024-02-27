@@ -18,7 +18,7 @@ from typing import (
     Optional,
 )
 
-import imageio
+import pillow
 import numpy
 
 try:
@@ -440,12 +440,35 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
+def multiobject_intersection_over_union(mask1, mask2, background=0, repeat_reverse=True):
+    iou_list = list()
+    for label1 in mask1.unique():
+        if label1 == background: continue
+        cc1 = (mask1 == label1)
+        for label2 in mask2[cc1].unique():
+            if label2 == background: continue
+            cc2 = (mask2 == label2)
+            iou_list.append(intersection_over_union(cc1, cc2))
+    if repeat_reverse:
+        iou_list += intersection_over_union(mask2, mask1, background, repeat_reverse=False)
+    return iou_list
+
+
+def intersection_over_union(mask1, mask2, background=0):
+    assert mask1.dtype == mask2.dtype
+    if mask1.dtype == numpy.bool:
+        return numpy.logical_and(mask1, mask2) / numpy.logical_or(mask1, mask2)
+    else:
+        return min(multiobject_intersection_over_union(mask1, mask2, background))
+
+
 def get_image_metric(attributes):
     attributes = attributes or {}
     metrics = {
         "mse": lambda im1, im2: (im1 - im2).square().mean(),
         "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
+        "iou": lambda im1, im2: 1 - intersection_over_union(mask1, mask2, attributes.get("background", 0)),
     }
     return metrics[attributes.get("metric")]
 
@@ -454,8 +477,8 @@ def files_image_diff(file1, file2, attributes=None):
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
-    im1 = imageio.imread(file1)
-    im2 = imageio.imread(file2)
+    im1 = numpy.array(pillow.Image.open(file1))
+    im2 = numpy.array(pillow.Image.open(file2))
 
     if im1.dtype != im2.dtype:
         raise AssertionError(f"Image data types did not match ({im1.dtype}, {im2.dtype}).")
