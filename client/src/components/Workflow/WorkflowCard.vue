@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -36,11 +35,10 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "refreshList", a?: boolean, b?: boolean): void;
-    (e: "tagClick", a: string): void;
+    (e: "tagClick", tag: string): void;
+    (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
 }>();
 
-const router = useRouter();
 const userStore = useUserStore();
 
 const { isAnonymous } = storeToRefs(userStore);
@@ -92,10 +90,6 @@ const runButtonTitle = computed(() => {
         }
     }
 });
-
-function onEdit() {
-    router.push(`/workflows/edit?id=${workflow.value.id}`);
-}
 
 async function onImport() {
     await copyWorkflow(workflow.value.id, workflow.value.owner);
@@ -194,7 +188,7 @@ async function onTagClick(tag: string) {
                             class="workflow-edit-button"
                             :title="editButtonTitle"
                             variant="outline-primary"
-                            @click="onEdit">
+                            :to="`/workflows/edit?id=${workflow.id}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
                             Edit
                         </BButton>

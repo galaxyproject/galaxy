@@ -14,7 +14,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { copyWorkflow, undeleteWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
@@ -36,10 +35,9 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "refreshList", a?: boolean): void;
+    (e: "refreshList", overlayLoading?: boolean): void;
 }>();
 
-const router = useRouter();
 const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 const { isAnonymous } = storeToRefs(useUserStore());
@@ -54,10 +52,6 @@ const shared = computed(() => {
         return false;
     }
 });
-
-function onShare() {
-    router.push(`/workflows/sharing?id=${props.workflow.id}`);
-}
 
 async function onCopy() {
     const confirmed = await confirm("Are you sure you want to make a copy of this workflow?", "Copy workflow");
@@ -114,7 +108,7 @@ async function onRestore() {
                 :size="buttonSize"
                 title="Share"
                 variant="outline-primary"
-                @click="onShare">
+                :to="`/workflows/sharing?id=${workflow.id}`">
                 <FontAwesomeIcon :icon="faShareAlt" fixed-width />
                 <span class="compact-view">Share</span>
             </BButton>

@@ -3,7 +3,6 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faClock, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { invocationCountsFetcher } from "@/api/workflows";
 import localize from "@/utils/localization";
@@ -15,8 +14,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const router = useRouter();
 
 const count = ref<number | undefined>(undefined);
 
@@ -32,10 +29,6 @@ async function initCounts() {
 }
 
 onMounted(initCounts);
-
-function onInvocations() {
-    router.push(`/workflows/${props.workflow.id}/invocations`);
-}
 </script>
 
 <template>
@@ -46,8 +39,9 @@ function onInvocations() {
             pill
             :title="localize('View workflow invocations')"
             class="outline-badge cursor-pointer list-view"
-            @click="onInvocations">
-            <FontAwesomeIcon :icon="faSitemap" />
+            :to="`/workflows/${props.workflow.id}/invocations`">
+            <FontAwesomeIcon :icon="faSitemap" fixed-width />
+
             <span v-if="count > 0">
                 workflow runs:
                 {{ count }}
@@ -62,7 +56,7 @@ function onInvocations() {
             class="inline-icon-button"
             variant="link"
             size="sm"
-            @click="onInvocations">
+            :to="`/workflows/${props.workflow.id}/invocations`">
             <FontAwesomeIcon :icon="faSitemap" fixed-width />
         </BButton>
     </div>

@@ -13,7 +13,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
@@ -43,7 +42,7 @@ type BaseAction = {
     size: "sm" | "md" | "lg";
     component: "async" | "button";
     variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
-    onClick?: () => Promise<void> | void;
+    onClick?: (e?: MouseEvent | KeyboardEvent) => void;
 };
 
 interface AAction extends BaseAction {
@@ -53,8 +52,7 @@ interface AAction extends BaseAction {
 
 interface BAction extends BaseAction {
     component: "button";
-    href?: string;
-    onClick?: () => Promise<void> | void;
+    to?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,7 +64,6 @@ const emit = defineEmits<{
     (e: "toggleShowPreview", a?: boolean): void;
 }>();
 
-const router = useRouter();
 const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 const { confirm } = useConfirmDialog();
@@ -88,16 +85,15 @@ const sourceType = computed(() => {
     }
 });
 
-function onExport() {
-    router.push(`/workflows/export?id=${props.workflow.id}`);
-}
-
 async function onToggleBookmark(checked: boolean) {
     await updateWorkflow(props.workflow.id, {
         show_in_tool_panel: checked,
     });
+
     emit("refreshList", true);
+
     Toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
+
     if (checked) {
         getGalaxyInstance().config.stored_workflow_menu_entries.push({
             id: props.workflow.id,
@@ -206,7 +202,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             icon: faFileExport,
             size: props.buttonSize,
             variant: "link",
-            onClick: () => onExport(),
+            to: `/workflows/export?id=${props.workflow.id}`,
         },
     ];
 });
@@ -235,6 +231,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 :size="action.size"
                 :title="action.tooltip"
                 :href="action.href"
+                :to="action.to"
                 @click="action.onClick">
                 <FontAwesomeIcon :icon="action.icon" fixed-width />
             </BButton>
@@ -257,9 +254,10 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
                 v-for="action in menuActions.filter((a) => a.condition).reverse()"
                 :key="action.class"
                 :class="action.class"
-                :href="action.href ?? undefined"
+                :href="action.href"
                 :title="action.title"
                 :target="action.target"
+                :to="action.to"
                 @click="action.onClick?.()">
                 <FontAwesomeIcon :icon="action.icon" fixed-width />
                 <span>{{ action.title }}</span>

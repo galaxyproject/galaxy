@@ -134,9 +134,6 @@ describe("InvocationsList.vue", () => {
             axiosMock
                 .onGet("/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
                 .reply(200, [mockInvocationData], { total_matches: "1" });
-            const mockRouter = {
-                push: jest.fn(),
-            };
             const propsData = {
                 ownerGrid: false,
                 loading: false,
@@ -163,9 +160,6 @@ describe("InvocationsList.vue", () => {
                 },
                 localVue,
                 pinia,
-                mocks: {
-                    $router: mockRouter,
-                },
             });
         });
 
@@ -201,10 +195,10 @@ describe("InvocationsList.vue", () => {
             expect(mockMethod).toHaveBeenCalled();
         });
 
-        it("calls executeWorkflow", async () => {
-            await wrapper.find('[data-workflow-run="workflowId"').trigger("click");
-            expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1);
-            expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/workflows/run?id=workflowId");
+        it("check run button", async () => {
+            const runButton = await wrapper.find('[data-workflow-run="workflowId"');
+
+            expect(runButton.attributes("href")).toBe("/workflows/run?id=workflowId");
         });
 
         it("should not render pager", async () => {
