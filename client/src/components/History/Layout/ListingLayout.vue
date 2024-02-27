@@ -5,7 +5,7 @@ import IntersectionObservable from "./IntersectionObservable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = defineProps<{
-    items: unknown[];
+    items: any[];
     queryKey?: string;
     dataKey?: string;
     loading?: boolean;
@@ -51,15 +51,9 @@ function scrollToOffset(offset: number) {
 
 const observer = new IntersectionObserver(
     (items) => {
-        for (let index = 0; index < items.length; index++) {
-            const element = items[index]!;
-            if (element.isIntersecting) {
-                const target = element.target as HTMLDivElement;
-                const targetIndex = parseInt(target.getAttribute("data-index") ?? "0");
-                currentOffset.value = targetIndex;
-                break;
-            }
-        }
+        const intersecting = items.filter((item) => item.isIntersecting);
+        const indices = intersecting.map((item) => parseInt(item.target.getAttribute("data-index") ?? "0"));
+        currentOffset.value = indices.length > 0 ? Math.min(...indices) : 0;
     },
     { root: root.value }
 );
@@ -81,7 +75,7 @@ function getKey(item: unknown, index: number) {
             class="listing-layout-item"
             :data-index="i"
             :observer="observer">
-            <slot name="item" :item="item" :current-offset="currentOffset" />
+            <slot name="item" :item="item" :current-offset="i" />
         </IntersectionObservable>
         <LoadingSpan v-if="props.loading" class="m-2" message="Loading" />
     </div>
