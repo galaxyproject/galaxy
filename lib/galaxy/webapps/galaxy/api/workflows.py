@@ -855,7 +855,6 @@ RefactorWorkflowBody = Annotated[
 SetWorkflowMenuBody = Annotated[
     Optional[SetWorkflowMenuPayload],
     Body(
-        default=None,
         title="Set workflow menu",
         description="The values to set a workflow menu.",
     ),
@@ -984,7 +983,7 @@ class FastAPIWorkflows:
     )
     def set_workflow_menu(
         self,
-        payload: SetWorkflowMenuBody,
+        payload: SetWorkflowMenuBody = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> SetWorkflowMenuSummary:
         return self.service.set_workflow_menu(payload, trans)
