@@ -480,8 +480,8 @@ def files_image_diff(file1, file2, attributes=None):
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
-    im1 = numpy.array(pillow.Image.open(file1))
-    im2 = numpy.array(pillow.Image.open(file2))
+    im1 = numpy.array(PIL.Image.open(file1))
+    im2 = numpy.array(PIL.Image.open(file2))
 
     if im1.dtype != im2.dtype:
         raise AssertionError(f"Image data types did not match ({im1.dtype}, {im2.dtype}).")

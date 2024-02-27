@@ -36,7 +36,7 @@ TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionE
 
 def _encode_image(im, **kwargs):
     buf = io.BytesIO()
-    pil_im = pillow.Image.fromarray(im)
+    pil_im = PIL.Image.fromarray(im)
     pil_im.save(buf, **kwargs)
     return buf.getvalue()
 
