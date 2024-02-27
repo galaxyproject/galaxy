@@ -465,6 +465,7 @@ def intersection_over_union(mask1, mask2, background=0):
 def get_image_metric(attributes):
     attributes = attributes or {}
     metrics = {
+        "mad": lambda im1, im2: numpy.abs(im1 - im2).mean(),
         "mse": lambda im1, im2: (im1 - im2).square().mean(),
         "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),

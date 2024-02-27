@@ -1,6 +1,7 @@
 import collections
 import gzip
 import tempfile
+import io
 from typing import (
     Any,
     Dict,
@@ -12,12 +13,16 @@ from typing import (
 
 import pytest
 
+import pillow
+import numpy
+
 from galaxy.tool_util.verify import (
     files_contains,
     files_delta,
     files_diff,
     files_re_match,
     files_re_match_multiline,
+    files_image_diff,
 )
 
 F1 = b"A\nB\nC"
@@ -30,9 +35,42 @@ TestFile = collections.namedtuple("TestFile", "value path")
 TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
 
 
+def _encode_image(im, **kwargs):
+    buf = io.BytesIO()
+    pil_im = pillow.Image.fromarray(im)
+    pil_im.save(buf, **kwargs)
+    return buf.getvalue()
+
+F6 = _encode_image(numpy.array(
+    [
+        [1.0, 1.0, 1.0],
+        [1.0, 0.9, 1.0],
+        [1.0, 1.0, 1.0],
+    ],
+    dtype=float), format="PNG")
+F7 = _encode_image(numpy.array(
+    [
+        [1.0, 1.0, 1.0],
+        [1.0, 0.8, 1.0],
+        [1.0, 1.0, 1.0],
+    ],
+    dtype=float), format="TIFF")
+F8 = _encode_image((F5 * 0xFF).astype(np.uint8), format="PNG")
+
+
 def _test_file_list():
     files = []
-    for b, ext in [(F1, ".txt"), (F2, ".txt"), (F3, ".pdf"), (F4, ".txt"), (MULTILINE_MATCH, ".txt"), (F1, ".txt.gz")]:
+    for b, ext in [
+        (F1, ".txt"),
+        (F2, ".txt"),
+        (F3, ".pdf"),
+        (F4, ".txt"),
+        (MULTILINE_MATCH, ".txt"),
+        (F1, ".txt.gz"),
+        (F6, ".png"),
+        (F7, ".tiff"),
+        (F8, ".png"),
+    ]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
             if ext == ".txt.gz":
                 b = gzip.compress(b)
@@ -42,7 +80,7 @@ def _test_file_list():
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
     tests: List[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
@@ -60,7 +98,7 @@ def generate_tests(multiline=False):
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
     # tests for equal files
     tests: List[TestDef] = [
         (f1, f1, None, None),  # pass default values
@@ -81,6 +119,32 @@ def generate_tests_sim_size():
             AssertionError,
         ),  # test with combination where at least one leads to an assertion
         (f1, f2, {"delta": 421, "delta_frac": 84.4}, AssertionError),
+    ]
+    return tests
+
+
+def generate_tests_image_diff():
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
+    metrics = ["mad", "mse", "rms", "fro", "iou"]
+    # tests for equal files (float)
+    tests: List[TestDef] = [
+        (f6, f6, {"metric": metric}, None) for metric in metrics
+    ]
+    # tests for equal files (uint8)
+    tests += [
+        (f8, f8, {"metric": metric}, None) for metric in metrics
+    ]
+    # tests for two different files
+    tests += [
+        (f6, f8, {"metric": metric}, AssertionError) for metric in metrics
+    ]
+    tests += [
+        (f7, f8, {"metric": metric}, AssertionError) for metric in metrics
+    ]
+    tests += [
+        (f6, f7, {"metric": "iou"}, None),
+        (f6, f7, {"metric": "mad", "eps": 0.1 / 9}, None),
+        (f6, f7, {"metric": "mad", "eps": (0.1 / 9) * 0.99}, AssertionError),
     ]
     return tests
 
@@ -128,3 +192,12 @@ def test_files_re_match_multiline(file1, file2, attributes, expect):
             files_re_match_multiline(file1.path, file2.path, attributes)
     else:
         files_re_match_multiline(file1.path, file2.path, attributes)
+
+
+@pytest.mark.parametrize("file1,file2,attributes,expect", generate_tests_image_diff())
+def test_files_image_diff(file1, file2, attributes, expect):
+    if expect is not None:
+        with pytest.raises(expect):
+            files_image_diff(file1.path, file2.path, attributes)
+    else:
+        files_image_diff(file1.path, file2.path, attributes)
