@@ -450,7 +450,7 @@ def _multiobject_intersection_over_union(mask1, mask2, repeat_reverse=True):
             cc1_iou_list.append(intersection_over_union(cc1, cc2))
         iou_list.append(max(cc1_iou_list))
     if repeat_reverse:
-        iou_list += intersection_over_union(mask2, mask1, repeat_reverse=False)
+        iou_list += _multiobject_intersection_over_union(mask2, mask1, repeat_reverse=False)
     return iou_list
 
 
