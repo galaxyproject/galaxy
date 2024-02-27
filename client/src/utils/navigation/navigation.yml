@@ -265,7 +265,7 @@ history_panel:
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_button: '.details .stateless-tags .toggle-button'
       tag_area_input: '.details .stateless-tags .headless-multiselect input'
-      list_items: '.dataset-collection-panel .listing .content-item'
+      list_items: '.dataset-collection-panel .listing-layout .content-item'
       back_to_history: svg[data-description="back to history"]
 
   selectors:
