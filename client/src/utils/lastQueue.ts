@@ -25,12 +25,18 @@ export class LastQueue<T extends (arg: any) => R, R = unknown> {
         this.rejectSkipped = rejectSkipped;
     }
 
+    private skipPromise(key: string | number) {
+        if (!this.rejectSkipped) {
+            return;
+        }
+
+        const promise = this.queuedPromises[key];
+        promise?.reject(new ActionSkippedError());
+    }
+
     async enqueue(action: T, arg: Parameters<T>[0], key: string | number = 0) {
         return new Promise((resolve, reject) => {
-            if (this.rejectSkipped && this.queuedPromises[key]) {
-                this.queuedPromises[key]?.reject(new ActionSkippedError());
-            }
-
+            this.skipPromise(key);
             this.queuedPromises[key] = { action, arg, resolve, reject };
             this.dequeue();
         });
