@@ -12,7 +12,7 @@ from typing import (
 )
 
 import numpy
-import pillow
+import PIL
 import pytest
 
 from galaxy.tool_util.verify import (

@@ -19,7 +19,7 @@ from typing import (
 )
 
 import numpy
-import pillow
+import PIL
 
 try:
     import pysam
