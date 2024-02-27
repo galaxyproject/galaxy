@@ -16759,6 +16759,7 @@ export interface operations {
                 instance?: boolean | null;
                 view?: string | null;
                 step_details?: boolean;
+                include_nested_invocations?: boolean;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

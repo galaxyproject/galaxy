@@ -1324,6 +1324,7 @@ class FastAPIInvocations:
         instance: InvocationsInstanceQueryParam = False,
         view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
+        include_nested_invocations: bool = True,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
         invocation_payload = InvocationIndexPayload(
@@ -1337,6 +1338,7 @@ class FastAPIInvocations:
             limit=limit,
             offset=offset,
             instance=instance,
+            include_nested_invocations=include_nested_invocations,
         )
         serialization_params = InvocationSerializationParams(
             view=view,
