@@ -5,12 +5,12 @@ import filecmp
 import hashlib
 import json
 import logging
+import math
 import os
 import os.path
 import re
 import shutil
 import tempfile
-import math
 from typing import (
     Any,
     Callable,
@@ -18,8 +18,8 @@ from typing import (
     Optional,
 )
 
-import pillow
 import numpy
+import pillow
 
 try:
     import pysam

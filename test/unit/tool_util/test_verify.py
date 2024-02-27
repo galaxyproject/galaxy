@@ -1,7 +1,7 @@
 import collections
 import gzip
-import tempfile
 import io
+import tempfile
 from typing import (
     Any,
     Dict,
@@ -11,18 +11,17 @@ from typing import (
     Type,
 )
 
-import pytest
-
-import pillow
 import numpy
+import pillow
+import pytest
 
 from galaxy.tool_util.verify import (
     files_contains,
     files_delta,
     files_diff,
+    files_image_diff,
     files_re_match,
     files_re_match_multiline,
-    files_image_diff,
 )
 
 F1 = b"A\nB\nC"
