@@ -479,7 +479,7 @@ def get_image_metric(attributes):
     try:
         return metrics[metric_name]
     except KeyError:
-        raise ValueError(f"No such metric: \"{metric_name}\"")
+        raise ValueError(f'No such metric: "{metric_name}"')
 
 
 def files_image_diff(file1, file2, attributes=None):
