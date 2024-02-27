@@ -1,6 +1,7 @@
 import collections
 import gzip
 import io
+import math
 import tempfile
 from typing import (
     Any,
@@ -75,6 +76,17 @@ F8 = _encode_image(
     / 0xFF,
     format="TIFF",
 )
+F9 = _encode_image(
+    numpy.array(
+        [
+            [0, 0, 0],
+            [0, 1, 0],
+            [0, 1, 2],
+        ],
+        dtype=numpy.uint8,
+    ),
+    format="PNG",
+)
 
 
 def _test_file_list():
@@ -89,6 +101,7 @@ def _test_file_list():
         (F6, ".png"),
         (F7, ".tiff"),
         (F8, ".tiff"),
+        (F9, ".png"),
     ]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
             if ext == ".txt.gz":
@@ -99,7 +112,7 @@ def _test_file_list():
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
     tests: List[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
@@ -117,7 +130,7 @@ def generate_tests(multiline=False):
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
     # tests for equal files
     tests: List[TestDef] = [
         (f1, f1, None, None),  # pass default values
@@ -143,7 +156,7 @@ def generate_tests_sim_size():
 
 
 def generate_tests_image_diff():
-    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8 = _test_file_list()
+    f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9 = _test_file_list()
     metrics = ["mae", "mse", "rms", "fro", "iou"]
     # tests for equal files (uint8, PNG)
     tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
@@ -158,6 +171,14 @@ def generate_tests_image_diff():
         (f6, f7, {"metric": "iou"}, None),
         (f6, f7, {"metric": "mae", "eps": 100 / 9 + 1e-4}, None),
         (f6, f7, {"metric": "mae", "eps": 100 / 9 - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "mse", "eps": (100 ** 2) / 9 + 1e-4}, None),
+        (f6, f7, {"metric": "mse", "eps": (100 ** 2) / 9 - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "rms", "eps": math.sqrt((100 ** 2) / 9) + 1e-4}, None),
+        (f6, f7, {"metric": "rms", "eps": math.sqrt((100 ** 2) / 9) - 1e-4}, AssertionError),
+        (f6, f7, {"metric": "fro", "eps": 100 + 1e-4}, None),
+        (f6, f7, {"metric": "fro", "eps": 100 - 1e-4}, AssertionError),
+        (f6, f9, {"metric": "iou", "eps": (1 - 1 / 8) + 1e-4}, None),
+        (f6, f9, {"metric": "iou", "eps": (1 - 1 / 8) - 1e-4}, AssertionError),
     ]
     return tests
 
