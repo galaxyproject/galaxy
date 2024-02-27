@@ -29,8 +29,8 @@ except ImportError:
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
-    DEFAULT_METRIC,
     DEFAULT_EPS,
+    DEFAULT_METRIC,
 )
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
