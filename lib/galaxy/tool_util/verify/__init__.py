@@ -443,10 +443,12 @@ def files_contains(file1, file2, attributes=None):
 def multiobject_intersection_over_union(mask1, mask2, background=0, repeat_reverse=True):
     iou_list = list()
     for label1 in mask1.unique():
-        if label1 == background: continue
+        if label1 == background:
+            continue
         cc1 = (mask1 == label1)
         for label2 in mask2[cc1].unique():
-            if label2 == background: continue
+            if label2 == background:
+                continue
             cc2 = (mask2 == label2)
             iou_list.append(intersection_over_union(cc1, cc2))
     if repeat_reverse:
@@ -469,7 +471,7 @@ def get_image_metric(attributes):
         "mse": lambda im1, im2: (im1 - im2).square().mean(),
         "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
-        "iou": lambda im1, im2: 1 - intersection_over_union(mask1, mask2, attributes.get("background", 0)),
+        "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2, attributes.get("background", 0)),
     }
     return metrics[attributes.get("metric")]
 
