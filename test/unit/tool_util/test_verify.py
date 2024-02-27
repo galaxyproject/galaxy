@@ -63,7 +63,17 @@ F7 = _encode_image(
     ),
     format="TIFF",
 )
-F8 = _encode_image(F6 / 0xFF, format="TIFF")
+F8 = _encode_image(
+    numpy.array(
+        [
+            [255, 255, 255],
+            [255, 100, 255],
+            [255, 255, 255],
+        ],
+        dtype=float,
+    ) / 0xFF,
+    format="TIFF",
+)
 
 
 def _test_file_list():
