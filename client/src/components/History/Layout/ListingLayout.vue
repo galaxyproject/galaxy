@@ -49,7 +49,6 @@ function scrollToOffset(offset: number) {
     element?.scrollIntoView();
 }
 
-// eslint-disable-next-line compat/compat
 const observer = new IntersectionObserver(
     (items) => {
         for (let index = 0; index < items.length; index++) {
