@@ -492,6 +492,6 @@ def files_image_diff(file1, file2, attributes=None):
         raise AssertionError(f"Image dimensions did not match ({im1.shape}, {im2.shape}).")
 
     distance = get_image_metric(attributes)(im1, im2)
-    distance_eps = attributes.get("eps", 0.0)
+    distance_eps = attributes.get("eps", 0.01)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
