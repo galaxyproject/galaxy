@@ -468,8 +468,8 @@ def get_image_metric(attributes):
     attributes = attributes or {}
     metrics = {
         "mae": lambda im1, im2: numpy.abs(im1 - im2).mean(),
-        "mse": lambda im1, im2: (im1 - im2).square().mean(),
-        "rms": lambda im1, im2: math.sqrt((im1 - im2).square().mean()),
+        "mse": lambda im1, im2: numpy.square(im1 - im2).mean(),
+        "rms": lambda im1, im2: math.sqrt(numpy.square(im1 - im2).mean()),
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
         "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2),
     }
