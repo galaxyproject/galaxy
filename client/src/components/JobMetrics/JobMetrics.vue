@@ -45,7 +45,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    shouldShowCarbonEmissionsEstimates: {
+    shouldShowCarbonEmissionEstimates: {
         type: Boolean,
         default: true,
     },
@@ -209,9 +209,7 @@ const estimatedServerInstance = computed(() => {
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"

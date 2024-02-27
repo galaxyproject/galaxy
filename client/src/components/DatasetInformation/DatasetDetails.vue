@@ -25,7 +25,7 @@
                             :geographical-server-location-name="config.geographical_server_location_name"
                             :power-usage-effectiveness="config.power_usage_effectiveness"
                             :should-show-aws-estimate="config.aws_estimate"
-                            :should-show-carbon-emissions-estimates="config.carbon_emissions_estimates" />
+                            :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
                         <JobDestinationParams v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
                         <JobDependencies :dependencies="job.dependencies"></JobDependencies>
                         <div v-if="dataset.peek">
