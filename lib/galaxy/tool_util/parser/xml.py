@@ -19,6 +19,8 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_METRIC,
+    DEFAULT_EPS,
 )
 from galaxy.util import (
     Element,
@@ -788,6 +790,9 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
     # `location` may contain an URL to a remote file that will be used to download `file` (if not already present on disk).
     location = attrib.get("location")
+    # Parameters for "image_diff" comparison
+    attributes["metric"] = attrib.pop("metric", DEFAULT_METRIC)
+    attributes["eps"] = float(attrib.pop("eps", DEFAULT_EPS))
     if location and file is None:
         file = os.path.basename(location)  # If no file specified, try to get filename from URL last component
     attributes["location"] = location

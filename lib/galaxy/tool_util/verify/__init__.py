@@ -29,6 +29,8 @@ except ImportError:
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_METRIC,
+    DEFAULT_EPS,
 )
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
@@ -473,7 +475,7 @@ def get_image_metric(attributes):
         "fro": lambda im1, im2: numpy.linalg.norm(im1 - im2, "fro"),
         "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2),
     }
-    return metrics[attributes.get("metric", "mae")]
+    return metrics[attributes.get("metric", DEFAULT_METRIC)]
 
 
 def files_image_diff(file1, file2, attributes=None):
@@ -490,6 +492,6 @@ def files_image_diff(file1, file2, attributes=None):
         raise AssertionError(f"Image dimensions did not match ({im1.shape}, {im2.shape}).")
 
     distance = get_image_metric(attributes)(im1, im2)
-    distance_eps = attributes.get("eps", 0.01)
+    distance_eps = attributes.get("eps", DEFAULT_EPS)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")

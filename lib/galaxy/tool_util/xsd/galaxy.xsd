@@ -7471,6 +7471,7 @@ favour of a ``has_size`` assertion.</xs:documentation>
       <xs:enumeration value="sim_size"/>
       <xs:enumeration value="re_match_multiline"/>
       <xs:enumeration value="contains"/>
+      <xs:enumeration value="image_diff"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="TestOutputMetricType">

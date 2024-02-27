@@ -11,19 +11,19 @@
   <tests>
     <test>
       <param name="in" value="im1_uint8.png" />
-      <output name="out" value="im1_uint8.png" compare="img_diff" metric="mae" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mae" />
     </test>
     <test>
       <param name="in" value="im1_uint8.tif" />
-      <output name="out" value="im1_uint8.png" compare="img_diff" metric="mse" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="mse" />
     </test>
     <test>
       <param name="in" value="im1_uint8.png" />
-      <output name="out" value="im1_uint8.png" compare="img_diff" metric="rms" />
+      <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" />
     </test>
     <test>
       <param name="in" value="im2_a.png" />
-      <output name="out" value="im2_b.png" compare="img_diff" metric="mae" eps="0.25" />
+      <output name="out" value="im2_b.png" compare="image_diff" metric="mae" eps="0.25" />
     </test>
   </tests>
 </tool>
