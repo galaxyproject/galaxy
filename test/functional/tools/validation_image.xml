@@ -1,0 +1,21 @@
+<tool id="validation_hdf5" name="Validation (hdf5)" version="1.0">
+    <command><![CDATA[
+      cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="cool" />
+    </inputs>
+    <outputs>
+        <data name="output" format="cool" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="im1_float.tif" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_metadata width="32" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
