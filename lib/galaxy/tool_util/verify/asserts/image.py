@@ -49,7 +49,7 @@ def assert_image_has_labels(
     # Determine labels present in the image.
     labels = numpy.unique(im_arr)
 
-    # Apply filtering induced by `exclude_labels`.
+    # Apply filtering due to `exclude_labels`.
     if isinstance(exclude_labels, str):
         if numpy.issubdtype(im_arr.dtype, numpy.integer):
             cast_label = lambda label: int(label)
@@ -69,7 +69,7 @@ def assert_image_has_labels(
 
     # Perform `mean_object_size` assertion.
     if mean_object_size is not None:
-        actual = numpy.mean([(im_arr == label).sum() for label in labels])
+        actual = sum((im_arr == label).sum() for label in labels) / len(labels)
         expected = float(mean_object_size)
         assert abs(actual - expected) <= float(eps), \
             f"Wrong mean object size: {actual} (expected {expected})"
