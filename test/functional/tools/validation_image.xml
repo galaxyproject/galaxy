@@ -1,4 +1,4 @@
-<tool id="validation_hdf5" name="Validation (hdf5)" version="1.0">
+<tool id="validation_image" name="validation_image" version="1.0">
     <command><![CDATA[
       cp '$input' '$output'
     ]]></command>
