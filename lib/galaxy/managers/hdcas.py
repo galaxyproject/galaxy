@@ -8,6 +8,8 @@ history.
 import logging
 from typing import Dict
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.managers import (
     annotatable,
@@ -334,3 +336,12 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
         return list(extensions_set)
+
+
+def get_hdca_by_name(session, name):
+    stmt = (
+        select(model.HistoryDatasetCollectionAssociation)
+        .where(model.HistoryDatasetCollectionAssociation.name == name)
+        .limit(1)
+    )
+    return session.scalars(stmt).first()
