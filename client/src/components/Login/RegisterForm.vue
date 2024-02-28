@@ -193,7 +193,7 @@ export default {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || withPrefix("/welcome/new");
+                    window.location = this.redirect || withPrefix("/");
                 })
                 .catch((error) => {
                     this.disableCreate = false;
