@@ -71,6 +71,12 @@
                         {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
                     </td>
                 </tr>
+                <tr v-if="invocationId">
+                    <td>Workflow Invocation</td>
+                    <td>
+                        <router-link :to="routeToInvocation">{{ invocationId }}</router-link>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -83,6 +89,8 @@ import UtcDate from "components/UtcDate";
 import { formatDuration, intervalToDuration } from "date-fns";
 import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
+
+import { invocationForJob } from "@/api/invocations";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
@@ -108,6 +116,7 @@ export default {
     data() {
         return {
             job: null,
+            invocationId: null,
         };
     },
     computed: {
@@ -119,6 +128,9 @@ export default {
         jobIsTerminal() {
             return this.job && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
         },
+        routeToInvocation() {
+            return `/workflows/invocations/${this.invocationId}`;
+        },
     },
     methods: {
         getAppRoot() {
@@ -126,6 +138,17 @@ export default {
         },
         updateJob(job) {
             this.job = job;
+            if (job) {
+                this.fetchInvocation(job.id);
+            }
+        },
+        async fetchInvocation(jobId) {
+            if (jobId) {
+                const invocation = await invocationForJob({ jobId: jobId });
+                if (invocation) {
+                    this.invocationId = invocation.id;
+                }
+            }
         },
     },
 };

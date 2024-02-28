@@ -19,6 +19,15 @@ export interface WorkflowInvocationStep {
     id: string;
 }
 
+export async function invocationForJob(params: { jobId: string }): Promise<WorkflowInvocation | null> {
+    const { data } = await axios.get(`${getAppRoot()}api/invocations?job_id=${params.jobId}`);
+    if (data.length > 0) {
+        return data[0] as WorkflowInvocation;
+    } else {
+        return null;
+    }
+}
+
 // TODO: Replace these provisional functions with fetchers after https://github.com/galaxyproject/galaxy/pull/16707 is merged
 export async function fetchInvocationDetails(params: { id: string }): Promise<ApiResponse<WorkflowInvocation>> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}`);
