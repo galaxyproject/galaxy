@@ -185,7 +185,8 @@ onMounted(() => {
                 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
             }"
             :style="cssVariables"
-            @click="onRootClick">
+            @click.exact="onRootClick"
+            @click.shift.capture.prevent.stop="commentStore.toggleCommentMultiSelected(props.comment.id)">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"

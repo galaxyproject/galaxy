@@ -88,11 +88,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     }
 
     function toggleStepMultiSelected(stepId: number) {
-        multiSelectedSteps.value[stepId] = !getStepMultiSelected.value(stepId);
+        setStepMultiSelected(stepId, !getStepMultiSelected.value(stepId));
     }
 
     function setStepMultiSelected(stepId: number, selected: boolean) {
-        multiSelectedSteps.value[stepId] = selected;
+        set(multiSelectedSteps.value, stepId, selected);
     }
 
     function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {

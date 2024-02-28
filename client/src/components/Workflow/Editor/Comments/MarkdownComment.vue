@@ -133,6 +133,7 @@ onMounted(() => {
 
 <template>
     <div ref="rootElement" class="markdown-workflow-comment">
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
         <div
             ref="resizeContainer"
             class="resize-container"
@@ -141,7 +142,8 @@ onMounted(() => {
                 'prevent-zoom': !props.readonly,
                 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
             }"
-            :style="cssVariables">
+            :style="cssVariables"
+            @click.shift.capture.prevent.stop="commentStore.toggleCommentMultiSelected(props.comment.id)">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
