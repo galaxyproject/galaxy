@@ -8,15 +8,19 @@ from typing import (
     Union,
 )
 
+from gxformat2._yaml import ordered_dump
+
 from galaxy import (
     exceptions,
     model,
+    util,
     web,
 )
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.histories import HistoryManager
 from galaxy.managers.workflows import (
     RefactorResponse,
     WorkflowContentsManager,
@@ -37,6 +41,7 @@ from galaxy.schema.workflows import (
     StoredWorkflowDetailed,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
+from galaxy.web import format_return_as_json
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -58,12 +63,39 @@ class WorkflowsService(ServiceBase):
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
         notification_service: NotificationService,
+        history_manager: HistoryManager,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
         self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
         self._tool_shed_registry = tool_shed_registry
+        self._history_manager = history_manager
+
+    def download_workflow(self, trans, workflow_id, history_id, style, format, version, instance):
+        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        history = None
+        if history_id:
+            history = self._history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        ret_dict = self._workflow_contents_manager.workflow_to_dict(
+            trans, stored_workflow, style=style, version=version, history=history
+        )
+        if format == "json-download":
+            sname = stored_workflow.name
+            sname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
+            if ret_dict.get("format-version", None) == "0.1":
+                extension = "ga"
+            else:
+                extension = "gxwf.json"
+            trans.response.headers["Content-Disposition"] = (
+                f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
+            )
+            trans.response.set_content_type("application/galaxy-archive")
+
+        if style == "format2" and format != "json-download":
+            return ordered_dump(ret_dict)
+        else:
+            return ret_dict
 
     def index(
         self,
