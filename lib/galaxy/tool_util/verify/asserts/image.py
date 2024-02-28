@@ -60,7 +60,7 @@ def assert_image_has_intensities(
     
     # Select the specified channel (if any).
     if channel is not None:
-        im_arr = im_arr[:, :, channel]
+        im_arr = im_arr[:, :, int(channel)]
 
     # Perform `mean_intensity` assertion.
     if mean_intensity is not None:
