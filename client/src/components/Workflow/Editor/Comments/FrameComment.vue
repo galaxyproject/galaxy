@@ -263,7 +263,11 @@ onMounted(() => {
         <div
             ref="resizeContainer"
             class="resize-container"
-            :class="{ resizable: !props.readonly, 'prevent-zoom': !props.readonly }"
+            :class="{
+                resizable: !props.readonly,
+                'prevent-zoom': !props.readonly,
+                'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
+            }"
             :style="cssVariables"
             @click="onClick">
             <DraggablePan
@@ -411,6 +415,10 @@ onMounted(() => {
         background-color: var(--secondary-color);
         flex: 1;
         position: relative;
+    }
+
+    &.multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px lighten($brand-info, 20%);
     }
 }
 
