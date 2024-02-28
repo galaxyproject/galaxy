@@ -9,11 +9,12 @@
         <data name="output" format="cool" />
     </outputs>
     <tests>
+        <! -- Tests with intensity images -->
         <test>
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
-                    <has_image_metadata width="32" height="32" channels="1" />
+                    <image_has_metadata width="32" height="32" channels="1" />
                 </assert_contents>
             </output>
         </test>
@@ -21,7 +22,35 @@
             <param name="input" value="im3_a.png" />
             <output name="output">
                 <assert_contents>
-                    <has_image_metadata width="32" height="32" channels="3" />
+                    <image_has_metadata width="32" height="32" channels="3" />
+                </assert_contents>
+            </output>
+        </test>
+        <! -- Tests with label images -->
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_metadata width="32" height="32" channels="1" />
+                    <image_has_labels number_of_objects="1" mean_object_size="256" exclude_labels="0">
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_metadata width="32" height="32" channels="1" />
+                    <image_has_labels number_of_objects="2" mean_object_size="256">
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_metadata width="32" height="32" channels="1" />
+                    <image_has_labels number_of_objects="2" mean_object_size="255" eps="1.0">
                 </assert_contents>
             </output>
         </test>
