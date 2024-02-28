@@ -528,7 +528,7 @@ class TestYamlLoader(BaseLoaderTestCase):
         }
         assert resource_requirements[6].to_dict() == {
             "resource_type": "shm_size",
-            "value_or_expression": "67108864",
+            "value_or_expression": 67108864,
         }
 
     def test_outputs(self):
