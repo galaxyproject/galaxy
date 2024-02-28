@@ -376,6 +376,7 @@
     <datatype extension="star" type="galaxy.datatypes.images:Star" display_in_upload="true" />
     <datatype extension="peff" type="galaxy.datatypes.proteomics:PEFF" display_in_upload="true" />
     <datatype extension="toml" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="colab.tar" auto_compressed_types="gz" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
     <!-- End Proteomics Datatypes -->
     <!-- FlowCytometry -->
     <datatype extension="fcs" type="galaxy.datatypes.flow:FCS" mimetype="application/octet-stream" display_in_upload="true" description="A FCS binary sequence file with a '.fcs' file extension." />
