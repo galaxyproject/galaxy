@@ -4900,6 +4900,10 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/download/{workflow_id}": {
+        /** Returns a selected workflow. */
+        get: operations["workflow_dict_api_workflows_download__workflow_id__get"];
+    };
     "/api/workflows/menu": {
         parameters: {
             query?: never;
@@ -4971,6 +4975,10 @@ export interface paths {
         head?: never;
         patch?: never;
         trace?: never;
+    };
+    "/api/workflows/{workflow_id}/download": {
+        /** Returns a selected workflow. */
+        get: operations["workflow_dict_api_workflows__workflow_id__download_get"];
     };
     "/api/workflows/{workflow_id}/enable_link_access": {
         parameters: {
@@ -33195,6 +33203,44 @@ export interface operations {
             };
         };
     };
+    workflow_dict_api_workflows_download__workflow_id__get: {
+        /** Returns a selected workflow. */
+        parameters: {
+            /** @description The history id to import a workflow from. */
+            /** @description The default is 'export', which is the meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are more tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download. */
+            /** @description The format to download the workflow in. */
+            /** @description The version of the workflow to fetch. */
+            query?: {
+                history_id?: string | null;
+                style?: string | null;
+                format?: string | null;
+                version?: number | null;
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_workflow_menu_api_workflows_menu_get: {
         parameters: {
             query?: {
@@ -33426,6 +33472,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    workflow_dict_api_workflows__workflow_id__download_get: {
+        /** Returns a selected workflow. */
+        parameters: {
+            /** @description The history id to import a workflow from. */
+            /** @description The default is 'export', which is the meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are more tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download. */
+            /** @description The format to download the workflow in. */
+            /** @description The version of the workflow to fetch. */
+            query?: {
+                history_id?: string | null;
+                style?: string | null;
+                format?: string | null;
+                version?: number | null;
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
