@@ -2,7 +2,8 @@ import io
 from typing import (
     Optional,
     Union,
-    List
+    List,
+    Tuple,
 )
 
 import numpy
@@ -30,6 +31,53 @@ def assert_image_has_metadata(
         actual_channels = len(im.getbands())
         assert channels is None or actual_channels == int(channels), \
             f"Image has wrong number of channels: {actual_channels} (expected {int(channels)})"
+
+
+def _compute_center_of_mass(im_arr):
+    while im_arr.ndim > 2:
+        im_arr = im_arr.sum(axis=2)
+    im_arr = numpy.abs(im_arr)
+    if im_arr.sum() == 0:
+        return (numpy.nan, numpy.nan)
+    im_arr = im_arr / im_arr.sum()
+    yy, xx = numpy.indices(im_arr.shape)
+    return (im_arr * xx).sum(), (im_arr * yy).sum()
+
+
+def assert_image_has_intensities(
+    output_bytes: bytes,
+    channel: Optional[Union[int, str]] = None,
+    mean_intensity: Optional[Union[float, str]] = None,
+    center_of_mass: Optional[Union[Tuple[float], str]] = None,
+    eps: Optional[Union[float, str]] = 1e-8,
+) -> None:
+    """
+    Assert the image output has specific intensity content.
+    """
+    buf = io.BytesIO(output_bytes)
+    with Image.open(buf) as im:
+        im_arr = numpy.array(im)
+    
+    # Select the specified channel (if any).
+    if channel is not None:
+        im_arr = im_arr[:, :, channel]
+
+    # Perform `mean_intensity` assertion.
+    if mean_intensity is not None:
+        actual = im_arr.mean()
+        expected = float(mean_intensity)
+        assert abs(actual - expected) <= float(eps), \
+            f"Wrong mean intensity: {actual} (expected {expected})"
+    
+    # Perform `center_of_mass` assertion.
+    if center_of_mass is not None:
+        if isinstance(center_of_mass, str):
+            center_of_mass = [float(c.strip()) for c in center_of_mass.split(",")]
+        assert len(center_of_mass) == 2, "center_of_mass must have two components"
+        actual = _compute_center_of_mass(im_arr)
+        distance = numpy.linalg.norm(numpy.subtract(center_of_mass, expected))
+        assert distance <= float(eps), \
+            f"Wrong center of mass: {actual} (expected {center_of_mass})"
 
 
 def assert_image_has_labels(

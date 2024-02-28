@@ -14,7 +14,7 @@
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" />
+                    <image_has_metadata width="32" height="32" channels="1" center_of_mass="15.61, 15.48" eps="0.01" />
                 </assert_contents>
             </output>
         </test>
@@ -23,6 +23,25 @@
             <output name="output">
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="3" />
+                    <image_has_intensities channel="0" mean_intensity="0.25" center_of_mass="7.5, 7.5" />
+                    <image_has_intensities channel="1" mean_intensity="0.0" />
+                    <image_has_intensities channel="2" mean_intensity="0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_a.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_intensities channel="0" mean_intensity="0.24" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_a.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_intensities channel="0" mean_intensity="0.24" eps="0.01" />
                 </assert_contents>
             </output>
         </test>
