@@ -1,4 +1,5 @@
 from galaxy.managers import users as lib
+from galaxy.webapps.galaxy.services.users import get_users_for_index
 from . import verify_items
 
 
@@ -25,6 +26,36 @@ def test_get_users_by_ids(session, make_random_users):
 
     users2 = lib.get_users_by_ids(session, ids)
     verify_items(users2, 3, (u1, u2, u3))
+
+
+def test_get_users_for_index(session, make_user):
+    u1 = make_user(email="a", username="b")
+    u2 = make_user(email="c", username="d")
+    u3 = make_user(email="e", username="f")
+    u4 = make_user(email="g", username="h")
+    u5 = make_user(email="i", username="z")
+    u6 = make_user(email="z", username="i")
+
+    users = get_users_for_index(session, False, f_email="a", expose_user_email=True)
+    verify_items(users, 1, [u1])
+    users = get_users_for_index(session, False, f_email="c", is_admin=True)
+    verify_items(users, 1, [u2])
+    users = get_users_for_index(session, False, f_name="f", expose_user_name=True)
+    verify_items(users, 1, [u3])
+    users = get_users_for_index(session, False, f_name="h", is_admin=True)
+    verify_items(users, 1, [u4])
+    users = get_users_for_index(session, False, f_any="i", is_admin=True)
+    verify_items(users, 2, [u5, u6])
+    users = get_users_for_index(session, False, f_any="i", expose_user_email=True, expose_user_name=True)
+    verify_items(users, 2, [u5, u6])
+    users = get_users_for_index(session, False, f_any="i", expose_user_email=True)
+    verify_items(users, 1, [u5])
+    users = get_users_for_index(session, False, f_any="i", expose_user_name=True)
+    verify_items(users, 1, [u6])
+
+    u1.deleted = True
+    users = get_users_for_index(session, True)
+    verify_items(users, 1, [u1])
 
 
 # TODO: factor out
