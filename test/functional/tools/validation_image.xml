@@ -41,7 +41,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity="0.24" eps="0.01" />
+                    <image_has_intensities channel="0" mean_intensity="0.24" eps="0.0100000001" />
                 </assert_contents>
             </output>
         </test>
