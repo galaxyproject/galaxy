@@ -3,10 +3,10 @@
       cp '$input' '$output'
     ]]></command>
     <inputs>
-        <param name="input" type="data" format="cool" />
+        <param name="input" type="data" format="data" />
     </inputs>
     <outputs>
-        <data name="output" format="cool" />
+        <data name="output" format="data" />
     </outputs>
     <tests>
         <!-- Tests with intensity images -->

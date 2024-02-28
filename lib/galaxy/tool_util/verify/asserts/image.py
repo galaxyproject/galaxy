@@ -52,7 +52,7 @@ def assert_image_has_labels(
     # Apply filtering induced by `exclude_labels`.
     if isinstance(exclude_labels, str):
         exclude_labels = [im_arr.dtype(label) for label in exclude_labels.split(",") if len(label) > 0]
-    labels = [label for label in labels if label is not in exclude_labels]
+    labels = [label for label in labels if label not in exclude_labels]
 
     # Perform `number_of_objects` assertion.
     if number_of_objects is not None:
