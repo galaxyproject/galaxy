@@ -128,11 +128,13 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     });
 
     function setCommentMultiSelected(id: number, selected: boolean) {
-        if (!localCommentsMetadata.value[id]) {
-            localCommentsMetadata.value[id] = {};
-        }
+        const meta = localCommentsMetadata.value[id];
 
-        localCommentsMetadata.value[id]!.multiSelected = selected;
+        if (meta) {
+            set(meta, "multiSelected", selected);
+        } else {
+            set(localCommentsMetadata.value, id, { multiSelected: selected });
+        }
     }
 
     function toggleCommentMultiSelected(id: number) {
@@ -196,13 +198,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     }
 
     function markJustCreated(id: number) {
-        const metadata = localCommentsMetadata.value[id];
-
-        if (metadata) {
-            set(metadata, "justCreated", true);
-        } else {
-            set(localCommentsMetadata.value, id, { justCreated: true });
-        }
+        set(localCommentsMetadata.value, id, { justCreated: true });
     }
 
     function clearJustCreated(id: number) {
@@ -308,6 +304,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
     return {
         commentsRecord,
         comments,
+        localCommentsMetadata,
         addComments,
         highestCommentId,
         isJustCreated,
