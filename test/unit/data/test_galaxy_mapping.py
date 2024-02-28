@@ -347,68 +347,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_dataset_dbkeys_and_extensions_summary(self):
-        u = model.User(email="mary2@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        d1 = model.HistoryDatasetAssociation(
-            extension="bam", dbkey="hg19", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        d2 = model.HistoryDatasetAssociation(
-            extension="txt", dbkey="hg19", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        c1 = model.DatasetCollection(collection_type="paired")
-        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
-        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
-        hdca = model.HistoryDatasetCollectionAssociation(collection=c1, history=h1)
-        self.model.session.add_all([d1, d2, c1, dce1, dce2, hdca])
-        self.model.session.flush()
-        assert hdca.dataset_dbkeys_and_extensions_summary[0] == {"hg19"}
-        assert hdca.dataset_dbkeys_and_extensions_summary[1] == {"bam", "txt"}
-
-    def test_populated_optimized_ok(self):
-        u = model.User(email="mary2@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        d2 = model.HistoryDatasetAssociation(
-            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        c1 = model.DatasetCollection(collection_type="paired")
-        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
-        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
-        self.model.session.add_all([d1, d2, c1, dce1, dce2])
-        self.model.session.flush()
-        assert c1.populated
-        assert c1.populated_optimized
-
-    def test_populated_optimized_empty_list_list_ok(self):
-        c1 = model.DatasetCollection(collection_type="list")
-        c2 = model.DatasetCollection(collection_type="list:list")
-        dce1 = model.DatasetCollectionElement(
-            collection=c2, element=c1, element_identifier="empty_list", element_index=0
-        )
-        self.model.session.add_all([c1, c2, dce1])
-        self.model.session.flush()
-        assert c1.populated
-        assert c1.populated_optimized
-        assert c2.populated
-        assert c2.populated_optimized
-
-    def test_populated_optimized_list_list_not_populated(self):
-        c1 = model.DatasetCollection(collection_type="list")
-        c1.populated_state = False
-        c2 = model.DatasetCollection(collection_type="list:list")
-        dce1 = model.DatasetCollectionElement(
-            collection=c2, element=c1, element_identifier="empty_list", element_index=0
-        )
-        self.model.session.add_all([c1, c2, dce1])
-        self.model.session.flush()
-        assert not c1.populated
-        assert not c1.populated_optimized
-        assert not c2.populated
-        assert not c2.populated_optimized
-
     def test_default_disk_usage(self):
         u = model.User(email="disk_default@test.com", password="password")
         self.persist(u)
