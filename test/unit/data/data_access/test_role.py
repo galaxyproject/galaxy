@@ -5,6 +5,7 @@ from galaxy.model.security import (
 )
 from . import verify_items
 
+
 def test_get_npns_roles(session, make_role):
     make_role(deleted=True)
     make_role(type=m.Role.types.PRIVATE)
