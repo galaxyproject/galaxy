@@ -41,7 +41,7 @@
             <output name="output">
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_labels number_of_objects="2" mean_object_size="256" />
+                    <image_has_labels number_of_objects="2" mean_object_size="512" />
                 </assert_contents>
             </output>
         </test>
@@ -49,7 +49,7 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_labels mean_object_size="255" eps="0.9" />
+                    <image_has_labels mean_object_size="511" eps="0.9" />
                 </assert_contents>
             </output>
         </test>
@@ -58,7 +58,7 @@
             <output name="output">
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_labels number_of_objects="2" mean_object_size="255" eps="1.0" />
+                    <image_has_labels number_of_objects="2" mean_object_size="511" eps="1.0" />
                 </assert_contents>
             </output>
         </test>
