@@ -75,7 +75,7 @@ def assert_image_has_intensities(
             center_of_mass = [float(c.strip()) for c in center_of_mass.split(",")]
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
         actual = _compute_center_of_mass(im_arr)
-        distance = numpy.linalg.norm(numpy.subtract(center_of_mass, expected))
+        distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
         assert distance <= float(eps), \
             f"Wrong center of mass: {actual} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
 
