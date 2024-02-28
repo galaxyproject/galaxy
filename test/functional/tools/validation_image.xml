@@ -19,7 +19,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.png" />
+            <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="3" />
@@ -30,7 +30,7 @@
             </output>
         </test>
         <test expect_test_failure="true">
-            <param name="input" value="im3_b.png" />
+            <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
                     <image_has_intensities channel="0" mean_intensity="0.24" />
@@ -38,7 +38,7 @@
             </output>
         </test>
         <test>
-            <param name="input" value="im3_b.png" />
+            <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
                     <image_has_intensities channel="0" mean_intensity="0.24" eps="0.01" />
