@@ -10,7 +10,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="im1_float.tif" />
+            <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
                     <has_image_metadata width="32" />
