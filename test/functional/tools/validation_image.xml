@@ -13,7 +13,15 @@
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
-                    <has_image_metadata width="32" />
+                    <has_image_metadata width="32" height="32" channels="1" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_a.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_metadata width="32" height="32" channels="3" />
                 </assert_contents>
             </output>
         </test>
