@@ -67,7 +67,7 @@ def assert_image_has_intensities(
         actual = im_arr.mean()
         expected = float(mean_intensity)
         assert abs(actual - expected) <= float(eps), \
-            f"Wrong mean intensity: {actual} (expected {expected})"
+            f"Wrong mean intensity: {actual} (expected {expected}, eps: {eps})"
     
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
@@ -77,7 +77,7 @@ def assert_image_has_intensities(
         actual = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(center_of_mass, expected))
         assert distance <= float(eps), \
-            f"Wrong center of mass: {actual} (expected {center_of_mass})"
+            f"Wrong center of mass: {actual} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
 
 
 def assert_image_has_labels(
@@ -120,4 +120,4 @@ def assert_image_has_labels(
         actual = sum((im_arr == label).sum() for label in labels) / len(labels)
         expected = float(mean_object_size)
         assert abs(actual - expected) <= float(eps), \
-            f"Wrong mean object size: {actual} (expected {expected})"
+            f"Wrong mean object size: {actual} (expected {expected}, eps: {eps})"
