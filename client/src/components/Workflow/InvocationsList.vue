@@ -70,6 +70,9 @@
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
+            <template v-slot:cell(state)="data">
+                <HelpText :uri="`galaxy.invocations.states.${data.value}`" :text="data.value" />
+            </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
                     v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
@@ -87,6 +90,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import HelpText from "components/Help/HelpText";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
@@ -104,6 +108,7 @@ export default {
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
+        HelpText,
     },
     mixins: [paginationMixin],
     props: {

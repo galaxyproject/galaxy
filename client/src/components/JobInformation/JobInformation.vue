@@ -16,7 +16,9 @@
                 </tr>
                 <tr v-if="job && job.state">
                     <td>Job State</td>
-                    <td data-description="galaxy-job-state">{{ job.state }}</td>
+                    <td data-description="galaxy-job-state">
+                        <HelpText :uri="`galaxy.jobs.states.${job.state}`" :text="job.state" />
+                    </td>
                 </tr>
                 <tr v-if="job && job.tool_version">
                     <td>Galaxy Tool Version</td>
@@ -40,16 +42,32 @@
                         {{ runTime }}
                     </td>
                 </tr>
-                <CodeRow v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
-                <CodeRow v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
-                <CodeRow v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
+                <CodeRow
+                    v-if="job"
+                    id="command-line"
+                    help-uri="unix.commandLine"
+                    :code-label="'Command Line'"
+                    :code-item="job.command_line" />
+                <CodeRow
+                    v-if="job"
+                    id="stdout"
+                    help-uri="unix.stdout"
+                    :code-label="'Tool Standard Output'"
+                    :code-item="job.tool_stdout" />
+                <CodeRow
+                    v-if="job"
+                    id="stderr"
+                    help-uri="unix.stderr"
+                    :code-label="'Tool Standard Error'"
+                    :code-item="job.tool_stderr" />
                 <CodeRow
                     v-if="job && job.traceback"
                     id="traceback"
+                    help-uri="unix.traceback"
                     :code-label="'Unexpected Job Errors'"
                     :code-item="job.traceback" />
                 <tr v-if="job">
-                    <td>Tool Exit Code</td>
+                    <td>Tool <HelpText uri="unix.exitCode" text="Exit Code" /></td>
                     <td id="exit-code">{{ job.exit_code }}</td>
                 </tr>
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
@@ -78,6 +96,7 @@
 
 <script>
 import CopyToClipboard from "components/CopyToClipboard";
+import HelpText from "components/Help/HelpText";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { formatDuration, intervalToDuration } from "date-fns";
@@ -92,6 +111,7 @@ export default {
         CodeRow,
         DecodedId,
         JobDetailsProvider,
+        HelpText,
         UtcDate,
         CopyToClipboard,
     },
