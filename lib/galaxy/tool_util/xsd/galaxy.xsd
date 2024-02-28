@@ -6539,7 +6539,7 @@ response to this directive.
         </xs:attribute>
         <xs:attribute name="data_style" type="InputsConfigfileDatastyleType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include a element identifiers, datatype, staging path, a source path and all metadata files.</xs:documentation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include element identifiers, datatype, staging path, a source path and all metadata files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
