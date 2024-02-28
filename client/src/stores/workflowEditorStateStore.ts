@@ -48,6 +48,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
+        multiSelectedSteps.value = {};
     }
 
     const getInputTerminalPosition = computed(

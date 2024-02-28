@@ -71,6 +71,7 @@ export type WorkflowComment =
 
 interface CommentsMetadata {
     justCreated?: boolean;
+    multiSelected?: boolean;
 }
 
 function assertCommentDataValid(
@@ -121,6 +122,26 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         assertDefined(comment);
         return comment;
     });
+
+    const getCommentMultiSelected = computed(() => (id: number) => {
+        return Boolean(localCommentsMetadata.value[id]?.multiSelected);
+    });
+
+    function setCommentMultiSelected(id: number, selected: boolean) {
+        if (!localCommentsMetadata.value[id]) {
+            localCommentsMetadata.value[id] = {};
+        }
+
+        localCommentsMetadata.value[id]!.multiSelected = selected;
+    }
+
+    function toggleCommentMultiSelected(id: number) {
+        setCommentMultiSelected(id, !getCommentMultiSelected.value(id));
+    }
+
+    function clearMultiSelectedComments() {
+        Object.values(localCommentsMetadata.value).forEach((meta) => (meta.multiSelected = false));
+    }
 
     function changePosition(id: number, position: [number, number]) {
         const comment = getComment.value(id);
@@ -290,6 +311,10 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         addComments,
         highestCommentId,
         isJustCreated,
+        getCommentMultiSelected,
+        setCommentMultiSelected,
+        toggleCommentMultiSelected,
+        clearMultiSelectedComments,
         changePosition,
         changeSize,
         changeData,
