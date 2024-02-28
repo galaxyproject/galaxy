@@ -621,21 +621,6 @@ def populate_api_routes(webapp, app):
         action="import_new_workflow_deprecated",
         conditions=dict(method=["POST"]),
     )
-    webapp.mapper.connect(
-        "workflow_dict",
-        "/api/workflows/{workflow_id}/download",
-        controller="workflows",
-        action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
-    # Preserve the following download route for now for dependent applications  -- deprecate at some point
-    webapp.mapper.connect(
-        "workflow_dict",
-        "/api/workflows/download/{workflow_id}",
-        controller="workflows",
-        action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
     # Deprecated in favor of POST /api/workflows with shared_workflow_id in payload.
     webapp.mapper.connect(
         "import_shared_workflow_deprecated",
