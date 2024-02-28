@@ -26,6 +26,7 @@
                     <image_has_intensities channel="0" mean_intensity="0.25" center_of_mass="7.5, 7.5" />
                     <image_has_intensities channel="1" mean_intensity="0.0" />
                     <image_has_intensities channel="2" mean_intensity="0" />
+                    <image_has_intensities mean_intensity="0.08333333333" center_of_mass="7.5, 7.5" />
                 </assert_contents>
             </output>
         </test>
