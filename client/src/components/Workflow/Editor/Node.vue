@@ -230,11 +230,13 @@ const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
 const isActive = computed(() => props.id === props.activeNodeId);
+
 const classes = computed(() => {
     return {
         "node-on-scroll-to": scrolledTo.value,
         "node-highlight": props.highlight || isActive.value,
         "is-active": isActive.value,
+        "node-multi-selected": stateStore.getStepMultiSelected(props.id),
     };
 });
 const style = computed(() => {
@@ -328,10 +330,20 @@ function makeActive() {
     width: $workflow-node-width;
     border: solid $brand-primary 1px;
 
+    $multi-selected: lighten($brand-info, 20%);
+
+    &.node-multi-selected {
+        box-shadow: 0 0 0 2px $white, 0 0 0 4px $multi-selected;
+    }
+
     &.node-highlight {
         z-index: 1001;
         border: solid $white 1px;
         box-shadow: 0 0 0 2px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 2px $brand-primary, 0 0 0 4px $multi-selected;
+        }
     }
 
     &.node-on-scroll-to {
@@ -345,6 +357,10 @@ function makeActive() {
         z-index: 1001;
         border: solid $white 1px;
         box-shadow: 0 0 0 3px $brand-primary;
+
+        &.node-multi-selected {
+            box-shadow: 0 0 0 3px $brand-primary, 0 0 0 5px $multi-selected;
+        }
     }
 
     .node-header {
