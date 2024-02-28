@@ -4,13 +4,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import (
-    false,
-    or_,
-    select,
-    true,
-)
-
 import galaxy.managers.base as managers_base
 from galaxy import (
     exceptions as glx_exceptions,
@@ -22,6 +15,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.users import (
+    get_users_for_index,
     UserDeserializer,
     UserManager,
     UserSerializer,
@@ -255,35 +249,3 @@ class UsersService(ServiceBase):
             # TODO: move into api_values
             rval.append(item)
         return rval
-
-
-def get_users_for_index(
-    session,
-    deleted: bool,
-    f_email: Optional[str] = None,
-    f_name: Optional[str] = None,
-    f_any: Optional[str] = None,
-    is_admin: bool = False,
-    expose_user_email: bool = False,
-    expose_user_name: bool = False,
-):
-    stmt = select(User)
-    if f_email and (is_admin or expose_user_email):
-        stmt = stmt.where(User.email.like(f"%{f_email}%"))
-    if f_name and (is_admin or expose_user_name):
-        stmt = stmt.where(User.username.like(f"%{f_name}%"))
-    if f_any:
-        if is_admin:
-            stmt = stmt.where(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-        else:
-            if expose_user_email and expose_user_name:
-                stmt = stmt.where(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-            elif expose_user_email:
-                stmt = stmt.where(User.email.like(f"%{f_any}%"))
-            elif expose_user_name:
-                stmt = stmt.where(User.username.like(f"%{f_any}%"))
-    if deleted:
-        stmt = stmt.where(User.deleted == true())
-    else:
-        stmt = stmt.where(User.deleted == false())
-    return session.scalars(stmt).all()
