@@ -36,6 +36,7 @@ TOOL_XML_1 = """
         <resource type="gpu_memory_min">4042</resource>
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
+        <resource type="shm_size">67108864</resource>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -140,6 +141,8 @@ requirements:
     cuda_device_count_min: 1
   - type: resource
     cuda_device_count_max: 2
+  - type: resource
+    shm_size: 67108864
 containers:
   - type: docker
     identifier: "awesome/bowtie"
@@ -331,6 +334,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[3].resource_type == "gpu_memory_min"
         assert resource_requirements[4].resource_type == "cuda_device_count_min"
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
+        assert resource_requirements[6].resource_type == "shm_size"
         assert not resource_requirements[0].runtime_required
 
     def test_outputs(self):
@@ -506,7 +510,7 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 6
+        assert len(resource_requirements) == 7
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
         assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
         assert resource_requirements[2].to_dict() == {
@@ -521,6 +525,10 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert resource_requirements[5].to_dict() == {
             "resource_type": "cuda_device_count_max",
             "value_or_expression": 2,
+        }
+        assert resource_requirements[6].to_dict() == {
+            "resource_type": "shm_size",
+            "value_or_expression": "67108864",
         }
 
     def test_outputs(self):

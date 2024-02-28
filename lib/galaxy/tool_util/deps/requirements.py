@@ -243,6 +243,7 @@ ResourceType = Literal[
     "gpu_memory_min",
     "cuda_device_count_min",
     "cuda_device_count_max",
+    "shm_size",
 ]
 VALID_RESOURCE_TYPES = get_args(ResourceType)
 
@@ -287,6 +288,7 @@ def resource_requirements_from_list(requirements: Iterable[Dict[str, Any]]) -> L
         "gpuMemoryMin": "gpu_memory_min",
         "cudaDeviceCountMin": "cuda_device_count_min",
         "cudaDeviceCountMax": "cuda_device_count_max",
+        "ShmSize": "shm_size",
     }
     rr = []
     for r in requirements:
