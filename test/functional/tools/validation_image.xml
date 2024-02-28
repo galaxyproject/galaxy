@@ -9,7 +9,7 @@
         <data name="output" format="cool" />
     </outputs>
     <tests>
-        <! -- Tests with intensity images -->
+        <!-- Tests with intensity images -->
         <test>
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
@@ -26,7 +26,7 @@
                 </assert_contents>
             </output>
         </test>
-        <! -- Tests with label images -->
+        <!-- Tests with label images -->
         <test>
             <param name="input" value="im2_b.png" />
             <output name="output">
