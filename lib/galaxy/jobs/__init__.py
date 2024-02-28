@@ -75,6 +75,7 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
@@ -1939,7 +1940,13 @@ class MinimalJobWrapper(HasResourceParameters):
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
             except MaxDiscoveredFilesExceededError as e:
                 final_job_state = job.states.ERROR
-                job.job_messages = [str(e)]
+                job.job_messages = [
+                    {
+                        "type": "internal",
+                        "desc": str(e),
+                        "error_level": StdioErrorLevel.FATAL,
+                    }
+                ]
 
             for dataset_assoc in output_dataset_associations:
                 if getattr(dataset_assoc.dataset, "discovered", False):
