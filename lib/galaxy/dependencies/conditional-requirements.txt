@@ -40,6 +40,9 @@ pykube-ng==21.3.0
 # Synnefo / Pithos+ object store client
 kamaki
 
+# Onedata object store client
+onedatafilerestclient
+
 watchdog
 
 # Error reporters optional modules

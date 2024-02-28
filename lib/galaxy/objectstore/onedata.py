@@ -9,10 +9,10 @@ from datetime import datetime
 from typing import Optional
 
 try:
-    from fs.errors import FSError, ResourceNotFound
-    from fs.onedatarestfs import OnedataRESTFS
+    from onedatafilerestclient import OnedataFileRESTClient
+    from onedatafilerestclient import OnedataRESTError
 except ImportError:
-    OnedataRESTFS = None
+    OnedataFileRESTClient = None
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -34,12 +34,14 @@ from .caching import (
 )
 
 NO_ONEDATA_ERROR_MESSAGE = (
-    "ObjectStore configured to use Onedata, but no OnedataRESTFS dependency "
+    "ObjectStore configured to use Onedata, but no OnedataFileRESTClient dependency "
     "available. Please install and properly configure onedata or modify Object "
     "Store configuration."
 )
 
 log = logging.getLogger(__name__)
+
+STREAM_CHUNK_SIZE = 1024 * 1024
 
 
 def _parse_config_xml(config_xml):
@@ -49,7 +51,7 @@ def _parse_config_xml(config_xml):
 
         conn_xml = _get_config_xml_elements(config_xml, "connection")[0]
         onezone_domain = conn_xml.get("onezone_domain")
-        insecure = string_as_bool(conn_xml.get("insecure", "False"))
+        verify_ssl = string_as_bool(conn_xml.get("verify_ssl", "True"))
 
         space_xml = _get_config_xml_elements(config_xml, "space")[0]
         space_name = space_xml.get("name")
@@ -65,7 +67,7 @@ def _parse_config_xml(config_xml):
             },
             "connection": {
                 "onezone_domain": onezone_domain,
-                "insecure": insecure,
+                "verify_ssl": verify_ssl,
             },
             "space": {
                 "name": space_name
@@ -110,11 +112,10 @@ class OnedataObjectStore(ConcreteObjectStore):
 
         connection_dict = config_dict["connection"]
         self.onezone_domain = connection_dict["onezone_domain"]
-        self.insecure = connection_dict.get("insecure", False)
+        self.verify_ssl = connection_dict.get("verify_ssl", True)
 
         space_dict = config_dict["space"]
         self.space_name = space_dict["name"] 
-        # self.space_name = "demo-space"
 
         cache_dict = config_dict.get("cache") or {}
         self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
@@ -128,14 +129,13 @@ class OnedataObjectStore(ConcreteObjectStore):
         self._initialize()
 
     def _initialize(self):
-        if OnedataRESTFS is None:
+        if OnedataFileRESTClient is None:
             raise Exception(NO_ONEDATA_ERROR_MESSAGE)
 
         log.debug("Configuring Onedata Connection")
-        self.fs_handle = OnedataRESTFS(self.onezone_domain, 
-                                       self.access_token,
-                                       self.space_name,
-                                       insecure=self.insecure)
+        self._client = OnedataFileRESTClient(self.onezone_domain, 
+                                             self.access_token,
+                                             verify_ssl=self.verify_ssl)
 
         if self.enable_cache_monitor:
             self.cache_monitor = InProcessCacheMonitor(self.cache_target, 
@@ -153,7 +153,7 @@ class OnedataObjectStore(ConcreteObjectStore):
             },
             "connection": {
                 "onezone_domain": self.onezone_domain,
-                "insecure": self.insecure,
+                "verify_ssl": self.verify_ssl,
             },
             "space": {
                 "name": self.space_name
@@ -230,19 +230,23 @@ class OnedataObjectStore(ConcreteObjectStore):
 
     def _get_size_in_onedata(self, rel_path):
         try:
-            info = self.fs_handle.getinfo(rel_path)
-            return info.size
-        except ResourceNotFound:
+            return self._client.get_attributes(self.space_name, file_path=rel_path)['size']
+        except OnedataRESTError:
             log.exception("Could not get '%s' size from Onedata", rel_path)
             return -1
 
     def _exists_in_onedata(self, rel_path):
-        # log.debug("\n\n\n\nPAAAATH %s\n\n\n\n", rel_path)  # XD?
         try:
-            return self.fs_handle.exists(rel_path)
-        except ResourceNotFound:
-            log.exception("Trouble checking '%s' existence in Onedata", rel_path)
-            return False
+            self._client.get_attributes(self.space_name, file_path=rel_path)
+            return True
+        except OnedataRESTError as ex:
+            if ex.http_code == 404:
+                return False
+            elif ex.http_code == 400 and ex.error_details.get("errno", None) == "enoent":
+                return False
+            else:
+                log.exception("Trouble checking '%s' existence in Onedata", rel_path)
+                return False
 
     def _in_cache(self, rel_path):
         """Check if the given dataset is in the local cache and return True if so."""
@@ -271,25 +275,28 @@ class OnedataObjectStore(ConcreteObjectStore):
     
             log.debug("Pulling file '%s' into cache to %s", rel_path, dst_path)
 
-            file_info = self.fs_handle.getinfo(rel_path)
+            file_size = self._client.get_attributes(self.space_name, file_path=rel_path)['size']
 
             # Test if cache is large enough to hold the new file
-            if not self.cache_target.fits_in_cache(file_info.size):
+            if not self.cache_target.fits_in_cache(file_size):
                 log.critical(
                     "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
-                    file_info.size,
+                    file_size,
                     self.cache_target.log_description,
                 )
                 return False
-
-            with self.fs_handle.openbin(rel_path) as src, open(dst_path, 'wb') as dst:
-                shutil.copyfileobj(src, dst)
+            
+            with open(dst_path, 'wb') as dst:
+                for chunk in self._client.iter_file_content(self.space_name, 
+                                                            STREAM_CHUNK_SIZE, 
+                                                            file_path=rel_path):
+                    dst.write(chunk)
 
             log.debug("Pulled '%s' into cache to %s", rel_path, dst_path)
 
             return True
-        except FSError:
+        except OnedataRESTError:
             log.exception("Problem downloading file '%s'", rel_path)
         return False
 
@@ -318,8 +325,19 @@ class OnedataObjectStore(ConcreteObjectStore):
                         rel_path,
                     )
 
-                    with open(source_file, 'rb') as src, self.fs_handle.openbin(rel_path, 'w') as dst:
-                        shutil.copyfileobj(src, dst)
+                    file_id = self._client.get_file_id(self.space_name, rel_path)
+
+                    with open(source_file, 'rb') as src:
+                        offset = 0
+                        while True:
+                            chunk = src.read(STREAM_CHUNK_SIZE)
+                            if not chunk:
+                                break
+
+                            self._client.put_file_content(self.space_name, 
+                                                          file_id, 
+                                                          offset, 
+                                                          chunk)
 
                     end_time = datetime.now()
                     log.debug(
@@ -332,7 +350,7 @@ class OnedataObjectStore(ConcreteObjectStore):
                 return True
             else:
                 log.error("Source file does not exist.", rel_path, source_file)
-        except FSError:
+        except OnedataRESTError:
             log.exception("Trouble pushing Onedata key '%s' from file '%s'", rel_path, source_file)
             raise
         return False
@@ -409,7 +427,7 @@ class OnedataObjectStore(ConcreteObjectStore):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 # need this line to set the dataset filename, not sure how this is done - filesystem is monitored?
                 open(os.path.join(self.staging_path, rel_path), "w").close()
-                self.fs_handle.create(rel_path)
+                self._client.create_file(self.space_name, rel_path, 'REG', create_parents=True)
         return self
 
     def _empty(self, obj, **kwargs):
@@ -451,9 +469,9 @@ class OnedataObjectStore(ConcreteObjectStore):
 
             # Delete from Onedata as well
             if self._exists_in_onedata(rel_path):
-                self.fs_handle.remove(rel_path)
+                self._client.remove(self.space_name, rel_path)
                 return True
-        except FSError:
+        except OnedataRESTError:
             log.exception("Could not delete '%s' from Onedata", rel_path)
         except OSError:
             log.exception("%s delete error", self._get_filename(obj, **kwargs))

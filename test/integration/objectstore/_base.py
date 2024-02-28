@@ -50,7 +50,7 @@ ONEDATA_DEMO_SPACE_NAME = "demo-space"
 ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="onedata">
     <auth access_token="${access_token}" />
-    <connection onezone_domain="${onezone_domain}" insecure="True"/>
+    <connection onezone_domain="${onezone_domain}" verify_ssl="False"/>
     <space name="${space_name}" />
     <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_onedata"/>
@@ -276,8 +276,8 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
 
     @classmethod
     def tearDownClass(cls):
-        # stop_docker(cls.op_container_name)
-        # stop_docker(cls.oz_container_name)
+        stop_docker(cls.op_container_name)
+        stop_docker(cls.oz_container_name)
 
         super().tearDownClass()
 
@@ -322,7 +322,7 @@ def start_onezone(oz_container_name):
         "--name",
         oz_container_name,
         "--rm",
-        "docker.onedata.org/onezone-dev:develop",  # TODO docker
+        "docker.onedata.org/onezone:VFS-11786-fix-race-conditions-in-the-demo-dockers-curl-wrapper",  # TODO docker
         "demo"
     ]
     subprocess.check_call(cmd)
@@ -347,7 +347,7 @@ def start_oneprovider(op_container_name, oz_ip_address):
         "--name",
         op_container_name,
         "--rm",
-        "docker.onedata.org/oneprovider-dev:develop",  # TODO docker
+        "docker.onedata.org/oneprovider:VFS-11786-fix-race-conditions-in-the-demo-dockers-curl-wrapper",  # TODO docker
         "demo",
         oz_ip_address
     ]
