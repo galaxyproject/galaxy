@@ -1,4 +1,3 @@
-import collections
 import os
 import random
 import uuid
@@ -152,56 +151,6 @@ class TestMappings(BaseModelTestCase):
         assert isinstance(history.get_display_name(), str)
         assert history.get_display_name() == "Hello₩◎ґʟⅾ"
 
-    def test_hda_to_library_dataset_dataset_association(self):
-        model = self.model
-        u = self.model.User(email="mary@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        hda = model.HistoryDatasetAssociation(
-            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
-        )
-        self.persist(hda)
-        trans = collections.namedtuple("trans", "user")
-        target_folder = model.LibraryFolder(name="library_folder")
-        ldda = hda.to_library_dataset_dataset_association(
-            trans=trans(user=u),
-            target_folder=target_folder,
-        )
-        assert target_folder.item_count == 1
-        assert ldda.id
-        assert ldda.library_dataset.id
-        assert ldda.library_dataset_id
-        assert ldda.library_dataset.library_dataset_dataset_association
-        assert ldda.library_dataset.library_dataset_dataset_association_id
-        library_dataset_id = ldda.library_dataset_id
-        replace_dataset = ldda.library_dataset
-        new_ldda = hda.to_library_dataset_dataset_association(
-            trans=trans(user=u), target_folder=target_folder, replace_dataset=replace_dataset
-        )
-        assert new_ldda.id != ldda.id
-        assert new_ldda.library_dataset_id == library_dataset_id
-        assert new_ldda.library_dataset.library_dataset_dataset_association_id == new_ldda.id
-        assert len(new_ldda.library_dataset.expired_datasets) == 1
-        assert new_ldda.library_dataset.expired_datasets[0] == ldda
-        assert target_folder.item_count == 1
-
-    def test_hda_to_library_dataset_dataset_association_fails_if_private(self):
-        model = self.model
-        u = model.User(email="mary2@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        hda = model.HistoryDatasetAssociation(
-            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
-        )
-        hda.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
-        self.persist(hda)
-        trans = collections.namedtuple("trans", "user")
-        target_folder = model.LibraryFolder(name="library_folder")
-        with pytest.raises(Exception) as exec_info:
-            hda.to_library_dataset_dataset_association(
-                trans=trans(user=u),
-                target_folder=target_folder,
-            )
-        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
-
     def test_tags(self):
         TAG_NAME = "Test Tag"
         my_tag = model.Tag(name=TAG_NAME)
@@ -243,23 +192,6 @@ class TestMappings(BaseModelTestCase):
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation)
-
-    def test_collection_get_interface(self):
-        u = model.User(email="mary@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        c1 = model.DatasetCollection(collection_type="list")
-        elements = 100
-        dces = [
-            model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i)
-            for i in range(elements)
-        ]
-        self.persist(u, h1, d1, c1, *dces, commit=False, expunge=False)
-        self.model.session.flush()
-        for i in range(elements):
-            assert c1[i] == dces[i]
 
     def test_dataset_instance_order(self) -> None:
         u = model.User(email="mary@example.com", password="password")
@@ -308,35 +240,6 @@ class TestMappings(BaseModelTestCase):
         assert all(d.name == f"forward_{i}" for i, d in enumerate(forward_hdas))
         assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse_hdas))
 
-    def test_collections_in_histories(self):
-        u = model.User(email="mary@example.com", password="password")
-        h1 = model.History(name="History 1", user=u)
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-        d2 = model.HistoryDatasetAssociation(
-            extension="txt", history=h1, create_dataset=True, sa_session=self.model.session
-        )
-
-        c1 = model.DatasetCollection(collection_type="pair")
-        hc1 = model.HistoryDatasetCollectionAssociation(history=h1, collection=c1, name="HistoryCollectionTest1")
-
-        dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="left")
-        dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="right")
-
-        self.persist(u, h1, d1, d2, c1, hc1, dce1, dce2)
-
-        stmt = (
-            select(model.HistoryDatasetCollectionAssociation)
-            .filter(model.HistoryDatasetCollectionAssociation.name == "HistoryCollectionTest1")
-            .limit(1)
-        )
-        loaded_dataset_collection = self.model.session.scalars(stmt).first().collection
-        assert len(loaded_dataset_collection.elements) == 2
-        assert loaded_dataset_collection.collection_type == "pair"
-        assert loaded_dataset_collection["left"] == dce1
-        assert loaded_dataset_collection["right"] == dce2
-
     def test_collections_in_library_folders(self):
         u = model.User(email="mary2@example.com", password="password")
         lf = model.LibraryFolder(name="RootFolder")
@@ -356,22 +259,6 @@ class TestMappings(BaseModelTestCase):
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
         # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
-
-    def test_dataset_action_tuples(self):
-        u = model.User(email="foo", password="foo")
-        h1 = model.History(user=u)
-        hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
-        hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
-        r1 = model.Role()
-        dp1 = model.DatasetPermissions(action="action1", dataset=hda1.dataset, role=r1)
-        dp2 = model.DatasetPermissions(action=None, dataset=hda1.dataset, role=r1)
-        dp3 = model.DatasetPermissions(action="action3", dataset=hda1.dataset, role=r1)
-        c1 = model.DatasetCollection(collection_type="type1")
-        dce1 = model.DatasetCollectionElement(collection=c1, element=hda1)
-        dce2 = model.DatasetCollectionElement(collection=c1, element=hda2)
-        self.model.session.add_all([u, h1, hda1, hda2, r1, dp1, dp2, dp3, c1, dce1, dce2])
-        self.model.session.flush()
-        assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
 
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")

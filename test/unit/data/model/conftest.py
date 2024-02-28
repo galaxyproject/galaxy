@@ -74,6 +74,37 @@ def make_data_manager_history_association(session):
 
 
 @pytest.fixture
+def make_dataset_collection(session):
+    def f(**kwd):
+        model = m.DatasetCollection(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_dataset_collection_element(session, make_hda):
+    def f(**kwd):
+        kwd["element"] = kwd.get("element") or make_hda()
+        model = m.DatasetCollectionElement(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_dataset_permissions(session):
+    def f(**kwd):
+        model = m.DatasetPermissions(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_default_history_permissions(session, make_history, make_role):
     def f(**kwd):
         kwd["history"] = kwd.get("history") or make_history()
@@ -112,6 +143,27 @@ def make_galaxy_session_to_history_association(session, make_history, make_galax
         kwd["galaxy_session"] = kwd.get("galaxy_session") or make_galaxy_session()
         kwd["history"] = kwd.get("history") or make_history()
         model = m.GalaxySessionToHistoryAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_hda(session, make_history):
+    def f(**kwd):
+        kwd["history"] = kwd.get("history") or make_history()
+        model = m.HistoryDatasetAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_hdca(session):
+    def f(**kwd):
+        model = m.HistoryDatasetCollectionAssociation(**kwd)
         write_to_db(session, model)
         return model
 

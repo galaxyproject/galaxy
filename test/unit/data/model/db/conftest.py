@@ -11,6 +11,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from galaxy import model as m
+from galaxy.datatypes.registry import Registry as DatatypesRegistry
+from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
+from . import MockObjectStore
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
@@ -39,6 +42,19 @@ def session(engine: "Engine") -> Session:
 def init_database(engine: "Engine") -> None:
     """Create database objects."""
     m.mapper_registry.metadata.create_all(engine)
+    install_timestamp_triggers(engine)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def init_object_store() -> None:
+    m.Dataset.object_store = MockObjectStore()  # type:ignore[assignment]
+
+
+@pytest.fixture(autouse=True, scope="module")
+def init_datatypes() -> None:
+    datatypes_registry = DatatypesRegistry()
+    datatypes_registry.load_datatypes()
+    m.set_datatypes_registry(datatypes_registry)
 
 
 @pytest.fixture(autouse=True)
