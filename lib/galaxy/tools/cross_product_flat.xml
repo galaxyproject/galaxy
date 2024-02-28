@@ -1,0 +1,89 @@
+<tool id="__CROSS_PRODUCT_FLAT__"
+      name="Flat Cross Product"
+      version="1.0.0">
+    <description></description>
+    <type class="CrossProductFlatCollectionTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <expand macro="uses_a_model_operation_action" />
+    <edam_operations>
+        <edam_operation>operation_3436</edam_operation> <!-- DataHandling -> Aggregation -->
+    </edam_operations>
+    <inputs>
+        <param type="data_collection" name="input_a" collection_type="list" label="Input Collection A" />
+        <param type="data_collection" name="input_b" collection_type="list" label="Input Collection B" />
+        <expand macro="join_identifier" />
+    </inputs>
+    <outputs>
+        <collection name="output_a" format_source="input_a" type="list" label="${on_string} (A files)" >
+        </collection>
+        <collection name="output_b" format_source="input_b" type="list" label="${on_string} (B files)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_a">
+                <collection type="list">
+                    <element name="a1" value="simple_line.txt" />
+                    <element name="a2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="input_b">
+                <collection type="list">
+                    <element name="b1" value="1.txt" />
+                    <element name="b2" value="1.fasta" />
+                </collection>
+            </param>
+            <param name="join_identifier" value="_" />
+            <output_collection name="output_a" type="list">
+                <element name="a1_b1">
+                    <expand macro="assert_is_simple_line" />
+                </element>
+                <element name="a1_b2">
+                    <expand macro="assert_is_simple_line" />
+                </element>
+                <element name="a2_b1">
+                    <expand macro="assert_is_simple_line_alt" />
+                </element>
+                <element name="a2_b2">
+                    <expand macro="assert_is_simple_line_alt" />
+                </element>
+            </output_collection>
+            <output_collection name="output_b" type="list">
+                <element name="a1_b1">
+                    <expand macro="assert_is_1_dot_txt" />
+                </element>
+                <element name="a1_b2">
+                    <expand macro="assert_is_1_dot_fasta" />
+                </element>
+                <element name="a2_b1">
+                    <expand macro="assert_is_1_dot_txt" />
+                </element>
+                <element name="a2_b2">
+                    <expand macro="assert_is_1_dot_fasta" />
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+
+
+===========
+Description
+===========
+
+
+----
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+     ]]></help>
+</tool>

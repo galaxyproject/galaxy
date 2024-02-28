@@ -1,0 +1,40 @@
+<macros>
+    <xml name="uses_a_model_operation_action">
+        <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    </xml>
+    <token name="@QUOTA_USAGE_NOTE@">This tool will create new history datasets copied from your input collections but your quota usage will not increase.</token>
+    <xml name="annotate_as_aggregation_operation">
+        <edam_operations>
+            <edam_operation>operation_3436</edam_operation> <!-- DataHandling -> Aggregation -->
+        </edam_operations>
+    </xml>
+    <xml name="join_identifier">
+        <param type="select" name="join_identifier" label="Join collection identifiers using" help="Separator for merging dataset identifiers">
+            <option value="_">underscore ( _ )</option>
+            <option value=":">colon ( : )</option>
+            <option value="-">dash ( - )</option>
+        </param>
+    </xml>
+    <xml name="assert_is_simple_line">
+        <assert_contents>
+            <has_text_matching expression="^This is a line of text.\n$" />
+        </assert_contents>        
+    </xml>
+    <xml name="assert_is_simple_line_alt">
+        <assert_contents>
+            <has_text_matching expression="^This is a different line of text.\n$" />
+        </assert_contents>        
+    </xml>
+    <xml name="assert_is_1_dot_txt">
+        <assert_contents>
+            <has_text_matching expression="^chr1" />
+            <has_text_matching expression="42287290" />
+        </assert_contents>
+    </xml>
+    <xml name="assert_is_1_dot_fasta">
+        <assert_contents>
+            <has_text_matching expression="^>hg17\n" />
+        </assert_contents>
+    </xml>
+</macros>
