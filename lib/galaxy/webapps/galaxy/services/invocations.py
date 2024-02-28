@@ -126,6 +126,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
             offset=invocation_payload.offset,
             sort_by=invocation_payload.sort_by,
             sort_desc=invocation_payload.sort_desc,
+            include_nested_invocations=invocation_payload.include_nested_invocations,
         )
         invocation_dict = self.serialize_workflow_invocations(invocations, serialization_params)
         return invocation_dict, total_matches

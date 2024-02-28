@@ -1452,6 +1452,7 @@ class InvocationIndexQueryPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
+    include_nested_invocations: bool = True
 
 
 PageSortByEnum = Literal["create_time", "title", "update_time", "username"]
