@@ -42,7 +42,6 @@ from galaxy.schema.workflows import (
     StoredWorkflowDetailed,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
-from galaxy.web import format_return_as_json
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -96,7 +95,7 @@ class WorkflowsService(ServiceBase):
             trans.response.set_content_type("application/galaxy-archive")
 
         if style == "format2" and format != "json-download":
-            return ordered_dump(ret_dict)
+            return PlainTextResponse(ordered_dump(ret_dict))
         else:
             return ret_dict
 
