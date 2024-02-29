@@ -30,7 +30,6 @@
     </b-alert>
 </template>
 <script>
-import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
 
@@ -49,7 +48,6 @@ export default {
         WorkflowInvocationDetails,
         WorkflowInvocationExportOptions,
     },
-    mixins: [mixin],
     props: {
         invocationId: {
             type: String,
