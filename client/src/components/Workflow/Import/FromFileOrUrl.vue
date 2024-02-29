@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert, BButton, BForm, BFormGroup, BFormInput } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
 import { withPrefix } from "@/utils/redirect";
-
-import { getRedirectOnImportPath } from "../redirectPath";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -78,31 +78,38 @@ async function submit(ev: SubmitEvent) {
 </script>
 
 <template>
-    <b-form class="mt-4 workflow-import-file" @submit="submit">
+    <BForm class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
-        <b-form-group label="Archived Workflow URL">
-            <b-form-input
+
+        <BFormGroup label="Archived Workflow URL">
+            <BFormInput
                 id="workflow-import-url-input"
                 v-model="sourceURL"
                 aria-label="Workflow Import URL"
                 type="url" />
             If the workflow is accessible via a URL, enter the URL above and click Import.
-        </b-form-group>
-        <b-form-group label="Archived Workflow File">
+        </BFormGroup>
+
+        <BFormGroup label="Archived Workflow File">
             <b-form-file v-model="sourceFile" :accept="acceptedWorkflowFormats" />
             If the workflow is in a file on your computer, choose it and then click Import.
-        </b-form-group>
-        <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-        <b-alert v-if="loading" show variant="info">
+        </BFormGroup>
+
+        <BAlert :show="hasErrorMessage" variant="danger">
+            {{ errorMessage }}
+        </BAlert>
+
+        <BAlert v-if="loading" show variant="info">
             <LoadingSpan message="Loading your workflow, this may take a while - please be patient." />
-        </b-alert>
-        <b-button
+        </BAlert>
+
+        <BButton
             id="workflow-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"
             variant="primary">
             Import workflow
-        </b-button>
-    </b-form>
+        </BButton>
+    </BForm>
 </template>

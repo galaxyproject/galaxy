@@ -1,14 +1,14 @@
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 
-let lastPostRequest;
+let lastPostRequest: Map<string, string>;
 
 jest.mock("axios", () => ({
-    post: (_url, request) => {
+    post: jest.fn((_url, request) => {
         lastPostRequest = request;
-    },
+    }),
 }));
 
 const localVue = getLocalVue(true);

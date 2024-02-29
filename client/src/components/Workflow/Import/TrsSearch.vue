@@ -1,18 +1,23 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BCard } from "bootstrap-vue";
+import { BAlert, BButton, BCard, BFormInput, BInputGroup, BInputGroupAppend, BTable } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
+import { Services } from "@/components/Workflow/services";
 import { withPrefix } from "@/utils/redirect";
 
-import { getRedirectOnImportPath } from "../redirectPath";
-import { Services } from "../services";
 import type { TrsSelection } from "./types";
 
-import TrsServerSelection from "./TrsServerSelection.vue";
-import TrsTool from "./TrsTool.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import TrsServerSelection from "@/components/Workflow/Import/TrsServerSelection.vue";
+import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
+
+library.add(faQuestion, faTimes);
 
 type TrsSearchData = {
     id: string;
@@ -122,10 +127,13 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 
 <template>
     <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
-        <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+        <BAlert :show="hasErrorMessage" variant="danger">
+            {{ errorMessage }}
+        </BAlert>
 
         <div class="mb-3">
             <b>TRS Server:</b>
+
             <TrsServerSelection
                 :trs-selection="trsSelection"
                 @onTrsSelection="onTrsSelection"
@@ -133,38 +141,41 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
         </div>
 
         <div>
-            <b-input-group class="mb-3">
-                <b-form-input
+            <BInputGroup class="mb-3">
+                <BFormInput
                     id="trs-search-query"
                     v-model="query"
                     debounce="500"
                     placeholder="search query"
                     data-description="filter text input"
                     @keyup.esc="query = ''" />
-                <b-input-group-append>
-                    <b-button
+
+                <BInputGroupAppend>
+                    <BButton
                         v-b-tooltip
                         placement="bottom"
                         size="sm"
                         data-description="show help toggle"
                         :title="searchHelp">
-                        <icon icon="question" />
-                    </b-button>
-                    <b-button size="sm" title="clear search" @click="query = ''">
-                        <icon icon="times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                        <FontAwesomeIcon :icon="faQuestion" />
+                    </BButton>
+
+                    <BButton size="sm" title="clear search" @click="query = ''">
+                        <FontAwesomeIcon :icon="faTimes" />
+                    </BButton>
+                </BInputGroupAppend>
+            </BInputGroup>
         </div>
+
         <div>
-            <b-alert v-if="loading" variant="info" show>
+            <BAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
-            </b-alert>
-            <b-alert v-else-if="!query" variant="info" show> Enter search query to begin search. </b-alert>
-            <b-alert v-else-if="results.length == 0" variant="info" show>
+            </BAlert>
+            <BAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </BAlert>
+            <BAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
-            </b-alert>
-            <b-table
+            </BAlert>
+            <BTable
                 v-else
                 :fields="fields"
                 :items="itemsComputed"
@@ -175,15 +186,16 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
                     <BCard>
-                        <b-alert v-if="importing" variant="info" show>
+                        <BAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
-                        </b-alert>
+                        </BAlert>
+
                         <TrsTool
                             :trs-tool="row.item.data"
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
                     </BCard>
                 </template>
-            </b-table>
+            </BTable>
         </div>
     </BCard>
 </template>
