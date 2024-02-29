@@ -35,6 +35,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "pv",
     "nora",
     "venn",
+    "tiffviewer",
     "ts_visjs",
 ];
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];

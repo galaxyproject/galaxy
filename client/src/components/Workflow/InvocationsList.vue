@@ -200,6 +200,8 @@ export default {
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
+            } else {
+                extraParams["include_nested_invocations"] = false;
             }
             if (this.historyId) {
                 extraParams["history_id"] = this.historyId;

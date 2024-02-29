@@ -15,6 +15,7 @@ const states = Object.keys(STATES).filter((state) => !excludeStates.includes(sta
 
 const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    name_eq: { handler: equals("name"), menuItem: false },
     extension: { placeholder: "extension", type: String, handler: equals("extension"), menuItem: true },
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
     state: {
@@ -26,6 +27,7 @@ const validFilters = {
         menuItem: true,
     },
     genome_build: { placeholder: "database", type: String, handler: contains("genome_build"), menuItem: true },
+    genome_build_eq: { handler: equals("genome_build"), menuItem: false },
     related: { placeholder: "related", type: Number, handler: equals("related"), menuItem: true },
     object_store_id: {
         placeholder: "object store",

@@ -748,6 +748,7 @@ ASSERTS = """
                 <invalid/>
             </assert_stderr>
             <assert_command>
+                <has_size value="500k" size="50"/>
                 <has_text invalid_attrib="blah"/>
             </assert_command>
             <output name="out_archive">
@@ -1799,11 +1800,12 @@ def test_tests_asserts(lint_ctx):
         "Invalid XML: Element 'not_has_text', attribute 'invalid_attrib_also_checked_in_nested_asserts': The attribute 'invalid_attrib_also_checked_in_nested_asserts' is not allowed."
         in lint_ctx.error_messages
     )
-    assert "Test 1: 'has_size' needs to specify 'value', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Test 1: 'has_size' needs to specify 'size', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Test 1: 'has_size' must not specify 'value' and 'size'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 8
+    assert len(lint_ctx.error_messages) == 9
 
 
 def test_tests_output_type_mismatch(lint_ctx):
@@ -2076,7 +2078,7 @@ def test_xml_comments_are_ignored(lint_ctx: LintContext):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 129
+    assert len(linter_names) == 130
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

@@ -68,6 +68,7 @@ List of behavior changes associated with profile versions:
 ### 24.0
 
 - Do not use Galaxy python environment for `data_source_async` tools.
+- Drop request parameters received by data source tools that are not declared in `<request_param_translation>` section.
 
 ### Examples
 
@@ -2251,9 +2252,14 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="Bytes" use="optional">
+    <xs:attribute name="size" type="Bytes" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An outdated alias for `size`</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="Bytes" use="optional">
@@ -6690,6 +6696,7 @@ Examples are included in the test tools directory including:
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
+      <xs:enumeration value="position" />
       <xs:enumeration value="description" />
       <xs:enumeration value="name" />
       <xs:enumeration value="info" />

@@ -3,8 +3,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faEye, faPen, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
 import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
@@ -35,12 +35,13 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "refreshList", a?: boolean, b?: boolean): void;
-    (e: "tagClick", a: string): void;
+    (e: "tagClick", tag: string): void;
+    (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
 }>();
 
-const router = useRouter();
 const userStore = useUserStore();
+
+const { isAnonymous } = storeToRefs(userStore);
 
 const showRename = ref(false);
 const showPreview = ref(false);
@@ -60,10 +61,35 @@ const description = computed(() => {
         return null;
     }
 });
-
-function onEdit() {
-    router.push(`/workflows/edit?id=${workflow.value.id}`);
-}
+const editButtonTitle = computed(() => {
+    if (isAnonymous.value) {
+        return "Log in to edit Workflow";
+    } else {
+        if (workflow.value.deleted) {
+            return "You cannot edit a deleted workflow. Restore it first.";
+        } else {
+            return "Edit Workflow";
+        }
+    }
+});
+const importedButtonTitle = computed(() => {
+    if (isAnonymous.value) {
+        return "Log in to import workflow";
+    } else {
+        return "Import this workflow to edit";
+    }
+});
+const runButtonTitle = computed(() => {
+    if (isAnonymous.value) {
+        return "Log in to run workflow";
+    } else {
+        if (workflow.value.deleted) {
+            return "You cannot run a deleted workflow. Restore it first.";
+        } else {
+            return "Run workflow";
+        }
+    }
+});
 
 async function onImport() {
     await copyWorkflow(workflow.value.id, workflow.value.owner);
@@ -119,7 +145,7 @@ async function onTagClick(tag: string) {
                     </div>
 
                     <div class="workflow-count-actions">
-                        <WorkflowInvocationsCount class="mx-1" :workflow="workflow" />
+                        <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
 
                         <WorkflowActions
                             :workflow="workflow"
@@ -141,7 +167,7 @@ async function onTagClick(tag: string) {
                     <StatelessTags
                         clickable
                         :value="workflow.tags"
-                        :disabled="workflow.deleted"
+                        :disabled="isAnonymous || workflow.deleted || shared"
                         :max-visible-tags="gridView ? 2 : 8"
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
@@ -155,18 +181,14 @@ async function onTagClick(tag: string) {
 
                     <div class="workflow-edit-run-buttons">
                         <BButton
-                            v-if="!shared"
+                            v-if="!isAnonymous && !shared"
                             v-b-tooltip.hover.noninteractive
                             :disabled="workflow.deleted"
                             size="sm"
                             class="workflow-edit-button"
-                            :title="
-                                workflow.deleted
-                                    ? 'You cannot edit a deleted workflow. Restore it first.'
-                                    : 'Edit workflow'
-                            "
+                            :title="editButtonTitle"
                             variant="outline-primary"
-                            @click="onEdit">
+                            :to="`/workflows/edit?id=${workflow.id}`">
                             <FontAwesomeIcon :icon="faEdit" fixed-width />
                             Edit
                         </BButton>
@@ -175,20 +197,24 @@ async function onTagClick(tag: string) {
                             v-else
                             v-b-tooltip.hover.noninteractive
                             size="sm"
-                            title="Import this workflow to edit"
+                            :disabled="isAnonymous"
+                            :title="importedButtonTitle"
                             :icon="faUpload"
                             variant="outline-primary"
                             :action="onImport">
                             Import
                         </AsyncButton>
 
-                        <WorkflowRunButton :id="workflow.id" />
+                        <WorkflowRunButton
+                            :id="workflow.id"
+                            :disabled="isAnonymous || workflow.deleted"
+                            :title="runButtonTitle" />
                     </div>
                 </div>
             </div>
 
             <WorkflowRename
-                v-if="!shared && !workflow.deleted"
+                v-if="!isAnonymous && !shared && !workflow.deleted"
                 :id="workflow.id"
                 :show="showRename"
                 :name="workflow.name"

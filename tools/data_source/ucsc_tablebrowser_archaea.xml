@@ -27,6 +27,7 @@ python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_siz
         <request_param galaxy_name="organism" remote_name="org" missing="unknown species" />
         <request_param galaxy_name="table" remote_name="hgta_table" missing="unknown table" />
         <request_param galaxy_name="description" remote_name="hgta_regionType" missing="no description" />
+        <request_param galaxy_name="position" remote_name="position" missing="unknown position" />
         <request_param galaxy_name="data_type" remote_name="hgta_outputType" missing="auto" >
             <value_translation>
                 <value galaxy_value="auto" remote_value="primaryTable" />
@@ -41,7 +42,7 @@ python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_siz
     </request_param_translation>
     <uihints minwidth="800"/>
     <outputs>
-        <data name="output" format="tabular" label="${tool.name} on ${organism}: ${table} (#if $description == 'range' then $getVar( 'position', 'unknown position' ) else $description#)"/>
+        <data name="output" format="tabular" label="${tool.name} on ${organism}: ${table} (#if $description == 'range' then $position else $description#)"/>
     </outputs>
     <options sanitize="False" refresh="True"/>
     <citations>

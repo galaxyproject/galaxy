@@ -16,7 +16,8 @@
   "browserslist": [
     "defaults",
     "not op_mini all",
-    "not ios_saf <= 15.0"
+    "not ios_saf <= 15.0",
+    "not kaios > 0"
   ],
   "resolutions": {
     "chokidar": "3.5.3",

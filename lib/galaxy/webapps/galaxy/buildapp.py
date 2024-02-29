@@ -595,9 +595,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
-    webapp.mapper.connect(
-        "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
-    )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
@@ -691,23 +688,18 @@ def populate_api_routes(webapp, app):
     #     action="import_tool_version",
     #     conditions=dict(method=["POST"]),
     # )
-
-    # API refers to usages and invocations - these mean the same thing but the
-    # usage routes should be considered deprecated.
-    invoke_names = {
-        "invocations": "",
-        "usage": "_deprecated",
-    }
-    for noun, suffix in invoke_names.items():
-        name = f"{noun}{suffix}"
-        webapp.mapper.connect(
-            f"workflow_{name}",
-            "/api/workflows/{workflow_id}/%s" % noun,
-            controller="workflows",
-            action="invoke",
-            conditions=dict(method=["POST"]),
-        )
-
+    webapp.mapper.connect(
+        "/api/workflows/{encoded_workflow_id}",
+        controller="workflows",
+        action="update",
+        conditions=dict(method=["PUT"]),
+    )
+    webapp.mapper.connect(
+        "/api/workflows",
+        controller="workflows",
+        action="create",
+        conditions=dict(method=["POST"]),
+    )
     # ================================
     # ===== USERS API =====
     # ================================
