@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 
 import FromFileOrUrl from "./FromFileOrUrl.vue";
 
-let lastPostRequest: any;
+let lastPostRequest: Map<string, string>;
 
 jest.mock("axios", () => ({
     post: jest.fn((_url, request) => {
