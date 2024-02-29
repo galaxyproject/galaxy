@@ -8,6 +8,7 @@ from typing import (
     Union,
 )
 
+from fastapi.responses import PlainTextResponse
 from gxformat2._yaml import ordered_dump
 
 from galaxy import (
@@ -73,7 +74,9 @@ class WorkflowsService(ServiceBase):
         self._history_manager = history_manager
 
     def download_workflow(self, trans, workflow_id, history_id, style, format, version, instance):
-        stored_workflow = self._workflows_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
         history = None
         if history_id:
             history = self._history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
