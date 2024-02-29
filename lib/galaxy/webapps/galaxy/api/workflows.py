@@ -652,10 +652,6 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
-        instance = util.string_as_bool(kwd.get("instance", "false"))
-        return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
-
     def __get_stored_workflow(self, trans, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
