@@ -16,7 +16,8 @@
         <div
             class="unselectable clearfix card-header py-1 px-2"
             :class="headerClass"
-            @click="makeActive"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
@@ -88,7 +89,8 @@
             variant="danger"
             show
             class="node-error m-0 rounded-0 rounded-bottom"
-            @click="makeActive">
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected">
             {{ errors }}
         </b-alert>
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
@@ -96,7 +98,8 @@
             v-else
             class="node-body position-relative card-body p-0 mx-2"
             :class="{ 'cursor-pointer': isInvocation }"
-            @click="makeActive"
+            @click.exact="makeActive"
+            @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
@@ -143,7 +146,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { type UseElementBoundingReturn, useKeyModifier, type UseScrollReturn, type VueInstance } from "@vueuse/core";
+import { type UseElementBoundingReturn, type UseScrollReturn, type VueInstance } from "@vueuse/core";
 import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
 import Vue, { computed, reactive, ref } from "vue";
@@ -316,14 +319,12 @@ function onClone() {
     emit("onClone", props.id);
 }
 
-const shiftActive = useKeyModifier("Shift");
-
 function makeActive() {
-    if (shiftActive.value) {
-        stateStore.toggleStepMultiSelected(props.id);
-    } else {
-        emit("onActivate", props.id);
-    }
+    emit("onActivate", props.id);
+}
+
+function toggleSelected() {
+    stateStore.toggleStepMultiSelected(props.id);
 }
 </script>
 
