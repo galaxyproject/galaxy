@@ -2178,6 +2178,7 @@ module.
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsImage" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:complexType>
   <xs:group name="TestAssertionsGeneral">
@@ -2247,9 +2248,9 @@ module.
       <xs:documentation xml:lang="en"><![CDATA[Assertions for image data]]></xs:documentation>
     </xs:annotation>
     <xs:choice>
-      <xs:element name="image_has_metadata" type="AssertImageHasMetadata"/>
-      <xs:element name="image_has_intensities" type="AssertImageHasIntensities"/>
-      <xs:element name="image_has_labels" type="AssertImageHasLabels"/>
+      <xs:element name="image_has_metadata" type="AssertImageHasMetadata" />
+      <xs:element name="image_has_intensities" type="AssertImageHasIntensities" />
+      <xs:element name="image_has_labels" type="AssertImageHasLabels" />
     </xs:choice>
   </xs:group>
   <xs:group name="TestAssertionsH5">
@@ -2500,6 +2501,7 @@ $attribute_list::5
       <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsImage" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="path" type="xs:string">
       <xs:annotation>
@@ -2762,19 +2764,87 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="width" type="xs:integer">
+    <xs:attribute name="width" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required width of the image.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="height" type="xs:integer">
+    <xs:attribute name="height" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required height of the image.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="channels" type="xs:integer">
+    <xs:attribute name="channels" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required number of channels of the image (e.g., 1 for grayscale, 3 for RGB, 4 for RGBA images).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertImageHasIntensities">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the image intensities comply with the specified constraints.
+
+```xml
+<image_has_intensities mean_intensity="0.83" center_of_mass="511.07, 223.34" eps="0.01" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="mean_intensity" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="center_of_mass" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" default="1e-8">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_intensity`` and ``center_of_mass`` assertions.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channel" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Restricts the ``mean_intensity`` and ``center_of_mass`` assertions to a specific channel of the image (where the value ``0`` corresponds to the first image channel).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertImageHasLabels">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the labels in a label image comply with the specified constraints.
+
+```xml
+<number_of_objects number_of_objects="187" mean_object_size="111.87" eps="0.01" exclude_labels="0" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="number_of_objects" type="xs:integer" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required number of unique labels in the image. It is assumed that each individual object corresponds to a unique label.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mean_object_size" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required mean size of the objects in the image, where the size of an object is measured by the number of pixels. It is assumed that each individual object corresponds to a unique label.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" default="1e-8">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_object_size`` assertion.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="exclude_labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">List of labels to be excluded from consideration for the ``number_of_objects`` and ``mean_object_size`` assertions, separated by a comma. The primary usage of this attribute is to exclude the background of a label image.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
