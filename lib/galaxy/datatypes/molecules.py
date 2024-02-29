@@ -1019,7 +1019,7 @@ class CIF(AtomicStructFile):
         # first non-comment line must begin with 'data_'
         # and '_atom_site_fract_(x|y|z)' must be specified somewhere in the file
         for line in file_prefix.line_iterator():
-            if not line:
+            if not line.rstrip():
                 continue
             elif line[0] == "#":  # comment so skip
                 continue
