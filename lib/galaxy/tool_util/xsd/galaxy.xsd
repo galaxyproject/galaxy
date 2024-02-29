@@ -2242,6 +2242,16 @@ module.
       <xs:element name="has_json_property_with_text" type="AssertHasJsonPropertyWithText"/>
     </xs:choice>
   </xs:group>
+  <xs:group name="TestAssertionsImage">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for image data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="image_has_metadata" type="AssertImageHasMetadata"/>
+      <xs:element name="image_has_intensities" type="AssertImageHasIntensities"/>
+      <xs:element name="image_has_labels" type="AssertImageHasLabels"/>
+    </xs:choice>
+  </xs:group>
   <xs:group name="TestAssertionsH5">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Assertions for H5 data]]></xs:documentation>
@@ -2738,6 +2748,35 @@ $attribute_list::5
     </xs:sequence>
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
+  </xs:complexType>
+  <xs:complexType name="AssertImageHasMetadata">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the image has the specified metadata.
+
+```xml
+<image_has_metadata width="512" height="512" channels="3" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="width" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required width of the image.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="height" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required height of the image.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="channels" type="xs:integer">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The required number of channels of the image (e.g., 1 for grayscale, 3 for RGB, 4 for RGBA images).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="AssertHasJsonPropertyWithValue">
     <xs:annotation>
