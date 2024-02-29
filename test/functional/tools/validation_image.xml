@@ -14,7 +14,8 @@
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" center_of_mass="15.61, 15.48" eps="0.01" />
+                    <image_has_metadata width="32" height="32" channels="1" />
+                    <image_has_intensities center_of_mass="15.61, 15.48" eps="0.01" />
                 </assert_contents>
             </output>
         </test>
