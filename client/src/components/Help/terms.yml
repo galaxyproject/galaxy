@@ -1,12 +1,12 @@
 unix:
   commandLine: |
-    Galaxy typically runs a class of computed programs called "command-line applications". A command
+    Galaxy typically runs a class of software called "command-line applications". A command
     line is essentially a string that describes what application should be run and what parameters
-    it should be ran with.
+    it should be run with.
 
     More information on command lines can be found on [Wikipedia](https://en.wikipedia.org/wiki/Command-line_interface).
   exitCode: |
-    An exit code is a numeric representation of how an application execution has completed.
+    An exit code is a numeric representation of how an application execution has completed. An exit code of value 0 typically indicates successful execution of an application, while other values indicate a failure.
 
     More information on exit codes can be found on [Wikipedia](https://en.wikipedia.org/wiki/Exit_status).
   stdout: |
@@ -23,7 +23,7 @@ unix:
     More information on standard error can be found on [Wikipedia](https://en.wikipedia.org/wiki/Standard_streams).
   traceback: |
     A "traceback" is also often called a "stack trace". This is typically used to describe what is
-    happening at various levels of an application at an instant in time and can sometimes used to
+    happening at various levels of an application at an instant in time and can sometimes be used to
     debug what is wrong with the execution of an application.
 
     More information on stack traces can be found on [Wikipedia](https://en.wikipedia.org/wiki/Stack_trace).
