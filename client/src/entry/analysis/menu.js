@@ -183,10 +183,6 @@ export function fetchMenu(options = {}) {
                 url: "/tours",
             },
             {
-                title: _l("Introduction to Galaxy"),
-                url: "/welcome/new",
-            },
-            {
                 title: _l("About"),
                 url: "/about",
             },
