@@ -15,7 +15,9 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Optional,
+    TYPE_CHECKING,
 )
 
 import numpy
@@ -36,6 +38,9 @@ from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
+
+if TYPE_CHECKING:
+    import numpy.typing
 
 log = logging.getLogger(__name__)
 
@@ -442,21 +447,23 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
-def _multiobject_intersection_over_union(mask1, mask2, repeat_reverse=True):
-    iou_list = list()
+def _multiobject_intersection_over_union(
+    mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", repeat_reverse: bool = True
+) -> List[numpy.floating]:
+    iou_list = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
-        cc1_iou_list = list()
+        cc1_iou_list = []
         for label2 in numpy.unique(mask2[cc1]):
             cc2 = mask2 == label2
             cc1_iou_list.append(intersection_over_union(cc1, cc2))
         iou_list.append(max(cc1_iou_list))
     if repeat_reverse:
-        iou_list += _multiobject_intersection_over_union(mask2, mask1, repeat_reverse=False)
+        iou_list.extend(_multiobject_intersection_over_union(mask2, mask1, repeat_reverse=False))
     return iou_list
 
 
-def intersection_over_union(mask1, mask2):
+def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray") -> numpy.floating:
     assert mask1.dtype == mask2.dtype
     assert mask1.ndim == mask2.ndim == 2
     assert mask1.shape == mask2.shape
@@ -466,15 +473,17 @@ def intersection_over_union(mask1, mask2):
         return min(_multiobject_intersection_over_union(mask1, mask2))
 
 
-def get_image_metric(attributes):
+def get_image_metric(
+    attributes: Dict[str, Any]
+) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], numpy.floating]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
-    attributes = attributes or {}
     metrics = {
-        "mae": lambda im1, im2: numpy.abs(im1 - im2).mean(),
-        "mse": lambda im1, im2: numpy.square((im1 - im2).astype(float)).mean(),
-        "rms": lambda im1, im2: math.sqrt(numpy.square((im1 - im2).astype(float)).mean()),
-        "fro": lambda im1, im2: numpy.linalg.norm((im1 - im2).reshape(1, -1), "fro"),
-        "iou": lambda im1, im2: 1 - intersection_over_union(im1, im2),
+        "mae": lambda arr1, arr2: numpy.abs(arr1 - arr2).mean(),
+        # Convert to float before squaring to prevent overflows
+        "mse": lambda arr1, arr2: numpy.square((arr1 - arr2).astype(float)).mean(),
+        "rms": lambda arr1, arr2: math.sqrt(numpy.square((arr1 - arr2).astype(float)).mean()),
+        "fro": lambda arr1, arr2: numpy.linalg.norm((arr1 - arr2).reshape(1, -1), "fro"),
+        "iou": lambda arr1, arr2: 1 - intersection_over_union(arr1, arr2),
     }
     try:
         return metrics[metric_name]
@@ -482,20 +491,22 @@ def get_image_metric(attributes):
         raise ValueError(f'No such metric: "{metric_name}"')
 
 
-def files_image_diff(file1, file2, attributes=None):
+def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]] = None) -> None:
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
-    im1 = numpy.array(Image.open(file1))
-    im2 = numpy.array(Image.open(file2))
+    with Image.open(file1) as im1:
+        arr1 = numpy.array(im1)
+    with Image.open(file2) as im2:
+        arr2 = numpy.array(im2)
 
-    if im1.dtype != im2.dtype:
-        raise AssertionError(f"Image data types did not match ({im1.dtype}, {im2.dtype}).")
+    if arr1.dtype != arr2.dtype:
+        raise AssertionError(f"Image data types did not match ({arr1.dtype}, {arr2.dtype}).")
 
-    if im1.shape != im2.shape:
-        raise AssertionError(f"Image dimensions did not match ({im1.shape}, {im2.shape}).")
+    if arr1.shape != arr2.shape:
+        raise AssertionError(f"Image dimensions did not match ({arr1.shape}, {arr2.shape}).")
 
-    distance = get_image_metric(attributes)(im1, im2)
+    distance = get_image_metric(attributes)(arr1, arr2)
     distance_eps = attributes.get("eps", DEFAULT_EPS)
     if distance > distance_eps:
         raise AssertionError(f"Image difference {distance} exceeds eps={distance_eps}.")
