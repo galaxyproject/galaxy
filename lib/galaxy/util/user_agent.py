@@ -15,14 +15,6 @@ def __append_word_to_user_agent(word):
     # set urllib User-Agent
     old_build_opener = urllib.request.build_opener
 
-    # def old_user_agent(opener):
-    #     user_agent_tuple = next((t for t in opener.addheaders
-    #         if t[0].lower() == 'user-agent'), None)
-    #     if user_agent_tuple is None:
-    #         return f"Python-urllib/{urllib.request.__version__}"
-    #     else:
-    #         return user_agent_tuple[1]
-
     def modify_user_agent_header(header):
         if header[0].lower() == "user-agent":
             return (header[0], f"{header[1]} {word}")
@@ -30,8 +22,6 @@ def __append_word_to_user_agent(word):
 
     def new_build_opener(*handlers):
         opener = old_build_opener(*handlers)
-        # agent = f"{old_user_agent(opener)} {word}"
-        # opener.addheaders.append(("User-Agent", agent))
         opener.addheaders = [ modify_user_agent_header(header)
            for header in opener.addheaders ]
         return opener
