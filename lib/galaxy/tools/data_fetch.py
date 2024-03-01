@@ -29,6 +29,7 @@ from galaxy.files.uris import (
 from galaxy.util import (
     in_directory,
     safe_makedirs,
+    user_agent,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile

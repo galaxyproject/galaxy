@@ -17,7 +17,6 @@ from typing import (
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
-import requests
 
 import galaxy.model
 import galaxy.model.security
@@ -139,6 +138,7 @@ from galaxy.util import (
     heartbeat,
     listify,
     StructuredExecutionTimer,
+    user_agent,
 )
 from galaxy.util.task import IntervalTask
 from galaxy.util.tool_shed import tool_shed_registry
@@ -481,12 +481,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
 
-    def _configure_user_agent(self):
-        """Append 'galaxy' to the python requests http user agent string if it's not already there."""
-        original_function = requests.utils.default_user_agent
-        if not original_function().endswith(" galaxy"):
-            requests.utils.default_user_agent = lambda *args: original_function(*args) + " galaxy"
-
     def _wait_for_database(self, url):
         attempts = self.config.database_wait_attempts
         pause = self.config.database_wait_sleep
@@ -779,9 +773,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         if self.heartbeat:
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
-
-        # Set HTTP User-Agent header string
-        self._configure_user_agent()
 
         self.database_heartbeat = DatabaseHeartbeat(application_stack=self.application_stack)
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
