@@ -12,6 +12,7 @@ import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { MarkdownWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
+import { useMultiSelect } from "../composables/multiSelect";
 import { darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -68,8 +69,11 @@ const content = computed(() => {
 
 const markdownTextarea = ref<HTMLTextAreaElement>();
 
+const { deselectAll } = useMultiSelect();
+
 function onClick() {
     if (!props.readonly && window.getSelection()?.toString() === "") {
+        deselectAll();
         markdownTextarea.value?.focus();
     }
 }
@@ -142,8 +146,7 @@ onMounted(() => {
                 'prevent-zoom': !props.readonly,
                 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
             }"
-            :style="cssVariables"
-            @click.shift.capture.prevent.stop="commentStore.toggleCommentMultiSelected(props.comment.id)">
+            :style="cssVariables">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
