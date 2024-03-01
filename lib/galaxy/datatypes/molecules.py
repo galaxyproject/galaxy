@@ -1009,6 +1009,9 @@ class CIF(AtomicStructFile):
         >>> fname = get_test_fname('1.star')
         >>> CIF().sniff(fname)
         False
+        >>> fname = get_test_fname('LaMnO3.cif')
+        >>> CIF().sniff(fname)
+        True
         """
 
         # check for optional CIF version marker '#\#CIF_<version>' at start of file
