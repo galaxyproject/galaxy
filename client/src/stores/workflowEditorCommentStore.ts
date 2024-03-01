@@ -123,6 +123,12 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         return comment;
     });
 
+    const multiSelectedCommentIds = computed(() =>
+        Object.entries(localCommentsMetadata.value)
+            .filter(([_id, meta]) => meta.multiSelected)
+            .map(([id]) => parseInt(id))
+    );
+
     const getCommentMultiSelected = computed(() => (id: number) => {
         return Boolean(localCommentsMetadata.value[id]?.multiSelected);
     });
@@ -308,6 +314,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         addComments,
         highestCommentId,
         isJustCreated,
+        multiSelectedCommentIds,
         getCommentMultiSelected,
         setCommentMultiSelected,
         toggleCommentMultiSelected,

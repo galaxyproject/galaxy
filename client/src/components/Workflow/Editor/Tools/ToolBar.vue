@@ -21,6 +21,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
+import { useMultiSelect } from "../composables/multiSelect";
 import { useToolLogic } from "./useToolLogic";
 
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
@@ -120,6 +121,28 @@ const toggleVisibilityButtonTitle = computed(() => {
     } else {
         return "show Toolbar";
     }
+});
+
+const { anySelected, selectedCommentsCount, selectedStepsCount } = useMultiSelect();
+
+const selectedCountText = computed(() => {
+    const stepWord = selectedStepsCount.value > 1 ? "steps" : "step";
+    const commentWord = selectedCommentsCount.value > 1 ? "comments" : "comment";
+    let text = "selected ";
+
+    if (selectedStepsCount.value > 0) {
+        text += `${selectedStepsCount.value} ${stepWord}`;
+
+        if (selectedCommentsCount.value > 0) {
+            text += " and ";
+        }
+    }
+
+    if (selectedCommentsCount.value > 0) {
+        text += `${selectedCommentsCount.value} ${commentWord}`;
+    }
+
+    return text;
 });
 </script>
 
@@ -317,6 +340,10 @@ const toggleVisibilityButtonTitle = computed(() => {
                 </BButton>
             </div>
         </div>
+
+        <div v-if="anySelected" class="selection-options">
+            <span>{{ selectedCountText }}</span>
+        </div>
     </div>
 </template>
 
@@ -330,6 +357,7 @@ const toggleVisibilityButtonTitle = computed(() => {
     z-index: 2000;
     pointer-events: none;
     display: flex;
+    width: 100%;
 
     .tools {
         display: flex;
@@ -417,6 +445,20 @@ const toggleVisibilityButtonTitle = computed(() => {
                     background-color: $brand-primary;
                 }
             }
+        }
+    }
+
+    .selection-options {
+        flex: 1;
+        pointer-events: none;
+        display: flex;
+        height: 3rem;
+        padding: 0.25rem;
+        gap: 1rem;
+        justify-content: flex-end;
+
+        > * {
+            pointer-events: auto;
         }
     }
 }
