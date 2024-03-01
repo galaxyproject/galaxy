@@ -160,6 +160,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { useMultiSelect } from "./composables/multiSelect";
 import type { OutputTerminals } from "./modules/terminals";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -319,7 +320,10 @@ function onClone() {
     emit("onClone", props.id);
 }
 
+const { deselectAll } = useMultiSelect();
+
 function makeActive() {
+    deselectAll();
     emit("onActivate", props.id);
 }
 

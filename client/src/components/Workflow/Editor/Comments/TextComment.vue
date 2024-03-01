@@ -11,6 +11,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
+import { useMultiSelect } from "../composables/multiSelect";
 import { colors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -114,8 +115,13 @@ const decreaseFontSizeTitle = computed(() =>
     canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size"
 );
 
+const { deselectAll } = useMultiSelect();
+
 function onRootClick() {
-    editableElement.value?.focus();
+    if (!props.readonly) {
+        deselectAll();
+        editableElement.value?.focus();
+    }
 }
 
 function onMove(position: { x: number; y: number }) {
@@ -185,8 +191,7 @@ onMounted(() => {
                 'multi-selected': commentStore.getCommentMultiSelected(props.comment.id),
             }"
             :style="cssVariables"
-            @click.exact="onRootClick"
-            @click.shift.capture.prevent.stop="commentStore.toggleCommentMultiSelected(props.comment.id)">
+            @click="onRootClick">
             <DraggablePan
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
