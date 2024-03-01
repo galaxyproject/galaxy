@@ -26,7 +26,7 @@ class OnedataFilesSource(PyFilesystem2FilesSource):
         onezone_domain = remove_prefix("http://", remove_prefix("https://", onezone_domain))
         access_token = props.pop("accessToken", "") or ""
         disable_tls_certificate_validation = (
-            props.pop("disable_tls_certificate_validation", False) or False)
+            props.pop("disableTlsCertificateValidation", False) or False)
         handle = OnedataRESTFS(onezone_domain, 
                                access_token, 
                                verify_ssl=not disable_tls_certificate_validation)

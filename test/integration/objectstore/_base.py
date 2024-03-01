@@ -46,6 +46,8 @@ RUCIO_OBJECT_STORE_CONFIG = string.Template(
 """
 )
 
+# Onedata setup for the test is done according to this documentation:
+# https://onedata.org/#/home/documentation/topic/stable/demo-mode
 ONEDATA_DEMO_SPACE_NAME = "demo-space"
 ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="onedata">
@@ -235,7 +237,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
 
         start_onezone(cls.oz_container_name)
 
-        oz_ip_address = get_onezone_ip_address(cls.oz_container_name)
+        oz_ip_address = docker_ip_address(cls.oz_container_name)
         start_oneprovider(cls.op_container_name, oz_ip_address)
         await_oneprovider_demo_readiness(cls.op_container_name)
 
@@ -264,7 +266,7 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
                 {
                     "temp_directory": temp_directory,
                     "access_token": get_onedata_access_token(cls.oz_container_name),
-                    "onezone_domain": get_onezone_ip_address(cls.oz_container_name),
+                    "onezone_domain": docker_ip_address(cls.oz_container_name),
                     "space_name": ONEDATA_DEMO_SPACE_NAME,
                     "optional_space_params": random.choice([
                         '',
@@ -293,17 +295,6 @@ def start_minio(container_name):
 
 def start_onezone(oz_container_name):
     docker_run("onedata/onezone:21.02.5-dev", oz_container_name, "demo")
-
-
-def get_onezone_ip_address(oz_container_name):
-    cmd = [
-        "docker",
-        "inspect",
-        '-f',
-        '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}',
-        oz_container_name,
-    ]
-    return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
 def start_oneprovider(op_container_name, oz_ip_address):
@@ -347,6 +338,17 @@ def docker_exec(container_name, *args, output=True):
         return subprocess.check_output(cmd)
     else:
         subprocess.check_call(cmd)
+
+
+def docker_ip_address(container_name):
+    cmd = [
+        "docker",
+        "inspect",
+        '-f',
+        '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}',
+        container_name,
+    ]
+    return subprocess.check_output(cmd).decode('utf-8').strip()
 
 
 def docker_rm(container_name):
