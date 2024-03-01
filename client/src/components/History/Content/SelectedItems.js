@@ -17,6 +17,8 @@ export default {
             items: new Map(),
             showSelection: false,
             allSelected: false,
+            initSelectedKey: null,
+            initDirection: null,
         };
     },
     computed: {
@@ -52,6 +54,33 @@ export default {
             this.items = newSelected;
             this.breakQuerySelection();
         },
+        shiftSelect({ item, nextItem, eventKey }) {
+            const currentItemKey = this.getItemKey(item);
+            if (!this.initDirection) {
+                this.initSelectedKey = currentItemKey;
+                this.initDirection = eventKey;
+                this.setSelected(item, true);
+            }
+            // got back to the initial selected item
+            else if (this.initSelectedKey === currentItemKey) {
+                this.initDirection = eventKey;
+            }
+            // same direction
+            else if (this.initDirection === eventKey) {
+                this.setSelected(item, true);
+            }
+            // different direction
+            else {
+                this.setSelected(item, false);
+            }
+            if (nextItem) {
+                this.setSelected(nextItem, true);
+            }
+        },
+        initKeySelection() {
+            this.initSelectedKey = null;
+            this.initDirection = null;
+        },
         selectItems(items = []) {
             const newItems = [...this.items.values(), ...items];
             const newEntries = newItems.map((item) => {
@@ -70,6 +99,7 @@ export default {
         reset() {
             this.items = new Map();
             this.allSelected = false;
+            this.initKeySelection();
         },
         cancelSelection() {
             this.showSelection = false;
@@ -110,6 +140,8 @@ export default {
             isSelected: this.isSelected,
             setSelected: this.setSelected,
             resetSelection: this.reset,
+            shiftSelect: this.shiftSelect,
+            initKeySelection: this.initKeySelection,
         });
     },
 };

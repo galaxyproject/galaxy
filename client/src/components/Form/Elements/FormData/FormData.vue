@@ -394,7 +394,11 @@ function onDragOver() {
 
 function onDrop() {
     if (dragData.value) {
-        handleIncoming(dragData.value);
+        if (eventStore.multipleDragData) {
+            handleIncoming(Object.values(dragData.value) as any, false);
+        } else {
+            handleIncoming(dragData.value);
+        }
         currentHighlighting.value = "success";
         dragData.value = null;
         clearHighlighting();
