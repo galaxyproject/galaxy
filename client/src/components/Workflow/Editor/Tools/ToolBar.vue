@@ -28,7 +28,7 @@ import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.v
 
 library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
 
-const { toolbarStore, commentStore, undoRedoStore } = useWorkflowStores();
+const { toolbarStore, commentStore, undoRedoStore, stateStore, stepStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -123,7 +123,7 @@ const toggleVisibilityButtonTitle = computed(() => {
     }
 });
 
-const { anySelected, selectedCommentsCount, selectedStepsCount } = useMultiSelect();
+const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
 
 const selectedCountText = computed(() => {
     const stepWord = selectedStepsCount.value > 1 ? "steps" : "step";
@@ -144,6 +144,20 @@ const selectedCountText = computed(() => {
 
     return text;
 });
+
+function deleteSelection() {
+    commentStore.multiSelectedCommentIds.forEach((id) => {
+        commentStore.deleteComment(id);
+    });
+
+    commentStore.clearMultiSelectedComments();
+
+    stateStore.multiSelectedStepIds.forEach((id) => {
+        stepStore.removeStep(id);
+    });
+
+    stateStore.clearStepMultiSelection();
+}
 </script>
 
 <template>
@@ -343,6 +357,12 @@ const selectedCountText = computed(() => {
 
         <div v-if="anySelected" class="selection-options">
             <span>{{ selectedCountText }}</span>
+
+            <BButtonGroup>
+                <BButton class="button" @click="deselectAll"> Clear </BButton>
+                <BButton class="button"> Duplicate </BButton>
+                <BButton class="button" @click="deleteSelection"> Delete </BButton>
+            </BButtonGroup>
         </div>
     </div>
 </template>
@@ -452,13 +472,19 @@ const selectedCountText = computed(() => {
         flex: 1;
         pointer-events: none;
         display: flex;
-        height: 3rem;
         padding: 0.25rem;
-        gap: 1rem;
-        justify-content: flex-end;
+        gap: 0.25rem;
+        align-items: end;
+        flex-direction: column-reverse;
+        align-self: flex-start;
 
         > * {
             pointer-events: auto;
+        }
+
+        .button {
+            height: 2rem;
+            padding: 0 0.5rem;
         }
     }
 }
