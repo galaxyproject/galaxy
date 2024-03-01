@@ -146,9 +146,11 @@ class ZarrImageGeneric(Image):
         search_path = os.path.join(dataset.extra_files_path, root_folder_name)
         primary_file = None
         for f in os.listdir(search_path):
-            if f == ".zgroup" and os.path.isfile(f) and not os.path.islink(f):
-                primary_file = os.path.join(search_path, f)
-                break
+            if f == ".zgroup":
+                f_path = os.path.join(search_path, f)
+                if os.path.isfile(f_path) and not os.path.islink(f_path):
+                    primary_file = f_path
+                    break
         if not primary_file:
             log.debug("Could not find .zgroup file; does not look like Zarr format")
             return
