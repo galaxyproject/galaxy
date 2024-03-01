@@ -1,5 +1,6 @@
-import requests
 import urllib
+
+import requests
 
 
 def __append_word_to_user_agent(word):
