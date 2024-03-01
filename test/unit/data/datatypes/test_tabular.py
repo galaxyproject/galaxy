@@ -64,7 +64,7 @@ def test_tabular_set_meta_nearly_empty():
 
 def test_tabular_column_types():
     """
-    file just containing a single new line
+    file containing a single containing only tab characters terminated with a new line character
     - empty lines are treated as comments
     """
     with tempfile.NamedTemporaryFile(mode="w") as test_file:
