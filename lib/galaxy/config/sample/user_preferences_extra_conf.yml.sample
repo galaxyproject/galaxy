@@ -122,8 +122,8 @@ preferences:
               label: Your access token, suitable for REST API access in a Oneprovider service
               type: password
               required: False
-            - name: insecure
-              label: Allows connection to Onedata servers without trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
+            - name: disable_tls_certificate_validation
+              label: Allows connection to Onedata servers that do not present trusted SSL certificates. SHOULD NOT be used unless you really know what you are doing.
               type: boolean
               required: False
               value: False
