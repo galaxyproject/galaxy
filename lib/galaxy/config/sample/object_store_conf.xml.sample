@@ -157,13 +157,29 @@
 <!--
     Sample Onedata Object Store
 
-    The "size" attribute of <cache> is in gigabytes.
+    Onedata specific options:
+    //auth/@access_token - an access token suitable for data access 
+                           (allowing calls to the Oneprovider REST API).
+
+    //connection/@onezone_domain - Domain of the Onezone service 
+                                   (e.g. "demo.onedata.org").
+
+    //connection/@disable_tls_certificate_validation - 
+        Allows connection to Onedata servers that do not present trusted SSL certificates. 
+        SHOULD NOT be used unless you really know what you are doing.
+
+    //space/@name - name of the Onedata space where the Galaxy data will 
+                    be stored.
+
+    //space/@path - relative directory path in space under which the Galaxy data 
+                    will be stored. Optional, if not provided, data will be stored 
+                    in the root of space.
 -->
 <!--
 <object_store type="onedata">
     <auth access_token="..." />
-    <connection onezone_domain="demo.onedata.org" verify_ssl="True"/>
-    <space name="krk-p" />
+    <connection onezone_domain="demo.onedata.org" disable_tls_certificate_validation="False"/>
+    <space name="krk-p" path="galaxy-data" />
     <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_onedata"/>
     <extra_dir type="temp" path="database/tmp_onedata"/>

@@ -1,5 +1,5 @@
-import json
 import os
+import random
 import string
 import subprocess
 import time
@@ -50,8 +50,8 @@ ONEDATA_DEMO_SPACE_NAME = "demo-space"
 ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
 <object_store type="onedata">
     <auth access_token="${access_token}" />
-    <connection onezone_domain="${onezone_domain}" verify_ssl="False"/>
-    <space name="${space_name}" />
+    <connection onezone_domain="${onezone_domain}" disable_tls_certificate_validation="True"/>
+    <space name="${space_name}" ${optional_space_params} />
     <cache path="${temp_directory}/object_store_cache" size="1000" cache_updated_data="${cache_updated_data}" />
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_onedata"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_onedata"/>
@@ -59,36 +59,13 @@ ONEDATA_OBJECT_STORE_CONFIG = string.Template("""
 """
 )
 
-def start_minio(container_name):
-    minio_start_args = [
-        "docker",
-        "run",
-        "-p",
-        f"{OBJECT_STORE_PORT}:9000",
-        "-d",
-        "--name",
-        container_name,
-        "--rm",
-        "minio/minio:latest",
-        "server",
-        "/data",
-    ]
-    subprocess.check_call(minio_start_args)
-
 
 def wait_rucio_ready(container_name):
-    rucio_check_args = [
-        "docker",
-        "exec",
-        container_name,
-        "rucio",
-        "list-rses",
-    ]
     timeout = 30
     start_time = time.time()
     while True:
         try:
-            rse = subprocess.check_output(rucio_check_args).decode("utf-8").strip()
+            rse = docker_exec(container_name, "rucio", "list-rses").decode("utf-8").strip()
             if rse == OBJECT_STORE_RUCIO_RSE_NAME:
                 return
         except subprocess.CalledProcessError:
@@ -99,18 +76,8 @@ def wait_rucio_ready(container_name):
 
 
 def start_rucio(container_name):
-    rucio_start_args = [
-        "docker",
-        "run",
-        "-p",
-        f"{OBJECT_STORE_PORT}:80",
-        "-d",
-        "--name",
-        container_name,
-        "--rm",
-        "code.ornl.gov:4567/ndip/public-docker/rucio:1.29.8",
-    ]
-    subprocess.check_call(rucio_start_args)
+    ports = [(OBJECT_STORE_PORT, 80)]
+    docker_run("code.ornl.gov:4567/ndip/public-docker/rucio:1.29.8", container_name, ports=ports)
 
     wait_rucio_ready(container_name)
 
@@ -150,7 +117,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def tearDownClass(cls):
-        stop_docker(cls.container_name)
+        docker_rm(cls.container_name)
         super().tearDownClass()
 
     @classmethod
@@ -270,14 +237,14 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
 
         oz_ip_address = get_onezone_ip_address(cls.oz_container_name)
         start_oneprovider(cls.op_container_name, oz_ip_address)
-        await_oneprovider(cls.op_container_name)
+        await_oneprovider_demo_readiness(cls.op_container_name)
 
         super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        stop_docker(cls.op_container_name)
-        stop_docker(cls.oz_container_name)
+        docker_rm(cls.op_container_name)
+        docker_rm(cls.oz_container_name)
 
         super().tearDownClass()
 
@@ -299,6 +266,11 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
                     "access_token": get_onedata_access_token(cls.oz_container_name),
                     "onezone_domain": get_onezone_ip_address(cls.oz_container_name),
                     "space_name": ONEDATA_DEMO_SPACE_NAME,
+                    "optional_space_params": random.choice([
+                        '',
+                        'path=""',
+                        'path="a/b/c/d"'
+                    ]),
                     "cache_updated_data": cls.updateCacheData(),
                 }
             ))
@@ -314,18 +286,13 @@ class BaseOnedataObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCa
         return True
 
 
+def start_minio(container_name):
+    ports = [(OBJECT_STORE_PORT, 9000)]
+    docker_run("minio/minio:latest", container_name, "server", "/data", ports=ports)
+
+
 def start_onezone(oz_container_name):
-    cmd = [
-        "docker",
-        "run",
-        "-d",
-        "--name",
-        oz_container_name,
-        "--rm",
-        "docker.onedata.org/onezone:VFS-11786-fix-race-conditions-in-the-demo-dockers-curl-wrapper",  # TODO docker
-        "demo"
-    ]
-    subprocess.check_call(cmd)
+    docker_run("onedata/onezone:21.02.5-dev", oz_container_name, "demo")
 
 
 def get_onezone_ip_address(oz_container_name):
@@ -340,35 +307,47 @@ def get_onezone_ip_address(oz_container_name):
 
 
 def start_oneprovider(op_container_name, oz_ip_address):
-    cmd = [
-        "docker",
-        "run",
-        "-d",
-        "--name",
-        op_container_name,
-        "--rm",
-        "docker.onedata.org/oneprovider:VFS-11786-fix-race-conditions-in-the-demo-dockers-curl-wrapper",  # TODO docker
-        "demo",
-        oz_ip_address
-    ]
-    subprocess.check_call(cmd)
+    docker_run("onedata/oneprovider:21.02.5-dev", op_container_name, "demo", oz_ip_address)
 
 
-def await_oneprovider(op_container_name):
-    cmd = [
-        "docker",
-        "exec",
-        op_container_name,
-        "await-demo"
-    ]
-    subprocess.check_call(cmd)
+def await_oneprovider_demo_readiness(op_container_name):
+    docker_exec(op_container_name, "await-demo", output=False)
 
 
 def get_onedata_access_token(oz_container_name):
-    cmd = [
-        "docker",
-        "exec",
-        oz_container_name,
-        "demo-access-token"
-    ]
-    return subprocess.check_output(cmd).decode('utf-8').strip()
+    return docker_exec(oz_container_name, "demo-access-token").decode("utf-8").strip()
+
+
+def docker_run(image, name, *args, detach=True, remove=True, ports=None):
+    cmd = ["docker", "run"]
+
+    if ports:
+        for (container_port, host_port) in ports:
+            cmd.extend(["-p", f"{container_port}:{host_port}"])
+
+    if detach:
+        cmd.append("-d")
+
+    cmd.extend(["--name", name])
+
+    if remove:
+        cmd.append("--rm")
+
+    cmd.append(image)
+    cmd.extend(args)
+
+    subprocess.check_call(cmd)
+
+
+def docker_exec(container_name, *args, output=True):
+    cmd = ["docker", "exec", container_name]
+    cmd.extend(args)
+
+    if output:
+        return subprocess.check_output(cmd)
+    else:
+        subprocess.check_call(cmd)
+
+
+def docker_rm(container_name):
+    subprocess.check_call(["docker", "rm", "-f", container_name])
