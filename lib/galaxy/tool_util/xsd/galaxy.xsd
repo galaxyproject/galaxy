@@ -6547,8 +6547,11 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data or collection inputs set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
-To include a dictionary with staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path``.
+To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
+
+Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
+and the other elements the identifiers of the collections containing the dataset.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -6568,9 +6571,9 @@ response to this directive.
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="data_style" type="xs:string">
+        <xs:attribute name="data_style" type="InputsConfigfileDatastyleType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include a staging path, a source path and all metadata files.</xs:documentation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include element identifiers, datatype, staging path, a source path and all metadata files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -7637,6 +7640,15 @@ the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="InputsConfigfileDatastyleType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="paths"/>
+      <xs:enumeration value="staging_path_and_source_path"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>
