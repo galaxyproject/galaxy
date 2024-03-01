@@ -6,7 +6,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
