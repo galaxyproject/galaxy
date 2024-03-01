@@ -5,6 +5,8 @@ Image classes
 import base64
 import json
 import logging
+import os
+import shutil
 from typing import Optional
 
 import mrcfile
@@ -125,6 +127,48 @@ class OMETiff(Tiff):
             if tif.is_ome:
                 return True
         return False
+
+
+class ZarrImageGeneric(Image):
+    file_ext = ""
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self.image_formats = ["ZARR"]
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        root_folder_name = data.Directory.get_root_folder(dataset.extra_files_path)
+        if not root_folder_name:
+            log.debug("Directory structure does not look like Zarr format")
+            return
+        dataset.metadata.root_folder = root_folder_name
+
+        search_path = os.path.join(dataset.extra_files_path, root_folder_name)
+        primary_file = None
+        for f in os.listdir(search_path):
+            if f == ".zgroup" and os.path.isfile(f) and not os.path.islink(f):
+                primary_file = os.path.join(search_path, f)
+                break
+        if not primary_file:
+            log.debug("Could not find .zgroup file; does not look like Zarr format")
+            return
+        shutil.copyfile(primary_file, dataset.get_file_name())
+
+    def sniff(self, filename: str) -> bool:
+        # Even if we were detecting a zarr-like folder structure, we couldn't
+        # know whether the file is for imaging purposes.
+        # That's why we return False here and leave detection to the ZarrGeneric
+        # class derived from Data.
+        return False
+
+
+class ZarrImage(ZarrImageGeneric):
+    file_ext = "zarr"
+    edam_format = "format_3547"
+
+
+class OMEZarr(ZarrImageGeneric):
+    file_ext = "ome_zarr"
 
 
 class Hamamatsu(Image):

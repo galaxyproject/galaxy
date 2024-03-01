@@ -1225,6 +1225,22 @@ class Directory(Data):
         error, msg, messagetype = False, "", ""
         return error, msg, messagetype
 
+    @classmethod
+    def get_root_folder(cls, path: str) -> str:
+        items_in_path = os.listdir(path)
+        root_folder_name = items_in_path[0]
+        if len(items_in_path) != 1 or not os.path.isdir(os.path.join(path, root_folder_name)):
+            return ""
+        return root_folder_name
+
+
+class ZarrGeneric(Directory):
+    """Class representing a zarr-format file structure with general-purpose numeric content."""
+
+    def sniff(self, filename: str) -> bool:
+        # TO DO: base this on the content of the .zgroup file in extra_files path
+        return False
+
 
 class GenericAsn1(Text):
     """Class for generic ASN.1 text format"""
