@@ -89,6 +89,7 @@ from galaxy.util import (
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
 )
 from . import (
     data,
@@ -3685,6 +3686,9 @@ class Fast5ArchiveGz(Fast5Archive):
     >>> fname = get_test_fname('test.fast5.tar.gz')
     >>> Fast5ArchiveGz().sniff(fname)
     True
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveGz().sniff(fname)
+    False
     >>> fname = get_test_fname('test.fast5.tar.bz2')
     >>> Fast5ArchiveGz().sniff(fname)
     False
@@ -3701,6 +3705,33 @@ class Fast5ArchiveGz(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
+class Fast5ArchiveXz(Fast5Archive):
+    """
+    Class describing a xz-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveXz().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    """
+
+    file_ext = "fast5.tar.xz"
+
+    def sniff(self, filename: str) -> bool:
+        if not is_xz(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
+
+
 class Fast5ArchiveBz2(Fast5Archive):
     """
     Class describing a bzip2-compressed FAST5 archive
@@ -3709,6 +3740,9 @@ class Fast5ArchiveBz2(Fast5Archive):
     >>> fname = get_test_fname('test.fast5.tar.bz2')
     >>> Fast5ArchiveBz2().sniff(fname)
     True
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveBz2().sniff(fname)
+    False
     >>> fname = get_test_fname('test.fast5.tar.gz')
     >>> Fast5ArchiveBz2().sniff(fname)
     False
@@ -4538,3 +4572,58 @@ class FITS(Binary):
             return dataset.peek
         except Exception:
             return f"Binary FITS file size ({nice_size(dataset.get_size())})"
+
+
+@build_sniff_from_prefix
+class Numpy(Binary):
+    """
+    Class defining a numpy data file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.npy')
+    >>> Numpy().sniff(fname)
+    True
+    """
+
+    file_ext = "npy"
+
+    MetadataElement(
+        name="version_str",
+        default="",
+        param=MetadataParameter,
+        desc="Version string for the numpy file format",
+        readonly=True,
+        visible=True,
+        no_value=0,
+        optional=True,
+    )
+
+    def _numpy_version_string(self, filename):
+        magic_string = open(filename, "rb").read(8)
+        version_str = f"{magic_string[6]}.{magic_string[7]}"
+        return version_str
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        try:
+            dataset.metadata.version_str = self._numpy_version_string(dataset.get_file_name())
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # The first 6 bytes of any numpy file is '\x93NUMPY', with following bytes for version
+        # number of file formats, and info about header data. The rest of the file contains binary data.
+        return file_prefix.startswith_bytes(b"\x93NUMPY")
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = f"Binary numpy file version {dataset.metadata.version_str}"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary numpy file (%s)" % (nice_size(dataset.get_size()))

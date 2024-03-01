@@ -29,6 +29,7 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as ec
 
 from galaxy.navigation.components import (
     Component,
@@ -540,6 +541,17 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    @retry_during_transitions
+    def get_grid_entry_names(self, selector):
+        self.sleep_for(self.wait_types.UX_RENDER)
+        names = []
+        grid = self.wait_for_selector(selector)
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
+            name = td[1].text if td[0].text == "" else td[0].text
+            names.append(name)
+        return names
+
     def select_grid_operation(self, item_name, option_label):
         target_item = None
         grid = self.components.grids.body.wait_for_visible()
@@ -564,9 +576,11 @@ class NavigatesGalaxy(HasDriver):
 
     def select_grid_cell(self, grid_name, item_name, column_index=3):
         cell = None
-        grid = self.wait_for_selector(grid_name)
+        grid = self.wait_for_selector(f"{grid_name} table")
         for row in grid.find_elements(By.TAG_NAME, "tr"):
             td = row.find_elements(By.TAG_NAME, "td")
+            print(td[0].text)
+            print(td[1].text)
             if item_name in [td[0].text, td[1].text]:
                 cell = td[column_index]
                 break
@@ -1174,14 +1188,15 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_histories_page(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.histories.wait_for_and_click()
         self.components.histories.histories.wait_for_present()
 
     def navigate_to_histories_shared_with_me_page(self):
         self.home()
-        self.click_masthead_user()
-        self.components.masthead.histories_shared_with_me.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.shared_histories.tab.wait_for_and_click()
 
     def navigate_to_user_preferences(self):
         self.home()
@@ -1190,28 +1205,30 @@ class NavigatesGalaxy(HasDriver):
 
     def navigate_to_invocations(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.invocations.wait_for_and_click()
 
     def navigate_to_pages(self):
         self.home()
-        self.click_masthead_user()
+        self.click_masthead_data()
         self.components.masthead.pages.wait_for_and_click()
 
     def navigate_to_published_workflows(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_workflows.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.workflows.wait_for_and_click()
+        self.components.workflows.published_tab.wait_for_and_click()
 
-    def navigate_to_published_histories_page(self):
+    def navigate_to_published_histories(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_histories.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.histories.wait_for_and_click()
+        self.components.published_histories.tab.wait_for_and_click()
 
     def navigate_to_published_pages(self):
         self.home()
-        self.click_masthead_shared_data()
-        self.components.masthead.published_pages.wait_for_and_click()
+        self.click_masthead_data()
+        self.components.masthead.pages.wait_for_and_click()
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
@@ -1263,7 +1280,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_open(self):
         self.home()
-        self.click_masthead_shared_data()
+        self.click_masthead_data()
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
 
@@ -1272,11 +1289,10 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_index_search_for(name)
         self.libraries_index_table_elements()[0].find_element(By.CSS_SELECTOR, "td a").click()
 
-    def page_open_and_screenshot(self, screenshot_name):
+    def page_open_and_screenshot(self, page_name, screenshot_name):
         self.home()
         self.navigate_to_pages()
-        self.components.pages.drop.wait_for_and_click()
-        self.components.pages.drop_view.wait_for_and_click()
+        self.select_grid_operation(page_name, "View")
         if screenshot_name:
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_name)
@@ -1386,27 +1402,24 @@ class NavigatesGalaxy(HasDriver):
         pages.index_table.wait_for_visible()
         return pages.index_rows.all()
 
-    def page_index_click_option(self, option_title, page_id):
-        self.components.pages.dropdown(id=page_id).wait_for_and_click()
-        if not self.select_dropdown_item(option_title):
-            raise AssertionError(f"Failed to find page action option with title [{option_title}]")
-
     def workflow_index_open(self):
         self.home()
         self.click_masthead_workflow()
 
-    def workflow_index_table_elements(self):
-        workflows = self.components.workflows
-        workflows.workflow_table.wait_for_visible()
-        return workflows.workflow_rows.all()
+    def workflow_shared_with_me_open(self):
+        self.workflow_index_open()
+        self.components.workflows.shared_with_me_tab.wait_for_and_click()
 
-    def workflow_index_table_row(self, workflow_index=0):
-        self.components.workflows.workflow_rows.wait_for_element_count_of_at_least(workflow_index + 1)
-        return self.workflow_index_table_elements()[workflow_index]
+    def workflow_card_elements(self):
+        self.components.workflows.workflow_cards.wait_for_visible()
+        return self.components.workflows.workflow_card.all()
+
+    def workflow_card_element(self, workflow_index=0):
+        return self.workflow_card_elements()[workflow_index]
 
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
-        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
+        row_element = self.workflow_card_element(workflow_index=workflow_index)
         columns = row_element.find_elements(By.CSS_SELECTOR, "td")
         return columns[column_index].text
 
@@ -1429,25 +1442,24 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_click_import(self):
         return self.components.workflows.import_button.wait_for_and_click()
 
-    def workflow_index_rename(self, new_name, workflow_index=0):
-        self.workflow_index_click_option("Rename", workflow_index=workflow_index)
-        alert = self.driver.switch_to.alert
-        alert.send_keys(new_name)
-        alert.accept()
-        self.components.workflows.workflow_with_name(workflow_name=new_name).wait_for_visible()
+    def workflow_rename(self, new_name, workflow_index=0):
+        workflow = self.workflow_card_element(workflow_index=workflow_index)
+        workflow.find_element(By.CSS_SELECTOR, "[data-workflow-rename]").click()
+        self.components.workflows.rename_input.wait_for_visible().clear()
+        self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
+        self.components.workflows.rename_input.wait_for_and_send_keys(self.keys.ENTER)
+
+    def workflow_delete_by_name(self, name):
+        self.workflow_index_search_for(name)
+        self.components.workflows.workflow_drop_down.wait_for_and_click()
+        self.components.workflows.delete_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components._.confirm_button(name="Delete").wait_for_and_click()
 
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
-        """Get workflow name for workflow_index'th row."""
-        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element(By.CSS_SELECTOR, ".workflow-dropdown")
-        return workflow_button.text
-
-    @retry_during_transitions
-    def workflow_click_option(self, workflow_selector, workflow_index=0):
-        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = workflow_row.find_element(By.CSS_SELECTOR, workflow_selector)
-        workflow_button.click()
+        workflow = self.workflow_card_element(workflow_index=workflow_index)
+        return workflow.find_element(By.CSS_SELECTOR, ".workflow-name").text
 
     def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
@@ -1457,15 +1469,16 @@ class NavigatesGalaxy(HasDriver):
                 menu_option.click()
                 return True
 
-    def workflow_index_click_option(self, option_title, workflow_index=0):
-        self.workflow_click_option(".workflow-dropdown", workflow_index)
-        if not self.select_dropdown_item(option_title):
-            raise AssertionError(f"Failed to find workflow action option with title [{option_title}]")
+    def workflow_share_click(self):
+        self.components.workflows.share_button.wait_for_and_click()
+
+    def workflow_index_view_external_link(self, workflow_index=0):
+        self.components.workflows.workflow_drop_down.wait_for_and_click()
+        self.components.workflows.view_external_link.wait_for_and_click()
 
     def workflow_index_click_tag_display(self, workflow_index=0):
-        workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
-        tag_display.click()
+        workflow_element = self.workflow_card_element(workflow_index=workflow_index)
+        workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags .headless-multiselect .toggle-button").click()
 
     def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
         self.workflow_index_click_tag_display(workflow_index=workflow_index)
@@ -1481,7 +1494,7 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def workflow_index_tag_elements(self, workflow_index=0):
-        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        workflow_row_element = self.workflow_card_element(workflow_index)
         tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
         tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag")
         return tag_spans
@@ -1516,11 +1529,12 @@ class NavigatesGalaxy(HasDriver):
 
             tag_area.send_keys(tag)
             self.send_enter(tag_area)
+        self.send_escape(tag_area)
 
     def workflow_run_with_name(self, name: str):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.workflow_click_option(".workflow-run")
+        self.components.workflows.run_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
@@ -1595,9 +1609,7 @@ class NavigatesGalaxy(HasDriver):
 
     def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
         name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
-        self.components.pages.drop.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.pages.drop_edit.wait_for_and_click()
+        self.select_grid_operation(name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
@@ -1649,8 +1661,8 @@ class NavigatesGalaxy(HasDriver):
     def click_masthead_user(self):
         self.components.masthead.user.wait_for_and_click()
 
-    def click_masthead_shared_data(self):
-        self.components.masthead.shared_data.wait_for_and_click()
+    def click_masthead_data(self):
+        self.components.masthead.data.wait_for_and_click()
 
     def click_masthead_workflow(self):
         self.components.masthead.workflow.wait_for_and_click()
@@ -1731,17 +1743,6 @@ class NavigatesGalaxy(HasDriver):
     def histories_click_advanced_search(self):
         search_selector = "#standard-search .advanced-search-toggle"
         self.wait_for_and_click_selector(search_selector)
-
-    @retry_during_transitions
-    def histories_get_history_names(self):
-        self.sleep_for(self.wait_types.UX_RENDER)
-        names = []
-        grid = self.wait_for_selector("#histories-grid")
-        for row in grid.find_elements(By.TAG_NAME, "tr"):
-            td = row.find_elements(By.TAG_NAME, "td")
-            name = td[1].text if td[0].text == "" else td[0].text
-            names.append(name)
-        return names
 
     @edit_details
     def history_panel_add_tags(self, tags):
@@ -1985,9 +1986,9 @@ class NavigatesGalaxy(HasDriver):
     def tour_wait_for_clickable_element(self, selector):
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"sizzle (jQuery) selector [{selector}] to become clickable")
+        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become clickable")
         element = wait.until(
-            sizzle.sizzle_selector_clickable(selector),
+            ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
             timeout_message,
         )
         return element
@@ -1995,9 +1996,9 @@ class NavigatesGalaxy(HasDriver):
     def tour_wait_for_element_present(self, selector):
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"sizzle (jQuery) selector [{selector}] to become present")
+        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become present")
         element = wait.until(
-            sizzle.sizzle_presence_of_selector(selector),
+            ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
             timeout_message,
         )
         return element

@@ -472,12 +472,12 @@ def test_has_line_matching_n_failure():
 
 SIZE_HAS_SIZE_ASSERTION = """
     <assert_contents>
-        <has_size value="{value}"/>
+        <has_size {size_attrib}="{value}"/>
     </assert_contents>
 """
 SIZE_HAS_SIZE_ASSERTION_DELTA = """
     <assert_contents>
-        <has_size value="{value}" delta="{delta}"/>
+        <has_size {size_attrib}="{value}" delta="{delta}"/>
     </assert_contents>
 """
 
@@ -491,39 +491,45 @@ with tempfile.NamedTemporaryFile(mode="w", delete=False) as txttmp:
 
 def test_has_size_success():
     """test has_size"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value=10), TEXT_DATA_HAS_TEXT)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="size", value=10), TEXT_DATA_HAS_TEXT)
     assert len(a) == 0
 
 
 def test_has_size_failure():
     """test has_size .. negative test"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value="10"), TEXT_DATA_HAS_TEXT * 2)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="value", value="10"), TEXT_DATA_HAS_TEXT * 2)
     assert "Expected file size of 10+-0 found 20" in a
     assert len(a) == 1
 
 
 def test_has_size_delta():
     """test has_size .. delta"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="10", delta="10"), TEXT_DATA_HAS_TEXT * 2)
+    a = run_assertions(
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(size_attrib="size", value="10", delta="10"), TEXT_DATA_HAS_TEXT * 2
+    )
     assert len(a) == 0
 
 
 def test_has_size_with_bytes_suffix():
     """test has_size .. bytes suffix"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1k", delta="0"), TEXT_DATA_HAS_TEXT * 100)
+    a = run_assertions(
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(size_attrib="size", value="1k", delta="0"), TEXT_DATA_HAS_TEXT * 100
+    )
     assert len(a) == 0
 
 
 def test_has_size_with_bytes_suffix_failure():
     """test has_size .. bytes suffix .. negative"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1Mi", delta="10k"), TEXT_DATA_HAS_TEXT * 100)
+    a = run_assertions(
+        SIZE_HAS_SIZE_ASSERTION_DELTA.format(size_attrib="value", value="1Mi", delta="10k"), TEXT_DATA_HAS_TEXT * 100
+    )
     assert "Expected file size of 1Mi+-10k found 1000" in a
     assert len(a) == 1
 
 
 def test_has_size_decompress_gz():
     """test has_size with gzipped data using decompress=True (which in real life is set int he parent output tag)"""
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value="100"), GZA100, decompress=True)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="size", value="100"), GZA100, decompress=True)
     assert len(a) == 0
 
 
@@ -532,7 +538,7 @@ def test_has_size_decompress_txt():
     test has_size with NON-gzipped data using decompress=True
     -> decompress should be ignored - in particular there should be no error
     """
-    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value="100"), A100, decompress=True)
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(size_attrib="size", value="100"), A100, decompress=True)
     assert len(a) == 0
 
 

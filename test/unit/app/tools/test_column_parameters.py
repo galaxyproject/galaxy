@@ -88,7 +88,7 @@ class TestDataColumnParameter(BaseParameterTestCase):
                 extension="interval", create_dataset=True, sa_session=self.app.model.context
             )
         )
-        ready_hda.set_dataset_state("ok")
+        ready_hda.state = "ok"
         return ready_hda
 
     @property

@@ -13,6 +13,8 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuInput from "@/components/Common/FilterMenuInput.vue";
 import FilterMenuMultiTags from "@/components/Common/FilterMenuMultiTags.vue";
+import FilterMenuObjectStore from "@/components/Common/FilterMenuObjectStore.vue";
+import FilterMenuQuotaSource from "@/components/Common/FilterMenuQuotaSource.vue";
 import FilterMenuRanged from "@/components/Common/FilterMenuRanged.vue";
 
 library.add(faAngleDoubleUp, faQuestion, faRedo, faSearch);
@@ -151,7 +153,6 @@ watch(
         <DelayedInput
             v-if="props.menuType !== 'standalone'"
             v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
-            :class="props.filterText && 'font-weight-bold'"
             :query="props.filterText"
             :delay="props.debounceDelay"
             :loading="props.loading"
@@ -206,6 +207,19 @@ watch(
                         :filters="filters"
                         :identifier="identifier"
                         @change="onOption" />
+                    <FilterMenuObjectStore
+                        v-else-if="validFilters[filter]?.type == 'ObjectStore'"
+                        :name="filter"
+                        :filter="validFilters[filter]"
+                        :filters="filters"
+                        @change="onOption" />
+                    <FilterMenuQuotaSource
+                        v-else-if="validFilters[filter]?.type == 'QuotaSource'"
+                        :name="filter"
+                        :filter="validFilters[filter]"
+                        :filters="filters"
+                        :identifier="identifier"
+                        @change="onOption" />
                     <FilterMenuInput
                         v-else
                         :name="filter"
@@ -220,7 +234,7 @@ watch(
             </div>
 
             <!-- Perform search or cancel out (or open help modal for whole Menu if exists) -->
-            <div class="mt-3">
+            <div class="mb-3 mt-1">
                 <BButton
                     :id="`${identifier}-advanced-filter-submit`"
                     class="mr-1"

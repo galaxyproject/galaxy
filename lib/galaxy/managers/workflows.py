@@ -69,6 +69,7 @@ from galaxy.model import (
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowInvocationToSubworkflowInvocationAssociation,
 )
 from galaxy.model.base import (
     ensure_object_added_to_session,
@@ -92,8 +93,8 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
-    workflow_building_modes,
 )
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
@@ -486,6 +487,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         offset=None,
         sort_by=None,
         sort_desc=None,
+        include_nested_invocations=True,
     ) -> Tuple[Query, int]:
         """Get invocations owned by the current user."""
 
@@ -503,6 +505,16 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
         if not include_terminal:
             stmt = stmt.where(WorkflowInvocation.state.in_(WorkflowInvocation.non_terminal_states))
+        if not include_nested_invocations:
+            subquery = (
+                select(WorkflowInvocationToSubworkflowInvocationAssociation.id)
+                .where(
+                    WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id
+                    == WorkflowInvocation.id
+                )
+                .exists()
+            )
+            stmt = stmt.where(~subquery)
 
         total_matches = get_count(trans.sa_session, stmt)
 
@@ -2091,5 +2103,5 @@ def _get_invocation(session, eager, invocation_id):
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)

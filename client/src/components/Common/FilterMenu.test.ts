@@ -154,14 +154,14 @@ describe("FilterMenu", () => {
         // `has_help` filter should have help modal button
         expect(wrapper.find("[title='Value Help']").classes().includes("btn")).toBe(true);
         // ranged time field (has 2 datepickers)
-        const createdGtInput = wrapper.find("[placeholder='creation time after']");
-        const createdLtInput = wrapper.find("[placeholder='creation time before']");
+        const createdGtInput = wrapper.find("[placeholder='after creation time']");
+        const createdLtInput = wrapper.find("[placeholder='before creation time']");
         createdGtInput.setValue("January 1, 2022");
         createdLtInput.setValue("January 1, 2023");
         expect(wrapper.findAll(".b-form-datepicker").length).toBe(2);
         // ranged number field (has different placeholder: greater instead of after...)
-        const indexGtInput = wrapper.find("[placeholder='index greater']");
-        const indexLtInput = wrapper.find("[placeholder='index lower']");
+        const indexGtInput = wrapper.find("[placeholder='greater than index']");
+        const indexLtInput = wrapper.find("[placeholder='lower than index']");
         indexGtInput.setValue("1234");
         indexLtInput.setValue("5678");
         // default bool filter

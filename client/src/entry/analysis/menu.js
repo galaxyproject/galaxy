@@ -41,7 +41,7 @@ export function fetchMenu(options = {}) {
     }
 
     //
-    // 'Shared Items' or Libraries tab.
+    // 'Data Items' or Libraries tab.
     //
     if (Galaxy.config.single_user) {
         // Single user can still use libraries, especially as we may grow that
@@ -52,10 +52,48 @@ export function fetchMenu(options = {}) {
             url: "/libraries",
             id: "libraries",
         });
+    } else if (Galaxy.user.id) {
+        menu.push({
+            id: "resources",
+            title: _l("Data"),
+            url: "javascript:void(0)",
+            tooltip: _l("Access resources"),
+            menu: [
+                {
+                    title: _l("Data Libraries"),
+                    url: "/libraries",
+                    target: "_top",
+                },
+                {
+                    title: _l("Datasets"),
+                    url: "/datasets/list",
+                },
+                {
+                    title: _l("Histories"),
+                    url: "/histories/list",
+                },
+                {
+                    title: _l("Pages"),
+                    url: "/pages/list",
+                },
+                {
+                    title: _l("Visualizations"),
+                    url: "/visualizations/list",
+                },
+                {
+                    title: _l("Workflows"),
+                    url: "/workflows/list",
+                },
+                {
+                    title: _l("Workflow Invocations"),
+                    url: "/workflows/invocations",
+                },
+            ],
+        });
     } else {
         menu.push({
-            id: "shared",
-            title: _l("Shared Data"),
+            id: "resources",
+            title: _l("Data"),
             url: "javascript:void(0)",
             tooltip: _l("Access published resources"),
             menu: [
@@ -65,20 +103,24 @@ export function fetchMenu(options = {}) {
                     target: "_top",
                 },
                 {
+                    title: _l("Datasets"),
+                    url: "/datasets/list_published",
+                },
+                {
                     title: _l("Histories"),
                     url: "/histories/list_published",
                 },
                 {
-                    title: _l("Workflows"),
-                    url: "/workflows/list_published",
+                    title: _l("Pages"),
+                    url: "/pages/list_published",
                 },
                 {
                     title: _l("Visualizations"),
                     url: "/visualizations/list_published",
                 },
                 {
-                    title: _l("Pages"),
-                    url: "/pages/list_published",
+                    title: _l("Workflows"),
+                    url: "/workflows/list_published",
                 },
             ],
         });
@@ -141,10 +183,6 @@ export function fetchMenu(options = {}) {
                 url: "/tours",
             },
             {
-                title: _l("Introduction to Galaxy"),
-                url: "/welcome/new",
-            },
-            {
                 title: _l("About"),
                 url: "/about",
             },
@@ -197,50 +235,18 @@ export function fetchMenu(options = {}) {
                     disabled: true,
                 },
                 { divider: true },
-                {
-                    title: _l("Preferences"),
-                    url: "/user",
-                },
-                { divider: true },
-                {
-                    title: _l("Datasets"),
-                    url: "/datasets/list",
-                },
-                {
-                    title: _l("Histories"),
-                    url: "/histories/list",
-                },
-                {
-                    title: _l("Histories shared with me"),
-                    url: "/histories/list_shared",
-                    hidden: Galaxy.config.single_user,
-                },
-                {
-                    title: _l("Archived Histories"),
-                    url: "/histories/archived",
-                },
-                {
-                    title: _l("Pages"),
-                    url: "/pages/list",
-                },
-                {
-                    title: _l("Workflow Invocations"),
-                    url: "/workflows/invocations",
-                },
             ],
         };
-        if (Galaxy.config.visualizations_visible) {
-            userTab.menu.push({
-                title: _l("Visualizations"),
-                url: "/visualizations/list",
-            });
-        }
         if (Galaxy.config.interactivetools_enable) {
             userTab.menu.push({
-                title: _l("Active InteractiveTools"),
+                title: _l("Active Interactive Tools"),
                 url: "/interactivetool_entry_points/list",
             });
         }
+        userTab.menu.push({
+            title: _l("Archived Histories"),
+            url: "/histories/archived",
+        });
         if (Galaxy.config.enable_notification_system) {
             userTab.menu.push({
                 title: _l("Notifications"),
@@ -248,6 +254,10 @@ export function fetchMenu(options = {}) {
             });
         }
         userTab.menu.push({ divider: true });
+        userTab.menu.push({
+            title: _l("Preferences"),
+            url: "/user",
+        });
         userTab.menu.push({
             title: _l("Sign Out"),
             onclick: userLogout,

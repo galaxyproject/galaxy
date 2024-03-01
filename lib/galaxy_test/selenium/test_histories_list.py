@@ -272,7 +272,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
             assert intersection == set()
 
     def get_histories(self):
-        return self.histories_get_history_names()
+        return self.get_grid_entry_names("#histories-grid")
 
     def add_tag(self, tags_cell, tag):
         tag_button = tags_cell.find_element(By.CSS_SELECTOR, ".stateless-tags button")

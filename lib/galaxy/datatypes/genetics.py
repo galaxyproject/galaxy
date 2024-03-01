@@ -91,7 +91,7 @@ class GenomeGraphs(Tabular):
         """
         return open(dataset.get_file_name(), "rb")
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this
@@ -115,9 +115,7 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
-                    internal_url = "%s" % app.legacy_url_for(
-                        mapper=app.legacy_mapper,
-                        environ=request.environ,
+                    internal_url = app.url_for(
                         controller="dataset",
                         dataset_id=dataset.id,
                         action="display_at",
@@ -125,7 +123,7 @@ class GenomeGraphs(Tabular):
                     )
                     display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (
                         base_url,
-                        app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
+                        app.url_for(controller="root"),
                         dataset.id,
                         type,
                     )

@@ -5,6 +5,8 @@ type QueuedAction<T extends (...args: any) => R, R = unknown> = {
     reject: (e: Error) => void;
 };
 
+export class ActionSkippedError extends Error {}
+
 /**
  * This queue waits until the current promise is resolved and only executes the last enqueued
  * promise. Promises added between the last and the currently executing promise are skipped.
@@ -13,15 +15,28 @@ type QueuedAction<T extends (...args: any) => R, R = unknown> = {
  */
 export class LastQueue<T extends (arg: any) => R, R = unknown> {
     throttlePeriod: number;
+    /** Throw an error if a queued action is skipped. This avoids dangling promises */
+    rejectSkipped: boolean;
     private queuedPromises: Record<string | number, QueuedAction<T, R>> = {};
     private pendingPromise = false;
 
-    constructor(throttlePeriod = 1000) {
+    constructor(throttlePeriod = 1000, rejectSkipped = false) {
         this.throttlePeriod = throttlePeriod;
+        this.rejectSkipped = rejectSkipped;
+    }
+
+    private skipPromise(key: string | number) {
+        if (!this.rejectSkipped) {
+            return;
+        }
+
+        const promise = this.queuedPromises[key];
+        promise?.reject(new ActionSkippedError());
     }
 
     async enqueue(action: T, arg: Parameters<T>[0], key: string | number = 0) {
         return new Promise((resolve, reject) => {
+            this.skipPromise(key);
             this.queuedPromises[key] = { action, arg, resolve, reject };
             this.dequeue();
         });

@@ -152,6 +152,9 @@ class DatasetStorageDetails(Model):
     badges: List[BadgeDict] = Field(
         description="A list of badges describing object store properties for concrete object store dataset is stored in."
     )
+    relocatable: bool = Field(
+        description="Indicator of whether the objectstore for this dataset can be switched by this user."
+    )
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -429,6 +432,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             source=quota_source.label,
             enabled=quota_source.use,
         )
+        relocatable = trans.app.security_agent.can_change_object_store_id(trans.user, dataset)
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
@@ -443,6 +447,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             sources=sources,
             quota=quota,
             badges=badges,
+            relocatable=relocatable,
         )
 
     def show_inheritance_chain(

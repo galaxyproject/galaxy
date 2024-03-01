@@ -1,5 +1,6 @@
 import bz2
 import gzip
+import lzma
 import os
 import re
 import tarfile
@@ -117,6 +118,26 @@ def check_gzip(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     return (True, True)
 
 
+def check_xz(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
+    try:
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(6)
+        if magic_check != util.xz_magic:
+            return (False, False)
+    except Exception:
+        return (False, False)
+
+    if not check_content:
+        return (True, True)
+
+    with lzma.LZMAFile(file_path, mode="rb") as xzipped_file:
+        chunk = xzipped_file.read(CHUNK_SIZE)
+    # See if we have a compressed HTML file
+    if check_html(chunk, file_path=False):
+        return (True, False)
+    return (True, True)
+
+
 def check_bz2(file_path: str, check_content: bool = True) -> Tuple[bool, bool]:
     try:
         with open(file_path, "rb") as temp:
@@ -165,6 +186,11 @@ def is_gzip(file_path: str) -> bool:
     return is_gzipped
 
 
+def is_xz(file_path: str) -> bool:
+    is_xzipped, is_valid = check_xz(file_path, check_content=False)
+    return is_xzipped
+
+
 def is_zip(file_path: str) -> bool:
     is_zipped, is_valid = check_zip(file_path, check_content=False)
     return is_zipped
@@ -197,6 +223,7 @@ def check_image(file_path: str):
 COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
     "gzip": check_gzip,
     "bz2": check_bz2,
+    "xz": check_xz,
     "zip": check_zip,
 }
 
@@ -211,5 +238,6 @@ __all__ = (
     "COMPRESSION_CHECK_FUNCTIONS",
     "is_gzip",
     "is_bz2",
+    "is_xz",
     "is_zip",
 )

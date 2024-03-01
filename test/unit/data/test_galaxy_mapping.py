@@ -900,6 +900,23 @@ class TestMappings(BaseModelTestCase):
         annotations = copied_workflow.steps[0].annotations
         assert len(annotations) == 1
 
+        stored_workflow = loaded_workflow.stored_workflow
+        counts = stored_workflow.invocation_counts()
+        assert counts
+
+        workflow_invocation_0 = _invocation_for_workflow(user, loaded_workflow)
+        workflow_invocation_1 = _invocation_for_workflow(user, loaded_workflow)
+        workflow_invocation_1.state = "scheduled"
+        self.model.session.add(workflow_invocation_0)
+        self.model.session.add(workflow_invocation_1)
+        # self.persist(workflow_invocation_0)
+        # self.persist(workflow_invocation_1)
+        self.model.session.flush()
+        counts = stored_workflow.invocation_counts()
+        print(counts)
+        assert counts.root["new"] == 2
+        assert counts.root["scheduled"] == 1
+
     def test_role_creation(self):
         security_agent = GalaxyRBACAgent(self.model)
 
@@ -1164,6 +1181,7 @@ def _invocation_for_workflow(user, workflow):
     workflow_invocation = galaxy.model.WorkflowInvocation()
     workflow_invocation.workflow = workflow
     workflow_invocation.history = h1
+    workflow_invocation.state = "new"
     return workflow_invocation
 
 

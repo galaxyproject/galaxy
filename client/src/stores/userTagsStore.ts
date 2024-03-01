@@ -1,27 +1,126 @@
+import { until } from "@vueuse/core";
+import Dexie from "dexie";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
+
+import { useHashedUserId } from "@/composables/hashedUserId";
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 
 import { useUserStore } from "./userStore";
 
+interface StoredTag {
+    id?: number;
+    tag: string;
+    userHash: string;
+    lastUsed: number;
+}
+
+class UserTagStoreDatabase extends Dexie {
+    tags!: Dexie.Table<StoredTag, number>;
+
+    constructor() {
+        super("userTagStoreDatabase");
+        this.version(1).stores({ tags: "++id, userHash, lastUsed" });
+    }
+}
+
+const maxDbEntriesPerUser = 10000;
+
+function normalizeTag(tag: string) {
+    return tag.replace(/^#/, "name:");
+}
+
 export const useUserTagsStore = defineStore("userTagsStore", () => {
-    const localTags = ref<string[]>([]);
-
     const { currentUser } = storeToRefs(useUserStore());
+    const { hashedUserId } = useHashedUserId(currentUser);
 
+    const db = new UserTagStoreDatabase();
+    const tags = ref<StoredTag[]>([]);
+    const dbLoaded = ref(false);
+
+    watch(
+        () => hashedUserId.value,
+        async (userHash) => {
+            if (userHash) {
+                tags.value = await db.tags.where("userHash").equals(userHash).sortBy("lastUsed");
+
+                console.log(tags.value);
+
+                if (tags.value.length > maxDbEntriesPerUser) {
+                    await removeOldestEntries(tags.value.length - maxDbEntriesPerUser);
+                }
+
+                dbLoaded.value = true;
+            }
+        },
+        { immediate: true }
+    );
+
+    /** removes the x oldest tags from the database */
+    async function removeOldestEntries(count: number) {
+        const oldestTags = tags.value.splice(0, count);
+        await db.tags.bulkDelete(oldestTags.map((o) => o.id!));
+    }
+
+    /** tags as string array */
     const userTags = computed(() => {
-        let tags: string[];
-        if (currentUser.value && !currentUser.value.isAnonymous) {
-            tags = [...(currentUser.value.tags_used ?? []), ...localTags.value];
-        } else {
-            tags = localTags.value;
-        }
-        const tagSet = new Set(tags);
-        return Array.from(tagSet).map((tag) => tag.replace(/^name:/, "#"));
+        return tags.value.map((o) => o.tag).reverse();
     });
 
-    const addLocalTag = (tag: string) => {
-        localTags.value.push(tag);
-    };
+    async function onNewTagSeen(tag: string) {
+        await until(dbLoaded).toBe(true);
 
-    return { localTags, userTags, addLocalTag };
+        assertDefined(hashedUserId.value);
+        tag = normalizeTag(tag);
+
+        const tagSet = new Set(userTags.value);
+
+        if (!tagSet.has(tag)) {
+            const tagObject: StoredTag = {
+                tag,
+                userHash: hashedUserId.value,
+                lastUsed: Date.now(),
+            };
+
+            tags.value.push(tagObject);
+            await db.tags.add(tagObject);
+        }
+    }
+
+    async function onMultipleNewTagsSeen(newTags: string[]) {
+        await until(dbLoaded).toBe(true);
+
+        const userHash = ensureDefined(hashedUserId.value);
+        const tagSet = new Set(userTags.value);
+
+        // only the ones that really are new
+        const filteredNewTags = newTags.map(normalizeTag).filter((tag) => !tagSet.has(tag));
+
+        if (filteredNewTags.length > 0) {
+            const now = Date.now();
+            const newTagObjects: StoredTag[] = filteredNewTags.map((tag) => ({
+                tag,
+                userHash,
+                lastUsed: now,
+            }));
+
+            tags.value = tags.value.concat(newTagObjects);
+            await db.tags.bulkAdd(newTagObjects);
+        }
+    }
+
+    async function onTagUsed(tag: string) {
+        await until(dbLoaded).toBe(true);
+        tag = normalizeTag(tag);
+
+        const storedTag = tags.value.find((o) => o.tag === tag);
+        const id = storedTag?.id;
+
+        if (id !== undefined) {
+            // put instead of update, because `removeOldestEntries` may have deleted this tag on init
+            await db.tags.put({ ...storedTag, lastUsed: Date.now() } as StoredTag, id);
+        }
+    }
+
+    return { userTags, onNewTagSeen, onTagUsed, onMultipleNewTagsSeen };
 });

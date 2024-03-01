@@ -12,6 +12,9 @@
   root: ${user.preferences['owncloud|root']}
   login: ${user.preferences['owncloud|username']}
   password: ${user.preferences['owncloud|password']}
+  # for accessing passwords stored in a vault:
+  # password: ${user.user_vault.read_secret('preferences/owncloud/password')}
+
   # By default, the plugin will use temp files to avoid loading entire files into memory. 
   # You can change the directory here or omit to use the default temp directory.
   temp_path: /your/temp/path

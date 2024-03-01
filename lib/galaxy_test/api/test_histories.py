@@ -189,31 +189,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             self._delete(f"histories/{history_1}")
 
             name_contains = "history"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
             name_contains = "history that match query"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 3
 
             name_contains = "ANOTHER"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
             assert len(index_response) == 0
-
-            name_contains = "test"
-            query = f"?search={name_contains}"
-            index_response = self._get(f"histories{query}").json()
-            assert len(index_response) == 3
 
             data = dict(search="is:deleted", show_published=False)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 
             self._update(history_0, {"published": True})
-            data = dict(search="is:published")
+            data = dict(search=f"query_{unique_id} is:published")
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 

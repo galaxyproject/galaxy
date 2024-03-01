@@ -47,33 +47,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def index(self, trans):
         return ""
 
-    @web.expose
-    def list_as_xml(self, trans):
-        """XML history list for functional tests"""
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template("/history/list_as_xml.mako")
-
-    @web.expose
-    def as_xml(self, trans, id=None, show_deleted=None, show_hidden=None):
-        """
-        Return a history in xml format.
-        """
-        if trans.app.config.require_login and not trans.user:
-            return trans.fill_template("/no_access.mako", message="Please log in to access Galaxy histories.")
-
-        if id:
-            history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        else:
-            history = trans.get_history(most_recent=True, create=True)
-
-        trans.response.set_content_type("text/xml")
-        return trans.fill_template_mako(
-            "history/as_xml.mako",
-            history=history,
-            show_deleted=string_as_bool(show_deleted),
-            show_hidden=string_as_bool(show_hidden),
-        )
-
     @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
@@ -230,21 +203,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return {
             "message": f"Success, requested permissions have been changed in {'all histories' if all_histories else history.name}."
         }
-
-    @web.expose
-    def adjust_hidden(self, trans, id=None, **kwd):
-        """THIS METHOD IS A TEMPORARY ADDITION. It'll allow us to fix the
-        regression in history-wide actions, and will be removed in the first
-        release after 17.01"""
-        action = kwd.get("user_action", None)
-        if action == "delete":
-            for hda in trans.history.datasets:
-                if not hda.visible:
-                    hda.mark_deleted()
-        elif action == "unhide":
-            trans.history.unhide_datasets()
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
 
     # ......................................................................... actions/orig. async
 

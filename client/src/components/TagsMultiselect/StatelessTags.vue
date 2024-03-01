@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { useToast } from "@/composables/toast";
 import { useUid } from "@/composables/utils/uid";
@@ -37,11 +37,15 @@ const userTagsStore = useUserTagsStore();
 const { userTags } = storeToRefs(userTagsStore);
 const { warning } = useToast();
 
+onMounted(() => {
+    userTagsStore.onMultipleNewTagsSeen(props.value);
+});
+
 function onAddTag(tag: string) {
     const newTag = tag.trim();
 
     if (isValid(newTag)) {
-        userTagsStore.addLocalTag(newTag);
+        userTagsStore.onNewTagSeen(newTag);
         emit("input", [...props.value, newTag]);
     } else {
         warning(`"${newTag}" is not a valid tag.`, "Invalid Tag");
@@ -111,7 +115,8 @@ function onTagClicked(tag: string) {
                 :placeholder="props.placeholder"
                 :validator="isValid"
                 @addOption="onAddTag"
-                @input="onInput" />
+                @input="onInput"
+                @selected="(tag) => userTagsStore.onTagUsed(tag)" />
         </div>
 
         <div v-else>
@@ -128,7 +133,7 @@ function onTagClicked(tag: string) {
                     :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
-                    @click="() => (toggledOpen = true)">
+                    @click.stop="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
                 </BButton>
 

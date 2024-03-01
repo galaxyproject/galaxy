@@ -88,6 +88,7 @@ watch(
                 ref="filterMenuInput"
                 v-model="localValue"
                 v-b-tooltip.focus.v-danger="hasError(props.name)"
+                class="mw-100"
                 size="sm"
                 :state="hasError(props.name) ? false : null"
                 :placeholder="`any ${props.filter.placeholder}`"

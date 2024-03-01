@@ -10,11 +10,12 @@ from galaxy.datatypes.registry import Registry
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
     is_zip,
 )
 from galaxy.util.hash_util import md5_hash_file
 from galaxy_test.driver import integration_util
-from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
+from .test_upload_configuration_options import BaseUploadContentConfigurationIntegrationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TEST_FILE_DIR = f"{SCRIPT_DIRECTORY}/../../lib/galaxy/datatypes/test"
@@ -42,14 +43,14 @@ def collect_test_data(registry):
     return {os.path.basename(data.path): data for data in test_data_description}
 
 
-class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
+class UploadTestDatatypeDataIntegrationInstance(BaseUploadContentConfigurationIntegrationInstance):
     framework_tool_and_types = False
     datatypes_conf_override = DATATYPES_CONFIG
     object_store_config = None
     object_store_config_path = None
 
 
-instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
+instance = integration_util.integration_module_instance(UploadTestDatatypeDataIntegrationInstance)
 
 
 registry = Registry()
@@ -59,7 +60,7 @@ TEST_CASES = collect_test_data(registry)
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_auto(
-    instance: UploadTestDatatypeDataTestCase,
+    instance: UploadTestDatatypeDataIntegrationInstance,
     test_data: TestData,
     temp_file,
     celery_session_worker,
@@ -70,14 +71,14 @@ def test_upload_datatype_auto(
 
 
 def upload_datatype_helper(
-    instance: UploadTestDatatypeDataTestCase,
+    instance: UploadTestDatatypeDataIntegrationInstance,
     test_data: TestData,
     temp_file,
     history_id: str,
     delete_cache_dir: bool = False,
 ) -> None:
     is_compressed = False
-    for is_method in (is_bz2, is_gzip, is_zip):
+    for is_method in (is_bz2, is_gzip, is_xz, is_zip):
         is_compressed = is_method(test_data.path)
         if is_compressed:
             break
@@ -119,9 +120,9 @@ def upload_datatype_helper(
             # Delete cache directory and then re-create it. This way we confirm
             # that dataset is fetched from the object store, not from the cache
             if TYPE_CHECKING:
-                from .objectstore.test_objectstore_datatype_upload import BaseObjectstoreUploadTest
+                from .objectstore.test_objectstore_datatype_upload import BaseObjectstoreUploadIntegrationInstance
 
-                assert isinstance(instance, BaseObjectstoreUploadTest)
+                assert isinstance(instance, BaseObjectstoreUploadIntegrationInstance)
             temp_dir = instance.get_object_store_kwargs()["temp_directory"]
             cache_dir = temp_dir + "/object_store_cache"
             shutil.rmtree(cache_dir)

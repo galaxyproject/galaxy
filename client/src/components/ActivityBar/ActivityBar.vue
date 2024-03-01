@@ -10,15 +10,16 @@ import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
 import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
-import WorkflowPanel from "@/components/Panels/WorkflowPanel.vue";
 
 const { config, isConfigLoaded } = useConfig();
 
@@ -44,7 +45,7 @@ const dragItem: Ref<Activity | null> = ref(null);
 const isDragging = ref(false);
 
 /**
- * Checks if the route of an activitiy is currently being visited and panels are collapsed
+ * Checks if the route of an activity is currently being visited and panels are collapsed
  */
 function isActiveRoute(activityTo: string) {
     return route.path === activityTo && isActiveSideBar("");
@@ -60,11 +61,18 @@ function isActiveSideBar(menuKey: string) {
 const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
 
 /**
+ * Checks if an activity that has a panel should have the `is-active` prop
+ */
+function panelActivityIsActive(activity: Activity) {
+    return isActiveSideBar(activity.id) || (activity.to !== null && isActiveRoute(activity.to));
+}
+
+/**
  * Evaluates the drop data and keeps track of the drop area
  */
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
-    if (eventData) {
+    if (eventData && !eventStore.multipleDragData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
         emit("dragstart", dragItem.value);
@@ -106,7 +114,12 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string) {
+function onToggleSidebar(toggle: string, to: string | null = null) {
+    // if an activity's dedicated panel/sideBar is already active
+    // but the route is different, don't collapse
+    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
+        return;
+    }
     userStore.toggleSideBar(toggle);
 }
 </script>
@@ -137,8 +150,7 @@ function onToggleSidebar(toggle: string) {
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onToggleSidebar()" />
+                                :tooltip="activity.tooltip" />
                             <InteractiveItem
                                 v-else-if="activity.id === 'interactivetools'"
                                 :id="`activity-${activity.id}`"
@@ -150,15 +162,15 @@ function onToggleSidebar(toggle: string) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'workflows'].includes(activity.id)"
+                                v-else-if="['tools', 'visualizations', 'multiview'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
-                                :is-active="isActiveSideBar(activity.id)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
-                                @click="onToggleSidebar(activity.id)" />
+                                @click="onToggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else-if="activity.to"
                                 :id="`activity-${activity.id}`"
@@ -178,7 +190,7 @@ function onToggleSidebar(toggle: string) {
                     v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
-                    :is-active="isActiveSideBar('notifications')"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
@@ -192,7 +204,8 @@ function onToggleSidebar(toggle: string) {
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
             <ToolPanel v-if="isActiveSideBar('tools')" />
-            <WorkflowPanel v-else-if="isActiveSideBar('workflows')" />
+            <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
+            <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
         </FlexPanel>

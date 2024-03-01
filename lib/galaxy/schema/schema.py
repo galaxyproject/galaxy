@@ -1452,21 +1452,23 @@ class InvocationIndexQueryPayload(Model):
         lt=1000,
     )
     offset: Optional[int] = Field(default=0, description="Number of invocations to skip")
+    include_nested_invocations: bool = True
 
 
-PageSortByEnum = Literal["update_time", "title", "username"]
+PageSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
 
 class PageIndexQueryPayload(Model):
     deleted: bool = False
-    show_published: Optional[bool] = None
-    show_shared: Optional[bool] = None
-    user_id: Optional[DecodedDatabaseIdField] = None
-    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
-    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
-    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
     limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
     offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+    show_own: Optional[bool] = None
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    user_id: Optional[DecodedDatabaseIdField] = None
 
 
 class CreateHistoryPayload(Model):
@@ -1965,6 +1967,11 @@ class EncodedDataItemSourceId(Model):
     )
 
 
+class EncodedJobParameterHistoryItem(EncodedDataItemSourceId):
+    hid: Optional[int] = None
+    name: str
+
+
 class DatasetJobInfo(DatasetSourceId):
     uuid: UuidField
 
@@ -2106,10 +2113,12 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Published",
         description="Whether this workflow is currently publicly available to all users.",
     )
-    annotations: List[str] = Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
-        ...,
-        title="Annotations",
-        description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+    annotations: Optional[List[str]] = (
+        Field(  # Inconsistency? Why workflows summaries use a list instead of an optional string?
+            None,
+            title="Annotations",
+            description="An list of annotations to provide details or to help understand the purpose and usage of this workflow.",
+        )
     )
     tags: TagCollection
     deleted: bool = Field(
@@ -2132,13 +2141,13 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Latest workflow UUID",
         description="TODO",
     )
-    number_of_steps: int = Field(
-        ...,
+    number_of_steps: Optional[int] = Field(
+        None,
         title="Number of Steps",
         description="The number of steps that make up this workflow.",
     )
-    show_in_tool_panel: bool = Field(
-        ...,
+    show_in_tool_panel: Optional[bool] = Field(
+        None,
         title="Show in Tool Panel",
         description="Whether to display this workflow in the Tools Panel.",
     )
@@ -2338,35 +2347,6 @@ class Person(Creator):
     )
 
 
-class StoredWorkflowDetailed(StoredWorkflowSummary):
-    annotation: Optional[str] = AnnotationField  # Inconsistency? See comment on StoredWorkflowSummary.annotations
-    license: Optional[str] = Field(
-        None, title="License", description="SPDX Identifier of the license associated with this workflow."
-    )
-    version: int = Field(
-        ..., title="Version", description="The version of the workflow represented by an incremental number."
-    )
-    inputs: Dict[int, WorkflowInput] = Field(
-        {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
-    )
-    creator: Optional[List[Union[Person, Organization]]] = Field(
-        None,
-        title="Creator",
-        description=("Additional information about the creator (or multiple creators) of this workflow."),
-    )
-    steps: Dict[
-        int,
-        Union[
-            InputDataStep,
-            InputDataCollectionStep,
-            InputParameterStep,
-            PauseStep,
-            ToolStep,
-            SubworkflowStep,
-        ],
-    ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
-
-
 class Input(Model):
     name: str = Field(..., title="Name", description="The name of the input.")
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
@@ -2402,6 +2382,9 @@ class WorkflowStepLayoutPosition(Model):
     y: int = Field(..., title="Y", description="Vertical pixel coordinate of the top right corner of the box.")
     height: int = Field(..., title="Height", description="Height of the box in pixels.")
     width: int = Field(..., title="Width", description="Width of the box in pixels.")
+
+
+InvocationsStateCounts = RootModel[Dict[str, int]]
 
 
 class WorkflowStepToExportBase(Model):

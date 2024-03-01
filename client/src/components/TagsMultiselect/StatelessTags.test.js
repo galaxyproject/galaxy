@@ -20,10 +20,12 @@ const mountWithProps = (props) => {
 };
 
 jest.mock("@/stores/userTagsStore");
-const addLocalTagMock = jest.fn((tag) => tag);
+const onNewTagSeenMock = jest.fn((tag) => tag);
 useUserTagsStore.mockReturnValue({
     userTags: computed(() => autocompleteTags),
-    addLocalTag: addLocalTagMock,
+    onNewTagSeen: onNewTagSeenMock,
+    onTagUsed: jest.fn(),
+    onMultipleNewTagsSeen: jest.fn(),
 });
 
 jest.mock("composables/toast");
@@ -103,8 +105,8 @@ describe("StatelessTags", () => {
         multiselect.find(selectors.options).trigger("click");
         await wrapper.vm.$nextTick();
 
-        expect(addLocalTagMock.mock.calls.length).toBe(1);
-        expect(addLocalTagMock.mock.results[0].value).toBe("new_tag");
+        expect(onNewTagSeenMock.mock.calls.length).toBe(1);
+        expect(onNewTagSeenMock.mock.results[0].value).toBe("new_tag");
     });
 
     it("warns about not allowed tags", async () => {

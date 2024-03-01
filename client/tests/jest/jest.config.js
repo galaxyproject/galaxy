@@ -35,6 +35,7 @@ module.exports = {
             "<rootDir>/node_modules/rxjs/dist/esm/internal/scheduler/AsyncScheduler.js",
         "^@/(.*)$": "<rootDir>/src/$1",
         "^@tests/(.*)$": "<rootDir>/tests/$1",
+        dexie: "<rootDir>/node_modules/dexie/dist/dexie.js",
     },
     modulePathIgnorePatterns: ["<rootDir>/src/.*/__mocks__"],
     rootDir: path.join(__dirname, "../../"),

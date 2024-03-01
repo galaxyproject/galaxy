@@ -56,6 +56,13 @@ class ConfigurationManager:
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
+    def encode_id(
+        self,
+        decoded_id: int,
+    ) -> Dict[str, str]:
+        encoded_id = self._app.security.encode_id(decoded_id)
+        return {"encoded_id": encoded_id}
+
     def tool_lineages(self) -> List[Dict[str, Dict]]:
         rval = []
         for id, tool in self._app.toolbox.tools():

@@ -620,10 +620,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     discarded_data = self.import_options.discarded_data
                     dataset_state = dataset_attrs.get("state", dataset_instance.states.OK)
                     if dataset_state == dataset_instance.states.DEFERRED:
-                        dataset_instance._state = dataset_instance.states.DEFERRED
+                        dataset_instance.state = dataset_instance.states.DEFERRED
                         dataset_instance.deleted = False
                         dataset_instance.purged = False
-                        dataset_instance.dataset.state = dataset_instance.states.DEFERRED
                         dataset_instance.dataset.deleted = False
                         dataset_instance.dataset.purged = False
                     elif (
@@ -635,7 +634,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         target_state = (
                             dataset_instance.states.DISCARDED if is_discarded else dataset_instance.states.DEFERRED
                         )
-                        dataset_instance._state = target_state
+                        dataset_instance.state = target_state
                         deleted = is_discarded and (discarded_data == ImportDiscardedDataType.FORBID)
                         dataset_instance.deleted = deleted
                         dataset_instance.purged = deleted
@@ -708,7 +707,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                         dataset_instance.datatype.set_meta(dataset_instance)
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
-                                    dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+                                    dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if not isinstance(dataset_instance, model.HistoryDatasetAssociation):

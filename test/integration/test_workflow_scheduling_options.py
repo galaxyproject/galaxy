@@ -36,7 +36,7 @@ class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
         url = f"workflows/{workflow_id}/invocations"
-        invocation_response = self._post(url, data=request)
+        invocation_response = self._post(url, data=request, json=True)
         invocation_url = url + "/" + invocation_response.json()["id"]
         time.sleep(5)
         state = self._get(invocation_url).json()["state"]

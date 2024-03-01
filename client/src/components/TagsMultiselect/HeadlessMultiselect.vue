@@ -9,7 +9,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useElementBounding } from "@vueuse/core";
+import { useElementBounding, whenever } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
 // @ts-ignore missing types
 import Vue2Teleport from "vue2-teleport";
@@ -41,6 +41,8 @@ const emit = defineEmits<{
     (e: "input", selected: string[]): void;
     /** emitted when a new option is selected, which wasn't part of the options prop */
     (e: "addOption", newOption: string): void;
+    /** emitted when a option is added */
+    (e: "selected", option: string): void;
 }>();
 
 const inputField = ref<HTMLInputElement | null>(null);
@@ -86,7 +88,9 @@ const filteredOptions = computed(() => {
 
 /** options trimmed to `maxShownOptions` and reordered so the search value appears first */
 const trimmedOptions = computed(() => {
-    const optionsSliced = filteredOptions.value.slice(0, props.maxShownOptions);
+    const optionsSliced = filteredOptions.value
+        .slice(0, props.maxShownOptions)
+        .map((tag) => tag.replace(/^name:/, "#"));
 
     // remove search value to put it in front
     const optionsSet = new Set(optionsSliced);
@@ -154,6 +158,7 @@ function onOptionSelected(option: string) {
         set.delete(option);
     } else {
         set.add(option);
+        emit("selected", option);
     }
 
     emit("input", Array.from(set));
@@ -249,6 +254,11 @@ watch(
         bounds.update();
     }
 );
+
+whenever(isOpen, async () => {
+    await nextTick();
+    bounds.update();
+});
 </script>
 
 <template>
@@ -408,6 +418,8 @@ watch(
     box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
+
+    background-color: $white;
 
     .headless-multiselect__option {
         padding: 0.4rem 0.5rem;

@@ -129,9 +129,9 @@ steps:
       element: "#workflow"
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
 
-    - title: "Shared data"
-      element: "#shared"
-      intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and your <b>Data Library</b> that are shared with you."
+    - title: "Data"
+      element: "#resources"
+      intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b> and <b>Visualizations</b>."
 
     - title: "Visualization"
       element: "#visualization"

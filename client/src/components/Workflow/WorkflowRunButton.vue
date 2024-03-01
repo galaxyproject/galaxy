@@ -1,41 +1,33 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlay } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+
+library.add(faPlay);
+
+interface Props {
+    id: string;
+    full?: boolean;
+    title?: string;
+    disabled?: boolean;
+}
+
+defineProps<Props>();
+</script>
+
 <template>
     <BButton
-        v-b-tooltip.hover.bottom
-        :title="title | localize"
+        id="workflow-run-button"
+        v-b-tooltip.hover.top.noninteractive
+        :title="title ?? 'Run workflow'"
         :data-workflow-run="id"
-        class="workflow-run btn-sm btn-primary fa fa-play"
-        @click.stop="executeWorkflow" />
+        variant="primary"
+        size="sm"
+        :disabled="disabled"
+        :to="`/workflows/run?id=${id}`">
+        <FontAwesomeIcon :icon="faPlay" fixed-width />
+
+        <span v-if="full" v-localize>Run</span>
+    </BButton>
 </template>
-
-<script>
-import { BButton, VBTooltip } from "bootstrap-vue";
-
-export default {
-    components: {
-        BButton,
-    },
-    directives: {
-        VBTooltip,
-    },
-    props: {
-        id: {
-            type: String,
-            required: true,
-        },
-        root: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        title() {
-            return "Run workflow";
-        },
-    },
-    methods: {
-        executeWorkflow() {
-            this.$router.push(`/workflows/run?id=${this.id}`);
-        },
-    },
-};
-</script>

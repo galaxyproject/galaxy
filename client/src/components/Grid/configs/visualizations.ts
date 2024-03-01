@@ -4,7 +4,6 @@ import axios from "axios";
 
 import { fetcher } from "@/api/schema";
 import { updateTags } from "@/api/tags";
-import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -28,12 +27,6 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    // TODO: Avoid using Galaxy instance to identify current user
-    const Galaxy = getGalaxyInstance();
-    const userId = !Galaxy.isAnonymous && Galaxy.user.id;
-    if (!userId) {
-        rethrowSimple("Please login to access this page.");
-    }
     const { data, headers } = await getVisualizations({
         limit,
         offset,
@@ -41,7 +34,8 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
         show_published: false,
-        user_id: userId,
+        show_own: true,
+        show_shared: false,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];

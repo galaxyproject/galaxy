@@ -58,11 +58,17 @@ List of behavior changes associated with profile versions:
 ### 21.09
 
 - Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
+- Do not use Galaxy Python virtual environment for `data_source` tools. `data_source` tools should explicitly use the `galaxy-util` package.
 
 ### 23.0
 
 - Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string)
   are set to `None` for templating in Cheetah. Older tools receive the empty string `""` as the templated value.
+
+### 24.0
+
+- Do not use Galaxy python environment for `data_source_async` tools.
+- Drop request parameters received by data source tools that are not declared in `<request_param_translation>` section.
 
 ### Examples
 
@@ -115,8 +121,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
-        </xs:element>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
@@ -265,9 +270,16 @@ this tool is usable within a workflow (defaults to ``true`` for normal tools and
       </xs:attribute>
       <xs:attribute name="URL_method" type="URLmethodType">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Only used if ``tool_type`` attribute value
-is ``data_source`` or ``data_source_async`` - this attribute defines the HTTP request method to use when
-communicating with an external data source application (the default is ``get``).</xs:documentation>
+          <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Was only used if ``tool_type`` attribute value is ``data_source`` or ``data_source_async`` -
+this attribute defined the HTTP request method to use when communicating with an external data source application
+(default: ``get``).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="require_login" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation needed</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -340,6 +352,19 @@ Usage example:
 ````
 <expand macro="citations" />
 ````
+       ]]></xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="macro" type="xs:anyType" minOccurs="0" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">
+            <![CDATA[
+A generalisation for macro tokens, templates and xml macros, i.e.
+`<macro name="an_xml_macro" type="xml">` is identical to `<xml name="an_xml_macro">`,
+`<macro name="a_template" type="template">` is identical to `<template name="a_template">`, and
+`<macro name="a_token" type="xml">` is identical to `<token name="a_token">`.
+
+Note that 
        ]]></xs:documentation>
         </xs:annotation>
       </xs:element>
@@ -1721,7 +1746,7 @@ useful for non-deterministic output.
         <xs:documentation xml:lang="en"><![CDATA[
 
 If specified, the target output's MD5 hash should match the value specified
-here. For large static files it may be inconvenient to upload the entiry file
+here. For large static files it may be inconvenient to upload the entire file
 and this can be used instead.
 
 ]]></xs:documentation>
@@ -1734,7 +1759,7 @@ and this can be used instead.
 If specified, the target output's checksum should match the value specified
 here. This value should have the form ``hash_type$hash_value``
 (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``). For large static files
-it may be inconvenient to upload the entiry file and this can be used instead.
+it may be inconvenient to upload the entire file and this can be used instead.
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -2227,9 +2252,14 @@ $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="Bytes" use="optional">
+    <xs:attribute name="size" type="Bytes" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="Bytes" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An outdated alias for `size`</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="delta" type="Bytes" use="optional">
@@ -2852,7 +2882,9 @@ tools will not need to specify any attributes on this tag itself.]]>
     </xs:attribute>
     <xs:attribute name="method" type="URLmethodType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated* and ignored,
+use a [request_param](#tool-request-param-translation-request-param) element with ``galaxy_name="URL_method"`` instead.
+Data source HTTP action (e.g. ``get`` or ``put``) to use.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="target" type="TargetType">
@@ -2981,10 +3013,10 @@ between paired inputs of single stranded inputs.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
+          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1" />
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="name" type="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Name for this element</xs:documentation>
           </xs:annotation>
@@ -3424,7 +3456,9 @@ $attribute_list:data_ref,dynamic_options,display,multiple:5
 
 #### ``data_column``
 
-This parameter type is used to select columns from a parameter.
+This parameter type is used to select columns from a data parameter.
+It uses the ``column_names`` metadata if present (only since 24.0)
+and as a fallback the tab separated values of the first line.
 
 $attribute_list:force_select,numerical,use_header_name,multiple:5
 
@@ -6513,8 +6547,11 @@ A contrived example of a tool that uses this is the test tool
 
 By default this file will not contain paths for data or collection inputs. To include simple
 paths for data or collection inputs set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
-To include a dictionary with staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path``.
+To include a dictionary with element identifiers, datatypes, staging paths, paths and metadata files set the ``data_style`` attribute to ``staging_path_and_source_path`` (element identifiers and datatypes are available since 24.0).
 An example tool that uses ``staging_path_and_source_path`` is [inputs_as_json_with_staging_path_and_source_path.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_staging_path_and_source_path.xml)
+
+Note that the element identifiers are stored as lists, where the last element is the actual element identifier of the dataset
+and the other elements the identifiers of the collections containing the dataset.
 
 For tools with profile >= 20.05 a select with ``multiple="true"`` is rendered as an array which is empty if nothing is selected. For older profile versions select lists are rendered as comma separated strings or a literal ``null`` in case nothing is selected.
 ]]></xs:documentation>
@@ -6534,9 +6571,9 @@ response to this directive.
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="data_style" type="xs:string">
+        <xs:attribute name="data_style" type="InputsConfigfileDatastyleType">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include a staging path, a source path and all metadata files.</xs:documentation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file. Set to 'staging_path_and_source_path' to include element identifiers, datatype, staging path, a source path and all metadata files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -6662,6 +6699,7 @@ Examples are included in the test tools directory including:
       <xs:enumeration value="dbkey" />
       <xs:enumeration value="organism" />
       <xs:enumeration value="table" />
+      <xs:enumeration value="position" />
       <xs:enumeration value="description" />
       <xs:enumeration value="name" />
       <xs:enumeration value="info" />
@@ -7234,6 +7272,11 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Maximum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
+      <xs:enumeration value="shm_size">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Size of /dev/shm. The format is `<number><unit>`. <number> must be greater than 0. Unit is optional and can be `b` (bytes), `k` (kilobytes), `m` (megabytes), or `g` (gigabytes). If you omit the unit, the default is bytes. If you omit the size entirely, the value is `64m`.]]></xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
@@ -7251,6 +7294,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
+      <xs:enumeration value="data_source_async"/>
       <xs:enumeration value="manage_data"/>
       <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
@@ -7596,6 +7640,15 @@ the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern value="(list|paired)([:,](list|paired))*"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="InputsConfigfileDatastyleType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Allowed collection types</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="paths"/>
+      <xs:enumeration value="staging_path_and_source_path"/>
     </xs:restriction>
   </xs:simpleType>
 </xs:schema>

@@ -1,3 +1,5 @@
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+
 import { fetcher } from "@/api/schema";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -40,11 +42,21 @@ const fields: FieldArray = [
     {
         title: "Title",
         key: "title",
-        type: "link",
-        width: 30,
-        handler: (data: VisualizationEntry) => {
-            window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-        },
+        type: "operations",
+        width: 40,
+        operations: [
+            {
+                title: "View",
+                icon: faEye,
+                handler: (data: VisualizationEntry) => {
+                    if (data.type === "trackster") {
+                        window.location.href = withPrefix(`/visualization/${data.type}?id=${data.id}`);
+                    } else {
+                        window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
+                    }
+                },
+            },
+        ],
     },
     {
         key: "annotation",

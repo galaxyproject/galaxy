@@ -293,6 +293,7 @@
   <tool file="${model_tools_path}/filter_empty_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
+  <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

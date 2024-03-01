@@ -49,11 +49,11 @@ function hasError(field: string) {
 
 function localPlaceholder(comp: "gt" | "lt") {
     if (comp == "gt") {
-        const field = isDateType.value ? "after" : "greater";
-        return `${props.filter.placeholder} ${field}`;
+        const field = isDateType.value ? "after" : "greater than";
+        return `${field} ${props.filter.placeholder}`;
     } else {
-        const field = isDateType.value ? "before" : "lower";
-        return `${props.filter.placeholder} ${field}`;
+        const field = isDateType.value ? "before" : "lower than";
+        return `${field} ${props.filter.placeholder}`;
     }
 }
 
