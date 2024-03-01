@@ -23,8 +23,9 @@ def __append_word_to_user_agent(word):
 
     def new_build_opener(*handlers):
         opener = old_build_opener(*handlers)
-        opener.addheaders = [ modify_user_agent_header(header)
-           for header in opener.addheaders ]
+        opener.addheaders = [
+            modify_user_agent_header(header) for header in opener.addheaders
+        ]
         return opener
 
     urllib.request.build_opener = new_build_opener
