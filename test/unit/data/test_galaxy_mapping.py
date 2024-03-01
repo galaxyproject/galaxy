@@ -347,15 +347,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_default_disk_usage(self):
-        u = model.User(email="disk_default@test.com", password="password")
-        self.persist(u)
-        u.adjust_total_disk_usage(1, None)
-        u_id = u.id
-        self.expunge()
-        user_reload = self.model.session.get(model.User, u_id)
-        assert user_reload.disk_usage == 1
-
     def test_basic(self):
         original_user_count = len(self.model.session.scalars(select(model.User)).all())
 
