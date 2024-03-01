@@ -10,6 +10,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
     is_zip,
 )
 from galaxy.util.hash_util import md5_hash_file
@@ -77,7 +78,7 @@ def upload_datatype_helper(
     delete_cache_dir: bool = False,
 ) -> None:
     is_compressed = False
-    for is_method in (is_bz2, is_gzip, is_zip):
+    for is_method in (is_bz2, is_gzip, is_xz, is_zip):
         is_compressed = is_method(test_data.path)
         if is_compressed:
             break

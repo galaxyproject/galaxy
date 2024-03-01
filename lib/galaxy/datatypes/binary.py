@@ -89,6 +89,7 @@ from galaxy.util import (
 from galaxy.util.checkers import (
     is_bz2,
     is_gzip,
+    is_xz,
 )
 from . import (
     data,
@@ -3685,6 +3686,9 @@ class Fast5ArchiveGz(Fast5Archive):
     >>> fname = get_test_fname('test.fast5.tar.gz')
     >>> Fast5ArchiveGz().sniff(fname)
     True
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveGz().sniff(fname)
+    False
     >>> fname = get_test_fname('test.fast5.tar.bz2')
     >>> Fast5ArchiveGz().sniff(fname)
     False
@@ -3701,6 +3705,33 @@ class Fast5ArchiveGz(Fast5Archive):
         return Fast5Archive.sniff(self, filename)
 
 
+class Fast5ArchiveXz(Fast5Archive):
+    """
+    Class describing a xz-compressed FAST5 archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveXz().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveXz().sniff(fname)
+    False
+    """
+
+    file_ext = "fast5.tar.xz"
+
+    def sniff(self, filename: str) -> bool:
+        if not is_xz(filename):
+            return False
+        return Fast5Archive.sniff(self, filename)
+
+
 class Fast5ArchiveBz2(Fast5Archive):
     """
     Class describing a bzip2-compressed FAST5 archive
@@ -3709,6 +3740,9 @@ class Fast5ArchiveBz2(Fast5Archive):
     >>> fname = get_test_fname('test.fast5.tar.bz2')
     >>> Fast5ArchiveBz2().sniff(fname)
     True
+    >>> fname = get_test_fname('test.fast5.tar.xz')
+    >>> Fast5ArchiveBz2().sniff(fname)
+    False
     >>> fname = get_test_fname('test.fast5.tar.gz')
     >>> Fast5ArchiveBz2().sniff(fname)
     False
