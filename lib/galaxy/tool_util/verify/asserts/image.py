@@ -32,9 +32,7 @@ def assert_image_has_metadata(
     buf = io.BytesIO(output_bytes)
     with Image.open(buf) as im:
 
-        assert width is None or im.size[0] == int(
-            width
-        ), f"Image has wrong width: {im.size[0]} (expected {int(width)})"
+        assert width is None or im.size[0] == int(width), f"Image has wrong width: {im.size[0]} (expected {int(width)})"
 
         assert height is None or im.size[1] == int(
             height
@@ -139,6 +137,6 @@ def assert_image_has_labels(
     if mean_object_size is not None:
         actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
         expected_mean_object_size = float(mean_object_size)
-        assert (
-            abs(actual_mean_object_size - expected_mean_object_size) <= float(eps)
+        assert abs(actual_mean_object_size - expected_mean_object_size) <= float(
+            eps
         ), f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
