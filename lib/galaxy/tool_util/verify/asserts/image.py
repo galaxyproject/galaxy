@@ -72,9 +72,9 @@ def assert_image_has_intensities(
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
         if isinstance(center_of_mass, str):
-            center_of_mass_parts = center_of_mass.split(",")
+            center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
             assert len(center_of_mass_parts) == 2
-            center_of_mass = tuple(float(c.strip()) for c in center_of_mass_parts)
+            center_of_mass = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
         actual = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
