@@ -20,13 +20,18 @@ from typing import (
     TYPE_CHECKING,
 )
 
-import numpy
-from PIL import Image
-
+try:
+    import numpy
+except ImportError:
+    pass
 try:
     import pysam
 except ImportError:
-    pysam = None  # type: ignore[assignment]
+    pass
+try:
+    from PIL import Image
+except ImportError:
+    pass
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
@@ -449,7 +454,7 @@ def files_contains(file1, file2, attributes=None):
 
 def _multiobject_intersection_over_union(
     mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray", repeat_reverse: bool = True
-) -> List[numpy.floating]:
+) -> List["numpy.floating"]:
     iou_list = []
     for label1 in numpy.unique(mask1):
         cc1 = mask1 == label1
@@ -463,7 +468,7 @@ def _multiobject_intersection_over_union(
     return iou_list
 
 
-def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray") -> numpy.floating:
+def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.NDArray") -> "numpy.floating":
     assert mask1.dtype == mask2.dtype
     assert mask1.ndim == mask2.ndim == 2
     assert mask1.shape == mask2.shape
@@ -475,7 +480,7 @@ def intersection_over_union(mask1: "numpy.typing.NDArray", mask2: "numpy.typing.
 
 def get_image_metric(
     attributes: Dict[str, Any]
-) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], numpy.floating]:
+) -> Callable[["numpy.typing.NDArray", "numpy.typing.NDArray"], "numpy.floating"]:
     metric_name = attributes.get("metric", DEFAULT_METRIC)
     metrics = {
         "mae": lambda arr1, arr2: numpy.abs(arr1 - arr2).mean(),

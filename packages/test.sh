@@ -51,7 +51,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[cwl,mulled,edam]'
+        pip install -e '.[cwl,mulled,edam,extended-assertions]'
     else
         pip install -e '.'
     fi
