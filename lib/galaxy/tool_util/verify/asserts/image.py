@@ -48,7 +48,7 @@ def assert_image_has_intensities(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     mean_intensity: Optional[Union[float, str]] = None,
-    center_of_mass: Optional[Union[Tuple[float], str]] = None,
+    center_of_mass: Optional[Union[Tuple[float, float], str]] = None,
     eps: Union[float, str] = 1e-8,
 ) -> None:
     """
@@ -72,8 +72,9 @@ def assert_image_has_intensities(
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
         if isinstance(center_of_mass, str):
-            test: Tuple[float] = tuple(float(c.strip()) for c in center_of_mass.split(","))
-            center_of_mass = test
+            center_of_mass_parts = center_of_mass.split(",")
+            assert len(center_of_mass_parts) == 2
+            center_of_mass = tuple(float(c.strip()) for c in center_of_mass_parts)
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
         actual = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
