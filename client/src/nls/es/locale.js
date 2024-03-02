@@ -739,11 +739,6 @@ define({
     "Data tables": "Tablas de datos",
     "Data types": "Tipos de datos",
     Server: false,
-    // ---------------------------------------------------------------------------- circster
-    "Could Not Save": "No se pudo guardar",
-    "Saving...": "Guardando",
-    Settings: false,
-    "Add tracks": "Agregar pistas",
     // ---------------------------------------------------------------------------- trackster
     "New Visualization": "Nueva visualización",
     "Add Data to Saved Visualization": "Agregar datos a visualización guardada",
@@ -751,21 +746,10 @@ define({
     Circster: false,
     Bookmarks: false,
     "Add group": "Agregar grupo",
-    // ---------------------------------------------------------------------------- sweepster
-    "Remove parameter from tree": "Eliminar parámetro del árbol",
-    "Add parameter to tree": "Agregar parámetro al árbol",
-    Remove: false,
     // ---------------------------------------------------------------------------- visualization
     "Select datasets for new tracks": "Seleccionar conjuntos de datos para nuevas pistas",
     "Select a dataset to visualize:": "Seleccionar un conjunto de datos para visualizar",
     Libraries: false,
-    // ---------------------------------------------------------------------------- phyloviz
-    "Zoom out": "Alejar",
-    "Zoom in": "Acercar",
-    "Phyloviz Help": "Ayuda de PhyloViz",
-    "Save visualization": "Guardar visualización",
-    "PhyloViz Settings": "Ajustes de PhyloViz",
-    Title: "Título",
     // ---------------------------------------------------------------------------- filters
     "Filtering Dataset": "Filtrando conjunto de datos",
     "Filter Dataset": "Filtrar conjunto de datos",

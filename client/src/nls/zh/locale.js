@@ -401,11 +401,6 @@ define({
     "Data tables": false,
     "Data types": false,
     Server: false,
-    // ---------------------------------------------------------------------------- circster
-    "Could Not Save": false,
-    "Saving...": false,
-    Settings: false,
-    "Add tracks": false,
     // ---------------------------------------------------------------------------- trackster
     "New Visualization": false,
     "Add Data to Saved Visualization": false,
@@ -413,20 +408,9 @@ define({
     Circster: false,
     Bookmarks: false,
     "Add group": false,
-    // ---------------------------------------------------------------------------- sweepster
-    "Remove parameter from tree": false,
-    "Add parameter to tree": false,
-    Remove: false,
     // ---------------------------------------------------------------------------- visualization
     "Select datasets for new tracks": false,
     Libraries: "库",
-    // ---------------------------------------------------------------------------- phyloviz
-    "Zoom out": false,
-    "Zoom in": false,
-    "Phyloviz Help": false,
-    "Save visualization": false,
-    "PhyloViz Settings": false,
-    Title: false,
     // ---------------------------------------------------------------------------- filters
     "Filtering Dataset": false,
     "Filter Dataset": false,
