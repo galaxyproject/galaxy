@@ -15,7 +15,7 @@
             <output name="output">
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_intensities center_of_mass="15.61, 15.48" eps="0.01" />
+                    <image_has_intensities center_of_mass="15.61, 15.48" />
                 </assert_contents>
             </output>
         </test>
@@ -44,6 +44,30 @@
             <output name="output">
                 <assert_contents>
                     <image_has_intensities channel="0" mean_intensity="0.24" eps="0.0100000001" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_intensities channel="0" mean_intensity_min="0.24" mean_intensity_max="0.26" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_intensities channel="0" mean_intensity_max="0.24" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_intensities channel="0" mean_intensity_min="0.26" />
                 </assert_contents>
             </output>
         </test>
@@ -80,6 +104,30 @@
                 <assert_contents>
                     <image_has_metadata width="32" height="32" channels="1" />
                     <image_has_labels number_of_objects="2" mean_object_size="511" eps="1.0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_labels mean_object_size_min="511" mean_object_size_max="513" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_labels mean_object_size_max="511" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <image_has_labels mean_object_size_min="513" />
                 </assert_contents>
             </output>
         </test>

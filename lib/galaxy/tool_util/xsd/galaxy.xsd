@@ -2798,19 +2798,29 @@ $attribute_list::5
         <xs:documentation xml:lang="en">The required mean value of the image intensities.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="mean_intensity_min" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">A lower bound of the required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mean_intensity_max" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An upper bound of the required mean value of the image intensities.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="center_of_mass" type="xs:string" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="eps" type="xs:float" use="optional" default="1e-8">
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_intensity`` and ``center_of_mass`` assertions (defaults to ``1e-8``).</xs:documentation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_intensity`` and ``center_of_mass`` assertions (defaults to ``0.01``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="channel" type="xs:integer" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Restricts the ``mean_intensity`` and ``center_of_mass`` assertions to a specific channel of the image (where the value ``0`` corresponds to the first image channel).</xs:documentation>
+        <xs:documentation xml:lang="en">Restricts the ``mean_intensity``, ``mean_intensity_min``, ``mean_intensity_max``, and ``center_of_mass`` assertions to a specific channel of the image (where the value ``0`` corresponds to the first image channel).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2837,9 +2847,19 @@ $attribute_list::5
         <xs:documentation xml:lang="en">The required mean size of the objects in the image, where the size of an object is measured by the number of pixels. It is assumed that each individual object corresponds to a unique label.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="eps" type="xs:float" use="optional" default="1e-8">
+    <xs:attribute name="mean_object_size_min" type="xs:float" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_object_size`` assertion (defaults to ``1e-8``).</xs:documentation>
+        <xs:documentation xml:lang="en">A lower bound of the required mean size of the objects in the image, where the size of an object is measured by the number of pixels. It is assumed that each individual object corresponds to a unique label.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="mean_object_size_max" type="xs:float" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">An upper bound of the required mean size of the objects in the image, where the size of an object is measured by the number of pixels. It is assumed that each individual object corresponds to a unique label.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for the ``mean_object_size`` assertion (defaults to 0.01).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="exclude_labels" type="xs:string" use="optional">

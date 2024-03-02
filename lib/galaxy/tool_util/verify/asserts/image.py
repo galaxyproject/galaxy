@@ -59,8 +59,10 @@ def assert_image_has_intensities(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     mean_intensity: Optional[Union[float, str]] = None,
+    mean_intensity_min: Optional[Union[float, str]] = None,
+    mean_intensity_max: Optional[Union[float, str]] = None,
     center_of_mass: Optional[Union[Tuple[float, float], str]] = None,
-    eps: Union[float, str] = 1e-8,
+    eps: Union[float, str] = 0.01,
 ) -> None:
     """
     Assert the image output has specific intensity content.
@@ -74,10 +76,26 @@ def assert_image_has_intensities(
         im_arr = im_arr[:, :, int(channel)]
 
     # Perform `mean_intensity` assertion.
+    actual_mean_intensity = im_arr.mean()
     if mean_intensity is not None:
-        actual = im_arr.mean()
-        expected = float(mean_intensity)
-        assert abs(actual - expected) <= float(eps), f"Wrong mean intensity: {actual} (expected {expected}, eps: {eps})"
+        mean_intensity = float(mean_intensity)
+        assert abs(actual_mean_intensity - mean_intensity) <= float(
+            eps
+        ), f"Wrong mean intensity: {actual_mean_intensity} (expected {mean_intensity}, eps: {eps})"
+
+    # Perform `mean_intensity_min` assertion.
+    if mean_intensity_min is not None:
+        mean_intensity_min = float(mean_intensity_min)
+        assert (
+            actual_mean_intensity >= mean_intensity_min
+        ), f"Wrong mean intensity: {actual_mean_intensity} (mean_intensity_min: {mean_intensity_min})"
+
+    # Perform `mean_intensity_max` assertion.
+    if mean_intensity_max is not None:
+        mean_intensity_max = float(mean_intensity_max)
+        assert (
+            actual_mean_intensity <= mean_intensity_max
+        ), f"Wrong mean intensity: {actual_mean_intensity} (mean_intensity_max: {mean_intensity_max})"
 
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
@@ -86,19 +104,21 @@ def assert_image_has_intensities(
             assert len(center_of_mass_parts) == 2
             center_of_mass = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
-        actual = _compute_center_of_mass(im_arr)
-        distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
+        actual_center_of_mass = _compute_center_of_mass(im_arr)
+        distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual_center_of_mass))
         assert distance <= float(
             eps
-        ), f"Wrong center of mass: {actual} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
+        ), f"Wrong center of mass: {actual_center_of_mass} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
 
 
 def assert_image_has_labels(
     output_bytes: bytes,
     number_of_objects: Optional[Union[int, str]] = None,
     mean_object_size: Optional[Union[float, str]] = None,
+    mean_object_size_min: Optional[Union[float, str]] = None,
+    mean_object_size_max: Optional[Union[float, str]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
-    eps: Union[float, str] = 1e-8,
+    eps: Union[float, str] = 0.01,
 ) -> None:
     """
     Assert the image output has specific label content.
@@ -134,9 +154,23 @@ def assert_image_has_labels(
         ), f"Wrong number of objects: {actual_number_of_objects} (expected {expected_number_of_objects})"
 
     # Perform `mean_object_size` assertion.
+    actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
     if mean_object_size is not None:
-        actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
         expected_mean_object_size = float(mean_object_size)
         assert abs(actual_mean_object_size - expected_mean_object_size) <= float(
             eps
         ), f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
+
+    # Perform `mean_object_size_min` assertion.
+    if mean_object_size_min is not None:
+        mean_object_size_min = float(mean_object_size_min)
+        assert (
+            actual_mean_object_size >= mean_object_size_min
+        ), f"Wrong mean object size: {actual_mean_object_size} (mean_object_size_min: {mean_object_size_min})"
+
+    # Perform `mean_object_size_max` assertion.
+    if mean_object_size_max is not None:
+        mean_object_size_max = float(mean_object_size_max)
+        assert (
+            actual_mean_object_size <= mean_object_size_max
+        ), f"Wrong mean object size: {actual_mean_object_size} (mean_object_size_max: {mean_object_size_max})"
