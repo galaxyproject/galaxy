@@ -72,7 +72,7 @@ def assert_image_has_intensities(
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
         if isinstance(center_of_mass, str):
-            center_of_mass = [float(c.strip()) for c in center_of_mass.split(",")]
+            center_of_mass = tuple(float(c.strip()) for c in center_of_mass.split(","))
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
         actual = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
@@ -104,7 +104,7 @@ def assert_image_has_labels(
         def cast_label(label):
             if numpy.issubdtype(im_arr.dtype, numpy.integer):
                 return int(label)
-            if numpy.issubdtype(im_arr.dtype, numpy.float):
+            if numpy.issubdtype(im_arr.dtype, float):
                 return float(label)
             raise AssertionError(f'Unsupported image label type: "{im_arr.dtype}"')
         exclude_labels = [cast_label(label) for label in exclude_labels.split(",") if len(label) > 0]
@@ -112,14 +112,14 @@ def assert_image_has_labels(
 
     # Perform `number_of_objects` assertion.
     if number_of_objects is not None:
-        actual = len(labels)
-        expected = int(number_of_objects)
-        assert actual == expected, \
-            f"Wrong number of objects: {actual} (expected {expected})"
+        actual_number_of_objects = len(labels)
+        expected_number_of_objects = int(number_of_objects)
+        assert actual_number_of_objects == expected_number_of_objects, \
+            f"Wrong number of objects: {actual_number_of_objects} (expected {expected_number_of_objects})"
 
     # Perform `mean_object_size` assertion.
     if mean_object_size is not None:
-        actual = sum((im_arr == label).sum() for label in labels) / len(labels)
-        expected = float(mean_object_size)
-        assert abs(actual - expected) <= float(eps), \
-            f"Wrong mean object size: {actual} (expected {expected}, eps: {eps})"
+        actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
+        expected_mean_object_size = float(mean_object_size)
+        assert abs(actual_mean_object_size - expected_mean_object_size) <= float(eps), \
+            f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
