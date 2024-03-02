@@ -32,15 +32,12 @@ def assert_image_has_metadata(
     buf = io.BytesIO(output_bytes)
     with Image.open(buf) as im:
 
-        error_text = f"Image has wrong width: {im.size[0]} (expected {int(width)})"
-        assert width is None or im.size[0] == int(width), error_text
+        assert width is None or im.size[0] == int(width), f"Image has wrong width: {im.size[0]} (expected {int(width)})"
 
-        error_text = f"Image has wrong height: {im.size[1]} (expected {int(height)})"
-        assert height is None or im.size[1] == int(height), error_text
+        assert height is None or im.size[1] == int(height), f"Image has wrong height: {im.size[1]} (expected {int(height)})"
 
         actual_channels = len(im.getbands())
-        error_text = f"Image has wrong number of channels: {actual_channels} (expected {int(channels)})"
-        assert channels is None or actual_channels == int(channels), error_text
+        assert channels is None or actual_channels == int(channels), f"Image has wrong number of channels: {actual_channels} (expected {int(channels)})"
 
 
 def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, float]:
@@ -76,8 +73,7 @@ def assert_image_has_intensities(
     if mean_intensity is not None:
         actual = im_arr.mean()
         expected = float(mean_intensity)
-        error_text = f"Wrong mean intensity: {actual} (expected {expected}, eps: {eps})"
-        assert abs(actual - expected) <= float(eps), error_text
+        assert abs(actual - expected) <= float(eps), f"Wrong mean intensity: {actual} (expected {expected}, eps: {eps})"
 
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
@@ -88,8 +84,7 @@ def assert_image_has_intensities(
         assert len(center_of_mass) == 2, "center_of_mass must have two components"
         actual = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual))
-        error_text = f"Wrong center of mass: {actual} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
-        assert distance <= float(eps), error_text
+        assert distance <= float(eps), f"Wrong center of mass: {actual} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
 
 
 def assert_image_has_labels(
@@ -126,12 +121,10 @@ def assert_image_has_labels(
     if number_of_objects is not None:
         actual_number_of_objects = len(labels)
         expected_number_of_objects = int(number_of_objects)
-        error_text = f"Wrong number of objects: {actual_number_of_objects} (expected {expected_number_of_objects})"
-        assert actual_number_of_objects == expected_number_of_objects, error_text
+        assert actual_number_of_objects == expected_number_of_objects, f"Wrong number of objects: {actual_number_of_objects} (expected {expected_number_of_objects})"
 
     # Perform `mean_object_size` assertion.
     if mean_object_size is not None:
         actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
         expected_mean_object_size = float(mean_object_size)
-        error_text = f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
-        assert abs(actual_mean_object_size - expected_mean_object_size) <= float(eps), error_text
+        assert abs(actual_mean_object_size - expected_mean_object_size) <= float(eps), f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
