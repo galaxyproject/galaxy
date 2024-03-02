@@ -4,10 +4,20 @@ from typing import (
     Union,
     List,
     Tuple,
+    TYPE_CHECKING,
 )
 
-import numpy
-from PIL import Image
+try:
+    import numpy
+except ImportError:
+    pass
+try:
+    from PIL import Image
+except ImportError:
+    pass
+
+if TYPE_CHECKING:
+    import numpy.typing
 
 
 def assert_image_has_metadata(
@@ -33,7 +43,7 @@ def assert_image_has_metadata(
             f"Image has wrong number of channels: {actual_channels} (expected {int(channels)})"
 
 
-def _compute_center_of_mass(im_arr):
+def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, float]:
     while im_arr.ndim > 2:
         im_arr = im_arr.sum(axis=2)
     im_arr = numpy.abs(im_arr)
