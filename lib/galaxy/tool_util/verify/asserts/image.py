@@ -1,10 +1,10 @@
 import io
 from typing import (
-    Optional,
-    Union,
     List,
+    Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 try:
