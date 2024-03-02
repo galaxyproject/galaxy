@@ -12,9 +12,9 @@ from PIL import Image
 
 def assert_image_has_metadata(
     output_bytes: bytes,
-    width: Optional[Union[int,str]] = None,
-    height: Optional[Union[int,str]] = None,
-    channels: Optional[Union[int,str]] = None,
+    width: Optional[Union[int, str]] = None,
+    height: Optional[Union[int, str]] = None,
+    channels: Optional[Union[int, str]] = None,
 ) -> None:
     """
     Assert the image output has specific metadata.
@@ -57,7 +57,7 @@ def assert_image_has_intensities(
     buf = io.BytesIO(output_bytes)
     with Image.open(buf) as im:
         im_arr = numpy.array(im)
-    
+
     # Select the specified channel (if any).
     if channel is not None:
         im_arr = im_arr[:, :, int(channel)]
@@ -68,7 +68,7 @@ def assert_image_has_intensities(
         expected = float(mean_intensity)
         assert abs(actual - expected) <= float(eps), \
             f"Wrong mean intensity: {actual} (expected {expected}, eps: {eps})"
-    
+
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
         if isinstance(center_of_mass, str):
@@ -93,7 +93,7 @@ def assert_image_has_labels(
     buf = io.BytesIO(output_bytes)
     with Image.open(buf) as im:
         im_arr = numpy.array(im)
-    
+
     # Determine labels present in the image.
     labels = numpy.unique(im_arr)
 
