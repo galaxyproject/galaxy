@@ -71,6 +71,7 @@ import Sharing from "@/components/Sharing/SharingPage.vue";
 import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
 
@@ -526,6 +527,11 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.query.id,
                         }),
+                    },
+                    {
+                        path: "workflows/invocations/:invocationId",
+                        component: WorkflowInvocationState,
+                        props: true,
                     },
                     {
                         path: "workflows/list",

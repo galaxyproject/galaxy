@@ -24,7 +24,8 @@
                     <small class="float-right" :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
                         <b
-                            >Invocation ID: <code>{{ row.item.id }}</code></b
+                            >Invocation ID:
+                            <router-link :to="invocationLink(row.item)">{{ row.item.id }}</router-link></b
                         >
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
@@ -221,6 +222,9 @@ export default {
         },
         swapRowDetails(row) {
             row.toggleDetails();
+        },
+        invocationLink(item) {
+            return `/workflows/invocations/${item.id}`;
         },
         switchHistory(historyId) {
             const Galaxy = getGalaxyInstance();
