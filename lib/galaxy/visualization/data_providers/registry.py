@@ -7,11 +7,7 @@ from typing import (
 
 from typing_extensions import Literal
 
-from galaxy.datatypes.data import (
-    Data,
-    Newick,
-    Nexus,
-)
+from galaxy.datatypes.data import Data
 from galaxy.datatypes.interval import (
     Bed,
     ChromatinInteractions,
@@ -24,14 +20,12 @@ from galaxy.datatypes.tabular import (
     Tabular,
     Vcf,
 )
-from galaxy.datatypes.xml import Phyloxml
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
 from galaxy.visualization.data_providers.basic import (
     BaseDataProvider,
     ColumnDataProvider,
 )
-from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 # a dict keyed on datatype with a 'default' string key.
 PROVIDER_BY_DATATYPE_CLASS_DICT = Dict[Union[Literal["default"], Type[Data]], Type[BaseDataProvider]]
@@ -86,8 +80,6 @@ class DataProviderRegistry:
                 data_provider_class = genome.RawVcfDataProvider
             elif isinstance(original_dataset.datatype, Tabular):
                 data_provider_class = ColumnDataProvider
-            elif isinstance(original_dataset.datatype, (Nexus, Newick, Phyloxml)):
-                data_provider_class = PhylovizDataProvider
 
             data_provider = data_provider_class(original_dataset=original_dataset)
 

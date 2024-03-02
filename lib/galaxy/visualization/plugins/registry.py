@@ -38,7 +38,7 @@ class VisualizationsRegistry:
     #: name of files to search for additional template lookup directories
     TEMPLATE_PATHS_CONFIG = "additional_template_paths.xml"
     #: built-in visualizations
-    BUILT_IN_VISUALIZATIONS = ["trackster", "circster", "sweepster", "phyloviz"]
+    BUILT_IN_VISUALIZATIONS = ["trackster"]
 
     def __str__(self):
         return self.__class__.__name__
