@@ -20,6 +20,30 @@ if TYPE_CHECKING:
     import numpy.typing
 
 
+def _assert_float(
+    actual: float,
+    label: str,
+    tolerance: Union[float, str],
+    expected: Optional[Union[float, str]] = None,
+    range_min: Optional[Union[float, str]] = None,
+    range_max: Optional[Union[float, str]] = None,
+) -> None:
+
+    # Perform `tolerance` based check.
+    if expected is not None:
+        assert abs(actual - float(expected)) <= float(
+            tolerance
+        ), f"Wrong {label}: {actual} (expected {expected} ±{tolerance})"
+
+    # Perform `range_min` based check.
+    if range_min is not None:
+        assert actual >= float(range_min), f"Wrong {label}: {actual} (must be {range_min} or larger)"
+
+    # Perform `range_max` based check.
+    if range_max is not None:
+        assert actual <= float(range_max), f"Wrong {label}: {actual} (must be {range_max} or smaller)"
+
+
 def assert_image_has_metadata(
     output_bytes: bytes,
     width: Optional[Union[int, str]] = None,
@@ -75,27 +99,15 @@ def assert_image_has_intensities(
     if channel is not None:
         im_arr = im_arr[:, :, int(channel)]
 
-    # Perform `mean_intensity` assertion.
-    actual_mean_intensity = im_arr.mean()
-    if mean_intensity is not None:
-        mean_intensity = float(mean_intensity)
-        assert abs(actual_mean_intensity - mean_intensity) <= float(
-            eps
-        ), f"Wrong mean intensity: {actual_mean_intensity} (expected {mean_intensity}, eps: {eps})"
-
-    # Perform `mean_intensity_min` assertion.
-    if mean_intensity_min is not None:
-        mean_intensity_min = float(mean_intensity_min)
-        assert (
-            actual_mean_intensity >= mean_intensity_min
-        ), f"Wrong mean intensity: {actual_mean_intensity} (mean_intensity_min: {mean_intensity_min})"
-
-    # Perform `mean_intensity_max` assertion.
-    if mean_intensity_max is not None:
-        mean_intensity_max = float(mean_intensity_max)
-        assert (
-            actual_mean_intensity <= mean_intensity_max
-        ), f"Wrong mean intensity: {actual_mean_intensity} (mean_intensity_max: {mean_intensity_max})"
+    # Perform `mean_intensity` assertions.
+    _assert_float(
+        actual=im_arr.mean(),
+        label="mean intensity",
+        tolerance=eps,
+        expected=mean_intensity,
+        range_min=mean_intensity_min,
+        range_max=mean_intensity_max,
+    )
 
     # Perform `center_of_mass` assertion.
     if center_of_mass is not None:
@@ -155,22 +167,11 @@ def assert_image_has_labels(
 
     # Perform `mean_object_size` assertion.
     actual_mean_object_size = sum((im_arr == label).sum() for label in labels) / len(labels)
-    if mean_object_size is not None:
-        expected_mean_object_size = float(mean_object_size)
-        assert abs(actual_mean_object_size - expected_mean_object_size) <= float(
-            eps
-        ), f"Wrong mean object size: {actual_mean_object_size} (expected {expected_mean_object_size}, eps: {eps})"
-
-    # Perform `mean_object_size_min` assertion.
-    if mean_object_size_min is not None:
-        mean_object_size_min = float(mean_object_size_min)
-        assert (
-            actual_mean_object_size >= mean_object_size_min
-        ), f"Wrong mean object size: {actual_mean_object_size} (mean_object_size_min: {mean_object_size_min})"
-
-    # Perform `mean_object_size_max` assertion.
-    if mean_object_size_max is not None:
-        mean_object_size_max = float(mean_object_size_max)
-        assert (
-            actual_mean_object_size <= mean_object_size_max
-        ), f"Wrong mean object size: {actual_mean_object_size} (mean_object_size_max: {mean_object_size_max})"
+    _assert_float(
+        actual=actual_mean_object_size,
+        label="mean object size",
+        tolerance=eps,
+        expected=mean_object_size,
+        range_min=mean_object_size_min,
+        range_max=mean_object_size_max,
+    )
