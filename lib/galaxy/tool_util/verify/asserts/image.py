@@ -49,7 +49,7 @@ def assert_image_has_intensities(
     channel: Optional[Union[int, str]] = None,
     mean_intensity: Optional[Union[float, str]] = None,
     center_of_mass: Optional[Union[Tuple[float], str]] = None,
-    eps: Optional[Union[float, str]] = 1e-8,
+    eps: Union[float, str] = 1e-8,
 ) -> None:
     """
     Assert the image output has specific intensity content.
@@ -84,8 +84,8 @@ def assert_image_has_labels(
     output_bytes: bytes,
     number_of_objects: Optional[Union[int, str]] = None,
     mean_object_size: Optional[Union[float, str]] = None,
-    exclude_labels: Optional[Union[str, List[int]]] = list(),
-    eps: Optional[Union[float, str]] = 1e-8,
+    exclude_labels: Optional[Union[str, List[int]]] = None,
+    eps: Union[float, str] = 1e-8,
 ) -> None:
     """
     Assert the image output has specific label content.
@@ -98,12 +98,14 @@ def assert_image_has_labels(
     labels = numpy.unique(im_arr)
 
     # Apply filtering due to `exclude_labels`.
+    if exclude_labels is None:
+        exclude_labels = list()
     if isinstance(exclude_labels, str):
-        if numpy.issubdtype(im_arr.dtype, numpy.integer):
-            cast_label = lambda label: int(label)
-        elif numpy.issubdtype(im_arr.dtype, numpy.float):
-            cast_label = lambda label: float(label)
-        else:
+        def cast_label(label):
+            if numpy.issubdtype(im_arr.dtype, numpy.integer):
+                return int(label)
+            if numpy.issubdtype(im_arr.dtype, numpy.float):
+                return float(label)
             raise AssertionError(f'Unsupported image label type: "{im_arr.dtype}"')
         exclude_labels = [cast_label(label) for label in exclude_labels.split(",") if len(label) > 0]
     labels = [label for label in labels if label not in exclude_labels]
