@@ -40,6 +40,9 @@ from galaxy.schema.workflows import (
     SetWorkflowMenuPayload,
     SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
+    WorkflowDictEditorSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictRunSummary,
 )
 from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
@@ -96,6 +99,22 @@ class WorkflowsService(ServiceBase):
 
         if style == "format2" and format != "json-download":
             return PlainTextResponse(ordered_dump(ret_dict))
+        elif style == "export":
+            return ret_dict
+        elif style == "editor":
+            return WorkflowDictEditorSummary(**ret_dict)
+        elif style == ("legacy" or "instance"):
+            return StoredWorkflowDetailed(**ret_dict)
+        elif style == "run":
+            return WorkflowDictRunSummary(**ret_dict)
+        elif style == "preview":
+            return WorkflowDictPreviewSummary(**ret_dict)
+        elif style == "format2":
+            return ret_dict
+        elif style == "format2_wrapped_yaml":
+            return ret_dict
+        elif style == "ga":
+            return ret_dict
         else:
             return ret_dict
 
