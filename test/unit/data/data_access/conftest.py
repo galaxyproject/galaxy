@@ -161,6 +161,18 @@ def make_hdca(session):
 
 
 @pytest.fixture
+def make_ldca(session):
+    def f(**kwd):
+        ldca = m.LibraryDatasetCollectionAssociation(**kwd)
+        with transaction(session):
+            session.add(ldca)
+            session.commit()
+        return ldca
+
+    return f
+
+
+@pytest.fixture
 def make_library(session):
     def f(**kwd):
         lib = m.Library(**kwd)
@@ -200,6 +212,20 @@ def make_library_permissions(session, make_library, make_role):
 
 
 @pytest.fixture
+def make_page(session, make_user):
+    def f(**kwd):
+        if "user" not in kwd:
+            kwd["user"] = make_user()
+        page = m.Page(**kwd)
+        with transaction(session):
+            session.add(page)
+            session.commit()
+        return page
+
+    return f
+
+
+@pytest.fixture
 def make_role(session):
     def f(**kwd):
         role = m.Role(**kwd)
@@ -207,6 +233,20 @@ def make_role(session):
             session.add(role)
             session.commit()
         return role
+
+    return f
+
+
+@pytest.fixture
+def make_stored_workflow(session, make_user):
+    def f(**kwd):
+        if "user" not in kwd:
+            kwd["user"] = make_user()
+        sw = m.StoredWorkflow(**kwd)
+        with transaction(session):
+            session.add(sw)
+            session.commit()
+        return sw
 
     return f
 
@@ -230,6 +270,18 @@ def make_user(session):
 
 
 @pytest.fixture
+def make_user_item_rating_association(session):
+    def f(assoc_class, user, item, rating):
+        assoc = assoc_class(user, item, rating)
+        with transaction(session):
+            session.add(assoc)
+            session.commit()
+        return assoc
+
+    return f
+
+
+@pytest.fixture
 def make_user_role_association(session):
     def f(user, role):
         assoc = m.UserRoleAssociation(user, role)
@@ -237,5 +289,19 @@ def make_user_role_association(session):
             session.add(assoc)
             session.commit()
         return assoc
+
+    return f
+
+
+@pytest.fixture
+def make_visualization(session, make_user):
+    def f(**kwd):
+        if "user" not in kwd:
+            kwd["user"] = make_user()
+        vis = m.Visualization(**kwd)
+        with transaction(session):
+            session.add(vis)
+            session.commit()
+        return vis
 
     return f
