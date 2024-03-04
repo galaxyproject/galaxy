@@ -398,6 +398,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.cif')
     >>> guess_ext(fname, sniff_order)
     'cif'
+    >>> fname = get_test_fname('LaMnO3.cif')
+    >>> guess_ext(fname, sniff_order)
+    'cif'
     >>> fname = get_test_fname('Si.xyz')
     >>> guess_ext(fname, sniff_order)
     'xyz'
