@@ -21,14 +21,14 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
-import { useMultiSelect } from "../composables/multiSelect";
+import { useSelectionOperations } from "./useSelectionOperations";
 import { useToolLogic } from "./useToolLogic";
 
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
 library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
 
-const { toolbarStore, commentStore, undoRedoStore, stateStore, stepStore } = useWorkflowStores();
+const { toolbarStore, commentStore, undoRedoStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
@@ -123,41 +123,7 @@ const toggleVisibilityButtonTitle = computed(() => {
     }
 });
 
-const { anySelected, selectedCommentsCount, selectedStepsCount, deselectAll } = useMultiSelect();
-
-const selectedCountText = computed(() => {
-    const stepWord = selectedStepsCount.value > 1 ? "steps" : "step";
-    const commentWord = selectedCommentsCount.value > 1 ? "comments" : "comment";
-    let text = "selected ";
-
-    if (selectedStepsCount.value > 0) {
-        text += `${selectedStepsCount.value} ${stepWord}`;
-
-        if (selectedCommentsCount.value > 0) {
-            text += " and ";
-        }
-    }
-
-    if (selectedCommentsCount.value > 0) {
-        text += `${selectedCommentsCount.value} ${commentWord}`;
-    }
-
-    return text;
-});
-
-function deleteSelection() {
-    commentStore.multiSelectedCommentIds.forEach((id) => {
-        commentStore.deleteComment(id);
-    });
-
-    commentStore.clearMultiSelectedComments();
-
-    stateStore.multiSelectedStepIds.forEach((id) => {
-        stepStore.removeStep(id);
-    });
-
-    stateStore.clearStepMultiSelection();
-}
+const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateSelection } = useSelectionOperations();
 </script>
 
 <template>
@@ -360,7 +326,7 @@ function deleteSelection() {
 
             <BButtonGroup>
                 <BButton class="button" @click="deselectAll"> Clear </BButton>
-                <BButton class="button"> Duplicate </BButton>
+                <BButton class="button" @click="duplicateSelection"> Duplicate </BButton>
                 <BButton class="button" @click="deleteSelection"> Delete </BButton>
             </BButtonGroup>
         </div>
