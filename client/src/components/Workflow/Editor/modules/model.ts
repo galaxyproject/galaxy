@@ -23,7 +23,7 @@ interface Workflow {
  */
 export async function fromSimple(
     id: string,
-    data: Workflow,
+    data: Pick<Workflow, "steps" | "comments">,
     appendData = false,
     defaultPosition = { top: 0, left: 0 }
 ) {
