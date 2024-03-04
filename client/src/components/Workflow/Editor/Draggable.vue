@@ -100,6 +100,8 @@ function getSnappedPosition<T extends Position>(position: T) {
     }
 }
 
+let previousPosition: Position | undefined;
+
 const onMove = (position: Position, event: DragEvent) => {
     dragging = true;
 
@@ -115,7 +117,14 @@ const onMove = (position: Position, event: DragEvent) => {
                 x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
                 y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
             };
-            emit("move", getSnappedPosition(newPosition), event);
+
+            const snapped = getSnappedPosition(newPosition);
+
+            if (!previousPosition || previousPosition.x !== snapped.x || previousPosition.y !== snapped.y) {
+                emit("move", snapped, event);
+            }
+
+            previousPosition = snapped;
         }
     });
 };

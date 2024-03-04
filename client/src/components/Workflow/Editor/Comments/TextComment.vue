@@ -11,7 +11,6 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
-import { useMultiSelect } from "../composables/multiSelect";
 import { colors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -115,11 +114,8 @@ const decreaseFontSizeTitle = computed(() =>
     canDecreaseFontSize.value ? `Decrease font size to ${fontSize.value - 1}` : "Minimum font size"
 );
 
-const { deselectAll } = useMultiSelect();
-
 function onRootClick() {
     if (!props.readonly) {
-        deselectAll();
         editableElement.value?.focus();
     }
 }

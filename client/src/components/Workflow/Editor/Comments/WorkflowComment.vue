@@ -65,6 +65,7 @@ function onMove(position: [number, number]) {
         lazyAction = new LazyChangePositionAction(commentStore, props.comment, position);
         undoRedoStore.applyLazyAction(lazyAction);
     }
+    hasMoved = true;
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -80,9 +81,10 @@ function onSetColor(color: WorkflowCommentColor) {
 }
 
 const { deselectAll } = useMultiSelect();
+let hasMoved = false;
 
 function toggleSelect(e: MouseEvent) {
-    if (!props.readonly && !(props.comment.type === "freehand")) {
+    if (!props.readonly && !(props.comment.type === "freehand") && !hasMoved) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -91,6 +93,8 @@ function toggleSelect(e: MouseEvent) {
             deselectAll();
         }
     }
+
+    hasMoved = false;
 }
 </script>
 
