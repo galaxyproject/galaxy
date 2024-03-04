@@ -42,7 +42,6 @@ from galaxy.schema.schema import (
     DatasetSourceType,
     DeleteHistoryContentPayload,
     DeleteHistoryContentResult,
-    EnergyUsageSummary,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentsArchiveDryRunResult,
@@ -51,6 +50,7 @@ from galaxy.schema.schema import (
     HistoryContentType,
     MaterializeDatasetInstanceAPIRequest,
     MaterializeDatasetInstanceRequest,
+    MetricsSummaryCumulative,
     StoreExportPayload,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -1023,13 +1023,13 @@ class FastAPIHistoryContents:
         return rval
 
     @router.get(
-        "/api/histories/{history_id}/energy_usage",
-        summary="Returns the energy usage of a given history.",
+        "/api/histories/{history_id}/metrics",
+        summary="Get the cumulative metrics of all jobs in a given history.",
     )
-    def get_energy_usage(
+    def get_metrics(
         self,
         history_id: HistoryIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> EnergyUsageSummary:
-        """Get the energy usage data of a history with ``history_id``."""
-        return self.service.get_energy_usage(trans, history_id)
+    ) -> MetricsSummaryCumulative:
+        """Get the cumulative metrics of all jobs in a history with ``history_id``."""
+        return self.service.get_metrics(trans, history_id)

@@ -189,12 +189,19 @@ export default {
         });
 
         async function fetchEnergyUsageData() {
-            const res = await fetcher.path("/api/invocations/{invocation_id}/energy_usage").method("get").create()({
+            const res = await fetcher.path("/api/invocations/{invocation_id}/metrics").method("get").create()({
                 invocation_id: invocationId.value,
             });
 
             if (res.ok) {
-                energyUsage.value = res.data;
+                const { total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh, total_energy_needed_kwh } =
+                    res.data;
+
+                energyUsage.value = {
+                    total_energy_needed_cpu_kwh,
+                    total_energy_needed_memory_kwh,
+                    total_energy_needed_kwh,
+                };
             }
         }
 

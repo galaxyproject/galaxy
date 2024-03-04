@@ -70,9 +70,9 @@ from galaxy.schema.invocation import (
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
-    EnergyUsageSummary,
     InvocationSortByEnum,
     InvocationsStateCounts,
+    MetricsSummaryCumulative,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -1793,12 +1793,13 @@ class FastAPIInvocations:
         return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
 
     @router.get(
-        "/api/invocations/{invocation_id}/energy_usage",
-        summary="Get the energy usage of a workflow invocation.",
+        "/api/invocations/{invocation_id}/metrics",
+        summary="Get the cumulative metrics of all jobs in a given workflow invocation.",
     )
-    def get_energy_usage(
+    def get_metrics(
         self,
         invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> EnergyUsageSummary:
-        return self.invocations_service.get_energy_usage(trans, invocation_id)
+    ) -> MetricsSummaryCumulative:
+        """Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``."""
+        return self.invocations_service.get_metrics(trans, invocation_id)

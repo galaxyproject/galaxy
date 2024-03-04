@@ -92,7 +92,6 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
     EncodedHistoryContentItem,
-    EnergyUsageSummary,
     HistoryContentBulkOperationPayload,
     HistoryContentBulkOperationResult,
     HistoryContentItem,
@@ -104,6 +103,7 @@ from galaxy.schema.schema import (
     HistoryContentType,
     JobSourceType,
     MaterializeDatasetInstanceRequest,
+    MetricsSummaryCumulative,
     Model,
     StoreContentSource,
     StoreExportPayload,
@@ -861,37 +861,53 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             archive.write(file_path, archive_path)
         return archive
 
-    def get_energy_usage(
+    def get_metrics(
         self,
         trans,
         history_id: DecodedDatabaseIdField,
-    ) -> EnergyUsageSummary:
-        """Get the energy usage of the history with ``history_id``.
-
-        :param  history_id:     the encoded id of the history whose energy usage is to be calculated
-        """
+    ) -> MetricsSummaryCumulative:
+        """Get the cumulative metrics of all jobs in a history with ``history_id``."""
         history = self._get_history(trans, history_id)
         job_ids = [job.id for job in history.jobs]
 
-        totals_query = trans.sa_session.query(
-            sa.func.sum(
-                sa.case(
-                    [(JobMetricNumeric.metric_name == "energy_needed_cpu", JobMetricNumeric.metric_value)], else_=0.0
-                )
-            ).label("total_energy_needed_cpu_kwh"),
-            sa.func.sum(
-                sa.case(
-                    [(JobMetricNumeric.metric_name == "energy_needed_memory", JobMetricNumeric.metric_value)], else_=0.0
-                )
-            ).label("total_energy_needed_memory_kwh"),
-        ).filter(JobMetricNumeric.job_id.in_(job_ids))
+        query_result = (
+            trans.sa_session.query(
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "energy_needed_cpu", JobMetricNumeric.metric_value)],
+                        else_=0.0,
+                    )
+                ).label("total_energy_needed_cpu_kwh"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "energy_needed_memory", JobMetricNumeric.metric_value)],
+                        else_=0.0,
+                    )
+                ).label("total_energy_needed_memory_kwh"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "runtime_seconds", JobMetricNumeric.metric_value)], else_=0
+                    )
+                ).label("total_runtime_seconds"),
+                sa.func.sum(
+                    sa.case([(JobMetricNumeric.metric_name == "galaxy_slots", JobMetricNumeric.metric_value)], else_=0)
+                ).label("total_allocated_cores_cpu"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "galaxy_memory_mb", JobMetricNumeric.metric_value)], else_=0
+                    )
+                ).label("total_allocated_memory_mebibyte"),
+            ).filter(JobMetricNumeric.job_id.in_(job_ids))
+        ).one()
 
-        total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh = totals_query.one()
-
-        return EnergyUsageSummary(
-            total_energy_needed_cpu_kwh=total_energy_needed_cpu_kwh,
-            total_energy_needed_memory_kwh=total_energy_needed_memory_kwh,
-            total_energy_needed_kwh=total_energy_needed_cpu_kwh + total_energy_needed_memory_kwh,
+        return MetricsSummaryCumulative(
+            total_runtime_seconds=int(query_result.total_runtime_seconds),
+            total_allocated_cores_cpu=int(query_result.total_allocated_cores_cpu),
+            total_allocated_memory_mebibyte=int(query_result.total_allocated_memory_mebibyte),
+            total_energy_needed_cpu_kwh=query_result.total_energy_needed_cpu_kwh,
+            total_energy_needed_memory_kwh=query_result.total_energy_needed_memory_kwh,
+            total_energy_needed_kwh=query_result.total_energy_needed_cpu_kwh
+            + query_result.total_energy_needed_memory_kwh,
         )
 
     def __delete_dataset(

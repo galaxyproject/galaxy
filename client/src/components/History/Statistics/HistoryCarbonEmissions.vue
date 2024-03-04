@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
-import { EnergyUsageSummary } from "@/api";
 import { fetcher } from "@/api/schema";
 import {
     worldwideCarbonIntensity,
@@ -21,19 +20,25 @@ const props = defineProps<{ historyId: string }>();
 
 const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
 
-const energyUsage = ref<EnergyUsageSummary>({
+const energyUsage = ref({
     total_energy_needed_cpu_kwh: 0,
     total_energy_needed_memory_kwh: 0,
     total_energy_needed_kwh: 0,
 });
 
 async function fetchEnergyUsageData() {
-    const res = await fetcher.path("/api/histories/{history_id}/energy_usage").method("get").create()({
+    const res = await fetcher.path("/api/histories/{history_id}/metrics").method("get").create()({
         history_id: props.historyId,
     });
 
     if (res.ok) {
-        energyUsage.value = res.data;
+        const { total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh, total_energy_needed_kwh } = res.data;
+
+        energyUsage.value = {
+            total_energy_needed_cpu_kwh,
+            total_energy_needed_memory_kwh,
+            total_energy_needed_kwh,
+        };
     }
 }
 

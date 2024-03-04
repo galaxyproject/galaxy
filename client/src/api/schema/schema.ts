@@ -811,13 +811,6 @@ export interface paths {
          */
         put: operations["enable_link_access_api_histories__history_id__enable_link_access_put"];
     };
-    "/api/histories/{history_id}/energy_usage": {
-        /**
-         * Returns the energy usage of a given history.
-         * @description Get the energy usage data of a history with ``history_id``.
-         */
-        get: operations["get_energy_usage_api_histories__history_id__energy_usage_get"];
-    };
     "/api/histories/{history_id}/exports": {
         /**
          * Get previous history exports.
@@ -872,6 +865,13 @@ export interface paths {
     "/api/histories/{history_id}/materialize": {
         /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
         post: operations["materialize_to_history_api_histories__history_id__materialize_post"];
+    };
+    "/api/histories/{history_id}/metrics": {
+        /**
+         * Get the cumulative metrics of all jobs in a given history.
+         * @description Get the cumulative metrics of all jobs in a history with ``history_id``.
+         */
+        get: operations["get_metrics_api_histories__history_id__metrics_get"];
     };
     "/api/histories/{history_id}/prepare_store_download": {
         /** Return a short term storage token to monitor download of the history. */
@@ -997,10 +997,6 @@ export interface paths {
          */
         get: operations["download_invocation_bco_api_invocations__invocation_id__biocompute_download_get"];
     };
-    "/api/invocations/{invocation_id}/energy_usage": {
-        /** Get the energy usage of a workflow invocation. */
-        get: operations["get_energy_usage_api_invocations__invocation_id__energy_usage_get"];
-    };
     "/api/invocations/{invocation_id}/jobs_summary": {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -1010,6 +1006,13 @@ export interface paths {
          * efficient as possible.
          */
         get: operations["invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get"];
+    };
+    "/api/invocations/{invocation_id}/metrics": {
+        /**
+         * Get the cumulative metrics of all jobs in a given workflow invocation.
+         * @description Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``.
+         */
+        get: operations["get_metrics_api_invocations__invocation_id__metrics_get"];
     };
     "/api/invocations/{invocation_id}/prepare_store_download": {
         /** Prepare a workflow invocation export-style download. */
@@ -4698,15 +4701,6 @@ export interface components {
              * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
              */
             src: components["schemas"]["DataItemSourceType"];
-        };
-        /** EnergyUsageSummary */
-        EnergyUsageSummary: {
-            /** Total Energy Needed Cpu Kwh */
-            total_energy_needed_cpu_kwh: number;
-            /** Total Energy Needed Kwh */
-            total_energy_needed_kwh: number;
-            /** Total Energy Needed Memory Kwh */
-            total_energy_needed_memory_kwh: number;
         };
         /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
@@ -8976,6 +8970,21 @@ export interface components {
              * @description The timestamp in ISO format.
              */
             time: string;
+        };
+        /** MetricsSummaryCumulative */
+        MetricsSummaryCumulative: {
+            /** Total Allocated Cores Cpu */
+            total_allocated_cores_cpu: number;
+            /** Total Allocated Memory Mebibyte */
+            total_allocated_memory_mebibyte: number;
+            /** Total Energy Needed Cpu Kwh */
+            total_energy_needed_cpu_kwh: number;
+            /** Total Energy Needed Kwh */
+            total_energy_needed_kwh: number;
+            /** Total Energy Needed Memory Kwh */
+            total_energy_needed_memory_kwh: number;
+            /** Total Runtime Seconds */
+            total_runtime_seconds: number;
         };
         /**
          * ModelStoreFormat
@@ -17315,36 +17324,6 @@ export interface operations {
             };
         };
     };
-    get_energy_usage_api_histories__history_id__energy_usage_get: {
-        /**
-         * Returns the energy usage of a given history.
-         * @description Get the energy usage data of a history with ``history_id``.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                history_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["EnergyUsageSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_history_exports_api_histories__history_id__exports_get: {
         /**
          * Get previous history exports.
@@ -17536,6 +17515,36 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_histories__history_id__metrics_get: {
+        /**
+         * Get the cumulative metrics of all jobs in a given history.
+         * @description Get the cumulative metrics of all jobs in a history with ``history_id``.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["MetricsSummaryCumulative"];
                 };
             };
             /** @description Validation Error */
@@ -18188,33 +18197,6 @@ export interface operations {
             };
         };
     };
-    get_energy_usage_api_invocations__invocation_id__energy_usage_get: {
-        /** Get the energy usage of a workflow invocation. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string | null;
-            };
-            /** @description The encoded database identifier of the Invocation. */
-            path: {
-                invocation_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["EnergyUsageSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get: {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
@@ -18238,6 +18220,36 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_invocations__invocation_id__metrics_get: {
+        /**
+         * Get the cumulative metrics of all jobs in a given workflow invocation.
+         * @description Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["MetricsSummaryCumulative"];
                 };
             };
             /** @description Validation Error */
