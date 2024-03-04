@@ -46,7 +46,7 @@ boltons = "*"
 boto = "*"
 bx-python = "*"
 celery = "*"
-Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/poetry/issues/2453
+Cheetah3 = "*"
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
