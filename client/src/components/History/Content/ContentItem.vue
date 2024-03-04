@@ -70,7 +70,7 @@
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
-                    @undelete="$emit('undelete')"
+                    @undelete="onUndelete"
                     @unhide="$emit('unhide')" />
             </div>
         </div>
@@ -288,6 +288,11 @@ export default {
         },
         onDelete(recursive = false) {
             this.$emit("delete", this.item, recursive);
+            this.$emit("update:selected", false);
+        },
+        onUndelete() {
+            this.$emit("undelete");
+            this.$emit("update:selected", false);
         },
         onDragStart(evt) {
             this.$emit("drag-start", evt);
