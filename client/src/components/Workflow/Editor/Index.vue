@@ -618,7 +618,8 @@ export default {
                 const action = new CopyIntoWorkflowAction(
                     this.id,
                     data,
-                    defaultPosition(this.graphOffset, this.transform)
+                    defaultPosition(this.graphOffset, this.transform),
+                    true
                 );
                 this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message

@@ -208,7 +208,9 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     const connectionStore = useConnectionStore(workflowId);
 
-    function addStep(newStep: NewStep, createConnections = true): Step {
+    const stateStore = useWorkflowStateStore(workflowId);
+
+    function addStep(newStep: NewStep, select = false, createConnections = true): Step {
         const stepId = newStep.id ?? getStepIndex.value + 1;
         const step = Object.freeze({ ...newStep, id: stepId } as Step);
 
@@ -219,6 +221,10 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         }
 
         stepExtraInputs.value[step.id] = findStepExtraInputs(step);
+
+        if (select) {
+            stateStore.setStepMultiSelected(step.id, true);
+        }
 
         return step;
     }

@@ -103,13 +103,21 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
         localCommentsMetadata.value = {};
     }
 
-    const addComments = (commentsArray: WorkflowComment[], defaultPosition: [number, number] = [0, 0]) => {
+    const addComments = (
+        commentsArray: WorkflowComment[],
+        defaultPosition: [number, number] = [0, 0],
+        select = false
+    ) => {
         commentsArray.forEach((comment) => {
             const newComment = structuredClone(comment);
             newComment.position[0] += defaultPosition[0];
             newComment.position[1] += defaultPosition[1];
 
             set(commentsRecord.value, newComment.id, newComment);
+
+            if (select) {
+                setCommentMultiSelected(newComment.id, true);
+            }
         });
     };
 
