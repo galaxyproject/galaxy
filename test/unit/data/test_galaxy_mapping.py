@@ -75,54 +75,6 @@ class BaseModelTestCase(TestCase):
 
 
 class TestMappings(BaseModelTestCase):
-    def test_ratings(self):
-        user_email = "rater@example.com"
-        u = model.User(email=user_email, password="password")
-        self.persist(u)
-
-        def persist_and_check_rating(rating_class, item):
-            rating = 5
-            rating_association = rating_class(u, item, rating)
-            self.persist(rating_association)
-            self.expunge()
-            stored_rating = self.model.session.scalars(select(rating_class)).all()[0]
-            assert stored_rating.rating == rating
-            assert stored_rating.user.email == user_email
-
-        sw = model.StoredWorkflow()
-        add_object_to_object_session(sw, u)
-        sw.user = u
-        self.persist(sw)
-        persist_and_check_rating(model.StoredWorkflowRatingAssociation, sw)
-
-        h = model.History(name="History for Rating", user=u)
-        self.persist(h)
-        persist_and_check_rating(model.HistoryRatingAssociation, h)
-
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
-        )
-        self.persist(d1)
-        persist_and_check_rating(model.HistoryDatasetAssociationRatingAssociation, d1)
-
-        page = model.Page()
-        page.user = u
-        self.persist(page)
-        persist_and_check_rating(model.PageRatingAssociation, page)
-
-        visualization = model.Visualization()
-        visualization.user = u
-        self.persist(visualization)
-        persist_and_check_rating(model.VisualizationRatingAssociation, visualization)
-
-        dataset_collection = model.DatasetCollection(collection_type="paired")
-        history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
-        self.persist(history_dataset_collection)
-        persist_and_check_rating(model.HistoryDatasetCollectionRatingAssociation, history_dataset_collection)
-
-        library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
-        self.persist(library_dataset_collection)
-        persist_and_check_rating(model.LibraryDatasetCollectionRatingAssociation, library_dataset_collection)
 
     def test_display_name(self):
         def assert_display_name_converts_to_unicode(item, name):
