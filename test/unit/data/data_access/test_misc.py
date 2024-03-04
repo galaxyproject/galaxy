@@ -1,3 +1,5 @@
+import random
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 
@@ -19,6 +21,33 @@ class User:
 
 
 # replacing test_galaxy_mapping.py
+
+
+def test_ratings(
+    session,
+    make_user,
+    make_stored_workflow,
+    make_history,
+    make_page,
+    make_visualization,
+    make_hdca,
+    make_ldca,
+    make_user_item_rating_association,
+):
+    def _test_rating(assoc_class, item, assoc_class_item_attr_name):
+        user = make_user()
+        rating = random.randint(0, 100)
+        rating_assoc = make_user_item_rating_association(assoc_class, user, item, rating)
+        assert rating_assoc.user == user
+        assert getattr(rating_assoc, assoc_class_item_attr_name) == item
+        assert rating_assoc.rating == rating
+
+    _test_rating(m.StoredWorkflowRatingAssociation, make_stored_workflow(), "stored_workflow")
+    _test_rating(m.HistoryRatingAssociation, make_history(), "history")
+    _test_rating(m.PageRatingAssociation, make_page(), "page")
+    _test_rating(m.VisualizationRatingAssociation, make_visualization(), "visualization")
+    _test_rating(m.HistoryDatasetCollectionRatingAssociation, make_hdca(), "dataset_collection")
+    _test_rating(m.LibraryDatasetCollectionRatingAssociation, make_ldca(), "dataset_collection")
 
 
 def test_hda_to_library_dataset_dataset_association(session, make_user, make_history, make_hda, make_library_folder):
