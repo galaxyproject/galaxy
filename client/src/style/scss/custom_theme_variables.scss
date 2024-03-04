@@ -1,6 +1,7 @@
 @import "theme/blue.scss";
 
-html {
+html,
+.reset-theme-variables {
     --masthead-color: #{$masthead-color};
     --masthead-text-color: #{$masthead-text-color};
     --masthead-text-hover: #{$masthead-text-hover};
