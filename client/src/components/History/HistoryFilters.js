@@ -29,6 +29,7 @@ const validFilters = {
     genome_build: { placeholder: "database", type: String, handler: contains("genome_build"), menuItem: true },
     genome_build_eq: { handler: equals("genome_build"), menuItem: false },
     related: { placeholder: "related", type: Number, handler: equals("related"), menuItem: true },
+    invocation_id: { placeholder: "invocation id", type: String, handler: equals("invocation_id"), menuItem: true },
     object_store_id: {
         placeholder: "object store",
         type: "ObjectStore",
