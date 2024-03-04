@@ -3510,7 +3510,10 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
     @staticmethod
     def element_is_valid(element: model.DatasetCollectionElement):
         dataset_instance: model.DatasetInstance = element.element_object
-        if dataset_instance.has_data():
+        has_data_lines = dataset_instance.metadata.get("has_data_lines")
+        if has_data_lines:
+            return True
+        if has_data_lines is None and dataset_instance.has_data():
             # We have data, but it might just be a compressed archive of nothing
             file_name = dataset_instance.get_file_name()
             _, fh = get_fileobj_raw(file_name, mode="rb")
