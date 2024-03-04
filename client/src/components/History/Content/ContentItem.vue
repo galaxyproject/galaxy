@@ -66,7 +66,6 @@
                     :is-visible="item.visible"
                     :state="state"
                     :item-urls="itemUrls"
-                    :keyboard-selectable="isCollection || expandDataset"
                     @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
