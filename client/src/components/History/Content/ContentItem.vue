@@ -6,7 +6,8 @@
         :data-state="dataState"
         tabindex="0"
         role="button"
-        @keydown="onKeyDown">
+        @keydown="onKeyDown"
+        @focus="$emit('update:item-focused')">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1" data-description="content item header info">
@@ -245,7 +246,10 @@ export default {
                 this.$emit("shift-select", event.key);
             } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                 event.preventDefault();
+                this.$emit("init-key-selection");
                 this.$emit("arrow-navigate", event.key);
+            } else if (event.key === "Tab") {
+                this.$emit("init-key-selection");
             } else if (event.key === "Delete" && !this.selected && !this.item.deleted) {
                 event.preventDefault();
                 this.onDelete(event.shiftKey);
@@ -258,11 +262,17 @@ export default {
             }
         },
         onClick(event) {
-            if (event && this.isCtrlKey(event)) {
+            if (event && event.shiftKey && this.isCtrlKey(event)) {
+                this.$emit("selected-to", false);
+            } else if (event && this.isCtrlKey(event)) {
+                this.$emit("init-key-selection");
                 this.$emit("update:selected", !this.selected);
+            } else if (event && event.shiftKey) {
+                this.$emit("selected-to", true);
             } else if (this.isPlaceholder) {
-                return;
+                this.$emit("init-key-selection");
             } else if (this.isDataset) {
+                this.$emit("init-key-selection");
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
                 this.$emit("view-collection", this.item, this.name);
@@ -289,10 +299,12 @@ export default {
         onDelete(recursive = false) {
             this.$emit("delete", this.item, recursive);
             this.$emit("update:selected", false);
+            this.$emit("init-key-selection");
         },
         onUndelete() {
             this.$emit("undelete");
             this.$emit("update:selected", false);
+            this.$emit("init-key-selection");
         },
         onDragStart(evt) {
             this.$emit("drag-start", evt);
