@@ -589,7 +589,7 @@ function setItemDragstart(
                                     "
                                     @hide-selection="setShowSelection(false)"
                                     @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
-                                    @select-all="selectAllInCurrentQuery(historyItems)"
+                                    @select-all="selectAllInCurrentQuery(historyItems, false)"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"

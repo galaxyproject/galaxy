@@ -36,7 +36,12 @@ export default {
         setShowSelection(val) {
             this.showSelection = val;
         },
-        selectAllInCurrentQuery(loadedItems = []) {
+        selectAllInCurrentQuery(loadedItems = [], force = true) {
+            // if we are not forcing selectAll, and all items are already selected; deselect them
+            if (!force && this.allSelected) {
+                this.setShowSelection(false);
+                return;
+            }
             this.selectItems(loadedItems);
             this.allSelected = true;
         },
