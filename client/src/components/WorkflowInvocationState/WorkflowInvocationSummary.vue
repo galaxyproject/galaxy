@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { InvocationJobsSummary, InvocationStep, WorkflowInvocationSummary } from "@/api/invocations";
+import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
 import { getRootFromIndexLink } from "@/onload";
 
 import {
@@ -21,7 +21,7 @@ function getUrl(path: string): string {
 }
 
 interface Props {
-    invocation?: WorkflowInvocationSummary;
+    invocation?: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
     jobStatesSummary: InvocationJobsSummary;
