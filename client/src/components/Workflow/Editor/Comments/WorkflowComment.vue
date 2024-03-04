@@ -42,6 +42,7 @@ function onResize(size: [number, number]) {
 
 function onMove(position: [number, number]) {
     commentStore.changePosition(props.comment.id, position);
+    hasMoved = true;
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -57,9 +58,10 @@ function onSetColor(color: WorkflowCommentColor) {
 }
 
 const { deselectAll } = useMultiSelect();
+let hasMoved = false;
 
 function toggleSelect(e: MouseEvent) {
-    if (!props.readonly && !(props.comment.type === "freehand")) {
+    if (!props.readonly && !(props.comment.type === "freehand") && !hasMoved) {
         if (e.shiftKey) {
             e.preventDefault();
             e.stopImmediatePropagation();
@@ -68,6 +70,8 @@ function toggleSelect(e: MouseEvent) {
             deselectAll();
         }
     }
+
+    hasMoved = false;
 }
 </script>
 

@@ -267,6 +267,8 @@ function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTermina
 }
 
 function onMoveTo(position: XYPosition) {
+    hasMoved = true;
+
     emit("onUpdateStepPosition", props.id, {
         top: position.y + props.scroll.y.value / props.scale,
         left: position.x + props.scroll.x.value / props.scale,
@@ -295,9 +297,14 @@ function onClone() {
 }
 
 const { deselectAll } = useMultiSelect();
+let hasMoved = false;
 
 function makeActive() {
-    deselectAll();
+    if (!hasMoved) {
+        deselectAll();
+    }
+
+    hasMoved = false;
     emit("onActivate", props.id);
 }
 
