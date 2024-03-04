@@ -88,7 +88,7 @@ pebble = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2, !=2.6.0, !=2.6.1, !=2.6.2", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
+pydantic = {version = ">=2, !=2.6.0, !=2.6.1, !=2.6.2, !=2.6.3", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
