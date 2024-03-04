@@ -361,10 +361,10 @@ async function onDrop(evt: any) {
         }
 
         if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} datasets copied to history`);
+            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
         }
         if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collections copied to history`);
+            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
         }
         historyStore.loadHistoryById(props.history.id);
     } catch (error) {
