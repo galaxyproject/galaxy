@@ -229,6 +229,10 @@ export default {
         },
     },
     methods: {
+        isCtrlKey(event) {
+            const isMac = navigator.userAgent.indexOf("Mac") >= 0;
+            return isMac ? event.metaKey : event.ctrlKey;
+        },
         onKeyDown(event) {
             if (!event.target.classList.contains("content-item")) {
                 return;
@@ -248,13 +252,13 @@ export default {
             } else if (event.key === "Escape") {
                 event.preventDefault();
                 this.$emit("hide-selection");
-            } else if (event.key === "a" && event.ctrlKey) {
+            } else if (event.key === "a" && this.isCtrlKey(event)) {
                 event.preventDefault();
                 this.$emit("select-all");
             }
         },
         onClick(event) {
-            if (event && event.ctrlKey) {
+            if (event && this.isCtrlKey(event)) {
                 this.$emit("update:selected", !this.selected);
             } else if (this.isPlaceholder) {
                 return;
