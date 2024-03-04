@@ -274,6 +274,16 @@ def make_job_import_history_archive(session):
 
 
 @pytest.fixture
+def make_ldca(session):
+    def f(**kwd):
+        model = m.LibraryDatasetCollectionAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_library(session):
     def f(**kwd):
         model = m.Library(**kwd)
@@ -307,9 +317,31 @@ def make_library_permissions(session, make_library, make_role):
 
 
 @pytest.fixture
+def make_page(session, make_user):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        model = m.Page(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_role(session):
     def f(**kwd):
         model = m.Role(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_stored_workflow(session, make_user):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        model = m.StoredWorkflow(**kwd)
         write_to_db(session, model)
         return model
 
@@ -330,10 +362,32 @@ def make_user(session):
 
 
 @pytest.fixture
+def make_user_item_rating_association(session):
+    def f(assoc_class, user, item, rating):
+        model = assoc_class(user, item, rating)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_user_role_association(session):
     def f(user, role):
         model = m.UserRoleAssociation(user, role)
         write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
+def make_visualization(session, make_user):
+    def f(**kwd):
+        kwd["user"] = kwd.get("user") or make_user()
+        model = m.Visualization(**kwd)
+        write_to_db(session, model)
+        return model
 
     return f
 
