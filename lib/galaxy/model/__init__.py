@@ -919,7 +919,7 @@ WHERE user_id = :user_id and quota_source_label = :label
         assert amount is not None
         if amount != 0:
             if quota_source_label is None:
-                self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
+                self.disk_usage = (self.disk_usage or 0) + amount
             else:
                 # else would work on newer sqlite - 3.24.0
                 engine = object_session(self).bind
