@@ -21,6 +21,7 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
@@ -589,7 +590,7 @@ class BooleanToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         truevalue = input_source.get("truevalue", "true")
         falsevalue = input_source.get("falsevalue", "false")
-        if tool and tool.profile >= 23.1:
+        if tool and Version(str(tool.profile)) >= Version("23.1"):
             if truevalue == falsevalue:
                 raise ParameterValueError("Cannot set true and false to the same value", self.name)
             if truevalue.lower() == "false":
@@ -1020,7 +1021,7 @@ class SelectToolParameter(ToolParameter):
                 "an invalid option (None) was selected, please verify", self.name, None, is_dynamic=self.is_dynamic
             )
         elif not legal_values:
-            if self.optional and self.tool.profile < 18.09:
+            if self.optional and Version(str(self.tool.profile)) < Version("18.09"):
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
                 # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.

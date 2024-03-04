@@ -11,6 +11,7 @@
         <resource type="gpu_memory_min">4042</resource>
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
+        <resource type="shm_size">67108864</resource>
     </requirements>
     <command><![CDATA[
 echo "\$GALAXY_SLOTS" > $output

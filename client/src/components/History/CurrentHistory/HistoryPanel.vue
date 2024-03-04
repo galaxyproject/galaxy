@@ -11,9 +11,11 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { Toast } from "@/composables/toast";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
+import { useEventStore } from "@/stores/eventStore";
 import { type HistoryItem, useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
+import { setDrag } from "@/utils/setDrag";
 
 import HistoryCounter from "./HistoryCounter.vue";
 import HistoryDetails from "./HistoryDetails.vue";
@@ -73,6 +75,13 @@ const operationRunning = ref<string | null>(null);
 const operationError = ref(null);
 const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
+const contentItemRefs = computed(() => {
+    return historyItems.value.reduce((acc: any, item) => {
+        // TODO: type `any` properly
+        acc[`item-${item.hid}`] = ref(null);
+        return acc;
+    }, {});
+});
 
 const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
@@ -302,28 +311,61 @@ function onDragLeave(e: DragEvent) {
 }
 
 async function onDrop(evt: any) {
+    const eventStore = useEventStore();
     showDropZone.value = false;
-    let data;
+    let data: HistoryItem[] | undefined;
+    let historyId: string | undefined;
+    const multiple = eventStore.multipleDragData;
     try {
-        data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+        if (multiple) {
+            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            // set historyId to the first history_id in the multiple drag data
+            const firstItem = Object.values(dragData)[0];
+            if (firstItem) {
+                historyId = firstItem.history_id;
+            }
+            data = Object.values(dragData);
+        } else {
+            data = [eventStore.getDragData() as HistoryItem];
+            if (data[0]) {
+                historyId = data[0].history_id;
+            }
+        }
     } catch (error) {
         // this was not a valid object for this dropzone, ignore
     }
 
-    if (!data || data.history_id === props.history.id) {
+    if (!data || historyId === props.history.id) {
         return;
     }
 
+    let datasetCount = 0;
+    let collectionCount = 0;
     try {
-        const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
-        await copyDataset(data.id, props.history.id, data.history_content_type, dataSource);
+        // iterate over the data array and copy each item to the current history
+        for (const item of data) {
+            const dataSource = item.history_content_type === "dataset" ? "hda" : "hdca";
+            await copyDataset(item.id, props.history.id, item.history_content_type, dataSource);
 
-        if (data.history_content_type === "dataset") {
-            Toast.info("Dataset copied to history");
-        } else {
-            Toast.info("Collection copied to history");
+            if (item.history_content_type === "dataset") {
+                datasetCount++;
+                if (!multiple) {
+                    Toast.info("Dataset copied to history");
+                }
+            } else {
+                collectionCount++;
+                if (!multiple) {
+                    Toast.info("Collection copied to history");
+                }
+            }
         }
 
+        if (multiple && datasetCount > 0) {
+            Toast.info(`${datasetCount} datasets copied to history`);
+        }
+        if (multiple && collectionCount > 0) {
+            Toast.info(`${collectionCount} collections copied to history`);
+        }
         historyStore.loadHistoryById(props.history.id);
     } catch (error) {
         Toast.error(`${error}`);
@@ -346,6 +388,46 @@ onMounted(async () => {
     }
     await loadHistoryItems();
 });
+
+function nextSelections(item: HistoryItem, eventKey: string) {
+    const nextItem = arrowNavigate(item, eventKey);
+    return {
+        item,
+        nextItem,
+        eventKey,
+    };
+}
+
+function arrowNavigate(item: HistoryItem, eventKey: string) {
+    let nextItem = null;
+    if (eventKey === "ArrowDown") {
+        nextItem = historyItems.value[historyItems.value.indexOf(item) + 1];
+    } else if (eventKey === "ArrowUp") {
+        nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
+    }
+    if (nextItem) {
+        contentItemRefs.value[`item-${nextItem.hid}`].value.$el.focus();
+    }
+    return nextItem;
+}
+
+function setItemDragstart(
+    item: HistoryItem,
+    itemIsSelected: boolean,
+    selectedItems: Map<string, HistoryItem>,
+    selectionSize: number,
+    event: DragEvent
+) {
+    if (itemIsSelected && selectionSize > 1) {
+        const selectedItemsObj: any = {};
+        for (const [key, value] of selectedItems) {
+            selectedItemsObj[key] = value;
+        }
+        setDrag(event, selectedItemsObj, true);
+    } else {
+        setDrag(event, item as any);
+    }
+}
 </script>
 
 <template>
@@ -363,6 +445,8 @@ onMounted(async () => {
                 selectAllInCurrentQuery,
                 isSelected,
                 setSelected,
+                shiftSelect,
+                initKeySelection,
                 resetSelection,
             }"
             :scope-key="queryKey"
@@ -479,6 +563,7 @@ onMounted(async () => {
                             <template v-slot:item="{ item, currentOffset }">
                                 <ContentItem
                                     :id="item.hid"
+                                    :ref="contentItemRefs[`item-${item.hid}`]"
                                     is-history-item
                                     :item="item"
                                     :name="item.name"
@@ -489,6 +574,22 @@ onMounted(async () => {
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
+                                    @arrow-navigate="
+                                        arrowNavigate(item, $event);
+                                        initKeySelection();
+                                    "
+                                    @drag-start="
+                                        setItemDragstart(
+                                            item,
+                                            showSelection && isSelected(item),
+                                            selectedItems,
+                                            selectionSize,
+                                            $event
+                                        )
+                                    "
+                                    @hide-selection="setShowSelection(false)"
+                                    @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
+                                    @select-all="selectAllInCurrentQuery(historyItems)"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"

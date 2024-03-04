@@ -450,18 +450,18 @@ class Tabular(TabularData):
         column_type_compare_order = list(column_type_set_order)  # Order to compare column types
         column_type_compare_order.reverse()
 
-        def type_overrules_type(column_type1, column_type2):
-            if column_type1 is None or column_type1 == column_type2:
+        def type_overrules_type(new_column_type, old_column_type):
+            if new_column_type is None or new_column_type == old_column_type:
                 return False
-            if column_type2 is None:
+            if old_column_type is None:
                 return True
             for column_type in column_type_compare_order:
-                if column_type1 == column_type:
+                if new_column_type == column_type:
                     return True
-                if column_type2 == column_type:
+                if old_column_type == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
+            raise ValueError(f"Tried to compare unknown column types: {new_column_type} and {old_column_type}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)
@@ -508,7 +508,7 @@ class Tabular(TabularData):
         comment_lines = 0
         column_names = None
         column_types: List = []
-        first_line_column_types = [default_column_type]  # default value is one column of type str
+        first_line_column_types = []
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
             with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:

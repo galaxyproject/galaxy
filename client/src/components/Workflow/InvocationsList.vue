@@ -24,7 +24,8 @@
                     <small class="float-right" :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
                         <b
-                            >Invocation ID: <code>{{ row.item.id }}</code></b
+                            >Invocation ID:
+                            <router-link :to="invocationLink(row.item)">{{ row.item.id }}</router-link></b
                         >
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
@@ -70,6 +71,9 @@
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
+            <template v-slot:cell(state)="data">
+                <HelpText :uri="`galaxy.invocations.states.${data.value}`" :text="data.value" />
+            </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
                     v-if="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
@@ -87,6 +91,7 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import HelpText from "components/Help/HelpText";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
@@ -104,6 +109,7 @@ export default {
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
+        HelpText,
     },
     mixins: [paginationMixin],
     props: {
@@ -216,6 +222,9 @@ export default {
         },
         swapRowDetails(row) {
             row.toggleDetails();
+        },
+        invocationLink(item) {
+            return `/workflows/invocations/${item.id}`;
         },
         switchHistory(historyId) {
             const Galaxy = getGalaxyInstance();

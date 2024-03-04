@@ -22,6 +22,7 @@ describe("JobInformation/JobInformation.vue", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
         axiosMock.onGet("/api/jobs/test_id?full=True").reply(200, jobResponse);
+        axiosMock.onGet("/api/invocations?job_id=test_id").reply(200, []);
     });
 
     afterEach(() => {

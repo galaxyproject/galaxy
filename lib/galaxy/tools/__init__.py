@@ -913,10 +913,10 @@ class Tool(Dictifiable):
         if self.tool_type not in ["default", "manage_data", "interactive", "data_source", "data_source_async"]:
             return True
 
-        if self.tool_type == "manage_data" and self.profile < 18.09:
+        if self.tool_type == "manage_data" and Version(str(self.profile)) < Version("18.09"):
             return True
 
-        if self.tool_type == "data_source" and self.profile < 21.09:
+        if self.tool_type == "data_source" and Version(str(self.profile)) < Version("21.09"):
             return True
 
         if self.tool_type == "data_source_async" and self.profile < 24.0:
@@ -1022,7 +1022,7 @@ class Tool(Dictifiable):
         self.python_template_version = tool_source.parse_python_template_version()
         if self.python_template_version is None:
             # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
-            if self.profile >= 19.05:
+            if profile >= Version("19.05"):
                 self.python_template_version = Version("3.5")
             else:
                 self.python_template_version = Version("2.7")
@@ -1036,7 +1036,7 @@ class Tool(Dictifiable):
 
         self.version = tool_source.parse_version()
         if not self.version:
-            if self.profile < 16.04:
+            if profile < Version("16.04"):
                 # For backward compatibility, some tools may not have versions yet.
                 self.version = "1.0.0"
             else:

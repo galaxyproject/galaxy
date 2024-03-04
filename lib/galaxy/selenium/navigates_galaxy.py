@@ -29,6 +29,7 @@ import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
+from selenium.webdriver.support import expected_conditions as ec
 
 from galaxy.navigation.components import (
     Component,
@@ -1985,9 +1986,9 @@ class NavigatesGalaxy(HasDriver):
     def tour_wait_for_clickable_element(self, selector):
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"sizzle (jQuery) selector [{selector}] to become clickable")
+        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become clickable")
         element = wait.until(
-            sizzle.sizzle_selector_clickable(selector),
+            ec.element_to_be_clickable((By.CSS_SELECTOR, selector)),
             timeout_message,
         )
         return element
@@ -1995,9 +1996,9 @@ class NavigatesGalaxy(HasDriver):
     def tour_wait_for_element_present(self, selector):
         timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
         wait = self.wait(timeout=timeout)
-        timeout_message = self._timeout_message(f"sizzle (jQuery) selector [{selector}] to become present")
+        timeout_message = self._timeout_message(f"Tour CSS selector [{selector}] to become present")
         element = wait.until(
-            sizzle.sizzle_presence_of_selector(selector),
+            ec.presence_of_element_located((By.CSS_SELECTOR, selector)),
             timeout_message,
         )
         return element

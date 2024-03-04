@@ -16,7 +16,7 @@ import { HistoryExport } from "components/HistoryExport/index";
 import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
-import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
+import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -72,6 +72,7 @@ import NotificationsList from "@/components/Notifications/NotificationsList.vue"
 import Sharing from "@/components/Sharing/SharingPage.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
+import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
 
 Vue.use(VueRouter);
 
@@ -502,10 +503,6 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
-                        path: "welcome/new",
-                        component: NewUserWelcome,
-                    },
-                    {
                         path: "workflows/create",
                         component: WorkflowCreate,
                         redirect: redirectAnon(),
@@ -531,6 +528,11 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             invocationId: route.query.id,
                         }),
+                    },
+                    {
+                        path: "workflows/invocations/:invocationId",
+                        component: WorkflowInvocationState,
+                        props: true,
                     },
                     {
                         path: "workflows/list",

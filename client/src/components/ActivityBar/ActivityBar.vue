@@ -72,7 +72,7 @@ function panelActivityIsActive(activity: Activity) {
  */
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
-    if (eventData) {
+    if (eventData && !eventStore.multipleDragData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
         emit("dragstart", dragItem.value);

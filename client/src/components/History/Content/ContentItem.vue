@@ -66,7 +66,7 @@
                     :is-visible="item.visible"
                     :state="state"
                     :item-urls="itemUrls"
-                    :keyboard-selectable="expandDataset"
+                    :keyboard-selectable="isCollection || expandDataset"
                     @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
@@ -113,7 +113,7 @@ import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
-import { clearDrag, setDrag } from "@/utils/setDrag.js";
+import { clearDrag } from "@/utils/setDrag.ts";
 
 import CollectionDescription from "./Collection/CollectionDescription";
 import { JobStateSummary } from "./Collection/JobStateSummary";
@@ -237,13 +237,29 @@ export default {
 
             if (event.key === "Enter" || event.key === " ") {
                 this.onClick();
+            } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+                event.preventDefault();
+                this.$emit("shift-select", event.key);
+            } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                event.preventDefault();
+                this.$emit("arrow-navigate", event.key);
+            } else if (event.key === "Delete" && !this.selected && !this.item.deleted) {
+                event.preventDefault();
+                this.onDelete(event.shiftKey);
+            } else if (event.key === "Escape") {
+                event.preventDefault();
+                this.$emit("hide-selection");
+            } else if (event.key === "a" && event.ctrlKey) {
+                event.preventDefault();
+                this.$emit("select-all");
             }
         },
-        onClick() {
-            if (this.isPlaceholder) {
+        onClick(event) {
+            if (event && event.ctrlKey) {
+                this.$emit("update:selected", !this.selected);
+            } else if (this.isPlaceholder) {
                 return;
-            }
-            if (this.isDataset) {
+            } else if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
                 this.$emit("view-collection", this.item, this.name);
@@ -271,9 +287,9 @@ export default {
             this.$emit("delete", this.item, recursive);
         },
         onDragStart(evt) {
-            setDrag(evt, this.item);
+            this.$emit("drag-start", evt);
         },
-        onDragEnd: function () {
+        onDragEnd() {
             clearDrag();
         },
         onEdit() {

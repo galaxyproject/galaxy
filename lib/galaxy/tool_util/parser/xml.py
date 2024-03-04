@@ -19,6 +19,8 @@ from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
+    DEFAULT_EPS,
+    DEFAULT_METRIC,
 )
 from galaxy.util import (
     Element,
@@ -128,7 +130,7 @@ class XmlToolSource(ToolSource):
         self.root = self.xml_tree.getroot()
         self._source_path = source_path
         self._macro_paths = macro_paths or []
-        self.legacy_defaults = self.parse_profile() == "16.01"
+        self.legacy_defaults = Version(self.parse_profile()) == Version("16.01")
         self._string = xml_to_string(self.root)
 
     def to_string(self):
@@ -248,7 +250,7 @@ class XmlToolSource(ToolSource):
         return environment_variables
 
     def parse_home_target(self):
-        target = "job_home" if self.parse_profile() >= "18.01" else "shared_home"
+        target = "job_home" if Version(self.parse_profile()) >= Version("18.01") else "shared_home"
         command_el = self._command_el
         command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
         if command_legacy is not None:
@@ -395,7 +397,7 @@ class XmlToolSource(ToolSource):
             style = out_elem.attrib["provided_metadata_style"]
 
         if style is None:
-            style = "legacy" if self.parse_profile() < "17.09" else "default"
+            style = "legacy" if Version(self.parse_profile()) < Version("17.09") else "default"
 
         assert style in ["legacy", "default"]
         return style
@@ -537,7 +539,7 @@ class XmlToolSource(ToolSource):
         output.filters = data_elem.findall("filter")
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
-        if output.from_work_dir and getattr(tool, "profile", 0) < 21.09:
+        if output.from_work_dir and Version(str(getattr(tool, "profile", 0))) < Version("21.09"):
             # We started quoting from_work_dir outputs in 21.09.
             # Prior to quoting, trailing spaces had no effect.
             # This ensures that old tools continue to work.
@@ -758,7 +760,7 @@ def __parse_element_tests(parent_element, profile=None):
         element_tests[identifier] = __parse_test_attributes(
             element, element_attrib, parse_elements=True, profile=profile
         )
-        if profile and profile >= "20.09":
+        if profile and Version(profile) >= Version("20.09"):
             element_tests[identifier][1]["expected_sort_order"] = idx
 
     return element_tests
@@ -788,6 +790,9 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
     # `location` may contain an URL to a remote file that will be used to download `file` (if not already present on disk).
     location = attrib.get("location")
+    # Parameters for "image_diff" comparison
+    attributes["metric"] = attrib.pop("metric", DEFAULT_METRIC)
+    attributes["eps"] = float(attrib.pop("eps", DEFAULT_EPS))
     if location and file is None:
         file = os.path.basename(location)  # If no file specified, try to get filename from URL last component
     attributes["location"] = location

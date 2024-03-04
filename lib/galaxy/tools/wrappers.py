@@ -19,6 +19,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -128,7 +130,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
             and input.type == "text"
             and input.optional
             and input.optionality_inferred
-            and (profile is None or profile < 23.0)
+            and (profile is None or Version(str(profile)) < Version("23.0"))
         ):
             # Tools with old profile versions may treat an optional text parameter as `""`
             value = ""

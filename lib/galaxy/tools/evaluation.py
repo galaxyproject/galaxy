@@ -15,6 +15,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
@@ -741,7 +743,7 @@ class ToolEvaluator:
         param_dict = self.param_dict
         directory = self.local_working_directory
         command = self.tool.command
-        if self.tool.profile < 16.04 and command and "$param_file" in command:
+        if Version(str(self.tool.profile)) < Version("16.04") and command and "$param_file" in command:
             with tempfile.NamedTemporaryFile(mode="w", dir=directory, delete=False) as param:
                 for key, value in param_dict.items():
                     # parameters can be strings or lists of strings, coerce to list
