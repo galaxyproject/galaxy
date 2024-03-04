@@ -10,6 +10,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.lint import Linter
 from galaxy.util import string_as_bool
 from ._util import (
@@ -814,7 +816,7 @@ class InputsBoolDistinctValues(Linter):
             profile = tool_source.parse_profile()
             truevalue = param.attrib.get("truevalue", "true")
             falsevalue = param.attrib.get("falsevalue", "false")
-            problematic_booleans_allowed = profile < "23.1"
+            problematic_booleans_allowed = Version(profile) < Version("23.1")
             lint_level = lint_ctx.warn if problematic_booleans_allowed else lint_ctx.error
             if truevalue == falsevalue:
                 lint_level(
@@ -840,7 +842,7 @@ class InputsBoolProblematic(Linter):
             profile = tool_source.parse_profile()
             truevalue = param.attrib.get("truevalue", "true")
             falsevalue = param.attrib.get("falsevalue", "false")
-            problematic_booleans_allowed = profile < "23.1"
+            problematic_booleans_allowed = Version(profile) < Version("23.1")
             lint_level = lint_ctx.warn if problematic_booleans_allowed else lint_ctx.error
             if truevalue.lower() == "false":
                 lint_level(

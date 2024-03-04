@@ -14,6 +14,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.job_execution.actions.post import ActionBox
@@ -420,7 +422,7 @@ class DefaultToolAction(ToolAction):
         # format='input" previously would give you a random extension from
         # the input extensions, now it should just give "input" as the output
         # format.
-        input_ext = "data" if tool.profile < 16.04 else "input"
+        input_ext = "data" if Version(str(tool.profile)) < Version("16.04") else "input"
         input_dbkey = incoming.get("dbkey", "?")
         for name, data in reversed(list(inp_data.items())):
             if not data:
@@ -432,7 +434,7 @@ class DefaultToolAction(ToolAction):
                 data = data.to_history_dataset_association(None)
                 inp_data[name] = data
 
-            if tool.profile < 16.04:
+            if Version(str(tool.profile)) < Version("16.04"):
                 input_ext = data.ext
 
             if data.dbkey not in [None, "?"]:

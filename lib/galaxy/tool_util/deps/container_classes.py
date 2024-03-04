@@ -16,6 +16,7 @@ from typing import (
 )
 from uuid import uuid4
 
+from packaging.version import Version
 from typing_extensions import Protocol
 
 from galaxy.util import (
@@ -360,7 +361,7 @@ class HasDockerLikeVolumes:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
-                if self.tool_info.profile <= 19.09:
+                if Version(str(self.tool_info.profile)) <= Version("19.09"):
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
