@@ -307,6 +307,8 @@ class TestsOutputCompareAttrib(Linter):
             "decompress": ["diff"],
             "delta": ["sim_size"],
             "delta_frac": ["sim_size"],
+            "metric": ["image_diff"],
+            "eps": ["image_diff"],
         }
         for test_idx, test in enumerate(tests, start=1):
             for output in test.xpath(".//*[self::output or self::element or self::discovered_dataset]"):

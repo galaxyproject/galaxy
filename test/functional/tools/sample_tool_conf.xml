@@ -8,6 +8,7 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
+  <tool file="image_diff.xml"/>
   <tool file="output_format_input.xml"/>
   <tool file="ucsc_tablebrowser.xml"/>
   <tool file="test_data_source.xml"/>

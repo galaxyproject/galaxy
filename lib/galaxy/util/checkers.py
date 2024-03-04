@@ -213,11 +213,9 @@ def iter_zip(file_path: str):
             yield (z.open(f), f)
 
 
-def check_image(file_path: str):
+def check_image(file_path: str) -> bool:
     """Simple wrapper around image_type to yield a True/False verdict"""
-    if image_type(file_path):
-        return True
-    return False
+    return bool(image_type(file_path))
 
 
 COMPRESSION_CHECK_FUNCTIONS: Dict[str, CompressionChecker] = {
