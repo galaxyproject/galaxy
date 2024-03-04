@@ -199,6 +199,7 @@ export const useWorkflowCommentStore = defineScopedStore("workflowCommentStore",
 
     function deleteComment(id: number) {
         del(commentsRecord.value, id);
+        del(localCommentsMetadata.value, id);
     }
 
     /**
