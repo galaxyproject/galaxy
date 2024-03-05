@@ -350,7 +350,10 @@ async function onDrop(evt: any) {
         // this was not a valid object for this dropzone, ignore
     }
 
-    if (!data || historyId === props.history.id) {
+    if (!data) {
+        return;
+    } else if (historyId === props.history.id) {
+        Toast.error("Cannot copy to the same history");
         return;
     }
 
