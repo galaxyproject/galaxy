@@ -117,9 +117,13 @@ Builtin Tool Updates
 Release Testing Team
 ===========================================================
 
-A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+A special thanks to the release testing team:
 
-<team members go here>
+* `Ahmed Awan <https://github.com/ahmedhamidawan>`__
+* `David López <https://github.com/davelopez>`__
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `John Davis <https://github.com/jdavcs>`__
+* `Tyler Collins <https://github.com/tcollins2011>`__
 
 Release Notes
 ===========================================================
