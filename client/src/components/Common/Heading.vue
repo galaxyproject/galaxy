@@ -47,15 +47,15 @@ const element = computed(() => {
 
 <template>
     <div v-if="props.separator" class="separator heading">
-        <div class="stripe"></div>
+        <b-button v-if="collapsible" variant="link" size="sm" @click="$emit('click')">
+            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
+            <icon v-else fixed-width icon="angle-double-up" />
+        </b-button>
+        <div v-else class="stripe"></div>
         <component
             :is="element"
             :class="[sizeClass, props.bold ? 'font-weight-bold' : '', collapsible ? 'collapsible' : '']"
             @click="$emit('click')">
-            <b-button v-if="collapsible" variant="link" size="sm">
-                <icon v-if="collapsed" fixed-width icon="angle-double-down" />
-                <icon v-else fixed-width icon="angle-double-up" />
-            </b-button>
             <slot />
         </component>
         <div class="stripe"></div>
