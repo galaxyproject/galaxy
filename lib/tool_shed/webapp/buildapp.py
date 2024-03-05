@@ -36,6 +36,10 @@ class ToolShedGalaxyWebTransaction(GalaxyWebTransaction):
     def repositories_hostname(self) -> str:
         return url_for("/", qualified=True).rstrip("/")
 
+    def get_or_create_default_history(self):
+        # tool shed has no concept of histories
+        return None
+
 
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
     injection_aware: bool = True
