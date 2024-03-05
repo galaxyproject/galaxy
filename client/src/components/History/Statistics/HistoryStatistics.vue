@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoriesStorageOverview from "./HistoriesStorageOverview.vue";
@@ -8,6 +9,7 @@ import Heading from "@/components/Common/Heading.vue";
 const props = defineProps<{ historyId: string }>();
 
 const { getHistoryNameById } = useHistoryStore();
+const { shouldShowCarbonEmissionsReports } = useCarbonEmissions();
 </script>
 
 <template>
@@ -32,7 +34,7 @@ const { getHistoryNameById } = useHistoryStore();
             <HistoriesStorageOverview />
         </section>
 
-        <section class="mt-3">
+        <section v-if="shouldShowCarbonEmissionsReports" class="mt-3">
             <Heading h2 bold separator> Carbon Emissions </Heading>
             <HistoryCarbonEmissions :history-id="props.historyId" />
         </section>

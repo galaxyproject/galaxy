@@ -70,7 +70,7 @@
             :loading="!invocationAndJobTerminal"
             class="jobs-progress" />
 
-        <div>
+        <div v-if="shouldShowCarbonEmissionsReports">
             <strong>Carbon Emissions:</strong>
 
             <CarbonEmissions
@@ -178,7 +178,11 @@ export default {
         },
     },
     setup(props) {
-        const { carbonIntensity, geographicalServerLocationName } = useCarbonEmissions();
+        const { 
+            carbonIntensity,
+            geographicalServerLocationName,
+            shouldShowCarbonEmissionsReports
+        } = useCarbonEmissions();
 
         const invocationId = computed(() => props.invocation?.id);
 
@@ -208,7 +212,7 @@ export default {
         watch(
             () => invocationId.value,
             () => {
-                if (invocationId.value) {
+                if (shouldShowCarbonEmissionsReports && invocationId.value) {
                     fetchEnergyUsageData();
                 }
             },
@@ -219,6 +223,7 @@ export default {
             carbonIntensity,
             energyUsage,
             geographicalServerLocationName,
+            shouldShowCarbonEmissionsReports,
             invocationId,
             worldwideCarbonIntensity,
             worldwidePowerUsageEffectiveness,
