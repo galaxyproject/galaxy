@@ -5,6 +5,7 @@
         class="workflow-node card"
         :scale="scale"
         :root-offset="rootOffset"
+        :position="position"
         :name="name"
         :node-label="title"
         :class="classes"
@@ -212,6 +213,8 @@ const scrolledTo = ref(false);
 function remove() {
     emit("onRemove", props.id);
 }
+
+const position = computed(() => ({ x: props.step.position?.left ?? 0, y: props.step.position?.top ?? 0 }));
 
 const el: Ref<VueInstance | null> = ref(null);
 const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLElement | undefined) ?? null);
