@@ -23,7 +23,7 @@ def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()
     for elem in root.findall("./registration/datatype"):
-        extension = elem.get("extension")
+        extension = elem.get("extension", "")
         datatypes.add(extension)
         auto_compressed_types = listify(elem.get("auto_compressed_types", ""))
         for act in auto_compressed_types:
