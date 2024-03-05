@@ -10,6 +10,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useEntryPointStore } from "@/stores/entryPointStore";
+import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
 
 import { JobStateSummary } from "./Collection/JobStateSummary";
@@ -75,6 +76,7 @@ const emit = defineEmits<{
 }>();
 
 const entryPointStore = useEntryPointStore();
+const eventStore = useEventStore();
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -170,9 +172,11 @@ const isBeingUsed = computed(() => {
     return Object.values(itemUrls.value).includes(route.path) ? "being-used" : "";
 });
 
-function isCtrlKey(event: KeyboardEvent) {
-    const isMac = navigator.userAgent.indexOf("Mac") >= 0;
-    return isMac ? event.metaKey : event.ctrlKey;
+/** Based on the user's keyboard platform, checks if it is the
+ * typical key for selection (ctrl for windows/linux, cmd for mac)
+ */
+function isSelectKey(event: KeyboardEvent) {
+    return eventStore.isMac ? event.metaKey : event.ctrlKey;
 }
 
 function onKeyDown(event: KeyboardEvent) {
@@ -197,16 +201,16 @@ function onKeyDown(event: KeyboardEvent) {
     } else if (event.key === "Escape") {
         event.preventDefault();
         emit("hide-selection");
-    } else if (event.key === "a" && isCtrlKey(event)) {
+    } else if (event.key === "a" && isSelectKey(event)) {
         event.preventDefault();
         emit("select-all");
     }
 }
 
 function onClick(event: KeyboardEvent) {
-    if (event && event.shiftKey && isCtrlKey(event)) {
+    if (event && event.shiftKey && isSelectKey(event)) {
         emit("selected-to", false);
-    } else if (event && isCtrlKey(event)) {
+    } else if (event && isSelectKey(event)) {
         emit("init-key-selection");
         emit("update:selected", !props.selected);
     } else if (event && event.shiftKey) {
