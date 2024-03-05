@@ -1,7 +1,7 @@
 # Tool data
 
 Galaxy stores tool data in the path defined by `tool_data_path` (by default `tool-data/`).
-It's possible to to separate tool data of shed installed tools by setting (`shed_tool_data_path`).
+It's possible to separate tool data of ToolShed-installed tools by setting `shed_tool_data_path`.
 
 Tool data consists of:
 
@@ -20,13 +20,13 @@ setting `galaxy_data_manager_data_path`.
 
 In order to make tool data usable from Galaxy tools so called tool data tables are used. 
 Those are tabular (by default tab separated) files with the extension `.loc`.
-Besides the actual paths the entries can contain, e.g. IDs, names, or other
+Besides the actual paths, the entries can contain IDs, names, or other information
 that can be used in tools to select reference data. The paths should be given as absolute paths,
 but can also be given relative to the Galaxy root dir.
 By default tool data tables are installed in `tool_data_path` (where also built-in tool data tables
 are stored). By setting `shed_tool_data_path` this can be separated.
 
-## Tool data table config
+## Tool data table config files
 
 The tool data tables that should be used in a Galaxy instance are configured
 using tool data table config files.  In addition these files contain some
@@ -89,5 +89,5 @@ tables are merged when they are loaded.
 When a new tool is installed that uses a data table a new entry is added to
 `shed_tool_data_table_config` and a `.loc` file is placed in a versioned
 subdirectory in `tool_data_path` (in a subdirectory that has the name of the
-toolshed). By default thus is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
-these directories will also contain tool data config files, but they are unused.
+toolshed). By default this is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
+these directories will also contain tool data table config files, but they are unused.
