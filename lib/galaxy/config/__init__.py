@@ -843,8 +843,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         # Carbon emissions configuration
         carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
-        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
-        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
+        self.carbon_intensity = carbon_intensity_entry.carbon_intensity
+        self.geographical_server_location_name = carbon_intensity_entry.location_name
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))

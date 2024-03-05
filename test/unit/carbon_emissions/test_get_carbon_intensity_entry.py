@@ -10,11 +10,11 @@ def test_get_carbon_intensity_entry():
     region_entry = get_carbon_intensity_entry("US-NY")
     invalid_entry = get_carbon_intensity_entry("Raya Lucaria")
 
-    assert country_entry["location_name"] == "United States of America"
-    assert country_entry["carbon_intensity"] == 423.94
+    assert country_entry.location_name == "United States of America"
+    assert country_entry.carbon_intensity == 423.94
 
-    assert region_entry["location_name"] == "New York (United States of America)"
-    assert region_entry["carbon_intensity"] == 199.01
+    assert region_entry.location_name == "New York (United States of America)"
+    assert region_entry.carbon_intensity == 199.01
 
-    assert invalid_entry["location_name"] == "GLOBAL"
-    assert invalid_entry["carbon_intensity"] == 475.0
+    assert invalid_entry.location_name == "GLOBAL"
+    assert invalid_entry.carbon_intensity == 475.0

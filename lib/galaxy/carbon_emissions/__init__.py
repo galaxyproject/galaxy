@@ -2,31 +2,31 @@ import csv
 import json
 import logging
 import os
-from typing import (
-    List,
-    TypedDict,
-)
+from typing import List
 
 log = logging.getLogger(__name__)
 
 
-class CarbonIntensityEntry(TypedDict):
-    location_name: str
-    carbon_intensity: float
+class CarbonIntensityEntry:
+    def __init__(self, location_name: str, carbon_intensity: float):
+        self.location_name = location_name
+        self.carbon_intensity = carbon_intensity
 
 
-class AWSInstanceCPU(TypedDict):
-    cpu_model: str
-    tdp: int
-    core_count: int
-    source: str
+class AWSInstanceCPU:
+    def __init__(self, cpu_model: str, tdp: int, core_count: int, source: str):
+        self.cpu_model = cpu_model
+        self.tdp = tdp
+        self.core_count = core_count
+        self.source = source
 
 
-class AWSInstance(TypedDict):
-    name: str
-    mem: float
-    v_cpu_count: int
-    cpu: List[AWSInstanceCPU]
+class AWSInstance:
+    def __init__(self, name: str, mem: float, v_cpu_count: int, cpu: List[AWSInstanceCPU]):
+        self.name = name
+        self.mem = mem
+        self.v_cpu_count = v_cpu_count
+        self.cpu = cpu
 
 
 def get_carbon_intensity_entry(geographical_server_location_code: str) -> CarbonIntensityEntry:
@@ -45,11 +45,11 @@ def get_carbon_intensity_entry(geographical_server_location_code: str) -> Carbon
             location_name = f"{region_name} ({location_name})"
 
         if location_code == geographical_server_location_code:
-            return {"location_name": location_name, "carbon_intensity": float(location_entry[4])}
+            return CarbonIntensityEntry(location_name=location_name, carbon_intensity=float(location_entry[4]))
 
     log.warning("No corresponding location name exists for location code: %s.", geographical_server_location_code)
     log.info("Using global default values for location name and carbon intensity...")
-    return {"location_name": "GLOBAL", "carbon_intensity": 475.0}
+    return CarbonIntensityEntry(location_name="GLOBAL", carbon_intensity=475.0)
 
 
 def load_aws_ec2_reference_data_json() -> List[AWSInstance]:

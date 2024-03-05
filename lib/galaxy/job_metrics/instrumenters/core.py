@@ -127,11 +127,14 @@ class CorePlugin(InstrumentPlugin):
 
             if allocated_cpu_cores is not None:
                 estimated_server_instance = self.__get_estimated_server_instance(
-                    allocated_cpu_cores, allocated_memory_mebibyte or 0
+                    allocated_cpu_cores,
+                    # Allow for the possibility that memory is not reported
+                    allocated_memory_mebibyte or 0,
                 )
+
                 if estimated_server_instance is not None:
-                    cpu_info = estimated_server_instance["cpu"][0]
-                    tdp_per_ore = cpu_info["tdp"] / cpu_info["core_count"]
+                    cpu_info = estimated_server_instance.cpu[0]
+                    tdp_per_ore = cpu_info.tdp / cpu_info.core_count
                     normalized_tdp_per_core = tdp_per_ore * allocated_cpu_cores
 
                     memory_allocated_in_gibibyte = (allocated_memory_mebibyte or 0) / 1024  # Convert to gibibyte
@@ -190,12 +193,12 @@ class CorePlugin(InstrumentPlugin):
 
         for aws_instance in load_aws_ec2_reference_data_json():
             # Use only core count in search criteria
-            if adjusted_memory == 0 and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
+            if adjusted_memory == 0 and aws_instance.v_cpu_count >= allocated_cpu_cores:
                 server_instance = aws_instance
                 break
 
             # Use both core count and allocated memory in search criteria
-            if aws_instance["mem"] >= adjusted_memory and aws_instance["v_cpu_count"] >= allocated_cpu_cores:
+            if aws_instance.mem >= adjusted_memory and aws_instance.v_cpu_count >= allocated_cpu_cores:
                 server_instance = aws_instance
                 break
 
