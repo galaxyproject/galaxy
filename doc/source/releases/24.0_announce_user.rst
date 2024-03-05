@@ -1,0 +1,131 @@
+
+===========================================================
+February 2024 Galaxy Release (v 24.0)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+Feature1
+--------
+
+Feature description.
+
+Feature2
+--------
+
+Feature description.
+
+Feature3
+--------
+
+Feature description.
+
+
+Visualizations
+===========================================================
+
+.. visualizations
+* Fix for fits_image_viewer visualization plugin
+  (thanks to `@francoismg <https://github.com/francoismg>`__).
+  `Pull Request 17002`_
+* Replaces Trackster Grids with Data Dialog, Removes Phyloviz, Circster and Sweepster
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17415`_
+* Add basic TIFF Image visualization
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17553`_
+* Enhance Avivator display app to support regular Tiffs
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17554`_
+* Remove legacy phyloviz, circster and sweepster artifacts
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 17573`_
+
+Datatypes
+===========================================================
+
+.. datatypes
+* Make columns types an empty list for empty tabular data
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 13918`_
+* Python 3.8 as minimum
+  (thanks to `@mr-c <https://github.com/mr-c>`__).
+  `Pull Request 16954`_
+* Add support for (fast5.tar).xz binary compressed files
+  (thanks to `@tuncK <https://github.com/tuncK>`__).
+  `Pull Request 17106`_
+* Fix for converter tests
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17188`_
+* correct dbkey for minerva display app
+  (thanks to `@hexylena <https://github.com/hexylena>`__).
+  `Pull Request 17196`_
+* Add a3m datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 17217`_
+* Add binary datatypes for intermediate output of fastk tools
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 17265`_
+* Enable ``warn_unreachable`` mypy option
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17365`_
+* Fix type annotation of code using XML etree
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17367`_
+* Update to black 2024 stable style
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17391`_
+* Allow using tool data bundles as inputs to reference data select parameters
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17435`_
+* Faster FASTA and FASTQ metadata setting
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17462`_
+* Feature SBOL datatypes
+  (thanks to `@guillaume-gricourt <https://github.com/guillaume-gricourt>`__).
+  `Pull Request 17482`_
+* Better display of estimated line numbers and add number of columns for tabular
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17492`_
+* Add magres datatype
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17499`_
+* add npy datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 17517`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+* Qiskit in galaxy
+  (thanks to `@thepineapplepirate <https://github.com/thepineapplepirate>`__).
+  `Pull Request 17170`_
+* Hide wig_to_bigWig tool
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17328`_
+* Update to black 2024 stable style
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 17391`_
+* Update RStudio GxIT to use the reworked 23.1 image
+  (thanks to `@natefoo <https://github.com/natefoo>`__).
+  `Pull Request 17533`_
+
+Release Testing Team
+===========================================================
+
+A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+
+<team members go here>
+
+Release Notes
+===========================================================
+
+Please see the :doc:`full release notes <24.0_announce>` for more details.
+
+.. include:: 24.0_prs.rst
+
+.. include:: _thanks.rst
