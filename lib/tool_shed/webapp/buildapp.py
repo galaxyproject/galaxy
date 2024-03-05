@@ -38,7 +38,7 @@ class ToolShedGalaxyWebTransaction(GalaxyWebTransaction):
 
     def get_or_create_default_history(self):
         # tool shed has no concept of histories
-        return None
+        raise NotImplementedError
 
 
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
