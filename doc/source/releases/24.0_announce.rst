@@ -2,11 +2,11 @@
 :orphan:
 
 ===========================================================
-24.0 Galaxy Release (Early 2024)
+24.0 Galaxy Release (March 2024)
 ===========================================================
 
 
 Schedule
 ===========================================================
- * Planned Freeze Date: 2024-02-05
- * Planned Release Date: 2024-02-26
+ * Planned Freeze Date: 2024-02-26
+ * Planned Release Date: 2024-03-25
