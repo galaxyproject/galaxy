@@ -1430,6 +1430,10 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
         from .pithos import PithosObjectStore
 
         objectstore_class = PithosObjectStore
+    elif store == "rucio":
+        from .rucio import RucioObjectStore
+
+        objectstore_class = RucioObjectStore
     else:
         raise Exception(f"Unrecognized object store definition: {store}")
     # Disable the Pulsar object store for now until it receives some attention

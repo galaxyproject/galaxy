@@ -7,6 +7,7 @@ testing configuration.
 
 import os
 import re
+import sys
 from typing import (
     ClassVar,
     Iterator,
@@ -82,6 +83,15 @@ def skip_unless_fixed_port():
         return _identity
 
     return pytest.mark.skip("GALAXY_TEST_PORT must be set for this test.")
+
+
+def skip_for_older_python(min_python_version):
+    if min_python_version is None:
+        return _identity
+    if sys.version_info < min_python_version:
+        return pytest.mark.skip(f"Skipping tests for Python version less than {min_python_version}")
+
+    return _identity
 
 
 def skip_if_github_workflow():
