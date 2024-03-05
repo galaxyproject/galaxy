@@ -642,9 +642,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = {}
+        element_instances: Dict[str, Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = {}
 
-        element_instance_list = []
+        element_instance_list: List[Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = []
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
