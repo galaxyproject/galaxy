@@ -5402,8 +5402,8 @@ This only applies to collections that are mapped over a non-collection input and
     <xs:attribute name="metadata_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">This copies the metadata information
-from the tool's input dataset. This is particularly useful for interval data
-types where the order of the columns is not set.</xs:documentation>
+from the tool's input dataset to serve as default for information that cannot be detected from the output.
+One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
