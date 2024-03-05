@@ -32,6 +32,11 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         }
 
+        if (toolbarStore.currentTool === "boxSelect") {
+            // TODO: box select logic
+            return;
+        }
+
         if (comment?.type === "freehand" || !comment) {
             const baseComment = {
                 id: commentStore.highestCommentId + 1,
