@@ -29,6 +29,7 @@ from datetime import (
     datetime,
     timezone,
 )
+from decimal import Decimal
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
@@ -1519,7 +1520,7 @@ def shorten_with_metric_prefix(amount: int) -> str:
         return str(amount)
 
 
-def nice_size(size: Union[float, int, str]) -> str:
+def nice_size(size: Union[float, int, str, Decimal]) -> str:
     """
     Returns a readably formatted string with the size
 
