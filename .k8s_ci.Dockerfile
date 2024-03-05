@@ -162,15 +162,18 @@ RUN set -xe; \
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
     && curl -L https://github.com/galaxyproject/gxadmin/releases/latest/download/gxadmin > /usr/bin/gxadmin \
-    && chmod +x /usr/bin/gxadmin \
-    && apt-get autoremove -y && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/*
+    && chmod +x /usr/bin/gxadmin
 
 # Create Galaxy user, group, directory; chown
 RUN set -xe; \
       adduser --system --group --uid 101 $GALAXY_USER \
       && mkdir -p $SERVER_DIR \
       && chown $GALAXY_USER:$GALAXY_USER $ROOT_DIR -R
+
+RUN set -xe; \
+    apt-get install -y logrotate \
+    && apt-get autoremove -y && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /etc/logrotate.d/*
 
 WORKDIR $ROOT_DIR
 # Copy galaxy files to final image
