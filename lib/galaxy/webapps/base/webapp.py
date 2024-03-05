@@ -650,7 +650,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             galaxy_session = self.__create_new_session(prev_galaxy_session, user_for_new_session)
             galaxy_session_requires_flush = True
             self.galaxy_session = galaxy_session
-            self.get_or_create_default_history()
+            if self.webapp.name == "galaxy":
+                self.get_or_create_default_history()
             self.__update_session_cookie(name=session_cookie)
         else:
             self.galaxy_session = galaxy_session
