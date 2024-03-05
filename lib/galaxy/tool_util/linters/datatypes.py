@@ -22,7 +22,7 @@ def _parse_datatypes(datatype_conf_path: str) -> Set[str]:
     datatypes = set()
     tree = parse_xml(datatype_conf_path)
     root = tree.getroot()
-    for elem in root.findall(f"./registration/datatype"):
+    for elem in root.findall("./registration/datatype"):
         extension = elem.get("extension")
         datatypes.add(extension)
         auto_compressed_types = listify(elem.get("auto_compressed_types", ""))
@@ -48,7 +48,7 @@ class DatatypesCustomConf(Linter):
         datatypes_conf_path = os.path.join(tool_dir, "datatypes_conf.xml")
         if os.path.exists(datatypes_conf_path):
             lint_ctx.warn(
-                f"Tool uses a custom datatypes_conf.xml which is discouraged",
+                "Tool uses a custom datatypes_conf.xml which is discouraged",
                 linter=cls.name(),
                 node=tool_node,
             )
