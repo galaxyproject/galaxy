@@ -46,10 +46,6 @@ class CorePluginFormatter(JobMetricFormatter):
             return FormattedMetric("Memory Allocated (MB)", "%d" % int(value))
         elif key == RUNTIME_SECONDS_KEY:
             return FormattedMetric("Job Runtime (Wall Clock)", seconds_to_str(int(value)))
-        elif key == ENERGY_NEEDED_CPU_KEY:
-            return FormattedMetric("CPU Energy Usage", self.__format_energy_needed_text(float(value)))
-        elif key == ENERGY_NEEDED_MEMORY_KEY:
-            return FormattedMetric("Memory Energy Usage", self.__format_energy_needed_text(float(value)))
         else:
             # TODO: Use localized version of this from galaxy.ini
             title = "Job Start Time" if key == START_EPOCH_KEY else "Job End Time"
