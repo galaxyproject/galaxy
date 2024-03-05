@@ -14,8 +14,10 @@
             <param name="input" value="im1_uint8.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_intensities center_of_mass="15.61, 15.48" />
+                    <has_image_width value="32" />
+                    <has_image_height value="32" />
+                    <has_image_channels value="1" />
+                    <has_image_center_of_mass point="15.61, 15.48" />
                 </assert_contents>
             </output>
         </test>
@@ -23,11 +25,15 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="3" />
-                    <image_has_intensities channel="0" mean_intensity="0.25" center_of_mass="7.5, 7.5" />
-                    <image_has_intensities channel="1" mean_intensity="0.0" />
-                    <image_has_intensities channel="2" mean_intensity="0" />
-                    <image_has_intensities mean_intensity="0.08333333333" center_of_mass="7.5, 7.5" />
+                    <has_image_width value="32" />
+                    <has_image_height value="32" />
+                    <has_image_channels value="3" />
+                    <has_image_center_of_mass channel="0" point="7.5, 7.5" />
+                    <has_image_mean_intensity channel="0" value="0.25" />
+                    <has_image_mean_intensity channel="1" value="0.0" />
+                    <has_image_mean_intensity channel="2" value="0" />
+                    <has_image_center_of_mass point="7.5, 7.5" />
+                    <has_image_mean_intensity value="0.08333333333" />
                 </assert_contents>
             </output>
         </test>
@@ -35,7 +41,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity="0.24" />
+                    <has_image_mean_intensity channel="0" value="0.24" />
                 </assert_contents>
             </output>
         </test>
@@ -43,7 +49,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity="0.24" eps="0.0100000001" />
+                    <has_image_mean_intensity channel="0" value="0.24" delta="0.0100000001" />
                 </assert_contents>
             </output>
         </test>
@@ -51,7 +57,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity_min="0.24" mean_intensity_max="0.26" />
+                    <has_image_mean_intensity channel="0" min="0.24" max="0.26" />
                 </assert_contents>
             </output>
         </test>
@@ -59,7 +65,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity_max="0.24" />
+                    <has_image_mean_intensity channel="0" max="0.24" />
                 </assert_contents>
             </output>
         </test>
@@ -67,7 +73,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <image_has_intensities channel="0" mean_intensity_min="0.26" />
+                    <has_image_mean_intensity channel="0" min="0.26" />
                 </assert_contents>
             </output>
         </test>
@@ -76,8 +82,11 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_labels number_of_objects="1" mean_object_size="256" exclude_labels="0" />
+                    <has_image_width value="32" />
+                    <has_image_height value="32" />
+                    <has_image_channels value="1" />
+                    <has_image_labels value="1" exclude_labels="0" />
+                    <has_image_mean_object_size value="256" exclude_labels="0" />
                 </assert_contents>
             </output>
         </test>
@@ -85,16 +94,11 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_labels number_of_objects="2" mean_object_size="512" />
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_test_failure="true">
-            <param name="input" value="im2_b.png" />
-            <output name="output">
-                <assert_contents>
-                    <image_has_labels mean_object_size="511" eps="0.9" />
+                    <has_image_width value="32" />
+                    <has_image_height value="32" />
+                    <has_image_channels value="1" />
+                    <has_image_labels value="2" />
+                    <has_image_mean_object_size value="512" />
                 </assert_contents>
             </output>
         </test>
@@ -102,8 +106,7 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_metadata width="32" height="32" channels="1" />
-                    <image_has_labels number_of_objects="2" mean_object_size="511" eps="1.0" />
+                    <has_image_mean_object_size labels="0" value="768" />
                 </assert_contents>
             </output>
         </test>
@@ -111,7 +114,7 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_labels mean_object_size_min="511" mean_object_size_max="513" />
+                    <has_image_mean_object_size labels="0, 1" value="512" />
                 </assert_contents>
             </output>
         </test>
@@ -119,7 +122,27 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_labels mean_object_size_max="511" />
+                    <has_image_mean_object_size value="511" delta="0.9" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_width value="32" />
+                    <has_image_height value="32" />
+                    <has_image_channels value="1" />
+                    <has_image_labels value="2" />
+                    <has_image_mean_object_size value="511" delta="1.0" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size min="511" max="513" />
                 </assert_contents>
             </output>
         </test>
@@ -127,7 +150,15 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <image_has_labels mean_object_size_min="513" />
+                    <has_image_mean_object_size max="511" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im2_b.png" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_mean_object_size min="513" />
                 </assert_contents>
             </output>
         </test>
