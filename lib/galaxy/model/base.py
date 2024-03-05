@@ -19,7 +19,6 @@ from typing import (
 )
 
 from sqlalchemy import event
-from sqlalchemy.exc import PendingRollbackError
 from sqlalchemy.orm import (
     scoped_session,
     Session,
@@ -67,13 +66,10 @@ def check_database_connection(session):
     by rolling back the invalidated transaction.
     Ref: https://docs.sqlalchemy.org/en/14/errors.html#can-t-reconnect-until-invalid-transaction-is-rolled-back
     """
-    try:
-        if session and session.connection().invalidated:
-            log.error("Database transaction rolled back due to invalid state.")
-            session.rollback()
-    except PendingRollbackError:
-        log.error("Database transaction rolled back.")
+    assert session
+    if not session.get_transaction().is_active or session.connection().invalidated:
         session.rollback()
+        log.error("Database transaction rolled back due to inactive session transaction or invalid connection state.")
 
 
 # TODO: Refactor this to be a proper class, not a bunch.
