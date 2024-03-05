@@ -14,6 +14,7 @@ import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from
 import type { Step } from "@/stores/workflowStepStore";
 
 import { useMultidrag } from "../composables/multidrag";
+import { useMultiSelect } from "../composables/multiSelect";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -138,6 +139,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
 }
 
 const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
+const { anySelected } = useMultiSelect();
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -154,7 +156,9 @@ function onDragStart() {
     const stepsInBounds = getStepsInBounds(aabb);
     const commentsInBounds = getCommentsInBounds(aabb);
 
-    multidragStart(aabb, stepsInBounds, commentsInBounds);
+    if (!anySelected.value) {
+        multidragStart(aabb, stepsInBounds, commentsInBounds);
+    }
 }
 
 function onDragEnd() {
@@ -230,6 +234,8 @@ onMounted(() => {
         selectAllText(editableElement.value);
     }
 });
+
+const position = computed(() => ({ x: props.comment.position[0], y: props.comment.position[1] }));
 </script>
 
 <template>
@@ -249,6 +255,7 @@ onMounted(() => {
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
+                :position="position"
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="onDragEnd"

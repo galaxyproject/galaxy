@@ -8,12 +8,18 @@ import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize"
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
-import { useDraggable } from "./composables/useDraggable.js";
+import { useMultidrag } from "./composables/multidrag";
+import { useMultiSelect } from "./composables/multiSelect";
+import { useDraggable } from "./composables/useDraggable";
 
 const props = defineProps({
     rootOffset: {
         type: Object as PropType<Position>,
         required: true,
+    },
+    position: {
+        type: Object as PropType<Position | null>,
+        default: null,
     },
     preventDefault: {
         type: Boolean,
@@ -59,9 +65,16 @@ const { throttle } = useAnimationFrameThrottle();
 
 let dragging = false;
 
+const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
+const { anySelected, multiSelectedSteps, multiSelectedComments } = useMultiSelect();
+
 const onStart = (_position: Position, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
+
+    if (anySelected.value && props.position) {
+        multidragStart(props.position, multiSelectedSteps.value, multiSelectedComments.value);
+    }
 
     if (event.type == "dragstart") {
         dragImg = document.createElement("img");
@@ -124,6 +137,7 @@ const onMove = (position: Position, event: DragEvent) => {
                 emit("move", snapped, event);
             }
 
+            multidragMove(snapped);
             previousPosition = snapped;
         }
     });
@@ -136,6 +150,8 @@ const onEnd = (_position: Position, event: DragEvent) => {
     }
 
     dragging = false;
+    multidragEnd();
+
     emit("mouseup", event);
     emit("stop");
 };

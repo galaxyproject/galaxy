@@ -9,6 +9,10 @@ const props = defineProps({
         type: Object as PropType<UnwrapRef<UseElementBoundingReturn>>,
         required: true,
     },
+    position: {
+        type: Object as PropType<Position>,
+        default: null,
+    },
     scale: {
         type: Number,
         required: false,
@@ -157,6 +161,7 @@ function onStart() {
 <template>
     <Draggable
         :root-offset="rootOffset"
+        :position="props.position"
         :prevent-default="preventDefault"
         :stop-propagation="stopPropagation"
         :drag-data="dragData"

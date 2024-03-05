@@ -169,6 +169,8 @@ onMounted(() => {
         selectAllText(editableElement.value);
     }
 });
+
+const position = computed(() => ({ x: props.comment.position[0], y: props.comment.position[1] }));
 </script>
 
 <template>
@@ -188,6 +190,7 @@ onMounted(() => {
                 v-if="!props.readonly"
                 :root-offset="reactive(props.rootOffset)"
                 :scale="props.scale"
+                :position="position"
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="saveText"
