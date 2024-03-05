@@ -4,7 +4,7 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
@@ -75,8 +75,6 @@ const emit = defineEmits<{
 }>();
 
 const entryPointStore = useEntryPointStore();
-
-const routeKey = ref(0);
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -231,15 +229,11 @@ function onDisplay() {
         window.open(url, "_blank");
     } else {
         // vue-router 4 supports a native force push with clean URLs,
-        // but we're using a workaround with a routeKey query parameter to force a reload.
+        // but we're using a __vkey__ bit as a workaround
         // Only conditionally force to keep urls clean most of the time.
         if (route.path === itemUrls.value.display) {
-            routeKey.value++;
-            router.push({
-                path: itemUrls.value.display,
-                query: { key: `${routeKey.value}` },
-                params: { title: props.name },
-            });
+            // @ts-ignore
+            router.push(itemUrls.value.display, { title: props.name, force: true });
         } else if (itemUrls.value.display) {
             router.push({ path: itemUrls.value.display, params: { title: props.name } });
         }
