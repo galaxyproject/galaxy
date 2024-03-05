@@ -5,8 +5,9 @@ import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import { formatDuration, intervalToDuration } from "date-fns";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import { invocationForJob } from "@/api/invocations";
 import { computed, ref } from "vue";
+
+import { invocationForJob } from "@/api/invocations";
 
 import DecodedId from "../DecodedId.vue";
 import CodeRow from "./CodeRow.vue";
