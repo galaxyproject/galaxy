@@ -4,15 +4,20 @@ import { faMarkdown } from "@fortawesome/free-brands-svg-icons";
 import {
     faChevronDown,
     faChevronUp,
+    faClone,
     faEraser,
     faMagnet,
     faMousePointer,
     faObjectGroup,
     faPen,
+    faTimes,
+    faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BButton, BButtonGroup, BFormInput } from "bootstrap-vue";
+//@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
+import { BoxSelect } from "lucide-vue";
 import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
@@ -26,7 +31,19 @@ import { useToolLogic } from "./useToolLogic";
 
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
-library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
+library.add(
+    faMarkdown,
+    faChevronDown,
+    faChevronUp,
+    faClone,
+    faEraser,
+    faMagnet,
+    faMousePointer,
+    faObjectGroup,
+    faPen,
+    faTimes,
+    faTrash
+);
 
 const { toolbarStore, commentStore, undoRedoStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
@@ -44,6 +61,11 @@ const snapButtonTitle = computed(() => {
 
 function onClickPointer() {
     currentTool.value = "pointer";
+}
+
+function onClickBoxSelect() {
+    toolbarStore.boxSelectMode = "add";
+    currentTool.value = "boxSelect";
 }
 
 function onCommentToolClick(comment: CommentTool) {
@@ -207,6 +229,17 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                         <FontAwesomeIcon icon="fa-eraser" size="lg" />
                     </BButton>
                 </BButtonGroup>
+
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    title="Box Select (Ctrl + 8)"
+                    data-tool="box-select"
+                    :pressed="currentTool === 'boxSelect'"
+                    class="button"
+                    variant="outline-primary"
+                    @click="onClickBoxSelect">
+                    <BoxSelect />
+                </BButton>
             </template>
 
             <BButton
@@ -222,7 +255,8 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
         <div v-if="toolbarVisible" class="options">
             <div
                 v-if="
-                    toolbarStore.snapActive && !['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)
+                    toolbarStore.snapActive &&
+                    !['freehandComment', 'freehandEraser', 'boxSelect'].includes(toolbarStore.currentTool)
                 "
                 class="option wide">
                 <label :for="snappingDistanceId" class="flex-label">
@@ -258,7 +292,9 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                 </BButtonGroup>
             </div>
 
-            <div v-if="!['pointer', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
+            <div
+                v-if="!['pointer', 'freehandEraser', 'boxSelect'].includes(toolbarStore.currentTool)"
+                class="option buttons">
                 <ColorSelector
                     :color="commentOptions.color"
                     class="color-selector"
@@ -319,15 +355,44 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                     Remove all
                 </BButton>
             </div>
+
+            <div v-if="currentTool === 'boxSelect'" class="option buttons">
+                <BButtonGroup>
+                    <BButton
+                        :pressed="toolbarStore.boxSelectMode === 'add'"
+                        class="button"
+                        data-option="select-mode-add"
+                        variant="outline-primary"
+                        title="add items to selection"
+                        @click="toolbarStore.boxSelectMode = 'add'">
+                        Add to selection
+                    </BButton>
+                    <BButton
+                        :pressed="toolbarStore.boxSelectMode === 'remove'"
+                        class="button"
+                        data-option="select-mode-remove"
+                        variant="outline-primary"
+                        title="remove items from selection"
+                        @click="toolbarStore.boxSelectMode = 'remove'">
+                        Remove from selection
+                    </BButton>
+                </BButtonGroup>
+            </div>
         </div>
 
         <div v-if="anySelected" class="selection-options">
             <span>{{ selectedCountText }}</span>
 
             <BButtonGroup>
-                <BButton class="button" @click="deselectAll"> Clear </BButton>
-                <BButton class="button" @click="duplicateSelection"> Duplicate </BButton>
-                <BButton class="button" @click="deleteSelection"> Delete </BButton>
+                <BButton class="button" title="clear selection" @click="deselectAll">
+                    Clear <FontAwesomeIcon icon="fa-times" />
+                </BButton>
+                <BButton class="button" title="duplicate selected" @click="duplicateSelection">
+                    Duplicate <FontAwesomeIcon icon="fa-clone" />
+                </BButton>
+                <BButton class="button" title="delete selected" @click="deleteSelection">
+                    Delete <FontAwesomeIcon icon="fa-trash" />
+                </BButton>
             </BButtonGroup>
         </div>
     </div>

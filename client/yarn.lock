@@ -8277,6 +8277,11 @@ lru-cache@^6.0.0:
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-10.0.1.tgz#0a3be479df549cca0e5d693ac402ff19537a6b7a"
   integrity sha512-IJ4uwUTi2qCccrioU6g9g/5rvvVl13bsdczUUcqbciD9iLr095yj8DQKdObriEvuNSx325N1rV1O0sJFszx75g==
 
+lucide-vue@^0.344.0:
+  version "0.344.0"
+  resolved "https://registry.yarnpkg.com/lucide-vue/-/lucide-vue-0.344.0.tgz#e1c281e352b814aac31db56d0bd99b0205e40e56"
+  integrity sha512-pful6clOPphjOjuVaD/D1Lf7VW8dI58TxKvN+veOQZ2EK3jJr5Jv5a32wG1sDOvW/rw5w+nZ7qha6INvWtZDdQ==
+
 make-dir@^3.0.0:
   version "3.1.0"
   resolved "https://registry.npmjs.org/make-dir/-/make-dir-3.1.0.tgz"

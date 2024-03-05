@@ -7,7 +7,7 @@ import { defineScopedStore } from "./scopedStore";
 import { WorkflowCommentColor } from "./workflowEditorCommentStore";
 
 export type CommentTool = "textComment" | "markdownComment" | "frameComment" | "freehandComment" | "freehandEraser";
-export type EditorTool = "pointer" | CommentTool;
+export type EditorTool = "pointer" | "boxSelect" | CommentTool;
 export type InputCatcherEventType =
     | "pointerdown"
     | "pointerup"
@@ -34,6 +34,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     const inputCatcherEventListeners = new Set<InputCatcherEventListener>();
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
     const toolbarVisible = useUserLocalStorage("workflow-editor-toolbar-visible", true);
+    const boxSelectMode = ref<"add" | "remove">("add");
 
     const commentOptions = reactive({
         bold: false,
@@ -94,5 +95,6 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
         inputCatcherPressed,
         onInputCatcherEvent,
         emitInputCatcherEvent,
+        boxSelectMode,
     };
 });

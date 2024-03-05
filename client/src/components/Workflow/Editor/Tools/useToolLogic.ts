@@ -47,6 +47,16 @@ export function useToolLogic(
             return;
         }
 
+        if (toolbarStore.currentTool === "boxSelect") {
+            // TODO: box select logic
+            return;
+        }
+
+        if (toolbarStore.currentTool === "boxSelect") {
+            // TODO: box select logic
+            return;
+        }
+
         if (comment.value?.type === "freehand" || !comment.value) {
             const baseComment = {
                 id: commentStore.highestCommentId + 1,
