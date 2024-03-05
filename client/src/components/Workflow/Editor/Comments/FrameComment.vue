@@ -13,6 +13,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { useMultidrag } from "../composables/multidrag";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -92,6 +93,7 @@ function onSetColor(color: WorkflowCommentColor) {
 }
 
 const { stateStore, stepStore, commentStore } = useWorkflowStores();
+type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
 function getStepsInBounds(bounds: AxisAlignedBoundingBox) {
     const steps: StepWithPosition[] = [];
@@ -135,12 +137,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
     return comments;
 }
 
-type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
-
-let stepsInBounds: StepWithPosition[] = [];
-let commentsInBounds: WorkflowComment[] = [];
-const stepStartOffsets = new Map<number, [number, number]>();
-const commentStartOffsets = new Map<number, [number, number]>();
+const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -154,41 +151,19 @@ function getAABB() {
 function onDragStart() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    const stepsInBounds = getStepsInBounds(aabb);
+    const commentsInBounds = getCommentsInBounds(aabb);
 
-    stepsInBounds.forEach((step) => {
-        stepStartOffsets.set(step.id, [step.position.left - aabb.x, step.position.top - aabb.y]);
-    });
-
-    commentsInBounds.forEach((comment) => {
-        commentStartOffsets.set(comment.id, [comment.position[0] - aabb.x, comment.position[1] - aabb.y]);
-    });
+    multidragStart(aabb, stepsInBounds, commentsInBounds);
 }
 
 function onDragEnd() {
     saveText();
-    stepsInBounds = [];
-    commentsInBounds = [];
-    stepStartOffsets.clear();
-    commentStartOffsets.clear();
+    multidragEnd();
 }
 
 function onMove(position: { x: number; y: number }) {
-    stepsInBounds.forEach((step) => {
-        const stepPosition = { left: 0, top: 0 };
-        const offset = stepStartOffsets.get(step.id) ?? [0, 0];
-        stepPosition.left = position.x + offset[0];
-        stepPosition.top = position.y + offset[1];
-        stepStore.updateStep({ ...step, position: stepPosition });
-    });
-
-    commentsInBounds.forEach((comment) => {
-        const offset = commentStartOffsets.get(comment.id) ?? [0, 0];
-        const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
-        commentStore.changePosition(comment.id, commentPosition);
-    });
-
+    multidragMove(position);
     emit("move", [position.x, position.y]);
 }
 
@@ -201,8 +176,8 @@ function onDoubleClick() {
 function onFitToContent() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    const stepsInBounds = getStepsInBounds(aabb);
+    const commentsInBounds = getCommentsInBounds(aabb);
 
     const targetAABB = new AxisAlignedBoundingBox();
 
