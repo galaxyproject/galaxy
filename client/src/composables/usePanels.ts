@@ -15,7 +15,7 @@ export function usePanels() {
         return true;
     });
 
-    const showActivityBar = computed(() => showPanels.value && userStore.showActivityBar && !userStore.isAnonymous);
+    const showActivityBar = computed(() => showPanels.value && userStore.showActivityBar);
     const showToolbox = computed(() => showPanels.value && !showActivityBar.value);
 
     return {

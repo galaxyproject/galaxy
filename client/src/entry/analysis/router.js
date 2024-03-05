@@ -82,7 +82,7 @@ patchRouterPush(VueRouter);
 function redirectAnon() {
     const Galaxy = getGalaxyInstance();
     if (!Galaxy.user || !Galaxy.user.id) {
-        return "/";
+        return "/login/start";
     }
 }
 
@@ -451,9 +451,9 @@ export function getRouter(Galaxy) {
                         path: "user/permissions",
                         component: UserDatasetPermissions,
                         redirect: redirectAnon(),
-                        props: (route) => ({
+                        props: {
                             userId: Galaxy.user.id,
-                        }),
+                        },
                     },
                     {
                         path: "user/:formId",
@@ -520,6 +520,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/invocations",
                         component: UserInvocations,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/invocations/report",
