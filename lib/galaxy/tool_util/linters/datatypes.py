@@ -40,7 +40,8 @@ class DatatypesCustomConf(Linter):
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
         if not tool_source.source_path:
             return
-        if not (tool_xml := getattr(tool_source, "xml_tree", None)):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
             return
         tool_node = tool_xml.getroot()
         tool_dir = os.path.dirname(tool_source.source_path)
