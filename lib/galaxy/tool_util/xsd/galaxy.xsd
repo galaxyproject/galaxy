@@ -4273,10 +4273,12 @@ Galaxy-aware URI for the default file for collection element.
   <xs:complexType name="ParamOptions">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
+This tag set is optionally contained within the ``<param>`` tag when the
+``type`` attribute value is ``select`` or ``data`` and used to dynamically
+generated lists of options.
 See [/tools/extract/liftOver_wrapper.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/extract/liftOver_wrapper.xml)
-for an example of how to use this tag set. This tag set is optionally contained
-within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
-``data`` and used to dynamically generated lists of options.
+and [test/functional/tools/select_dynamic.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/select_dynamic.xml)
+for an examples of how to use this tag set.
 
 For data parameters this tag can be used to restrict possible input datasets to datasets that match the ``dbkey`` of another data input by including a ``data_meta`` filter. See for
 instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
