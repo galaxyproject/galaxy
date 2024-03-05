@@ -14,6 +14,7 @@ import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from
 import type { Step } from "@/stores/workflowStepStore";
 
 import { LazyMoveMultipleAction } from "../Actions/commentActions";
+import { useMultidrag } from "../composables/multidrag";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -97,6 +98,7 @@ function onSetColor(color: WorkflowCommentColor) {
 }
 
 const { stateStore, stepStore, commentStore, undoRedoStore } = useWorkflowStores();
+type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
 function getStepsInBounds(bounds: AxisAlignedBoundingBox) {
     const steps: StepWithPosition[] = [];
@@ -140,10 +142,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
     return comments;
 }
 
-type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
-
-let stepsInBounds: StepWithPosition[] = [];
-let commentsInBounds: WorkflowComment[] = [];
+const { multidragStart, multidragEnd, multidragMove } = useMultidrag();
 
 let lazyAction: LazyMoveMultipleAction | null = null;
 
@@ -159,20 +158,20 @@ function getAABB() {
 function onDragStart() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    const stepsInBounds = getStepsInBounds(aabb);
+    const commentsInBounds = getCommentsInBounds(aabb);
 
     commentsInBounds.push(props.comment);
 
     lazyAction = new LazyMoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
     undoRedoStore.applyLazyAction(lazyAction);
+    multidragStart(aabb, stepsInBounds, commentsInBounds);
 }
 
 function onDragEnd() {
     saveText();
-    stepsInBounds = [];
-    commentsInBounds = [];
     undoRedoStore.flushLazyAction();
+    multidragEnd();
 }
 
 function onMove(position: { x: number; y: number }) {
@@ -181,6 +180,7 @@ function onMove(position: { x: number; y: number }) {
     } else {
         onDragStart();
     }
+    multidragMove(position);
 }
 
 function onDoubleClick() {
@@ -192,8 +192,8 @@ function onDoubleClick() {
 function onFitToContent() {
     const aabb = getAABB();
 
-    stepsInBounds = getStepsInBounds(aabb);
-    commentsInBounds = getCommentsInBounds(aabb);
+    const stepsInBounds = getStepsInBounds(aabb);
+    const commentsInBounds = getCommentsInBounds(aabb);
 
     const targetAABB = new AxisAlignedBoundingBox();
 
