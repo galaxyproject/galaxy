@@ -1,6 +1,7 @@
 import { useMagicKeys } from "@vueuse/core";
 import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 
+import { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
 import { defineScopedStore } from "./scopedStore";
@@ -35,6 +36,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     const snapDistance = ref<10 | 20 | 50 | 100 | 200>(10);
     const toolbarVisible = useUserLocalStorage("workflow-editor-toolbar-visible", true);
     const boxSelectMode = ref<"add" | "remove">("add");
+    const boxSelectRect = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });
 
     const commentOptions = reactive({
         bold: false,
@@ -46,6 +48,15 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
     });
 
     const inputCatcherPressed = ref(false);
+
+    function resetBoxSelect() {
+        boxSelectRect.value = {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0,
+        };
+    }
 
     function onInputCatcherEvent(type: InputCatcherEventType, callback: InputCatcherEventListener["callback"]) {
         const listener = {
@@ -96,5 +107,7 @@ export const useWorkflowEditorToolbarStore = defineScopedStore("workflowEditorTo
         onInputCatcherEvent,
         emitInputCatcherEvent,
         boxSelectMode,
+        boxSelectRect,
+        resetBoxSelect,
     };
 });
