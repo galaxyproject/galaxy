@@ -82,6 +82,8 @@ const contentItemRefs = computed(() => {
         return acc;
     }, {});
 });
+const currItemFocused = ref<HistoryItem | null>(null);
+const lastItemFocused = ref<HistoryItem | null>(null);
 
 const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
@@ -149,6 +151,8 @@ watch(
         invisibleHistoryItems.value = {};
         offsetQueryParam.value = 0;
         loadHistoryItems();
+        currItemFocused.value = null;
+        lastItemFocused.value = null;
     }
 );
 
@@ -176,6 +180,8 @@ watch(
     (newValue, currentValue) => {
         if (newValue !== currentValue) {
             operationRunning.value = null;
+            currItemFocused.value = null;
+            lastItemFocused.value = null;
         }
     }
 );
@@ -192,6 +198,15 @@ watch(historyItems, (newHistoryItems) => {
         }
     }
 });
+
+watch(
+    () => currItemFocused.value,
+    (newItem, oldItem) => {
+        if (newItem) {
+            lastItemFocused.value = oldItem;
+        }
+    }
+);
 
 function getHighlight(item: HistoryItem) {
     if (unref(isLoading)) {
@@ -335,7 +350,10 @@ async function onDrop(evt: any) {
         // this was not a valid object for this dropzone, ignore
     }
 
-    if (!data || historyId === props.history.id) {
+    if (!data) {
+        return;
+    } else if (historyId === props.history.id) {
+        Toast.error("Cannot copy to the same history");
         return;
     }
 
@@ -361,10 +379,10 @@ async function onDrop(evt: any) {
         }
 
         if (multiple && datasetCount > 0) {
-            Toast.info(`${datasetCount} datasets copied to history`);
+            Toast.info(`${datasetCount} dataset${datasetCount > 1 ? "s" : ""} copied to new history`);
         }
         if (multiple && collectionCount > 0) {
-            Toast.info(`${collectionCount} collections copied to history`);
+            Toast.info(`${collectionCount} collection${collectionCount > 1 ? "s" : ""} copied to new history`);
         }
         historyStore.loadHistoryById(props.history.id);
     } catch (error) {
@@ -388,15 +406,6 @@ onMounted(async () => {
     }
     await loadHistoryItems();
 });
-
-function nextSelections(item: HistoryItem, eventKey: string) {
-    const nextItem = arrowNavigate(item, eventKey);
-    return {
-        item,
-        nextItem,
-        eventKey,
-    };
-}
 
 function arrowNavigate(item: HistoryItem, eventKey: string) {
     let nextItem = null;
@@ -444,6 +453,7 @@ function setItemDragstart(
                 setShowSelection,
                 selectAllInCurrentQuery,
                 isSelected,
+                selectTo,
                 setSelected,
                 shiftSelect,
                 initKeySelection,
@@ -574,10 +584,7 @@ function setItemDragstart(
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
-                                    @arrow-navigate="
-                                        arrowNavigate(item, $event);
-                                        initKeySelection();
-                                    "
+                                    @arrow-navigate="arrowNavigate(item, $event)"
                                     @drag-start="
                                         setItemDragstart(
                                             item,
@@ -588,12 +595,17 @@ function setItemDragstart(
                                         )
                                     "
                                     @hide-selection="setShowSelection(false)"
-                                    @shift-select="(eventKey) => shiftSelect(nextSelections(item, eventKey))"
-                                    @select-all="selectAllInCurrentQuery(historyItems)"
+                                    @init-key-selection="initKeySelection"
+                                    @shift-select="
+                                        (eventKey) => shiftSelect(item, arrowNavigate(item, eventKey), eventKey)
+                                    "
+                                    @select-all="selectAllInCurrentQuery(historyItems, false)"
+                                    @selected-to="(reset) => selectTo(item, lastItemFocused, historyItems, reset)"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
+                                    @update:item-focused="currItemFocused = item"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
