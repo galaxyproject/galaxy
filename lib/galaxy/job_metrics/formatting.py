@@ -15,7 +15,7 @@ class JobMetricFormatter:
     """Format job metric key-value pairs for human consumption in Web UI."""
 
     def format(self, key: str, value: Any) -> FormattedMetric:
-        return FormattedMetric(str(key), str(value))
+        return FormattedMetric(key, str(value))
 
 
 def seconds_to_str(value: int) -> str:
