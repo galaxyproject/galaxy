@@ -144,6 +144,8 @@ def queue_invoke(
 
 
 class WorkflowInvoker:
+    progress: "WorkflowProgress"
+
     def __init__(
         self,
         trans: "WorkRequestContext",
@@ -348,7 +350,7 @@ class WorkflowProgress:
     def __init__(
         self,
         workflow_invocation: WorkflowInvocation,
-        inputs_by_step_id: Any,
+        inputs_by_step_id: Dict[int, Any],
         module_injector: ModuleInjector,
         param_map: Dict[int, Dict[str, Any]],
         jobs_per_scheduling_iteration: int = -1,
@@ -415,7 +417,7 @@ class WorkflowProgress:
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]) -> Any:
+    def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: Dict[str, Any]):
         replacement: Union[
             modules.NoReplacement,
             model.DatasetCollectionInstance,
@@ -447,7 +449,7 @@ class WorkflowProgress:
                         replacement = raw_to_galaxy(trans, step_input.default_value)
         return replacement
 
-    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True) -> Any:
+    def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
         output_step_id = connection.output_step.id
         output_name = connection.output_name
         if output_step_id not in self.outputs:
@@ -530,7 +532,7 @@ class WorkflowProgress:
 
         return replacement
 
-    def get_replacement_workflow_output(self, workflow_output: "WorkflowOutput") -> Any:
+    def get_replacement_workflow_output(self, workflow_output: "WorkflowOutput"):
         step = workflow_output.workflow_step
         output_name = workflow_output.output_name
         step_outputs = self.outputs[step.id]
@@ -541,7 +543,10 @@ class WorkflowProgress:
             return step_outputs[output_name]
 
     def set_outputs_for_input(
-        self, invocation_step: WorkflowInvocationStep, outputs: Any = None, already_persisted: bool = False
+        self,
+        invocation_step: WorkflowInvocationStep,
+        outputs: Optional[Dict[str, Any]] = None,
+        already_persisted: bool = False,
     ) -> None:
         step = invocation_step.workflow_step
 
