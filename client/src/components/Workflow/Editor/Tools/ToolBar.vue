@@ -125,7 +125,7 @@ function onRemoveAllFreehand() {
     commentStore.deleteFreehandComments();
 }
 
-useToolLogic(toolbarStore, commentStore, undoRedoStore);
+useToolLogic();
 
 const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7 } = useMagicKeys();
 
