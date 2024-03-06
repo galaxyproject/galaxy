@@ -146,6 +146,7 @@ export function useToolLogic() {
         }
 
         comment.value = null;
+        start = null;
     });
 
     toolbarStore.onInputCatcherEvent("pointerleave", () => {
