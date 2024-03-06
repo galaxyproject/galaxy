@@ -1,6 +1,7 @@
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export interface Workflow {
@@ -33,6 +34,7 @@ export async function fromSimple(
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
     const stateStore = useWorkflowStateStore(id);
+    const toolbarStore = useWorkflowEditorToolbarStore(id);
 
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
@@ -80,6 +82,7 @@ export async function fromSimple(
     stateStore.report = data.report ?? {
         markdown: reportDefault,
     };
+    toolbarStore.currentTool = "pointer";
 }
 
 export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {
