@@ -225,8 +225,10 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         parsed_url = parse.urlparse(response.url)
         provider = parse.parse_qs(parsed_url.query)["connect_external_provider"][0]
         assert "keycloak" == provider
+
+        # user should not have been logged in
         response = self._get("users/current")
-        self._assert_status_code_is(response, 400)
+        assert "id" not in response.json()
 
     def test_oidc_login_account_linkup(self):
         # pre-create a user account manually
