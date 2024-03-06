@@ -2,7 +2,12 @@ import axios from "axios";
 
 import { getAppRoot } from "@/onload";
 
-import { ApiResponse, fetcher } from "./schema";
+import { ApiResponse, components, fetcher } from "./schema";
+
+// TODO: rename...
+export type WorkflowInvocationSummary = components["schemas"]["WorkflowInvocationElementView"];
+export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
+export type InvocationStep = components["schemas"]["InvocationStep"];
 
 export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
 

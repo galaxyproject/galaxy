@@ -34,7 +34,7 @@ async function mountWorkflowInvocationState(invocation: WorkflowInvocation | nul
         },
         computed: {
             invocation: () => invocation,
-            jobStatesSummary: () => new JOB_STATES_MODEL.JobStatesSummary(invocationJobsSummaryById),
+            jobStatesSummary: () => invocationJobsSummaryById,
         },
         pinia,
         localVue,
