@@ -225,6 +225,8 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         parsed_url = parse.urlparse(response.url)
         provider = parse.parse_qs(parsed_url.query)["connect_external_provider"][0]
         assert "keycloak" == provider
+
+        # user should not have been logged in
         response = self._get("users/current")
         assert "id" not in response.json()
 
