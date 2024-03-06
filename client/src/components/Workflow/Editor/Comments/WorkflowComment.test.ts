@@ -20,6 +20,7 @@ jest.mock("@/composables/workflowStores", () => ({
             changeColor,
             deleteComment,
             isJustCreated: () => false,
+            getCommentMultiSelected: () => false,
         },
     }),
 }));
