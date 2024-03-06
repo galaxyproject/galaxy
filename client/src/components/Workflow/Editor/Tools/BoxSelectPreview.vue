@@ -13,10 +13,12 @@ const cssVariables = computed(() => ({
 }));
 
 const visible = computed(() => toolbarStore.boxSelectRect.width !== 0 && toolbarStore.boxSelectRect.height !== 0);
+
+const removeMode = computed(() => toolbarStore.boxSelectMode === "remove");
 </script>
 
 <template>
-    <div v-show="visible" class="box-select-preview" :style="cssVariables"></div>
+    <div v-show="visible" class="box-select-preview" :class="{ 'remove-mode': removeMode }" :style="cssVariables"></div>
 </template>
 
 <style scoped lang="scss">
@@ -30,7 +32,12 @@ const visible = computed(() => toolbarStore.boxSelectRect.width !== 0 && toolbar
     top: var(--position-top);
     left: var(--position-left);
 
-    border: dashed 4px $brand-info;
+    border: dashed 2px $brand-info;
     background-color: rgba($brand-info, 0.25);
+
+    &.remove-mode {
+        border-color: $brand-danger;
+        background-color: rgba($brand-danger, 0.25);
+    }
 }
 </style>
