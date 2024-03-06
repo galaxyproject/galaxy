@@ -72,7 +72,6 @@ const emit = defineEmits<{
     (e: "tag-change", item: any, newTags: Array<string>): void;
     (e: "tag-click", tag: string): void;
     (e: "toggleHighlights", item: any): void;
-    (e: "update:item-focused"): void;
 }>();
 
 const entryPointStore = useEntryPointStore();
@@ -296,8 +295,7 @@ function toggleHighlights() {
         :data-state="dataState"
         tabindex="0"
         role="button"
-        @keydown="onKeyDown"
-        @focus="emit('update:item-focused')">
+        @keydown="onKeyDown">
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">

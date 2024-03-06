@@ -10,6 +10,7 @@ import SelectedItems from "@/components/History/Content/SelectedItems";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import { Toast } from "@/composables/toast";
+import { useActiveElement } from "@/composables/useActiveElement";
 import { startWatchingHistory } from "@/store/historyStore/model/watchHistory";
 import { useEventStore } from "@/stores/eventStore";
 import { type HistoryItem, useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -82,8 +83,8 @@ const contentItemRefs = computed(() => {
         return acc;
     }, {});
 });
-const currItemFocused = ref<HistoryItem | null>(null);
-const lastItemFocused = ref<HistoryItem | null>(null);
+const currItemFocused = useActiveElement();
+const lastItemId = ref<string | null>(null);
 
 const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
 const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
@@ -143,6 +144,10 @@ const storeFilterText = computed(() => {
     return currentFilterText.value || "";
 });
 
+const lastItemFocused = computed(() => {
+    return lastItemId.value ? historyItems.value.find((item) => lastItemId.value === `dataset-${item.id}`) : null;
+});
+
 watch(offsetQueryParam, () => loadHistoryItems());
 
 watch(
@@ -151,8 +156,7 @@ watch(
         invisibleHistoryItems.value = {};
         offsetQueryParam.value = 0;
         loadHistoryItems();
-        currItemFocused.value = null;
-        lastItemFocused.value = null;
+        lastItemId.value = null;
     }
 );
 
@@ -180,8 +184,7 @@ watch(
     (newValue, currentValue) => {
         if (newValue !== currentValue) {
             operationRunning.value = null;
-            currItemFocused.value = null;
-            lastItemFocused.value = null;
+            lastItemId.value = null;
         }
     }
 );
@@ -202,8 +205,10 @@ watch(historyItems, (newHistoryItems) => {
 watch(
     () => currItemFocused.value,
     (newItem, oldItem) => {
-        if (newItem) {
-            lastItemFocused.value = oldItem;
+        // if user clicked elsewhere, set lastItemId to the last focused item
+        // (if it was indeed a history .content-item)
+        if (newItem && oldItem?.classList?.contains("content-item") && oldItem?.getAttribute("data-hid")) {
+            lastItemId.value = oldItem?.id || null;
         }
     }
 );
@@ -605,7 +610,6 @@ function setItemDragstart(
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
-                                    @update:item-focused="currItemFocused = item"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
                                     @delete="onDelete"
