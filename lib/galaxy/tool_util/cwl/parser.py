@@ -35,7 +35,6 @@ from .cwltool_deps import (
     beta_relaxed_fmt_check,
     ensure_cwltool_available,
     getdefault,
-    normalizeFilesDirs,
     pathmapper,
     process,
     ref_resolver,
@@ -71,6 +70,7 @@ SUPPORTED_TOOL_REQUIREMENTS = [
     "EnvVarRequirement",
     "InitialWorkDirRequirement",
     "InlineJavascriptRequirement",
+    "LoadListingRequirement",
     "ResourceRequirement",
     "ShellCommandRequirement",
     "ScatterFeatureRequirement",
@@ -82,6 +82,9 @@ SUPPORTED_TOOL_REQUIREMENTS = [
 
 
 SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
+
+PERSISTED_REPRESENTATION = "cwl_tool_object"
+SENTINEL_GALAXY_SLOTS_VALUE = 1.480231396
 
 ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
 
@@ -330,23 +333,29 @@ class JobProxy:
 
             args = [RuntimeContext(job_args)]
             kwargs: Dict[str, str] = {}
-            self._cwl_job = next(self._tool_proxy._tool.job(self._input_dict, self._output_callback, *args, **kwargs))
+            # The job method modifies inputs_record_schema in place to match the job definition
+            # This breaks subsequent use with other job definitions, so create a shallow copy of
+            # the CommandLineTool instance and add a deepcopy of the inputs_record_schema
+            # (instead of globally manipulating self._tool_proxy._tool, which is likely not thread-safe).
+            cwl_tool_instance = copy.copy(self._tool_proxy._tool)
+            cwl_tool_instance.inputs_record_schema = copy.deepcopy(cwl_tool_instance.inputs_record_schema)
+            self._cwl_job = next(cwl_tool_instance.job(self._input_dict, self._output_callback, *args, **kwargs))
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
     def _normalize_job(self):
+        runtime_context = RuntimeContext({})
+        make_fs_access = getdefault(runtime_context.make_fs_access, StdFsAccess)
+        fs_access = make_fs_access(runtime_context.basedir)
+
         # Somehow reuse whatever causes validate in cwltool... maybe?
         def pathToLoc(p):
             if "location" not in p and "path" in p:
                 p["location"] = p["path"]
                 del p["path"]
 
-        runtime_context = RuntimeContext({})
-        make_fs_access = getdefault(runtime_context.make_fs_access, StdFsAccess)
-        fs_access = make_fs_access(runtime_context.basedir)
         process.fill_in_defaults(self._tool_proxy._tool.tool["inputs"], self._input_dict, fs_access)
         visit_class(self._input_dict, ("File", "Directory"), pathToLoc)
         # TODO: Why doesn't fillInDefault fill in locations instead of paths?
-        normalizeFilesDirs(self._input_dict)
         # TODO: validate like cwltool process _init_job.
         #    validate.validate_ex(self.names.get_name("input_record_schema", ""), builder.job,
         #                         strict=False, logger=_logger_validation_warnings)
@@ -393,13 +402,19 @@ class JobProxy:
 
     def _select_resources(self, request, runtime_context=None):
         new_request = request.copy()
-        new_request["cores"] = "$GALAXY_SLOTS"
+        # TODO: we really need to find a better solution to set cores here.
+        # This could be to delay building the cwl job until we're at the worker node,
+        # (see https://github.com/galaxyproject/galaxy/pull/12459 for an attempt)
+        # or guessing what the value of $GALAXY_SLOTS will be when preparing the job.
+        new_request["cores"] = SENTINEL_GALAXY_SLOTS_VALUE
         return new_request
 
     @property
     def command_line(self):
         if self.is_command_line_job:
-            return self.cwl_job().command_line
+            command_line = self.cwl_job().command_line
+            # Undo the SENTINEL_GALAXY_SLOTS_VALUE hack above
+            return [fragment.replace(str(SENTINEL_GALAXY_SLOTS_VALUE), "$GALAXY_SLOTS") for fragment in command_line]
         else:
             return ["true"]
 

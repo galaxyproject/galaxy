@@ -9,9 +9,9 @@ class CollectionTypeDescriptionFactory:
         # I think.
         self.type_registry = type_registry
 
-    def for_collection_type(self, collection_type):
+    def for_collection_type(self, collection_type, fields=None):
         assert collection_type is not None
-        return CollectionTypeDescription(collection_type, self)
+        return CollectionTypeDescription(collection_type, self, fields=fields)
 
 
 class CollectionTypeDescription:
@@ -47,12 +47,15 @@ class CollectionTypeDescription:
 
     collection_type: str
 
-    def __init__(self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory):
+    def __init__(
+        self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory, fields=None
+    ):
         if isinstance(collection_type, CollectionTypeDescription):
             self.collection_type = collection_type.collection_type
         else:
             self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
+        self.fields = fields
         self.__has_subcollections = self.collection_type.find(":") > 0
 
     def child_collection_type(self):
@@ -90,9 +93,13 @@ class CollectionTypeDescription:
         collection_type = self.collection_type
         return collection_type.endswith(other_collection_type) and collection_type != other_collection_type
 
-    def is_subcollection_of_type(self, other_collection_type):
+    def is_subcollection_of_type(self, other_collection_type, proper=True):
+        """If proper is False, than a type is consider a subcollection of itself."""
         if not hasattr(other_collection_type, "collection_type"):
             other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
+        if not proper and self.can_match_type(other_collection_type):
+            return True
+
         return other_collection_type.has_subcollections_of_type(self)
 
     def can_match_type(self, other_collection_type):

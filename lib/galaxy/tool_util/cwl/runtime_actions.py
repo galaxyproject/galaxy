@@ -156,9 +156,9 @@ def handle_outputs(job_directory=None):
             with open(os.path.join(secondary_files_dir, "..", SECONDARY_FILES_INDEX_PATH), "w") as f:
                 json.dump(index_contents, f)
 
-        return {"created_from_basename": output["basename"]}
+        return {"created_from_basename": output["basename"], "ext": "data", "format": output.get("format")}
 
-    def handle_known_output(output, output_key, output_name):
+    def handle_known_output(output, output_name):
         # if output["class"] != "File":
         #    # This case doesn't seem like it would be reached - why is this here?
         #    provided_metadata[output_name] = {
@@ -188,13 +188,13 @@ def handle_outputs(job_directory=None):
     for output_name, output in outputs.items():
         handled_outputs.append(output_name)
         if isinstance(output, dict) and "location" in output:
-            handle_known_output(output, output_name, output_name)
+            handle_known_output(output, output_name)
         elif isinstance(output, dict):
             prefix = f"{output_name}|__part__|"
             for record_key, record_value in output.items():
                 record_value_output_key = f"{prefix}{record_key}"
                 if isinstance(record_value, dict) and "class" in record_value:
-                    handle_known_output(record_value, record_value_output_key, output_name)
+                    handle_known_output(record_value, record_value_output_key)
                 else:
                     # param_evaluation_noexpr
                     handle_known_output_json(output, output_name)
@@ -222,6 +222,8 @@ def handle_outputs(job_directory=None):
             handle_known_output_json(None, output_name)
 
     job_metadata = os.path.join(job_directory, cwl_metadata_params["job_metadata"])
+    # We may have moved away the tool working directory
+    os.makedirs(tool_working_directory, exist_ok=True)
     with open(job_metadata, "w") as f:
         json.dump(provided_metadata, f)
 

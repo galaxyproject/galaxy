@@ -39,7 +39,13 @@ log = logging.getLogger(__name__)
 
 def validate_datatype_extension(datatypes_registry, ext):
     if ext and ext not in ("auto", "data") and not datatypes_registry.get_datatype_by_extension(ext):
+        # also allow putting in data ontology ... might want to model this as a separate input
+        if ":" in ext:
+            ext_by_ontology = datatypes_registry.get_datatype_ext_by_format_ontology(ext)
+            if ext_by_ontology:
+                return ext_by_ontology
         raise RequestParameterInvalidException(f"Requested extension '{ext}' unknown, cannot upload dataset.")
+    return ext
 
 
 def persist_uploads(params, trans):

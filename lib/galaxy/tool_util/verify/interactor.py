@@ -392,14 +392,14 @@ class GalaxyInteractorApi:
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
         wait_on(func, what, walltime_exceeded)
 
-    def get_job_stdio(self, job_id):
+    def get_job_stdio(self, job_id: str) -> Dict[str, Any]:
         job_stdio = self.__get_job_stdio(job_id).json()
         return job_stdio
 
-    def __get_job(self, job_id):
+    def __get_job(self, job_id: str) -> Response:
         return self._get(f"jobs/{job_id}")
 
-    def __get_job_stdio(self, job_id):
+    def __get_job_stdio(self, job_id: str) -> Response:
         return self._get(f"jobs/{job_id}?full=true")
 
     def get_history(self, history_name="test_history"):

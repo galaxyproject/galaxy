@@ -184,6 +184,10 @@ class ToolParameter(Dictifiable):
         self.validators = []
         for elem in input_source.parse_validator_elems():
             self.validators.append(validation.Validator.from_element(self, elem))
+        if hasattr(input_source, "parse_map_to"):
+            self.map_to = input_source.parse_map_to()
+        else:
+            self.map_to = None
 
     @property
     def visible(self) -> bool:
@@ -1936,6 +1940,12 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
+        if getattr(value, "ephemeral", False):
+            # wf_wc_scatter_multiple_flattened
+            value = value.persistent_object
+            if value.id is None:
+                app.model.context.add(value)
+                app.model.context.flush()
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
@@ -2116,7 +2126,7 @@ class DataToolParameter(BaseDataToolParameter):
             raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", ""]:
             if self.default_object:
-                return raw_to_galaxy(trans, self.default_object)
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2456,7 +2466,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
             if self.default_object:
-                return raw_to_galaxy(trans, self.default_object)
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2672,14 +2682,12 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
 # Code from CWL branch to massage in order to be shared across tools and workflows,
 # and for CWL artifacts as well as Galaxy ones.
-def raw_to_galaxy(trans, as_dict_value):
-    app = trans.app
-    history = trans.history
-
+def raw_to_galaxy(app, history, as_dict_value):
     object_class = as_dict_value["class"]
     if object_class == "File":
         # TODO: relative_to = "/"
-        location = as_dict_value.get("location")
+        location = as_dict_value.get("location") or as_dict_value.get("path")
+        assert os.path.exists(location[len("file://")])
         name = (
             as_dict_value.get("identifier")
             or as_dict_value.get("basename")
@@ -2714,15 +2722,15 @@ def raw_to_galaxy(trans, as_dict_value):
             dbkey="?",
             dataset=dataset,
             flush=False,
-            sa_session=trans.sa_session,
+            sa_session=app.model.session,
         )
         primary_data.state = Dataset.states.DEFERRED
         permissions = app.security_agent.history_get_default_permissions(history)
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
-        trans.sa_session.add(primary_data)
+        app.model.session.add(primary_data)
         history.stage_addition(primary_data)
         history.add_pending_items()
-        trans.sa_session.flush()
+        app.model.session.flush()
         return primary_data
     else:
         name = as_dict_value.get("name")
@@ -2741,7 +2749,7 @@ def raw_to_galaxy(trans, as_dict_value):
                 element_class = element_dict["class"]
                 identifier = element_dict["identifier"]
                 if element_class == "File":
-                    hda = raw_to_galaxy(trans, element_dict)
+                    hda = raw_to_galaxy(app, history, element_dict)
                     collection_builder.add_dataset(identifier, hda)
                 else:
                     subcollection_builder = collection_builder.get_level(identifier)
@@ -2750,9 +2758,91 @@ def raw_to_galaxy(trans, as_dict_value):
         collection_builder = builder.BoundCollectionBuilder(collection)
         write_elements_to_collection(as_dict_value, collection_builder)
         collection_builder.populate()
-        trans.sa_session.add(hdca)
-        trans.sa_session.flush()
+        app.model.session.add(hdca)
+        app.model.session.flush()
         return hdca
+
+
+class FieldTypeToolParameter(ToolParameter):
+    """CWL field type defined parameter source."""
+
+    def __init__(self, tool, input_source, context=None):
+        input_source = ensure_input_source(input_source)
+        super().__init__(tool, input_source)
+        # self.field_type = input_source.parse_field_type()
+
+    def from_json(self, value, trans, other_values=None):
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+            return None
+
+        if value is None:
+            return None
+
+        if not isinstance(value, dict) or "src" not in value:
+            value = {"src": "json", "value": value}
+        elif value.get("class") == "File":
+            return raw_to_galaxy(trans.app, trans.history, value)
+        return self.to_python(value, trans.app)
+
+    def to_json(self, value, app, use_security):
+        """Convert a value to a string representation suitable for persisting"""
+        assert isinstance(value, dict)
+        assert "src" in value
+        return value
+
+    def to_python(self, value, app):
+        """Convert a value created with to_json back to an object representation"""
+        if value is None:
+            return None
+        # return super(FieldTypeToolParameter, self).to_python(value, app)
+        if not isinstance(value, dict):
+            value = json.loads(value)
+        assert isinstance(value, dict)
+        assert "src" in value or "class" in value
+        if "src" in value:
+            src = value["src"]
+            if "value" in value:
+                # We have an expanded value, not an ID
+                return value
+            elif src in ["hda", "hdca", "dce"]:
+                id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
+                if src == "dce":
+                    value = app.model.context.query(app.model.DatasetCollectionElement).get(id)
+                elif src == "hdca":
+                    value = app.model.context.query(app.model.HistoryDatasetCollectionAssociation).get(id)
+                else:
+                    value = app.model.context.query(app.model.HistoryDatasetAssociation).get(id)
+
+                return {"src": src, "value": value}
+        # Reaching this if we have a default filex
+        return value
+
+    def value_to_basic(self, value, app, use_security=False):
+        log.info(f"value_to_basic of {value} ({type(value)})")
+        if is_runtime_value(value):
+            return runtime_to_json(value)
+
+        if value is None:
+            return None
+
+        if isinstance(value, dict):
+            if "src" in value:
+                src = value["src"]
+                if src in ["hda", "hdca", "dce"]:
+                    id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
+                    value = {"src": src, "id": id}
+            else:
+                # Default file
+                assert "class" in value
+
+        else:
+            value = {"src": "json", "value": value}
+
+        return json.dumps(value)
+
+    def value_from_basic(self, value, app, ignore_errors=False):
+        return super().value_from_basic(value, app, ignore_errors)
+        # return json.loads(value)
 
 
 parameter_types = dict(
@@ -2775,6 +2865,7 @@ parameter_types = dict(
     rules=RulesListToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
+    field=FieldTypeToolParameter,
 )
 
 
@@ -2832,4 +2923,7 @@ def history_item_to_json(value, app, use_security):
         src = "hda"
     if src is not None:
         object_id = cached_id(value)
-        return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
+        new_val = getattr(value, "extra_params", {})
+        new_val["id"] = app.security.encode_id(object_id) if use_security else object_id
+        new_val["src"] = src
+        return new_val

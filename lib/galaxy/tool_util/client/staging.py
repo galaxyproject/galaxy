@@ -65,14 +65,15 @@ class StagingInterface(metaclass=abc.ABCMeta):
             self._handle_job(job)
         return tool_response
 
-    def _fetch_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _fetch_post(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         tool_response = self._post("tools/fetch", payload)
+        job_details = []
         for job in tool_response.get("jobs", []):
-            self._handle_job(job)
-        return tool_response
+            job_details.append(self._handle_job(job))
+        return job_details
 
     @abc.abstractmethod
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(
@@ -142,10 +143,9 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             elif isinstance(upload_target, DirectoryUploadTarget):
                 fetch_payload = _fetch_payload(history_id, file_type="directory")
-                fetch_payload["targets"][0].pop("elements")
                 tar_path = upload_target.tar_path
                 src = _attach_file(fetch_payload, tar_path)
-                fetch_payload["targets"][0]["elements_from"] = src
+                fetch_payload["targets"][0]["elements"][0].update(src)
             elif isinstance(upload_target, ObjectUploadTarget):
                 content = json.dumps(upload_target.object)
                 fetch_payload = _fetch_payload(history_id, file_type="expression.json")
@@ -160,7 +160,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             else:
                 raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
-            return self._fetch_post(fetch_payload)
+            return self._fetch_post(fetch_payload)[0]
 
         # Save legacy upload_func to target older Galaxy servers
         def upload_func(upload_target: UploadTarget) -> Dict[str, Any]:
@@ -175,12 +175,13 @@ class StagingInterface(metaclass=abc.ABCMeta):
 
             if isinstance(upload_target, FileUploadTarget):
                 file_path = upload_target.path
-                file_type = upload_target.properties.get("filetype", None) or DEFAULT_FILE_TYPE
+                file_type = DEFAULT_FILE_TYPE
                 dbkey = upload_target.properties.get("dbkey", None) or DEFAULT_DBKEY
                 upload_payload = _upload_payload(
                     history_id,
                     file_type=file_type,
                     to_posix_lines=dbkey,
+                    cwl_format=upload_target.properties.get("filetype"),
                 )
                 name = _file_path_to_name(file_path)
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
@@ -288,8 +289,9 @@ class InteractorStaging(StagingInterface):
         assert response.status_code == 200, response.text
         return response.json()
 
-    def _handle_job(self, job_response):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         self.galaxy_interactor.wait_for_job(job_response["id"])
+        return self.galaxy_interactor.get_job_stdio(job_response["id"])
 
     @property
     def use_fetch_api(self):
@@ -320,6 +322,8 @@ def _upload_payload(
         tool_input["files_0|space_to_tab"] = "Yes"
     if "file_name" in kwd:
         tool_input["files_0|NAME"] = kwd["file_name"]
+    if kwd.get("cwl_format"):
+        tool_input["cwl_format"] = kwd["cwl_format"]
     tool_input["files_0|type"] = "upload_dataset"
     payload["inputs"] = tool_input
     payload["__files"] = {}

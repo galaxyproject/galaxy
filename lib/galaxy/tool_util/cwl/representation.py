@@ -4,9 +4,12 @@ input description and the CWL description for a job json. """
 import json
 import logging
 import os
+import tarfile
+import uuid
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     NamedTuple,
     Optional,
 )
@@ -184,6 +187,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     # Verify it isn't a NoneDataset
     if dataset_wrapper.unsanitized:
         raw_file_object["size"] = int(dataset_wrapper.get_size())
+        raw_file_object["format"] = str(dataset_wrapper.cwl_formats[0])
 
     set_basename_and_derived_properties(
         raw_file_object, str(dataset_wrapper.created_from_basename or dataset_wrapper.name)
@@ -205,6 +209,9 @@ def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
     except Exception:
         archive_location = None
 
+    extra_params = getattr(dataset_wrapper.unsanitized, "extra_params", {})
+    # We need to resolve path to location if there is a listing
+
     directory_json = {
         "location": dataset_wrapper.extra_files_path,
         "class": "Directory",
@@ -214,7 +221,52 @@ def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
         "archive_nameroot": nameroot,
     }
 
-    return directory_json
+    def tar_to_directory(directory_item):
+        # TODO: Should we just make sure that archive exists in extra_files_path ??
+        tar_file_location = directory_item["archive_location"]
+        directory_name = directory_item["name"]
+
+        assert os.path.exists(tar_file_location), tar_file_location
+
+        tmp_dir = os.path.join(inputs_dir, "direx", str(uuid.uuid4()))  # direx for "DIR EXtract"
+        directory_location = os.path.join(tmp_dir, directory_name)
+
+        os.makedirs(tmp_dir)
+
+        assert os.path.exists(tmp_dir), tmp_dir
+
+        # TODO: safe version of this!
+        bkp_cwd = os.getcwd()
+        os.chdir(tmp_dir)
+        tar = tarfile.open(tar_file_location)
+        tar.extractall(directory_location)
+        tar.close()
+        os.chdir(bkp_cwd)
+
+        assert os.path.exists(directory_location), directory_location
+
+        directory_item["location"] = directory_location
+        directory_item["nameext"] = "None"
+        directory_item["nameroot"] = directory_name
+        directory_item["basename"] = directory_name
+
+    tar_to_directory(directory_json)
+    extra_params.update(directory_json)
+
+    entry_to_location(extra_params, extra_params["location"])
+    return extra_params
+
+
+def entry_to_location(entry: Dict[str, Any], parent_location: str):
+    # TODO unit test
+    if entry["class"] == "File" and "path" in entry and "location" not in entry:
+        entry["location"] = os.path.join(parent_location, entry.pop("path"))
+        entry["size"] = os.path.getsize(entry["location"])
+    elif entry["class"] == "Directory" and "listing" in entry:
+        if "location" not in entry and "path" in entry:
+            entry["location"] = os.path.join(parent_location, entry.pop("path"))
+        for listing_entry in entry["listing"]:
+            entry_to_location(listing_entry, parent_location=entry["location"])
 
 
 def collection_wrapper_to_array(inputs_dir, wrapped_value):
@@ -229,6 +281,107 @@ def collection_wrapper_to_record(inputs_dir, wrapped_value):
     for key, value in wrapped_value.items():
         rval[key] = dataset_wrapper_to_file_json(inputs_dir, value)
     return rval
+
+
+def galactic_flavored_to_cwl_job(tool, param_dict, local_working_directory):
+    def simple_value(input, param_dict_value, type_representation_name=None):
+        type_representation = type_representation_from_name(type_representation_name)
+        # Hmm... cwl_type isn't really the cwl type in every case,
+        # like in the case of json for instance.
+
+        if type_representation.galaxy_param_type == NO_GALAXY_INPUT:
+            assert param_dict_value is None
+            return None
+
+        if type_representation.name == "file":
+            dataset_wrapper = param_dict_value
+            return dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper)
+        elif type_representation.name == "directory":
+            dataset_wrapper = param_dict_value
+            return dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper)
+        elif type_representation.name == "integer":
+            return int(str(param_dict_value))
+        elif type_representation.name == "long":
+            return int(str(param_dict_value))
+        elif type_representation.name in ["float", "double"]:
+            return float(str(param_dict_value))
+        elif type_representation.name == "boolean":
+            return string_as_bool(param_dict_value)
+        elif type_representation.name == "text":
+            return str(param_dict_value)
+        elif type_representation.name == "enum":
+            return str(param_dict_value)
+        elif type_representation.name == "json":
+            raw_value = param_dict_value.value
+            return json.loads(raw_value)
+        elif type_representation.name == "field":
+            if param_dict_value is None:
+                return None
+            if hasattr(param_dict_value, "value"):
+                # Is InputValueWrapper
+                rval = param_dict_value.value
+                if isinstance(rval, dict) and "src" in rval and rval["src"] == "json":
+                    # needed for wf_step_connect_undeclared_param, so non-file defaults?
+                    return rval["value"]
+                return rval
+            elif not param_dict_value.is_collection:
+                # Is DatasetFilenameWrapper
+                return dataset_wrapper_to_file_json(inputs_dir, param_dict_value)
+            else:
+                # Is DatasetCollectionWrapper
+                hdca_wrapper = param_dict_value
+                if hdca_wrapper.collection.collection_type == "list":
+                    # TODO: generalize to lists of lists and lists of non-files...
+                    return collection_wrapper_to_array(inputs_dir, hdca_wrapper)
+                elif hdca_wrapper.collection.collection_type.collection_type == "record":
+                    return collection_wrapper_to_record(inputs_dir, hdca_wrapper)
+
+        elif type_representation.name == "array":
+            # TODO: generalize to lists of lists and lists of non-files...
+            return collection_wrapper_to_array(inputs_dir, param_dict_value)
+        elif type_representation.name == "record":
+            return collection_wrapper_to_record(inputs_dir, param_dict_value)
+        else:
+            return str(param_dict_value)
+
+    inputs_dir = os.path.join(local_working_directory, "_inputs")
+
+    inputs = {}
+
+    # TODO: walk tree
+    for input_name, input_param in tool.inputs.items():
+        if input_param.type == "data":
+            # Probably need to be passing in the wrappers and using them - this seems to be
+            # an HDA.
+            map_to = input_param.map_to
+            inputs_at_depth = inputs
+            if map_to:
+                while "/" in map_to:
+                    first, map_to = map_to.split("/", 1)
+                    if first not in inputs_at_depth:
+                        inputs_at_depth[first] = {}
+                    inputs_at_depth = inputs_at_depth[first]
+            else:
+                map_to = input_param.name
+            inputs_at_depth[map_to] = dataset_wrapper_to_file_json(inputs_dir, param_dict[input_name])
+        else:
+            matched_field = None
+            for field in tool._cwl_tool_proxy.input_fields():
+                if field["name"] == input_name:  # CWL <=> Galaxy
+                    matched_field = field
+            field_type = field_to_field_type(matched_field)
+            if isinstance(field_type, list):
+                assert USE_FIELD_TYPES
+                type_descriptions = [FIELD_TYPE_REPRESENTATION]
+            else:
+                type_descriptions = type_descriptions_for_field_types([field_type])
+            assert len(type_descriptions) == 1
+            type_description_name = type_descriptions[0].name
+
+            inputs[input_name] = simple_value(input_param, param_dict[input_name], type_description_name)
+
+    log.info("job inputs is %s" % inputs)
+    return inputs
 
 
 def to_cwl_job(tool, param_dict, local_working_directory):
@@ -288,10 +441,10 @@ def to_cwl_job(tool, param_dict, local_working_directory):
             else:
                 # Is DatasetCollectionWrapper
                 hdca_wrapper = param_dict_value
-                if hdca_wrapper.collection_type == "list":
+                if hdca_wrapper.collection.collection_type == "list":
                     # TODO: generalize to lists of lists and lists of non-files...
                     return collection_wrapper_to_array(inputs_dir, hdca_wrapper)
-                elif hdca_wrapper.collection_type.collection_type == "record":
+                elif hdca_wrapper.collection.collection_type == "record":
                     return collection_wrapper_to_record(inputs_dir, hdca_wrapper)
 
         elif type_representation.name == "array":
