@@ -664,10 +664,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 self.sa_session.add(prev_galaxy_session)
             with transaction(self.sa_session):
                 self.sa_session.commit()
-        # If the old session was invalid, get a new (or existing default,
-        # unused) history with our new session
-        if invalidate_existing_session:
-            self.get_or_create_default_history()
 
     def _ensure_logged_in_user(self, session_cookie: str) -> None:
         # The value of session_cookie can be one of
