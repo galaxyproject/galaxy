@@ -3,8 +3,8 @@ import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
-import { formatDuration, intervalToDuration } from "date-fns";
 import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
+import { formatDuration, intervalToDuration } from "date-fns";
 import { computed, ref } from "vue";
 
 import { invocationForJob } from "@/api/invocations";
