@@ -1089,10 +1089,11 @@ steps:
     @selenium_test
     def test_editor_place_comments(self):
         editor = self.components.workflow_editor
+
         self.workflow_create_new(annotation="simple workflow")
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        tool_bar = editor.tool_bar._.wait_for_visible()
+        canvas = editor.canvas_body.wait_for_visible()
 
         # select text comment tool use all options and set font size to 2
         editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
@@ -1103,7 +1104,7 @@ steps:
         self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
 
         # place text comment
-        self.mouse_drag(from_element=tool_bar, to_offset=(400, 110))
+        self.mouse_drag(from_element=canvas, from_offset=(-200, -200), to_offset=(400, 110))
 
         self.action_chains().send_keys("Hello World").perform()
 
@@ -1128,7 +1129,7 @@ steps:
         # place and test markdown comment
         editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
         editor.tool_bar.color(color="lime").wait_for_and_click()
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 220))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 220))
         self.action_chains().send_keys("# Hello World").perform()
 
         editor.tool_bar.tool(tool="pointer").wait_for_and_click()
@@ -1149,7 +1150,7 @@ steps:
         # place and test frame comment
         editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
         editor.tool_bar.color(color="blue").wait_for_and_click()
-        self.mouse_drag(from_element=tool_bar, from_offset=(10, 10), to_offset=(400, 300))
+        self.mouse_drag(from_element=canvas, from_offset=(-200, -150), to_offset=(400, 300))
         self.action_chains().send_keys("My Frame").perform()
 
         title: WebElement = editor.comment.frame_title.wait_for_visible()
@@ -1173,14 +1174,14 @@ steps:
         editor.tool_bar.smoothing.wait_for_and_click()
         self.action_chains().send_keys(Keys.RIGHT * 10).perform()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         editor.comment.freehand_comment.wait_for_visible()
 
         editor.tool_bar.color(color="black").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
         self.action_chains().send_keys(Keys.LEFT * 20).perform()
-        self.mouse_drag(from_element=tool_bar, from_offset=(300, 300), via_offsets=[(100, 200)], to_offset=(-200, 30))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), via_offsets=[(100, 200)], to_offset=(-200, 30))
 
         # test bulk remove freehand
         editor.tool_bar.remove_freehand.wait_for_and_click()
@@ -1191,7 +1192,7 @@ steps:
         self.action_chains().send_keys(Keys.RIGHT * 20).perform()
         editor.tool_bar.color(color="orange").wait_for_and_click()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         freehand_comment_a: WebElement = editor.comment.freehand_comment.wait_for_visible()
 
@@ -1205,7 +1206,7 @@ steps:
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
         editor.tool_bar.color(color="yellow").wait_for_and_click()
 
-        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -100), to_offset=(200, 200))
 
         freehand_comment_b: WebElement = editor.comment.freehand_comment.wait_for_visible()
 
