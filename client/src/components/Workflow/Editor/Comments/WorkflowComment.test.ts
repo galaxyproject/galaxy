@@ -28,6 +28,7 @@ jest.mock("@/composables/workflowStores", () => ({
             changeColor,
             deleteComment,
             isJustCreated: () => false,
+            getCommentMultiSelected: () => false,
         },
         undoRedoStore: {
             applyAction: (action: UndoRedoAction) => action.run(),
