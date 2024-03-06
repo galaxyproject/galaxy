@@ -203,7 +203,6 @@ const estimatedServerInstance = computed(() => {
         <AwsEstimate
             v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
             :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
