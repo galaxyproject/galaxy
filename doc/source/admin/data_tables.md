@@ -6,8 +6,19 @@ It's possible to to separate tool data of shed installed tools by setting (`shed
 Tool data consists of:
 
 1. the actual data
-2. a tool data table
-3. tool data config files
+2. one or more so called `loc` files
+3. entries in a tool data table (config) file
+
+
+## History
+
+In order to understand the naming and structure of these three components it might be of advantage
+to look in the history. Tool data was organized in tabular `loc` that contained metadata and paths
+of the data. Those files were were installed with the tool and could be accessed with the
+[`from_file`](https://docs.galaxyproject.org/en/master/dev/schema.html#from-file) mechanism from tools.
+Since each tool version had it's own `loc` file the maintenance was difficult. With tool data tables
+an additional abstraction layer was introduced that is used from tools via
+[`from_datatable`](https://docs.galaxyproject.org/en/master/dev/schema.html#from-data-table).
 
 ## Tool data
 
@@ -16,20 +27,20 @@ actual tool data in a separate folder. For manually managed tool data this can b
 storing the data in another folder. For data that is added by data managers this can be achieved by
 setting `galaxy_data_manager_data_path`.
 
-## Tool data tables
+## `loc` files
 
-In order to make tool data usable from Galaxy tools so called tool data tables are used. 
+In order to make tool data usable from Galaxy tools so called `loc` files are used. 
 Those are tabular (by default tab separated) files with the extension `.loc`.
-Besides the actual paths the entries can contain, e.g. IDs, names, or other
+Besides the actual paths the entries can contain, e.g. IDs, names, or other metadata
 that can be used in tools to select reference data. The paths should be given as absolute paths,
 but can also be given relative to the Galaxy root dir.
-By default tool data tables are installed in `tool_data_path` (where also built-in tool data tables
+By default `loc` files are installed in `tool_data_path` (where also built-in `loc` files
 are stored). By setting `shed_tool_data_path` this can be separated.
 
-## Tool data table config
+## Tool data tables
 
-The tool data tables that should be used in a Galaxy instance are configured
-using tool data table config files.  In addition these files contain some
+The tool data tables that should be used in a Galaxy instance are listed
+in tool data table config files. In addition these contain some
 metadata.
 
 Tool data table config files are XML files listing tool data table configurations:
@@ -40,7 +51,7 @@ Tool data table config files are XML files listing tool data table configuration
 </tables>
 ```
 
-A tool data table configuration looks like this 
+An entry for a tool data looks like this
 
 ```xml
 <table name="bwa_indexes_color" comment_char="#" allow_duplicate_entries="False">
@@ -53,7 +64,7 @@ A tool data table configuration looks like this
 - `columns`: a comma separated list of column names
 - `file`: `path` (alternatively `url`, `from_config`)
 
-Tool data table definitions for tools installed from a toolshed have an additional
+Tool data table entries for tools installed from a toolshed have an additional
 element `tool_shed_repository` and sub-tags `tool_shed`
 `repository_name`, `repository_owner`, `installed_changeset_revision`, e.g.:
 
@@ -70,24 +81,26 @@ element `tool_shed_repository` and sub-tags `tool_shed`
 </table>
 ```
 
-The file path points to a data table (i.e. a `.loc` file) and can be given
-relative (to the `tool_data_path`) or absolute. If a given relative path does
-not exist also the base name is checked (many tools use something like
-`tool-data/xyz.loc` and store example `loc` files in a `tool-data/` directory in
-the tool repository).
+The file path points to a `loc` file and can be given relative (to the
+`tool_data_path`) or absolute. If a given relative path does not exist also the
+base name is checked (many tools use something like `tool-data/xyz.loc` and
+store example `loc` files in a `tool-data/` directory in the tool repository).
 Currently also `.loc.sample` may be used in case the specified `.loc` is absent.
 
-Tool data table config files: 
+Galaxy uses two tool data table config files:
 
 - `tool_data_table_config_path`: by default `tool_data_table_conf.xml` in Galaxy's `config/` directory.
 - `shed_tool_data_table_config`: by default `shed_tool_data_table_conf.xml` in
 Galaxy's `config/` directory. This file lists all tool data tables of tools
 installed from a toolshed. Note that the entries are versioned, i.e. there is a
-separate entry for each tool and tool version. These content of the tool data
-tables are merged when they are loaded.
+separate entry for each tool and tool version.
+
+The tool data table config files can (and do) contain multiple entries for the same data table
+(identified by the same name). These content of the corresponding `loc` files are merged when
+they are loaded.
 
 When a new tool is installed that uses a data table a new entry is added to
-`shed_tool_data_table_config` and a `.loc` file is placed in a versioned
+`shed_tool_data_table_config` and a `loc` file is placed in a versioned
 subdirectory in `tool_data_path` (in a subdirectory that has the name of the
 toolshed). By default thus is `tool-data/toolshed.g2.bx.psu.edu/`. Note that
 these directories will also contain tool data config files, but they are unused.
