@@ -20,6 +20,7 @@ from typing import (
 )
 
 from packaging.version import Version
+from typing_extensions import TypeAlias
 
 from galaxy.model import (
     DatasetCollection,
@@ -605,6 +606,9 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
     __nonzero__ = __bool__
 
 
+DatasetCollectionElementWrapper: TypeAlias = Union["DatasetCollectionWrapper", DatasetFilenameWrapper]
+
+
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     name: Optional[str]
     collection: DatasetCollection
@@ -642,15 +646,15 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances: Dict[str, Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = {}
+        element_instances: Dict[str, DatasetCollectionElementWrapper] = {}
 
-        element_instance_list: List[Union[DatasetCollectionWrapper, DatasetFilenameWrapper]] = []
+        element_instance_list: List[DatasetCollectionElementWrapper] = []
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
 
             if dataset_collection_element.is_collection:
-                element_wrapper: Union[DatasetCollectionWrapper, DatasetFilenameWrapper] = DatasetCollectionWrapper(
+                element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
                     job_working_directory, dataset_collection_element, **kwargs
                 )
             else:
@@ -757,7 +761,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def is_input_supplied(self) -> bool:
         return self.__input_supplied
 
-    def __getitem__(self, key: Union[str, int]) -> Union[None, "DatasetCollectionWrapper", DatasetFilenameWrapper]:
+    def __getitem__(self, key: Union[str, int]) -> Optional[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return None
         if isinstance(key, int):
@@ -765,7 +769,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         else:
             return self.__element_instances[key]
 
-    def __getattr__(self, key: str) -> Union[None, "DatasetCollectionWrapper", DatasetFilenameWrapper]:
+    def __getattr__(self, key: str) -> Optional[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return None
         try:
@@ -775,7 +779,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     def __iter__(
         self,
-    ) -> Iterator[Union["DatasetCollectionWrapper", DatasetFilenameWrapper]]:
+    ) -> Iterator[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return [].__iter__()
         return self.__element_instance_list.__iter__()
