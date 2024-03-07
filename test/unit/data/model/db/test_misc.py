@@ -1,6 +1,8 @@
 import random
 
 import pytest
+from sqlalchemy import inspect
+from sqlalchemy.exc import IntegrityError
 
 from galaxy import model as m
 from galaxy.model.unittest_utils.db_helpers import get_hdca_by_name
@@ -207,3 +209,26 @@ def test_current_galaxy_session(session, make_user, make_galaxy_session):
     new_galaxy_session = make_galaxy_session()
     user.galaxy_sessions.append(new_galaxy_session)
     assert user.current_galaxy_session == new_galaxy_session
+
+
+def test_next_hid(session, make_history):
+    h = make_history()
+    assert h.hid_counter == 1
+    h._next_hid()
+    assert h.hid_counter == 2
+    h._next_hid(n=3)
+    assert h.hid_counter == 5
+
+
+def test_history_hid_counter_is_expired_after_next_hid_call(session, make_history):
+    h = make_history()
+    state = inspect(h)
+    assert h.hid_counter == 1
+    assert "hid_counter" not in state.unloaded
+    assert "id" not in state.unloaded
+
+    h._next_hid()
+
+    assert "hid_counter" in state.unloaded  # this attribute has been expired
+    assert "id" not in state.unloaded  # but other attributes have NOT been expired
+    assert h.hid_counter == 2  # check this last: this causes this hid_counter to be reloaded
