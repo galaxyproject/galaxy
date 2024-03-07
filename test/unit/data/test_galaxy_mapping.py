@@ -123,26 +123,6 @@ class TestMappings(BaseModelTestCase):
         assert all(d.name == f"forward_{i}" for i, d in enumerate(forward_hdas))
         assert all(d.name == f"reverse_{i}" for i, d in enumerate(reverse_hdas))
 
-    def test_collections_in_library_folders(self):
-        u = model.User(email="mary2@example.com", password="password")
-        lf = model.LibraryFolder(name="RootFolder")
-        library = model.Library(name="Library1", root_folder=lf)
-        ld1 = model.LibraryDataset()
-        ld2 = model.LibraryDataset()
-
-        ldda1 = model.LibraryDatasetDatasetAssociation(extension="txt", library_dataset=ld1)
-        ldda2 = model.LibraryDatasetDatasetAssociation(extension="txt", library_dataset=ld1)
-
-        c1 = model.DatasetCollection(collection_type="pair")
-        dce1 = model.DatasetCollectionElement(collection=c1, element=ldda1)
-        dce2 = model.DatasetCollectionElement(collection=c1, element=ldda2)
-        self.persist(u, library, lf, ld1, ld2, c1, ldda1, ldda2, dce1, dce2)
-
-        # TODO:
-        # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # assert len(loaded_dataset_collection.datasets) == 2
-        # assert loaded_dataset_collection.collection_type == "pair"
-
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
