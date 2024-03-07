@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, set as VueSet, unref, watch } from "vue";
+import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
@@ -55,6 +55,8 @@ interface Props {
     isMultiViewItem?: boolean;
 }
 
+type ContentItemRef = Record<string, Ref<InstanceType<typeof ContentItem> | null>>;
+
 const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
@@ -77,9 +79,8 @@ const operationError = ref(null);
 const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
-    return historyItems.value.reduce((acc: any, item) => {
-        // TODO: type `any` properly
-        acc[`item-${item.hid}`] = ref(null);
+    return historyItems.value.reduce((acc: ContentItemRef, item) => {
+        acc[`item-${item.id}`] = ref(null);
         return acc;
     }, {});
 });
@@ -410,6 +411,12 @@ onMounted(async () => {
         filterText.value = storeFilterText.value;
     }
     await loadHistoryItems();
+    // if there is a listOffset, we are coming from a collection view, so focus on item at that offset
+    if (props.listOffset) {
+        const itemId = historyItems.value[props.listOffset]?.id;
+        const itemElement = contentItemRefs.value[`item-${itemId}`]?.value?.$el as HTMLElement;
+        itemElement?.focus();
+    }
 });
 
 function arrowNavigate(item: HistoryItem, eventKey: string) {
@@ -420,7 +427,8 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
         nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
     }
     if (nextItem) {
-        contentItemRefs.value[`item-${nextItem.hid}`].value.$el.focus();
+        const itemElement = contentItemRefs.value[`item-${nextItem.id}`]?.value?.$el as HTMLElement;
+        itemElement?.focus();
     }
     return nextItem;
 }
@@ -578,7 +586,7 @@ function setItemDragstart(
                             <template v-slot:item="{ item, currentOffset }">
                                 <ContentItem
                                     :id="item.hid"
-                                    :ref="contentItemRefs[`item-${item.hid}`]"
+                                    :ref="contentItemRefs[`item-${item.id}`]"
                                     is-history-item
                                     :item="item"
                                     :name="item.name"
