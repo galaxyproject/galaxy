@@ -350,17 +350,6 @@ class TestMappings(BaseModelTestCase):
         assert d.metadata.anyAttribute is None
         assert "items" not in d.metadata
 
-    def test_jobs(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
-        job = model.Job()
-        job.user = u
-        job.tool_id = "cat1"
-
-        self.persist(u, job)
-
-        loaded_job = self.model.session.scalars(select(model.Job).filter(model.Job.user == u).limit(1)).first()
-        assert loaded_job.tool_id == "cat1"
-
     def test_job_metrics(self):
         u = model.User(email="jobtest@foo.bar.baz", password="password")
         job = model.Job()
