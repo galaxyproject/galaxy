@@ -234,7 +234,7 @@ const { anySelected, selectedCountText, deleteSelection, deselectAll, duplicateS
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     title="Box Select (Ctrl + 8)"
-                    data-tool="box-select"
+                    data-tool="box_select"
                     :pressed="currentTool === 'boxSelect'"
                     class="button"
                     variant="outline-primary"
