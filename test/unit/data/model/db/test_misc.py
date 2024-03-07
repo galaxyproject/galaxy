@@ -265,3 +265,34 @@ def test_metadata_spec(make_hda):
     assert d.metadata.chromCol == 1
     assert d.metadata.anyAttribute is None
     assert "items" not in d.metadata
+
+
+def test_job_metrics(make_job):
+    job = make_job()
+    job.add_metric("gx", "galaxy_slots", 5)
+    job.add_metric("system", "system_name", "localhost")
+
+    assert len(job.text_metrics) == 1
+    assert job.text_metrics[0].plugin == "system"
+    assert job.text_metrics[0].metric_name == "system_name"
+    assert job.text_metrics[0].metric_value == "localhost"
+    assert len(job.numeric_metrics) == 1
+    assert job.numeric_metrics[0].plugin == "gx"
+    assert job.numeric_metrics[0].metric_name == "galaxy_slots"
+    assert job.numeric_metrics[0].metric_value == 5
+
+
+def test_task_metrics(make_task):
+    task = make_task()
+    task.add_metric("foo", "some-name", "some-value")
+    big_value = ":".join(f"{i}" for i in range(2000))
+    task.add_metric("env", "BIG_PATH", big_value)
+
+    assert len(task.text_metrics) == 2
+    assert task.text_metrics[0].plugin == "foo"
+    assert task.text_metrics[0].metric_name == "some-name"
+    assert task.text_metrics[0].metric_value == "some-value"
+    assert task.text_metrics[1].plugin == "env"
+    assert task.text_metrics[1].metric_name == "BIG_PATH"
+    # Ensure big values truncated
+    assert len(task.text_metrics[1].metric_value) <= 1023

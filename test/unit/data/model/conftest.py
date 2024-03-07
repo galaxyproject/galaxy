@@ -359,6 +359,20 @@ def make_stored_workflow(session, make_user):
 
 
 @pytest.fixture
+def make_task(session, make_job):
+    def f(**kwd):
+        kwd["job"] = kwd.get("job") or make_job()
+        # Assumption: if the following args are needed, a test should supply them
+        kwd["working_directory"] = kwd.get("working_directory") or random_str()
+        kwd["prepare_files_cmd"] = kwd.get("prepare_files_cmd") or random_str()
+        model = m.Task(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_user(session):
     def f(**kwd):
         kwd["username"] = kwd.get("username") or random_str()
