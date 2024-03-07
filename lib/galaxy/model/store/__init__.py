@@ -120,7 +120,10 @@ from ... import model
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
-    from galaxy.model import ImplicitCollectionJobs
+    from galaxy.model import (
+        HistoryItem,
+        ImplicitCollectionJobs,
+    )
     from galaxy.model.tags import GalaxyTagHandlerSession
 
 log = logging.getLogger(__name__)
@@ -1339,9 +1342,6 @@ def _copied_from_object_key(
     return copied_from_object_key
 
 
-HasHid = Union[model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation]
-
-
 class ObjectImportTracker:
     """Keep track of new and existing imported objects.
 
@@ -1359,8 +1359,8 @@ class ObjectImportTracker:
     hda_copied_from_sinks: Dict[ObjectKeyType, ObjectKeyType]
     hdca_copied_from_sinks: Dict[ObjectKeyType, ObjectKeyType]
     jobs_by_key: Dict[ObjectKeyType, model.Job]
-    requires_hid: List[HasHid]
-    copy_hid_for: Dict[HasHid, HasHid]
+    requires_hid: List["HistoryItem"]
+    copy_hid_for: Dict["HistoryItem", "HistoryItem"]
 
     def __init__(self) -> None:
         self.libraries_by_key = {}

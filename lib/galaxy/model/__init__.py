@@ -7035,6 +7035,9 @@ class HistoryDatasetCollectionAssociation(
         return len(results) > 0
 
 
+HistoryItem: TypeAlias = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
+
+
 class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, RepresentById):
     """Associates a DatasetCollection with a library folder."""
 
