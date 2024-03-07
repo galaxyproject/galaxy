@@ -112,7 +112,7 @@ const gridConfig: GridConfig = {
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
     plural: "Histories",
-    sortBy: "name",
+    sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "name", "update_time", "username"],
     title: "Shared Histories",
