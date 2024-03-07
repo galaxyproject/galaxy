@@ -184,6 +184,7 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
         onClick(event);
     } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
         event.preventDefault();
@@ -206,7 +207,8 @@ function onKeyDown(event: KeyboardEvent) {
     }
 }
 
-function onClick(event: KeyboardEvent) {
+function onClick(e: Event) {
+    const event = e as KeyboardEvent;
     if (event && event.shiftKey && isSelectKey(event)) {
         emit("selected-to", false);
     } else if (event && isSelectKey(event)) {
@@ -284,6 +286,12 @@ function onTagClick(tag: string) {
 
 function toggleHighlights() {
     emit("toggleHighlights", props.item);
+}
+
+function unexpandedClick(event: Event) {
+    if (!props.expandDataset) {
+        onClick(event);
+    }
 }
 </script>
 
@@ -364,22 +372,26 @@ function toggleHighlights() {
                     @unhide="emit('unhide')" />
             </div>
         </div>
-        <CollectionDescription
-            v-if="!isDataset"
-            class="px-2 pb-2"
-            :job-state-summary="jobState"
-            :collection-type="item.collection_type"
-            :element-count="item.element_count"
-            :elements-datatypes="item.elements_datatypes" />
-        <StatelessTags
-            v-if="!tagsDisabled || hasTags"
-            class="px-2 pb-2"
-            :value="tags"
-            :disabled="tagsDisabled"
-            :clickable="filterable"
-            :use-toggle-link="false"
-            @input="onTags"
-            @tag-click="onTagClick" />
+        <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
+        <span @click.stop="unexpandedClick">
+            <CollectionDescription
+                v-if="!isDataset"
+                class="px-2 pb-2 cursor-pointer"
+                :job-state-summary="jobState"
+                :collection-type="item.collection_type"
+                :element-count="item.element_count"
+                :elements-datatypes="item.elements_datatypes" />
+            <StatelessTags
+                v-if="!tagsDisabled || hasTags"
+                class="px-2 pb-2"
+                :class="{ 'cursor-pointer': !expandDataset }"
+                :value="tags"
+                :disabled="tagsDisabled"
+                :clickable="filterable"
+                :use-toggle-link="false"
+                @input="onTags"
+                @tag-click="onTagClick" />
+        </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <BCollapse :visible="expandDataset" class="px-2 pb-2">
             <DatasetDetails
