@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import localize from "@/utils/localization";
 
 interface Props {
-    // TODO: Replace with actual datatype type
     genomes: { id: string; text: string }[];
     databaseKeyFromElements: string;
 }
@@ -13,15 +12,18 @@ interface Props {
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    // TODO: Replace with actual datatype type
     (event: "clicked-save", attribute: string, newValue: any): void;
 }>();
 
-const selectedGenome = computed(() => props.genomes.find((element) => element.id == props.databaseKeyFromElements));
+const selectedGenome = ref();
 
 function clickedSave() {
     emit("clicked-save", "dbkey", selectedGenome.value);
 }
+
+onMounted(() => {
+    selectedGenome.value = props.genomes.find((element) => element.id == props.databaseKeyFromElements);
+});
 </script>
 
 <template>
