@@ -127,7 +127,7 @@ function onRemoveAllFreehand() {
 
 useToolLogic();
 
-const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7 } = useMagicKeys();
+const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7, ctrl_8 } = useMagicKeys();
 
 whenever(ctrl_1!, () => (toolbarStore.currentTool = "pointer"));
 whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
@@ -136,6 +136,7 @@ whenever(ctrl_4!, () => (toolbarStore.currentTool = "markdownComment"));
 whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
 whenever(ctrl_6!, () => (toolbarStore.currentTool = "freehandComment"));
 whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
+whenever(ctrl_8!, () => (toolbarStore.currentTool = "boxSelect"));
 
 const toggleVisibilityButtonTitle = computed(() => {
     if (toolbarVisible.value) {
