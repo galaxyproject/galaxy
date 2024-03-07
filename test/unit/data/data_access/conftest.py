@@ -120,6 +120,18 @@ def make_dataset_permissions(session):
 
 
 @pytest.fixture
+def make_galaxy_session(session):
+    def f(**kwd):
+        gs = m.GalaxySession(**kwd)
+        with transaction(session):
+            session.add(gs)
+            session.commit()
+        return gs
+
+    return f
+
+
+@pytest.fixture
 def make_history(session, make_user):
     def f(**kwd):
         kwd["user"] = kwd.get("user", make_user())
