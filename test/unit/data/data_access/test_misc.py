@@ -211,3 +211,12 @@ def test_history_contents(session, make_history, make_hda):
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
     assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+
+
+def test_current_galaxy_session(session, make_user, make_galaxy_session):
+    user = make_user()
+    galaxy_session = make_galaxy_session(user=user)
+    assert user.current_galaxy_session == galaxy_session
+    new_galaxy_session = make_galaxy_session()
+    user.galaxy_sessions.append(new_galaxy_session)
+    assert user.current_galaxy_session == new_galaxy_session
