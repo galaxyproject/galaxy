@@ -23,12 +23,14 @@ const sessionCsrfToken = computed(() => {
     <div class="overflow-auto m-3">
         <ChangePassword
             v-if="hasToken"
+            id="change-password"
             :expired-user="router.currentRoute.query.expired_user"
             :message-text="router.currentRoute.query.message"
             :message-variant="router.currentRoute.query.status"
             :token="router.currentRoute.query.token" />
         <LoginIndex
             v-else-if="isConfigLoaded"
+            id="login-index"
             :allow-user-creation="config.allow_user_creation"
             :enable-oidc="config.enable_oidc"
             :mailing-join-addr="config.mailing_join_addr"
