@@ -62,7 +62,7 @@ export function useSelectionOperations() {
             stepIds.map((id) => [id, structuredClone(ensureDefined(stepStore.steps[id]))])
         );
 
-        fromSimple(id, { comments, steps }, true, { top: 50, left: 100 }, true);
+        fromSimple(id, { comments, steps }, true, { top: 200, left: 100 }, true);
     }
 
     return {
