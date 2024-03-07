@@ -23,7 +23,9 @@ interface Props {
 const props = defineProps<Props>();
 
 const history = computed(() => historyStore.getHistoryById(props.historyId));
+
 const canSwitch = computed(() => !!history.value && !history.value.archived && !history.value.purged);
+
 const actionText = computed(() => (canSwitch.value ? "Switch to" : "View in new tab"));
 
 function onClick(history: HistorySummary) {
@@ -46,12 +48,22 @@ function viewHistoryInNewTab(history: HistorySummary) {
 <template>
     <div>
         <LoadingSpan v-if="!history" />
-        <div v-else v-b-tooltip.hover.top.html :title="`<b>${actionText}</b><br>${history.name}`" class="truncate">
-            <FontAwesomeIcon v-if="history.purged" :icon="faBurn" title="This history has been purged" />
-            <FontAwesomeIcon v-if="history.archived" :icon="faArchive" title="This history has been archived" />
-            <BLink class="history-link" href="#" @click.stop="onClick(history)">
+        <div v-else v-b-tooltip.hover.top.html :title="`<b>${actionText}</b><br>${history.name}`" class="history-link">
+            <BLink class="truncate" href="#" @click.stop="onClick(history)">
                 {{ history.name }}
             </BLink>
+
+            <FontAwesomeIcon v-if="history.purged" :icon="faBurn" fixed-width />
+            <FontAwesomeIcon v-else-if="history.archived" :icon="faArchive" fixed-width />
         </div>
     </div>
 </template>
+
+<style scoped>
+.history-link {
+    display: flex;
+    gap: 1px;
+    align-items: center;
+    justify-content: space-between;
+}
+</style>
