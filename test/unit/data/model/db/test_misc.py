@@ -172,3 +172,29 @@ def test_default_disk_usage(session, make_user):
     u.adjust_total_disk_usage(1, None)
     user_reload = session.get(m.User, u.id)
     assert user_reload.disk_usage == 1
+
+
+def test_history_contents(session, make_history, make_hda):
+    h1 = make_history()
+    d1 = make_hda(history=h1, name="1")
+    d2 = make_hda(history=h1, name="2", visible=False, create_dataset=True, sa_session=session)
+    d2.dataset.object_store_id = "foobar"
+    d3 = make_hda(history=h1, name="3", deleted=True, create_dataset=True, sa_session=session)
+    d3.dataset.object_store_id = "three_store"
+    d4 = make_hda(history=h1, name="4", visible=False, deleted=True)
+
+    def contents_iter_names(**kwds):
+        history = session.get(m.History, h1.id)
+        return [h.name for h in history.contents_iter(**kwds)]
+
+    assert contents_iter_names() == ["1", "2", "3", "4"]
+    assert contents_iter_names(deleted=False) == ["1", "2"]
+    assert contents_iter_names(visible=True) == ["1", "3"]
+    assert contents_iter_names(visible=True, object_store_ids=["three_store"]) == ["3"]
+    assert contents_iter_names(visible=False) == ["2", "4"]
+    assert contents_iter_names(deleted=True, visible=False) == ["4"]
+    assert contents_iter_names(deleted=False, object_store_ids=["foobar"]) == ["2"]
+    assert contents_iter_names(deleted=False, object_store_ids=["foobar2"]) == []
+    assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
+    assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
+    assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
