@@ -20,6 +20,7 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     Json,
@@ -151,11 +152,11 @@ HistoryDatasetAssociationId = Annotated[EncodedDatabaseIdField, Field(..., title
 JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
-DatasetStateField: DatasetState = Field(
-    ...,
-    title="State",
-    description="The current state of this dataset.",
-)
+DatasetStateField = Annotated[
+    DatasetState,
+    BeforeValidator(lambda v: "discarded" if v == "deleted" else v),
+    Field(..., title="State", description="The current state of this dataset."),
+]
 
 CreateTimeField = Field(
     title="Create Time",
@@ -661,7 +662,7 @@ class HDASummary(HDACommon):
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
     )
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     extension: Optional[str] = Field(
         ...,
         title="Extension",
@@ -679,7 +680,7 @@ class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
     accessible: bool = AccessibleField
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
 
 
 HdaLddaField = Field(
@@ -872,7 +873,7 @@ class HDAObject(Model, WithModelClass):
     # If so at least merge models
     id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: HistoryID
     tags: List[str]
@@ -3080,7 +3081,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     date_uploaded: datetime
     is_unrestricted: bool
     is_private: bool
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     file_size: str
     raw_size: int
     ldda_id: EncodedDatabaseIdField
@@ -3650,7 +3651,7 @@ class DatasetSummary(Model):
     id: EncodedDatabaseIdField
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     deleted: bool
     purged: bool
     purgable: bool
