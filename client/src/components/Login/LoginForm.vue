@@ -40,7 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
     redirect: undefined,
     termsUrl: undefined,
     welcomeUrl: undefined,
-    allowUserCreation: true,
+    allowUserCreation: false,
     showWelcomeWithLogin: false,
     registrationWarningMessage: undefined,
 });
