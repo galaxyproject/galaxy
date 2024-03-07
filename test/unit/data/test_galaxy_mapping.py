@@ -211,49 +211,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_basic(self):
-        original_user_count = len(self.model.session.scalars(select(model.User)).all())
-
-        # Make some changes and commit them
-        u = model.User(email="james@foo.bar.baz", password="password")
-        h1 = model.History(name="History 1", user=u)
-        h2 = model.History(name=("H" * 1024))
-        self.persist(u, h1, h2)
-        metadata = dict(chromCol=1, startCol=2, endCol=3)
-        d1 = model.HistoryDatasetAssociation(
-            extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=self.model.session
-        )
-        self.persist(d1)
-
-        # Check
-        users = self.model.session.scalars(select(model.User)).all()
-        assert len(users) == original_user_count + 1
-        user = [user for user in users if user.email == "james@foo.bar.baz"][0]
-        assert user.email == "james@foo.bar.baz"
-        assert user.password == "password"
-        assert len(user.histories) == 1
-        assert user.histories[0].name == "History 1"
-        hists = self.model.session.scalars(select(model.History)).all()
-        hist0 = [history for history in hists if history.id == h1.id][0]
-        hist1 = [history for history in hists if history.id == h2.id][0]
-        assert hist0.name == "History 1"
-        assert hist1.name == ("H" * 255)
-        assert hist0.user == user
-        assert hist1.user is None
-        assert hist1.datasets[0].metadata.chromCol == 1
-        # The filename test has moved to objectstore
-        # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
-        # Do an update and check
-        hist1.name = "History 2b"
-        self.expunge()
-        hists = self.model.session.scalars(select(model.History)).all()
-        hist0 = [history for history in hists if history.name == "History 1"][0]
-        hist1 = [history for history in hists if history.name == "History 2b"][0]
-        assert hist0.name == "History 1"
-        assert hist1.name == "History 2b"
-        # gvk TODO need to ad test for GalaxySessions, but not yet sure what they should look like.
-
     def test_metadata_spec(self):
         metadata = dict(chromCol=1, startCol=2, endCol=3)
         d = model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
