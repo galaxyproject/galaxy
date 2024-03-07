@@ -1254,6 +1254,93 @@ steps:
         assert top % 200 == 0
         assert left % 200 == 0
 
+    @selenium_test
+    def test_editor_selection(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple workflow")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        canvas = editor.canvas_body.wait_for_visible()
+
+        # place tool in center of canvas
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("tool_node")
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, -100))
+
+        # select the node
+        self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
+        assert selection_count.text.find("1 step") != -1
+
+        # duplicate it
+        editor.tool_bar.duplicate_selection.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
+        assert selection_count.text.find("1 step") != -1
+
+        # rename original node
+        editor.label_input.wait_for_and_send_keys("_original")
+
+        # move the node
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, 100))
+
+        # clear selection
+        editor.tool_bar.clear_selection.wait_for_and_click()
+        editor.tool_bar.selection_count.wait_for_absent_or_hidden()
+
+        # select both using box
+        tool_node_original = editor.node._(label="tool_node_original").wait_for_present()
+        editor.tool_bar.tool(tool="box_select").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(
+            from_element=tool_node_original, from_offset=(150, -100), to_element=tool_node, to_offset=(-150, 100)
+        )
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
+        assert selection_count.text.find("2 steps") != -1
+
+        # delete steps
+        editor.tool_bar.delete_selection.wait_for_and_click()
+        editor.tool_bar.selection_count.wait_for_absent_or_hidden()
+        editor.node._(label="tool_node_original").wait_for_absent()
+        editor.node._(label="tool_node").wait_for_absent()
+
+        # place comments
+        editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.mouse_drag(from_element=canvas, from_offset=(-100, -200), to_element=canvas, to_offset=(100, 0))
+
+        editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.mouse_drag(from_element=canvas, from_offset=(-100, 0), to_element=canvas, to_offset=(100, 200))
+
+        # select both using box select
+        editor.tool_bar.tool(tool="box_select").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 210))
+
+        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
+        assert selection_count.text.find("2 comments") != -1
+
+        # deselect one using box select
+        editor.tool_bar.select_mode_remove.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 10))
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
+        assert selection_count.text.find("1 comment") != -1
+
     def get_node_position(self, label: str):
         node = self.components.workflow_editor.node._(label=label).wait_for_present()
 
