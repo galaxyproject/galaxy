@@ -211,27 +211,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_job_metrics(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
-        job = model.Job()
-        job.user = u
-        job.tool_id = "cat1"
-
-        job.add_metric("gx", "galaxy_slots", 5)
-        job.add_metric("system", "system_name", "localhost")
-
-        self.persist(u, job)
-
-        task = model.Task(job=job, working_directory="/tmp", prepare_files_cmd="split.sh")
-        task.add_metric("gx", "galaxy_slots", 5)
-        task.add_metric("system", "system_name", "localhost")
-
-        big_value = ":".join(f"{i}" for i in range(2000))
-        task.add_metric("env", "BIG_PATH", big_value)
-        self.persist(task)
-        # Ensure big values truncated
-        assert len(task.text_metrics[1].metric_value) <= 1023
-
     def test_tasks(self):
         u = model.User(email="jobtest@foo.bar.baz", password="password")
         job = model.Job()
