@@ -2,6 +2,7 @@ import urllib
 
 import requests
 
+from galaxy.version import VERSION
 
 def __append_word_to_user_agent(word):
 
@@ -31,4 +32,4 @@ def __append_word_to_user_agent(word):
     urllib.request.build_opener = new_build_opener
 
 
-__append_word_to_user_agent("galaxy")
+__append_word_to_user_agent(f"galaxy/{VERSION}")
