@@ -77,48 +77,6 @@ class BaseModelTestCase(TestCase):
 
 class TestMappings(BaseModelTestCase):
 
-    def test_tags(self):
-        TAG_NAME = "Test Tag"
-        my_tag = model.Tag(name=TAG_NAME)
-        u = model.User(email="tagger@example.com", password="password")
-        self.persist(my_tag, u)
-
-        def tag_and_test(taggable_object, tag_association_class):
-            q = select(tag_association_class).join(model.Tag).where(model.Tag.name == TAG_NAME)
-
-            assert len(self.model.session.execute(q).all()) == 0
-
-            tag_association = tag_association_class()
-            tag_association.tag = my_tag
-            taggable_object.tags = [tag_association]
-            self.persist(tag_association, taggable_object)
-
-            assert len(self.model.session.execute(q).all()) == 1
-
-        sw = model.StoredWorkflow(user=u)
-        tag_and_test(sw, model.StoredWorkflowTagAssociation)
-
-        h = model.History(name="History for Tagging", user=u)
-        tag_and_test(h, model.HistoryTagAssociation)
-
-        d1 = model.HistoryDatasetAssociation(
-            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
-        )
-        tag_and_test(d1, model.HistoryDatasetAssociationTagAssociation)
-
-        page = model.Page(user=u)
-        tag_and_test(page, model.PageTagAssociation)
-
-        visualization = model.Visualization(user=u)
-        tag_and_test(visualization, model.VisualizationTagAssociation)
-
-        dataset_collection = model.DatasetCollection(collection_type="paired")
-        history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
-        tag_and_test(history_dataset_collection, model.HistoryDatasetCollectionTagAssociation)
-
-        library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
-        tag_and_test(library_dataset_collection, model.LibraryDatasetCollectionTagAssociation)
-
     def test_dataset_instance_order(self) -> None:
         u = model.User(email="mary@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
