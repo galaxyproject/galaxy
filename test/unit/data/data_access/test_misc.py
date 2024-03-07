@@ -244,3 +244,30 @@ def test_history_hid_counter_is_expired_after_next_hid_call(session, make_histor
     assert "hid_counter" in state.unloaded  # this attribute has been expired
     assert "id" not in state.unloaded  # but other attributes have NOT been expired
     assert h.hid_counter == 2  # check this last: this causes this hid_counter to be reloaded
+
+
+def test_get_display_name(session, make_ldda, make_hda, make_history, make_library, make_library_folder):
+
+    def assert_display_name_converts_to_unicode(item, name):
+        assert isinstance(item.get_display_name(), str)
+        assert item.get_display_name() == name
+
+    ldda = make_ldda(name="ldda_name")
+    assert_display_name_converts_to_unicode(ldda, "ldda_name")
+
+    hda = make_hda(name="hda_name")
+    assert_display_name_converts_to_unicode(hda, "hda_name")
+
+    history = make_history(name="history_name")
+    assert_display_name_converts_to_unicode(history, "history_name")
+
+    library = make_library(name="library_name")
+    assert_display_name_converts_to_unicode(library, "library_name")
+
+    library_folder = make_library_folder(name="library_folder")
+    assert_display_name_converts_to_unicode(library_folder, "library_folder")
+
+    history = make_history(name="Hello₩◎ґʟⅾ")
+    assert isinstance(history.name, str)
+    assert isinstance(history.get_display_name(), str)
+    assert history.get_display_name() == "Hello₩◎ґʟⅾ"

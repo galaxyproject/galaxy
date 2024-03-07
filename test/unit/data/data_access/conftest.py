@@ -182,6 +182,18 @@ def make_ldca(session):
 
 
 @pytest.fixture
+def make_ldda(session):
+    def f(**kwd):
+        ldda = m.LibraryDatasetDatasetAssociation(**kwd)
+        with transaction(session):
+            session.add(ldda)
+            session.commit()
+        return ldda
+
+    return f
+
+
+@pytest.fixture
 def make_library(session):
     def f(**kwd):
         lib = m.Library(**kwd)
