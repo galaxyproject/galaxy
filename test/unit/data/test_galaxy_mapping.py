@@ -77,32 +77,6 @@ class BaseModelTestCase(TestCase):
 
 class TestMappings(BaseModelTestCase):
 
-    def test_display_name(self):
-        def assert_display_name_converts_to_unicode(item, name):
-            assert isinstance(item.get_display_name(), str)
-            assert item.get_display_name() == name
-
-        ldda = model.LibraryDatasetDatasetAssociation(name="ldda_name")
-        assert_display_name_converts_to_unicode(ldda, "ldda_name")
-
-        hda = model.HistoryDatasetAssociation(name="hda_name")
-        assert_display_name_converts_to_unicode(hda, "hda_name")
-
-        history = model.History(name="history_name")
-        assert_display_name_converts_to_unicode(history, "history_name")
-
-        library = model.Library(name="library_name")
-        assert_display_name_converts_to_unicode(library, "library_name")
-
-        library_folder = model.LibraryFolder(name="library_folder")
-        assert_display_name_converts_to_unicode(library_folder, "library_folder")
-
-        history = model.History(name="Hello₩◎ґʟⅾ")
-
-        assert isinstance(history.name, str)
-        assert isinstance(history.get_display_name(), str)
-        assert history.get_display_name() == "Hello₩◎ґʟⅾ"
-
     def test_tags(self):
         TAG_NAME = "Test Tag"
         my_tag = model.Tag(name=TAG_NAME)

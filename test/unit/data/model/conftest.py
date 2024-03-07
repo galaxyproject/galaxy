@@ -284,6 +284,16 @@ def make_ldca(session):
 
 
 @pytest.fixture
+def make_ldda(session):
+    def f(**kwd):
+        model = m.LibraryDatasetDatasetAssociation(**kwd)
+        write_to_db(session, model)
+        return model
+
+    return f
+
+
+@pytest.fixture
 def make_library(session):
     def f(**kwd):
         model = m.Library(**kwd)
