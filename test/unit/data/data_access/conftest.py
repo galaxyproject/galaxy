@@ -170,6 +170,18 @@ def make_hdca(session):
 
 
 @pytest.fixture
+def make_job(session):
+    def f(**kwd):
+        job = m.Job(**kwd)
+        with transaction(session):
+            session.add(job)
+            session.commit()
+        return job
+
+    return f
+
+
+@pytest.fixture
 def make_ldca(session):
     def f(**kwd):
         ldca = m.LibraryDatasetCollectionAssociation(**kwd)
@@ -266,6 +278,22 @@ def make_stored_workflow(session, make_user):
             session.add(sw)
             session.commit()
         return sw
+
+    return f
+
+
+@pytest.fixture
+def make_task(session, make_job):
+    def f(**kwd):
+        kwd["job"] = kwd.get("job", make_job())
+        # Assumption: if the following args are needed, a test should supply them
+        kwd["working_directory"] = kwd.get("working_directory", random_str())
+        kwd["prepare_files_cmd"] = kwd.get("prepare_files_cmd", random_str())
+        task = m.Task(**kwd)
+        with transaction(session):
+            session.add(task)
+            session.commit()
+        return task
 
     return f
 
