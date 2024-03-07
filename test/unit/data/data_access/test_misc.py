@@ -25,7 +25,6 @@ class User:
 
 
 def test_ratings(
-    session,
     make_user,
     make_stored_workflow,
     make_history,
@@ -161,7 +160,7 @@ def test_populated_optimized_ok(session, make_dataset_collection, make_dataset_c
     assert c1.populated_optimized
 
 
-def test_populated_optimized_empty_list_list_ok(session, make_dataset_collection, make_dataset_collection_element):
+def test_populated_optimized_empty_list_list_ok(make_dataset_collection, make_dataset_collection_element):
     c1 = make_dataset_collection(collection_type="list")
     c2 = make_dataset_collection(collection_type="list:list")
     make_dataset_collection_element(collection=c2, element=c1)
@@ -171,7 +170,7 @@ def test_populated_optimized_empty_list_list_ok(session, make_dataset_collection
     assert c2.populated_optimized
 
 
-def test_populated_optimized_list_list_not_populated(session, make_dataset_collection, make_dataset_collection_element):
+def test_populated_optimized_list_list_not_populated(make_dataset_collection, make_dataset_collection_element):
     c1 = make_dataset_collection(collection_type="list", populated=False)
     c2 = make_dataset_collection(collection_type="list:list")
     make_dataset_collection_element(collection=c2, element=c1)
@@ -214,7 +213,7 @@ def test_history_contents(session, make_history, make_hda):
     assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
 
 
-def test_current_galaxy_session(session, make_user, make_galaxy_session):
+def test_current_galaxy_session(make_user, make_galaxy_session):
     user = make_user()
     galaxy_session = make_galaxy_session(user=user)
     assert user.current_galaxy_session == galaxy_session
@@ -223,7 +222,7 @@ def test_current_galaxy_session(session, make_user, make_galaxy_session):
     assert user.current_galaxy_session == new_galaxy_session
 
 
-def test_next_hid(session, make_history):
+def test_next_hid(make_history):
     h = make_history()
     assert h.hid_counter == 1
     h._next_hid()
@@ -232,7 +231,7 @@ def test_next_hid(session, make_history):
     assert h.hid_counter == 5
 
 
-def test_history_hid_counter_is_expired_after_next_hid_call(session, make_history):
+def test_history_hid_counter_is_expired_after_next_hid_call(make_history):
     h = make_history()
     state = inspect(h)
     assert h.hid_counter == 1
@@ -246,7 +245,7 @@ def test_history_hid_counter_is_expired_after_next_hid_call(session, make_histor
     assert h.hid_counter == 2  # check this last: this causes this hid_counter to be reloaded
 
 
-def test_get_display_name(session, make_ldda, make_hda, make_history, make_library, make_library_folder):
+def test_get_display_name(make_ldda, make_hda, make_history, make_library, make_library_folder):
 
     def assert_display_name_converts_to_unicode(item, name):
         assert isinstance(item.get_display_name(), str)
