@@ -1633,7 +1633,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def add_output_dataset(self, name, dataset):
         joda = JobToOutputDatasetAssociation(name, dataset)
-        dataset.dataset.job = self
+        if dataset.dataset.job is None:
+            # Only set job if dataset doesn't already have associated job.
+            # database operation tools that make copies should not modify the job here.
+            dataset.dataset.job = self
         add_object_to_object_session(self, joda)
         self.output_datasets.append(joda)
 
