@@ -179,7 +179,7 @@ def test_tools(
     verify_kwds = (verify_kwds or {}).copy()
     tool_test_start = dt.datetime.now()
     history_created = False
-    test_history = None
+    test_history: Optional[str] = None
     if not history_per_test_case:
         if not history_name:
             history_name = f"History for {results.suitename}"
@@ -192,8 +192,8 @@ def test_tools(
                 if log:
                     log.info(f"Using existing history with id '{test_history}', last updated: {history['update_time']}")
         if not test_history:
-            history_created = True
             test_history = galaxy_interactor.new_history(history_name=history_name, publish_history=publish_history)
+            history_created = True
             if log:
                 log.info(f"History created with id '{test_history}'")
     verify_kwds.update(
@@ -231,7 +231,7 @@ def test_tools(
                 log.info(f"Report written to '{destination}'")
                 log.info(results.info_message())
                 log.info(f"Total tool test time: {dt.datetime.now() - tool_test_start}")
-            if history_created and not no_history_cleanup:
+            if test_history and history_created and not no_history_cleanup:
                 galaxy_interactor.delete_history(test_history)
 
 
