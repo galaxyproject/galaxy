@@ -137,7 +137,7 @@ watch(
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
 $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 @import "~@fortawesome/fontawesome-free/scss/solid";
