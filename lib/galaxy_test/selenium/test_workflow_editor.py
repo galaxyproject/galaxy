@@ -1273,22 +1273,20 @@ steps:
         self.action_chains().move_to_element(tool_node).key_down(Keys.SHIFT).click().key_up(Keys.SHIFT).perform()
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
-        assert selection_count.text.find("1 step") != -1
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
 
         # duplicate it
         editor.tool_bar.duplicate_selection.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
-        assert selection_count.text.find("1 step") != -1
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 step") != -1
 
         # rename original node
         editor.label_input.wait_for_and_send_keys("_original")
 
         # move the node
-        tool_node = editor.node._(label="tool_node").wait_for_present()
-        self.mouse_drag(from_element=tool_node, to_element=canvas, to_offset=(0, 100))
+        tool_node_new = editor.node._(label="tool_node").wait_for_present()
+        self.mouse_drag(from_element=tool_node_new, to_element=canvas, to_offset=(0, 100))
 
         # clear selection
         editor.tool_bar.clear_selection.wait_for_and_click()
@@ -1300,12 +1298,11 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
 
         self.mouse_drag(
-            from_element=tool_node_original, from_offset=(150, -100), to_element=tool_node, to_offset=(-150, 100)
+            from_element=tool_node_original, from_offset=(150, -100), to_element=tool_node_new, to_offset=(-150, 100)
         )
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
-        assert selection_count.text.find("2 steps") != -1
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("2 steps") != -1
 
         # delete steps
         editor.tool_bar.delete_selection.wait_for_and_click()
@@ -1328,8 +1325,7 @@ steps:
 
         self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 210))
 
-        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
-        assert selection_count.text.find("2 comments") != -1
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("2 comments") != -1
 
         # deselect one using box select
         editor.tool_bar.select_mode_remove.wait_for_and_click()
@@ -1338,8 +1334,7 @@ steps:
         self.mouse_drag(from_element=canvas, from_offset=(-110, -210), to_element=canvas, to_offset=(110, 10))
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        selection_count: WebElement = editor.tool_bar.selection_count.wait_for_visible()
-        assert selection_count.text.find("1 comment") != -1
+        assert editor.tool_bar.selection_count.wait_for_visible().text.find("1 comment") != -1
 
     def get_node_position(self, label: str):
         node = self.components.workflow_editor.node._(label=label).wait_for_present()
