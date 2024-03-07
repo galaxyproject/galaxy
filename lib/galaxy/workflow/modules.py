@@ -942,7 +942,7 @@ class InputModule(WorkflowModule):
         if input_value is None:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             if default_value is not NO_REPLACEMENT:
-                input_value = raw_to_galaxy(trans, default_value)
+                input_value = raw_to_galaxy(trans.app, trans.history, default_value)
 
         step_outputs = dict(output=input_value)
 

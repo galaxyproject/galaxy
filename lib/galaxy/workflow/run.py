@@ -45,6 +45,7 @@ from galaxy.workflow.run_request import (
 
 if TYPE_CHECKING:
     from galaxy.model import (
+        HistoryItem,
         Workflow,
         WorkflowOutput,
         WorkflowStep,
@@ -422,6 +423,7 @@ class WorkflowProgress:
             modules.NoReplacement,
             model.DatasetCollectionInstance,
             List[model.DatasetCollectionInstance],
+            "HistoryItem",
         ] = modules.NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
@@ -446,7 +448,7 @@ class WorkflowProgress:
             for step_input in step.inputs:
                 if step_input.name == prefixed_name and step_input.default_value_set:
                     if is_data:
-                        replacement = raw_to_galaxy(trans, step_input.default_value)
+                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
@@ -713,7 +715,7 @@ class WorkflowProgress:
         )
 
     def raw_to_galaxy(self, value: dict):
-        return raw_to_galaxy(self.module_injector.trans, value)
+        return raw_to_galaxy(self.module_injector.trans.app, self.module_injector.trans.history, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         try:
