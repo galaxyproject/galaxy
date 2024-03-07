@@ -11005,10 +11005,9 @@ export interface components {
             };
             /**
              * Latest workflow UUID
-             * Format: uuid4
              * @description TODO
              */
-            latest_workflow_uuid: string;
+            latest_workflow_uuid?: string | null;
             /**
              * License
              * @description SPDX Identifier of the license associated with this workflow.
