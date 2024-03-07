@@ -212,13 +212,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_metadata_spec(self):
-        metadata = dict(chromCol=1, startCol=2, endCol=3)
-        d = model.HistoryDatasetAssociation(extension="interval", metadata=metadata, sa_session=self.model.session)
-        assert d.metadata.chromCol == 1
-        assert d.metadata.anyAttribute is None
-        assert "items" not in d.metadata
-
     def test_job_metrics(self):
         u = model.User(email="jobtest@foo.bar.baz", password="password")
         job = model.Job()

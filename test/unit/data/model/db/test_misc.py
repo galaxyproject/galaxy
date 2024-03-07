@@ -258,3 +258,11 @@ def test_get_display_name(session, make_ldda, make_hda, make_history, make_libra
     assert isinstance(history.name, str)
     assert isinstance(history.get_display_name(), str)
     assert history.get_display_name() == "Hello₩◎ґʟⅾ"
+
+
+def test_metadata_spec(make_hda):
+    metadata = dict(chromCol=1, startCol=2, endCol=3)
+    d = make_hda(extension="interval", metadata=metadata)
+    assert d.metadata.chromCol == 1
+    assert d.metadata.anyAttribute is None
+    assert "items" not in d.metadata
