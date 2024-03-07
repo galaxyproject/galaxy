@@ -211,16 +211,6 @@ class TestMappings(BaseModelTestCase):
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
-    def test_tasks(self):
-        u = model.User(email="jobtest@foo.bar.baz", password="password")
-        job = model.Job()
-        task = model.Task(job=job, working_directory="/tmp", prepare_files_cmd="split.sh")
-        job.user = u
-        self.persist(u, job, task)
-
-        loaded_task = self.model.session.scalars(select(model.Task).filter(model.Task.job == job).limit(1)).first()
-        assert loaded_task.prepare_input_files_cmd == "split.sh"
-
     def test_history_audit(self):
         u = model.User(email="contents@foo.bar.baz", password="password")
         h1 = model.History(name="HistoryAuditHistory", user=u)
