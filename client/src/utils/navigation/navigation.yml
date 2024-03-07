@@ -718,8 +718,8 @@ workflow_editor:
       select_mode_remove: "[data-option='select-mode-remove']"
       selection_count: ".selection-options > span"
       clear_selection: "[title='clear selection']"
-      duplicate_selection: "[title='duplicate selection']"
-      delete_selection: "[title='delete selection']"
+      duplicate_selection: "[title='duplicate selected']"
+      delete_selection: "[title='delete selected']"
   comment:
     selectors:
       _: ".workflow-editor-comment"
