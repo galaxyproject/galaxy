@@ -138,7 +138,7 @@ from galaxy.util import (
     heartbeat,
     listify,
     StructuredExecutionTimer,
-    user_agent,
+    user_agent, # noqa: F401
 )
 from galaxy.util.task import IntervalTask
 from galaxy.util.tool_shed import tool_shed_registry
