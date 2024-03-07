@@ -7,11 +7,11 @@ import {
     faExchangeAlt,
     faFileArchive,
     faFileExport,
+    faList,
     faLock,
     faPlay,
     faPlus,
     faShareAlt,
-    faSitemap,
     faStream,
     faTrash,
     faUserLock,
@@ -50,7 +50,7 @@ library.add(
     faPlay,
     faPlus,
     faShareAlt,
-    faSitemap,
+    faList,
     faStream,
     faTrash,
     faUserLock
@@ -204,7 +204,7 @@ function userTitle(title: string) {
                         :disabled="isAnonymous"
                         :title="userTitle('Display Workflow Invocations')"
                         @click="$router.push(`/histories/${history.id}/invocations`)">
-                        <FontAwesomeIcon fixed-width :icon="faSitemap" class="fa-rotate-270 mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faList" class="mr-1" />
                         <span v-localize>Show Invocations</span>
                     </BDropdownItem>
 
