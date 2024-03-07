@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faClock, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
 
 import { invocationCountsFetcher } from "@/api/workflows";
 import localize from "@/utils/localization";
 
-library.add(faClock, faSitemap);
+library.add(faList);
 
 interface Props {
     workflow: any;
@@ -34,7 +34,6 @@ onMounted(initCounts);
 <template>
     <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
         <BBadge v-if="count != undefined && count === 0" pill class="list-view">
-            <FontAwesomeIcon :icon="faClock" fixed-width />
             <span>never run</span>
         </BBadge>
         <BBadge
@@ -44,7 +43,7 @@ onMounted(initCounts);
             :title="localize('View workflow invocations')"
             class="outline-badge cursor-pointer list-view"
             :to="`/workflows/${props.workflow.id}/invocations`">
-            <FontAwesomeIcon :icon="faClock" fixed-width />
+            <FontAwesomeIcon :icon="faList" fixed-width />
 
             <span>
                 workflow runs:
@@ -59,7 +58,7 @@ onMounted(initCounts);
             variant="link"
             size="sm"
             :to="`/workflows/${props.workflow.id}/invocations`">
-            <FontAwesomeIcon :icon="faClock" fixed-width />
+            <FontAwesomeIcon :icon="faList" fixed-width />
         </BButton>
     </div>
 </template>
