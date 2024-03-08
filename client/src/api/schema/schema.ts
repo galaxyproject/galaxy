@@ -9752,7 +9752,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */
@@ -12474,7 +12474,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */

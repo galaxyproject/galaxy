@@ -2275,7 +2275,7 @@ class SubworkflowStep(WorkflowStepBase):
 
 class Creator(Model):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-    name: str = Field(..., title="Name", description="The name of the creator.")
+    name: Optional[str] = Field(None, title="Name", description="The name of the creator.")
     address: Optional[str] = Field(
         None,
         title="Address",
