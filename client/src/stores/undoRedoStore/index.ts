@@ -47,6 +47,19 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         redoActionStack.value = [];
     }
 
+    /**
+     * constructs a new action inline
+     *
+     * @example
+     * action()
+     *     .onRun(() => console.log("run"))
+     *     .onUndo(() => console.log("undo"))
+     *     .apply();
+     */
+    function action() {
+        return new FactoryAction((action) => applyAction(action));
+    }
+
     return {
         undoActionStack,
         redoActionStack,
@@ -54,5 +67,60 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         undo,
         redo,
         applyAction,
+        action,
     };
 });
+
+class FactoryAction extends UndoRedoAction {
+    private applyCallback: (action: FactoryAction) => void;
+
+    private runCallback?: () => void;
+    private undoCallback?: () => void;
+    private redoCallback?: () => void;
+    private destroyCallback?: () => void;
+
+    constructor(applyCallback: (action: FactoryAction) => void) {
+        super();
+        this.applyCallback = applyCallback;
+    }
+
+    onRun(callback: typeof this.runCallback) {
+        this.runCallback = callback;
+        return this;
+    }
+
+    onUndo(callback: typeof this.undoCallback) {
+        this.undoCallback = callback;
+        return this;
+    }
+
+    onRedo(callback: typeof this.redoCallback) {
+        this.redoCallback = callback;
+        return this;
+    }
+
+    onDestroy(callback: typeof this.destroyCallback) {
+        this.destroyCallback = callback;
+        return this;
+    }
+
+    apply() {
+        this.applyCallback(this);
+    }
+
+    run() {
+        this.runCallback ? this.runCallback() : null;
+    }
+
+    undo() {
+        this.undoCallback ? this.undoCallback() : null;
+    }
+
+    redo() {
+        this.redoCallback ? this.redoCallback() : this.run();
+    }
+
+    destroy() {
+        this.destroyCallback ? this.destroyCallback() : null;
+    }
+}
