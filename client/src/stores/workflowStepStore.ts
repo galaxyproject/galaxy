@@ -137,6 +137,8 @@ interface StepInputMapOver {
     [index: number]: { [index: string]: CollectionTypeDescriptor };
 }
 
+export type WorkflowStepStore = ReturnType<typeof useWorkflowStepStore>;
+
 export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (workflowId) => {
     const steps = ref<Steps>({});
     const stepMapOver = ref<{ [index: number]: CollectionTypeDescriptor }>({});
