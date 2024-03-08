@@ -8953,7 +8953,7 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     dict_element_visible_keys = ["id", "workflow_step_id", "workflow_invocation_id", "subworkflow_invocation_id"]
 
 
-class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
+class WorkflowInvocationMessage(Base, Dictifiable):
     __tablename__ = "workflow_invocation_message"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     workflow_invocation_id: Mapped[int] = mapped_column(
