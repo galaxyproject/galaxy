@@ -55,9 +55,9 @@ NESTED_ASSERT_LIST = yaml.safe_load(
 
 def test_nested_asserts():
     asserts = to_test_assert_list(NESTED_ASSERT_LIST)
-    assert len(asserts) == 1
-    assert len(asserts[0]["children"]) == 2
-    assert asserts[0]["children"][0]["tag"] == "has_text"
-    assert asserts[0]["children"][0]["attributes"]["text"] == "a text"
-    assert asserts[0]["children"][1]["tag"] == "has_text"
-    assert asserts[0]["children"][1]["attributes"]["text"] == "another text"
+    assert asserts and len(asserts) == 1
+    assert asserts and asserts[0]["children"] and len(asserts[0]["children"]) == 2
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][0]["tag"] == "has_text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][0]["attributes"]["text"] == "a text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][1]["tag"] == "has_text"
+    assert asserts and asserts[0]["children"] and asserts[0]["children"][1]["attributes"]["text"] == "another text"
