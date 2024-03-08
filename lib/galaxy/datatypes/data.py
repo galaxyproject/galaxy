@@ -1298,17 +1298,12 @@ class Directory(Data):
         if preview:
             root_folder = dataset.metadata.root_folder
             index_file = dataset.metadata.index_file
-            if not filename or filename == 'index':
+            if not filename or filename == "index":
                 if root_folder is not None and index_file:
                     # display the index file in lieu of the empty primary dataset
                     file_path = os.path.join(dataset.extra_files_path, root_folder, index_file)
                     self._clean_and_set_mime_type(trans, "text/plain", headers)  # type: ignore[arg-type]
-                    return self._yield_user_file_content(
-                        trans,
-                        dataset,
-                        file_path,
-                        headers
-                    ), headers
+                    return self._yield_user_file_content(trans, dataset, file_path, headers), headers
                 elif root_folder:
                     # delegate to the parent method, which knows how to display
                     # a directory
@@ -1317,9 +1312,13 @@ class Directory(Data):
                     # No meaningful display available, show an info message instead
                     self._clean_and_set_mime_type(trans, "text/plain", headers)  # type: ignore[arg-type]
                     if root_folder is None:
-                        return util.smart_str("Cannot generate preview with incomplete metadata. Resetting metadata may help.")
+                        return util.smart_str(
+                            "Cannot generate preview with incomplete metadata. Resetting metadata may help."
+                        )
                     elif self.recognized_index_files:
-                        return util.smart_str("None of the known key files for the datatype present. Is the datatype format set correctly?")
+                        return util.smart_str(
+                            "None of the known key files for the datatype present. Is the datatype format set correctly?"
+                        )
                     else:
                         return util.smart_str("No preview available for this dataset."), headers
 
