@@ -1315,7 +1315,7 @@ class Directory(Data):
                     filename = root_folder
                 else:
                     # No meaningful display available, show an info message instead
-                    self._clean_and_set_mime_type(trans, "text/plain", headers) # type: ignore[arg-type]
+                    self._clean_and_set_mime_type(trans, "text/plain", headers)  # type: ignore[arg-type]
                     if root_folder is None:
                         return util.smart_str("Cannot generate preview with incomplete metadata. Resetting metadata may help.")
                     elif self.recognized_index_files:
