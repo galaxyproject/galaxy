@@ -1,5 +1,5 @@
 import { UndoRedoAction } from "@/stores/undoRedoStore";
-import type { BaseWorkflowComment, WorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
+import type { BaseWorkflowComment, WorkflowComment, WorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 
 class CommentStoreAction extends UndoRedoAction {
     store: WorkflowCommentStore;
@@ -11,17 +11,35 @@ class CommentStoreAction extends UndoRedoAction {
 }
 
 export class AddCommentAction extends CommentStoreAction {
+    comment: WorkflowComment;
+
     constructor(store: WorkflowCommentStore, comment: BaseWorkflowComment) {
         super(store);
+        this.comment = structuredClone(this.store.commentsRecord[comment.id]!);
+    }
 
-        const newComment = structuredClone(this.store.commentsRecord[comment.id]!);
+    undo() {
+        this.store.deleteComment(this.comment.id);
+    }
 
-        this.onUndo(() => {
-            this.store.deleteComment(newComment.id);
-        });
+    redo() {
+        this.store.addComments([this.comment]);
+    }
+}
 
-        this.onRedo(() => {
-            this.store.addComments([newComment]);
-        });
+export class DeleteCommentAction extends CommentStoreAction {
+    comment: WorkflowComment;
+
+    constructor(store: WorkflowCommentStore, comment: WorkflowComment) {
+        super(store);
+        this.comment = structuredClone(this.store.commentsRecord[comment.id]!);
+    }
+
+    run() {
+        this.store.deleteComment(this.comment.id);
+    }
+
+    undo() {
+        this.store.addComments([this.comment]);
     }
 }
