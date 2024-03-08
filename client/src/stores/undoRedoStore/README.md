@@ -133,7 +133,7 @@ let lazyAction: ChangeCommentPositionAction | null = null;
 
 function onCommentChangePosition(position: Position) {
     if (lazyAction && undoRedoStore.isQueued(lazyAction)) {
-        lazyAction.changePosition(position);
+        lazyAction.updatePosition(position);
     } else {
         lazyAction = new ChangeCommentPositionAction(commentStore, comment, position);
         undoRedoStore.applyLazyAction(lazyAction);
