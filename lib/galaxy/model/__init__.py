@@ -103,6 +103,7 @@ from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
     column_property,
+    DeclarativeBase,
     deferred,
     joinedload,
     Mapped,
@@ -116,6 +117,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm.collections import attribute_keyed_dict
 from sqlalchemy.sql import exists
+from sqlalchemy.sql.expression import FromClause
 from typing_extensions import (
     Literal,
     Protocol,
@@ -221,23 +223,15 @@ CANNOT_SHARE_PRIVATE_DATASET_MESSAGE = "Attempting to share a non-shareable data
 
 
 if TYPE_CHECKING:
-    # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
-
-    class DeclarativeMeta(_DeclarativeMeta, type):
-        pass
-
     from galaxy.datatypes.data import Data
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
 
     class _HasTable:
-        table: Table
-        __table__: Table
+        table: FromClause
+        __table__: FromClause
 
 else:
-    from sqlalchemy.orm import DeclarativeMeta
-
     _HasTable = object
 
 
@@ -249,7 +243,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(_HasTable, metaclass=DeclarativeMeta):
+class Base(_HasTable, DeclarativeBase):
     __abstract__ = True
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     mapper_registry.metadata = metadata
