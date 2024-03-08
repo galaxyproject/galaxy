@@ -1243,26 +1243,6 @@ class Directory(Data):
         visible=False,
     )
 
-    MetadataElement(
-        name="folder_size",
-        default=0,
-        desc="Total size of the folder in bytes",
-        readonly=True,
-        optional=False,
-        visible=False,
-    )
-
-    @classmethod
-    def _get_size(cls, root_path):
-        total_size = 0
-        for dirpath, dirnames, filenames in os.walk(root_path):
-            for f in filenames:
-                fp = os.path.join(dirpath, f)
-                # skip if it is symbolic link
-                if not os.path.islink(fp):
-                    total_size += os.path.getsize(fp)
-        return total_size
-
     def set_meta(self, dataset: DatasetProtocol, **kwd):
         efp = dataset.extra_files_path
         efp_items = os.listdir(efp)
@@ -1277,12 +1257,11 @@ class Directory(Data):
                 index_file = f
                 break
         dataset.metadata.index_file = index_file
-        dataset.metadata.folder_size = self._get_size(os.path.join(efp, dataset.metadata.root_folder))
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"{dataset.metadata.root_folder}"
-            dataset.blurb = nice_size(dataset.metadata.folder_size)
+            dataset.blurb = nice_size(dataset.dataset.total_size)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
