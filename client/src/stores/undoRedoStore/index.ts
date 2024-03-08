@@ -4,6 +4,10 @@ import { defineScopedStore } from "@/stores/scopedStore";
 
 import { UndoRedoAction } from "./undoRedoAction";
 
+export { UndoRedoAction } from "./undoRedoAction";
+
+export type UndoRedoStore = ReturnType<typeof useUndoRedoStore>;
+
 export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const undoActionStack = ref<UndoRedoAction[]>([]);
     const redoActionStack = ref<UndoRedoAction[]>([]);
@@ -12,7 +16,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     function undo() {
         const action = undoActionStack.value.pop();
 
-        if (action) {
+        if (action !== undefined) {
             action.undo();
             redoActionStack.value.push(action);
         }
@@ -21,7 +25,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     function redo() {
         const action = redoActionStack.value.pop();
 
-        if (action) {
+        if (action !== undefined) {
             action.redo();
             undoActionStack.value.push(action);
         }

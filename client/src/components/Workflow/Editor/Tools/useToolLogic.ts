@@ -1,6 +1,7 @@
 import simplify from "simplify-js";
 import { watch } from "vue";
 
+import { UndoRedoAction, type UndoRedoStore } from "@/stores/undoRedoStore";
 import type { BaseWorkflowComment, WorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { type WorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { assertDefined } from "@/utils/assertions";
@@ -8,7 +9,11 @@ import { match } from "@/utils/utils";
 
 import { vecMax, vecMin, vecReduceFigures, vecSnap, vecSubtract, type Vector } from "../modules/geometry";
 
-export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentStore: WorkflowCommentStore) {
+export function useToolLogic(
+    toolbarStore: WorkflowEditorToolbarStore,
+    commentStore: WorkflowCommentStore,
+    undoRedoStore: UndoRedoStore
+) {
     let comment: BaseWorkflowComment | null = null;
     let start: Vector | null = null;
 
@@ -20,7 +25,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             if (comment?.type === "freehand") {
                 finalizeFreehandComment(comment);
             } else {
-                comment = null;
+                applyCommentAction();
             }
         }
     );
@@ -105,22 +110,40 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             toolbarStore.currentTool = "pointer";
         }
 
-        comment = null;
+        applyCommentAction();
     });
 
     toolbarStore.onInputCatcherEvent("pointerleave", () => {
         if (comment?.type === "freehand") {
             finalizeFreehandComment(comment);
-            comment = null;
+            applyCommentAction();
         }
     });
 
     toolbarStore.onInputCatcherEvent("temporarilyDisabled", () => {
         if (comment?.type === "freehand") {
             finalizeFreehandComment(comment);
-            comment = null;
+            applyCommentAction();
         }
     });
+
+    function applyCommentAction() {
+        if (comment) {
+            const newComment = structuredClone(commentStore.commentsRecord[comment.id]!);
+            const action = new UndoRedoAction();
+
+            action.onUndo(() => {
+                commentStore.deleteComment(newComment.id);
+            });
+            action.onRedo(() => {
+                commentStore.addComments([newComment]);
+            });
+
+            undoRedoStore.applyAction(action);
+        }
+
+        comment = null;
+    }
 
     const finalizeFreehandComment = (comment: BaseWorkflowComment) => {
         const freehandComment = commentStore.commentsRecord[comment.id];
