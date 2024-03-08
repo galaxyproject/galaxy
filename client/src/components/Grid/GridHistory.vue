@@ -17,7 +17,7 @@ const userStore = useUserStore();
 library.add(faPlus);
 
 interface Props {
-    activeList?: "my" | "shared" | "published";
+    activeList?: "archived" | "my" | "shared" | "published";
     username?: string;
 }
 
@@ -63,6 +63,9 @@ const props = withDefaults(defineProps<Props>(), {
             </BNavItem>
             <BNavItem id="histories-published-tab" :active="activeList === 'published'" to="/histories/list_published">
                 Public Histories
+            </BNavItem>
+            <BNavItem id="histories-published-tab" :active="activeList === 'archived'" to="/histories/archived">
+                Archived Histories
             </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
