@@ -45,7 +45,7 @@ def create_database(db_url, database=None, encoding="utf8", template=None):
 
 @contextmanager
 def sqlalchemy_engine(url):
-    engine = create_engine(url, future=True)
+    engine = create_engine(url)
     try:
         yield engine
     finally:
