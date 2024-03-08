@@ -241,7 +241,6 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     mapper_registry.metadata = metadata
     registry = mapper_registry
-    __init__ = mapper_registry.constructor
     table: FromClause
 
     @classmethod
