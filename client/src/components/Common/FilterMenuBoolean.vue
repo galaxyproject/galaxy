@@ -2,14 +2,13 @@
 import { BFormGroup, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
+import type { ValidFilter } from "@/utils/filtering";
+
 type FilterType = string | boolean | undefined;
 
 interface Props {
     name: string;
-    filter: {
-        boolType?: string;
-        placeholder: string;
-    };
+    filter: ValidFilter<any>;
     filters: {
         [k: string]: FilterType;
     };

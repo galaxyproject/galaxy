@@ -29,6 +29,14 @@ const operatorForAlias = {
     eq: ":",
 } as const satisfies Record<string, string>;
 
+export type ErrorType = {
+    filter: string;
+    index?: string;
+    value?: string;
+    typeError?: string;
+    msg: string;
+};
+
 type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
