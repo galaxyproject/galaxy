@@ -50,7 +50,6 @@ interface Props {
     history: HistorySummary;
     filter?: string;
     canEditHistory?: boolean;
-    shouldShowControls?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
@@ -61,7 +60,6 @@ const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
     canEditHistory: true,
-    shouldShowControls: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -510,13 +508,13 @@ function setItemDragstart(
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastCheckedTime"
-                        :show-controls="shouldShowControls"
+                        :show-controls="canEditHistory"
                         :filter-text.sync="filterText"
                         :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
-                        v-if="shouldShowControls"
+                        v-if="canEditHistory"
                         :history="history"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
