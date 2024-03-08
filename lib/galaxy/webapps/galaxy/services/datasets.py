@@ -884,7 +884,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # If stats were requested, return them.
             if "stats" in kwargs:
                 if stats["data"]["max"] == 0:
-                    return DataResult(dataset_type=indexer.dataset_type, data=None)
+                    return DataResult(dataset_type=indexer.dataset_type, data=[])
                 else:
                     return stats
 
