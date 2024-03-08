@@ -135,7 +135,6 @@ async function onImportCopy(history: ArchivedHistorySummary) {
 </script>
 <template>
     <section id="archived-histories" class="d-flex flex-column">
-        <h1>Archived Histories</h1>
         <div>
             <DelayedInput
                 :query="searchText"
