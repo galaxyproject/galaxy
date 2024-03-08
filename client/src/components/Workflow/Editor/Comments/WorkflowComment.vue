@@ -5,6 +5,14 @@ import { computed } from "vue";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
+import {
+    ChangeColorAction,
+    ChangeDataAction,
+    ChangePositionAction,
+    ChangeSizeAction,
+    DeleteCommentAction,
+} from "../Actions/commentActions";
+
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
 import MarkdownComment from "./MarkdownComment.vue";
@@ -28,18 +36,34 @@ const cssVariables = computed(() => ({
     "--height": `${props.comment.size[1]}px`,
 }));
 
-const { commentStore } = useWorkflowStores();
+const { commentStore, undoRedoStore } = useWorkflowStores();
+let lazyAction: ChangeDataAction | ChangePositionAction | ChangeSizeAction | null = null;
 
 function onUpdateData(data: any) {
-    commentStore.changeData(props.comment.id, data);
+    if (lazyAction instanceof ChangeDataAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(data);
+    } else {
+        lazyAction = new ChangeDataAction(commentStore, props.comment, data);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onResize(size: [number, number]) {
-    commentStore.changeSize(props.comment.id, size);
+    if (lazyAction instanceof ChangeSizeAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(size);
+    } else {
+        lazyAction = new ChangeSizeAction(commentStore, props.comment, size);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onMove(position: [number, number]) {
-    commentStore.changePosition(props.comment.id, position);
+    if (lazyAction instanceof ChangePositionAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.updateData(position);
+    } else {
+        lazyAction = new ChangePositionAction(commentStore, props.comment, position);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -47,11 +71,11 @@ function onPan(position: { x: number; y: number }) {
 }
 
 function onRemove() {
-    commentStore.deleteComment(props.comment.id);
+    undoRedoStore.applyAction(new DeleteCommentAction(commentStore, props.comment));
 }
 
 function onSetColor(color: WorkflowCommentColor) {
-    commentStore.changeColor(props.comment.id, color);
+    undoRedoStore.applyAction(new ChangeColorAction(commentStore, props.comment, color));
 }
 </script>
 
