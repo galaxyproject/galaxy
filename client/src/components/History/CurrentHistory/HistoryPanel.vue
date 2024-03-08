@@ -80,7 +80,7 @@ const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
     return historyItems.value.reduce((acc: ContentItemRef, item) => {
-        acc[`item-${item.id}`] = ref(null);
+        acc[`item-${item.hid}`] = ref(null);
         return acc;
     }, {});
 });
@@ -413,8 +413,8 @@ onMounted(async () => {
     await loadHistoryItems();
     // if there is a listOffset, we are coming from a collection view, so focus on item at that offset
     if (props.listOffset) {
-        const itemId = historyItems.value[props.listOffset]?.id;
-        const itemElement = contentItemRefs.value[`item-${itemId}`]?.value?.$el as HTMLElement;
+        const itemHid = historyItems.value[props.listOffset]?.hid;
+        const itemElement = contentItemRefs.value[`item-${itemHid}`]?.value?.$el as HTMLElement;
         itemElement?.focus();
     }
 });
@@ -427,7 +427,7 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
         nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
     }
     if (nextItem) {
-        const itemElement = contentItemRefs.value[`item-${nextItem.id}`]?.value?.$el as HTMLElement;
+        const itemElement = contentItemRefs.value[`item-${nextItem.hid}`]?.value?.$el as HTMLElement;
         itemElement?.focus();
     }
     return nextItem;
@@ -586,7 +586,7 @@ function setItemDragstart(
                             <template v-slot:item="{ item, currentOffset }">
                                 <ContentItem
                                     :id="item.hid"
-                                    :ref="contentItemRefs[`item-${item.id}`]"
+                                    :ref="contentItemRefs[`item-${item.hid}`]"
                                     is-history-item
                                     :item="item"
                                     :name="item.name"
