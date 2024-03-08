@@ -140,3 +140,25 @@ function onCommentChangePosition(position: Position) {
     }
 }
 ```
+
+## Tips and Tricks
+
+**Do not rely on data which may be deleted by an Action**
+
+For example, relying on a vue component instance, or any object instance for that matter may break,
+if the object gets deleted and re-created.
+
+Instead treat all data as if it were serializable.
+
+**Operate on stores as much as you can**
+
+The safest thing to mutate from an Undo-Redo Action is a store, since they are singletons by nature,
+and you can be fairly certain that they will be around as long as your UndoRedoStore instance will be.
+
+**Use shallow and deep copies to avoid state mutation**
+
+Accidentally mutating the state of an action once it is applies breaks the undo-redo stack.
+Undoing or Redoing an action may now no longer yield the same results.
+
+Using shallow copies (`{ ...object }; [ ...array ];`) or deep copies (`structuredClone(object)`),
+avoids accidental mutation.
