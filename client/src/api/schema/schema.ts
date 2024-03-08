@@ -12107,18 +12107,17 @@ export interface components {
              * Label
              * @description Label of the input.
              */
-            label: string;
+            label: string | null;
             /**
              * UUID
-             * Format: uuid4
              * @description Universal unique identifier of the input.
              */
-            uuid: string;
+            uuid: string | null;
             /**
              * Value
              * @description TODO
              */
-            value: string;
+            value: Record<string, never> | null;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
