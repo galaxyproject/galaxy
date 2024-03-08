@@ -139,7 +139,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
             <DelayedInput
                 :query="searchText"
                 class="m-1 mb-3"
-                placeholder="Search by name"
+                placeholder="search by name"
                 @change="updateSearchQuery" />
             <BAlert v-if="isLoading" variant="info" show>
                 <LoadingSpan v-if="isLoading" message="Loading archived histories" />
