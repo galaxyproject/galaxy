@@ -339,7 +339,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(
-    base.ModelManager[model.DatasetInstance],
+    base.ModelManager[model.DatasetInstance],  # type:ignore[type-var]
     secured.AccessibleManagerMixin,
     secured.OwnableManagerMixin,
     deletable.PurgableManagerMixin,

@@ -13,8 +13,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import registry
+from sqlalchemy.sql.expression import FromClause
 
-from galaxy.model import _HasTable
 from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup,
     dbcleanup_wrapper,
@@ -156,14 +156,16 @@ mapper_registry = registry()
 
 
 @mapper_registry.mapped
-class Foo(_HasTable):
+class Foo:
+    __table__: FromClause
     __tablename__ = "foo"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
 
 
 @mapper_registry.mapped
-class Bar(_HasTable):
+class Bar:
+    __table__: FromClause
     __tablename__ = "bar"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)

@@ -227,13 +227,6 @@ if TYPE_CHECKING:
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
 
-    class _HasTable:
-        table: FromClause
-        __table__: FromClause
-
-else:
-    _HasTable = object
-
 
 def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     if isinstance(uuid, UUID):
@@ -243,12 +236,13 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(_HasTable, DeclarativeBase):
+class Base(DeclarativeBase):
     __abstract__ = True
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     mapper_registry.metadata = metadata
     registry = mapper_registry
     __init__ = mapper_registry.constructor
+    table: FromClause
 
     @classmethod
     def __declare_last__(cls):
@@ -4413,7 +4407,7 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
     return ret
 
 
-class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
+class DatasetInstance(RepresentById, UsesCreateAndUpdateTime):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
 
     states = Dataset.states
@@ -4424,6 +4418,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     validated_states = DatasetValidatedState
+    table: FromClause
+    __table__: FromClause
 
     def __init__(
         self,
@@ -11108,6 +11104,7 @@ HistoryDatasetAssociation.table = Table(
         "hidden_beneath_collection_instance_id", ForeignKey("history_dataset_collection_association.id"), nullable=True
     ),
 )
+HistoryDatasetAssociation.__table__ = HistoryDatasetAssociation.table
 
 LibraryDatasetDatasetAssociation.table = Table(
     "library_dataset_dataset_association",
@@ -11152,6 +11149,7 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("message", TrimmedString(255)),
 )
+LibraryDatasetDatasetAssociation.__table__ = LibraryDatasetDatasetAssociation.table
 
 
 mapper_registry.map_imperatively(
