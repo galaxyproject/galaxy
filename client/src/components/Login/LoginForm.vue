@@ -35,13 +35,10 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    enableOidc: false,
     showResetLink: true,
     redirect: undefined,
     termsUrl: undefined,
     welcomeUrl: undefined,
-    allowUserCreation: false,
-    showWelcomeWithLogin: false,
     registrationWarningMessage: undefined,
 });
 
@@ -62,7 +59,7 @@ const messageVariant = ref<"info" | "danger">("info");
 const headerWelcome = ref(localize("Welcome to Galaxy, please log in"));
 const labelNameAddress = ref(localize("Public Name or Email Address"));
 const connectExternalEmail = ref(urlParams.get("connect_external_email"));
-const connectExternalLabel = ref(urlParams.get("connect_externallocalizeabel"));
+const connectExternalLabel = ref(urlParams.get("connect_external_label"));
 const connectExternalProvider = ref(urlParams.get("connect_external_provider"));
 const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "true");
 
@@ -96,11 +93,11 @@ async function submitLogin() {
         }
 
         if (response.data.expired_user) {
-            router.push(`/root/login?expired_user=${response.data.expired_user}`);
+            window.location.href = withPrefix(`/root/login?expired_user=${response.data.expired_user}`);
         } else if (connectExternalProvider.value) {
-            router.push("/user/external_ids?connect_external=true");
+            window.location.href = withPrefix("/user/external_ids?connect_external=true");
         } else if (response.data.redirect) {
-            router.push(encodeURI(response.data.redirect));
+            window.location.href = withPrefix(encodeURI(response.data.redirect));
         } else {
             window.location.href = withPrefix("/");
         }

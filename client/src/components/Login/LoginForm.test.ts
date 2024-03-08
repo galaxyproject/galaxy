@@ -89,7 +89,7 @@ describe("LoginForm", () => {
         const originalLocation = window.location;
         jest.spyOn(window, "location", "get").mockImplementation(() => ({
             ...originalLocation,
-            search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_externallocalizeabel=${provider_label}`,
+            search: `?connect_external_email=${external_email}&connect_external_provider=${provider_id}&connect_external_label=${provider_label}`,
         }));
 
         const wrapper = await mountLoginForm();
