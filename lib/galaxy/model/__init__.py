@@ -9129,7 +9129,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         back_populates="workflow_invocation_step",
         viewonly=True,
     )
-    order_index = column_property(
+    order_index: Mapped[int] = column_property(
         select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
