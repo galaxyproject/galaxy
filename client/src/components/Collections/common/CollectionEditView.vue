@@ -7,6 +7,7 @@ import { BAlert, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { copyCollection } from "@/api/datasetCollections";
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "@/components/providers";
 import { useConfig } from "@/composables/config";
 import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
@@ -38,10 +39,7 @@ const { currentHistoryId } = storeToRefs(historyStore);
 
 const jobError = ref(null);
 const errorMessage = ref("");
-const noQuotaIncreaseMessage = ref("Your quota will not increase.");
-const newCollectionMessage = ref("This will create a new collection in your History.");
 const infoMessage = ref("This will create a new collection in your History. Your quota will not increase.");
-const expectWaitTimeMessage = ref("This operation might take a short while, depending on the size of your collection.");
 
 const attributesData = computed(() => {
     return collectionAttributesStore.getAttributes(props.collectionId);
@@ -59,19 +57,16 @@ function updateInfoMessage(strMessage: string) {
 
 // TODO: Replace with actual datatype type
 async function clickedSave(attribute: string, newValue: any) {
-    const url = prependPath(`/api/dataset_collections/${props.collectionId}/copy`);
-    const data: { dbkey?: string } = {};
-
-    if (attribute == "dbkey") {
-        data["dbkey"] = newValue.id;
-    } else {
+    if (attribute !== "dbkey") {
         // TODO: extend this to other attributes that could be changed
         console.error(`Changing ${attribute} not implemented`);
         return;
     }
 
+    const dbKey = newValue.id;
+
     try {
-        await axios.post(url, data).catch(handleError);
+        await copyCollection(props.collectionId, dbKey);
     } catch (err) {
         errorMessage.value = errorMessageAsString(err, "History import failed.");
     }
@@ -141,7 +136,11 @@ function handleError(err: any) {
         <BTabs content-class="mt-3">
             <BTab
                 title-link-class="collection-edit-change-genome-nav"
-                @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
+                @click="
+                    updateInfoMessage(
+                        'This will create a new collection in your History. Your quota will not increase.'
+                    )
+                ">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faTable" />
                     &nbsp; {{ localize("Database/Build") }}
@@ -163,7 +162,7 @@ function handleError(err: any) {
                 <BTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
-                    @click="updateInfoMessage(newCollectionMessage)">
+                    @click="updateInfoMessage('This will create a new collection in your History.')">
                     <template v-slot:title>
                         <FontAwesomeIcon :icon="faCog" />
                         &nbsp; {{ localize("Convert") }}
@@ -176,7 +175,11 @@ function handleError(err: any) {
             <BTab
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 title-link-class="collection-edit-change-datatype-nav"
-                @click="updateInfoMessage(expectWaitTimeMessage)">
+                @click="
+                    updateInfoMessage(
+                        'This operation might take a short while, depending on the size of your collection.'
+                    )
+                ">
                 <template v-slot:title>
                     <FontAwesomeIcon :icon="faDatabase" />
                     &nbsp; {{ localize("Datatypes") }}
