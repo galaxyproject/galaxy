@@ -4,6 +4,7 @@ import requests
 
 from galaxy.version import VERSION
 
+
 def __append_word_to_user_agent(word):
 
     # set requests User-Agent
