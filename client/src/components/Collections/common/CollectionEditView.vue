@@ -16,7 +16,7 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { HistoryContentBulkOperationPayload, updateHistories } from "./services";
+import { HistoryContentBulkOperationPayload, updateHistoryItemsBulk } from "./services";
 
 import ChangeDatatypeTab from "@/components/Collections/common/ChangeDatatypeTab.vue";
 import DatabaseEditTab from "@/components/Collections/common/DatabaseEditTab.vue";
@@ -106,7 +106,7 @@ async function clickedDatatypeChange(selectedDatatype: any) {
     };
 
     try {
-        await updateHistories(currentHistoryId.value ?? "", data);
+        await updateHistoryItemsBulk(currentHistoryId.value ?? "", data);
     } catch (err) {
         errorMessage.value = errorMessageAsString(err, "History import failed.");
     }
