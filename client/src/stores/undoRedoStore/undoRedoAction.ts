@@ -1,22 +1,38 @@
 export class UndoRedoAction {
-    onRun?: () => void;
-    onUndo?: () => void;
-    onRedo?: () => void;
-    onDestroy?: () => void;
+    runCallback?: () => void;
+    undoCallback?: () => void;
+    redoCallback?: () => void;
+    destroyCallback?: () => void;
+
+    onRun(callback: typeof this.runCallback) {
+        this.runCallback = callback;
+    }
+
+    onUndo(callback: typeof this.undoCallback) {
+        this.undoCallback = callback;
+    }
+
+    onRedo(callback: typeof this.redoCallback) {
+        this.redoCallback = callback;
+    }
+
+    onDestroy(callback: typeof this.destroyCallback) {
+        this.destroyCallback = callback;
+    }
 
     run() {
-        this.onRun ? this.onRun() : null;
+        this.runCallback ? this.runCallback() : null;
     }
 
     undo() {
-        this.onUndo ? this.onUndo() : null;
+        this.undoCallback ? this.undoCallback() : null;
     }
 
     redo() {
-        this.onRedo ? this.onRedo() : this.run();
+        this.redoCallback ? this.redoCallback() : this.run();
     }
 
     destroy() {
-        this.onDestroy ? this.onDestroy() : null;
+        this.destroyCallback ? this.destroyCallback() : null;
     }
 }

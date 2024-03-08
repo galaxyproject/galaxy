@@ -165,6 +165,7 @@
 </template>
 
 <script>
+import { useMagicKeys, whenever } from "@vueuse/core";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
@@ -247,7 +248,13 @@ export default {
         const uid = unref(useUid("workflow-editor-"));
         const id = ref(props.workflowId || uid);
 
-        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id);
+        const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
+
+        const { undo, redo } = undoRedoStore;
+        const { ctrl_z, ctrl_y } = useMagicKeys();
+
+        whenever(ctrl_z, undo);
+        whenever(ctrl_y, redo);
 
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
