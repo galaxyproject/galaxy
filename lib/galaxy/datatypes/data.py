@@ -1212,12 +1212,14 @@ class Text(Data):
 class Directory(Data):
     """Class representing a directory of files."""
 
+    file_ext = "directory"
+
     # The behavior of this class is intended to be similar to that of
     # composite types, but with arbitrary structure of extra_files.
 
     # A prioritized list of files in the directory that, if present, can serve
     # as a replacement for a composite type's primary dataset.
-    recognized_index_files = []
+    recognized_index_files: List[str] = []
 
     # Directories converted from archives, and possibly others, have a single
     # root folder inside the directory. The root_folder attribute lets tools
