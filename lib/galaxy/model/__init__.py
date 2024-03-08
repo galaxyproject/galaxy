@@ -2979,7 +2979,7 @@ class HistoryAudit(Base):
     __tablename__ = "history_audit"
     __table_args__ = (PrimaryKeyConstraint(sqlite_on_conflict="IGNORE"),)
 
-    history_id = mapped_column(Integer, ForeignKey("history.id"), primary_key=True, nullable=False)
+    history_id: Mapped[int] = mapped_column(Integer, ForeignKey("history.id"), primary_key=True, nullable=False)
     update_time: Mapped[datetime] = mapped_column(DateTime, default=now, primary_key=True, nullable=False)
 
     # This class should never be instantiated.
@@ -9478,7 +9478,7 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Se
     dataset_collection_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("history_dataset_collection_association.id", name="fk_wiodca_dci"), index=True
     )
-    workflow_output_id = mapped_column(Integer, ForeignKey("workflow_output.id", name="fk_wiodca_woi"), index=True)
+    workflow_output_id: Mapped[int] = mapped_column(Integer, ForeignKey("workflow_output.id", name="fk_wiodca_woi"), index=True)
 
     workflow_invocation = relationship("WorkflowInvocation", back_populates="output_dataset_collections")
     workflow_step = relationship("WorkflowStep")
@@ -11106,7 +11106,7 @@ class CeleryUserRateLimit(Base):
 
     __tablename__ = "celery_user_rate_limit"
 
-    user_id = mapped_column(Integer, ForeignKey("galaxy_user.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("galaxy_user.id", ondelete="CASCADE"), primary_key=True)
     last_scheduled_time: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
     def __repr__(self):
