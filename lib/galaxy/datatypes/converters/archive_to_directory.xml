@@ -18,6 +18,9 @@
     </configfiles>
     <inputs>
         <param format="tar,zip" name="input1" type="data"/>
+        <param name="__target_datatype__" type="select" label="Target data type">
+            <option value="directory">directory</option>
+        </param>
     </inputs>
     <outputs provided_metadata_file="metadata_json">
         <data format="auto" name="output1"/>
@@ -25,6 +28,7 @@
     <tests>
         <test>
             <param name="input1" ftype="tar" value="testdir1.tar"/>
+            <param name="__target_datatype__" value="directory"/>
             <output name="output1" ftype="directory" value="testdir1.tar.directory"/>
         </test>
     </tests>
