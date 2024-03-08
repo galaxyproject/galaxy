@@ -59,7 +59,7 @@ def verify_database_is_initialized(db_url: str) -> None:
     if not database_exists(db_url):
         raise DatabaseDoesNotExistError(db_url)
 
-    engine = create_engine(db_url, future=True)
+    engine = create_engine(db_url)
     try:
         db_state = DatabaseStateCache(engine=engine)
         if db_state.is_database_empty() or db_state.contains_only_kombu_tables():
@@ -161,7 +161,7 @@ class LegacyManageDb:
         """
         db_url = gxy_db_url or self.gxy_db_url
         try:
-            engine = create_engine(db_url, future=True)
+            engine = create_engine(db_url)
             version = self._get_gxy_alembic_db_version(engine)
             if not version:
                 version = self._get_gxy_sam_db_version(engine)
@@ -197,7 +197,7 @@ class LegacyManageDb:
 
     def _upgrade(self, db_url, model):
         try:
-            engine = create_engine(db_url, future=True)
+            engine = create_engine(db_url)
             am = get_alembic_manager(engine)
             am.upgrade(model)
         finally:

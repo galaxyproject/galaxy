@@ -106,9 +106,9 @@ def build_engine(
         set_sqlite_connect_args(engine_options, url)
 
     if url.startswith("sqlite://") and url not in ("sqlite:///:memory:", "sqlite://"):
-        engine = create_engine(url, **engine_options, poolclass=NullPool, future=True)
+        engine = create_engine(url, **engine_options, poolclass=NullPool)
     else:
-        engine = create_engine(url, **engine_options, future=True)
+        engine = create_engine(url, **engine_options)
 
     # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())
