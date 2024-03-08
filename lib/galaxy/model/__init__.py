@@ -251,7 +251,6 @@ class Base(DeclarativeBase, _HasTable):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     mapper_registry.metadata = metadata
     registry = mapper_registry
-    __init__ = mapper_registry.constructor
 
     @classmethod
     def __declare_last__(cls):
