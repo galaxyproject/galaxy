@@ -281,9 +281,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/list_published",
                         component: GridHistory,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "histories/archived",
@@ -381,9 +382,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "pages/list_published",
                         component: GridPage,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "storage/history/:historyId",

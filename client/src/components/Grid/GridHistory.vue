@@ -18,9 +18,10 @@ library.add(faPlus);
 
 interface Props {
     activeList?: "my" | "shared" | "published";
+    username?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
 });
 </script>
@@ -66,6 +67,6 @@ withDefaults(defineProps<Props>(), {
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
         <GridList v-else-if="activeList === 'shared'" :grid-config="historiesSharedGridConfig" embedded />
-        <GridList v-else :grid-config="historiesPublishedGridConfig" embedded />
+        <GridList v-else :grid-config="historiesPublishedGridConfig" :username-search="props.username" embedded />
     </div>
 </template>
