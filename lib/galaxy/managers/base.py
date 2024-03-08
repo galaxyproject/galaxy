@@ -193,7 +193,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
 
 
 # =============================================================================
-U = TypeVar("U", bound=model._HasTable)
+U = TypeVar("U", bound=model.Base)
 
 
 # -----------------------------------------------------------------------------
@@ -999,7 +999,7 @@ class ModelFilterParser(HasAModelManager):
     # (as the model informs how the filter params are parsed)
     # I have no great idea where this 'belongs', so it's here for now
 
-    model_class: Type[model._HasTable]
+    model_class: Type[Union[model.Base, model.DatasetInstance]]
     parsed_filter = parsed_filter
     orm_filter_parsers: OrmFilterParsersType
     fn_filter_parsers: FunctionFilterParsersType

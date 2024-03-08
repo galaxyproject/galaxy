@@ -10,8 +10,8 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import registry
+from sqlalchemy.sql.expression import FromClause
 
-from galaxy.model import _HasTable
 from galaxy.model.unittest_utils.mapping_testing_utils import (
     collection_consists_of_objects,
     has_index,
@@ -75,14 +75,16 @@ mapper_registry = registry()
 
 
 @mapper_registry.mapped
-class Foo(_HasTable):
+class Foo:
+    __table__: FromClause
     __tablename__ = "foo"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
 
 
 @mapper_registry.mapped
-class Bar(_HasTable):
+class Bar:
+    __table__: FromClause
     __tablename__ = "bar"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
