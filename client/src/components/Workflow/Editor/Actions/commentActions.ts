@@ -5,6 +5,7 @@ import type {
     WorkflowCommentColor,
     WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
+import { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 
 class CommentAction extends UndoRedoAction {
     protected store: WorkflowCommentStore;
@@ -64,7 +65,6 @@ class MutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoActio
     private commentId: number;
     private startData: WorkflowComment[K];
     private endData: WorkflowComment[K];
-    private ran = false;
     protected applyDataCallback: (commentId: number, data: WorkflowComment[K]) => void;
 
     constructor(
@@ -82,17 +82,12 @@ class MutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoActio
     }
 
     updateData(data: WorkflowComment[K]) {
-        if (this.ran) {
-            throw new Error("data of a mutation action can not be changed once the action was run");
-        } else {
-            this.endData = data;
-            this.applyDataCallback(this.commentId, this.endData);
-        }
+        this.endData = data;
+        this.applyDataCallback(this.commentId, this.endData);
     }
 
-    run() {
+    redo() {
         this.applyDataCallback(this.commentId, this.endData);
-        this.ran = true;
     }
 
     undo() {
@@ -118,5 +113,77 @@ export class ChangeSizeAction extends MutateCommentAction<"size"> {
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, size: [number, number]) {
         const callback = store.changeSize;
         super(comment, "size", size, callback);
+    }
+}
+
+type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
+
+export class MoveMultipleAction extends UndoRedoAction {
+    private commentStore;
+    private stepStore;
+    private comments;
+    private steps;
+
+    private stepStartOffsets = new Map<number, [number, number]>();
+    private commentStartOffsets = new Map<number, [number, number]>();
+
+    private positionFrom;
+    private positionTo;
+
+    constructor(
+        commentStore: WorkflowCommentStore,
+        stepStore: WorkflowStepStore,
+        comments: WorkflowComment[],
+        steps: StepWithPosition[],
+        position: { x: number; y: number }
+    ) {
+        super();
+        this.commentStore = commentStore;
+        this.stepStore = stepStore;
+        this.comments = [...comments];
+        this.steps = [...steps];
+
+        this.steps.forEach((step) => {
+            this.stepStartOffsets.set(step.id, [step.position.left - position.x, step.position.top - position.y]);
+        });
+
+        this.comments.forEach((comment) => {
+            this.commentStartOffsets.set(comment.id, [
+                comment.position[0] - position.x,
+                comment.position[1] - position.y,
+            ]);
+        });
+
+        this.positionFrom = { ...position };
+        this.positionTo = { ...position };
+    }
+
+    changePosition(position: { x: number; y: number }) {
+        this.setPosition(position);
+        this.positionTo = { ...position };
+    }
+
+    private setPosition(position: { x: number; y: number }) {
+        this.steps.forEach((step) => {
+            const stepPosition = { left: 0, top: 0 };
+            const offset = this.stepStartOffsets.get(step.id) ?? [0, 0];
+            stepPosition.left = position.x + offset[0];
+            stepPosition.top = position.y + offset[1];
+            this.stepStore.updateStep({ ...step, position: stepPosition });
+        });
+
+        this.comments.forEach((comment) => {
+            const offset = this.commentStartOffsets.get(comment.id) ?? [0, 0];
+            const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
+            this.commentStore.changePosition(comment.id, commentPosition);
+        });
+    }
+
+    undo() {
+        this.setPosition(this.positionFrom);
+    }
+
+    redo() {
+        this.setPosition(this.positionTo);
     }
 }

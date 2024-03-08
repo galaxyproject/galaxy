@@ -13,6 +13,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
+import { MoveMultipleAction } from "../Actions/commentActions";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -66,7 +67,11 @@ function getInnerText() {
 }
 
 function saveText() {
-    emit("change", { ...props.comment.data, title: getInnerText() });
+    const text = getInnerText();
+
+    if (text !== props.comment.data.title) {
+        emit("change", { ...props.comment.data, title: text });
+    }
 }
 
 const showColorSelector = ref(false);
@@ -91,7 +96,7 @@ function onSetColor(color: WorkflowCommentColor) {
     emit("set-color", color);
 }
 
-const { stateStore, stepStore, commentStore } = useWorkflowStores();
+const { stateStore, stepStore, commentStore, undoRedoStore } = useWorkflowStores();
 
 function getStepsInBounds(bounds: AxisAlignedBoundingBox) {
     const steps: StepWithPosition[] = [];
@@ -139,8 +144,8 @@ type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
 let stepsInBounds: StepWithPosition[] = [];
 let commentsInBounds: WorkflowComment[] = [];
-const stepStartOffsets = new Map<number, [number, number]>();
-const commentStartOffsets = new Map<number, [number, number]>();
+
+let lazyAction: MoveMultipleAction | null = null;
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -157,39 +162,25 @@ function onDragStart() {
     stepsInBounds = getStepsInBounds(aabb);
     commentsInBounds = getCommentsInBounds(aabb);
 
-    stepsInBounds.forEach((step) => {
-        stepStartOffsets.set(step.id, [step.position.left - aabb.x, step.position.top - aabb.y]);
-    });
+    commentsInBounds.push(props.comment);
 
-    commentsInBounds.forEach((comment) => {
-        commentStartOffsets.set(comment.id, [comment.position[0] - aabb.x, comment.position[1] - aabb.y]);
-    });
+    lazyAction = new MoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
+    undoRedoStore.applyLazyAction(lazyAction);
 }
 
 function onDragEnd() {
     saveText();
     stepsInBounds = [];
     commentsInBounds = [];
-    stepStartOffsets.clear();
-    commentStartOffsets.clear();
+    undoRedoStore.flushLazyAction();
 }
 
 function onMove(position: { x: number; y: number }) {
-    stepsInBounds.forEach((step) => {
-        const stepPosition = { left: 0, top: 0 };
-        const offset = stepStartOffsets.get(step.id) ?? [0, 0];
-        stepPosition.left = position.x + offset[0];
-        stepPosition.top = position.y + offset[1];
-        stepStore.updateStep({ ...step, position: stepPosition });
-    });
-
-    commentsInBounds.forEach((comment) => {
-        const offset = commentStartOffsets.get(comment.id) ?? [0, 0];
-        const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
-        commentStore.changePosition(comment.id, commentPosition);
-    });
-
-    emit("move", [position.x, position.y]);
+    if (lazyAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.changePosition(position);
+    } else {
+        onDragStart();
+    }
 }
 
 function onDoubleClick() {
@@ -273,7 +264,6 @@ onMounted(() => {
                 class="draggable-pan"
                 @move="onMove"
                 @mouseup="onDragEnd"
-                @start="onDragStart"
                 @pan-by="(p) => emit('pan-by', p)" />
 
             <div class="frame-comment-header">

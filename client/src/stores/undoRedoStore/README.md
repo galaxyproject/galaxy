@@ -71,3 +71,72 @@ Classes offer the advantage that they can be defined in another file, and easily
 They also make it easier to store and keep track of the state required by the action.
 
 The inline factory is good for short, simple actions that need little to no state.
+
+## Lazy Actions
+
+Sometimes many similar events happen in a short time frame, and we do not want to save them all as individual actions.
+One example for this may be entering text. Having every individual letter as an undo action is not practical.
+
+This is where lazy actions come in. They can be applied, by calling `undoRedoStore.applyLazyAction`.
+
+When calling this function, the actual applying of the action is delayed, and as long as it hasn't entered the undo stack, we can mutate the action.
+
+In order to check if an action is still waiting to be applied, we can use `undoRedoStore.isQueued`.
+As long as this check returns true, it is save to mutate the action.
+
+Applying any action, or applying a new lazy action, will apply the currently pending action and push it to the undo stack.
+Lazy actions can also be ran immediately, canceled, or have their time delay extended.
+
+Due to the additional complexity introduced by mutating action state, it is not recommended to use lazy actions together with the factory api.
+
+Here is an example of a lazy action in action.
+
+```ts
+class ChangeCommentPositionAction extends UndoRedoAction {
+    private store: WorkflowCommentStore;
+    private commentId: number;
+    private startPosition: Position;
+    private endPosition: Position;
+
+    constructor(
+        store: WorkflowCommentStore,
+        comment: WorkflowComment,
+        position: Position
+    ) {
+        super();
+        this.store
+        this.commentId = comment.id;
+        this.startPosition = structuredClone(position);
+        this.endPosition = structuredClone(position);
+        this.store.changePosition(this.commentId, position);
+    }
+
+    updatePosition(position: Position) {
+        this.endPosition = position;
+        this.store.changePosition(this.commentId, position);
+    }
+
+    redo() {
+        this.store.changePosition(this.commentId, this.endPosition);
+    }
+
+    undo() {
+        this.store.changePosition(this.commentId, this.startPosition);
+    }
+}
+```
+
+In this example, we would call `updatePosition` as long as the action hasn't been applied to the undo stack.
+
+```ts
+let lazyAction: ChangeCommentPositionAction | null = null;
+
+function onCommentChangePosition(position: Position) {
+    if (lazyAction && undoRedoStore.isQueued(lazyAction)) {
+        lazyAction.changePosition(position);
+    } else {
+        lazyAction = new ChangeCommentPositionAction(commentStore, comment, position);
+        undoRedoStore.applyLazyAction(lazyAction);
+    }
+}
+```
