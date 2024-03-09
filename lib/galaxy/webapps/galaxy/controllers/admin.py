@@ -125,8 +125,7 @@ class UserListGrid(grids.GridData):
         }
         deleted = False
         purged = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -195,8 +194,7 @@ class RoleListGrid(grids.GridData):
         }
         deleted = False
         query = query.filter(self.model_class.type != self.model_class.types.PRIVATE)
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -255,8 +253,7 @@ class GroupListGrid(grids.GridData):
             "is": "is",
         }
         deleted = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
@@ -326,8 +323,7 @@ class QuotaListGrid(grids.GridData):
             "is": "is",
         }
         deleted = False
-        search_query = kwargs.get("search")
-        if search_query:
+        if search_query := kwargs.get("search"):
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):

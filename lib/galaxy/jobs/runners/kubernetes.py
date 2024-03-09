@@ -972,8 +972,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             log.debug(f"No service found for job with k8s_job_name {k8s_job_name}")
         # remove the interactive environment entrypoints
-        eps = job_wrapper.get_job().interactivetool_entry_points
-        if eps:
+        if eps := job_wrapper.get_job().interactivetool_entry_points:
             log.debug(f"Removing entry points for job with ID {job_wrapper.get_id_tag()}")
             self.app.interactivetool_manager.remove_entry_points(eps)
 
