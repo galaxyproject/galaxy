@@ -44,11 +44,11 @@ NESTED_ASSERT_LIST = yaml.safe_load(
     """
 - has_archive_member:
     path: ".*"
-    children:
-    - has_text:
-        text: "a text"
-    - has_text:
-        text: "another text"
+    asserts:
+      - has_text:
+          text: "a text"
+      - has_text:
+          text: "another text"
 """
 )
 
