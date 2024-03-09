@@ -824,7 +824,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def join_url_and_params(self, url: str, params, query=None) -> str:
         if params is None:
-            params = dict()
+            params = {}
         if query is None:
             query = urlparse(url).query
         if query:
@@ -1510,7 +1510,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         return self.get_repository_metadata_for_db_object(self._db_repository(repository))
 
     def get_repository_metadata_for_db_object(self, repository: DbRepository):
-        return [metadata_revision for metadata_revision in repository.metadata_revisions]
+        return list(repository.metadata_revisions)
 
     def get_repository_metadata_by_changeset_revision(self, repository_id: int, changeset_revision):
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(
@@ -2069,8 +2069,8 @@ class ShedTwillTestCase(ShedApiTestCase):
         assert found_it, f"Did not find invalid tool file {name} in {invalid_tools}"
 
     def verify_unchanged_repository_metadata(self, repository: Repository):
-        old_metadata = dict()
-        new_metadata = dict()
+        old_metadata = {}
+        new_metadata = {}
         for metadata in self.get_repository_metadata(repository):
             old_metadata[metadata.changeset_revision] = metadata.metadata
         self.reset_repository_metadata(repository)

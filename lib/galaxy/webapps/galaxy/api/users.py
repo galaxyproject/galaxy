@@ -738,7 +738,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         if not preferences:
             return []
-        extra_pref_inputs = list()
+        extra_pref_inputs = []
         # Build sections for different categories of inputs
         user_vault = UserVaultWrapper(trans.app.vault, user)
         for item, value in preferences.items():
@@ -787,7 +787,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
-        inputs = list()
+        inputs = []
         user_info = {
             "email": email,
             "username": username,
@@ -956,7 +956,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.values = form_values
 
         # Update values for extra user preference items
-        extra_user_pref_data = dict()
+        extra_user_pref_data = {}
         extra_pref_keys = self._get_extra_user_preferences(trans)
         user_vault = UserVaultWrapper(trans.app.vault, user)
         if extra_pref_keys is not None:
@@ -1134,7 +1134,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return {"message": "Toolbox filters have been saved."}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
-        filter_inputs = list()
+        filter_inputs = []
         filter_values = saved_values.get(filter_type, [])
         filter_config = filter_types[filter_type]["config"]
         filter_title = filter_types[filter_type]["title"]

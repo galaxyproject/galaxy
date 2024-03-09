@@ -2210,8 +2210,8 @@ class HexrdMaterials(H5):
         try:
             with h5py.File(dataset.get_file_name(), "r") as mat_file:
                 dataset.metadata.materials = list(mat_file.keys())
-                sgn = dict()
-                lp = dict()
+                sgn = {}
+                lp = {}
                 for m in mat_file.keys():
                     if "SpaceGroupNumber" in mat_file[m] and len(mat_file[m]["SpaceGroupNumber"]) > 0:
                         sgn[m] = mat_file[m]["SpaceGroupNumber"][0].item()
@@ -2401,8 +2401,8 @@ class SQlite(Binary):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         try:
             tables = []
-            columns = dict()
-            rowcounts = dict()
+            columns = {}
+            rowcounts = {}
             conn = sqlite.connect(dataset.get_file_name())
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"

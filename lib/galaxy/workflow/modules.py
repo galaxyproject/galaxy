@@ -826,7 +826,7 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict()
+        state.inputs = {}
         return state
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
@@ -1673,7 +1673,7 @@ class PauseModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict()
+        state.inputs = {}
         return state
 
     def execute(

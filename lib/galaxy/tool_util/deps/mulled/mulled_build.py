@@ -150,7 +150,7 @@ def get_affected_packages(args):
 def conda_versions(pkg_name, file_name):
     """Return all conda version strings for a specified package name."""
     j = json.load(open(file_name))
-    ret = list()
+    ret = []
     for pkg in j["packages"].values():
         if pkg["name"] == pkg_name:
             ret.append(f"{pkg['version']}--{pkg['build']}")

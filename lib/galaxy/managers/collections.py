@@ -350,7 +350,7 @@ class DatasetCollectionManager:
                 suitable_converters = suitable_converters.intersection(set_of_new_converters)
                 if suitable_converters:
                     most_recent_datatype = datatype
-        suitable_tool_ids = list()
+        suitable_tool_ids = []
         for tool in suitable_converters:
             tool_info = {
                 "tool_id": tool[1].id,

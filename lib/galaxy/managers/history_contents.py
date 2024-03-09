@@ -236,9 +236,7 @@ class HistoryContentsManager(base.SortableManager):
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map: Dict[str, List[int]] = dict(
-            [(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])]
-        )
+        id_map: Dict[str, List[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)

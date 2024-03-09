@@ -112,7 +112,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
 
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         # Start the job runner parent object

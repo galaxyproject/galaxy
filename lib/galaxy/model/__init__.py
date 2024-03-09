@@ -2576,7 +2576,7 @@ class FakeDatasetAssociation:
 
     def __init__(self, dataset=None):
         self.dataset = dataset
-        self.metadata = dict()
+        self.metadata = {}
 
     def get_file_name(self, sync_cache=True):
         return self.dataset.get_file_name(sync_cache)
@@ -4255,8 +4255,8 @@ class Dataset(Base, StorableObject, Serializable):
             total_size=to_int(self.total_size),
             created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or "") or None,
-            hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes)),
-            sources=list(map(lambda s: s.serialize(id_encoder, serialization_options), self.sources)),
+            hashes=[h.serialize(id_encoder, serialization_options) for h in self.hashes],
+            sources=[s.serialize(id_encoder, serialization_options) for s in self.sources],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
@@ -4418,7 +4418,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.designation = designation
         # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
         self._metadata = None
-        self.metadata = metadata or dict()
+        self.metadata = metadata or {}
         self.metadata_deferred = metadata_deferred
         self.extended_metadata = extended_metadata
         if (
@@ -6585,7 +6585,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             type=self.collection_type,
             populated_state=self.populated_state,
             populated_state_message=self.populated_state_message,
-            elements=list(map(lambda e: e.serialize(id_encoder, serialization_options), self.elements)),
+            elements=[e.serialize(id_encoder, serialization_options) for e in self.elements],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
@@ -8507,7 +8507,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .where(WorkflowInvocation.handler.is_(None))
             .order_by(WorkflowInvocation.id.asc())
         )
-        return [wid for wid in sa_session.scalars(stmt)]
+        return list(sa_session.scalars(stmt))
 
     @staticmethod
     def poll_active_workflow_ids(engine, scheduler=None, handler=None):

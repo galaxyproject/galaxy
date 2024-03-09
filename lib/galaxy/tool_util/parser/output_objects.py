@@ -128,7 +128,7 @@ class ToolOutput(ToolOutputBase):
             as_dict["edam_format"] = edam_format
             edam_data = app.datatypes_registry.edam_data.get(self.format)
             as_dict["edam_data"] = edam_data
-        as_dict["discover_datasets"] = list(map(lambda d: d.to_dict(), self.dataset_collector_descriptions))
+        as_dict["discover_datasets"] = [d.to_dict() for d in self.dataset_collector_descriptions]
         return as_dict
 
     @staticmethod

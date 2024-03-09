@@ -298,7 +298,7 @@ def parse_legacy_index_query_params(
     if types:
         content_types = parse_content_types(types)
     else:
-        content_types = [e for e in HistoryContentType]
+        content_types = list(HistoryContentType)
 
     id_list = None
     if ids:

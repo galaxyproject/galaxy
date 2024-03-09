@@ -377,7 +377,7 @@ class MatchedRepositoryGrid(grids.Grid):
 
 
 class InstallMatchedRepositoryGrid(MatchedRepositoryGrid):
-    columns = [col for col in MatchedRepositoryGrid.columns]
+    columns = list(MatchedRepositoryGrid.columns)
     # Override the NameColumn
     columns[0] = MatchedRepositoryGrid.NameColumn(
         "Name", link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)), attach_popup=False
@@ -748,7 +748,7 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
 class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToolTestComponentsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with missing tool test components"
-    columns = [col for col in RepositoriesMissingToolTestComponentsGrid.columns]
+    columns = list(RepositoriesMissingToolTestComponentsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -915,7 +915,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
 class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with invalid tools"
-    columns = [col for col in RepositoriesWithInvalidToolsGrid.columns]
+    columns = list(RepositoriesWithInvalidToolsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.

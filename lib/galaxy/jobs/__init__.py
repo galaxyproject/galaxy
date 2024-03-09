@@ -122,7 +122,7 @@ class JobDestination(Bunch):
         self["env"] = []
         self["resubmit"] = []
         # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
-        self["params"] = dict()
+        self["params"] = {}
 
         # Use the values persisted in an existing job
         if "from_job" in kwds and kwds["from_job"].destination_id is not None:
@@ -143,7 +143,7 @@ class JobToolConfiguration(Bunch):
     def __init__(self, **kwds):
         self["handler"] = None
         self["destination"] = None
-        self["params"] = dict()
+        self["params"] = {}
         super().__init__(**kwds)
 
     def get_resource_group(self):
@@ -448,7 +448,7 @@ class JobConfiguration(ConfiguresHandlers):
         execution_dict = job_config_dict.get("execution", {})
         environments = execution_dict.get("environments", [])
         enviroment_iter = (
-            map(lambda e: (e["id"], e), environments) if isinstance(environments, list) else environments.items()
+            ((e["id"], e) for e in environments) if isinstance(environments, list) else environments.items()
         )
         for environment_id, environment_dict in enviroment_iter:
             metrics = environment_dict.get("metrics")
@@ -520,11 +520,11 @@ class JobConfiguration(ConfiguresHandlers):
                 assert tool_class is None
                 tool_id = raw_tool_id.lower().rstrip("/")
                 if tool_id not in self.tools:
-                    self.tools[tool_id] = list()
+                    self.tools[tool_id] = []
             else:
                 assert tool_class in VALID_TOOL_CLASSES, tool_class
                 if tool_class not in self.tool_classes:
-                    self.tool_classes[tool_class] = list()
+                    self.tool_classes[tool_class] = []
 
             params = tool.get("params")
             if params is None:
@@ -663,7 +663,7 @@ class JobConfiguration(ConfiguresHandlers):
             key = param.get("id")
             if key in ["container", "container_override"]:
                 containers = map(requirements.container_from_element, param.findall("container"))
-                param_value = list(map(lambda c: c.to_dict(), containers))
+                param_value = [c.to_dict() for c in containers]
             else:
                 param_value = param.text
 
@@ -2273,7 +2273,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if set_extension:
             for output_dataset_assoc in job.output_datasets:
                 if output_dataset_assoc.dataset.ext == "auto":
-                    context = self.get_dataset_finish_context(dict(), output_dataset_assoc)
+                    context = self.get_dataset_finish_context({}, output_dataset_assoc)
                     output_dataset_assoc.dataset.extension = context.get("ext", "data")
             with transaction(self.sa_session):
                 self.sa_session.commit()

@@ -78,7 +78,7 @@ class TestsAssertsHasNQuant(Linter):
             ):
                 if a.tag not in ["has_n_lines", "has_n_columns"]:
                     continue
-                if not (set(a.attrib) & set(["n", "min", "max"])):
+                if not (set(a.attrib) & {"n", "min", "max"}):
                     lint_ctx.error(
                         f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", linter=cls.name(), node=a
                     )
@@ -101,7 +101,7 @@ class TestsAssertsHasSizeQuant(Linter):
             ):
                 if a.tag != "has_size":
                     continue
-                if len(set(a.attrib) & set(["value", "size", "min", "max"])) == 0:
+                if len(set(a.attrib) & {"value", "size", "min", "max"}) == 0:
                     lint_ctx.error(
                         f"Test {test_idx}: '{a.tag}' needs to specify 'size', 'min', or 'max'",
                         linter=cls.name(),
@@ -522,7 +522,7 @@ class TestsValid(Linter):
 def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
         is_valid = False
-        is_valid |= bool(set(test.attrib) & set(("expect_failure", "expect_exit_code", "expect_num_outputs")))
+        is_valid |= bool(set(test.attrib) & {"expect_failure", "expect_exit_code", "expect_num_outputs"})
         for ta in ("assert_stdout", "assert_stderr", "assert_command"):
             if test.find(ta) is not None:
                 is_valid = True

@@ -389,7 +389,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "name": data_table.name,
                         "filename": filename,
                         "tool_data_path": file_dict.get("tool_data_path"),
-                        "errors": ", ".join(file_missing + [error for error in file_dict.get("errors", [])]),
+                        "errors": ", ".join(file_missing + list(file_dict.get("errors", []))),
                     }
                 )
 
