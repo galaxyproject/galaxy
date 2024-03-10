@@ -640,10 +640,9 @@ class JobConfiguration(ConfiguresHandlers):
                 fields = []
                 for field_name in fields_names:
                     if field_name not in self.resource_parameters:
-                        message = "Failed to find field for resource {} in resource parameters {}".format(
-                            field_name, self.resource_parameters
+                        raise KeyError(
+                            f"Failed to find field for resource {field_name} in resource parameters {self.resource_parameters}"
                         )
-                        raise KeyError(message)
                     fields.append(parse_xml_string(self.resource_parameters[field_name]))
 
                 if fields:
@@ -2209,9 +2208,7 @@ class MinimalJobWrapper(HasResourceParameters):
         try:
             if not tmp_dir or util.asbool(tmp_dir):
                 working_directory = self.working_directory
-                return """$([ ! -e '{0}/tmp' ] || mv '{0}/tmp' '{0}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{0}/tmp'; echo '{0}/tmp')""".format(
-                    working_directory
-                )
+                return f"""$([ ! -e '{working_directory}/tmp' ] || mv '{working_directory}/tmp' '{working_directory}'/tmp.$(date +%Y%m%d-%H%M%S) ; mkdir '{working_directory}/tmp'; echo '{working_directory}/tmp')"""
             else:
                 return tmp_dir
         except ValueError:

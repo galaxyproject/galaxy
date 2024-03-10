@@ -281,12 +281,14 @@ class CloudManager(sharable.SharableModelManager):
                 )
             if key is None:
                 log.exception(
-                    "Could not get object `{}` for user `{}`. Object may not exist, or the provided credentials are "
-                    "invalid or not authorized to read the bucket/object.".format(obj, trans.user.id)
+                    "Could not get object `%s` for user `%s`. Object may not exist, or the provided credentials are "
+                    "invalid or not authorized to read the bucket/object.",
+                    obj,
+                    trans.user.id,
                 )
                 raise ObjectNotFound(
-                    "Could not get the object `{}`. Please check if the object exists, and credentials are valid and "
-                    "authorized to read the bucket and object. ".format(obj)
+                    f"Could not get the object `{obj}`. Please check if the object exists, and credentials are valid and "
+                    "authorized to read the bucket and object. "
                 )
 
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
@@ -299,9 +301,7 @@ class CloudManager(sharable.SharableModelManager):
             job_errors = output.get("job_errors", [])
             if job_errors:
                 raise ValueError(
-                    "Following error occurred while getting the given object(s) from {}: {}".format(
-                        cloudauthz.provider, job_errors
-                    )
+                    f"Following error occurred while getting the given object(s) from {cloudauthz.provider}: {job_errors}"
                 )
             else:
                 for d in output["out_data"]:
@@ -391,9 +391,10 @@ class CloudManager(sharable.SharableModelManager):
                 except Exception as e:
                     err_msg = f"maybe invalid or unauthorized credentials. {util.unicodify(e)}"
                     log.debug(
-                        "Failed to send the dataset `{}` per user `{}` request to cloud, {}".format(
-                            object_label, trans.user.id, err_msg
-                        )
+                        "Failed to send the dataset `%s` per user `%s` request to cloud, %s",
+                        object_label,
+                        trans.user.id,
+                        err_msg,
                     )
                     failed.append(json.dumps({"object": object_label, "error": err_msg}))
         return sent, failed

@@ -857,12 +857,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
             metadata = repository_metadata.metadata
             if invalid_tools := metadata.get("invalid_tools", []):
                 for invalid_tool_config in invalid_tools:
-                    href_str = '<a href="load_invalid_tool?repository_id={}&tool_config={}&changeset_revision={}">{}</a>'.format(
-                        trans.security.encode_id(repository.id),
-                        invalid_tool_config,
-                        repository_metadata.changeset_revision,
-                        invalid_tool_config,
-                    )
+                    href_str = f'<a href="load_invalid_tool?repository_id={trans.security.encode_id(repository.id)}&tool_config={invalid_tool_config}&changeset_revision={repository_metadata.changeset_revision}">{invalid_tool_config}</a>'
                     val += href_str
                     val += "<br/>"
                 val = val.rstrip("<br/>")

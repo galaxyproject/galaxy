@@ -420,10 +420,7 @@ class PithosObjectStore(ConcreteObjectStore):
                     shutil.copy2(source_path, cache_path)
                 self._fix_permissions(cache_path)
             except OSError:
-                log.exception(
-                    'Trouble copying source file "{source}" to cache "{cache}"'
-                    "".format(source=source_path, cache=cache_path)
-                )
+                log.exception('Trouble copying source file "%s" to cache "%s"', source_path, cache_path)
         else:
             with open(cache_path) as f:
                 self.pithos.upload_object(obj, f)

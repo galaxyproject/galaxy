@@ -24,7 +24,6 @@ from typing import (
 
 from typing_extensions import Protocol
 
-from galaxy import util
 from galaxy.files.uris import stream_url_to_file as files_stream_url_to_file
 from galaxy.util import (
     compression_utils,
@@ -837,9 +836,7 @@ def handle_compressed_file(
                 except OSError as e:
                     os.remove(uncompressed.name)
                     raise OSError(
-                        "Problem uncompressing {} data, please try retrieving the data uncompressed: {}".format(
-                            compressed_type, util.unicodify(e)
-                        )
+                        f"Problem uncompressing {compressed_type} data, please try retrieving the data uncompressed: {e}"
                     )
                 finally:
                     is_compressed = False

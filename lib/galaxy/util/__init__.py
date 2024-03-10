@@ -1412,9 +1412,12 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             os.chmod(path, perms)
         except Exception as e:
             log.warning(
-                "Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}".format(
-                    oct(umask), path, oct(perms), oct(stat.S_IMODE(st.st_mode)), unicodify(e)
-                )
+                "Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s",
+                oct(umask),
+                path,
+                oct(perms),
+                oct(stat.S_IMODE(st.st_mode)),
+                e,
             )
     # fix group
     if gid is not None and st.st_gid != gid:
@@ -1428,9 +1431,11 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                 desired_group = gid
                 current_group = st.st_gid
             log.warning(
-                "Unable to honor primary group ({}) for {}, group remains {}, error was: {}".format(
-                    desired_group, path, current_group, unicodify(e)
-                )
+                "Unable to honor primary group (%s) for %s, group remains %s, error was: %s",
+                desired_group,
+                path,
+                current_group,
+                e,
             )
 
 
