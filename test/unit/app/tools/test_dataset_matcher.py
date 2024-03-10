@@ -12,6 +12,7 @@ from galaxy.util.unittest import TestCase
 from .test_data_parameters import MockHistoryDatasetAssociation
 from .util import MockTool
 
+
 class TestDatasetMatcher(TestCase, UsesApp):
     def test_hda_mismatches(self):
         # Datasets not visible are not "valid" for param.
