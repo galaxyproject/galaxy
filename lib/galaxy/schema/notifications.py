@@ -3,8 +3,10 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    Generic,
     List,
     Optional,
+    TypeVar,
     Union,
 )
 
@@ -259,30 +261,33 @@ class NotificationCreateData(Model):
     )
 
 
-class NotificationRecipients(Model):
+DatabaseIdT = TypeVar("DatabaseIdT")
+
+
+class GenericNotificationRecipients(Model, Generic[DatabaseIdT]):
     """The recipients of a notification. Can be a combination of users, groups and roles."""
 
-    user_ids: List[DecodedDatabaseIdField] = Field(
+    user_ids: List[DatabaseIdT] = Field(
         default=[],
         title="User IDs",
         description="The list of encoded user IDs of the users that should receive the notification.",
     )
-    group_ids: List[DecodedDatabaseIdField] = Field(
+    group_ids: List[DatabaseIdT] = Field(
         default=[],
         title="Group IDs",
         description="The list of encoded group IDs of the groups that should receive the notification.",
     )
-    role_ids: List[DecodedDatabaseIdField] = Field(
+    role_ids: List[DatabaseIdT] = Field(
         default=[],
         title="Role IDs",
         description="The list of encoded role IDs of the roles that should receive the notification.",
     )
 
 
-class NotificationCreateRequest(Model):
+class GenericNotificationCreateRequest(Model, Generic[DatabaseIdT]):
     """Contains the recipients and the notification to create."""
 
-    recipients: NotificationRecipients = Field(
+    recipients: GenericNotificationRecipients[DatabaseIdT] = Field(
         ...,
         title="Recipients",
         description="The recipients of the notification. Can be a combination of users, groups and roles.",
@@ -292,6 +297,11 @@ class NotificationCreateRequest(Model):
         title="Notification",
         description="The notification to create. The structure depends on the category.",
     )
+
+
+NotificationCreateRequestEncoded = GenericNotificationCreateRequest[DecodedDatabaseIdField]
+NotificationCreateRequest = GenericNotificationCreateRequest[int]
+NotificationRecipients = GenericNotificationRecipients[int]
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):

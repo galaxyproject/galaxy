@@ -43,6 +43,7 @@ from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.schema.notifications import NotificationCreateRequest
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -483,3 +484,13 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
 @galaxy_task(action="prune object store cache directories")
 def clean_object_store_caches(object_store: BaseObjectStore):
     check_caches(object_store.cache_targets())
+
+
+@galaxy_task(action="send notifications to all recipients")
+def send_notification_to_recipients_async(
+    request: NotificationCreateRequest, notification_manager: NotificationManager
+):
+    """Send a notification to a list of users."""
+    _, notifications_sent = notification_manager.send_notification_to_recipients(request=request)
+
+    log.info(f"Successfully sent {notifications_sent} notifications.")

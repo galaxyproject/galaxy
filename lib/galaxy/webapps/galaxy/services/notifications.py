@@ -4,8 +4,10 @@ from typing import (
     NoReturn,
     Optional,
     Set,
+    Union,
 )
 
+from galaxy.celery.tasks import send_notification_to_recipients_async
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
@@ -20,6 +22,7 @@ from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
+    GenericNotificationCreateRequest,
     NotificationBroadcastUpdateRequest,
     NotificationCreatedResponse,
     NotificationCreateRequest,
@@ -33,7 +36,11 @@ from galaxy.schema.notifications import (
     UserNotificationResponse,
     UserNotificationUpdateRequest,
 )
-from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.schema.schema import AsyncTaskResultSummary
+from galaxy.webapps.galaxy.services.base import (
+    async_task_summary,
+    ServiceBase,
+)
 
 
 class NotificationService(ServiceBase):
@@ -42,11 +49,28 @@ class NotificationService(ServiceBase):
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequest
-    ) -> NotificationCreatedResponse:
-        """Sends a notification to a list of recipients (users, groups or roles)."""
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
+        """
         self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
-        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(payload)
+        return self.send_notification_internal(payload)
+
+    def send_notification_internal(
+        self, request: GenericNotificationCreateRequest
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        Note: This function is meant for internal use from other services that don't need to check sender permissions.
+        """
+        if self.notification_manager.can_send_notifications_async:
+            result = send_notification_to_recipients_async.delay(request)
+            summary = async_task_summary(result)
+            return summary
+
+        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(request)
         return NotificationCreatedResponse(
             total_notifications_sent=recipient_user_count,
             notification=NotificationResponse.model_validate(notification),

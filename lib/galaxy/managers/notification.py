@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import (
     List,
@@ -39,16 +40,21 @@ from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
+    GenericNotificationCreateRequest,
     MandatoryNotificationCategory,
     NotificationBroadcastUpdateRequest,
+    NotificationCategorySettings,
     NotificationCreateData,
-    NotificationCreateRequest,
     NotificationRecipients,
     PersonalNotificationCategory,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+from galaxy.util import unicodify
+
+log = logging.getLogger(__name__)
+
 
 NOTIFICATION_PREFERENCES_SECTION_NAME = "notifications"
 
@@ -110,31 +116,57 @@ class NotificationManager:
         if not self.notifications_enabled:
             raise ConfigDoesNotAllowException("Notifications are disabled in this Galaxy.")
 
-    def send_notification_to_recipients(self, request: NotificationCreateRequest) -> Tuple[Optional[Notification], int]:
+    @property
+    def can_send_notifications_async(self):
+        return self.config.enable_celery_tasks
+
+    def send_notification_to_recipients(
+        self, request: GenericNotificationCreateRequest
+    ) -> Tuple[Optional[Notification], int]:
         """
         Creates a new notification and associates it with all the recipient users.
+
+        It takes into account the user's notification preferences to decide if the notification should be sent to them,
+        and also uses the configured channels to send the notification via different means (e.g. email, etc).
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
-        notifications_sent = len(recipient_users)
         notification = self._create_notification_model(request.notification)
         self.sa_session.add(notification)
-        self._send_to_users(notification, recipient_users)
+
+        notifications_sent = self._send_notifications(notification, recipient_users)
         with transaction(self.sa_session):
             self.sa_session.commit()
+
         return notification, notifications_sent
 
-    def _send_to_users(self, notification: Notification, users: List[User]):
-        # TODO: Move this potentially expensive operation to a task?
+    def _send_notifications(self, notification: Notification, users: List[User]) -> int:
+        success_count = 0
         for user in users:
-            if self._user_is_subscribed_to_notification(user, notification.category):  # type:ignore[arg-type]
-                user_notification_association = UserNotificationAssociation(user, notification)
-                self.sa_session.add(user_notification_association)
+            try:
+                self._send_notification_to_user(notification, user)
+                success_count += 1
+            except Exception as e:
+                log.error(f"Error sending notification to user {user.id}. Reason: {unicodify(e)}")
+                continue
+        return success_count
 
-    def _user_is_subscribed_to_notification(self, user: User, category: PersonalNotificationCategory) -> bool:
+    def _send_notification_to_user(self, notification: Notification, user: User):
+        category_settings = self._get_user_category_settings(user, notification.category)
+        if self._is_subscribed_to_category(category_settings):
+            # Send the in-app notification
+            user_notification_association = UserNotificationAssociation(user, notification)
+            self.sa_session.add(user_notification_association)
+
+    def _is_subscribed_to_category(self, category_settings: NotificationCategorySettings) -> bool:
+        return category_settings.enabled
+
+    def _get_user_category_settings(
+        self, user: User, category: PersonalNotificationCategory
+    ) -> NotificationCategorySettings:
         notification_preferences = self.get_user_notification_preferences(user)
         category_settings = notification_preferences.get(category)
-        return category_settings.enabled
+        return category_settings
 
     def create_broadcast_notification(self, request: BroadcastNotificationCreateRequest):
         """Creates a broadcasted notification.
