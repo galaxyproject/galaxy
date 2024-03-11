@@ -13,7 +13,6 @@ from pydantic import (
 )
 from typing_extensions import Annotated
 
-from galaxy.model import InputConnDictType
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnnotationField,
@@ -565,7 +564,7 @@ class WorkflowDictExportSteps(Model):
     in_parameter: Optional[Dict[str, Any]] = Field(
         None, title="In", description="The input connections of the step.", alias="in"
     )
-    input_connections: Optional[InputConnDictType] = Field(
+    input_connections: Optional[Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]] = Field(
         None,
         title="Input Connections",
         description="The input connections of the step.",
