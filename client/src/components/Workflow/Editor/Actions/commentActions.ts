@@ -5,7 +5,7 @@ import type {
     WorkflowCommentColor,
     WorkflowCommentStore,
 } from "@/stores/workflowEditorCommentStore";
-import { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 
 class CommentAction extends UndoRedoAction {
     protected store: WorkflowCommentStore;
