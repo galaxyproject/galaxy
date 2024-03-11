@@ -2,7 +2,6 @@ import logging
 from typing import Tuple
 
 from galaxy import exceptions
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.visualizations import (
     VisualizationManager,
     VisualizationSerializer,
@@ -13,6 +12,7 @@ from galaxy.schema.visualization import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
 log = logging.getLogger(__name__)
@@ -30,12 +30,12 @@ class VisualizationsService(ServiceBase):
         security: IdEncodingHelper,
         manager: VisualizationManager,
         serializer: VisualizationSerializer,
-        notification_manager: NotificationManager,
+        notification_service: NotificationService,
     ):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = ShareableService(self.manager, self.serializer, notification_manager)
+        self.shareable_service = ShareableService(self.manager, self.serializer, notification_service)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
 

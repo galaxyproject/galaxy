@@ -12,7 +12,6 @@ from typing import (
 from sqlalchemy import false
 
 from galaxy.managers import base
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
@@ -41,6 +40,7 @@ from galaxy.schema.schema import (
     SharingStatus,
     UserIdentifier,
 )
+from galaxy.webapps.galaxy.services.notifications import NotificationService
 
 log = logging.getLogger(__name__)
 
@@ -67,11 +67,11 @@ class ShareableService:
         self,
         manager: SharableModelManager,
         serializer: SharableModelSerializer,
-        notification_manager: NotificationManager,
+        notification_service: NotificationService,
     ) -> None:
         self.manager = manager
         self.serializer = serializer
-        self.notification_manager = notification_manager
+        self.notification_service = notification_service
 
     def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
@@ -174,9 +174,13 @@ class ShareableService:
         return send_to_users, send_to_err
 
     def _send_notification_to_users(self, users_to_notify: Set[User], item: SharableItem, status: ShareWithStatus):
-        if self.notification_manager.notifications_enabled and not status.errors and users_to_notify:
+        if (
+            self.notification_service.notification_manager.notifications_enabled
+            and not status.errors
+            and users_to_notify
+        ):
             request = SharedItemNotificationFactory.build_notification_request(item, users_to_notify, status)
-            self.notification_manager.send_notification_to_recipients(request)
+            self.notification_service.send_notification_internal(request)
 
 
 class SharedItemNotificationFactory:
