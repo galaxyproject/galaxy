@@ -41,6 +41,7 @@ from galaxy.schema.workflows import (
     SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
     WorkflowDictEditorSummary,
+    WorkflowDictExportSummary,
     WorkflowDictPreviewSummary,
     WorkflowDictRunSummary,
 )
@@ -96,11 +97,10 @@ class WorkflowsService(ServiceBase):
                 f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
             )
             trans.response.set_content_type("application/galaxy-archive")
-
+        if style == "export":
+            style = style = self._workflow_contents_manager.app.config.default_workflow_export_format
         if style == "format2" and format != "json-download":
             return PlainTextResponse(ordered_dump(ret_dict))
-        elif style == "export":
-            return ret_dict
         elif style == "editor":
             return WorkflowDictEditorSummary(**ret_dict)
         elif style == ("legacy" or "instance"):
@@ -114,7 +114,7 @@ class WorkflowsService(ServiceBase):
         elif style == "format2_wrapped_yaml":
             return ret_dict
         elif style == "ga":
-            return ret_dict
+            return WorkflowDictExportSummary(**ret_dict)
         else:
             return ret_dict
 
