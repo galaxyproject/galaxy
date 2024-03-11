@@ -986,6 +986,8 @@
     <!-- Flexible Image Transport System (FITS) used in Astronomy https://fits.gsfc.nasa.gov/ https://fits.gsfc.nasa.gov/rfc4047.txt -->
     <datatype extension="fits" type="galaxy.datatypes.binary:FITS" mimetype="application/octet-stream" display_in_upload="true" description="Flexible Image Transport System (FITS) used in Astronomy"/>
     <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true"/>
+    <!-- Moonshot datatypes -->
+    <datatype extension="spif" type="galaxy.datatypes.triples:Spif" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -1090,6 +1092,7 @@
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.chain:Chain"/>
+    <sniffer type="galaxy.datatypes.triples:Spif"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.images:Gifti" />
@@ -1270,5 +1273,8 @@
     <sniffer type="galaxy.datatypes.text:BCSLmodel"/>
     <sniffer type="galaxy.datatypes.text:StormSample"/>
     <sniffer type="galaxy.datatypes.text:StormCheck"/>
+
+    <!-- Moonshot sniffers -->
+    <sniffer type="galaxy.datatypes.triples:ProgrammingLanguageIndependentFormat"/>
   </sniffers>
 </datatypes>
