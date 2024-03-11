@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type Ref, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
@@ -109,6 +110,7 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
 });
 const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
 
+const { currentFavorites } = storeToRefs(useUserStore());
 const toolStore = useToolStore();
 
 const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
@@ -118,8 +120,6 @@ const ontologyList = toolStore
 
 onMounted(() => {
     searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
-    const Galaxy = getGalaxyInstance();
-    const favoritesResults = Galaxy?.user.getFavorites().tools;
 
     searchWorker.value.onmessage = ({ data }) => {
         const { type, payload, sectioned, query, closestTerm } = data;
@@ -128,7 +128,7 @@ onMounted(() => {
         } else if (type === "clearFilterResult") {
             emit("onResults", null, null, null);
         } else if (type === "favoriteToolsResult") {
-            emit("onResults", favoritesResults, null, null);
+            emit("onResults", currentFavorites.value.tools, null, null);
         }
     };
 });
@@ -136,6 +136,15 @@ onMounted(() => {
 onUnmounted(() => {
     searchWorker.value?.terminate();
 });
+
+watch(
+    () => currentFavorites.value.tools,
+    () => {
+        if (FAVORITES.includes(props.query)) {
+            post({ type: "favoriteTools" });
+        }
+    }
+);
 
 function checkQuery(q: string) {
     emit("onQuery", q);
