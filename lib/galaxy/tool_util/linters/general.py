@@ -240,4 +240,4 @@ class BioToolsValid(Linter):
                 continue
             metadata_source = ApiBiotoolsMetadataSource()
             if not metadata_source.get_biotools_metadata(xref["value"]):
-                lint_ctx.error(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)
+                lint_ctx.warn(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)

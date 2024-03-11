@@ -1095,11 +1095,11 @@ def test_general_valid_new_profile_fmt(lint_ctx):
 def test_general_valid_biotools(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_VALID_BIOTOOLS)
     run_lint_module(lint_ctx, general, tool_source)
-    assert "No entry johnscoolbowtie in bio.tools." in lint_ctx.error_messages
+    assert "No entry johnscoolbowtie in bio.tools." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 4
-    assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 1
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
 
 
 def test_help_multiple(lint_ctx):
