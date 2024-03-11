@@ -37,7 +37,7 @@ const generatePdfTooltip = "Generate PDF report for this workflow invocation";
 
 const { workflow, loading, error } = useWorkflowInstance(props.invocation.workflow_id);
 
-const invocationId = computed<string | undefined>(() => props.invocation.id);
+const invocationId = computed<string>(() => props.invocation.id);
 
 const indexStr = computed(() => {
     if (props.index == undefined) {
