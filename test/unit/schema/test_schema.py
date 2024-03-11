@@ -1,5 +1,8 @@
 from uuid import uuid4
 
+from pydantic import BaseModel
+
+from galaxy.schema.schema import DatasetStateField
 from galaxy.schema.tasks import (
     GenerateInvocationDownload,
     RequestUser,
@@ -22,3 +25,12 @@ def test_task_schema():
     assert rehydrated_download.invocation_id == TEST_INVOCATION_ID
     assert rehydrated_download.user.user_id == TEST_USER_ID
     assert rehydrated_download.galaxy_url == TEST_GALAXY_URL
+
+
+class StateModel(BaseModel):
+    state: DatasetStateField
+
+
+def test_dataset_state_coercion():
+    assert StateModel(state="ok").state == "ok"
+    assert StateModel(state="deleted").state == "discarded"
