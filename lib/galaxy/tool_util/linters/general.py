@@ -240,5 +240,7 @@ class TextSpaces(Linter):
                 continue
             if node.text and node.text != node.text.strip():
                 lint_ctx.warn(
-                    f"XML node '{node.tag}' has text with leading or trailing spaces ('{node.text}'!='{node.text.strip()}').", linter=cls.name(), node=node
+                    f"XML node '{node.tag}' has text with leading or trailing spaces ('{node.text}'!='{node.text.strip()}').",
+                    linter=cls.name(),
+                    node=node,
                 )
