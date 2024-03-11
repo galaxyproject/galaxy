@@ -88,7 +88,7 @@ export default {
             required: true,
         },
     },
-    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
+    emits: ["onSetData", "onChangePostJobActions", "onAnnotation", "onLabel"],
     setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")
