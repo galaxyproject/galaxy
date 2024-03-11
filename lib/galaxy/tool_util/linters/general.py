@@ -227,3 +227,18 @@ class ResourceRequirementExpression(Linter):
                 lint_ctx.warn(
                     "Expressions in resource requirement not supported yet", linter=cls.name(), node=tool_node
                 )
+
+
+class TextSpaces(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        _, tool_node = _tool_xml_and_root(tool_source)
+        if not tool_node:
+            return
+        for node in tool_node.iter():
+            if len(node) > 0:
+                continue
+            if node.text and node.text != node.text.strip():
+                lint_ctx.warn(
+                    f"XML node '{node.tag}' has text with leading or trailing spaces ('{node.text}'!='{node.text.strip()}').", linter=cls.name(), node=node
+                )

@@ -118,6 +118,16 @@ GENERAL_VALID_NEW_PROFILE_FMT = """
 </tool>
 """
 
+GENERAL_TEXT_SPACES = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
+    <xrefs>
+        <xref type="bio.tools">
+            bwa
+        </xref>
+    </xrefs>
+</tool>
+"""
+
 # test tool xml for help linter
 HELP_MULTIPLE = """
 <tool id="id" name="name">
@@ -893,10 +903,12 @@ XML_ORDER = """
 TOOL_WITH_COMMENTS = """
 <tool>
     <stdio>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <regex match="low space" source="both" level="warning" description="Low space on device" />
     </stdio>
     <outputs>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <data format="pdf" name="out_file1" />
     </outputs>
 </tool>
 """
@@ -922,15 +934,6 @@ def get_xml_tree(xml_string: str) -> ElementTree:
 
 def get_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(get_xml_tree(xml_string))
-
-
-def get_tool_xml_exact(xml_string: str):
-    """Returns the tool XML as it is, without stripping comments or anything else."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
-        tmp.write(xml_string)
-        tmp.flush()
-        tool_path = tmp.name
-        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
 def run_lint_module(lint_ctx, lint_module, lint_target):
@@ -1075,6 +1078,25 @@ def test_general_valid_new_profile_fmt(lint_ctx):
     assert "Tool specifies profile version [23.0]." in lint_ctx.valid_messages
     assert "Tool defines an id [valid_id]." in lint_ctx.valid_messages
     assert "Tool defines a name [valid name]." in lint_ctx.valid_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
+    assert not lint_ctx.error_messages
+
+
+def test_general_text_spaces(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_TEXT_SPACES)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "XML node 'xref' has text with leading or trailing spaces ('\n            bwa\n        '!='bwa')" in lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 1
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_general_text_spaces_comments(lint_ctx):
+    tool_source = get_xml_tool_source(TOOL_WITH_COMMENTS)
+    run_lint_module(lint_ctx, general, tool_source)
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
@@ -2068,17 +2090,10 @@ def test_linting_cwl_tool(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_xml_comments_are_ignored(lint_ctx: LintContext):
-    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
-    lint_xml_with(lint_ctx, tool_xml)
-    for lint_message in lint_ctx.message_list:
-        assert "Comment" not in lint_message.message
-
-
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 130
+    assert len(linter_names) == 131
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
