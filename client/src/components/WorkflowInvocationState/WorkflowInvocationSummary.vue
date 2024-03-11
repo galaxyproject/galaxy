@@ -14,7 +14,7 @@ import InvocationJobsProgressBar from "./InvocationJobsProgressBar.vue";
 import InvocationStepsProgressBar from "./InvocationStepsProgressBar.vue";
 
 interface Props {
-    invocation?: WorkflowInvocationElementView;
+    invocation: WorkflowInvocationElementView;
     invocationAndJobTerminal: boolean;
     invocationSchedulingTerminal: boolean;
     jobStatesSummary: InvocationJobsSummary;
@@ -23,7 +23,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const invocationId = computed<string | undefined>(() => props.invocation?.id);
+const invocationId = computed<string>(() => props.invocation.id);
 
 const indexStr = computed(() => {
     if (props.index == undefined) {
@@ -34,7 +34,7 @@ const indexStr = computed(() => {
 });
 
 const invocationState = computed(() => {
-    return props.invocation?.state || "new";
+    return props.invocation.state || "new";
 });
 
 const invocationStateSuccess = computed(() => {
@@ -43,6 +43,10 @@ const invocationStateSuccess = computed(() => {
 
 const runningCount = computed<number>(() => {
     return jobStatesSummaryRunningCount(props.jobStatesSummary);
+});
+
+const messages = computed(() => {
+    return props.invocation.messages;
 });
 
 const emit = defineEmits<{
@@ -72,9 +76,9 @@ function onCancel() {
                 title="Cancel scheduling of workflow invocation"
                 @click="onCancel"></span>
         </div>
-        <template v-if="invocation.messages?.length">
+        <template v-if="messages?.length">
             <InvocationMessage
-                v-for="message in invocation.messages"
+                v-for="message in messages"
                 :key="message.reason"
                 class="steps-progress my-1"
                 :invocation-message="message"
