@@ -56,7 +56,7 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
         tool_inputs = tool_show["inputs"]
-        input_names = map(lambda x: x["name"], tool_inputs)
+        input_names = (x["name"] for x in tool_inputs)
         assert "__job_resource" in input_names
 
     def test_job_resources(self):

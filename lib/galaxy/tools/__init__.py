@@ -765,10 +765,10 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.stdio_exit_codes: List = list()
-        self.stdio_regexes: List = list()
-        self.inputs_by_page: List[Dict] = list()
-        self.display_by_page: List = list()
+        self.stdio_exit_codes: List = []
+        self.stdio_regexes: List = []
+        self.inputs_by_page: List[Dict] = []
+        self.display_by_page: List = []
         self.action: Union[str, Tuple[str, str]] = "/tool_runner/index"
         self.target = "galaxy_main"
         self.method = "post"
@@ -1078,7 +1078,7 @@ class Tool(Dictifiable):
         if self.environment_variables:
             if not self.docker_env_pass_through:
                 self.docker_env_pass_through = []
-            self.docker_env_pass_through.extend(map(lambda x: x["name"], self.environment_variables))
+            self.docker_env_pass_through.extend(x["name"] for x in self.environment_variables)
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -2040,7 +2040,7 @@ class Tool(Dictifiable):
         require any user input. Will raise an exception if any parameter
         does require input.
         """
-        args = dict()
+        args = {}
         for key, param in self.inputs.items():
             # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
             # we must check if param is a BaseURLToolParameter first
@@ -3707,7 +3707,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
             source_new_label = (line.strip().split("\t") for line in new_labels)
-            new_labels_dict = {source: new_label for source, new_label in source_new_label}
+            new_labels_dict = dict(source_new_label)
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier

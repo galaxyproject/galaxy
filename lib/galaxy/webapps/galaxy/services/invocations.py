@@ -227,9 +227,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.collection,
     ):
-        return list(
-            map(lambda i: self.serialize_workflow_invocation(i, params, default_view=default_view), invocations)
-        )
+        return [self.serialize_workflow_invocation(i, params, default_view=default_view) for i in invocations]
 
     def serialize_workflow_invocation_step(
         self,

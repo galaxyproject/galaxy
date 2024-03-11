@@ -433,7 +433,7 @@ def xml_element_to_dict(elem):
 
     sub_elems = list(elem)
     if sub_elems:
-        sub_elem_dict = dict()
+        sub_elem_dict = {}
         for sub_sub_elem_dict in map(xml_element_to_dict, sub_elems):
             for key, value in sub_sub_elem_dict.items():
                 if key not in sub_elem_dict:
@@ -1280,8 +1280,8 @@ class ParamsWithSpecs(collections.defaultdict):
     """ """
 
     def __init__(self, specs=None, params=None):
-        self.specs = specs or dict()
-        self.params = params or dict()
+        self.specs = specs or {}
+        self.params = params or {}
         for name, value in self.params.items():
             if name not in self.specs:
                 self._param_unknown_error(name)
@@ -1817,7 +1817,7 @@ def parse_non_hex_float(s):
 
 def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, doseq=False):
     if params is None:
-        params = dict()
+        params = {}
     if pathspec is None:
         pathspec = []
     parsed_url = urlparse(base_url)

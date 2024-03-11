@@ -43,7 +43,7 @@ def parse_config_xml(config_xml):
     :returns: (dict) according to syntax
     :raises: various XML parse errors
     """
-    r = dict()
+    r = {}
     try:
         for tag, required_attrs, optional_attrs in (
             (

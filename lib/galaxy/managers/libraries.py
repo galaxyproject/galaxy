@@ -155,7 +155,7 @@ class LibraryManager:
         """
         is_admin = trans.user_is_admin
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
-        restricted_library_ids = {id for id in get_library_ids(trans.sa_session, library_access_action)}
+        restricted_library_ids = set(get_library_ids(trans.sa_session, library_access_action))
         prefetched_ids = {"restricted_library_ids": restricted_library_ids}
 
         if is_admin:

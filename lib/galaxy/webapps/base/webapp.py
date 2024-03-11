@@ -1005,7 +1005,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     @base.lazy_property
     def template_context(self):
-        return dict()
+        return {}
 
     def set_message(self, message, type=None):
         """

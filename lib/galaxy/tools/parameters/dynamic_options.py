@@ -912,8 +912,7 @@ def strip_or_none(maybe_string: Optional[Element]) -> Optional[str]:
 
 
 def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
-    from_url = elem.get("from_url")
-    if from_url:
+    if from_url := elem.get("from_url"):
         request_method = cast(Literal["GET", "POST"], elem.get("request_method", "GET"))
         assert request_method in get_args(REQUEST_METHODS)
         request_headers = strip_or_none(elem.find("request_headers"))

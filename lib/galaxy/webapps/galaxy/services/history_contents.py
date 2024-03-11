@@ -1365,7 +1365,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         contents: List["HistoryItem"] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
-        datasets_ids = map(lambda dataset: dataset.id, dataset_items)
+        datasets_ids = (dataset.id for dataset in dataset_items)
         contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
 
         collection_items = filter(

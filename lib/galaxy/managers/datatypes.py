@@ -25,7 +25,7 @@ def view_index(
         if upload_only:
             return datatypes_registry.upload_file_formats
         else:
-            return [ext for ext in datatypes_registry.datatypes_by_extension]
+            return list(datatypes_registry.datatypes_by_extension)
     else:
         rval = []
         for datatype_info_dict in datatypes_registry.datatype_info_dicts:

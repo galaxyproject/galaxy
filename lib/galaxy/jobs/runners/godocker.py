@@ -133,7 +133,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             godocker_master=dict(map=str), user=dict(map=str), key=dict(map=str), godocker_project=dict(map=str)
         )
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         # Start the job runner parent object
@@ -379,7 +379,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 volume = job_destination.params["godocker_volumes"]
                 volume = volume.split(",")
                 for i in volume:
-                    temp = dict({"name": i})
+                    temp = {"name": i}
                     volumes.append(temp)
             except Exception:
                 log.debug("godocker_volume not set, using default.")

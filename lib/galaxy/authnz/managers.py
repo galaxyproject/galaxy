@@ -193,7 +193,7 @@ class AuthnzManager:
         if config_xml.find("well_known_oidc_config_uri") is not None:
             rtv["well_known_oidc_config_uri"] = config_xml.find("well_known_oidc_config_uri").text
         if config_xml.findall("allowed_idp") is not None:
-            self.allowed_idps = list(map(lambda idp: idp.text, config_xml.findall("allowed_idp")))
+            self.allowed_idps = [idp.text for idp in config_xml.findall("allowed_idp")]
         if config_xml.find("ca_bundle") is not None:
             rtv["ca_bundle"] = config_xml.find("ca_bundle").text
         if config_xml.find("icon") is not None:

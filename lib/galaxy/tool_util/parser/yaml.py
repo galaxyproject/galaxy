@@ -361,7 +361,7 @@ class YamlInputSource(InputSource):
         return sources
 
     def parse_static_options(self):
-        static_options = list()
+        static_options = []
         input_dict = self.input_dict
         for option in input_dict.get("options", {}):
             value = option.get("value")

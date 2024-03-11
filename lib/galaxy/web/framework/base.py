@@ -94,8 +94,8 @@ class WebApplication:
         `finalize_config` when all controllers and routes have been added
         and `__call__` to handle a request (WSGI style).
         """
-        self.controllers = dict()
-        self.api_controllers = dict()
+        self.controllers = {}
+        self.api_controllers = {}
         self.mapper = routes.Mapper()
         self.clientside_routes = routes.Mapper(controller_scan=None, register=False)
         # FIXME: The following two options are deprecated and should be

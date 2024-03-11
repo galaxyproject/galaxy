@@ -934,7 +934,7 @@ def get_tool_xml_exact(xml_string: str):
 
 
 def run_lint_module(lint_ctx, lint_module, lint_target):
-    lint_tool_source_with_modules(lint_ctx, lint_target, list(set([lint_module, xsd])))
+    lint_tool_source_with_modules(lint_ctx, lint_target, list({lint_module, xsd}))
 
 
 def run_lint(lint_ctx, lint_func, lint_target):
