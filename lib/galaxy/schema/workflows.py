@@ -13,6 +13,7 @@ from pydantic import (
 )
 from typing_extensions import Annotated
 
+from galaxy.model import InputConnDictType
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnnotationField,
@@ -454,6 +455,138 @@ class WorkflowDictRunSteps(Model):
     )
 
 
+class WorkflowDictExportSteps(Model):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The order index of the step.",
+    )
+    type: WorkflowModuleType = Field(
+        ...,
+        title="Type",
+        description="The type of the step.",
+    )
+    content_id: Optional[str] = Field(
+        None,
+        title="Content ID",
+        description="The content ID of the step.",
+    )
+    tool_id: Optional[str] = Field(
+        None,
+        title="Tool ID",
+        description="The tool ID associated with the step (applicable only if the step type is 'tool').",
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The version of the tool associated with the step.",
+    )
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the step.",
+    )
+    tool_state: Optional[str] = Field(
+        None,
+        title="Tool State",
+        description="The serialized state of the tool associated with the step.",
+    )
+    errors: Optional[str] = Field(
+        None,
+        title="Errors",
+        description="Any errors associated with the step.",
+    )
+    uuid: str = Field(
+        ...,
+        title="UUID",
+        description="The UUID (Universally Unique Identifier) of the step.",
+    )
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+        description="The label of the step (optional).",
+    )
+    annotation: WorkflowAnnotationField = Field(
+        None,
+        title="Annotation",
+        description="The annotation associated with the step.",
+    )
+    when: Optional[str] = Field(
+        None,
+        title="When",
+        description="The when expression of the step.",
+    )
+    # TODO - can be modeled see manager line 1483 or below
+    tool_shed_repository: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Tool Shed Repository",
+        description="Information about the tool shed repository associated with the tool.",
+    )
+    # "name" (type: str): The name of the tool shed repository.
+    # "owner" (type: str): The owner of the tool shed repository.
+    # "changeset_revision" (type: str): The changeset revision of the tool shed repository.
+    # "tool_shed" (type: str): The tool shed URL.
+    tool_representation: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Tool Representation",
+        description="The representation of the tool associated with the step.",
+    )
+    # TODO - can be modeled see manager line 1500
+    post_job_actions: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Post Job Actions",
+        description="A dictionary containing post-job actions associated with the step.",
+    )
+    # TODO - can also be WorkflowDictExportSummary see manager line 1512
+    subworkflow: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Sub Workflow",
+        description="The sub-workflow associated with the step.",
+    )
+    # TODO - can be modeled see manager line 1516 -1532
+    inputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Inputs",
+        description="The inputs of the step.",
+    )
+    # TODO - can be modeled see manager line 1535 and 1543
+    workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Workflow Outputs",
+        description="A list of workflow outputs for the step.",
+    )
+    # TODO - can be modeled see manager line 1546
+    outputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Outputs",
+        description="The outputs of the step.",
+    )
+    # TODO - can be modeled see manager line 1551
+    in_parameter: Optional[Dict[str, Any]] = Field(
+        None, title="In", description="The input connections of the step.", alias="in"
+    )
+    input_connections: Optional[InputConnDictType] = Field(
+        None,
+        title="Input Connections",
+        description="The input connections of the step.",
+    )
+    position: Optional[Any] = Field(
+        None,
+        title="Position",
+        description="The position of the step.",
+    )
+
+
+# "post_job_actions" (type: dict): Dictionary containing post-job actions associated with the step.
+
+# The keys are a combination of action_type and output_name.
+# The values are dictionaries with the following items:
+# "action_type" (type: str): The type of the post-job action.
+# "output_name" (type: str): The name of the output associated with the post-job action.
+# "action_arguments" (type: str): The arguments of the post-job action.
+# These items provide detailed information about each step in the workflow, including the step type, associated tools, errors, and annotations.
+
+
 class WorkflowDictBaseModel(Model):
     name: str = Field(
         ...,
@@ -548,7 +681,7 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
 
 
 class WorkflowDictExportSummary(WorkflowDictBaseModel):
-    a_galaxy_workflow: Optional[bool] = Field(
+    a_galaxy_workflow: Optional[str] = Field(
         None,
         title="A Galaxy Workflow",
         description="Is a Galaxy workflow.",
@@ -578,4 +711,24 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         None,
         title="Report",
         description="The configuration for generating a report for the workflow.",
+    )
+    creator: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Creator",
+        description="Metadata about the creator of the workflow.",
+    )
+    license: Optional[str] = Field(
+        None,
+        title="License",
+        description="The license information for the workflow.",
+    )
+    source_metadata: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Source Metadata",
+        description="Metadata about the source of the workflow.",
+    )
+    steps: Dict[int, WorkflowDictExportSteps] = Field(
+        ...,
+        title="Steps",
+        description="A dictionary with information about all the steps of the workflow.",
     )
