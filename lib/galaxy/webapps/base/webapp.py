@@ -912,29 +912,30 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
+        history = self.galaxy_session.current_history
+        if history and not history.deleted:
+            return history
 
-        # There must be a user to fetch a default history.
-        if not self.galaxy_session.user:
-            return self.new_history()
+        user = self.galaxy_session.user
+        if user:
+            # Look for default history that (a) has default name + is not deleted and
+            # (b) has no datasets. If suitable history found, use it; otherwise, create
+            # new history.
+            stmt = select(self.app.model.History).filter_by(
+                user=user, name=self.app.model.History.default_name, deleted=False
+            )
+            unnamed_histories = self.sa_session.scalars(stmt)
+            default_history = None
+            for history in unnamed_histories:
+                if history.empty:
+                    # Found suitable default history.
+                    default_history = history
+                    break
 
-        # Look for default history that (a) has default name + is not deleted and
-        # (b) has no datasets. If suitable history found, use it; otherwise, create
-        # new history.
-        stmt = select(self.app.model.History).filter_by(
-            user=self.galaxy_session.user, name=self.app.model.History.default_name, deleted=False
-        )
-        unnamed_histories = self.sa_session.scalars(stmt)
-        default_history = None
-        for history in unnamed_histories:
-            if history.empty:
-                # Found suitable default history.
-                default_history = history
-                break
-
-        # Set or create history.
-        if default_history:
-            history = default_history
-            self.set_history(history)
+            # Set or create history.
+            if default_history:
+                history = default_history
+                self.set_history(history)
         else:
             history = self.new_history()
 
