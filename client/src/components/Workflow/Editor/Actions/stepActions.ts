@@ -1,4 +1,5 @@
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 
 class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
@@ -7,6 +8,7 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     toValue: Step[K];
     stepId;
     stepStore;
+    onUndoRedo?: () => void;
 
     constructor(stepStore: WorkflowStepStore, stepId: number, key: K, fromValue: Step[K], toValue: Step[K]) {
         super();
@@ -26,14 +28,20 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
 
     undo() {
         this.stepStore.updateStepValue(this.stepId, this.key, this.fromValue);
+        this.onUndoRedo?.();
     }
 
     redo() {
         this.stepStore.updateStepValue(this.stepId, this.key, this.toValue);
+        this.onUndoRedo?.();
     }
 }
 
-export function useStepActions(stepStore: WorkflowStepStore, undoRedoStore: UndoRedoStore) {
+export function useStepActions(
+    stepStore: WorkflowStepStore,
+    undoRedoStore: UndoRedoStore,
+    stateStore: WorkflowStateStore
+) {
     /**
      * If the pending action is a `LazyMutateStepAction` and matches the step id and field key, returns it.
      * Otherwise returns `null`
@@ -60,6 +68,10 @@ export function useStepActions(stepStore: WorkflowStepStore, undoRedoStore: Undo
         } else {
             const action = new LazyMutateStepAction(stepStore, step.id, key, step[key], value);
             undoRedoStore.applyLazyAction(action);
+
+            action.onUndoRedo = () => {
+                stateStore.activeNodeId = step.id;
+            };
         }
     }
 

@@ -28,6 +28,8 @@ type OutputTerminalPositions = { [index: number]: { [index: string]: OutputTermi
 type StepPosition = { [index: number]: UnwrapRef<UseElementBoundingReturn> };
 type StepLoadingState = { [index: number]: { loading?: boolean; error?: string } };
 
+export type WorkflowStateStore = ReturnType<typeof useWorkflowStateStore>;
+
 export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () => {
     const inputTerminals = ref<InputTerminalPositions>({});
     const outputTerminals = ref<OutputTerminalPositions>({});
