@@ -14,7 +14,9 @@ import {
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ProgressBar from "@/components/ProgressBar.vue";
-import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
+
+import InvocationMessage from "./InvocationMessage.vue";
+import InvocationSummaryActionButtons from "./InvocationSummaryActionButtons.vue";
 
 function getUrl(path: string): string {
     return getRootFromIndexLink() + path;
@@ -29,9 +31,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const reportTooltip = "View report for this workflow invocation";
-const generatePdfTooltip = "Generate PDF report for this workflow invocation";
 
 const invocationId = computed<string | undefined>(() => props.invocation?.id);
 
@@ -49,18 +48,6 @@ const invocationState = computed(() => {
 
 const invocationStateSuccess = computed(() => {
     return invocationState.value == "scheduled" && runningCount.value === 0 && props.invocationAndJobTerminal;
-});
-
-const disabledReportTooltip = computed(() => {
-    const state = invocationState.value;
-    const runCount = runningCount.value;
-    if (state != "scheduled") {
-        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
-    } else if (runCount != 0) {
-        return `The workflow invocation still contains ${runCount} running job(s). Once these jobs have completed this option will become available.`;
-    } else {
-        return "Steps for this workflow are still running. A report will be available once complete.";
-    }
 });
 
 const stepCount = computed<number>(() => {
@@ -88,24 +75,6 @@ const stepStates = computed<StepStateType>(() => {
         }
     }
     return stepStates;
-});
-
-const invocationLink = computed<string | null>(() => {
-    const id = invocationId.value;
-    if (id) {
-        return getUrl(`workflows/invocations/report?id=${id}`);
-    } else {
-        return null;
-    }
-});
-
-const invocationPdfLink = computed<string | null>(() => {
-    const id = invocationId.value;
-    if (id) {
-        return getUrl(`api/invocations/${id}/report.pdf`);
-    } else {
-        return null;
-    }
 });
 
 const stepStatesStr = computed<string>(() => {
@@ -151,29 +120,12 @@ function onCancel() {
 
 <template>
     <div class="mb-3 workflow-invocation-state-component">
-        <div v-if="invocationAndJobTerminal">
-            <span>
-                <b-button
-                    v-b-tooltip.hover
-                    :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
-                    :disabled="!invocationStateSuccess"
-                    size="sm"
-                    class="invocation-report-link"
-                    :href="invocationLink">
-                    View Report
-                </b-button>
-                <b-button
-                    v-b-tooltip.hover
-                    :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
-                    :disabled="!invocationStateSuccess"
-                    size="sm"
-                    class="invocation-pdf-link"
-                    :href="invocationPdfLink"
-                    target="_blank">
-                    Generate PDF
-                </b-button>
-            </span>
-        </div>
+        <InvocationSummaryActionButtons
+            v-if="invocationAndJobTerminal"
+            :invocation-id="invocationId"
+            :invocation-state="invocationState"
+            :invocation-state-success="invocationStateSuccess"
+            :running-count="runningCount" />
         <div v-else-if="!invocationAndJobTerminal">
             <b-alert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
