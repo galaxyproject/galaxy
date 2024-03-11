@@ -198,7 +198,7 @@ function returnToLogin() {
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <ExternalLogin :login_page="true" :exclude_idps="[connectExternalProvider]" />
+                                    <ExternalLogin login-page :exclude-idps="[connectExternalProvider]" />
                                 </div>
                             </BCardBody>
 
