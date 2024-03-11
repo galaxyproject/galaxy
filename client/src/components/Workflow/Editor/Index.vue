@@ -81,7 +81,7 @@
                             @onReport="onReport"
                             @onLayout="onLayout"
                             @onEdit="onEdit"
-                            @onAttributes="onAttributes"
+                            @onAttributes="showAttributes"
                             @onLint="onLint"
                             @onUpgrade="onUpgrade" />
                     </div>
@@ -135,7 +135,7 @@
                             :license="license"
                             :steps="steps"
                             :datatypes-mapper="datatypesMapper"
-                            @onAttributes="onAttributes"
+                            @onAttributes="showAttributes"
                             @onHighlight="onHighlight"
                             @onUnhighlight="onUnhighlight"
                             @onRefactor="onAttemptRefactor"
@@ -394,7 +394,7 @@ export default {
             emit("update:confirmation", false);
         });
 
-        const stepActions = useStepActions(stepStore, undoRedoStore);
+        const stepActions = useStepActions(stepStore, undoRedoStore, stateStore);
 
         return {
             id,
@@ -731,7 +731,7 @@ export default {
         nameValidate() {
             if (!this.name) {
                 Toast.error("Please provide a name for your workflow.");
-                this.onAttributes();
+                this.showAttributes();
                 return false;
             }
             return true;
