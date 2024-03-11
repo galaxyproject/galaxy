@@ -96,8 +96,6 @@
                             @onChangePostJobActions="onChangePostJobActions"
                             @onAnnotation="onAnnotation"
                             @onLabel="onLabel"
-                            @onOutputLabel="onOutputLabel"
-                            @onUpdateStep="onUpdateStep"
                             @onSetData="onSetData" />
                         <FormDefault
                             v-else-if="hasActiveNodeDefault"
@@ -107,8 +105,6 @@
                             @onLabel="onLabel"
                             @onEditSubworkflow="onEditSubworkflow"
                             @onAttemptRefactor="onAttemptRefactor"
-                            @onOutputLabel="onOutputLabel"
-                            @onUpdateStep="onUpdateStep"
                             @onSetData="onSetData" />
                         <WorkflowAttributes
                             v-else-if="attributesVisible"
