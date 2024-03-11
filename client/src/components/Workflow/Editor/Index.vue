@@ -182,6 +182,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
+import { useStepActions } from "./Actions/stepActions";
 import { SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
@@ -343,12 +344,15 @@ export default {
             stepStore.$reset();
             stateStore.$reset();
             commentStore.$reset();
+            undoRedoStore.$reset();
         }
 
         onUnmounted(() => {
             resetStores();
             emit("update:confirmation", false);
         });
+
+        const stepActions = useStepActions(stepStore, undoRedoStore);
 
         return {
             id,
@@ -379,6 +383,7 @@ export default {
             stateStore,
             resetStores,
             initialLoading,
+            stepActions,
         };
     },
     data() {
@@ -464,8 +469,7 @@ export default {
             this.stepStore.updateStep(step);
         },
         onUpdateStepPosition(stepId, position) {
-            const step = { ...this.steps[stepId], position };
-            this.onUpdateStep(step);
+            this.stepActions.setPosition(this.steps[stepId], position);
         },
         onConnect(connection) {
             this.connectionStore.addConnection(connection);
@@ -648,8 +652,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
-            const step = { ...this.steps[nodeId], annotation: newAnnotation };
-            this.onUpdateStep(step);
+            this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
         },
         async routeToWorkflow(id) {
             // map scoped stores to existing stores, before updating the id
@@ -709,8 +712,7 @@ export default {
                 });
         },
         onLabel(nodeId, newLabel) {
-            const step = { ...this.steps[nodeId], label: newLabel };
-            this.onUpdateStep(step);
+            this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
         onScrollTo(stepId) {
             this.scrollToId = stepId;

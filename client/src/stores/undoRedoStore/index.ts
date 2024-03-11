@@ -13,6 +13,12 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const redoActionStack = ref<UndoRedoAction[]>([]);
     const maxUndoActions = ref(100);
 
+    function $reset() {
+        undoActionStack.value.forEach((action) => action.destroy());
+        undoActionStack.value = [];
+        clearRedoStack();
+    }
+
     function undo() {
         flushLazyAction();
         const action = undoActionStack.value.pop();
@@ -122,6 +128,7 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         setLazyActionTimeout,
         isQueued,
         pendingLazyAction,
+        $reset,
     };
 });
 
