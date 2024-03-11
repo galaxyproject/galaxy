@@ -741,7 +741,7 @@ export default {
                         tool_version: data.tool_version,
                         errors: data.errors,
                     };
-                    this.onUpdateStep(step);
+                    this.stepActions.setData(this.steps[stepId], step);
                 });
         },
         onLabel(nodeId, newLabel) {
