@@ -1,9 +1,14 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUnlink } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref, watch } from "vue";
 
 import localize from "@/utils/localization";
 
 import ClickToEdit from "@/components/Collections/common/ClickToEdit.vue";
+
+library.add(faUnlink);
 
 interface Props {
     // TODO: Define the type of the pair prop
@@ -52,11 +57,13 @@ onMounted(() => {
                 </span>
             </span>
 
-            <span class="reverse-dataset-name flex-column">{{ pair.reverse.name }}</span>
+            <span class="reverse-dataset-name flex-column">
+                {{ pair.reverse.name }}
+            </span>
         </li>
 
         <button class="unpair-btn" @click="unlinkFn">
-            <span class="fa fa-unlink" :title="localize('Unpair')"></span>
+            <FontAwesomeIcon :icon="faUnlink" :title="localize('Unpair')" />
         </button>
     </div>
 </template>
