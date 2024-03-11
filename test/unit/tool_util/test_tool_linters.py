@@ -1083,7 +1083,10 @@ def test_general_valid_new_profile_fmt(lint_ctx):
 def test_general_text_spaces(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_TEXT_SPACES)
     run_lint_module(lint_ctx, general, tool_source)
-    assert "XML node 'xref' has text with leading or trailing spaces ('\n            bwa\n        '!='bwa')" in lint_ctx.warn_messages
+    assert (
+        "XML node 'xref' has text with leading or trailing spaces ('\n            bwa\n        '!='bwa')"
+        in lint_ctx.warn_messages
+    )
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
     assert len(lint_ctx.warn_messages) == 1
