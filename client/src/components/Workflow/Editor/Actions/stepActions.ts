@@ -1,6 +1,7 @@
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
 
 class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     key: K;
@@ -34,6 +35,44 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     redo() {
         this.stepStore.updateStepValue(this.stepId, this.key, this.toValue);
         this.onUndoRedo?.();
+    }
+}
+
+export class SetDataAction extends UndoRedoAction {
+    stepStore;
+    stateStore;
+    stepId;
+    fromPartial: Partial<Step> = {};
+    toPartial: Partial<Step> = {};
+
+    constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, from: Step, to: Step) {
+        super();
+        this.stepStore = stepStore;
+        this.stateStore = stateStore;
+        this.stepId = from.id;
+
+        Object.entries(from).forEach(([key, value]) => {
+            const otherValue = to[key as keyof Step] as any;
+
+            if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
+                this.fromPartial[key as keyof Step] = structuredClone(value);
+                this.toPartial[key as keyof Step] = structuredClone(otherValue);
+            }
+        });
+    }
+
+    run() {
+        const step = this.stepStore.getStep(this.stepId);
+        assertDefined(step);
+        this.stateStore.activeNodeId = this.stepId;
+        this.stepStore.updateStep({ ...step, ...this.toPartial });
+    }
+
+    undo() {
+        const step = this.stepStore.getStep(this.stepId);
+        assertDefined(step);
+        this.stateStore.activeNodeId = this.stepId;
+        this.stepStore.updateStep({ ...step, ...this.fromPartial });
     }
 }
 
@@ -87,9 +126,15 @@ export function useStepActions(
         changeValueOrCreateAction(step, "label", label);
     }
 
+    function setData(from: Step, to: Step) {
+        const action = new SetDataAction(stepStore, stateStore, from, to);
+        undoRedoStore.applyAction(action);
+    }
+
     return {
         setPosition,
         setAnnotation,
         setLabel,
+        setData,
     };
 }
