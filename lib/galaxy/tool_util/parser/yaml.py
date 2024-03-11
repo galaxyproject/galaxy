@@ -287,10 +287,11 @@ def to_test_assert_list(assertions) -> AssertionList:
                 new_assertion["that"] = assertion_key
                 new_assertion.update(assertion_value)
             assertion = new_assertion
-        children = []
-        if "children" in assertion:
-            children = assertion["children"]
-            del assertion["children"]
+        children = assertion.pop("asserts", assertion.pop("children", []))
+        # if there are no nested assertions then children should be []
+        # but to_test_assert_list would return None
+        if children:
+            children = to_test_assert_list(children)
         assert_dict: AssertionDict = dict(
             tag=assertion["that"],
             attributes=assertion,
