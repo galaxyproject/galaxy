@@ -248,6 +248,16 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         stepExtraInputs.value[step.id] = findStepExtraInputs(step);
     }
 
+    function updateStepValue<K extends keyof Step>(stepId: number, key: K, value: Step[K]) {
+        const step = steps.value[stepId];
+        assertDefined(step);
+
+        const partialStep: Partial<Step> = {};
+        partialStep[key] = value;
+
+        updateStep({ ...step, ...partialStep });
+    }
+
     function changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
         set(stepMapOver.value, stepId, mapOver);
     }
@@ -361,6 +371,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         addStep,
         insertNewStep,
         updateStep,
+        updateStepValue,
         changeStepMapOver,
         resetStepInputMapOver,
         changeStepInputMapOver,

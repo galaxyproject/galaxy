@@ -186,6 +186,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
+import { useStepActions } from "./Actions/stepActions";
 import { SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
@@ -349,12 +350,15 @@ export default {
             stepStore.$reset();
             stateStore.$reset();
             commentStore.$reset();
+            undoRedoStore.$reset();
         }
 
         onUnmounted(() => {
             resetStores();
             emit("update:confirmation", false);
         });
+
+        const stepActions = useStepActions(stepStore, undoRedoStore);
 
         return {
             id,
@@ -385,6 +389,7 @@ export default {
             stateStore,
             resetStores,
             initialLoading,
+            stepActions,
         };
     },
     data() {
@@ -472,8 +477,7 @@ export default {
             this.stepStore.updateStep(step);
         },
         onUpdateStepPosition(stepId, position) {
-            const step = { ...this.steps[stepId], position };
-            this.onUpdateStep(step);
+            this.stepActions.setPosition(this.steps[stepId], position);
         },
         onConnect(connection) {
             this.connectionStore.addConnection(connection);
@@ -656,8 +660,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
-            const step = { ...this.steps[nodeId], annotation: newAnnotation };
-            this.onUpdateStep(step);
+            this.stepActions.setAnnotation(this.steps[nodeId], newAnnotation);
         },
         async routeToWorkflow(id) {
             // map scoped stores to existing stores, before updating the id
@@ -724,22 +727,7 @@ export default {
             this.onReportUpdate(newMarkdown);
         },
         onLabel(nodeId, newLabel) {
-            const step = { ...this.steps[nodeId], label: newLabel };
-            const oldLabel = this.steps[nodeId].label;
-            this.onUpdateStep(step);
-            const stepType = this.steps[nodeId].type;
-            const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
-            const labelType = isInput ? "input" : "step";
-            const labelTypeTitle = isInput ? "Input" : "Step";
-            const newMarkdown = replaceLabel(this.markdownText, labelType, oldLabel, newLabel);
-            if (newMarkdown !== this.markdownText) {
-                this.debouncedToast(`${labelTypeTitle} label updated in workflow report.`, 1500);
-            }
-            this.onReportUpdate(newMarkdown);
-        },
-        debouncedToast(message, delay) {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = setTimeout(() => Toast.success(message), delay);
+            this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
         onScrollTo(stepId) {
             this.scrollToId = stepId;
