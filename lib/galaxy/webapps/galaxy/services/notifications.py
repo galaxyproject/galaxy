@@ -22,10 +22,10 @@ from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
-    GenericNotificationCreateRequest,
     NotificationBroadcastUpdateRequest,
     NotificationCreatedResponse,
     NotificationCreateRequest,
+    NotificationCreateRequestBody,
     NotificationResponse,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
@@ -48,7 +48,7 @@ class NotificationService(ServiceBase):
         self.notification_manager = notification_manager
 
     def send_notification(
-        self, sender_context: ProvidesUserContext, payload: NotificationCreateRequest
+        self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
     ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
         """Sends a notification to a list of recipients (users, groups or roles).
 
@@ -56,10 +56,14 @@ class NotificationService(ServiceBase):
         """
         self.notification_manager.ensure_notifications_enabled()
         self._ensure_user_can_send_notifications(sender_context)
-        return self.send_notification_internal(payload)
+        request = NotificationCreateRequest.model_construct(
+            notification=payload.root.notification,
+            recipients=payload.root.recipients,
+        )
+        return self.send_notification_internal(request)
 
     def send_notification_internal(
-        self, request: GenericNotificationCreateRequest
+        self, request: NotificationCreateRequest
     ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
         """Sends a notification to a list of recipients (users, groups or roles).
 

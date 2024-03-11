@@ -3,7 +3,10 @@ API operations on Notification objects.
 """
 
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from fastapi import (
     Body,
@@ -19,7 +22,7 @@ from galaxy.schema.notifications import (
     BroadcastNotificationResponse,
     NotificationBroadcastUpdateRequest,
     NotificationCreatedResponse,
-    NotificationCreateRequest,
+    NotificationCreateRequestBody,
     NotificationsBatchRequest,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
@@ -30,6 +33,7 @@ from galaxy.schema.notifications import (
     UserNotificationsBatchUpdateRequest,
     UserNotificationUpdateRequest,
 )
+from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.webapps.galaxy.api.common import NotificationIdPathParam
 from galaxy.webapps.galaxy.services.notifications import NotificationService
@@ -219,8 +223,8 @@ class FastAPINotifications:
     def send_notification(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: NotificationCreateRequest = Body(),
-    ) -> NotificationCreatedResponse:
+        payload: NotificationCreateRequestBody = Body(),
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
         """Sends a notification to a list of recipients (users, groups or roles)."""
         return self.service.send_notification(sender_context=trans, payload=payload)
 

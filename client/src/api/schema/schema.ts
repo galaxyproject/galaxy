@@ -5391,6 +5391,40 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
+        /** GenericNotificationCreateRequest[Annotated[int, BeforeValidator, BeforeValidator, PlainSerializer, WithJsonSchema, WithJsonSchema]] */
+        GenericNotificationCreateRequest_Annotated_int__BeforeValidator__BeforeValidator__PlainSerializer__WithJsonSchema__WithJsonSchema__: {
+            /**
+             * Notification
+             * @description The notification to create. The structure depends on the category.
+             */
+            notification: components["schemas"]["NotificationCreateData"];
+            /**
+             * Recipients
+             * @description The recipients of the notification. Can be a combination of users, groups and roles.
+             */
+            recipients: components["schemas"]["GenericNotificationRecipients_Annotated_int__BeforeValidator__BeforeValidator__PlainSerializer__WithJsonSchema__WithJsonSchema__"];
+        };
+        /** GenericNotificationRecipients[Annotated[int, BeforeValidator, BeforeValidator, PlainSerializer, WithJsonSchema, WithJsonSchema]] */
+        GenericNotificationRecipients_Annotated_int__BeforeValidator__BeforeValidator__PlainSerializer__WithJsonSchema__WithJsonSchema__: {
+            /**
+             * Group IDs
+             * @description The list of encoded group IDs of the groups that should receive the notification.
+             * @default []
+             */
+            group_ids?: string[];
+            /**
+             * Role IDs
+             * @description The list of encoded role IDs of the roles that should receive the notification.
+             * @default []
+             */
+            role_ids?: string[];
+            /**
+             * User IDs
+             * @description The list of encoded user IDs of the users that should receive the notification.
+             * @default []
+             */
+            user_ids?: string[];
+        };
         /**
          * GroupCreatePayload
          * @description Payload schema for creating a group.
@@ -9628,22 +9662,8 @@ export interface components {
              */
             variant: components["schemas"]["NotificationVariant"];
         };
-        /**
-         * NotificationCreateRequest
-         * @description Contains the recipients and the notification to create.
-         */
-        NotificationCreateRequest: {
-            /**
-             * Notification
-             * @description The notification to create. The structure depends on the category.
-             */
-            notification: components["schemas"]["NotificationCreateData"];
-            /**
-             * Recipients
-             * @description The recipients of the notification. Can be a combination of users, groups and roles.
-             */
-            recipients: components["schemas"]["NotificationRecipients"];
-        };
+        /** NotificationCreateRequestBody */
+        NotificationCreateRequestBody: components["schemas"]["GenericNotificationCreateRequest_Annotated_int__BeforeValidator__BeforeValidator__PlainSerializer__WithJsonSchema__WithJsonSchema__"];
         /** NotificationCreatedResponse */
         NotificationCreatedResponse: {
             /**
@@ -9656,30 +9676,6 @@ export interface components {
              * @description The total number of notifications that were sent to the recipients.
              */
             total_notifications_sent: number;
-        };
-        /**
-         * NotificationRecipients
-         * @description The recipients of a notification. Can be a combination of users, groups and roles.
-         */
-        NotificationRecipients: {
-            /**
-             * Group IDs
-             * @description The list of encoded group IDs of the groups that should receive the notification.
-             * @default []
-             */
-            group_ids?: string[];
-            /**
-             * Role IDs
-             * @description The list of encoded role IDs of the roles that should receive the notification.
-             * @default []
-             */
-            role_ids?: string[];
-            /**
-             * User IDs
-             * @description The list of encoded user IDs of the users that should receive the notification.
-             * @default []
-             */
-            user_ids?: string[];
         };
         /**
          * NotificationResponse
@@ -19976,14 +19972,16 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["NotificationCreateRequest"];
+                "application/json": components["schemas"]["NotificationCreateRequestBody"];
             };
         };
         responses: {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                    "application/json":
+                        | components["schemas"]["NotificationCreatedResponse"]
+                        | components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Validation Error */

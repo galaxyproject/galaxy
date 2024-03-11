@@ -299,9 +299,12 @@ class GenericNotificationCreateRequest(Model, Generic[DatabaseIdT]):
     )
 
 
-NotificationCreateRequestEncoded = GenericNotificationCreateRequest[DecodedDatabaseIdField]
 NotificationCreateRequest = GenericNotificationCreateRequest[int]
 NotificationRecipients = GenericNotificationRecipients[int]
+
+
+class NotificationCreateRequestBody(RootModel):
+    root: GenericNotificationCreateRequest[DecodedDatabaseIdField]
 
 
 class BroadcastNotificationCreateRequest(NotificationCreateData):
