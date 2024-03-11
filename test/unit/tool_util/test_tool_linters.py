@@ -897,7 +897,7 @@ XML_ORDER = """
 """
 
 TOOL_WITH_COMMENTS = """
-<tool>
+<tool id="id" name="name" version="1" profile="22.01">
     <stdio>
         <!-- This is a comment -->
         <regex match="low space" source="both" level="warning" description="Low space on device" />
@@ -1088,7 +1088,7 @@ def test_general_text_spaces(lint_ctx):
         in lint_ctx.warn_messages
     )
     assert not lint_ctx.info_messages
-    assert len(lint_ctx.valid_messages) == 1
+    assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
 
