@@ -47,7 +47,7 @@
         </div>
         <div class="mt-2">
             <b>Tags</b>
-            <StatelessTags :value="tagsCurrent" @input="onTags" />
+            <StatelessTags :value="tags" @input="onTags" />
             <div class="form-text text-muted">
                 Apply tags to make it easy to search for and find items with the same tag.
             </div>
@@ -117,7 +117,6 @@ export default {
         return {
             message: null,
             messageVariant: null,
-            tagsCurrent: this.tags,
             versionCurrent: this.version,
             annotationCurrent: this.annotation,
             nameCurrent: this.name,
@@ -186,9 +185,8 @@ export default {
     },
     methods: {
         onTags(tags) {
-            this.tagsCurrent = tags;
             this.onAttributes({ tags });
-            this.$emit("onTags", this.tagsCurrent);
+            this.$emit("onTags", tags);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
