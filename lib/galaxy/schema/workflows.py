@@ -310,8 +310,8 @@ class WorkflowDictEditorSteps(Model):
         title="Type",
         description="The type of workflow module.",
     )
-    label: str = Field(
-        ...,
+    label: Optional[str] = Field(
+        None,
         title="Label",
         description="The label of the step.",
     )
@@ -415,8 +415,8 @@ class WorkflowDictRunSteps(Model):
         title="Step Type",
         description="The type of the step.",
     )
-    step_label: str = Field(
-        ...,
+    step_label: Optional[str] = Field(
+        None,
         title="Step Label",
         description="The label of the step.",
     )
