@@ -115,18 +115,18 @@
                             :id="id"
                             :tags="tags"
                             :parameters="parameters"
-                            :annotation-current.sync="annotation"
                             :annotation="annotation"
-                            :name-current.sync="name"
                             :name="name"
                             :version="version"
                             :versions="versions"
                             :license="license"
                             :creator="creator"
                             @onVersion="onVersion"
-                            @onTags="onTags"
+                            @onTags="setTags"
                             @onLicense="onLicense"
-                            @onCreator="onCreator" />
+                            @onCreator="onCreator"
+                            @update:nameCurrent="setName"
+                            @update:annotationCurrent="setAnnotation" />
                         <WorkflowLint
                             v-else-if="showLint"
                             :untyped-parameters="parameters"
@@ -186,6 +186,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
+import { SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
@@ -262,6 +263,60 @@ export default {
         whenever(ctrl_z, undo);
         whenever(ctrl_y, redo);
 
+        const name = ref("Unnamed Workflow");
+        const setNameActionHandler = new SetValueActionHandler(undoRedoStore, (value) => (name.value = value));
+        /** user set name. queues an undo/redo action */
+        function setName(newName) {
+            if (name.value !== newName) {
+                setNameActionHandler.set(name.value, newName);
+            }
+        }
+
+        const report = ref({});
+        const setReportActionHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (report.value = structuredClone(value))
+        );
+        /** user set report. queues an undo/redo action */
+        function setReport(newReport) {
+            setReportActionHandler.set(report.value, newReport);
+        }
+
+        const license = ref(null);
+        const setLicenseHandler = new SetValueActionHandler(undoRedoStore, (value) => (license.value = value));
+        /** user set license. queues an undo/redo action */
+        function setLicense(newLicense) {
+            if (license.value !== newLicense) {
+                setLicenseHandler.set(license.value, newLicense);
+            }
+        }
+
+        const creator = ref(null);
+        const setCreatorHandler = new SetValueActionHandler(undoRedoStore, (value) => (creator.value = value));
+        /** user set creator. queues an undo/redo action */
+        function setCreator(newCreator) {
+            setCreatorHandler.set(creator.value, newCreator);
+        }
+
+        const annotation = ref(null);
+        const setAnnotationHandler = new SetValueActionHandler(undoRedoStore, (value) => (annotation.value = value));
+        /** user set annotation. queues an undo/redo action */
+        function setAnnotation(newAnnotation) {
+            if (annotation.value !== newAnnotation) {
+                setAnnotationHandler.set(annotation.value, newAnnotation);
+            }
+        }
+
+        const tags = ref([]);
+        const setTagsHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (tags.value = structuredClone(value))
+        );
+        /** user set tags. queues an undo/redo action */
+        function setTags(newTags) {
+            setTagsHandler.set(tags.value, newTags);
+        }
+
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const { activeNodeId } = storeToRefs(stateStore);
@@ -303,6 +358,18 @@ export default {
 
         return {
             id,
+            name,
+            setName,
+            report,
+            setReport,
+            license,
+            setLicense,
+            creator,
+            setCreator,
+            annotation,
+            setAnnotation,
+            tags,
+            setTags,
             connectionStore,
             hasChanges,
             hasInvalidConnections,
@@ -326,13 +393,7 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            report: {},
             labels: {},
-            license: null,
-            creator: null,
-            annotation: null,
-            name: "Unnamed Workflow",
-            tags: this.workflowTags,
             services: null,
             stateMessages: [],
             insertedStateMessages: [],
@@ -832,21 +893,16 @@ export default {
                 }
             }
         },
-        onTags(tags) {
-            if (this.tags != tags) {
-                this.tags = tags;
-            }
-        },
         onLicense(license) {
             if (this.license != license) {
                 this.hasChanges = true;
-                this.license = license;
+                this.setLicense(license);
             }
         },
         onCreator(creator) {
             if (this.creator != creator) {
                 this.hasChanges = true;
-                this.creator = creator;
+                this.setCreator(creator);
             }
         },
         onActiveNode(nodeId) {
