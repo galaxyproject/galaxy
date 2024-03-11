@@ -20,6 +20,7 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    BeforeValidator,
     ConfigDict,
     Field,
     Json,
@@ -151,11 +152,11 @@ HistoryDatasetAssociationId = Annotated[EncodedDatabaseIdField, Field(..., title
 JobId = Annotated[EncodedDatabaseIdField, Field(..., title="Job ID")]
 
 
-DatasetStateField: DatasetState = Field(
-    ...,
-    title="State",
-    description="The current state of this dataset.",
-)
+DatasetStateField = Annotated[
+    DatasetState,
+    BeforeValidator(lambda v: "discarded" if v == "deleted" else v),
+    Field(..., title="State", description="The current state of this dataset."),
+]
 
 CreateTimeField = Field(
     title="Create Time",
@@ -661,7 +662,7 @@ class HDASummary(HDACommon):
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
     )
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     extension: Optional[str] = Field(
         ...,
         title="Extension",
@@ -679,7 +680,7 @@ class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
     accessible: bool = AccessibleField
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
 
 
 HdaLddaField = Field(
@@ -872,7 +873,7 @@ class HDAObject(Model, WithModelClass):
     # If so at least merge models
     id: HistoryDatasetAssociationId
     model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: HistoryID
     tags: List[str]
@@ -2136,8 +2137,8 @@ class StoredWorkflowSummary(Model, WithModelClass):
         title="Owner",
         description="The name of the user who owns this workflow.",
     )
-    latest_workflow_uuid: UUID4 = Field(  # Is this really used?
-        ...,
+    latest_workflow_uuid: Optional[UUID4] = Field(
+        None,
         title="Latest workflow UUID",
         description="TODO",
     )
@@ -2154,17 +2155,17 @@ class StoredWorkflowSummary(Model, WithModelClass):
 
 
 class WorkflowInput(Model):
-    label: str = Field(
+    label: Optional[str] = Field(
         ...,
         title="Label",
         description="Label of the input.",
     )
-    value: str = Field(
+    value: Optional[Any] = Field(
         ...,
         title="Value",
         description="TODO",
     )
-    uuid: UUID4 = Field(
+    uuid: Optional[UUID4] = Field(
         ...,
         title="UUID",
         description="Universal unique identifier of the input.",
@@ -2275,7 +2276,7 @@ class SubworkflowStep(WorkflowStepBase):
 
 class Creator(Model):
     class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-    name: str = Field(..., title="Name", description="The name of the creator.")
+    name: Optional[str] = Field(None, title="Name", description="The name of the creator.")
     address: Optional[str] = Field(
         None,
         title="Address",
@@ -3080,7 +3081,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     date_uploaded: datetime
     is_unrestricted: bool
     is_private: bool
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     file_size: str
     raw_size: int
     ldda_id: EncodedDatabaseIdField
@@ -3650,7 +3651,7 @@ class DatasetSummary(Model):
     id: EncodedDatabaseIdField
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-    state: DatasetState = DatasetStateField
+    state: DatasetStateField
     deleted: bool
     purged: bool
     purgable: bool

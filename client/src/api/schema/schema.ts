@@ -9752,7 +9752,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */
@@ -11005,10 +11005,9 @@ export interface components {
             };
             /**
              * Latest workflow UUID
-             * Format: uuid4
              * @description TODO
              */
-            latest_workflow_uuid: string;
+            latest_workflow_uuid?: string | null;
             /**
              * License
              * @description SPDX Identifier of the license associated with this workflow.
@@ -12108,18 +12107,17 @@ export interface components {
              * Label
              * @description Label of the input.
              */
-            label: string;
+            label: string | null;
             /**
              * UUID
-             * Format: uuid4
              * @description Universal unique identifier of the input.
              */
-            uuid: string;
+            uuid: string | null;
             /**
              * Value
              * @description TODO
              */
-            value: string;
+            value: Record<string, never> | null;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
@@ -12475,7 +12473,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */

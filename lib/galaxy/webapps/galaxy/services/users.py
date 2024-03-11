@@ -239,8 +239,11 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                item = trans.user.to_dict()
-                return [item]
+                if trans.user:
+                    item = trans.user.to_dict()
+                    return [item]
+                else:
+                    return []
             stmt = stmt.filter(User.deleted == false())
         for user in trans.sa_session.scalars(stmt).all():
             item = user.to_dict()

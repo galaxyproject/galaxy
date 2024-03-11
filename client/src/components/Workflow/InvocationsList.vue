@@ -56,14 +56,7 @@
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">
-                <div
-                    v-b-tooltip.hover.top.html
-                    :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
-                    class="truncate">
-                    <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        {{ getHistoryNameById(data.item.history_id) }}
-                    </b-link>
-                </div>
+                <SwitchToHistoryLink :history-id="data.value" />
             </template>
             <template v-slot:cell(create_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -90,7 +83,6 @@
 </template>
 
 <script>
-import { getGalaxyInstance } from "app";
 import HelpText from "components/Help/HelpText";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
@@ -103,13 +95,15 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import paginationMixin from "./paginationMixin";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 export default {
     components: {
+        HelpText,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
-        HelpText,
+        SwitchToHistoryLink,
     },
     mixins: [paginationMixin],
     props: {
@@ -225,10 +219,6 @@ export default {
         },
         invocationLink(item) {
             return `/workflows/invocations/${item.id}`;
-        },
-        switchHistory(historyId) {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.switchToHistory(historyId);
         },
     },
 };

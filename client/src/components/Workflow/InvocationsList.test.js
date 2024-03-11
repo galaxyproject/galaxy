@@ -169,7 +169,7 @@ describe("InvocationsList.vue", () => {
             const row = rows[0];
             const columns = row.findAll("td");
             expect(columns.at(1).text()).toBe("workflow name");
-            expect(columns.at(2).text()).toBe("history name");
+            expect(columns.at(2).text()).toBe("Loading..."); // Checking the actual name will be tested in its own component
             expect(columns.at(3).text()).toBe(
                 formatDistanceToNow(parseISO(`${mockInvocationData.create_time}Z`), { addSuffix: true })
             );
@@ -186,13 +186,6 @@ describe("InvocationsList.vue", () => {
             await wrapper.find(".toggle-invocation-details").trigger("click");
             rows = wrapper.findAll("tbody > tr").wrappers;
             expect(rows.length).toBe(1);
-        });
-
-        it("calls switchHistory", async () => {
-            const mockMethod = jest.fn();
-            wrapper.vm.switchHistory = mockMethod;
-            await wrapper.find("#switch-to-history").trigger("click");
-            expect(mockMethod).toHaveBeenCalled();
         });
 
         it("check run button", async () => {

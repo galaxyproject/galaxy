@@ -1633,6 +1633,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def add_output_dataset(self, name, dataset):
         joda = JobToOutputDatasetAssociation(name, dataset)
+        if dataset.dataset.job is None:
+            # Only set job if dataset doesn't already have associated job.
+            # database operation tools that make copies should not modify the job here.
+            dataset.dataset.job = self
         add_object_to_object_session(self, joda)
         self.output_datasets.append(joda)
 
@@ -1996,24 +2000,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 state = :state,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT hda.dataset_id FROM history_dataset_association hda
-                INNER JOIN job_to_output_dataset jtod
-                ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
-            );
-        """
-            ),
-            text(
-                """
-            UPDATE dataset
-            SET
-                state = :state,
-                update_time = :update_time
-            WHERE id IN (
-                SELECT ldda.dataset_id FROM library_dataset_dataset_association ldda
-                INNER JOIN job_to_output_library_dataset jtold
-                ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
-            );
+            WHERE
+                dataset.job_id = :job_id
         """
             ),
             text(
@@ -2022,11 +2010,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 info = :info,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT jtod.dataset_id
-                FROM job_to_output_dataset jtod
-                WHERE jtod.job_id = :job_id
-            );
+            FROM dataset
+            WHERE
+                history_dataset_association.dataset_id = dataset.id
+                AND dataset.job_id = :job_id;
         """
             ),
             text(
@@ -2035,11 +2022,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 info = :info,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT jtold.ldda_id
-                FROM job_to_output_library_dataset jtold
-                WHERE jtold.job_id = :job_id
-            );
+            FROM dataset
+            WHERE
+                library_dataset_dataset_association.dataset_id = dataset.id
+                AND dataset.job_id = :job_id;
         """
             ),
         ]

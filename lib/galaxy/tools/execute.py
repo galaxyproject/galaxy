@@ -175,11 +175,6 @@ def execute(
             history = execution_slice.history or history
             jobs_executed += 1
 
-    if job_datasets:
-        for job, datasets in job_datasets.items():
-            for dataset_instance in datasets:
-                dataset_instance.dataset.job = job
-
     if execution_slice:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets

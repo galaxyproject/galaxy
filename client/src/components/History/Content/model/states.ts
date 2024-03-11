@@ -12,7 +12,7 @@ interface StateRepresentation {
     nonDb?: boolean;
 }
 
-type StateMap = {
+export type StateMap = {
     [__ in State]: StateRepresentation;
 };
 

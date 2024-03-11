@@ -366,7 +366,7 @@ class FastAPIUsers:
         return payload
 
     @router.delete(
-        "/api/users/{user_id}/favorites/{object_type}/{object_id}",
+        "/api/users/{user_id}/favorites/{object_type}/{object_id:path}",
         name="remove_favorite",
         summary="Remove the object from user's favorites",
     )
