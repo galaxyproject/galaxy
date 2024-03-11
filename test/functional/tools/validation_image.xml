@@ -25,6 +25,22 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
+                    <has_image_width value="30" delta="2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_test_failure="true">
+            <param name="input" value="im3_b.tif" />
+            <output name="output">
+                <assert_contents>
+                    <has_image_width value="29" delta="2" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input" value="im3_b.tif" />
+            <output name="output">
+                <assert_contents>
                     <has_image_width value="32" />
                     <has_image_height value="32" />
                     <has_image_channels value="3" />
@@ -49,7 +65,7 @@
             <param name="input" value="im3_b.tif" />
             <output name="output">
                 <assert_contents>
-                    <has_image_mean_intensity channel="0" value="0.24" delta="0.0100000001" />
+                    <has_image_mean_intensity channel="0" value="0.24" eps="0.0100000001" />
                 </assert_contents>
             </output>
         </test>
@@ -122,7 +138,7 @@
             <param name="input" value="im2_b.png" />
             <output name="output">
                 <assert_contents>
-                    <has_image_mean_object_size value="511" delta="0.9" />
+                    <has_image_mean_object_size value="511" eps="0.9" />
                 </assert_contents>
             </output>
         </test>
@@ -134,7 +150,7 @@
                     <has_image_height value="32" />
                     <has_image_channels value="1" />
                     <has_image_labels value="2" />
-                    <has_image_mean_object_size value="511" delta="1.0" />
+                    <has_image_mean_object_size value="511" eps="1.0" />
                 </assert_contents>
             </output>
         </test>

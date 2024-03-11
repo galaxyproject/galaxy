@@ -2858,7 +2858,7 @@ $attribute_list::5
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is an image and has a specific mean intensity value of ``value``
-plus/minus ``delta`` (e.g., ``<image_has_mean_intensity value="0.83" />``).
+plus/minus ``eps`` (e.g., ``<image_has_mean_intensity value="0.83" />``).
 Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
@@ -2870,9 +2870,9 @@ $attribute_list::5
         <xs:documentation xml:lang="en">The required mean value of the image intensities.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:float" use="optional" default="0.01">
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- delta``.</xs:documentation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="min" type="xs:float" use="optional">
@@ -2895,7 +2895,7 @@ $attribute_list::5
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is an image and has a specific center of mass of ``point``,
-or has an Euclidean distance of ``delta`` or less to that point (e.g.,
+or has an Euclidean distance of ``eps`` or less to that point (e.g.,
 ``<has_image_center_of_mass point="511.07, 223.34" />``).
 
 $attribute_list::5
@@ -2907,7 +2907,7 @@ $attribute_list::5
         <xs:documentation xml:lang="en">The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:float" use="optional" default="0.01">
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
       <xs:annotation>
         <xs:documentation xml:lang="en">The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).</xs:documentation>
       </xs:annotation>
@@ -2969,8 +2969,9 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageMeanObjectSize">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image with labeled objects which have the specified mean size (number of pixels, e.g.,
-``<has_image_mean_object_size value="111.87" exclude_labels="0" />``). The labels must be unique.
+Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+plus/minus ``eps`` (e.g., ``<has_image_mean_object_size value="111.87" exclude_labels="0" />``).
+The labels must be unique.
 
 $attribute_list::5
 ]]>
@@ -2981,9 +2982,9 @@ $attribute_list::5
         <xs:documentation xml:lang="en">The required mean size of the uniquely labeled objects.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="delta" type="xs:float" use="optional" default="0.01">
+    <xs:attribute name="eps" type="xs:float" use="optional" default="0.01">
       <xs:annotation>
-        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- delta``.</xs:documentation>
+        <xs:documentation xml:lang="en">The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="min" type="xs:float" use="optional">

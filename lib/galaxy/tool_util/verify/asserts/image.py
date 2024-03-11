@@ -156,7 +156,7 @@ def assert_has_image_mean_intensity(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     value: Optional[Union[float, str]] = None,
-    delta: Union[float, str] = 0.01,
+    eps: Union[float, str] = 0.01,
     min: Optional[Union[float, str]] = None,
     max: Optional[Union[float, str]] = None,
 ) -> None:
@@ -167,7 +167,7 @@ def assert_has_image_mean_intensity(
     _assert_float(
         actual=im_arr.mean(),
         label="mean intensity",
-        tolerance=delta,
+        tolerance=eps,
         expected=value,
         range_min=min,
         range_max=max,
@@ -178,7 +178,7 @@ def assert_has_image_center_of_mass(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     point: Optional[Union[Tuple[float, float], str]] = None,
-    delta: Union[float, str] = 0.01,
+    eps: Union[float, str] = 0.01,
 ) -> None:
     """
     Asserts the specified output is an image and has the specified center of mass.
@@ -193,8 +193,8 @@ def assert_has_image_center_of_mass(
         actual_center_of_mass = _compute_center_of_mass(im_arr)
         distance = numpy.linalg.norm(numpy.subtract(point, actual_center_of_mass))
         assert distance <= float(
-            delta
-        ), f"Wrong center of mass: {actual_center_of_mass} (expected {point}, distance: {distance}, delta: {delta})"
+            eps
+        ), f"Wrong center of mass: {actual_center_of_mass} (expected {point}, distance: {distance}, eps: {eps})"
 
 
 def _get_image_labels(
@@ -271,7 +271,7 @@ def assert_has_image_mean_object_size(
     labels: Optional[Union[str, List[int]]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
     value: Optional[Union[float, str]] = None,
-    delta: Union[float, str] = 0.01,
+    eps: Union[float, str] = 0.01,
     min: Optional[Union[float, str]] = None,
     max: Optional[Union[float, str]] = None,
 ) -> None:
@@ -283,7 +283,7 @@ def assert_has_image_mean_object_size(
     _assert_float(
         actual=actual_mean_object_size,
         label="mean object size",
-        tolerance=delta,
+        tolerance=eps,
         expected=value,
         range_min=min,
         range_max=max,
