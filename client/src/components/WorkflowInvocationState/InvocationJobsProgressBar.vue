@@ -12,7 +12,6 @@ import {
     runningCount as jobStatesSummaryRunningCount,
 } from "./util";
 
-
 interface Props {
     jobStatesSummary: InvocationJobsSummary;
     invocationSchedulingTerminal: boolean;
