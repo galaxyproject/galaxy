@@ -8493,7 +8493,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .where(WorkflowInvocation.handler.is_(None))
             .order_by(WorkflowInvocation.id.asc())
         )
-        return list(sa_session.scalars(stmt))
+        return [wid for wid in sa_session.scalars(stmt)]
 
     @staticmethod
     def poll_active_workflow_ids(engine, scheduler=None, handler=None):
