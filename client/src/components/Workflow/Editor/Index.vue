@@ -108,7 +108,7 @@
                             @onUpdateStep="onUpdateStep"
                             @onSetData="onSetData" />
                         <WorkflowAttributes
-                            v-else-if="showAttributes"
+                            v-else-if="attributesVisible"
                             :id="id"
                             :tags="tags"
                             :parameters="parameters"
@@ -258,8 +258,28 @@ export default {
         whenever(ctrl_z, undo);
         whenever(ctrl_y, redo);
 
+        const isCanvas = ref(true);
+
+        const parameters = ref(null);
+
+        function ensureParametersSet() {
+            parameters.value = getUntypedWorkflowParameters(steps.value);
+        }
+
+        const showInPanel = ref("attributes");
+
+        function showAttributes() {
+            ensureParametersSet();
+            stateStore.activeNodeId = null;
+            showInPanel.value = "attributes";
+        }
+
         const name = ref("Unnamed Workflow");
-        const setNameActionHandler = new SetValueActionHandler(undoRedoStore, (value) => (name.value = value));
+        const setNameActionHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (name.value = value),
+            showAttributes
+        );
         /** user set name. queues an undo/redo action */
         function setName(newName) {
             if (name.value !== newName) {
@@ -268,9 +288,12 @@ export default {
         }
 
         const report = ref({});
+
+        // TODO: move report undo redo to report editor
         const setReportActionHandler = new SetValueActionHandler(
             undoRedoStore,
-            (value) => (report.value = structuredClone(value))
+            (value) => (report.value = structuredClone(value)),
+            showAttributes
         );
         /** user set report. queues an undo/redo action */
         function setReport(newReport) {
@@ -278,7 +301,11 @@ export default {
         }
 
         const license = ref(null);
-        const setLicenseHandler = new SetValueActionHandler(undoRedoStore, (value) => (license.value = value));
+        const setLicenseHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (license.value = value),
+            showAttributes
+        );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
             if (license.value !== newLicense) {
@@ -287,14 +314,22 @@ export default {
         }
 
         const creator = ref(null);
-        const setCreatorHandler = new SetValueActionHandler(undoRedoStore, (value) => (creator.value = value));
+        const setCreatorHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (creator.value = value),
+            showAttributes
+        );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
             setCreatorHandler.set(creator.value, newCreator);
         }
 
         const annotation = ref(null);
-        const setAnnotationHandler = new SetValueActionHandler(undoRedoStore, (value) => (annotation.value = value));
+        const setAnnotationHandler = new SetValueActionHandler(
+            undoRedoStore,
+            (value) => (annotation.value = value),
+            showAttributes
+        );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
             if (annotation.value !== newAnnotation) {
@@ -305,7 +340,8 @@ export default {
         const tags = ref([]);
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
-            (value) => (tags.value = structuredClone(value))
+            (value) => (tags.value = structuredClone(value)),
+            showAttributes
         );
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {
@@ -357,6 +393,11 @@ export default {
         return {
             id,
             name,
+            isCanvas,
+            parameters,
+            ensureParametersSet,
+            showInPanel,
+            showAttributes,
             setName,
             report,
             setReport,
@@ -388,11 +429,9 @@ export default {
     },
     data() {
         return {
-            isCanvas: true,
             markdownConfig: null,
             markdownText: null,
             versions: [],
-            parameters: null,
             labels: {},
             services: null,
             stateMessages: [],
@@ -404,7 +443,6 @@ export default {
             messageBody: null,
             messageIsError: false,
             version: this.initialVersion,
-            showInPanel: "attributes",
             saveAsName: null,
             saveAsAnnotation: null,
             showSaveAsModal: false,
@@ -413,7 +451,7 @@ export default {
         };
     },
     computed: {
-        showAttributes() {
+        attributesVisible() {
             return this.showInPanel == "attributes";
         },
         showLint() {
@@ -642,11 +680,6 @@ export default {
                 });
             });
         },
-        onAttributes() {
-            this._ensureParametersSet();
-            this.stateStore.activeNodeId = null;
-            this.showInPanel = "attributes";
-        },
         onWorkflowTextEditor() {
             this.stateStore.activeNodeId = null;
             this.showInPanel = "attributes";
@@ -725,7 +758,7 @@ export default {
             this.highlightId = null;
         },
         onLint() {
-            this._ensureParametersSet();
+            this.ensureParametersSet();
             this.stateStore.activeNodeId = null;
             this.showInPanel = "lint";
         },
@@ -790,9 +823,6 @@ export default {
                 this.version = version;
                 this._loadCurrent(this.id, version);
             }
-        },
-        _ensureParametersSet() {
-            this.parameters = getUntypedWorkflowParameters(this.steps);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
