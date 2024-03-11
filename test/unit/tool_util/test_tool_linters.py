@@ -30,6 +30,7 @@ from galaxy.util import (
     ElementTree,
     parse_xml,
 )
+from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
@@ -115,6 +116,15 @@ GENERAL_VALID = """
 
 GENERAL_VALID_NEW_PROFILE_FMT = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+</tool>
+"""
+
+GENERAL_VALID_BIOTOOLS = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <xrefs>
+        <xref type="bio.tools">bwa</xref>
+        <xref type="bio.tools">johnscoolbowtie</xref>
+    </xrefs>
 </tool>
 """
 
@@ -1079,6 +1089,17 @@ def test_general_valid_new_profile_fmt(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+@skip_if_site_down("https://bio.tools/")
+def test_general_valid_biotools(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_BIOTOOLS)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "No entry johnscoolbowtie in bio.tools." in lint_ctx.error_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_help_multiple(lint_ctx):
@@ -2078,7 +2099,7 @@ def test_xml_comments_are_ignored(lint_ctx: LintContext):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 130
+    assert len(linter_names) == 131
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [
