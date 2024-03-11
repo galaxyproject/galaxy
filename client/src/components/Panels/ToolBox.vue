@@ -253,7 +253,7 @@ function setButtonText() {
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">
-                <UploadButton />
+                <UploadButton v-if="!props.workflow" />
                 <div v-if="hasResults && resultPanel" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />
