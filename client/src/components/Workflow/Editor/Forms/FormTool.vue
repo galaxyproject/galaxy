@@ -42,6 +42,7 @@
                 <Heading h2 separator bold size="sm"> Additional Options </Heading>
                 <FormSection
                     :id="stepId"
+                    :key="formKey"
                     :node-inputs="stepInputs"
                     :node-outputs="stepOutputs"
                     :step="step"
