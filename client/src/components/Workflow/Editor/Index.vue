@@ -360,7 +360,7 @@ export default {
             return null;
         });
 
-        const hasChanges = ref(false);
+        const { hasChanges } = storeToRefs(stateStore);
         const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
@@ -590,9 +590,9 @@ export default {
             this.hasChanges = true;
         },
         onChangePostJobActions(nodeId, postJobActions) {
-            const updatedStep = { ...this.steps[nodeId], post_job_actions: postJobActions };
-            this.stepStore.updateStep(updatedStep);
-            this.onChange();
+            const step = this.steps[nodeId];
+            const updatedStep = { ...step, post_job_actions: postJobActions };
+            this.stepActions.setData(step, updatedStep);
         },
         onRemove(nodeId) {
             this.stepStore.removeStep(nodeId);

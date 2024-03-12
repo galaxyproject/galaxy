@@ -45,7 +45,7 @@ export class SetDataAction extends UndoRedoAction {
     stepId;
     fromPartial: Partial<Step> = {};
     toPartial: Partial<Step> = {};
-    refreshForm: () => void;
+    onUndoRedo?: () => void;
 
     constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, from: Step, to: Step) {
         super();
@@ -61,9 +61,10 @@ export class SetDataAction extends UndoRedoAction {
                 this.toPartial[key as keyof Step] = structuredClone(otherValue);
             }
         });
+    }
 
-        const { refresh } = useRefreshFromStore();
-        this.refreshForm = refresh;
+    isEmpty() {
+        return Object.keys(this.fromPartial).length === 0;
     }
 
     run() {
@@ -78,12 +79,12 @@ export class SetDataAction extends UndoRedoAction {
         assertDefined(step);
         this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.fromPartial });
-        this.refreshForm();
+        this.onUndoRedo?.();
     }
 
     redo() {
         this.run();
-        this.refreshForm();
+        this.onUndoRedo?.();
     }
 }
 
@@ -121,6 +122,7 @@ export function useStepActions(
 
             action.onUndoRedo = () => {
                 stateStore.activeNodeId = step.id;
+                stateStore.hasChanges = true;
             };
         }
     }
@@ -137,9 +139,19 @@ export function useStepActions(
         changeValueOrCreateAction(step, "label", label);
     }
 
+    const { refresh } = useRefreshFromStore();
+
     function setData(from: Step, to: Step) {
         const action = new SetDataAction(stepStore, stateStore, from, to);
-        undoRedoStore.applyAction(action);
+
+        if (!action.isEmpty()) {
+            action.onUndoRedo = () => {
+                stateStore.activeNodeId = from.id;
+                stateStore.hasChanges = true;
+                refresh();
+            };
+            undoRedoStore.applyAction(action);
+        }
     }
 
     return {
