@@ -30,6 +30,7 @@
                 <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="id"
+                    :key="formKey"
                     :inputs="inputs"
                     :errors="errors"
                     text-enable="Set in Advance"
@@ -54,10 +55,12 @@
 </template>
 
 <script>
+import { storeToRefs } from "pinia";
 import Utils from "utils/utils";
-import { toRef } from "vue";
+import { ref, toRef, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { useRefreshFromStore } from "@/stores/refreshFromStore";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
@@ -97,6 +100,14 @@ export default {
         const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
+        const { formKey } = storeToRefs(useRefreshFromStore());
+        const mainValues = ref(null);
+
+        watch(
+            () => formKey.value,
+            () => (mainValues.value = null)
+        );
+
         return {
             stepId,
             annotation,
@@ -106,11 +117,12 @@ export default {
             configForm,
             postJobActions,
             uniqueErrorLabel,
+            formKey,
+            mainValues,
         };
     },
     data() {
         return {
-            mainValues: null,
             messageText: "",
             messageVariant: "success",
         };
