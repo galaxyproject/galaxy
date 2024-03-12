@@ -50,7 +50,6 @@ interface Props {
     history: HistorySummary;
     filter?: string;
     canEditHistory?: boolean;
-    shouldShowControls?: boolean;
     filterable?: boolean;
     isMultiViewItem?: boolean;
 }
@@ -61,7 +60,6 @@ const props = withDefaults(defineProps<Props>(), {
     listOffset: 0,
     filter: "",
     canEditHistory: true,
-    shouldShowControls: true,
     filterable: false,
     isMultiViewItem: false,
 });
@@ -80,7 +78,7 @@ const querySelectionBreak = ref(false);
 const dragTarget = ref<EventTarget | null>(null);
 const contentItemRefs = computed(() => {
     return historyItems.value.reduce((acc: ContentItemRef, item) => {
-        acc[`item-${item.id}`] = ref(null);
+        acc[itemUniqueKey(item)] = ref(null);
         return acc;
     }, {});
 });
@@ -405,6 +403,10 @@ function getItemKey(item: HistoryItem) {
     return item.type_id;
 }
 
+function itemUniqueKey(item: HistoryItem) {
+    return `${item.history_content_type}-${item.id}`;
+}
+
 onMounted(async () => {
     // `filterable` here indicates if this is the current history panel
     if (props.filterable && !props.filter) {
@@ -413,9 +415,11 @@ onMounted(async () => {
     await loadHistoryItems();
     // if there is a listOffset, we are coming from a collection view, so focus on item at that offset
     if (props.listOffset) {
-        const itemId = historyItems.value[props.listOffset]?.id;
-        const itemElement = contentItemRefs.value[`item-${itemId}`]?.value?.$el as HTMLElement;
-        itemElement?.focus();
+        const itemAtOffset = historyItems.value[props.listOffset];
+        if (itemAtOffset) {
+            const itemElement = contentItemRefs.value[itemUniqueKey(itemAtOffset)]?.value?.$el as HTMLElement;
+            itemElement?.focus();
+        }
     }
 });
 
@@ -427,7 +431,7 @@ function arrowNavigate(item: HistoryItem, eventKey: string) {
         nextItem = historyItems.value[historyItems.value.indexOf(item) - 1];
     }
     if (nextItem) {
-        const itemElement = contentItemRefs.value[`item-${nextItem.id}`]?.value?.$el as HTMLElement;
+        const itemElement = contentItemRefs.value[itemUniqueKey(nextItem)]?.value?.$el as HTMLElement;
         itemElement?.focus();
     }
     return nextItem;
@@ -510,13 +514,13 @@ function setItemDragstart(
                         :history="history"
                         :is-watching="isWatching"
                         :last-checked="lastCheckedTime"
-                        :show-controls="shouldShowControls"
+                        :show-controls="canEditHistory"
                         :filter-text.sync="filterText"
                         :hide-reload="isMultiViewItem"
                         @reloadContents="reloadContents" />
 
                     <HistoryOperations
-                        v-if="shouldShowControls"
+                        v-if="canEditHistory"
                         :history="history"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
@@ -586,7 +590,7 @@ function setItemDragstart(
                             <template v-slot:item="{ item, currentOffset }">
                                 <ContentItem
                                     :id="item.hid"
-                                    :ref="contentItemRefs[`item-${item.id}`]"
+                                    :ref="contentItemRefs[itemUniqueKey(item)]"
                                     is-history-item
                                     :item="item"
                                     :name="item.name"
