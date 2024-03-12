@@ -21,6 +21,7 @@ interface Props {
     loginPage?: boolean;
     excludeIdps?: string[];
 }
+
 const props = withDefaults(defineProps<Props>(), {
     loginPage: false,
     excludeIdps: () => [],
@@ -42,26 +43,24 @@ const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value
 const filteredOIDCIdps = computed(() => {
     const exclude = ["cilogon", "custos"].concat(props.excludeIdps);
     const filtered = Object.assign({}, oIDCIdps.value);
+
     exclude.forEach((idp) => {
         delete filtered[idp];
     });
+
     return filtered;
 });
 
 const cilogonListShow = computed(() => {
-    return (
-        Object.prototype.hasOwnProperty.call(oIDCIdps.value, "cilogon") ||
-        Object.prototype.hasOwnProperty.call(oIDCIdps.value, "custos")
-    );
+    return oIDCIdps.value.cilogon || oIDCIdps.value.custos;
 });
 
-const messageShow = computed(() => messageText.value != null);
-
-const cILogonEnabled = computed(() => Object.prototype.hasOwnProperty.call(oIDCIdps.value, "cilogon"));
-const custosEnabled = computed(() => Object.prototype.hasOwnProperty.call(oIDCIdps.value, "custos"));
+const cILogonEnabled = computed(() => oIDCIdps.value.cilogon);
+const custosEnabled = computed(() => oIDCIdps.value.custos);
 
 onMounted(async () => {
     rememberIdp.value = getIdpPreference() !== null;
+
     // Only fetch CILogonIDPs if custos/cilogon configured
     if (cilogonListShow.value) {
         await getCILogonIdps();
@@ -75,9 +74,10 @@ function toggleCILogon(idp: string) {
 
 async function submitOIDCLogin(idp: string) {
     loading.value = true;
+
     try {
         const { data } = await axios.post(withPrefix(`/authnz/${idp}/login`));
-        loading.value = false;
+
         if (data.redirect_uri) {
             window.location = data.redirect_uri;
         }
@@ -86,6 +86,7 @@ async function submitOIDCLogin(idp: string) {
         messageVariant.value = "danger";
         const message = error.response?.data && error.response.data.err_msg;
         messageText.value = message || "Login failed for an unknown reason.";
+    } finally {
         loading.value = false;
     }
 }
@@ -94,16 +95,20 @@ async function submitCILogon(idp: string | null) {
     if (props.loginPage) {
         setIdpPreference();
     }
+
     if (!selected.value || !idp) {
         messageVariant.value = "danger";
         messageText.value = "Please select an institution.";
         return;
     }
+
     loading.value = true;
+
     try {
         const { data } = await axios.post(withPrefix(`/authnz/${idp}/login/?idphint=${selected.value.EntityID}`));
-        loading.value = false;
+
         localStorage.setItem("galaxy-provider", idp);
+
         if (data.redirect_uri) {
             window.location = data.redirect_uri;
         }
@@ -112,6 +117,7 @@ async function submitCILogon(idp: string | null) {
         messageVariant.value = "danger";
         const message = error.response?.data && error.response.data.err_msg;
         messageText.value = message || "Login failed for an unknown reason.";
+    } finally {
         loading.value = false;
     }
 }
@@ -119,17 +125,22 @@ async function submitCILogon(idp: string | null) {
 async function getCILogonIdps() {
     try {
         const { data } = await axios.get(withPrefix("/authnz/get_cilogon_idps"));
+
         cILogonIdps.value = data;
+
         if (cILogonIdps.value.length == 1) {
             selected.value = cILogonIdps.value[0]!;
         } else {
             // List is originally sorted by OrganizationName which can be different from DisplayName
             cILogonIdps.value.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
         }
+
         if (props.loginPage) {
             const preferredIdp = getIdpPreference();
+
             if (preferredIdp) {
                 const selectedIdp = cILogonIdps.value.find((idp) => idp.EntityID === preferredIdp);
+
                 if (selectedIdp) {
                     selected.value = selectedIdp;
                 }
@@ -158,12 +169,14 @@ function getIdpPreference() {
 
 <template>
     <div>
-        <BAlert :show="messageShow" :variant="messageVariant">
+        <BAlert :show="messageText" :variant="messageVariant">
             {{ messageText }}
         </BAlert>
+
         <BForm id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />
+
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="props.loginPage">
                     <!--Only Display if CILogon/Custos is configured-->

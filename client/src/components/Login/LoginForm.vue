@@ -212,9 +212,9 @@ function returnToLogin() {
                                         </BFormText>
                                     </BFormGroup>
 
-                                    <BButton v-localize name="login" type="submit" :disabled="loading">{{
-                                        localize("Login")
-                                    }}</BButton>
+                                    <BButton v-localize name="login" type="submit" :disabled="loading">
+                                        {{ localize("Login") }}
+                                    </BButton>
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
