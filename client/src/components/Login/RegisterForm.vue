@@ -130,7 +130,12 @@ async function submit() {
                             accordion="registration_acc">
                             <BCardBody>
                                 <BFormGroup :label="labelEmailAddress" label-for="register-form-email">
-                                    <BFormInput id="register-form-email" v-model="email" name="email" type="text" />
+                                    <BFormInput
+                                        id="register-form-email"
+                                        v-model="email"
+                                        name="email"
+                                        type="text"
+                                        required />
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelPassword" label-for="register-form-password">
@@ -138,7 +143,8 @@ async function submit() {
                                         id="register-form-password"
                                         v-model="password"
                                         name="password"
-                                        type="password" />
+                                        type="password"
+                                        required />
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
@@ -146,7 +152,8 @@ async function submit() {
                                         id="register-form-confirm"
                                         v-model="confirm"
                                         name="confirm"
-                                        type="password" />
+                                        type="password"
+                                        required />
                                 </BFormGroup>
 
                                 <BFormGroup :label="labelPublicName" label-for="register-form-username">
@@ -154,7 +161,8 @@ async function submit() {
                                         id="register-form-username"
                                         v-model="username"
                                         name="username"
-                                        type="text" />
+                                        type="text"
+                                        required />
 
                                     <BFormText v-localize>
                                         Your public name is an identifier that will be used to generate addresses for

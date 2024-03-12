@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axios from "axios";
+import axios, { type AxiosError } from "axios";
 import {
     BAlert,
     BButton,
@@ -13,7 +13,7 @@ import {
     BFormInput,
     BFormText,
 } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import localize from "@/utils/localization";
@@ -53,15 +53,16 @@ const urlParams = new URLSearchParams(window.location.search);
 
 const login = ref("");
 const password = ref(null);
+const passwordState = ref<boolean | null>(null);
+const loading = ref(false);
 const messageText = ref("");
-const labelPassword = ref(localize("Password"));
 const messageVariant = ref<"info" | "danger">("info");
-const headerWelcome = ref(localize("Welcome to Galaxy, please log in"));
-const labelNameAddress = ref(localize("Public Name or Email Address"));
 const connectExternalEmail = ref(urlParams.get("connect_external_email"));
 const connectExternalLabel = ref(urlParams.get("connect_external_label"));
 const connectExternalProvider = ref(urlParams.get("connect_external_provider"));
 const confirmURL = ref(urlParams.has("confirm") && urlParams.get("confirm") == "true");
+
+const excludeIdps = computed(() => (connectExternalProvider.value ? [connectExternalProvider.value] : undefined));
 
 function toggleLogin() {
     emit("toggle-login");
@@ -69,6 +70,8 @@ function toggleLogin() {
 
 async function submitLogin() {
     let redirect: string | null;
+    passwordState.value = null;
+    loading.value = true;
 
     if (connectExternalEmail.value) {
         login.value = connectExternalEmail.value;
@@ -101,7 +104,9 @@ async function submitLogin() {
         } else {
             window.location.href = withPrefix("/");
         }
-    } catch (error: any) {
+    } catch (e) {
+        loading.value = false;
+        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
         const message = error.response && error.response.data && error.response.data.err_msg;
 
@@ -109,6 +114,9 @@ async function submitLogin() {
             messageText.value = message + " Try logging in to the existing account through an external provider below.";
         } else {
             messageText.value = message || "Login failed for an unknown reason.";
+        }
+        if (message === "Invalid password.") {
+            passwordState.value = false;
         }
     }
 }
@@ -118,14 +126,18 @@ function setRedirect(url: string) {
 }
 
 async function resetLogin() {
+    loading.value = true;
     try {
         const response = await axios.post(withPrefix("/user/reset_password"), { email: login.value });
         messageVariant.value = "info";
         messageText.value = response.data.message;
-    } catch (error: any) {
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
         messageVariant.value = "danger";
-        const errMsg = error.response.data && error.response.data.err_msg;
+        const errMsg = error.response?.data && error.response.data.err_msg;
         messageText.value = errMsg || "Password reset failed for an unknown reason.";
+    } finally {
+        loading.value = false;
     }
 }
 
@@ -140,6 +152,7 @@ function returnToLogin() {
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
                     <BAlert :show="!!messageText" :variant="messageVariant">
+                        <!-- eslint-disable-next-line vue/no-v-html -->
                         <span v-html="messageText" />
                     </BAlert>
 
@@ -152,17 +165,20 @@ function returnToLogin() {
                     <BForm id="login" @submit.prevent="submitLogin()">
                         <BCard no-body>
                             <BCardHeader v-if="!connectExternalProvider">
-                                <span>{{ headerWelcome }}</span>
+                                <span>{{ localize("Welcome to Galaxy, please log in") }}</span>
                             </BCardHeader>
 
                             <BCardBody>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <BFormGroup :label="labelNameAddress" label-for="login-form-name">
+                                    <BFormGroup
+                                        :label="localize('Public Name or Email Address')"
+                                        label-for="login-form-name">
                                         <BFormInput
                                             v-if="!connectExternalProvider"
                                             id="login-form-name"
                                             v-model="login"
+                                            required
                                             name="login"
                                             type="text" />
                                         <BFormInput
@@ -174,10 +190,12 @@ function returnToLogin() {
                                             type="text" />
                                     </BFormGroup>
 
-                                    <BFormGroup :label="labelPassword" label-for="login-form-password">
+                                    <BFormGroup :label="localize('Password')" label-for="login-form-password">
                                         <BFormInput
                                             id="login-form-password"
                                             v-model="password"
+                                            required
+                                            :state="passwordState"
                                             name="password"
                                             type="password" />
 
@@ -194,11 +212,13 @@ function returnToLogin() {
                                         </BFormText>
                                     </BFormGroup>
 
-                                    <BButton v-localize name="login" type="submit">Login</BButton>
+                                    <BButton v-localize name="login" type="submit" :disabled="loading">{{
+                                        localize("Login")
+                                    }}</BButton>
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <ExternalLogin login-page :exclude-idps="[connectExternalProvider]" />
+                                    <ExternalLogin login-page :exclude-idps="excludeIdps" />
                                 </div>
                             </BCardBody>
 

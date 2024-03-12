@@ -37,7 +37,7 @@ const rememberIdp = ref(false);
 const cilogonOrCustos = ref<string | null>(null);
 const toggleCilogon = ref(false);
 
-const oIDCIdps = computed<OIDCConfig>(() => isConfigLoaded.value ? config.value.oidc : {});
+const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
 
 const filteredOIDCIdps = computed(() => {
     const exclude = ["cilogon", "custos"].concat(props.excludeIdps);
@@ -86,7 +86,7 @@ async function submitOIDCLogin(idp: string) {
         messageVariant.value = "danger";
         const message = error.response?.data && error.response.data.err_msg;
         messageText.value = message || "Login failed for an unknown reason.";
-        loading.value = false;        
+        loading.value = false;
     }
 }
 
