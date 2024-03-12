@@ -1,3 +1,4 @@
+import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
@@ -44,6 +45,7 @@ export class SetDataAction extends UndoRedoAction {
     stepId;
     fromPartial: Partial<Step> = {};
     toPartial: Partial<Step> = {};
+    refreshForm: () => void;
 
     constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, from: Step, to: Step) {
         super();
@@ -59,6 +61,9 @@ export class SetDataAction extends UndoRedoAction {
                 this.toPartial[key as keyof Step] = structuredClone(otherValue);
             }
         });
+
+        const { refresh } = useRefreshFromStore();
+        this.refreshForm = refresh;
     }
 
     run() {
@@ -73,6 +78,12 @@ export class SetDataAction extends UndoRedoAction {
         assertDefined(step);
         this.stateStore.activeNodeId = this.stepId;
         this.stepStore.updateStep({ ...step, ...this.fromPartial });
+        this.refreshForm();
+    }
+
+    redo() {
+        this.run();
+        this.refreshForm();
     }
 }
 
