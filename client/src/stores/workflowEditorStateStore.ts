@@ -39,6 +39,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const scale = ref(1);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
+    const hasChanges = ref(false);
 
     function $reset() {
         inputTerminals.value = {};
@@ -104,6 +105,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        hasChanges,
         stepPosition,
         stepLoadingState,
         $reset,
