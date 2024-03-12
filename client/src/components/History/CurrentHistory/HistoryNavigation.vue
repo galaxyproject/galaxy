@@ -280,7 +280,7 @@ function userTitle(title: string) {
                 Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
             <BFormCheckbox id="purge-history" v-model="purgeHistory">
-                <span v-localize>Purge history</span>
+                <span v-localize>Yes, permanently delete this history.</span>
             </BFormCheckbox>
         </BModal>
     </div>
