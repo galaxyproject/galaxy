@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BTab, BTabs } from "bootstrap-vue";
+import { BAlert, BSpinner, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -147,7 +147,9 @@ function handleError(err: any) {
                 </template>
 
                 <DbKeyProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
+                    <div v-if="loading">
+                        <BSpinner label="Loading Database/Builds..." />
+                    </div>
                     <div v-else>
                         <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
