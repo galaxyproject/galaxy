@@ -91,8 +91,11 @@ export default {
             return Boolean(this.formData[this.deleteActionKey]);
         },
     },
-    watch: {
-        formData() {
+    created() {
+        this.setFormData();
+    },
+    methods: {
+        postPostJobActions() {
             // The formData shape is kind of unfortunate, but it is what we have now.
             // This should be a properly nested object whose values should be retrieved and set via a store
             const postJobActions = {};
@@ -118,11 +121,6 @@ export default {
             });
             this.$emit("onChange", postJobActions);
         },
-    },
-    created() {
-        this.setFormData();
-    },
-    methods: {
         setFormData() {
             const pjas = {};
             Object.values(this.postJobActions).forEach((pja) => {
@@ -164,6 +162,7 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
+                this.postPostJobActions();
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {
