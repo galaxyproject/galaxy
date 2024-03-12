@@ -596,9 +596,8 @@ export default {
             this.hasChanges = true;
         },
         onChangePostJobActions(nodeId, postJobActions) {
-            const step = this.steps[nodeId];
-            const updatedStep = { ...step, post_job_actions: postJobActions };
-            this.stepActions.setData(step, updatedStep);
+            const partialStep = { post_job_actions: postJobActions };
+            this.stepActions.updateStep(nodeId, partialStep);
         },
         onRemove(nodeId) {
             this.stepActions.removeStep(this.steps[nodeId], this.showAttributes);
@@ -741,8 +740,7 @@ export default {
             this.lastQueue
                 .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
                 .then((data) => {
-                    const step = {
-                        ...this.steps[stepId],
+                    const partialStep = {
                         content_id: data.content_id,
                         inputs: data.inputs,
                         outputs: data.outputs,
@@ -751,7 +749,7 @@ export default {
                         tool_version: data.tool_version,
                         errors: data.errors,
                     };
-                    this.stepActions.setData(this.steps[stepId], step);
+                    this.stepActions.updateStep(stepId, partialStep);
                 });
         },
         onOutputLabel(oldValue, newValue) {
