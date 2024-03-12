@@ -283,13 +283,5 @@ function userTitle(title: string) {
                 <span v-localize>Purge history</span>
             </BFormCheckbox>
         </BModal>
-
-        <BModal
-            id="purge-history-modal"
-            title="Permanently Delete History?"
-            title-tag="h2"
-            @ok="historyStore.deleteHistory(history.id, true)">
-            <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
-        </BModal>
     </div>
 </template>
