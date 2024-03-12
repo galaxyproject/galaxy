@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import CarbonEmissionsCalculations from "components/CarbonEmissions/CarbonEmissionsCalculations";
 import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
@@ -15,7 +16,6 @@ import { HistoryExport } from "components/HistoryExport/index";
 import HistoryImport from "components/HistoryImport";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import JobDetails from "components/JobInformation/JobDetails";
-import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import ToolSuccess from "components/Tool/ToolSuccess";
@@ -66,9 +66,9 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
+import HistoryStatistics from "@/components/History/Statistics/HistoryStatistics.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
-import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import UserDatasetPermissions from "@/components/User/UserDatasetPermissions.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 import WorkflowInvocationState from "@/components/WorkflowInvocationState/WorkflowInvocationState.vue";
@@ -386,9 +386,9 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
-                        path: "storage/history/:historyId",
-                        name: "HistoryOverviewInAnalysis",
-                        component: HistoryStorageOverview,
+                        path: "statistics/history/:historyId",
+                        name: "HistoryStatistics",
+                        component: HistoryStatistics,
                         props: true,
                     },
                     {
@@ -581,7 +581,7 @@ export function getRouter(Galaxy) {
                             queryTrsId: route.query.trs_id,
                             queryTrsVersionId: route.query.trs_version,
                             queryTrsUrl: route.query.trs_url,
-                            isRun: route.query.run_form == "true",
+                            isRun: route.query.run_form === "true",
                         }),
                     },
                     {
@@ -618,7 +618,7 @@ export function getRouter(Galaxy) {
         return false;
     }
 
-    router.beforeEach(async (to, from, next) => {
+    router.beforeEach(async (to, _, next) => {
         // TODO: merge anon redirect functionality here for more standard handling
 
         const isAdminAccessRequired = checkAdminAccessRequired(to);

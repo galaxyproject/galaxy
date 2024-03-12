@@ -33,6 +33,7 @@
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
+
         <HistoryPanel
             v-else
             :history="history"

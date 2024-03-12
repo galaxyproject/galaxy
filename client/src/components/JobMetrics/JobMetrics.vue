@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, unref, watch } from "vue";
+import { computed, unref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
-import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
-
 import AwsEstimate from "./AwsEstimate.vue";
-import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import JobCarbonEmissions from "./JobCarbonEmissions.vue";
 
 const props = defineProps({
     datasetFilesize: {
@@ -29,75 +28,33 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    powerUsageEffectiveness: {
-        type: Number,
-        default: worldwidePowerUsageEffectiveness,
-    },
-    geographicalServerLocationName: {
-        type: String,
-        default: "GLOBAL",
-    },
-    carbonIntensity: {
-        type: Number,
-        default: worldwideCarbonIntensity,
-    },
-    shouldShowAwsEstimate: {
-        type: Boolean,
-        default: false,
-    },
-    shouldShowCarbonEmissionEstimates: {
-        type: Boolean,
-        default: true,
-    },
 });
 
 const jobMetricsStore = useJobMetricsStore();
 
-async function getJobMetrics() {
-    if (props.jobId) {
-        await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
-    } else {
-        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
-    }
-}
-
-watch(
-    props,
-    () => {
-        getJobMetrics();
-    },
-    { immediate: true }
+const { config } = useConfig(true);
+const shouldShowAwsEstimate = computed(() => (config.value?.aws_estimate as boolean) ?? false);
+const shouldShowCarbonEmissionsEstimates = computed(
+    () => (config.value?.carbon_emissions_estimates as boolean) ?? true
 );
-
-const ec2Instances = ref<EC2[]>();
-import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
-
-type EC2 = {
-    name: string;
-    mem: number;
-    price: number;
-    priceUnit: string;
-    vCpuCount: number;
-    cpu: {
-        cpuModel: string;
-        tdp: number;
-        coreCount: number;
-        source: string;
-    }[];
-};
 
 const jobMetrics = computed(() => {
     if (props.jobId) {
         return jobMetricsStore.getJobMetricsByJobId(props.jobId);
-    } else {
-        return jobMetricsStore.getJobMetricsByDatasetId(props.datasetId, props.datasetType);
     }
+    return jobMetricsStore.getJobMetricsByDatasetId(props.datasetId, props.datasetType);
 });
 
 const jobMetricsGroupedByPluginType = computed(() => {
     const pluginGroups: Record<string, any> = {};
+    const ignoredMetrics = ["energy_needed_cpu", "energy_needed_memory"];
 
     for (const metric of jobMetrics.value) {
+        // Ignore specified metrics so they are excluded from the UI
+        if (ignoredMetrics.includes(metric.name)) {
+            continue;
+        }
+
         // new group found
         if (!(metric.plugin in pluginGroups)) {
             pluginGroups[metric.plugin] = {};
@@ -111,78 +68,71 @@ const jobMetricsGroupedByPluginType = computed(() => {
     return pluginGroups;
 });
 
+const energyUsage = computed(() => {
+    const energyNeededCPU = jobMetrics.value.find(({ name }) => name === "energy_needed_cpu")?.raw_value;
+    if (!energyNeededCPU) {
+        return;
+    }
+
+    const energyNeededMemory = jobMetrics.value.find(({ name }) => name === "energy_needed_memory")?.raw_value;
+    if (!energyNeededMemory) {
+        return {
+            energyNeededCPU: parseFloat(energyNeededCPU),
+            energyNeededMemory: 0.0,
+        };
+    }
+
+    return {
+        energyNeededCPU: parseFloat(energyNeededCPU),
+        energyNeededMemory: parseFloat(energyNeededMemory),
+    };
+});
+
 const pluginsSortedByPluginType = computed(() => {
     return Object.keys(jobMetricsGroupedByPluginType.value).sort();
 });
 
-function getMetricByName(key: string) {
-    return jobMetrics.value.find(({ name }) => name === key)?.raw_value;
-}
+const hasMetricsToDisplay = computed(() => {
+    return jobMetrics.value.length > 0;
+});
 
 const jobRuntimeInSeconds = computed(() => {
-    const runtime = getMetricByName("runtime_seconds");
+    const key = "runtime_seconds";
+    const runtime = unref(jobMetrics).find(({ name }) => name === key)?.raw_value;
 
     return runtime ? parseInt(runtime) : undefined;
 });
 
 const coresAllocated = computed(() => {
-    const coreCount = getMetricByName("galaxy_slots");
+    const key = "galaxy_slots";
+    const coreCount = unref(jobMetrics).find(({ name }) => name === key)?.raw_value;
 
     return coreCount ? parseInt(coreCount) : undefined;
 });
 
 const memoryAllocatedInMebibyte = computed(() => {
-    const memoryUsage = getMetricByName("galaxy_memory_mb");
+    const key = "galaxy_memory_mb";
+    const memoryUsage = unref(jobMetrics).find(({ name }) => name === key)?.raw_value;
 
     return memoryUsage ? parseInt(memoryUsage) : undefined;
 });
 
-const estimatedServerInstance = computed(() => {
-    const cores = unref(coresAllocated);
-    if (!cores) {
-        return;
+async function fetchJobMetrics() {
+    if (props.jobId) {
+        await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
     }
+    await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+}
 
-    const memory = unref(memoryAllocatedInMebibyte);
-    const adjustedMemory = memory ? memory / 1024 : 0;
-
-    const ec2 = unref(ec2Instances);
-    if (!ec2) {
-        return;
-    }
-
-    const serverInstance = ec2.find((instance) => {
-        if (adjustedMemory === 0) {
-            // Exclude memory from search criteria
-            return instance.vCpuCount >= cores;
-        }
-
-        // Search by all criteria
-        return instance.mem >= adjustedMemory && instance.vCpuCount >= cores;
-    });
-
-    if (!serverInstance) {
-        return;
-    }
-
-    const cpu = serverInstance.cpu[0];
-    if (!cpu) {
-        return;
-    }
-
-    return {
-        name: serverInstance.name,
-        cpuInfo: {
-            modelName: cpu.cpuModel,
-            totalAvailableCores: cpu.coreCount,
-            tdp: cpu.tdp,
-        },
-    };
-});
+watch(
+    () => [props.datasetType, props.datasetId, props.jobId],
+    () => fetchJobMetrics(),
+    { immediate: true }
+);
 </script>
 
 <template>
-    <div v-if="pluginsSortedByPluginType.length > 0">
+    <div v-if="hasMetricsToDisplay">
         <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
 
         <div v-for="pluginType in pluginsSortedByPluginType" :key="pluginType" class="metrics_plugin">
@@ -201,21 +151,11 @@ const estimatedServerInstance = computed(() => {
         </div>
 
         <AwsEstimate
-            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
-            :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
+            v-if="shouldShowAwsEstimate && jobRuntimeInSeconds && coresAllocated"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
-        <CarbonEmissions
-            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
-            :carbon-intensity="carbonIntensity"
-            :geographical-server-location-name="geographicalServerLocationName"
-            :power-usage-effectiveness="powerUsageEffectiveness"
-            :estimated-server-instance="estimatedServerInstance"
-            :job-runtime-in-seconds="jobRuntimeInSeconds"
-            :cores-allocated="coresAllocated"
-            :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
+        <JobCarbonEmissions v-if="shouldShowCarbonEmissionsEstimates && energyUsage" :energy-usage="energyUsage" />
     </div>
 </template>

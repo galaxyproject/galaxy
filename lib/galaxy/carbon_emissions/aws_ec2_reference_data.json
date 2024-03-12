@@ -1,0 +1,718 @@
+[
+    {
+        "name": "t2.nano",
+        "mem": 0.5,
+        "v_cpu_count": 1,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.nano",
+        "mem": 0.5,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "t2.micro",
+        "mem": 1,
+        "v_cpu_count": 1,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.micro",
+        "mem": 1,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "t2.small",
+        "mem": 2,
+        "v_cpu_count": 1,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.small",
+        "mem": 2,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m3.medium",
+        "mem": 3.75,
+        "v_cpu_count": 1,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2670 v2 (Ivy Bridge/Sandy Bridge)",
+                "tdp": 115,
+                "core_count": 10,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2670-v2.c1665"
+            }
+        ]
+    },
+    {
+        "name": "t2.medium",
+        "mem": 4,
+        "v_cpu_count": 2,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.medium",
+        "mem": 4,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m3.large",
+        "mem": 7.5,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "t2.large",
+        "mem": 8,
+        "v_cpu_count": 2,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.large",
+        "mem": 8,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.large",
+        "mem": 8,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5d.large",
+        "mem": 8,
+        "v_cpu_count": 2,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.large",
+        "mem": 8,
+        "v_cpu_count": 2,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m3.xlarge",
+        "mem": 15,
+        "v_cpu_count": 4,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.xlarge",
+        "mem": 16,
+        "v_cpu_count": 4,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.xlarge",
+        "mem": 16,
+        "v_cpu_count": 4,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.xlarge",
+        "mem": 16,
+        "v_cpu_count": 4,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "t2.xlarge",
+        "mem": 16,
+        "v_cpu_count": 4,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m5d.xlarge",
+        "mem": 16,
+        "v_cpu_count": 4,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m3.2xlarge",
+        "mem": 30,
+        "v_cpu_count": 8,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5d.2xlarge",
+        "mem": 32,
+        "v_cpu_count": 8,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.2xlarge",
+        "mem": 32,
+        "v_cpu_count": 8,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.2xlarge",
+        "mem": 32,
+        "v_cpu_count": 8,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "t3.2xlarge",
+        "mem": 32,
+        "v_cpu_count": 8,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "t2.2xlarge",
+        "mem": 32,
+        "v_cpu_count": 8,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m5d.4xlarge",
+        "mem": 64,
+        "v_cpu_count": 16,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.4xlarge",
+        "mem": 64,
+        "v_cpu_count": 16,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m5.4xlarge",
+        "mem": 64,
+        "v_cpu_count": 16,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.10xlarge",
+        "mem": 160,
+        "v_cpu_count": 40,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m5d.12xlarge",
+        "mem": 192,
+        "v_cpu_count": 48,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.12xlarge",
+        "mem": 192,
+        "v_cpu_count": 48,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m4.16xlarge",
+        "mem": 256,
+        "v_cpu_count": 64,
+        "cpu": [
+            {
+                "cpu_model": "Intel Xeon E5-2676 v3 (Haswell)",
+                "tdp": 120,
+                "core_count": 12,
+                "source": "https://www.techpowerup.com/cpu-specs/xeon-e5-2676-v3.c2885"
+            },
+            {
+                "cpu_model": "Intel Xeon E5-2686 v4 (Broadwell)",
+                "tdp": 145,
+                "core_count": 18,
+                "source": "https://en.wikichip.org/wiki/intel/xeon_e5/e5-2686_v4"
+            }
+        ]
+    },
+    {
+        "name": "m5d.metal",
+        "mem": 384,
+        "v_cpu_count": 96,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.metal",
+        "mem": 384,
+        "v_cpu_count": 96,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5d.24xlarge",
+        "mem": 384,
+        "v_cpu_count": 96,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    },
+    {
+        "name": "m5.24xlarge",
+        "mem": 384,
+        "v_cpu_count": 96,
+        "cpu": [
+                {
+                    "cpu_model": "Intel Xeon 8259CL (Cascade Lake)",
+                    "tdp": 210,
+                    "core_count": 24,
+                    "source": "https://www.cpubenchmark.net/cpu.php?cpu=Intel+Xeon+Platinum+8259CL+%40+2.50GHz&id=3671"
+                },
+                {
+                    "cpu_model": "Intel Xeon Platinum 8175M",
+                    "tdp": 240,
+                    "core_count": 24,
+                    "source": "https://en.wikichip.org/wiki/intel/xeon_platinum/8175m"
+                }
+        ]
+    }
+]

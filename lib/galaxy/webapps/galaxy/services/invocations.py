@@ -7,6 +7,7 @@ from typing import (
     Tuple,
 )
 
+import sqlalchemy as sa
 from pydantic import Field
 
 from galaxy.celery.tasks import (
@@ -25,6 +26,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import (
+    JobMetricNumeric,
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
@@ -45,6 +47,7 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
     InvocationIndexQueryPayload,
+    MetricsSummaryCumulative,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -134,6 +137,54 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
     def show(self, trans, invocation_id, serialization_params, eager=False):
         wfi = self._workflows_manager.get_invocation(trans, invocation_id, eager)
         return self.serialize_workflow_invocation(wfi, serialization_params)
+
+    def get_metrics(
+        self,
+        trans,
+        invocation_id: DecodedDatabaseIdField,
+    ) -> MetricsSummaryCumulative:
+        workflow_invocation = self._workflows_manager.get_invocation(trans, invocation_id, eager=True)
+        job_ids = [step.job_id for step in workflow_invocation.steps if step.job_id is not None]
+
+        query_result = (
+            trans.sa_session.query(
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "energy_needed_cpu", JobMetricNumeric.metric_value)],
+                        else_=0.0,
+                    )
+                ).label("total_energy_needed_cpu_kwh"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "energy_needed_memory", JobMetricNumeric.metric_value)],
+                        else_=0.0,
+                    )
+                ).label("total_energy_needed_memory_kwh"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "runtime_seconds", JobMetricNumeric.metric_value)], else_=0
+                    )
+                ).label("total_runtime_seconds"),
+                sa.func.sum(
+                    sa.case([(JobMetricNumeric.metric_name == "galaxy_slots", JobMetricNumeric.metric_value)], else_=0)
+                ).label("total_allocated_cores_cpu"),
+                sa.func.sum(
+                    sa.case(
+                        [(JobMetricNumeric.metric_name == "galaxy_memory_mb", JobMetricNumeric.metric_value)], else_=0
+                    )
+                ).label("total_allocated_memory_mebibyte"),
+            ).filter(JobMetricNumeric.job_id.in_(job_ids))
+        ).one()
+
+        return MetricsSummaryCumulative(
+            total_runtime_seconds=int(query_result.total_runtime_seconds),
+            total_allocated_cores_cpu=int(query_result.total_allocated_cores_cpu),
+            total_allocated_memory_mebibyte=int(query_result.total_allocated_memory_mebibyte),
+            total_energy_needed_cpu_kwh=query_result.total_energy_needed_cpu_kwh,
+            total_energy_needed_memory_kwh=query_result.total_energy_needed_memory_kwh,
+            total_energy_needed_kwh=query_result.total_energy_needed_cpu_kwh
+            + query_result.total_energy_needed_memory_kwh,
+        )
 
     def cancel(self, trans, invocation_id, serialization_params):
         wfi = self._workflows_manager.request_invocation_cancellation(trans, invocation_id)

@@ -18,14 +18,7 @@
                         <JobInformation :job_id="dataset.creating_job" />
                         <DatasetStorage :dataset-id="datasetId" />
                         <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
-                        <JobMetrics
-                            v-if="isConfigLoaded"
-                            :dataset-id="datasetId"
-                            :carbon-intensity="config.carbon_intensity"
-                            :geographical-server-location-name="config.geographical_server_location_name"
-                            :power-usage-effectiveness="config.power_usage_effectiveness"
-                            :should-show-aws-estimate="config.aws_estimate"
-                            :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
+                        <JobMetrics v-if="isConfigLoaded" :dataset-id="datasetId" />
                         <JobDestinationParams v-if="currentUser.is_admin" :job-id="dataset.creating_job" />
                         <JobDependencies :dependencies="job.dependencies"></JobDependencies>
                         <div v-if="dataset.peek">

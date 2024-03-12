@@ -4,9 +4,8 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import JobMetrics from "./JobMetrics";
+import JobMetrics from "./JobMetrics.vue";
 
-// Ignore all axios calls, data is mocked locally -- just say "OKAY!"
 jest.mock("axios", () => ({
     get: async () => {
         return { response: { status: 200 } };
@@ -17,12 +16,23 @@ const localVue = getLocalVue();
 
 describe("JobMetrics/JobMetrics.vue", () => {
     it("should not render a div if no plugins found in store", async () => {
-        const wrapper = mount(JobMetrics, {
-            pinia: createTestingPinia(),
+        const pinia = createTestingPinia({
+            initialState: {
+                jobMetricsStore: {
+                    jobMetricsByHdaId: {},
+                    jobMetricsByJobId: {},
+                    jobMetricsByLddaId: {},
+                },
+            },
+        });
+        setActivePinia(pinia);
+
+        const wrapper = mount(JobMetrics as any, {
             propsData: {
-                jobId: "9000",
+                jobId: "some-job-id",
             },
             localVue,
+            pinia,
         });
 
         await wrapper.vm.$nextTick();
@@ -30,7 +40,7 @@ describe("JobMetrics/JobMetrics.vue", () => {
     });
 
     it("should group plugins by type", async () => {
-        const JOB_ID = "9000";
+        const JOB_ID = "some-job-id";
         const mockMetricsResponse = [
             { plugin: "core", title: "runtime", value: 145 },
             { plugin: "core", title: "memory", value: 146 },
@@ -50,12 +60,12 @@ describe("JobMetrics/JobMetrics.vue", () => {
         });
         setActivePinia(pinia);
 
-        const wrapper = mount(JobMetrics, {
-            localVue,
-            pinia,
+        const wrapper = mount(JobMetrics as any, {
             propsData: {
                 jobId: JOB_ID,
             },
+            localVue,
+            pinia,
         });
 
         // Wait for axios and rendering.

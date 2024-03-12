@@ -1,26 +1,34 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps<{
     jobRuntimeInSeconds: number;
     coresAllocated: number;
     memoryAllocatedInMebibyte?: number;
-    ec2Instances: {
-        name: string;
-        mem: number;
-        price: number;
-        priceUnit: string;
-        vCpuCount: number;
-        cpu: {
-            cpuModel: string;
-            tdp: number;
-            coreCount: number;
-            source: string;
-        }[];
-    }[];
 }>();
 
+const ec2Instances = ref<EC2[]>();
+import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
+
+type EC2 = {
+    name: string;
+    mem: number;
+    price: number;
+    priceUnit: string;
+    vCpuCount: number;
+    cpu: {
+        cpuModel: string;
+        tdp: number;
+        coreCount: number;
+        source: string;
+    }[];
+};
+
 const computedAwsEstimate = computed(() => {
+    if (!ec2Instances.value) {
+        return;
+    }
+
     const { coresAllocated, jobRuntimeInSeconds, memoryAllocatedInMebibyte } = props;
 
     if (coresAllocated <= 0 || jobRuntimeInSeconds <= 0) {
@@ -30,7 +38,7 @@ const computedAwsEstimate = computed(() => {
     const adjustedMemoryAllocated = memoryAllocatedInMebibyte ? memoryAllocatedInMebibyte / 1024 : 0.5;
 
     // Estimate EC2 instance. Data is already sorted
-    const ec2Instance = props.ec2Instances.find((ec) => {
+    const ec2Instance = ec2Instances.value.find((ec) => {
         return ec.mem >= adjustedMemoryAllocated && ec.vCpuCount >= coresAllocated;
     });
 

@@ -69,23 +69,88 @@
             :error-count="errorCount"
             :loading="!invocationAndJobTerminal"
             class="jobs-progress" />
+
+        <div v-if="shouldShowCarbonEmissionsReports">
+            <strong>Carbon Emissions:</strong>
+
+            <CarbonEmissions
+                :energy-needed-memory="energyUsage.total_energy_needed_memory_kwh"
+                :energy-needed-c-p-u="energyUsage.total_energy_needed_cpu_kwh"
+                :total-energy-needed="energyUsage.total_energy_needed_kwh"
+                :total-carbon-emissions="() => energyUsage.total_energy_needed_kwh * carbonIntensity">
+                <template v-slot:header>
+                    <p>
+                        Here is an estimated summary of the total carbon footprint of this workflow invocation.
+
+                        <RouterLink
+                            to="/carbon_emissions_calculations"
+                            title="Learn about how we estimate carbon emissions"
+                            class="align-self-start mt-2">
+                            <span>
+                                Click here to learn more about how we calculate your carbon emissions data.
+                                <FontAwesomeIcon icon="fa-question-circle" />
+                            </span>
+                        </RouterLink>
+                    </p>
+                </template>
+
+                <template v-slot:footer>
+                    <p class="p-0 m-0">
+                        <span v-if="geographicalServerLocationName === 'GLOBAL'" id="location-explanation">
+                            <strong>1.</strong> Based off of the global carbon intensity value of
+                            {{ worldwideCarbonIntensity }}.
+                        </span>
+                        <span v-else id="location-explanation">
+                            <strong>1.</strong> based off of this galaxy instance's configured location of
+                            <strong>{{ geographicalServerLocationName }}</strong
+                            >, which has a carbon intensity value of {{ carbonIntensity }} gCO2/kWh.
+                        </span>
+
+                        <br />
+
+                        <span id="pue">
+                            <strong>2.</strong> Using the global default power usage effectiveness value of
+                            {{ worldwidePowerUsageEffectiveness }}.
+                        </span>
+                    </p>
+                </template>
+            </CarbonEmissions>
+        </div>
     </div>
 </template>
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import CarbonEmissions from "components/CarbonEmissions/CarbonEmissions";
 import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
+import { computed, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
+
+import { fetcher } from "@/api/schema";
+import {
+    worldwideCarbonIntensity,
+    worldwidePowerUsageEffectiveness,
+} from "@/components/CarbonEmissions/carbonEmissionConstants";
+import { useCarbonEmissions } from "@/composables/carbonEmissions";
 
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
+
+library.add(faQuestionCircle);
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     components: {
+        CarbonEmissions,
+        FontAwesomeIcon,
         InvocationMessage,
-        ProgressBar,
         LoadingSpan,
+        ProgressBar,
+        RouterLink,
     },
     mixins: [mixin],
     props: {
@@ -112,6 +177,58 @@ export default {
             default: null,
         },
     },
+    setup(props) {
+        const { 
+            carbonIntensity,
+            geographicalServerLocationName,
+            shouldShowCarbonEmissionsReports
+        } = useCarbonEmissions();
+
+        const invocationId = computed(() => props.invocation?.id);
+
+        const energyUsage = ref({
+            total_energy_needed_cpu_kwh: 0,
+            total_energy_needed_memory_kwh: 0,
+            total_energy_needed_kwh: 0,
+        });
+
+        async function fetchEnergyUsageData() {
+            const res = await fetcher.path("/api/invocations/{invocation_id}/metrics").method("get").create()({
+                invocation_id: invocationId.value,
+            });
+
+            if (res.ok) {
+                const { total_energy_needed_cpu_kwh, total_energy_needed_memory_kwh, total_energy_needed_kwh } =
+                    res.data;
+
+                energyUsage.value = {
+                    total_energy_needed_cpu_kwh,
+                    total_energy_needed_memory_kwh,
+                    total_energy_needed_kwh,
+                };
+            }
+        }
+
+        watch(
+            () => invocationId.value,
+            () => {
+                if (shouldShowCarbonEmissionsReports && invocationId.value) {
+                    fetchEnergyUsageData();
+                }
+            },
+            { immediate: true }
+        );
+
+        return {
+            carbonIntensity,
+            energyUsage,
+            geographicalServerLocationName,
+            shouldShowCarbonEmissionsReports,
+            invocationId,
+            worldwideCarbonIntensity,
+            worldwidePowerUsageEffectiveness,
+        };
+    },
     data() {
         return {
             stepStatesInterval: null,
@@ -121,9 +238,6 @@ export default {
         };
     },
     computed: {
-        invocationId() {
-            return this.invocation?.id;
-        },
         indexStr() {
             if (this.index == null) {
                 return "";

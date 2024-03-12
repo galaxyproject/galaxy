@@ -69,13 +69,7 @@ watch(
             :job-id="jobId"
             :implicit-collection-jobs-id="implicitCollectionJobsId"
             :select-job-options="selectJobOptions">
-            <JobMetrics
-                v-if="targetJobId"
-                class="job-metrics"
-                :job-id="targetJobId"
-                :should-show-aws-estimate="false"
-                :should-show-carbon-emission-estimates="false"
-                :include-title="false" />
+            <JobMetrics v-if="targetJobId" class="job-metrics" :job-id="targetJobId" :include-title="false" />
         </JobSelection>
         <b-card-footer v-if="footer">
             {{ footer }}

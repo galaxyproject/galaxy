@@ -3658,3 +3658,12 @@ class DatasetSummary(Model):
     file_size: int
     total_size: int
     uuid: UuidField
+
+
+class MetricsSummaryCumulative(Model):
+    total_allocated_cores_cpu: int
+    total_allocated_memory_mebibyte: int
+    total_runtime_seconds: int
+    total_energy_needed_cpu_kwh: float
+    total_energy_needed_memory_kwh: float
+    total_energy_needed_kwh: float

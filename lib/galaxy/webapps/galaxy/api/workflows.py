@@ -72,6 +72,7 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     InvocationSortByEnum,
     InvocationsStateCounts,
+    MetricsSummaryCumulative,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -1794,3 +1795,15 @@ class FastAPIInvocations:
             merge_history_metadata=merge_history_metadata or False,
         )
         return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/metrics",
+        summary="Get the cumulative metrics of all jobs in a given workflow invocation.",
+    )
+    def get_metrics(
+        self,
+        invocation_id: InvocationIDPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> MetricsSummaryCumulative:
+        """Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``."""
+        return self.invocations_service.get_metrics(trans, invocation_id)

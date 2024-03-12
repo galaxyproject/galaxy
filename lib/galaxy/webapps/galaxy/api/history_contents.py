@@ -50,6 +50,7 @@ from galaxy.schema.schema import (
     HistoryContentType,
     MaterializeDatasetInstanceAPIRequest,
     MaterializeDatasetInstanceRequest,
+    MetricsSummaryCumulative,
     StoreExportPayload,
     UpdateDatasetPermissionsPayload,
     UpdateHistoryContentsBatchPayload,
@@ -1020,3 +1021,15 @@ class FastAPIHistoryContents:
         )
         rval = self.service.materialize(trans, materialize_request)
         return rval
+
+    @router.get(
+        "/api/histories/{history_id}/metrics",
+        summary="Get the cumulative metrics of all jobs in a given history.",
+    )
+    def get_metrics(
+        self,
+        history_id: HistoryIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> MetricsSummaryCumulative:
+        """Get the cumulative metrics of all jobs in a history with ``history_id``."""
+        return self.service.get_metrics(trans, history_id)

@@ -54,8 +54,8 @@ const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_i
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
 
-function onDashboard() {
-    router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
+function onClickStatistics() {
+    router.push({ name: "HistoryStatistics", params: { historyId: props.history.id } });
 }
 
 function setFilter(filter: string) {
@@ -121,13 +121,13 @@ onMounted(() => {
     <div class="history-size my-1 d-flex justify-content-between">
         <BButton
             v-b-tooltip.hover
-            title="History Size"
+            title="History Statistics"
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none history-storage-overview-button"
             :disabled="!showControls"
-            data-description="storage dashboard button"
-            @click="onDashboard">
+            data-description="statistics dashboard button"
+            @click="onClickStatistics">
             <FontAwesomeIcon :icon="faDatabase" />
             <span>{{ niceHistorySize }}</span>
         </BButton>

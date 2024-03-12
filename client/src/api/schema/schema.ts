@@ -866,6 +866,13 @@ export interface paths {
         /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
         post: operations["materialize_to_history_api_histories__history_id__materialize_post"];
     };
+    "/api/histories/{history_id}/metrics": {
+        /**
+         * Get the cumulative metrics of all jobs in a given history.
+         * @description Get the cumulative metrics of all jobs in a history with ``history_id``.
+         */
+        get: operations["get_metrics_api_histories__history_id__metrics_get"];
+    };
     "/api/histories/{history_id}/prepare_store_download": {
         /** Return a short term storage token to monitor download of the history. */
         post: operations["prepare_store_download_api_histories__history_id__prepare_store_download_post"];
@@ -999,6 +1006,13 @@ export interface paths {
          * efficient as possible.
          */
         get: operations["invocation_jobs_summary_api_invocations__invocation_id__jobs_summary_get"];
+    };
+    "/api/invocations/{invocation_id}/metrics": {
+        /**
+         * Get the cumulative metrics of all jobs in a given workflow invocation.
+         * @description Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``.
+         */
+        get: operations["get_metrics_api_invocations__invocation_id__metrics_get"];
     };
     "/api/invocations/{invocation_id}/prepare_store_download": {
         /** Prepare a workflow invocation export-style download. */
@@ -8956,6 +8970,21 @@ export interface components {
              * @description The timestamp in ISO format.
              */
             time: string;
+        };
+        /** MetricsSummaryCumulative */
+        MetricsSummaryCumulative: {
+            /** Total Allocated Cores Cpu */
+            total_allocated_cores_cpu: number;
+            /** Total Allocated Memory Mebibyte */
+            total_allocated_memory_mebibyte: number;
+            /** Total Energy Needed Cpu Kwh */
+            total_energy_needed_cpu_kwh: number;
+            /** Total Energy Needed Kwh */
+            total_energy_needed_kwh: number;
+            /** Total Energy Needed Memory Kwh */
+            total_energy_needed_memory_kwh: number;
+            /** Total Runtime Seconds */
+            total_runtime_seconds: number;
         };
         /**
          * ModelStoreFormat
@@ -17494,6 +17523,36 @@ export interface operations {
             };
         };
     };
+    get_metrics_api_histories__history_id__metrics_get: {
+        /**
+         * Get the cumulative metrics of all jobs in a given history.
+         * @description Get the cumulative metrics of all jobs in a history with ``history_id``.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["MetricsSummaryCumulative"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     prepare_store_download_api_histories__history_id__prepare_store_download_post: {
         /** Return a short term storage token to monitor download of the history. */
         parameters: {
@@ -18159,6 +18218,36 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["InvocationJobsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_invocations__invocation_id__metrics_get: {
+        /**
+         * Get the cumulative metrics of all jobs in a given workflow invocation.
+         * @description Get the cumulative metrics of all jobs in a workflow invocation with ``invocation_id``.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["MetricsSummaryCumulative"];
                 };
             };
             /** @description Validation Error */
