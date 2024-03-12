@@ -39,7 +39,10 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional v-if="isSubworkflow" :step="step" v-on="$listeners" />
+            <FormConditional
+                v-if="isSubworkflow"
+                :step="step"
+                @onUpdateStep="(id, step) => emit('onUpdateStep', id, step)" />
             <FormDisplay
                 v-if="configForm?.inputs"
                 :id="formDisplayId"
@@ -81,7 +84,14 @@ const props = defineProps<{
     step: Step;
     datatypes: DatatypesMapperModel["datatypes"];
 }>();
-const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
+const emit = defineEmits([
+    "onAnnotation",
+    "onLabel",
+    "onAttemptRefactor",
+    "onEditSubworkflow",
+    "onSetData",
+    "onUpdateStep",
+]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
