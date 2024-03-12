@@ -180,11 +180,13 @@ export class RemoveStepAction extends UndoRedoAction {
     run() {
         this.stepStore.removeStep(this.step.id);
         this.showAttributesCallback();
+        this.stateStore.hasChanges = true;
     }
 
     undo() {
         this.stepStore.addStep(structuredClone(this.step));
         this.stateStore.activeNodeId = this.step.id;
+        this.stateStore.hasChanges = true;
     }
 }
 
@@ -269,7 +271,15 @@ export function useStepActions(
         });
 
         const action = new UpdateStepAction(stepStore, stateStore, id, fromPartial, toPartial);
-        undoRedoStore.applyAction(action);
+
+        if (!action.isEmpty()) {
+            action.onUndoRedo = () => {
+                stateStore.activeNodeId = id;
+                stateStore.hasChanges = true;
+                refresh();
+            };
+            undoRedoStore.applyAction(action);
+        }
     }
 
     return {
