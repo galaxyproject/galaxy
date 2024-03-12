@@ -79,7 +79,7 @@ function onViewUserPublished() {
 <template>
     <div>
         <BButton
-            v-if="workflow.published"
+            v-if="workflow.published && !publishedView"
             v-b-tooltip.noninteractive
             size="sm"
             class="workflow-published-icon inline-icon-button"
@@ -87,6 +87,7 @@ function onViewUserPublished() {
             title="Published workflow. Click to view all published workflows">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
         </BButton>
+        <FontAwesomeIcon v-else-if="workflow.published" :icon="faGlobe" fixed-width size="sm" />
 
         <BButton
             v-if="sourceType.includes('trs')"

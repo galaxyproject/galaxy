@@ -4,13 +4,14 @@ import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay, BPagination } from "bootstrap-vue";
 import { filter } from "underscore";
-import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
+
+import { helpHtml, WorkflowFilters } from "./WorkflowFilters";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -21,37 +22,6 @@ import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
 
 library.add(faStar, faTrash);
-
-const helpHtml = `<div>
-<p>This input can be used to filter the workflows displayed.</p>
-
-<p>
-    Text entered here will be searched against workflow names and workflow
-    tags. Additionally, advanced filtering tags can be used to refine the
-    search more precisely. Filtering tags are of the form
-    <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
-    <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to
-    search just for RNAseq in the workflow name,
-    <code>name:rnsseq</code> can be used. Notice by default the search is
-    not case-sensitive. If the quoted version of tag is used, the search is
-    case sensitive and only full matches will be returned. So
-    <code>name:'RNAseq'</code> would show only workflows named exactly
-    <code>RNAseq</code>.
-</p>
-
-<p>The available filtering tags are:</p>
-<dl>
-    <dt><code>name</code></dt>
-    <dd>
-        Shows workflows with the given sequence of characters in their names.
-    </dd>
-    <dt><code>tag</code></dt>
-    <dd>
-        Shows workflows with the given workflow tag. You may also click
-        on a tag to filter on that tag directly.
-    </dd>
-</dl>
-</div>`;
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
@@ -76,28 +46,7 @@ const totalWorkflows = ref(0);
 const showAdvanced = ref(false);
 const showBookmarked = ref(false);
 const listHeader = ref<any>(null);
-const advancedFiltering = ref<any>(null);
 const workflowsLoaded = ref<WorkflowsList>([]);
-
-const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | undefined>>> = computed(() => {
-    return {
-        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-        tag: {
-            placeholder: "tag",
-            type: "MultiTags",
-            handler: contains("tags", "tag", expandNameTag),
-            menuItem: true,
-        },
-        deleted: {
-            placeholder: "Filter on deleted workflows",
-            type: Boolean,
-            handler: equals("deleted", "deleted", toBool),
-            menuItem: false,
-        },
-    };
-});
-
-const WorkflowFilters = new Filtering(validFilters.value);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -123,24 +72,16 @@ const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "
 const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && filterText.value);
 
-function updateFilter(newVal: string) {
-    advancedFiltering.value.updateFilter(newVal.trim());
-}
+const workflowFilters = computed(() => WorkflowFilters(props.activeList));
+const rawFilters = computed(() =>
+    Object.fromEntries(workflowFilters.value.getFiltersForText(filterText.value, true, false))
+);
+const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
+const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
 
-function onTagClick(tag: string) {
-    if (filterText.value.includes(tag)) {
-        filterText.value = filterText.value.replace(`tag:'${tag}'`, "").trim();
-    } else {
-        filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", `'${tag}'`);
-    }
-}
-
-function onToggleDeleted() {
-    if (!showDeleted.value) {
-        filterText.value = `${filterText.value} is:deleted`.trim();
-    } else {
-        filterText.value = filterText.value.replace("is:deleted", "").trim();
-    }
+function updateFilterValue(filterKey: string, newValue: any) {
+    const currentFilterText = filterText.value;
+    filterText.value = workflowFilters.value.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
 function onToggleBookmarked() {
@@ -155,15 +96,22 @@ async function load(overlayLoading = false, silent = false) {
             loading.value = true;
         }
     }
+    let search;
+    if (Object.keys(invalidFilters.value).length === 0) {
+        search = validatedFilterText();
 
-    let search = filterText.value;
-
-    if (published.value) {
-        search += " is:published";
-    }
-
-    if (sharedWithMe.value) {
-        search += " is:shared_with_me";
+        // append default backend query filters for provided `props.activeList`
+        if (published.value && !workflowFilters.value.getFilterValue(search, "published")) {
+            search += " is:published";
+        }
+        if (sharedWithMe.value && !workflowFilters.value.getFilterValue(search, "shared_with_me")) {
+            search += " is:shared_with_me";
+        }
+    } else {
+        // there are invalid filters, so we don't want to search
+        overlay.value = false;
+        loading.value = false;
+        return;
     }
 
     try {
@@ -205,6 +153,15 @@ async function onPageChange(page: number) {
     await load(true);
 }
 
+function validatedFilterText() {
+    // there are no filters derived from the `filterText`
+    if (Object.keys(rawFilters.value).length === 0) {
+        return filterText.value;
+    }
+    // there are valid filters derived from the `filterText`
+    return workflowFilters.value.getFilterText(validFilters.value, true);
+}
+
 watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
     offset.value = 0;
     await load(true);
@@ -212,7 +169,7 @@ watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
 
 onMounted(() => {
     if (router.currentRoute.query.owner) {
-        filterText.value = `${filterText.value} user:${router.currentRoute.query.owner}`.trim();
+        updateFilterValue("user", router.currentRoute.query.owner);
     }
     load();
 });
@@ -251,15 +208,14 @@ onMounted(() => {
                 id="workflow-list-filter"
                 name="workflows"
                 class="mb-2"
-                :filter-class="WorkflowFilters"
+                :filter-class="workflowFilters"
                 :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 has-help
                 :placeholder="searchPlaceHolder"
-                :show-advanced.sync="showAdvanced"
-                @updateFilter="updateFilter">
+                :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>
-                    <div v-html="helpHtml"></div>
+                    <div v-html="helpHtml(activeList)"></div>
                 </template>
             </FilterMenu>
 
@@ -274,7 +230,7 @@ onMounted(() => {
                             :title="!showDeleted ? 'Show deleted workflows' : 'Hide deleted workflows'"
                             :pressed="showDeleted"
                             variant="outline-primary"
-                            @click="onToggleDeleted">
+                            @click="updateFilterValue('deleted', true)">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
                             Show deleted
                         </BButton>
@@ -303,9 +259,25 @@ onMounted(() => {
             No workflows found. You may create or import new workflows using the buttons above.
         </BAlert>
 
-        <BAlert v-else-if="!loading && !overlay && noResults" id="no-workflow-found" variant="info" show>
-            No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
-        </BAlert>
+        <!-- There are either `noResults` or `invalidFilters` -->
+        <span v-else-if="!loading && !overlay && (noResults || Object.keys(invalidFilters).length > 0)">
+            <BAlert v-if="Object.keys(invalidFilters).length === 0" id="no-workflow-found" variant="info" show>
+                No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
+            </BAlert>
+
+            <BAlert v-else id="no-workflow-found-invalid" variant="danger" show>
+                <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
+                <ul>
+                    <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
+                        <b>{{ invalidKey }}</b
+                        >: {{ value }}
+                    </li>
+                </ul>
+                <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()"
+                    >Remove invalid filters from query</a
+                >
+            </BAlert>
+        </span>
 
         <BOverlay
             v-else
@@ -322,7 +294,7 @@ onMounted(() => {
                 :grid-view="view === 'grid'"
                 :class="view === 'grid' ? 'grid-view' : 'list-view'"
                 @refreshList="load"
-                @tagClick="onTagClick" />
+                @tagClick="(tag) => updateFilterValue('tag', tag)" />
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"

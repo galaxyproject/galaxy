@@ -412,9 +412,9 @@ async function onDrop() {
     }
 }
 
-function updateFilterValue(newFilterText: string, newValue: any) {
+function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
-    filterText.value = filterClass.setFilterValue(currentFilterText, newFilterText, newValue);
+    filterText.value = filterClass.setFilterValue(currentFilterText, filterKey, newValue);
 }
 
 function getItemKey(item: HistoryItem) {

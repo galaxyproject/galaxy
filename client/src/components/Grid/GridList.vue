@@ -76,8 +76,11 @@ const sortDesc = ref(props.gridConfig ? props.gridConfig.sortDesc : false);
 
 // filtering refs and handlers
 const filterText = ref("");
-const searchTerm = ref("");
 const showAdvanced = ref(false);
+const filterClass = props.gridConfig.filtering;
+const rawFilters = computed(() => Object.fromEntries(filterClass.getFiltersForText(filterText.value, true, false)));
+const validFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).validFilters);
+const invalidFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).invalidFilters);
 
 // hide message helper
 const hideMessage = useDebounceFn(() => {
@@ -111,12 +114,17 @@ function displayInitialMessage() {
 async function getGridData() {
     selected.value = new Set();
     if (props.gridConfig) {
+        if (Object.keys(invalidFilters.value).length > 0) {
+            // there are invalid filters, so we don't want to search
+            loading.value = false;
+            return;
+        }
         try {
             const offset = props.limit * (currentPage.value - 1);
             const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,
-                searchTerm.value,
+                validatedFilterText(),
                 sortBy.value,
                 sortDesc.value
             );
@@ -157,13 +165,6 @@ async function onOperation(operation: Operation, rowData: RowData) {
  */
 function onRouterPush(route: string) {
     router.push(route);
-}
-
-/**
- * Apply backend formatted filter and execute grid search
- */
-function onSearch(query: string) {
-    searchTerm.value = query;
 }
 
 /**
@@ -212,13 +213,23 @@ function onSelectAll(current: boolean): void {
 }
 
 /**
+ * A valid filter/query for the backend
+ */
+function validatedFilterText() {
+    // there are no filters derived from the `filterText`; return the `filterText` as is
+    if (Object.keys(rawFilters.value).length === 0) {
+        return filterText.value;
+    }
+    // there are valid filters derived from the `filterText`
+    return filterClass.getFilterText(validFilters.value, false);
+}
+
+/**
  * Initialize grid data
  */
 onMounted(() => {
     if (props.usernameSearch) {
-        const search_query = `user:${props.usernameSearch}`.trim();
-        filterText.value = search_query;
-        onSearch(search_query);
+        filterText.value = filterClass.setFilterValue(filterText.value, "user", props.usernameSearch);
     }
     getGridData();
     eventBus.on(onRouterPush);
@@ -232,7 +243,7 @@ onUnmounted(() => {
 /**
  * Load current page
  */
-watch([currentPage, searchTerm, sortDesc, sortBy], () => getGridData());
+watch([currentPage, filterText, sortDesc, sortBy], () => getGridData());
 
 /**
  * Operation message timeout handler
@@ -269,21 +280,34 @@ watch(operationMessage, () => {
                 :class="{ 'py-2': !embedded }"
                 :name="gridConfig.plural"
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
-                :filter-class="gridConfig.filtering"
+                :filter-class="filterClass"
                 :filter-text.sync="filterText"
                 :loading="loading"
-                :show-advanced.sync="showAdvanced"
-                @on-backend-filter="onSearch" />
+                :show-advanced.sync="showAdvanced" />
             <hr v-if="showAdvanced" />
         </div>
         <LoadingSpan v-if="loading" />
-        <BAlert v-else-if="!isAvailable" variant="info" show>
-            <span v-if="searchTerm">
-                <span v-localize>Nothing found with:</span>
-                <b>{{ searchTerm }}</b>
-            </span>
-            <span v-else v-localize> No entries found. </span>
-        </BAlert>
+        <span v-else-if="!isAvailable || Object.keys(invalidFilters).length > 0" variant="info" show>
+            <BAlert v-if="Object.keys(invalidFilters).length === 0" variant="info" show>
+                <span v-if="filterText">
+                    <span v-localize>Nothing found with:</span>
+                    <b>{{ filterText }}</b>
+                </span>
+                <span v-else v-localize> No entries found. </span>
+            </BAlert>
+            <BAlert v-else variant="danger" show>
+                <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
+                <ul>
+                    <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
+                        <b>{{ invalidKey }}</b
+                        >: {{ value }}
+                    </li>
+                </ul>
+                <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
+                    Remove invalid filters from query
+                </a>
+            </BAlert>
+        </span>
         <table v-else class="grid-table">
             <thead>
                 <th v-if="!!gridConfig.batch">
@@ -354,7 +378,7 @@ watch(operationMessage, () => {
                             :value="rowData[fieldEntry.key]"
                             :disabled="fieldEntry.disabled"
                             @input="onTagInput(rowData, $event, fieldEntry.handler)"
-                            @tag-click="applyFilter('tag', $event, true)" />
+                            @tag-click="applyFilter('tag', $event)" />
                         <span v-else v-localize> Not available. </span>
                     </div>
                     <FontAwesomeIcon v-else icon="fa-shield-alt" />
