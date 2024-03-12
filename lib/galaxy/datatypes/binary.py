@@ -4137,9 +4137,7 @@ class Npz(CompressedArchive):
         try:
             npz = np.load(filename)
             if isinstance(npz, np.lib.npyio.NpzFile):
-                for f in npz.files:
-                    if isinstance(npz[f], np.ndarray):
-                        return True
+                return True
         except Exception:
             return False
         return False
