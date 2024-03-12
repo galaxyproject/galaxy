@@ -8,6 +8,7 @@ from typing import (
 
 from packaging.version import Version
 
+from galaxy.tool_util.biotools.source import ApiBiotoolsMetadataSource
 from galaxy.tool_util.lint import Linter
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -227,3 +228,16 @@ class ResourceRequirementExpression(Linter):
                 lint_ctx.warn(
                     "Expressions in resource requirement not supported yet", linter=cls.name(), node=tool_node
                 )
+
+
+class BioToolsValid(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        _, tool_node = _tool_xml_and_root(tool_source)
+        xrefs = tool_source.parse_xrefs()
+        for xref in xrefs:
+            if xref["reftype"] != "bio.tools":
+                continue
+            metadata_source = ApiBiotoolsMetadataSource()
+            if not metadata_source.get_biotools_metadata(xref["value"]):
+                lint_ctx.warn(f'No entry {xref["value"]} in bio.tools.', linter=cls.name(), node=tool_node)
