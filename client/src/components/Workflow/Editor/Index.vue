@@ -608,15 +608,13 @@ export default {
         },
         async onClone(stepId) {
             const sourceStep = this.steps[parseInt(stepId)];
-            const stepCopy = JSON.parse(JSON.stringify(sourceStep));
-            const { id } = this.stepStore.addStep({
-                ...stepCopy,
+            this.stepActions.copyStep({
+                ...sourceStep,
                 id: null,
                 uuid: null,
                 label: null,
                 position: defaultPosition(this.graphOffset, this.transform),
             });
-            this.stateStore.activeNodeId = id;
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
