@@ -182,7 +182,7 @@ import { LastQueue } from "@/utils/lastQueue";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
-import { useStepActions } from "./Actions/stepActions";
+import { InsertStepAction, useStepActions } from "./Actions/stepActions";
 import { SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
@@ -427,6 +427,7 @@ export default {
             resetStores,
             initialLoading,
             stepActions,
+            undoRedoStore,
         };
     },
     data() {
@@ -848,22 +849,30 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            const stepData = this.stepStore.insertNewStep(
+
+            const action = new InsertStepAction(this.stepStore, this.stateStore, {
                 contentId,
                 name,
                 type,
-                defaultPosition(this.graphOffset, this.transform)
-            );
+                position: defaultPosition(this.graphOffset, this.transform),
+            });
+
+            this.undoRedoStore.applyAction(action);
+            const stepData = action.getNewStepData();
 
             getModule({ name, type, content_id: contentId }, stepData.id, this.stateStore.setLoadingState).then(
                 (response) => {
-                    this.stepStore.updateStep({
+                    const updatedStep = {
                         ...stepData,
                         tool_state: response.tool_state,
                         inputs: response.inputs,
                         outputs: response.outputs,
                         config_form: response.config_form,
-                    });
+                    };
+
+                    this.stepStore.updateStep(updatedStep);
+                    action.updateStepData = updatedStep;
+
                     this.stateStore.activeNodeId = stepData.id;
                 }
             );

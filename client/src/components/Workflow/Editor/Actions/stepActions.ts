@@ -88,6 +88,59 @@ export class SetDataAction extends UndoRedoAction {
     }
 }
 
+export type InsertStepData = {
+    contentId: Parameters<WorkflowStepStore["insertNewStep"]>[0];
+    name: Parameters<WorkflowStepStore["insertNewStep"]>[1];
+    type: Parameters<WorkflowStepStore["insertNewStep"]>[2];
+    position: Parameters<WorkflowStepStore["insertNewStep"]>[3];
+};
+
+export class InsertStepAction extends UndoRedoAction {
+    stepStore;
+    stateStore;
+    stepData;
+    updateStepData?: Step;
+    stepId?: number;
+    newStepData?: Step;
+
+    constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, stepData: InsertStepData) {
+        super();
+        this.stepStore = stepStore;
+        this.stateStore = stateStore;
+        this.stepData = stepData;
+    }
+
+    stepDataToTuple() {
+        return Object.values(this.stepData) as Parameters<WorkflowStepStore["insertNewStep"]>;
+    }
+
+    getNewStepData() {
+        assertDefined(this.newStepData);
+        return this.newStepData;
+    }
+
+    run() {
+        this.newStepData = this.stepStore.insertNewStep(...this.stepDataToTuple());
+        this.stepId = this.newStepData.id;
+
+        if (this.updateStepData) {
+            this.stepStore.updateStep(this.updateStepData);
+            this.stepId = this.updateStepData.id;
+        }
+    }
+
+    undo() {
+        assertDefined(this.stepId);
+        this.stepStore.removeStep(this.stepId);
+    }
+
+    redo() {
+        this.run();
+        assertDefined(this.stepId);
+        this.stateStore.activeNodeId = this.stepId;
+    }
+}
+
 export function useStepActions(
     stepStore: WorkflowStepStore,
     undoRedoStore: UndoRedoStore,
