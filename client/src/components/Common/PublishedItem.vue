@@ -82,11 +82,11 @@ const { showActivityBar, showToolbox } = usePanels();
                 <h2 class="h-sm">Related Pages</h2>
 
                 <div>
-                    <router-link :to="urlAll">All published {{ plural }}.</router-link>
+                    <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
 
                 <div>
-                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
+                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>
             <LoadingSpan v-else message="Loading item details" />

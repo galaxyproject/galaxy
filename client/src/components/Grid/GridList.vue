@@ -37,6 +37,8 @@ interface Props {
     embedded?: boolean;
     // rows per page to be shown
     limit?: number;
+    // username for initial search
+    usernameSearch?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -213,6 +215,11 @@ function onSelectAll(current: boolean): void {
  * Initialize grid data
  */
 onMounted(() => {
+    if (props.usernameSearch) {
+        const search_query = `user:${props.usernameSearch}`.trim();
+        filterText.value = search_query;
+        onSearch(search_query);
+    }
     getGridData();
     eventBus.on(onRouterPush);
     displayInitialMessage();
