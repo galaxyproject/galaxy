@@ -96,7 +96,8 @@
                             @onChangePostJobActions="onChangePostJobActions"
                             @onAnnotation="onAnnotation"
                             @onLabel="onLabel"
-                            @onSetData="onSetData" />
+                            @onSetData="onSetData"
+                            @onUpdateStep="updateStep" />
                         <FormDefault
                             v-else-if="hasActiveNodeDefault"
                             :step="activeStep"
@@ -105,7 +106,8 @@
                             @onLabel="onLabel"
                             @onEditSubworkflow="onEditSubworkflow"
                             @onAttemptRefactor="onAttemptRefactor"
-                            @onSetData="onSetData" />
+                            @onSetData="onSetData"
+                            @onUpdateStep="updateStep" />
                         <WorkflowAttributes
                             v-else-if="attributesVisible"
                             :id="id"
@@ -512,6 +514,9 @@ export default {
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
         },
+        updateStep(id, partialStep) {
+            this.stepActions.updateStep(id, partialStep);
+        },
         onUpdateStepPosition(stepId, position) {
             this.stepActions.setPosition(this.steps[stepId], position);
         },
@@ -575,7 +580,7 @@ export default {
                 this.id,
                 this.stateStore.setLoadingState
             ).then((response) => {
-                this.onUpdateStep({
+                this.stepStore.updateStep({
                     ...this.steps[step.id],
                     config_form: response.config_form,
                     content_id: response.content_id,
@@ -596,8 +601,7 @@ export default {
             this.stepActions.setData(step, updatedStep);
         },
         onRemove(nodeId) {
-            this.stepStore.removeStep(nodeId);
-            this.showInPanel = "attributes";
+            this.stepActions.removeStep(this.steps[nodeId], this.showAttributes);
         },
         onEditSubworkflow(contentId) {
             const editUrl = `/workflows/edit?workflow_id=${contentId}`;
@@ -682,7 +686,7 @@ export default {
         onLayout() {
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
                 layout.autoLayout(this.id, this.steps).then((newSteps) => {
-                    newSteps.map((step) => this.onUpdateStep(step));
+                    newSteps.map((step) => this.stepStore.updateStep(step));
                 });
             });
         },

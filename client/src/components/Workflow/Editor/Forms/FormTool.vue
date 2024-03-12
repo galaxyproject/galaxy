@@ -25,7 +25,7 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional :step="step" v-on="$listeners" />
+            <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
             <div class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
@@ -92,7 +92,7 @@ export default {
             required: true,
         },
     },
-    emits: ["onSetData", "onChangePostJobActions", "onAnnotation", "onLabel"],
+    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
     setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")

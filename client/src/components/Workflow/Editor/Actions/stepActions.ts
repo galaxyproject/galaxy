@@ -39,28 +39,27 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     }
 }
 
-export class SetDataAction extends UndoRedoAction {
+export class UpdateStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
     stepId;
-    fromPartial: Partial<Step> = {};
-    toPartial: Partial<Step> = {};
+    fromPartial;
+    toPartial;
     onUndoRedo?: () => void;
 
-    constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, from: Step, to: Step) {
+    constructor(
+        stepStore: WorkflowStepStore,
+        stateStore: WorkflowStateStore,
+        stepId: number,
+        fromPartial: Partial<Step>,
+        toPartial: Partial<Step>
+    ) {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
-        this.stepId = from.id;
-
-        Object.entries(from).forEach(([key, value]) => {
-            const otherValue = to[key as keyof Step] as any;
-
-            if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
-                this.fromPartial[key as keyof Step] = structuredClone(value);
-                this.toPartial[key as keyof Step] = structuredClone(otherValue);
-            }
-        });
+        this.stepId = stepId;
+        this.fromPartial = fromPartial;
+        this.toPartial = toPartial;
     }
 
     isEmpty() {
@@ -85,6 +84,24 @@ export class SetDataAction extends UndoRedoAction {
     redo() {
         this.run();
         this.onUndoRedo?.();
+    }
+}
+
+export class SetDataAction extends UpdateStepAction {
+    constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, from: Step, to: Step) {
+        const fromPartial: Partial<Step> = {};
+        const toPartial: Partial<Step> = {};
+
+        Object.entries(from).forEach(([key, value]) => {
+            const otherValue = to[key as keyof Step] as any;
+
+            if (JSON.stringify(value) !== JSON.stringify(otherValue)) {
+                fromPartial[key as keyof Step] = structuredClone(value);
+                toPartial[key as keyof Step] = structuredClone(otherValue);
+            }
+        });
+
+        super(stepStore, stateStore, from.id, fromPartial, toPartial);
     }
 }
 
@@ -138,6 +155,36 @@ export class InsertStepAction extends UndoRedoAction {
         this.run();
         assertDefined(this.stepId);
         this.stateStore.activeNodeId = this.stepId;
+    }
+}
+
+export class RemoveStepAction extends UndoRedoAction {
+    stepStore;
+    stateStore;
+    showAttributesCallback;
+    step: Step;
+
+    constructor(
+        stepStore: WorkflowStepStore,
+        stateStore: WorkflowStateStore,
+        showAttributesCallback: () => void,
+        step: Step
+    ) {
+        super();
+        this.stepStore = stepStore;
+        this.stateStore = stateStore;
+        this.showAttributesCallback = showAttributesCallback;
+        this.step = structuredClone(step);
+    }
+
+    run() {
+        this.stepStore.removeStep(this.step.id);
+        this.showAttributesCallback();
+    }
+
+    undo() {
+        this.stepStore.addStep(structuredClone(this.step));
+        this.stateStore.activeNodeId = this.step.id;
     }
 }
 
@@ -207,10 +254,30 @@ export function useStepActions(
         }
     }
 
+    function removeStep(step: Step, showAttributesCallback: () => void) {
+        const action = new RemoveStepAction(stepStore, stateStore, showAttributesCallback, step);
+        undoRedoStore.applyAction(action);
+    }
+
+    function updateStep(id: number, toPartial: Partial<Step>) {
+        const fromStep = stepStore.getStep(id);
+        assertDefined(fromStep);
+        const fromPartial: Partial<Step> = {};
+
+        Object.keys(toPartial).forEach((key) => {
+            fromPartial[key as keyof Step] = structuredClone(fromStep[key as keyof Step]) as any;
+        });
+
+        const action = new UpdateStepAction(stepStore, stateStore, id, fromPartial, toPartial);
+        undoRedoStore.applyAction(action);
+    }
+
     return {
         setPosition,
         setAnnotation,
         setLabel,
         setData,
+        removeStep,
+        updateStep,
     };
 }
