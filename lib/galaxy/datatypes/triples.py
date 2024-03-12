@@ -155,6 +155,42 @@ class Rdf(xml.GenericXml, Triples):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
+@build_sniff_from_prefix
+class Spif(xml.GenericXml, Triples):
+    """
+    Programming Language Independent Format (Michel Chaudron).
+    """
+    file_ext = "spif"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # SEON check
+        # Try to match SEON line (No match implies None implies False)
+        is_seon = bool(
+            re.compile(r'xmlns:SEON_code="http://se-on.org/ontologies/domain-specific/2012/02/code.owl#"')
+            .search(file_prefix.contents_header)
+            )
+        
+        # Legacy RDF check
+        # Match RDF line
+        rdf_match = re.compile(r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"').search(
+            file_prefix.contents_header
+        )
+        # Find group 1 in SEON line
+        rdf_group = rdf_match.group(1)
+        # SEON check
+        is_rdf = (f"{rdf_group}:RDF") in file_prefix.contents_header
+        
+        # Combine and return result
+        return is_seon and is_rdf
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            dataset.blurb = "SPIF/RDF/XML triple data"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
 @build_sniff_from_prefix
 class Jsonld(text.Json, Triples):
