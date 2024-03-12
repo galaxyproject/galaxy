@@ -185,41 +185,54 @@ function onKeyDown(event: KeyboardEvent) {
 
     if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        onClick(event);
-    } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+        onClick();
+    } else if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !event.shiftKey) {
         event.preventDefault();
-        emit("shift-select", event.key);
-    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-        event.preventDefault();
-        emit("init-key-selection");
         emit("arrow-navigate", event.key);
-    } else if (event.key === "Tab") {
-        emit("init-key-selection");
-    } else if (event.key === "Delete" && !props.selected && !props.item.deleted) {
-        event.preventDefault();
-        onDelete(event.shiftKey);
-    } else if (event.key === "Escape") {
-        event.preventDefault();
-        emit("hide-selection");
-    } else if (event.key === "a" && isSelectKey(event)) {
-        event.preventDefault();
-        emit("select-all");
+    }
+
+    if (props.writable) {
+        if (event.key === "Tab") {
+            emit("init-key-selection");
+        } else {
+            event.preventDefault();
+            if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
+                emit("shift-select", event.key);
+            } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+                emit("init-key-selection");
+            } else if (event.key === "Delete" && !props.selected && !props.item.deleted) {
+                onDelete(event.shiftKey);
+                emit("arrow-navigate", "ArrowDown");
+            } else if (event.key === "Escape") {
+                emit("hide-selection");
+            } else if (event.key === "a" && isSelectKey(event)) {
+                emit("select-all");
+            }
+        }
     }
 }
 
-function onClick(e: Event) {
+function onClick(e?: Event) {
     const event = e as KeyboardEvent;
-    if (event && event.shiftKey && isSelectKey(event)) {
-        emit("selected-to", false);
-    } else if (event && isSelectKey(event)) {
-        emit("init-key-selection");
-        emit("update:selected", !props.selected);
-    } else if (event && event.shiftKey) {
-        emit("selected-to", true);
-    } else if (props.isPlaceholder) {
-        emit("init-key-selection");
-    } else if (props.isDataset) {
-        emit("init-key-selection");
+    if (event && props.writable) {
+        if (event.shiftKey && isSelectKey(event)) {
+            emit("selected-to", false);
+            return;
+        } else if (isSelectKey(event)) {
+            emit("init-key-selection");
+            emit("update:selected", !props.selected);
+            return;
+        } else if (event.shiftKey) {
+            emit("selected-to", true);
+            return;
+        } else {
+            emit("init-key-selection");
+        }
+    }
+    if (props.isPlaceholder) {
+        return;
+    }
+    if (props.isDataset) {
         emit("update:expand-dataset", !props.expandDataset);
     } else {
         emit("view-collection", props.item, props.name);
