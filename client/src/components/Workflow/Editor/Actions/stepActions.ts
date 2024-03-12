@@ -190,6 +190,30 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 }
 
+export class CopyStepAction extends UndoRedoAction {
+    stepStore;
+    stateStore;
+    step;
+    onUndoRedo?: () => void;
+
+    constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, step: Step) {
+        super();
+        this.stepStore = stepStore;
+        this.stateStore = stateStore;
+        this.step = structuredClone(step);
+    }
+
+    run() {
+        this.step = this.stepStore.addStep(this.step);
+        this.stateStore.activeNodeId = this.step.id;
+        this.stateStore.hasChanges = true;
+    }
+
+    undo() {
+        this.stepStore.removeStep(this.step.id);
+    }
+}
+
 export function useStepActions(
     stepStore: WorkflowStepStore,
     undoRedoStore: UndoRedoStore,
@@ -282,6 +306,11 @@ export function useStepActions(
         }
     }
 
+    function copyStep(step: Step) {
+        const action = new CopyStepAction(stepStore, stateStore, step);
+        undoRedoStore.applyAction(action);
+    }
+
     return {
         setPosition,
         setAnnotation,
@@ -289,5 +318,6 @@ export function useStepActions(
         setData,
         removeStep,
         updateStep,
+        copyStep,
     };
 }
