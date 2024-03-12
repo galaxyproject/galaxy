@@ -50,7 +50,7 @@ def sqlite_app(sqlite_connection):
 
 @pytest.fixture()
 def postgres_app(postgresql_proc):
-    connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
+    connection = f"postgresql://{postgresql_proc.user}@{postgresql_proc.host}:{postgresql_proc.port}/"
 
     def create_app():
         return create_base_test(connection, amqp_type="postgres")
