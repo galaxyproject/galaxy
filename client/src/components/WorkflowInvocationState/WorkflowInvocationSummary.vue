@@ -5,13 +5,11 @@ import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invo
 
 import { runningCount as jobStatesSummaryRunningCount } from "./util";
 
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import ProgressBar from "@/components/ProgressBar.vue";
-
-import InvocationMessage from "./InvocationMessage.vue";
-import InvocationSummaryActionButtons from "./InvocationSummaryActionButtons.vue";
 import InvocationJobsProgressBar from "./InvocationJobsProgressBar.vue";
+import InvocationMessage from "./InvocationMessage.vue";
 import InvocationStepsProgressBar from "./InvocationStepsProgressBar.vue";
+import InvocationSummaryActionButtons from "./InvocationSummaryActionButtons.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     invocation: WorkflowInvocationElementView;
