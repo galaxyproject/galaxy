@@ -54,13 +54,10 @@
                 @scrollTo="scrollToId = null"
                 @transform="(value) => (transform = value)"
                 @graph-offset="(value) => (graphOffset = value)"
-                @onUpdate="onUpdate"
                 @onClone="onClone"
                 @onCreate="onInsertTool"
                 @onChange="onChange"
-                @onConnect="onConnect"
                 @onRemove="onRemove"
-                @onUpdateStep="onUpdateStep"
                 @onUpdateStepPosition="onUpdateStepPosition">
             </WorkflowGraph>
         </div>
@@ -512,9 +509,6 @@ export default {
         },
         onUpdateStepPosition(stepId, position) {
             this.stepActions.setPosition(this.steps[stepId], position);
-        },
-        onConnect(connection) {
-            this.connectionStore.addConnection(connection);
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
