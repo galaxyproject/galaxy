@@ -720,9 +720,9 @@ class User(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    email: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=False)
+    email: Mapped[str] = mapped_column(TrimmedString(255), index=True)
     username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
-    password: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    password: Mapped[str] = mapped_column(TrimmedString(255))
     last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
     external: Mapped[Optional[bool]] = mapped_column(default=False)
     form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
@@ -731,7 +731,7 @@ class User(Base, Dictifiable, RepresentById):
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
     # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
-    active: Mapped[bool] = mapped_column(index=True, default=True, nullable=False)
+    active: Mapped[bool] = mapped_column(index=True, default=True)
     activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), nullable=True, index=True)
 
     addresses: Mapped[List["UserAddress"]] = relationship(
@@ -2148,7 +2148,7 @@ class Task(Base, JobLike, RepresentById):
     job_messages: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     traceback: Mapped[Optional[str]] = mapped_column(TEXT)
-    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=False)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
     working_directory: Mapped[Optional[str]] = mapped_column(String(1024))
     task_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
     task_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255))
@@ -2506,7 +2506,7 @@ class ImplicitCollectionJobs(Base, Serializable):
     __tablename__ = "implicit_collection_jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new", nullable=False)
+    populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="new")
     jobs = relationship(
         "ImplicitCollectionJobsJobAssociation", back_populates="implicit_collection_jobs", cascade_backrefs=False
     )
@@ -2541,7 +2541,7 @@ class ImplicitCollectionJobsJobAssociation(Base, RepresentById):
         ForeignKey("implicit_collection_jobs.id"), index=True
     )
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)  # Consider making this nullable...
-    order_index: Mapped[int] = mapped_column(nullable=False)
+    order_index: Mapped[int]
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", back_populates="jobs")
     job = relationship("Job", back_populates="implicit_collection_jobs_association")
 
@@ -2551,7 +2551,7 @@ class PostJobAction(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
-    action_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(255))
     output_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     action_arguments: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
     workflow_step = relationship(
@@ -2572,8 +2572,8 @@ class PostJobActionAssociation(Base, RepresentById):
     __tablename__ = "post_job_action_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=False)
-    post_job_action_id: Mapped[int] = mapped_column(ForeignKey("post_job_action.id"), index=True, nullable=False)
+    job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
+    post_job_action_id: Mapped[int] = mapped_column(ForeignKey("post_job_action.id"), index=True)
     post_job_action = relationship("PostJobAction")
     job = relationship("Job", back_populates="post_job_actions")
 
@@ -2963,8 +2963,8 @@ class HistoryAudit(Base):
     __tablename__ = "history_audit"
     __table_args__ = (PrimaryKeyConstraint(sqlite_on_conflict="IGNORE"),)
 
-    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), primary_key=True, nullable=False)
-    update_time: Mapped[datetime] = mapped_column(default=now, primary_key=True, nullable=False)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), primary_key=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, primary_key=True)
 
     # This class should never be instantiated.
     # See https://github.com/galaxyproject/galaxy/pull/11914 for details.
@@ -3675,7 +3675,7 @@ class UserQuotaSourceUsage(Base, Dictifiable, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), index=True)
     # user had an index on disk_usage - does that make any sense? -John
-    disk_usage: Mapped[Decimal] = mapped_column(Numeric(15, 0), default=0, nullable=False)
+    disk_usage: Mapped[Decimal] = mapped_column(Numeric(15, 0), default=0)
     user = relationship("User", back_populates="quota_source_usages")
 
 
@@ -6298,8 +6298,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     __tablename__ = "dataset_collection"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    collection_type: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="ok", nullable=False)
+    collection_type: Mapped[str] = mapped_column(Unicode(255))
+    populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="ok")
     populated_state_message: Mapped[Optional[str]] = mapped_column(TEXT)
     element_count: Mapped[Optional[int]] = mapped_column(nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -7186,7 +7186,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     # Parent collection id describing what collection this element belongs to.
-    dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True, nullable=False)
+    dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     # Child defined by this association - HDA, LDDA, or another dataset association...
     hda_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
@@ -7478,7 +7478,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     latest_workflow_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("workflow.id", use_alter=True, name="stored_workflow_latest_workflow_id_fk"), index=True
     )
@@ -7837,7 +7837,7 @@ class WorkflowStep(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True, nullable=False)
+    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
     subworkflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), index=True, nullable=True)
     dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True, nullable=True)
     type: Mapped[Optional[str]] = mapped_column(String(64))
@@ -8250,7 +8250,7 @@ class WorkflowOutput(Base, Serializable):
     __tablename__ = "workflow_output"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=False)
+    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     output_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))
     uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
@@ -8292,7 +8292,7 @@ class WorkflowComment(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     order_index: Mapped[Optional[int]]
-    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True, nullable=False)
+    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
     position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     size: Mapped[Optional[bytes]] = mapped_column(JSONType)
     type: Mapped[Optional[str]] = mapped_column(String(16))
@@ -8394,7 +8394,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
-    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True, nullable=False)
+    workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
     scheduler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
@@ -8968,9 +8968,7 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
 class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_message"
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[int] = mapped_column(
-        ForeignKey("workflow_invocation.id"), index=True, nullable=False
-    )
+    workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     reason: Mapped[Optional[str]] = mapped_column(String(32))
     details: Mapped[Optional[str]] = mapped_column(TrimmedString(255), nullable=True)
     output_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -9047,10 +9045,8 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    workflow_invocation_id: Mapped[int] = mapped_column(
-        ForeignKey("workflow_invocation.id"), index=True, nullable=False
-    )
-    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=False)
+    workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
     implicit_collection_jobs_id: Mapped[Optional[int]] = mapped_column(
@@ -9616,10 +9612,10 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
     update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    name: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    name: Mapped[str] = mapped_column(TrimmedString(255))
     desc: Mapped[Optional[str]] = mapped_column(TEXT)
     form_definition_current_id: Mapped[int] = mapped_column(
-        ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False
+        ForeignKey("form_definition_current.id", use_alter=True), index=True
     )
     fields: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
     type: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
@@ -9731,13 +9727,13 @@ class UserAddress(Base, RepresentById):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     desc: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    name: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    name: Mapped[str] = mapped_column(TrimmedString(255))
     institution: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    address: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    city: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    state: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    postal_code: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
-    country: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    address: Mapped[str] = mapped_column(TrimmedString(255))
+    city: Mapped[str] = mapped_column(TrimmedString(255))
+    state: Mapped[str] = mapped_column(TrimmedString(255))
+    postal_code: Mapped[str] = mapped_column(TrimmedString(255))
+    country: Mapped[str] = mapped_column(TrimmedString(255))
     phone: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
@@ -10155,7 +10151,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     latest_revision_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("page_revision.id", use_alter=True, name="page_latest_revision_id_fk"), index=True
     )
@@ -10236,7 +10232,7 @@ class PageRevision(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=False)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True)
     title: Mapped[Optional[str]] = mapped_column(TEXT)
     content: Mapped[Optional[str]] = mapped_column(TEXT)
     content_format: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
@@ -10274,7 +10270,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     latest_revision_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("visualization_revision.id", use_alter=True, name="visualization_latest_revision_id_fk"),
         index=True,
@@ -10387,7 +10383,7 @@ class VisualizationRevision(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=False)
+    visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True)
     title: Mapped[Optional[str]] = mapped_column(TEXT)
     dbkey: Mapped[Optional[str]] = mapped_column(TEXT)
     config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
@@ -10901,7 +10897,7 @@ class APIKeys(Base, RepresentById):
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
-    deleted: Mapped[bool] = mapped_column(index=True, server_default=false(), nullable=False)
+    deleted: Mapped[bool] = mapped_column(index=True, server_default=false())
 
 
 def copy_list(lst, *args, **kwds):
@@ -11031,7 +11027,7 @@ class CeleryUserRateLimit(Base):
     __tablename__ = "celery_user_rate_limit"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), primary_key=True)
-    last_scheduled_time: Mapped[datetime] = mapped_column(nullable=False)
+    last_scheduled_time: Mapped[datetime]
 
     def __repr__(self):
         return (
