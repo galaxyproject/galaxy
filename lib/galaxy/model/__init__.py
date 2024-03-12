@@ -7500,7 +7500,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     def invocation_counts(self) -> InvocationsStateCounts:
         sa_session = object_session(self)
         stmt = (
-            select([WorkflowInvocation.state, func.count(WorkflowInvocation.state)])
+            select(WorkflowInvocation.state, func.count(WorkflowInvocation.state))
             .select_from(StoredWorkflow)
             .join(Workflow, Workflow.stored_workflow_id == StoredWorkflow.id)
             .join(WorkflowInvocation, WorkflowInvocation.workflow_id == Workflow.id)
