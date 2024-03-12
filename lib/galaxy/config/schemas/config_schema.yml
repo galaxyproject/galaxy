@@ -2831,6 +2831,7 @@ mapping:
         type: str
         default: default
         required: false
+        per_host: true
         desc: |
           Default tool panel view for the current Galaxy configuration. This should refer to an id of
           a panel view defined using the panel_views or panel_views_dir configuration options or an
