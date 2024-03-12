@@ -375,8 +375,8 @@ class InvocationStep(Model, WithModelClass):
             ),
         ]
     ]
-    state: Optional[Union[InvocationStepState, JobState]] = Field(
-        default=None,
+    state: Union[InvocationStepState, JobState] = Field(
+        ...,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )

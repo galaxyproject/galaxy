@@ -2,7 +2,6 @@
 import { computed } from "vue";
 
 import { InvocationJobsSummary } from "@/api/invocations";
-import ProgressBar from "@/components/ProgressBar.vue";
 
 import {
     errorCount as jobStatesSummaryErrorCount,
@@ -11,6 +10,8 @@ import {
     okCount as jobStatesSummaryOkCount,
     runningCount as jobStatesSummaryRunningCount,
 } from "./util";
+
+import ProgressBar from "@/components/ProgressBar.vue";
 
 interface Props {
     jobStatesSummary: InvocationJobsSummary;

@@ -12239,7 +12239,7 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state?: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"] | null;
+            state: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"];
             /** Subworkflow Invocation Id */
             subworkflow_invocation_id: string | null;
             /**
