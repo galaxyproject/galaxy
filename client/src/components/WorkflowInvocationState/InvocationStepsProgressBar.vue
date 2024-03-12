@@ -2,6 +2,7 @@
 import { computed } from "vue";
 
 import { InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+
 import ProgressBar from "@/components/ProgressBar.vue";
 
 interface Props {
@@ -28,8 +29,7 @@ const stepStates = computed<StepStateType>(() => {
         if (!step) {
             continue;
         }
-        // the API defined state here allowing null and undefined is odd...
-        const stepState: string = step.state || "unknown";
+        const stepState: string = step.state;
         if (!stepStates[stepState]) {
             stepStates[stepState] = 1;
         } else {
