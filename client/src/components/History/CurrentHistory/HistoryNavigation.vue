@@ -277,7 +277,7 @@ function userTitle(title: string) {
             @ok="onDelete"
             @show="purgeHistory = false">
             <p v-localize>
-                Do you also want to purge the history <i class="ml-1">{{ history.name }}</i>
+                Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
             </p>
             <BFormCheckbox id="purge-history" v-model="purgeHistory">
                 <span v-localize>Purge history</span>
