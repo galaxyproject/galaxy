@@ -120,6 +120,7 @@ Release Testing Team
 A special thanks to the release testing team:
 
 * `Ahmed Awan <https://github.com/ahmedhamidawan>`__
+* `Amirhossein Naghsh Nilchi <https://github.com/nilchia>`__
 * `David López <https://github.com/davelopez>`__
 * `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
 * `John Davis <https://github.com/jdavcs>`__
