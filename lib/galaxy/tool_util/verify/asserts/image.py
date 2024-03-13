@@ -242,7 +242,7 @@ def assert_has_image_n_labels(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
-    value: Optional[Union[int, str]] = None,
+    n: Optional[Union[int, str]] = None,
     delta: Union[int, str] = 0,
     min: Optional[Union[int, str]] = None,
     max: Optional[Union[int, str]] = None,
