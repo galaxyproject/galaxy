@@ -222,6 +222,7 @@ def mull_targets(
     singularity_image_dir="singularity_import",
     base_image=None,
     determine_base_image=True,
+    invfile=INVFILE,
 ):
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -266,7 +267,7 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         "-f",
-        f"{INVFILE}",
+        invfile,
         "-set",
         f"CHANNELS={channels_str}",
         "-set",
@@ -470,6 +471,7 @@ def add_build_arguments(parser):
     parser.add_argument(
         "--singularity-image-dir", dest="singularity_image_dir", help="Directory to write singularity images too."
     )
+    parser.add_argument("--involucro-lua-file", dest="invfile", default=INVFILE, help="Path to invfile.lua")
     parser.add_argument("-n", "--namespace", dest="namespace", default="biocontainers", help="quay.io namespace.")
     parser.add_argument(
         "-r",
@@ -580,6 +582,8 @@ def args_to_mull_targets_kwds(args):
         kwds["hash_func"] = args.hash
     if hasattr(args, "singularity_image_dir") and args.singularity_image_dir:
         kwds["singularity_image_dir"] = args.singularity_image_dir
+    if hasattr(args, "invfile"):
+        kwds["invfile"] = args.invfile
 
     kwds["involucro_context"] = context_from_args(args)
 
