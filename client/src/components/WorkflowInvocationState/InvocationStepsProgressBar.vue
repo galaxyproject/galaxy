@@ -46,9 +46,9 @@ const stepStatesStr = computed<string>(() => {
 
 <template>
     <span>
-        <ProgressBar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
+        <ProgressBar v-if="!invocation" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <ProgressBar
-            v-if="invocationState == 'cancelled'"
+            v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
             class="steps-progress" />
