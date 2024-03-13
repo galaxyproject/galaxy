@@ -57,7 +57,7 @@ from ..conda_compat import MetaData
 
 log = logging.getLogger(__name__)
 
-DIRNAME = os.environ.get("INVFILE_DIRNAME", os.path.dirname(__file__))
+INVFILE = os.environ.get("INVFILE", os.path.join(os.path.dirname(__file__), "invfile.lua"))
 DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base-glibc-busybox-bash:latest")
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
@@ -266,7 +266,7 @@ def mull_targets(
     bind_str = ",".join(binds)
     involucro_args = [
         "-f",
-        f"{DIRNAME}/invfile.lua",
+        f"{INVFILE}",
         "-set",
         f"CHANNELS={channels_str}",
         "-set",
