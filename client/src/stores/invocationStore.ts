@@ -5,7 +5,7 @@ import {
     fetchInvocationJobsSummary,
     fetchInvocationStep,
     type WorkflowInvocation,
-    type WorkflowInvocationJobsSummary,
+    type InvocationJobsSummary,
     type WorkflowInvocationStep,
 } from "@/api/invocations";
 import { useKeyedCache } from "@/composables/keyedCache";
@@ -15,7 +15,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
-        useKeyedCache<WorkflowInvocationJobsSummary>(fetchInvocationJobsSummary);
+        useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
 
     const { getItemById: getInvocationStepById, fetchItemById: fetchInvocationStepById } =
         useKeyedCache<WorkflowInvocationStep>(fetchInvocationStep);

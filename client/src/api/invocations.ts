@@ -13,10 +13,6 @@ export const invocationsFetcher = fetcher.path("/api/invocations").method("get")
 
 export type WorkflowInvocation = WorkflowInvocationElementView | WorkflowInvocationCollectionView;
 
-export interface WorkflowInvocationJobsSummary {
-    id: string;
-}
-
 export interface WorkflowInvocationStep {
     id: string;
 }
@@ -38,13 +34,11 @@ export async function fetchInvocationDetails(params: { id: string }): Promise<Ap
     } as ApiResponse<WorkflowInvocation>;
 }
 
-export async function fetchInvocationJobsSummary(params: {
-    id: string;
-}): Promise<ApiResponse<WorkflowInvocationJobsSummary>> {
+export async function fetchInvocationJobsSummary(params: { id: string }): Promise<ApiResponse<InvocationJobsSummary>> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}/jobs_summary`);
     return {
         data,
-    } as ApiResponse<WorkflowInvocationJobsSummary>;
+    } as ApiResponse<InvocationJobsSummary>;
 }
 
 export async function fetchInvocationStep(params: { id: string }): Promise<ApiResponse<WorkflowInvocationStep>> {
