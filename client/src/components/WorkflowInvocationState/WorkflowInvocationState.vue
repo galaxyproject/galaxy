@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BAlert, BTab, BTabs } from "bootstrap-vue";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref, toRef, watch } from "vue";
 
 import { type InvocationJobsSummary, type WorkflowInvocationElementView } from "@/api/invocations";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
@@ -9,6 +9,7 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { cancelWorkflowScheduling } from "./services";
+import { useInvocationState } from "./usesInvocationState";
 import { isTerminal, jobCount, runningCount } from "./util";
 
 import InvocationReport from "../Workflow/InvocationReport.vue";
@@ -62,20 +63,7 @@ useAnimationFrameResizeObserver(scrollableDiv, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.height >= clientSize.height + 1;
 });
 
-const invocation = computed(() =>
-    invocationLoaded.value
-        ? (invocationStore.getInvocationById(props.invocationId) as WorkflowInvocationElementView)
-        : null
-);
 const invocationState = computed(() => invocation.value?.state || "new");
-const invocationAndJobTerminal = computed(() => invocationSchedulingTerminal.value && jobStatesTerminal.value);
-const invocationSchedulingTerminal = computed(() => {
-    return (
-        invocationState.value == "scheduled" ||
-        invocationState.value == "cancelled" ||
-        invocationState.value == "failed"
-    );
-});
 const jobStatesTerminal = computed(() => {
     if (invocationSchedulingTerminal.value && jobCount(jobStatesSummary.value as InvocationJobsSummary) === 0) {
         // no jobs for this invocation (think subworkflow or just inputs)
@@ -83,13 +71,10 @@ const jobStatesTerminal = computed(() => {
     }
     return !!jobStatesSummary.value && isTerminal(jobStatesSummary.value as InvocationJobsSummary);
 });
-const jobStatesSummary = computed(() => {
-    const jobsSummary = invocationStore.getInvocationJobsSummaryById(props.invocationId);
-    return (!jobsSummary ? null : jobsSummary) as InvocationJobsSummary;
-});
 const invocationStateSuccess = computed(() => {
     return (
         invocationState.value == "scheduled" &&
+        jobStatesSummary.value &&
         runningCount(jobStatesSummary.value) === 0 &&
         invocationAndJobTerminal.value
     );
@@ -133,7 +118,22 @@ async function pollJobStatesUntilTerminal() {
         jobStatesInterval.value = setTimeout(pollJobStatesUntilTerminal, 3000);
     }
 }
-function onError(e: any) {
+
+const {
+    invocation: invocationFromState,
+    invocationSchedulingTerminal,
+    invocationAndJobTerminal,
+    jobStatesSummary,
+    monitorState,
+    clearStateMonitor,
+} = useInvocationState(toRef(props, "invocationId"));
+
+const invocation = computed(() => invocationFromState.value as WorkflowInvocationElementView | undefined);
+
+onMounted(monitorState);
+onBeforeUnmount(clearStateMonitor);
+
+function onError(e: unknown) {
     console.error(e);
 }
 function onCancel() {
@@ -153,6 +153,7 @@ function cancelWorkflowSchedulingLocal() {
             :content-class="['overflow-auto', isScrollable ? 'pr-2' : '']">
             <BTab key="0" title="Overview" active>
                 <WorkflowInvocationOverview
+                    v-if="jobStatesSummary"
                     class="invocation-overview"
                     :invocation="invocation"
                     :index="index"
