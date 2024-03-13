@@ -238,7 +238,7 @@ def _get_image_labels(
     return im_arr, present_labels
 
 
-def assert_has_image_labels(
+def assert_has_image_n_labels(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,

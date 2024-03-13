@@ -2253,7 +2253,7 @@ module.
       <xs:element name="has_image_channels" type="AssertHasImageChannels" />
       <xs:element name="has_image_mean_intensity" type="AssertHasImageMeanIntensity" />
       <xs:element name="has_image_center_of_mass" type="AssertHasImageCenterOfMass" />
-      <xs:element name="has_image_labels" type="AssertHasImageLabels" />
+      <xs:element name="has_image_n_labels" type="AssertHasImageNLabels" />
       <xs:element name="has_image_mean_object_size" type="AssertHasImageMeanObjectSize" />
     </xs:choice>
   </xs:group>
@@ -2918,18 +2918,18 @@ $attribute_list::5
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
-  <xs:complexType name="AssertHasImageLabels">
+  <xs:complexType name="AssertHasImageNLabels">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is an image and has the specified number of labels, or unique values (e.g.,
-``<has_image_labels value="187" exclude_labels="0" />``).
+``<has_image_n_labels n="187" exclude_labels="0" />``).
 The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:integer" use="optional">
+    <xs:attribute name="n" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected number of labels.`</xs:documentation>
       </xs:annotation>
