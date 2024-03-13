@@ -24,6 +24,7 @@ import {
     BDropdownDivider,
     BDropdownItem,
     BDropdownText,
+    BFormCheckbox,
     BModal,
     BSpinner,
 } from "bootstrap-vue";
@@ -63,18 +64,27 @@ interface Props {
     historiesLoading?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     title: "Histories",
     historiesLoading: false,
 });
 
 const showSwitchModal = ref(false);
+const purgeHistory = ref(false);
 
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 const { totalHistoryCount } = storeToRefs(historyStore);
+
+function onDelete() {
+    if (purgeHistory.value) {
+        historyStore.deleteHistory(props.history.id, true);
+    } else {
+        historyStore.deleteHistory(props.history.id, false);
+    }
+}
 
 function userTitle(title: string) {
     if (isAnonymous.value) {
@@ -264,16 +274,14 @@ function userTitle(title: string) {
             id="delete-history-modal"
             title="Delete History?"
             title-tag="h2"
-            @ok="historyStore.deleteHistory(history.id, false)">
-            <p v-localize>Really delete the current history?</p>
-        </BModal>
-
-        <BModal
-            id="purge-history-modal"
-            title="Permanently Delete History?"
-            title-tag="h2"
-            @ok="historyStore.deleteHistory(history.id, true)">
-            <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
+            @ok="onDelete"
+            @show="purgeHistory = false">
+            <p v-localize>
+                Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
+            </p>
+            <BFormCheckbox id="purge-history" v-model="purgeHistory">
+                <span v-localize>Yes, permanently delete this history.</span>
+            </BFormCheckbox>
         </BModal>
     </div>
 </template>
