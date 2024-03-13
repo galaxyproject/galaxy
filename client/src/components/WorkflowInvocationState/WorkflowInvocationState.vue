@@ -1,18 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount } from "vue";
+import { onBeforeUnmount, onMounted, toRef } from "vue";
 
-import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
-
-import LoadingSpan from "@/components/LoadingSpan.vue";
-
-import { useInvocationStore } from "@/stores/invocationStore";
+import { WorkflowInvocationElementView } from "@/api/invocations";
 
 import { cancelWorkflowScheduling } from "./services";
-import { isTerminal, jobCount } from "./util";
+import { useInvocationState } from "./usesInvocationState";
 
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     invocationId: string;
@@ -21,70 +18,17 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const invocationStore = useInvocationStore();
+const {
+    invocation,
+    invocationSchedulingTerminal,
+    invocationAndJobTerminal,
+    jobStatesSummary,
+    monitorState,
+    clearStateMonitor,
+} = useInvocationState(toRef(props, "invocationId"));
 
-type OptionalInterval = ReturnType<typeof setInterval> | null;
-
-let stepStatesInterval: OptionalInterval = null;
-let jobStatesInterval: OptionalInterval = null;
-
-const invocation = computed(() => {
-    return invocationStore.getInvocationById(props.invocationId);
-});
-
-const invocationState = computed(() => {
-    return invocation.value?.state || "new";
-});
-
-const invocationAndJobTerminal = computed(() => {
-    return !!(invocationSchedulingTerminal.value && jobStatesTerminal.value);
-});
-
-const invocationSchedulingTerminal = computed(() => {
-    const state = invocationState.value;
-    return state == "scheduled" || state == "cancelled" || state == "failed";
-});
-
-const jobStatesTerminal = computed(() => {
-    if (invocationSchedulingTerminal.value && jobCount(jobStatesSummary.value) === 0) {
-        // no jobs for this invocation (think subworkflow or just inputs)
-        return true;
-    }
-    return jobStatesSummary.value && isTerminal(jobStatesSummary.value);
-});
-
-const jobStatesSummary = computed<InvocationJobsSummary | null>(() => {
-    const jobsSummary: InvocationJobsSummary | null = invocationStore.getInvocationJobsSummaryById(props.invocationId);
-    return !jobsSummary ? null : jobsSummary;
-});
-
-async function pollStepStatesUntilTerminal() {
-    if (!invocation.value || !invocationSchedulingTerminal.value) {
-        await invocationStore.fetchInvocationForId({ id: props.invocationId });
-        stepStatesInterval = setTimeout(pollStepStatesUntilTerminal, 3000);
-    }
-}
-
-async function pollJobStatesUntilTerminal() {
-    if (!jobStatesTerminal.value) {
-        await invocationStore.fetchInvocationJobsSummaryForId({ id: props.invocationId });
-        jobStatesInterval = setTimeout(pollJobStatesUntilTerminal, 3000);
-    }
-}
-
-onMounted(() => {
-    pollStepStatesUntilTerminal();
-    pollJobStatesUntilTerminal();
-});
-
-onBeforeUnmount(() => {
-    if (jobStatesInterval) {
-        clearTimeout(jobStatesInterval);
-    }
-    if (stepStatesInterval) {
-        clearTimeout(stepStatesInterval);
-    }
-});
+onMounted(monitorState);
+onBeforeUnmount(clearStateMonitor);
 
 function onError(e: unknown) {
     console.error(e);
