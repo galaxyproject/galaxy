@@ -576,16 +576,6 @@ class WorkflowDictExportSteps(Model):
     )
 
 
-# "post_job_actions" (type: dict): Dictionary containing post-job actions associated with the step.
-
-# The keys are a combination of action_type and output_name.
-# The values are dictionaries with the following items:
-# "action_type" (type: str): The type of the post-job action.
-# "output_name" (type: str): The name of the output associated with the post-job action.
-# "action_arguments" (type: str): The arguments of the post-job action.
-# These items provide detailed information about each step in the workflow, including the step type, associated tools, errors, and annotations.
-
-
 class WorkflowDictBaseModel(Model):
     name: str = Field(
         ...,
@@ -730,4 +720,72 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         ...,
         title="Steps",
         description="A dictionary with information about all the steps of the workflow.",
+    )
+
+
+class WorkflowDictFormat2Summary(Model):
+    workflow_class: str = Field(
+        ...,
+        title="Class",
+        description="The class of the workflow.",
+        alias="class",
+    )
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+        description="The label or name of the workflow.",
+    )
+    creator: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Creator",
+        description="Metadata about the creator of the workflow.",
+    )
+    license: Optional[str] = Field(
+        None,
+        title="License",
+        description="The license information for the workflow.",
+    )
+    release: Optional[str] = Field(
+        None,
+        title="Release",
+        description="The release information for the workflow.",
+    )
+    tags: Optional[List[str]] = Field(
+        None,
+        title="Tags",
+        description="The tags associated with the workflow.",
+    )
+    uuid: Optional[str] = Field(
+        None,
+        title="UUID",
+        description="The UUID (Universally Unique Identifier) of the workflow, represented as a string.",
+    )
+    report: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Report",
+        description="The configuration for generating a report for the workflow.",
+    )
+    inputs: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Inputs",
+        description="A dictionary representing the inputs of the workflow.",
+    )
+    outputs: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Outputs",
+        description="A dictionary representing the outputs of the workflow.",
+    )
+    # TODO - step into line 888 in manager
+    steps: Dict[str, Any] = Field(
+        ...,
+        title="Steps",
+        description="A dictionary representing the steps of the workflow.",
+    )
+
+
+class WorkflowDictFormat2WrappedYamlSummary(Model):
+    yaml_content: str = Field(
+        ...,
+        title="YAML Content",
+        description="The content of the workflow in YAML format.",
     )
