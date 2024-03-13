@@ -21,6 +21,13 @@ watch(
         emit("input", newLocalValue);
     }
 );
+
+watch(
+    () => props.value,
+    (newValue) => {
+        localValue.value = newValue;
+    }
+);
 </script>
 
 <template>
