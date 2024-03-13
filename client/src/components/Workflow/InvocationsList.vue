@@ -65,7 +65,10 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(state)="data">
-                <InvocationsListState :invocation-state="data.value" :invocation-id="data.item.id" />
+                <InvocationsListState
+                    :invocation-state="data.value"
+                    :invocation-id="data.item.id"
+                    :details-showing="data.detailsShowing" />
             </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
@@ -126,7 +129,7 @@ export default {
         }
         fields.push(
             { key: "create_time", label: "Invoked", class: "col-small", sortable: true },
-            { key: "state", class: "col-small" },
+            { key: "state" },
             { key: "execute", label: "Run", class: "col-button" }
         );
         return {
@@ -212,7 +215,7 @@ export default {
 }
 
 .table:deep(.col-name) {
-    width: 40%;
+    width: 35%;
 }
 
 .table:deep(.col-history) {
