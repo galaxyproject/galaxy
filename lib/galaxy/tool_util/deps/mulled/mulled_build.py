@@ -57,7 +57,7 @@ from ..conda_compat import MetaData
 
 log = logging.getLogger(__name__)
 
-DIRNAME = os.path.dirname(__file__)
+DIRNAME = os.environ.get("INVFILE_DIRNAME", os.path.dirname(__file__))
 DEFAULT_BASE_IMAGE = os.environ.get("DEFAULT_BASE_IMAGE", "quay.io/bioconda/base-glibc-busybox-bash:latest")
 DEFAULT_EXTENDED_BASE_IMAGE = os.environ.get(
     "DEFAULT_EXTENDED_BASE_IMAGE", "quay.io/bioconda/base-glibc-debian-bash:latest"
