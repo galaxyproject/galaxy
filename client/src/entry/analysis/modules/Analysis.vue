@@ -8,12 +8,11 @@ import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
 const showCenter = ref(false);
-const { showToolbox, showPanels } = usePanels();
+const { showPanels } = usePanels();
 
 // methods
 function hideCenter() {
@@ -39,9 +38,6 @@ onUnmounted(() => {
 <template>
     <div id="columns" class="d-flex">
         <ActivityBar />
-        <FlexPanel v-if="showToolbox" side="left">
-            <ToolPanel />
-        </FlexPanel>
         <div id="center" class="overflow-auto p-3 w-100">
             <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
