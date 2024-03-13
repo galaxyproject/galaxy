@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, toRef } from "vue";
 
-import { WorkflowInvocationElementView } from "@/api/invocations";
-
 import { cancelWorkflowScheduling } from "./services";
 import { useInvocationState } from "./usesInvocationState";
 

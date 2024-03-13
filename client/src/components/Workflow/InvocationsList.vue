@@ -65,7 +65,7 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(state)="data">
-                <HelpText :uri="`galaxy.invocations.states.${data.value}`" :text="data.value" />
+                <InvocationsListState :invocation-state="data.value" :invocation-id="data.item.id" />
             </template>
             <template v-slot:cell(execute)="data">
                 <WorkflowRunButton
@@ -83,7 +83,6 @@
 </template>
 
 <script>
-import HelpText from "components/Help/HelpText";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
 import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
@@ -94,12 +93,13 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 
 import paginationMixin from "./paginationMixin";
 
+import InvocationsListState from "./InvocationsListState.vue";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 export default {
     components: {
-        HelpText,
+        InvocationsListState,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
