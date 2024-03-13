@@ -341,22 +341,12 @@ class InvocationStepCollectionOutput(Model):
     )
 
 
-class InvocationStep(Model, WithModelClass):
+class BaseInvocationStep(Model, WithModelClass):
     """Information about workflow invocation step"""
 
     model_class: INVOCATION_STEP_MODEL_CLASS = ModelClassField(INVOCATION_STEP_MODEL_CLASS)
     id: Annotated[EncodedDatabaseIdField, Field(..., title="Invocation Step ID")]
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[
-        Annotated[
-            EncodedDatabaseIdField,
-            Field(
-                default=None,
-                title="Job ID",
-                description="The encoded ID of the job associated with this workflow invocation step.",
-            ),
-        ]
-    ]
     workflow_step_id: Annotated[
         EncodedDatabaseIdField,
         Field(
@@ -375,11 +365,6 @@ class InvocationStep(Model, WithModelClass):
             ),
         ]
     ]
-    state: Union[InvocationStepState, JobState] = Field(
-        ...,
-        title="State of the invocation step",
-        description="Describes where in the scheduling process the workflow invocation step is.",
-    )
     action: Optional[bool] = InvocationStepActionField
     order_index: int = Field(
         ...,
@@ -415,6 +400,32 @@ class InvocationStep(Model, WithModelClass):
         None,
         title="Implicit Collection Jobs ID",
         description="The implicit collection job ID associated with the workflow invocation step.",
+    )
+
+
+class LegacyInvocationStep(BaseInvocationStep):
+    job_id: Optional[
+        Annotated[
+            EncodedDatabaseIdField,
+            Field(
+                default=None,
+                title="Job ID",
+                description="The encoded ID of the job associated with this workflow invocation step.",
+            ),
+        ]
+    ]
+    state: Optional[JobState] = Field(
+        ...,
+        title="State of the invocation step",
+        description="Describes the job state corresponding to this invocation step.",
+    )
+
+
+class InvocationStep(BaseInvocationStep):
+    state: InvocationStepState = Field(
+        ...,
+        title="State of the invocation step",
+        description="Describes where in the scheduling process the workflow invocation step is.",
     )
 
 
@@ -567,8 +578,7 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 
-class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
-    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
+class BaseWorkflowInvocationElementView(WorkflowInvocationCollectionView):
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
     )
@@ -593,10 +603,34 @@ class WorkflowInvocationElementView(WorkflowInvocationCollectionView):
     )
 
 
+class LegacyWorkflowInvocationElementView(BaseWorkflowInvocationElementView):
+    steps: List[LegacyInvocationStep] = Field(
+        default=..., title="Steps", description="Steps of the workflow invocation (legacy view using job state)."
+    )
+
+
+class WorkflowInvocationElementView(BaseWorkflowInvocationElementView):
+    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
+
+
 class WorkflowInvocationResponse(RootModel):
     root: Annotated[
-        Union[WorkflowInvocationElementView, WorkflowInvocationCollectionView], Field(union_mode="left_to_right")
+        Union[WorkflowInvocationElementView, LegacyWorkflowInvocationElementView, WorkflowInvocationCollectionView],
+        Field(union_mode="left_to_right"),
     ]
+
+    @staticmethod
+    def from_dict(as_dict: Dict[str, Any], view: "InvocationSerializationView", legacy_job_state: bool):
+        # WorkflowInvocationResponse(**as_dict) does the same thing but I think it is better to
+        # be explicit here since we know what model we're trying to serialize - this is safer, more
+        # performant, and will likely yield clearer error messages.
+        if view == InvocationSerializationView.collection:
+            root = WorkflowInvocationCollectionView(**as_dict)
+        elif legacy_job_state:
+            root = LegacyWorkflowInvocationElementView(**as_dict)
+        else:
+            root = WorkflowInvocationElementView(**as_dict)
+        return WorkflowInvocationResponse(root=root)
 
 
 class WorkflowInvocationRequestModel(Model):

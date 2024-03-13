@@ -260,7 +260,7 @@ class InvocationsService(ServiceBase, ConsumesModelStores):
         legacy_job_state = params.legacy_job_state
         as_dict = invocation.to_dict(view.value, step_details=step_details, legacy_job_state=legacy_job_state)
         as_dict["messages"] = invocation.messages
-        return WorkflowInvocationResponse(**as_dict)
+        return WorkflowInvocationResponse.from_dict(as_dict, view, legacy_job_state)
 
     def serialize_workflow_invocations(
         self,

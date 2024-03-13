@@ -12239,7 +12239,7 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state: components["schemas"]["InvocationStepState"] | components["schemas"]["JobState"];
+            state: components["schemas"]["InvocationStepState"];
             /** Subworkflow Invocation Id */
             subworkflow_invocation_id: string | null;
             /**
@@ -13113,6 +13113,82 @@ export interface components {
          * @enum {string}
          */
         LandingRequestState: "unclaimed" | "claimed";
+        /** LegacyInvocationStep */
+        LegacyInvocationStep: {
+            /**
+             * Action
+             * @description Whether to take action on the invocation step.
+             */
+            action: boolean | null;
+            /**
+             * Invocation Step ID
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Job Id */
+            job_id: string | null;
+            /**
+             * Jobs
+             * @description Jobs associated with the workflow invocation step.
+             * @default []
+             */
+            jobs?: components["schemas"]["JobBaseModel"][];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "WorkflowInvocationStep";
+            /**
+             * Order index
+             * @description The index of the workflow step in the workflow.
+             */
+            order_index: number;
+            /**
+             * Output collections
+             * @description The dataset collection outputs of the workflow invocation step.
+             * @default {}
+             */
+            output_collections?: {
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
+            };
+            /**
+             * Outputs
+             * @description The outputs of the workflow invocation step.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
+            };
+            /**
+             * State of the invocation step
+             * @description Describes the job state corresponding to this invocation step.
+             */
+            state: components["schemas"]["JobState"] | null;
+            /** Subworkflow Invocation Id */
+            subworkflow_invocation_id: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string | null;
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with this workflow invocation step.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+            /**
+             * Step label
+             * @description The label of the workflow step
+             */
+            workflow_step_label?: string | null;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow step.
+             */
+            workflow_step_uuid?: string | null;
+        };
         /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
@@ -13139,6 +13215,110 @@ export interface components {
              * @default []
              */
             LIBRARY_MODIFY_in: string[] | string | null;
+        };
+        /** LegacyWorkflowInvocationElementView */
+        LegacyWorkflowInvocationElementView: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Input step parameters
+             * @description Input step parameters of the workflow invocation.
+             */
+            input_step_parameters: {
+                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
+            };
+            /**
+             * Inputs
+             * @description Input datasets/dataset collections of the workflow invocation.
+             */
+            inputs: {
+                [key: string]: components["schemas"]["InvocationInput"] | undefined;
+            };
+            /**
+             * Messages
+             * @description A list of messages about why the invocation did not succeed.
+             */
+            messages: (
+                | components["schemas"]["InvocationCancellationReviewFailedResponse"]
+                | components["schemas"]["InvocationCancellationHistoryDeletedResponse"]
+                | components["schemas"]["InvocationCancellationUserRequestResponse"]
+                | components["schemas"]["InvocationFailureDatasetFailedResponse"]
+                | components["schemas"]["InvocationFailureCollectionFailedResponse"]
+                | components["schemas"]["InvocationFailureJobFailedResponse"]
+                | components["schemas"]["InvocationFailureOutputNotFoundResponse"]
+                | components["schemas"]["InvocationFailureExpressionEvaluationFailedResponse"]
+                | components["schemas"]["InvocationFailureWhenNotBooleanResponse"]
+                | components["schemas"]["InvocationUnexpectedFailureResponse"]
+                | components["schemas"]["InvocationEvaluationWarningWorkflowOutputNotFoundResponse"]
+            )[];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "WorkflowInvocation";
+            /**
+             * Output collections
+             * @description Output dataset collections of the workflow invocation.
+             */
+            output_collections: {
+                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
+            };
+            /**
+             * Output values
+             * @description Output values of the workflow invocation.
+             */
+            output_values: Record<string, never>;
+            /**
+             * Outputs
+             * @description Output datasets of the workflow invocation.
+             */
+            outputs: {
+                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
+            };
+            /**
+             * Invocation state
+             * @description State of workflow invocation.
+             */
+            state: components["schemas"]["InvocationState"];
+            /**
+             * Steps
+             * @description Steps of the workflow invocation (legacy view using job state).
+             */
+            steps: components["schemas"]["LegacyInvocationStep"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow invocation.
+             */
+            uuid?: string | string | null;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
         };
         /** LibraryAvailablePermissions */
         LibraryAvailablePermissions: {
@@ -18317,6 +18497,7 @@ export interface components {
         /** WorkflowInvocationResponse */
         WorkflowInvocationResponse:
             | components["schemas"]["WorkflowInvocationElementView"]
+            | components["schemas"]["LegacyWorkflowInvocationElementView"]
             | components["schemas"]["WorkflowInvocationCollectionView"];
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
