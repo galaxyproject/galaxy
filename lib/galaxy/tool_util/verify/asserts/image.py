@@ -254,7 +254,7 @@ def assert_has_image_n_labels(
     present_labels = _get_image_labels(output_bytes, channel, exclude_labels)[1]
     _assert_number(
         len(present_labels),
-        value,
+        n,
         delta,
         min,
         max,
