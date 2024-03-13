@@ -42,6 +42,8 @@ from galaxy.schema.workflows import (
     StoredWorkflowDetailed,
     WorkflowDictEditorSummary,
     WorkflowDictExportSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictFormat2WrappedYamlSummary,
     WorkflowDictPreviewSummary,
     WorkflowDictRunSummary,
 )
@@ -110,13 +112,13 @@ class WorkflowsService(ServiceBase):
         elif style == "preview":
             return WorkflowDictPreviewSummary(**ret_dict)
         elif style == "format2":
-            return ret_dict
+            return WorkflowDictFormat2Summary(**ret_dict)
         elif style == "format2_wrapped_yaml":
-            return ret_dict
+            return WorkflowDictFormat2WrappedYamlSummary(**ret_dict)
         elif style == "ga":
             return WorkflowDictExportSummary(**ret_dict)
         else:
-            return ret_dict
+            raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
 
     def index(
         self,
