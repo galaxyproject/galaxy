@@ -221,7 +221,7 @@ def _get_image_labels(
 
     # Apply filtering due to `labels` (keep only those).
     if labels is None:
-        labels = list()
+        labels = []
     if isinstance(labels, str):
         labels = [cast_label(label) for label in labels.split(",") if len(label) > 0]
     if len(labels) > 0:
@@ -229,7 +229,7 @@ def _get_image_labels(
 
     # Apply filtering due to `exclude_labels`.
     if exclude_labels is None:
-        exclude_labels = list()
+        exclude_labels = []
     if isinstance(exclude_labels, str):
         exclude_labels = [cast_label(label) for label in exclude_labels.split(",") if len(label) > 0]
     present_labels = [label for label in present_labels if label not in exclude_labels]
