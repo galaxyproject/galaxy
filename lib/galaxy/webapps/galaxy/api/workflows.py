@@ -84,6 +84,12 @@ from galaxy.schema.workflows import (
     SetWorkflowMenuPayload,
     SetWorkflowMenuSummary,
     StoredWorkflowDetailed,
+    WorkflowDictEditorSummary,
+    WorkflowDictExportSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictFormat2WrappedYamlSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictRunSummary,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -848,6 +854,16 @@ SetWorkflowMenuBody = Annotated[
     ),
 ]
 
+DownloadWorkflowSummary = Union[
+    WorkflowDictEditorSummary,
+    StoredWorkflowDetailed,
+    WorkflowDictRunSummary,
+    WorkflowDictPreviewSummary,
+    WorkflowDictFormat2Summary,
+    WorkflowDictExportSummary,
+    WorkflowDictFormat2WrappedYamlSummary,
+]
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -907,11 +923,13 @@ class FastAPIWorkflows:
     @router.get(
         "/api/workflows/{workflow_id}/download",
         summary="Returns a selected workflow.",
+        response_model_exclude_unset=True,
     )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     @router.get(
         "/api/workflows/download/{workflow_id}",
         summary="Returns a selected workflow.",
+        response_model_exclude_unset=True,
     )
     def workflow_dict(
         self,
@@ -922,7 +940,7 @@ class FastAPIWorkflows:
         version: VersionQueryParam = None,
         instance: InstanceQueryParam = False,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> DownloadWorkflowSummary:
         return self.service.download_workflow(trans, workflow_id, history_id, style, format, version, instance)
 
     @router.put(
