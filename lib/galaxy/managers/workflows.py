@@ -90,6 +90,7 @@ from galaxy.tools.parameters import (
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
+    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
@@ -1520,12 +1521,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 if name:
                     input_dicts.append({"name": name, "description": annotation_str})
             for name, val in step_state.items():
-                if isinstance(val, RuntimeValue):
+                if isinstance(val, RuntimeValue) and not isinstance(val, ConnectedValue):
                     input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
                 elif isinstance(val, dict):
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
-                        if isinstance(partval, RuntimeValue):
+                        if isinstance(partval, RuntimeValue) and not isinstance(val, ConnectedValue):
                             input_dicts.append(
                                 {"name": name, "description": f"runtime parameter for tool {module.get_name()}"}
                             )
