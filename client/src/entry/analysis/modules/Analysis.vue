@@ -13,7 +13,7 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
 const showCenter = ref(false);
-const { showActivityBar, showToolbox, showPanels } = usePanels();
+const { showToolbox, showPanels } = usePanels();
 
 // methods
 function hideCenter() {
@@ -38,7 +38,7 @@ onUnmounted(() => {
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
+        <ActivityBar />
         <FlexPanel v-if="showToolbox" side="left">
             <ToolPanel />
         </FlexPanel>

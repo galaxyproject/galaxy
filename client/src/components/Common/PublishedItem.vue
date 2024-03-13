@@ -46,12 +46,12 @@ const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
-const { showActivityBar, showToolbox } = usePanels();
+const { showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
+        <ActivityBar />
 
         <FlexPanel v-if="showToolbox" side="left">
             <ToolPanel />
