@@ -70,6 +70,7 @@ IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
 CONDA_IMAGE = os.environ.get("CONDA_IMAGE", None)
+SHELL_OPTS = os.environ.get("SHELL_OPTS", '-c')
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -290,6 +291,8 @@ def mull_targets(
         involucro_args.extend(["-set", f"DEST_BASE_IMAGE={dest_base_image}"])
     if CONDA_IMAGE:
         involucro_args.extend(["-set", f"CONDA_IMAGE={CONDA_IMAGE}"])
+    if SHELL_OPTS:
+        involucro_args.extend(["-set", f"SHELL_OPTS={SHELL_OPTS}"])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE=1"])
     if singularity:
