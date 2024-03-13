@@ -49,7 +49,7 @@ def _assert_float(
 
 def assert_has_image_width(
     output_bytes: bytes,
-    value: Optional[Union[int, str]] = None,
+    width: Optional[Union[int, str]] = None,
     delta: Union[int, str] = 0,
     min: Optional[Union[int, str]] = None,
     max: Optional[Union[int, str]] = None,
@@ -62,7 +62,7 @@ def assert_has_image_width(
     with Image.open(buf) as im:
         _assert_number(
             im.size[0],
-            value,
+            width,
             delta,
             min,
             max,
@@ -74,7 +74,7 @@ def assert_has_image_width(
 
 def assert_has_image_height(
     output_bytes: bytes,
-    value: Optional[Union[int, str]] = None,
+    height: Optional[Union[int, str]] = None,
     delta: Union[int, str] = 0,
     min: Optional[Union[int, str]] = None,
     max: Optional[Union[int, str]] = None,
@@ -87,7 +87,7 @@ def assert_has_image_height(
     with Image.open(buf) as im:
         _assert_number(
             im.size[1],
-            value,
+            height,
             delta,
             min,
             max,
@@ -99,7 +99,7 @@ def assert_has_image_height(
 
 def assert_has_image_channels(
     output_bytes: bytes,
-    value: Optional[Union[int, str]] = None,
+    channels: Optional[Union[int, str]] = None,
     delta: Union[int, str] = 0,
     min: Optional[Union[int, str]] = None,
     max: Optional[Union[int, str]] = None,
@@ -112,7 +112,7 @@ def assert_has_image_channels(
     with Image.open(buf) as im:
         _assert_number(
             len(im.getbands()),
-            value,
+            channels,
             delta,
             min,
             max,
@@ -155,7 +155,7 @@ def _get_image(
 def assert_has_image_mean_intensity(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
-    value: Optional[Union[float, str]] = None,
+    mean_intensity: Optional[Union[float, str]] = None,
     eps: Union[float, str] = 0.01,
     min: Optional[Union[float, str]] = None,
     max: Optional[Union[float, str]] = None,
@@ -168,7 +168,7 @@ def assert_has_image_mean_intensity(
         actual=im_arr.mean(),
         label="mean intensity",
         tolerance=eps,
-        expected=value,
+        expected=mean_intensity,
         range_min=min,
         range_max=max,
     )
@@ -176,25 +176,24 @@ def assert_has_image_mean_intensity(
 
 def assert_has_image_center_of_mass(
     output_bytes: bytes,
+    center_of_mass: Union[Tuple[float, float], str],
     channel: Optional[Union[int, str]] = None,
-    point: Optional[Union[Tuple[float, float], str]] = None,
     eps: Union[float, str] = 0.01,
 ) -> None:
     """
     Asserts the specified output is an image and has the specified center of mass.
     """
     im_arr = _get_image(output_bytes, channel)
-    if point is not None:
-        if isinstance(point, str):
-            point_parts = [c.strip() for c in point.split(",")]
-            assert len(point_parts) == 2
-            point = (float(point_parts[0]), float(point_parts[1]))
-        assert len(point) == 2, "point must have two components"
-        actual_center_of_mass = _compute_center_of_mass(im_arr)
-        distance = numpy.linalg.norm(numpy.subtract(point, actual_center_of_mass))
-        assert distance <= float(
-            eps
-        ), f"Wrong center of mass: {actual_center_of_mass} (expected {point}, distance: {distance}, eps: {eps})"
+    if isinstance(center_of_mass, str):
+        center_of_mass_parts = [c.strip() for c in center_of_mass.split(",")]
+        assert len(center_of_mass_parts) == 2
+        center_of_mass = (float(center_of_mass_parts[0]), float(center_of_mass_parts[1]))
+    assert len(center_of_mass) == 2, "center_of_mass must have two components"
+    actual_center_of_mass = _compute_center_of_mass(im_arr)
+    distance = numpy.linalg.norm(numpy.subtract(center_of_mass, actual_center_of_mass))
+    assert distance <= float(
+        eps
+    ), f"Wrong center of mass: {actual_center_of_mass} (expected {center_of_mass}, distance: {distance}, eps: {eps})"
 
 
 def _get_image_labels(
@@ -270,7 +269,7 @@ def assert_has_image_mean_object_size(
     channel: Optional[Union[int, str]] = None,
     labels: Optional[Union[str, List[int]]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
-    value: Optional[Union[float, str]] = None,
+    mean_object_size: Optional[Union[float, str]] = None,
     eps: Union[float, str] = 0.01,
     min: Optional[Union[float, str]] = None,
     max: Optional[Union[float, str]] = None,
@@ -284,7 +283,7 @@ def assert_has_image_mean_object_size(
         actual=actual_mean_object_size,
         label="mean object size",
         tolerance=eps,
-        expected=value,
+        expected=mean_object_size,
         range_min=min,
         range_max=max,
     )

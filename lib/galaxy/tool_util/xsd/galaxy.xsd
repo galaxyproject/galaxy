@@ -2758,15 +2758,15 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageWidth">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image and has a specific width (in pixels) of ``value``
-plus/minus ``delta`` (e.g., ``<has_image_width value="512" delta="2" />``).
+Asserts the output is an image and has a specific width (in pixels),
+plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
 Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:integer" use="optional">
+    <xs:attribute name="width" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected width of the image (in pixels).`</xs:documentation>
       </xs:annotation>
@@ -2791,15 +2791,15 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageHeight">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image and has a specific height (in pixels) of ``value``
-plus/minus ``delta`` (e.g., ``<has_image_height value="512" delta="2" />``).
+Asserts the output is an image and has a specific height (in pixels),
+plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
 Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:integer" use="optional">
+    <xs:attribute name="height" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected height of the image (in pixels).`</xs:documentation>
       </xs:annotation>
@@ -2824,15 +2824,15 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageChannels">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image and has a specific number of channels of ``value``
-plus/minus ``delta`` (e.g., ``<has_image_height value="512" delta="2" />``).
+Asserts the output is an image and has a specific number of channels,
+plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
 Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:integer" use="optional">
+    <xs:attribute name="channels" type="xs:integer" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">Expected number of channels of the image.`</xs:documentation>
       </xs:annotation>
@@ -2857,15 +2857,15 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageMeanIntensity">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image and has a specific mean intensity value of ``value``
-plus/minus ``eps`` (e.g., ``<image_has_mean_intensity value="0.83" />``).
+Asserts the output is an image and has a specific mean intensity value,
+plus/minus ``eps`` (e.g., ``<image_has_mean_intensity mean_intensity="0.83" />``).
 Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:float" use="optional">
+    <xs:attribute name="mean_intensity" type="xs:float" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required mean value of the image intensities.</xs:documentation>
       </xs:annotation>
@@ -2894,15 +2894,15 @@ $attribute_list::5
   <xs:complexType name="AssertHasImageCenterOfMass">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Asserts the output is an image and has a specific center of mass of ``point``,
+Asserts the output is an image and has a specific center of mass,
 or has an Euclidean distance of ``eps`` or less to that point (e.g.,
-``<has_image_center_of_mass point="511.07, 223.34" />``).
+``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="point" type="xs:string" use="optional">
+    <xs:attribute name="center_of_mass" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).</xs:documentation>
       </xs:annotation>
@@ -2970,14 +2970,14 @@ $attribute_list::5
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
-plus/minus ``eps`` (e.g., ``<has_image_mean_object_size value="111.87" exclude_labels="0" />``).
+plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
 The labels must be unique.
 
 $attribute_list::5
 ]]>
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="value" type="xs:float" use="optional">
+    <xs:attribute name="mean_object_size" type="xs:float" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en">The required mean size of the uniquely labeled objects.</xs:documentation>
       </xs:annotation>
