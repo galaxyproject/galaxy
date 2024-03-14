@@ -678,6 +678,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
     )
     format_version: Optional[str] = Field(
         None,
+        alias="format-version",
         title="Format Version",
         description="The version of the workflow format being used.",
     )
