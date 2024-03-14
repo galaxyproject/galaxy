@@ -635,6 +635,16 @@ class HistoryContentsFilters(
         """
         return [self.decode_type_id(type_id) for type_id in type_id_list_string.split(sep)]
 
+    def create_invocation_filter(self, attr, op, val):
+
+        def _invocation_filter(model_class=None):
+            value = self.app.security.decode_id(val)
+            if op != "eq":
+                raise_filter_err(attr, op, val, "bad op in filter")
+            return model_class.invocation_id == value
+
+        return _invocation_filter
+
     def _add_parsers(self):
         super()._add_parsers()
         database_connection: str = self.app.config.database_connection
@@ -657,5 +667,6 @@ class HistoryContentsFilters(
                 "visible": {"op": ("eq"), "val": parse_bool},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
+                "invocation_id": self.create_invocation_filter,
             }
         )
