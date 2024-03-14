@@ -140,6 +140,56 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert len(index_response) == 1
         assert index_response[0]["name"] == expected_history_name
 
+    def test_index_views(self):
+        # Make sure there is at least one history
+        self._create_history(f"TestHistoryForViews_{uuid4()}")["id"]
+        # By default the view is summary
+        index_response = self._get("histories").json()
+        for history in index_response:
+            assert "state" not in history
+
+        # Change the view to detailed
+        index_response = self._get("histories?view=detailed").json()
+        for history in index_response:
+            assert "state" in history
+
+        # Expect only specific keys
+        expected_keys = ["name"]
+        unexpected_keys = ["id", "deleted", "state"]
+        index_response = self._get(f"histories?keys={','.join(expected_keys)}").json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            for key in unexpected_keys:
+                assert key not in history
+
+    def test_index_search_mode_views(self):
+        # Make sure there is at least one history
+        expected_name_contains = "SearchMode"
+        self._create_history(f"TestHistory{expected_name_contains}_{uuid4()}")["id"]
+        # By default the view is summary
+        data = dict(search=expected_name_contains, show_published=False)
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            assert "state" not in history
+
+        # Change the view to detailed
+        data = dict(search=expected_name_contains, show_published=False)
+        index_response = self._get("histories?view=detailed", data=data).json()
+        for history in index_response:
+            assert "state" in history
+
+        # Expect only specific keys
+        expected_keys = ["name"]
+        unexpected_keys = ["id", "deleted", "state"]
+        data = dict(search=expected_name_contains, show_published=False, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            for key in unexpected_keys:
+                assert key not in history
+
     def test_index_case_insensitive_contains_query(self):
         # Create the histories with a different user to ensure the test
         # is not conflicted with the current user's histories.
