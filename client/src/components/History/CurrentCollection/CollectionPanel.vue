@@ -43,7 +43,16 @@ const dsc = computed(() => {
     }
     return currentCollection;
 });
-const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
+
+watch(
+    () => [dsc.value, offset.value],
+    () => {
+        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
+    },
+    { immediate: true }
+);
+
+const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value));
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
