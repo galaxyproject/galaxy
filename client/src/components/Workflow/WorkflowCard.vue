@@ -123,37 +123,33 @@ async function onTagClick(tag: string) {
             :class="{
                 'workflow-shared': workflow.published,
             }">
-            <div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div>
-                        <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
+            <div class="workflow-card-header">
+                <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
 
-                        <span class="workflow-name font-weight-bold">
-                            {{ workflow.name }}
-                            <BButton
-                                v-if="!shared && !workflow.deleted"
-                                v-b-tooltip.hover.noninteractive
-                                :data-workflow-rename="workflow.id"
-                                class="inline-icon-button workflow-rename"
-                                variant="link"
-                                size="sm"
-                                title="Rename"
-                                @click="showRename = !showRename">
-                                <FontAwesomeIcon :icon="faPen" fixed-width />
-                            </BButton>
-                        </span>
-                    </div>
+                <div class="workflow-count-actions">
+                    <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
 
-                    <div class="workflow-count-actions">
-                        <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />
-
-                        <WorkflowActions
-                            :workflow="workflow"
-                            :published="publishedView"
-                            @refreshList="emit('refreshList', true)"
-                            @toggleShowPreview="toggleShowPreview" />
-                    </div>
+                    <WorkflowActions
+                        :workflow="workflow"
+                        :published="publishedView"
+                        @refreshList="emit('refreshList', true)"
+                        @toggleShowPreview="toggleShowPreview" />
                 </div>
+
+                <span class="workflow-name font-weight-bold">
+                    {{ workflow.name }}
+                    <BButton
+                        v-if="!shared && !workflow.deleted"
+                        v-b-tooltip.hover.noninteractive
+                        :data-workflow-rename="workflow.id"
+                        class="inline-icon-button workflow-rename"
+                        variant="link"
+                        size="sm"
+                        title="Rename"
+                        @click="showRename = !showRename">
+                        <FontAwesomeIcon :icon="faPen" fixed-width />
+                    </BButton>
+                </span>
 
                 <TextSummary
                     v-if="description"
@@ -272,47 +268,53 @@ async function onTagClick(tag: string) {
         border-radius: 0.5rem;
         padding: 0.5rem;
 
-        .workflow-count-actions {
-            display: flex;
-            align-self: baseline;
-            align-items: center;
-            flex-direction: row;
+        &.workflow-shared {
+            border-left: 0.25rem solid $brand-primary;
         }
 
-        .text-summary {
-            height: inherit;
-        }
+        .workflow-card-header {
+            display: grid;
 
-        .workflow-name {
-            font-size: 1rem;
-            font-weight: bold;
-        }
+            .workflow-count-actions {
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                position: absolute;
+                right: 0.5rem;
+            }
 
-        .workflow-card-actions {
-            display: flex;
-            gap: 0.25rem;
-            margin-top: 0.25rem;
-            align-items: center;
-            justify-content: end;
+            .workflow-name {
+                font-size: 1rem;
+                font-weight: bold;
+                word-break: break-all;
+            }
         }
 
         .workflow-card-footer {
             display: flex;
             justify-content: space-between;
             align-items: end;
-        }
 
-        .workflow-card-tags {
-            max-width: 60%;
+            .workflow-card-tags {
+                max-width: 60%;
+            }
+
+            .workflow-card-actions {
+                display: flex;
+                gap: 0.25rem;
+                margin-top: 0.25rem;
+                align-items: center;
+                justify-content: end;
+            }
         }
 
         @container workflow-card (max-width: #{$breakpoint-sm}) {
             .workflow-card-footer {
                 display: inline-block;
-            }
 
-            .workflow-card-tags {
-                max-width: 100%;
+                .workflow-card-tags {
+                    max-width: 100%;
+                }
             }
         }
 
@@ -329,19 +331,7 @@ async function onTagClick(tag: string) {
         }
     }
 
-    .workflow-shared {
-        border-left: 0.25rem solid $brand-primary;
-    }
-
     @container workflow-card (max-width: #{$breakpoint-md}) {
-        .hide-in-card {
-            display: none !important;
-        }
-
-        .show-in-card {
-            display: inline-block !important;
-        }
-
         .workflow-count-actions {
             align-items: baseline;
             justify-content: end;
@@ -352,14 +342,6 @@ async function onTagClick(tag: string) {
         .workflow-count-actions {
             align-items: end;
             flex-direction: column-reverse;
-        }
-
-        .hide-in-card {
-            display: inline-block !important;
-        }
-
-        .show-in-card {
-            display: none !important;
         }
     }
 }
