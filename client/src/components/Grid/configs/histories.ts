@@ -241,7 +241,7 @@ const fields: FieldArray = [
         ],
     },
     {
-        key: "hid_counter",
+        key: "count",
         title: "Items",
         type: "text",
     },
