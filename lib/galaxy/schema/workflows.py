@@ -269,16 +269,82 @@ class SetWorkflowMenuSummary(Model):
     )
 
 
-class WorkflowDictPreviewSteps(Model):
+class WorkflowDictStepsBase(Model):
+    type: WorkflowModuleType = Field(
+        ...,
+        title="Type",
+        alias="step_type",
+        description="The type of the module that represents a step in the workflow.",
+    )
+    # fields below are not in all models initially, but as they were optional in all
+    # models that had them I think it should be no problem to put them here
+    # in the base in order to avoid code duplication
+    when: Optional[str] = Field(
+        None,
+        title="When",
+        description="The when expression for the step.",
+    )
+    label: Optional[str] = Field(
+        None,
+        alias="step_label",
+        title="Label",
+        description="The label of the step.",
+    )
+    # TODO - could be modeled further see manager
+    post_job_actions: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
+        None,
+        title="Post Job Actions",
+        description="A dictionary of post-job actions for the step.",
+    )
+    tool_version: Optional[str] = Field(
+        None,
+        title="Tool Version",
+        description="The version of the tool associated with the step.",
+    )
+    errors: Optional[Union[List[str], str]] = Field(
+        None,
+        title="Errors",
+        description="Any errors associated with the step.",
+    )
+    tool_id: Optional[str] = Field(
+        None,
+        title="Tool ID",
+        description="The tool ID associated with the step.",
+    )
+    position: Optional[Any] = Field(
+        None,
+        title="Position",
+        description="The position of the step.",
+    )
+    # TODO - can be modeled further see manager
+    outputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Outputs",
+        description="The outputs of the step.",
+    )
+    tool_state: Optional[Union[Dict[str, Any], str]] = Field(
+        None,
+        title="Tool State",
+        description="The state of the tool associated with the step",
+    )
+    content_id: Optional[str] = Field(
+        None,
+        title="Content ID",
+        description="The content ID of the step.",
+    )
+    # TODO - could be modeled further see manager
+    workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Workflow Outputs",
+        description="A list of workflow outputs for the step.",
+    )
+
+
+class WorkflowDictPreviewSteps(WorkflowDictStepsBase):
     order_index: int = Field(
         ...,
         title="Order Index",
         description="The order index of the step.",
-    )
-    type: WorkflowModuleType = Field(
-        ...,
-        title="Type",
-        description="The type of workflow module.",
     )
     annotation: WorkflowAnnotationField = None
     label: str = Field(
@@ -286,69 +352,28 @@ class WorkflowDictPreviewSteps(Model):
         title="Label",
         description="The label of the step.",
     )
-    tool_id: Optional[str] = Field(
-        None, title="Tool ID", description="The unique name of the tool associated with this step."
-    )
-    tool_version: Optional[str] = Field(
-        None, title="Tool Version", description="The version of the tool associated with this step."
-    )
     inputs: List[Dict[str, Any]] = Field(
         ...,
         title="Inputs",
         description="The inputs of the step.",
     )
-    errors: Optional[List[str]] = Field(
-        None,
-        title="Errors",
-        description="Any errors associated with the subworkflow.",
-    )
 
 
-class WorkflowDictEditorSteps(Model):
+class WorkflowDictEditorSteps(WorkflowDictStepsBase):
     id: int = Field(
         ...,
         title="ID",
         description="The order index of the step.",
-    )
-    type: WorkflowModuleType = Field(
-        ...,
-        title="Type",
-        description="The type of workflow module.",
-    )
-    label: Optional[str] = Field(
-        None,
-        title="Label",
-        description="The label of the step.",
-    )
-    content_id: Optional[str] = Field(
-        None,
-        title="Content ID",
-        description="The identifier for the content of the step.",
     )
     name: Optional[str] = Field(
         None,
         title="Name",
         description="The name of the step.",
     )
-    tool_state: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Tool State",
-        description="The state of the step's tool.",
-    )
-    errors: Optional[List[str]] = Field(
-        None,
-        title="Errors",
-        description="Any errors associated with the step.",
-    )
     inputs: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Inputs",
         description="The inputs of the step.",
-    )
-    outputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Outputs",
-        description="The outputs of the step.",
     )
     config_form: Optional[Dict[str, Any]] = Field(
         None,
@@ -356,25 +381,10 @@ class WorkflowDictEditorSteps(Model):
         description="The configuration form for the step.",
     )
     annotation: WorkflowAnnotationField
-    post_job_actions: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Post Job Actions",
-        description="A dictionary of post-job actions for the step.",
-    )
     uuid: Optional[str] = Field(
         None,
         title="UUID",
         description="The UUID of the step.",
-    )
-    when: Optional[str] = Field(
-        None,
-        title="When",
-        description="The when expression for the step.",
-    )
-    workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Workflow Outputs",
-        description="A list of workflow outputs for the step.",
     )
     tooltip: Optional[str] = Field(
         None,
@@ -386,44 +396,19 @@ class WorkflowDictEditorSteps(Model):
         title="Input Connections",
         description="A dictionary representing the input connections for the step.",
     )
-    position: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Position",
-        description="The position of the step.",
-    )
-    tool_version: Optional[str] = Field(
-        None,
-        title="Tool Version",
-        description="The version of the step's tool.",
-    )
 
 
-# TODO - This is missing some fields - see manager line 1006
-class WorkflowDictRunSteps(Model):
+# TODO - This is potentially missing some fields, when step type is tool - see manager line 1006 - TODO
+class WorkflowDictRunSteps(WorkflowDictStepsBase):
     inputs: List[Dict[str, Any]] = Field(
         ...,
         title="Inputs",
         description="The inputs of the step.",
     )
-    when: Optional[str] = Field(
-        None,
-        title="When",
-        description="The when expression for the step.",
-    )
     replacement_parameters: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Replacement Parameters",
         description="Informal replacement parameters for the step.",
-    )
-    step_type: WorkflowModuleType = Field(
-        ...,
-        title="Step Type",
-        description="The type of the step.",
-    )
-    step_label: Optional[str] = Field(
-        None,
-        title="Step Label",
-        description="The label of the step.",
     )
     step_name: str = Field(
         ...,
@@ -451,75 +436,25 @@ class WorkflowDictRunSteps(Model):
         title="Messages",
         description="Upgrade messages for the step.",
     )
-    # TODO - can further specify post_job_actions - look at code in manager
-    post_job_actions: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Post Job Actions",
-        description="A list of dictionaries representing the post-job actions for the step.",
-    )
 
 
-class WorkflowDictExportSteps(Model):
+class WorkflowDictExportSteps(WorkflowDictStepsBase):
     id: int = Field(
         ...,
         title="ID",
         description="The order index of the step.",
-    )
-    type: WorkflowModuleType = Field(
-        ...,
-        title="Type",
-        description="The type of the step.",
-    )
-    content_id: Optional[str] = Field(
-        None,
-        title="Content ID",
-        description="The content ID of the step.",
-    )
-    tool_id: Optional[str] = Field(
-        None,
-        title="Tool ID",
-        description="The tool ID associated with the step (applicable only if the step type is 'tool').",
-    )
-    tool_version: Optional[str] = Field(
-        None,
-        title="Tool Version",
-        description="The version of the tool associated with the step.",
     )
     name: str = Field(
         ...,
         title="Name",
         description="The name of the step.",
     )
-    tool_state: Optional[str] = Field(
-        None,
-        title="Tool State",
-        description="The serialized state of the tool associated with the step.",
-    )
-    errors: Optional[str] = Field(
-        None,
-        title="Errors",
-        description="Any errors associated with the step.",
-    )
     uuid: str = Field(
         ...,
         title="UUID",
         description="The UUID (Universally Unique Identifier) of the step.",
     )
-    label: Optional[str] = Field(
-        None,
-        title="Label",
-        description="The label of the step (optional).",
-    )
-    annotation: WorkflowAnnotationField = Field(
-        None,
-        title="Annotation",
-        description="The annotation associated with the step.",
-    )
-    when: Optional[str] = Field(
-        None,
-        title="When",
-        description="The when expression of the step.",
-    )
+    annotation: WorkflowAnnotationField = None
     # TODO - can be modeled see manager line 1483 or below
     tool_shed_repository: Optional[Dict[str, Any]] = Field(
         None,
@@ -535,12 +470,6 @@ class WorkflowDictExportSteps(Model):
         title="Tool Representation",
         description="The representation of the tool associated with the step.",
     )
-    # TODO - can be modeled see manager line 1500
-    post_job_actions: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Post Job Actions",
-        description="A dictionary containing post-job actions associated with the step.",
-    )
     # TODO - can also be WorkflowDictExportSummary see manager line 1512
     subworkflow: Optional[Dict[str, Any]] = Field(
         None,
@@ -553,18 +482,6 @@ class WorkflowDictExportSteps(Model):
         title="Inputs",
         description="The inputs of the step.",
     )
-    # TODO - can be modeled see manager line 1535 and 1543
-    workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Workflow Outputs",
-        description="A list of workflow outputs for the step.",
-    )
-    # TODO - can be modeled see manager line 1546
-    outputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Outputs",
-        description="The outputs of the step.",
-    )
     # TODO - can be modeled see manager line 1551
     in_parameter: Optional[Dict[str, Any]] = Field(
         None, title="In", description="The input connections of the step.", alias="in"
@@ -573,11 +490,6 @@ class WorkflowDictExportSteps(Model):
         None,
         title="Input Connections",
         description="The input connections of the step.",
-    )
-    position: Optional[Any] = Field(
-        None,
-        title="Position",
-        description="The position of the step.",
     )
 
 
