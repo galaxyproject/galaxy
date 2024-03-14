@@ -1,16 +1,23 @@
+import typing
+from copy import deepcopy
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Any,
+    Callable,
     Dict,
     List,
     Optional,
+    TypeVar,
     Union,
 )
 
 from pydantic import (
     BaseModel,
+    create_model,
     Field,
 )
+from pydantic.fields import FieldInfo
 
 
 class BootstrapAdminUser(BaseModel):
@@ -110,3 +117,42 @@ class PdfDocumentType(str, Enum):
 class APIKeyModel(BaseModel):
     key: str = Field(..., title="Key", description="API key to interact with the Galaxy API")
     create_time: datetime = Field(..., title="Create Time", description="The time and date this API key was created.")
+
+
+T = TypeVar("T", bound="BaseModel")
+
+
+def partial_model(
+    include: Optional[list[str]] = None, exclude: Optional[list[str]] = None
+) -> Callable[[type[T]], type[T]]:
+    """Return a decorator to make model fields optional"""
+
+    if exclude is None:
+        exclude = []
+
+    @typing.no_type_check  # Mypy doesn't understand pydantic's create_model
+    def decorator(model: type[T]) -> type[T]:
+        def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
+            new = deepcopy(field)
+            new.default = default
+            new.annotation = Optional[field.annotation or Any]
+            return new.annotation, new
+
+        fields = model.model_fields
+        if include is None:
+            fields = fields.items()
+        else:
+            fields = ((k, v) for k, v in fields.items() if k in include)
+
+        return create_model(
+            model.__name__,
+            __base__=model,
+            __module__=model.__module__,
+            **{
+                field_name: make_optional(field_info)
+                for field_name, field_info in fields
+                if exclude is None or field_name not in exclude
+            },
+        )
+
+    return decorator

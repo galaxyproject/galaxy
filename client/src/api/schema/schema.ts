@@ -3597,6 +3597,142 @@ export interface components {
         CustomHistoryItem: {
             [key: string]: unknown | undefined;
         };
+        /** CustomHistoryView */
+        CustomHistoryView: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived?: boolean | null;
+            /**
+             * Contents Active
+             * @description Contains the number of active, deleted or hidden items in a History.
+             */
+            contents_active?: components["schemas"]["HistoryActiveContentCounts"] | null;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url?: string | null;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count?: number | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Genome Build
+             * @description TODO
+             */
+            genome_build?: string | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable?: boolean | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published?: boolean | null;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged?: boolean | null;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size?: number | null;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string | null;
+            /**
+             * State
+             * @description The current state of the History based on the states of the datasets it contains.
+             */
+            state?: components["schemas"]["DatasetState"] | null;
+            /**
+             * State Counts
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            state_details?: {
+                [key: string]: number | undefined;
+            } | null;
+            /**
+             * State IDs
+             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
+             */
+            state_ids?: {
+                [key: string]: string[] | undefined;
+            } | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             */
+            user_id?: string | null;
+            /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string | null;
+            [key: string]: unknown | undefined;
+        };
         /**
          * DCESummary
          * @description Dataset Collection Element summary information.
@@ -6378,6 +6514,27 @@ export interface components {
         HelpForumUser: {
             [key: string]: unknown | undefined;
         };
+        /**
+         * HistoryActiveContentCounts
+         * @description Contains the number of active, deleted or hidden items in a History.
+         */
+        HistoryActiveContentCounts: {
+            /**
+             * Active
+             * @description Number of active datasets.
+             */
+            active: number;
+            /**
+             * Deleted
+             * @description Number of deleted datasets.
+             */
+            deleted: number;
+            /**
+             * Hidden
+             * @description Number of hidden datasets.
+             */
+            hidden: number;
+        };
         /** HistoryContentBulkOperationPayload */
         HistoryContentBulkOperationPayload: {
             /** Items */
@@ -6612,26 +6769,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
-        };
-        /**
-         * HistoryMinimal
-         * @description Minimal History Response with optional fields
-         */
-        HistoryMinimal: {
-            /** Id */
-            id?: string | null;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
-             */
-            model_class: "History";
-            /**
-             * User ID
-             * @description The encoded ID of the user that owns this History.
-             */
-            user_id?: string | null;
             [key: string]: unknown | undefined;
         };
         /**
@@ -15139,9 +15276,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15181,9 +15318,9 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15267,9 +15404,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15305,9 +15442,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15373,9 +15510,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15410,9 +15547,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15447,9 +15584,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15507,9 +15644,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15549,9 +15686,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15592,9 +15729,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"]
                     )[];
                 };
             };
@@ -15629,9 +15766,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15670,9 +15807,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15712,9 +15849,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */
@@ -15806,9 +15943,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["CustomHistoryView"];
                 };
             };
             /** @description Validation Error */

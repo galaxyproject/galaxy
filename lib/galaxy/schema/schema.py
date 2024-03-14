@@ -33,6 +33,7 @@ from typing_extensions import (
     Literal,
 )
 
+from galaxy.schema import partial_model
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -1204,18 +1205,6 @@ class UpdateHistoryContentsPayload(HistoryBase):
     )
 
 
-class HistoryMinimal(HistoryBase, WithModelClass):
-    """Minimal History Response with optional fields"""
-
-    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
-    id: Optional[HistoryID] = None
-    user_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="User ID",
-        description="The encoded ID of the user that owns this History.",
-    )
-
-
 class HistorySummary(HistoryBase, WithModelClass):
     """History summary information."""
 
@@ -1341,10 +1330,30 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
     )
 
 
-AnyHistoryView = Union[
-    HistoryDetailed,
-    HistorySummary,
-    HistoryMinimal,
+@partial_model()
+class CustomHistoryView(HistoryDetailed):
+    """History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter. Unfortunately, we cannot know the exact fields that
+    will be requested, so we have to allow all fields to be optional.
+    """
+
+    # Define a few more useful fields to be optional that are not part of HistoryDetailed
+    contents_active: Optional[HistoryActiveContentCounts] = Field(
+        default=None,
+        title="Contents Active",
+        description=("Contains the number of active, deleted or hidden items in a History."),
+    )
+
+
+AnyHistoryView = Annotated[
+    Union[
+        HistorySummary,
+        HistoryDetailed,
+        CustomHistoryView,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 
