@@ -201,7 +201,9 @@ class FastAPIHistories:
                 offset=offset,
                 search=search,
             )
-            entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+            entries, total_matches = self.service.index_query(
+                trans, payload, serialization_params, include_total_count=True
+            )
             response.headers["total_matches"] = str(total_matches)
             return entries
 
