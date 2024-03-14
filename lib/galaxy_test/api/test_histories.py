@@ -346,6 +346,10 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             history_id, contents=["Hello", "World"], direct_upload=True
         )
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response.json())
+        history = self._show(history_id)
+        assert "update_time" in history
+        original_update_time = history["update_time"]
+
         copied_history_response = self.dataset_populator.copy_history(history_id)
         copied_history_response.raise_for_status()
         copied_history = copied_history_response.json()
@@ -365,6 +369,10 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert source_hda["id"] != copied_hda["id"]
         assert source_hda["history_id"] != copied_hda["history_id"]
         assert source_hda["hid"] == copied_hda["hid"] == 2
+
+        history = self._show(history_id)
+        new_update_time = history["update_time"]
+        assert original_update_time == new_update_time
 
     # TODO: (CE) test_create_from_copy
     def test_import_from_model_store_dict(self):
