@@ -24,6 +24,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    username: undefined,
 });
 </script>
 
