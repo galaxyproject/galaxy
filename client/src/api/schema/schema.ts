@@ -6836,6 +6836,21 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
              * Type
              * @constant
              */
@@ -6863,6 +6878,21 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
              * Type
              * @constant
              */
@@ -6889,6 +6919,21 @@ export interface components {
             input_steps: {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
             /**
              * Type
              * @constant
@@ -9662,6 +9707,21 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
              * Type
              * @constant
              */
@@ -11068,6 +11128,21 @@ export interface components {
             input_steps: {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
             /**
              * Type
              * @constant

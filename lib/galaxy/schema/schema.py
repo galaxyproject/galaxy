@@ -2216,6 +2216,15 @@ class WorkflowStepBase(Model):
         description="A dictionary containing information about the inputs connected to this workflow step.",
     )
     when: Optional[str]
+    # TODO: these should move to ToolStep, however we might be breaking scripts that iterate over steps and
+    # assume tool_id is a valid key for every step.
+    tool_id: Optional[str] = Field(
+        None, title="Tool ID", description="The unique name of the tool associated with this step."
+    )
+    tool_version: Optional[str] = Field(
+        None, title="Tool Version", description="The version of the tool associated with this step."
+    )
+    tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
 class InputDataStep(WorkflowStepBase):
@@ -2236,13 +2245,6 @@ class PauseStep(WorkflowStepBase):
 
 class ToolStep(WorkflowStepBase):
     type: Literal["tool"]
-    tool_id: Optional[str] = Field(
-        None, title="Tool ID", description="The unique name of the tool associated with this step."
-    )
-    tool_version: Optional[str] = Field(
-        None, title="Tool Version", description="The version of the tool associated with this step."
-    )
-    tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
 class SubworkflowStep(WorkflowStepBase):
