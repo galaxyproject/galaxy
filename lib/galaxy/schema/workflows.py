@@ -39,6 +39,15 @@ WorkflowAnnotationField = Annotated[
     ),
 ]
 
+WorkflowCreator = Annotated[
+    Optional[List[Union[Person, Organization]]],
+    Field(
+        None,
+        title="Creator",
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
+    ),
+]
+
 
 class GetTargetHistoryPayload(Model):
     # TODO - Are the descriptions correct?
@@ -198,11 +207,7 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
     inputs: Dict[int, WorkflowInput] = Field(
         {}, title="Inputs", description="A dictionary containing information about all the inputs of the workflow."
     )
-    creator: Optional[List[Union[Person, Organization]]] = Field(
-        None,
-        title="Creator",
-        description=("Additional information about the creator (or multiple creators) of this workflow."),
-    )
+    creator: WorkflowCreator
     steps: Dict[
         int,
         Annotated[
@@ -619,11 +624,7 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
         title="License",
         description="The license information for the workflow.",
     )
-    creator: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Creator",
-        description="Metadata about the creator of the workflow.",
-    )
+    creator: WorkflowCreator
     source_metadata: Optional[Dict[str, Any]] = Field(
         None,
         title="Source Metadata",
@@ -701,11 +702,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="Report",
         description="The configuration for generating a report for the workflow.",
     )
-    creator: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Creator",
-        description="Metadata about the creator of the workflow.",
-    )
+    creator: WorkflowCreator
     license: Optional[str] = Field(
         None,
         title="License",
@@ -735,11 +732,7 @@ class WorkflowDictFormat2Summary(Model):
         title="Label",
         description="The label or name of the workflow.",
     )
-    creator: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Creator",
-        description="Metadata about the creator of the workflow.",
-    )
+    creator: WorkflowCreator
     license: Optional[str] = Field(
         None,
         title="License",
