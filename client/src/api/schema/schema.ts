@@ -13088,14 +13088,14 @@ export interface components {
             config_form?: Record<string, never> | null;
             /**
              * Content ID
-             * @description The identifier for the content of the step.
+             * @description The content ID of the step.
              */
             content_id?: string | null;
             /**
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string[] | null;
+            errors?: string[] | string | null;
             /**
              * ID
              * @description The order index of the step.
@@ -13111,11 +13111,6 @@ export interface components {
              * @description The inputs of the step.
              */
             inputs?: Record<string, never>[] | null;
-            /**
-             * Label
-             * @description The label of the step.
-             */
-            label?: string | null;
             /**
              * Name
              * @description The name of the step.
@@ -13135,15 +13130,30 @@ export interface components {
              * Post Job Actions
              * @description A dictionary of post-job actions for the step.
              */
-            post_job_actions?: Record<string, never> | null;
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Label
+             * @description The label of the step.
+             */
+            step_label?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            step_type: components["schemas"]["WorkflowModuleType"];
+            /**
+             * Tool ID
+             * @description The tool ID associated with the step.
+             */
+            tool_id?: string | null;
             /**
              * Tool State
-             * @description The state of the step's tool.
+             * @description The state of the tool associated with the step
              */
-            tool_state?: Record<string, never> | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
-             * @description The version of the step's tool.
+             * @description The version of the tool associated with the step.
              */
             tool_version?: string | null;
             /**
@@ -13151,11 +13161,6 @@ export interface components {
              * @description The tooltip for the step.
              */
             tooltip?: string | null;
-            /**
-             * Type
-             * @description The type of workflow module.
-             */
-            type: components["schemas"]["WorkflowModuleType"];
             /**
              * UUID
              * @description The UUID of the step.
@@ -13186,9 +13191,11 @@ export interface components {
             comments: Record<string, never>[];
             /**
              * Creator
-             * @description Metadata about the creator of the workflow.
+             * @description Additional information about the creator (or multiple creators) of this workflow.
              */
-            creator?: Record<string, never> | null;
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
             /**
              * License
              * @description The license information for the workflow.
@@ -13233,7 +13240,7 @@ export interface components {
         WorkflowDictExportSteps: {
             /**
              * Annotation
-             * @description The annotation associated with the step.
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
              */
             annotation?: string | null;
             /**
@@ -13245,7 +13252,7 @@ export interface components {
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string | null;
+            errors?: string[] | string | null;
             /**
              * ID
              * @description The order index of the step.
@@ -13269,11 +13276,6 @@ export interface components {
              */
             inputs?: Record<string, never>[] | null;
             /**
-             * Label
-             * @description The label of the step (optional).
-             */
-            label?: string | null;
-            /**
              * Name
              * @description The name of the step.
              */
@@ -13290,9 +13292,19 @@ export interface components {
             position?: Record<string, never> | null;
             /**
              * Post Job Actions
-             * @description A dictionary containing post-job actions associated with the step.
+             * @description A dictionary of post-job actions for the step.
              */
-            post_job_actions?: Record<string, never> | null;
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Label
+             * @description The label of the step.
+             */
+            step_label?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            step_type: components["schemas"]["WorkflowModuleType"];
             /**
              * Sub Workflow
              * @description The sub-workflow associated with the step.
@@ -13300,7 +13312,7 @@ export interface components {
             subworkflow?: Record<string, never> | null;
             /**
              * Tool ID
-             * @description The tool ID associated with the step (applicable only if the step type is 'tool').
+             * @description The tool ID associated with the step.
              */
             tool_id?: string | null;
             /**
@@ -13315,19 +13327,14 @@ export interface components {
             tool_shed_repository?: Record<string, never> | null;
             /**
              * Tool State
-             * @description The serialized state of the tool associated with the step.
+             * @description The state of the tool associated with the step
              */
-            tool_state?: string | null;
+            tool_state?: Record<string, never> | string | null;
             /**
              * Tool Version
              * @description The version of the tool associated with the step.
              */
             tool_version?: string | null;
-            /**
-             * Type
-             * @description The type of the step.
-             */
-            type: components["schemas"]["WorkflowModuleType"];
             /**
              * UUID
              * @description The UUID (Universally Unique Identifier) of the step.
@@ -13335,7 +13342,7 @@ export interface components {
             uuid: string;
             /**
              * When
-             * @description The when expression of the step.
+             * @description The when expression for the step.
              */
             when?: string | null;
             /**
@@ -13363,14 +13370,16 @@ export interface components {
             comments?: Record<string, never>[] | null;
             /**
              * Creator
-             * @description Metadata about the creator of the workflow.
+             * @description Additional information about the creator (or multiple creators) of this workflow.
              */
-            creator?: Record<string, never> | null;
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
             /**
              * Format Version
              * @description The version of the workflow format being used.
              */
-            format_version?: string | null;
+            "format-version"?: string | null;
             /**
              * License
              * @description The license information for the workflow.
@@ -13423,9 +13432,11 @@ export interface components {
             class: string;
             /**
              * Creator
-             * @description Metadata about the creator of the workflow.
+             * @description Additional information about the creator (or multiple creators) of this workflow.
              */
-            creator?: Record<string, never> | null;
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
             /**
              * Inputs
              * @description A dictionary representing the inputs of the workflow.
@@ -13488,10 +13499,15 @@ export interface components {
              */
             annotation?: string | null;
             /**
-             * Errors
-             * @description Any errors associated with the subworkflow.
+             * Content ID
+             * @description The content ID of the step.
              */
-            errors?: string[] | null;
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description Any errors associated with the step.
+             */
+            errors?: string[] | string | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -13508,20 +13524,50 @@ export interface components {
              */
             order_index: number;
             /**
+             * Outputs
+             * @description The outputs of the step.
+             */
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description The position of the step.
+             */
+            position?: Record<string, never> | null;
+            /**
+             * Post Job Actions
+             * @description A dictionary of post-job actions for the step.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            step_type: components["schemas"]["WorkflowModuleType"];
+            /**
              * Tool ID
-             * @description The unique name of the tool associated with this step.
+             * @description The tool ID associated with the step.
              */
             tool_id?: string | null;
             /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
              * Tool Version
-             * @description The version of the tool associated with this step.
+             * @description The version of the tool associated with the step.
              */
             tool_version?: string | null;
             /**
-             * Type
-             * @description The type of workflow module.
+             * When
+             * @description The when expression for the step.
              */
-            type: components["schemas"]["WorkflowModuleType"];
+            when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description A list of workflow outputs for the step.
+             */
+            workflow_outputs?: Record<string, never>[] | null;
         };
         /** WorkflowDictPreviewSummary */
         WorkflowDictPreviewSummary: {
@@ -13549,6 +13595,16 @@ export interface components {
              */
             annotation?: string | null;
             /**
+             * Content ID
+             * @description The content ID of the step.
+             */
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description Any errors associated with the step.
+             */
+            errors?: string[] | string | null;
+            /**
              * Inputs
              * @description The inputs of the step.
              */
@@ -13564,10 +13620,20 @@ export interface components {
              */
             output_connections: Record<string, never>[];
             /**
-             * Post Job Actions
-             * @description A list of dictionaries representing the post-job actions for the step.
+             * Outputs
+             * @description The outputs of the step.
              */
-            post_job_actions?: Record<string, never>[] | null;
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description The position of the step.
+             */
+            position?: Record<string, never> | null;
+            /**
+             * Post Job Actions
+             * @description A dictionary of post-job actions for the step.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
             /**
              * Replacement Parameters
              * @description Informal replacement parameters for the step.
@@ -13579,7 +13645,7 @@ export interface components {
              */
             step_index: number;
             /**
-             * Step Label
+             * Label
              * @description The label of the step.
              */
             step_label?: string | null;
@@ -13589,8 +13655,8 @@ export interface components {
              */
             step_name: string;
             /**
-             * Step Type
-             * @description The type of the step.
+             * Type
+             * @description The type of the module that represents a step in the workflow.
              */
             step_type: components["schemas"]["WorkflowModuleType"];
             /**
@@ -13599,10 +13665,30 @@ export interface components {
              */
             step_version?: string | null;
             /**
+             * Tool ID
+             * @description The tool ID associated with the step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with the step.
+             */
+            tool_version?: string | null;
+            /**
              * When
              * @description The when expression for the step.
              */
             when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description A list of workflow outputs for the step.
+             */
+            workflow_outputs?: Record<string, never>[] | null;
         };
         /** WorkflowDictRunSummary */
         WorkflowDictRunSummary: {
