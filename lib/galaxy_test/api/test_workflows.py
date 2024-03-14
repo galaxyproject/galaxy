@@ -328,6 +328,15 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         # workflow was created first in this instance.
         assert sorted(step["id"] for step in workflow["steps"].values()) != [0, 1, 2]
 
+    def test_show_subworkflow(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_NESTED_SIMPLE)
+        workflow = self._get(f"workflows/{workflow_id}", {"style": "instance"}).json()
+        assert isinstance(workflow["id"], str)
+        subworkflow_step = workflow["steps"]["2"]
+        assert subworkflow_step["type"] == "subworkflow"
+        assert isinstance(subworkflow_step["workflow_id"], str)
+        self._get(f"workflows/{subworkflow_step['workflow_id']}", {"style": "instance"}).json()
+
     def test_show_invalid_key_is_400(self):
         show_response = self._get(f"workflows/{self._random_key()}")
         self._assert_status_code_is(show_response, 400)
