@@ -11,13 +11,14 @@ import { useUserStore } from "@/stores/userStore";
 import Heading from "@/components/Common/Heading.vue";
 import LoginRequired from "@/components/Common/LoginRequired.vue";
 import GridList from "@/components/Grid/GridList.vue";
+import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 const userStore = useUserStore();
 
 library.add(faPlus);
 
 interface Props {
-    activeList?: "my" | "shared" | "published";
+    activeList?: "archived" | "my" | "shared" | "published";
     username?: string;
 }
 
@@ -64,9 +65,17 @@ const props = withDefaults(defineProps<Props>(), {
             <BNavItem id="histories-published-tab" :active="activeList === 'published'" to="/histories/list_published">
                 Public Histories
             </BNavItem>
+            <BNavItem id="histories-published-tab" :active="activeList === 'archived'" to="/histories/archived">
+                Archived Histories
+            </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
         <GridList v-else-if="activeList === 'shared'" :grid-config="historiesSharedGridConfig" embedded />
-        <GridList v-else :grid-config="historiesPublishedGridConfig" :username-search="props.username" embedded />
+        <GridList
+            v-else-if="activeList === 'published'"
+            :grid-config="historiesPublishedGridConfig"
+            :username-search="props.username"
+            embedded />
+        <HistoryArchive v-else />
     </div>
 </template>
