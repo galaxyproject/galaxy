@@ -191,7 +191,7 @@ class FastAPIHistories:
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )
         else:
-            payload = HistoryIndexQueryPayload.construct(
+            payload = HistoryIndexQueryPayload.model_construct(
                 show_own=show_own,
                 show_published=show_published,
                 show_shared=show_shared,
