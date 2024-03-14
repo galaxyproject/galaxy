@@ -399,6 +399,7 @@ watch(operationMessage, () => {
     top: 0;
 }
 .grid-sticky {
+    left: 0;
     z-index: 2;
     background: $white;
     opacity: 0.95;
