@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BAlert, BButton, BFormCheckbox, BOverlay, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -64,11 +64,12 @@ const selectedIndeterminate = computed(() => ![0, gridData.value.length].include
 const currentPage = ref(1);
 const totalRows = ref(0);
 
-// loading indicator
-const loading = ref(true);
+// loading indicators
+const initDataLoading = ref(true);
+const resultsLoading = ref(false);
 
-// check if loading has completed and data rows are available
-const isAvailable = computed(() => !loading.value && totalRows.value > 0);
+// check if `initDataLoading` has completed and data rows are available
+const isAvailable = computed(() => !initDataLoading.value && totalRows.value > 0);
 
 // sort references
 const sortBy = ref(props.gridConfig ? props.gridConfig.sortBy : "");
@@ -112,11 +113,13 @@ function displayInitialMessage() {
  * Request grid data
  */
 async function getGridData() {
+    resultsLoading.value = true;
     selected.value = new Set();
     if (props.gridConfig) {
         if (Object.keys(invalidFilters.value).length > 0) {
             // there are invalid filters, so we don't want to search
-            loading.value = false;
+            initDataLoading.value = false;
+            resultsLoading.value = false;
             return;
         }
         try {
@@ -131,10 +134,11 @@ async function getGridData() {
             gridData.value = responseData;
             totalRows.value = responseTotal;
             errorMessage.value = "";
-            loading.value = false;
         } catch (e) {
             errorMessage.value = `Failed to obtain grid data: ${e}`;
-            loading.value = false;
+        } finally {
+            initDataLoading.value = false;
+            resultsLoading.value = false;
         }
     }
 }
@@ -229,7 +233,7 @@ function validatedFilterText() {
  */
 onMounted(() => {
     if (props.usernameSearch) {
-        filterText.value = filterClass.setFilterValue(filterText.value, "user", props.usernameSearch);
+        filterText.value = filterClass.setFilterValue(filterText.value, "user", `'${props.usernameSearch}'`);
     }
     getGridData();
     eventBus.on(onRouterPush);
@@ -282,11 +286,11 @@ watch(operationMessage, () => {
                 :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                 :filter-class="filterClass"
                 :filter-text.sync="filterText"
-                :loading="loading"
+                :loading="initDataLoading || resultsLoading"
                 :show-advanced.sync="showAdvanced" />
             <hr v-if="showAdvanced" />
         </div>
-        <LoadingSpan v-if="loading" />
+        <LoadingSpan v-if="initDataLoading" />
         <span v-else-if="!isAvailable || Object.keys(invalidFilters).length > 0" variant="info" show>
             <BAlert v-if="Object.keys(invalidFilters).length === 0" variant="info" show>
                 <span v-if="filterText">
@@ -308,83 +312,93 @@ watch(operationMessage, () => {
                 </a>
             </BAlert>
         </span>
-        <table v-else class="grid-table">
-            <thead>
-                <th v-if="!!gridConfig.batch">
-                    <BFormCheckbox
-                        class="m-2"
-                        :checked="selectedAll"
-                        :indeterminate="selectedIndeterminate"
-                        @change="onSelectAll" />
-                </th>
-                <th
-                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
-                    :key="fieldIndex"
-                    class="text-nowrap px-2"
-                    :data-description="`grid header ${fieldIndex}`">
-                    <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                        <BButton
-                            variant="link"
-                            class="text-nowrap font-weight-bold"
-                            :data-description="`grid sort key ${fieldEntry.key}`"
-                            @click="onSort(fieldEntry.key)">
-                            <span>{{ fieldEntry.title || fieldEntry.key }}</span>
-                            <span v-if="sortBy === fieldEntry.key">
-                                <FontAwesomeIcon v-if="sortDesc" icon="caret-down" data-description="grid sort desc" />
-                                <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
-                            </span>
-                        </BButton>
-                    </span>
-                    <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
-                </th>
-            </thead>
-            <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
-                <td v-if="!!gridConfig.batch">
-                    <BFormCheckbox
-                        :checked="selected.has(rowData)"
-                        class="m-2 cursor-pointer"
-                        data-description="grid selected"
-                        @change="onSelect(rowData)" />
-                </td>
-                <td
-                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
-                    :key="fieldIndex"
-                    class="px-2 py-3"
-                    :style="{ width: `${fieldEntry.width}%` }">
-                    <div
-                        v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
-                        :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
-                        <GridOperations
-                            v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
-                            :operations="fieldEntry.operations"
-                            :row-data="rowData"
-                            :title="rowData[fieldEntry.key]"
-                            @execute="onOperation($event, rowData)" />
-                        <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
-                        <GridDatasets v-else-if="fieldEntry.type == 'datasets'" :history-id="rowData[fieldEntry.key]" />
-                        <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
-                        <GridLink
-                            v-else-if="fieldEntry.type == 'link'"
-                            :text="rowData[fieldEntry.key]"
-                            @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
-                        <SharingIndicators
-                            v-else-if="fieldEntry.type == 'sharing'"
-                            :object="rowData"
-                            @filter="onFilter($event)" />
-                        <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
-                        <StatelessTags
-                            v-else-if="fieldEntry.type == 'tags'"
-                            clickable
-                            :value="rowData[fieldEntry.key]"
-                            :disabled="fieldEntry.disabled"
-                            @input="onTagInput(rowData, $event, fieldEntry.handler)"
-                            @tag-click="applyFilter('tag', $event, true)" />
-                        <span v-else v-localize> Not available. </span>
-                    </div>
-                    <FontAwesomeIcon v-else icon="fa-shield-alt" />
-                </td>
-            </tr>
-        </table>
+        <BOverlay v-else :show="resultsLoading" rounded="sm">
+            <table class="grid-table">
+                <thead>
+                    <th v-if="!!gridConfig.batch">
+                        <BFormCheckbox
+                            class="m-2"
+                            :checked="selectedAll"
+                            :indeterminate="selectedIndeterminate"
+                            @change="onSelectAll" />
+                    </th>
+                    <th
+                        v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
+                        :key="fieldIndex"
+                        class="text-nowrap px-2"
+                        :data-description="`grid header ${fieldIndex}`">
+                        <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
+                            <BButton
+                                variant="link"
+                                class="text-nowrap font-weight-bold"
+                                :data-description="`grid sort key ${fieldEntry.key}`"
+                                @click="onSort(fieldEntry.key)">
+                                <span>{{ fieldEntry.title || fieldEntry.key }}</span>
+                                <span v-if="sortBy === fieldEntry.key">
+                                    <FontAwesomeIcon
+                                        v-if="sortDesc"
+                                        icon="caret-down"
+                                        data-description="grid sort desc" />
+                                    <FontAwesomeIcon v-else icon="caret-up" data-description="grid sort asc" />
+                                </span>
+                            </BButton>
+                        </span>
+                        <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
+                    </th>
+                </thead>
+                <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
+                    <td v-if="!!gridConfig.batch">
+                        <BFormCheckbox
+                            :checked="selected.has(rowData)"
+                            class="m-2 cursor-pointer"
+                            data-description="grid selected"
+                            @change="onSelect(rowData)" />
+                    </td>
+                    <td
+                        v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
+                        :key="fieldIndex"
+                        class="px-2 py-3"
+                        :style="{ width: `${fieldEntry.width}%` }">
+                        <div
+                            v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
+                            :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
+                            <GridOperations
+                                v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
+                                :operations="fieldEntry.operations"
+                                :row-data="rowData"
+                                :title="rowData[fieldEntry.key]"
+                                @execute="onOperation($event, rowData)" />
+                            <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
+                            <GridDatasets
+                                v-else-if="fieldEntry.type == 'datasets'"
+                                :history-id="rowData[fieldEntry.key]" />
+                            <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
+                            <GridLink
+                                v-else-if="fieldEntry.type == 'link'"
+                                :text="rowData[fieldEntry.key]"
+                                @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
+                            <SharingIndicators
+                                v-else-if="fieldEntry.type == 'sharing'"
+                                :object="rowData"
+                                @filter="onFilter($event)" />
+                            <UtcDate
+                                v-else-if="fieldEntry.type == 'date'"
+                                :date="rowData[fieldEntry.key]"
+                                mode="elapsed" />
+                            <StatelessTags
+                                v-else-if="fieldEntry.type == 'tags'"
+                                clickable
+                                :value="rowData[fieldEntry.key]"
+                                :disabled="fieldEntry.disabled"
+                                @input="onTagInput(rowData, $event, fieldEntry.handler)"
+                                @tag-click="applyFilter('tag', $event, true)" />
+                            <span v-else v-localize> Not available. </span>
+                        </div>
+                        <FontAwesomeIcon v-else icon="fa-shield-alt" />
+                    </td>
+                </tr>
+            </table>
+        </BOverlay>
         <div class="flex-grow-1 h-100" />
         <div class="grid-footer">
             <div v-if="isAvailable" class="d-flex justify-content-between pt-3">
