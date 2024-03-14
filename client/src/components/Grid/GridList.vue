@@ -363,7 +363,7 @@ watch(operationMessage, () => {
         </table>
         <div class="flex-grow-1 h-100" />
         <div class="grid-footer">
-            <div v-if="isAvailable && gridConfig.batch" class="d-flex justify-content-between pt-3">
+            <div v-if="isAvailable" class="d-flex justify-content-between pt-3">
                 <div class="d-flex">
                     <div v-for="(batchOperation, batchIndex) in gridConfig.batch" :key="batchIndex">
                         <BButton
@@ -381,9 +381,6 @@ watch(operationMessage, () => {
                         </BButton>
                     </div>
                 </div>
-                <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
-            </div>
-            <div v-else-if="isAvailable" class="d-flex justify-content-center pt-3">
                 <BPagination v-model="currentPage" :total-rows="totalRows" :per-page="limit" class="m-0" size="sm" />
             </div>
         </div>
