@@ -2099,7 +2099,7 @@ class JobFullDetails(JobDetails):
 
 
 class StoredWorkflowSummary(Model, WithModelClass):
-    id: DecodedDatabaseIdField
+    id: EncodedDatabaseIdField
     model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -2203,33 +2203,39 @@ class InputStep(Model):
     )
 
 
-class WorkflowModuleType(str, Enum):
-    """Available types of modules that represent a step in a Workflow."""
-
-    data_input = "data_input"
-    data_collection_input = "data_collection_input"
-    parameter_input = "parameter_input"
-    subworkflow = "subworkflow"
-    tool = "tool"
-    pause = "pause"  # Experimental
-
-
 class WorkflowStepBase(Model):
     id: int = Field(
         ...,
         title="ID",
         description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
-    type: WorkflowModuleType = Field(..., title="Type", description="The type of workflow module.")
     annotation: Optional[str] = AnnotationField
     input_steps: Dict[str, InputStep] = Field(
         ...,
         title="Input Steps",
         description="A dictionary containing information about the inputs connected to this workflow step.",
     )
+    when: Optional[str]
 
 
-class ToolBasedWorkflowStep(WorkflowStepBase):
+class InputDataStep(WorkflowStepBase):
+    type: Literal["data_input"]
+
+
+class InputDataCollectionStep(WorkflowStepBase):
+    type: Literal["data_collection_input"]
+
+
+class InputParameterStep(WorkflowStepBase):
+    type: Literal["parameter"]
+
+
+class PauseStep(WorkflowStepBase):
+    type: Literal["pause"]
+
+
+class ToolStep(WorkflowStepBase):
+    type: Literal["tool"]
     tool_id: Optional[str] = Field(
         None, title="Tool ID", description="The unique name of the tool associated with this step."
     )
@@ -2239,37 +2245,9 @@ class ToolBasedWorkflowStep(WorkflowStepBase):
     tool_inputs: Any = Field(None, title="Tool Inputs", description="TODO")
 
 
-class InputDataStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_input, title="Type", description="The type of workflow module."
-    )
-
-
-class InputDataCollectionStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.data_collection_input, title="Type", description="The type of workflow module."
-    )
-
-
-class InputParameterStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.parameter_input, title="Type", description="The type of workflow module."
-    )
-
-
-class PauseStep(WorkflowStepBase):
-    type: WorkflowModuleType = Field(WorkflowModuleType.pause, title="Type", description="The type of workflow module.")
-
-
-class ToolStep(ToolBasedWorkflowStep):
-    type: WorkflowModuleType = Field(WorkflowModuleType.tool, title="Type", description="The type of workflow module.")
-
-
 class SubworkflowStep(WorkflowStepBase):
-    type: WorkflowModuleType = Field(
-        WorkflowModuleType.subworkflow, title="Type", description="The type of workflow module."
-    )
-    workflow_id: DecodedDatabaseIdField = Field(
+    type: Literal["subworkflow"]
+    workflow_id: EncodedDatabaseIdField = Field(
         ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
     )
 

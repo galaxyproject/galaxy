@@ -6836,26 +6836,12 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
-             * Tool ID
-             * @description The unique name of the tool associated with this step.
-             */
-            tool_id?: string | null;
-            /**
-             * Tool Inputs
-             * @description TODO
-             */
-            tool_inputs?: Record<string, never>;
-            /**
-             * Tool Version
-             * @description The version of the tool associated with this step.
-             */
-            tool_version?: string | null;
-            /**
              * Type
-             * @description The type of workflow module.
-             * @default data_collection_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "data_collection_input";
+            /** When */
+            when: string | null;
         };
         /** InputDataStep */
         InputDataStep: {
@@ -6877,26 +6863,12 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
-             * Tool ID
-             * @description The unique name of the tool associated with this step.
-             */
-            tool_id?: string | null;
-            /**
-             * Tool Inputs
-             * @description TODO
-             */
-            tool_inputs?: Record<string, never>;
-            /**
-             * Tool Version
-             * @description The version of the tool associated with this step.
-             */
-            tool_version?: string | null;
-            /**
              * Type
-             * @description The type of workflow module.
-             * @default data_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "data_input";
+            /** When */
+            when: string | null;
         };
         /** InputParameterStep */
         InputParameterStep: {
@@ -6918,26 +6890,12 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
-             * Tool ID
-             * @description The unique name of the tool associated with this step.
-             */
-            tool_id?: string | null;
-            /**
-             * Tool Inputs
-             * @description TODO
-             */
-            tool_inputs?: Record<string, never>;
-            /**
-             * Tool Version
-             * @description The version of the tool associated with this step.
-             */
-            tool_version?: string | null;
-            /**
              * Type
-             * @description The type of workflow module.
-             * @default parameter_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "parameter";
+            /** When */
+            when: string | null;
         };
         /** InputReferenceByLabel */
         InputReferenceByLabel: {
@@ -9705,10 +9663,11 @@ export interface components {
             };
             /**
              * Type
-             * @description The type of workflow module.
-             * @default pause
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "pause";
+            /** When */
+            when: string | null;
         };
         /** Person */
         Person: {
@@ -11111,10 +11070,11 @@ export interface components {
             };
             /**
              * Type
-             * @description The type of workflow module.
-             * @default subworkflow
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "subworkflow";
+            /** When */
+            when: string | null;
             /**
              * Workflow ID
              * @description The encoded ID of the workflow that will be run on this step.
@@ -11301,10 +11261,11 @@ export interface components {
             tool_version?: string | null;
             /**
              * Type
-             * @description The type of workflow module.
-             * @default tool
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "tool";
+            /** When */
+            when: string | null;
         };
         /** Tour */
         Tour: {
@@ -12303,18 +12264,6 @@ export interface components {
                 [key: string]: number | undefined;
             };
         };
-        /**
-         * WorkflowModuleType
-         * @description Available types of modules that represent a step in a Workflow.
-         * @enum {string}
-         */
-        WorkflowModuleType:
-            | "data_input"
-            | "data_collection_input"
-            | "parameter_input"
-            | "subworkflow"
-            | "tool"
-            | "pause";
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
             /**

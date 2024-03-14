@@ -1615,9 +1615,9 @@ class WorkflowContentsManager(UsesAnnotations):
     def _workflow_to_dict_instance(self, trans, stored, workflow, legacy=True):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
-        item = stored.to_dict(view="element", value_mapper={"id": encode})
+        item = stored.to_dict(view="element")
         item["name"] = workflow.name
-        item["url"] = trans.url_builder("workflow", id=item["id"])
+        item["url"] = trans.url_builder("workflow", id=encode(stored.id))
         item["owner"] = stored.user.username
         item["email_hash"] = md5_hash_str(stored.user.email)
         item["slug"] = stored.slug
@@ -1668,7 +1668,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 del step_dict["tool_id"]
                 del step_dict["tool_version"]
                 del step_dict["tool_inputs"]
-                step_dict["workflow_id"] = encode(step.subworkflow.id)
+                step_dict["workflow_id"] = step.subworkflow.id
 
             for conn in step.input_connections:
                 step_id = step.id if legacy else step.order_index
