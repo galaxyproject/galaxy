@@ -2617,6 +2617,7 @@ class SubworkflowStepToExport(WorkflowStepToExportBase):
     )
 
 
+# TODO - move to schema of workflow
 class WorkflowToExport(Model):
     a_galaxy_workflow: str = Field(  # Is this meant to be a bool instead?
         "true", title="Galaxy Workflow", description="Whether this workflow is a Galaxy Workflow."
