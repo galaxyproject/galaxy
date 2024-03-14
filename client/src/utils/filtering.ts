@@ -104,7 +104,7 @@ export function toLowerNoQuotes<T>(value: T): string {
 
 /** Converts name tags starting with '#' to 'name:'
  * @param value
- * @returns Lowercase value with 'name:' replaced with '#'
+ * @returns String value with 'name:' replaced with '#'
  * */
 export function expandNameTag<T>(value: T): string {
     if (value && typeof value === "string") {
@@ -114,7 +114,7 @@ export function expandNameTag<T>(value: T): string {
             value = value.replace(/^#/, "name:") as T;
         }
     }
-    return toLower(value);
+    return value as string;
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
@@ -233,7 +233,9 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
  * @param validAliases: Array of valid aliases for filters
  * @param quoteStrings: Whether to auto quote filter strings in the query
  * @param nameMatching: Whether to apply name filter for unspecified filterText
- *                      (e.g. filterText = 'foo' -> 'name:foo')
+ *                      (e.g. filterText = 'foo' -> 'name:foo').
+ *                      Typically, when this is false, we index every field in
+ *                      the backend for unspecified filterText.
  * @returns Filtering object
  * */
 export default class Filtering<T> {
@@ -588,11 +590,10 @@ export default class Filtering<T> {
             if (converter) {
                 if (
                     (converter == toBool && filterValue == "any") ||
-                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string))
+                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string)) ||
+                    (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter))
                 ) {
                     return filterValue;
-                } else if (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter)) {
-                    return toLower(filterValue) as T;
                 }
                 return converter(filterValue);
             } else {

@@ -21,6 +21,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const emit = defineEmits<{
+    (e: "update-filter", key: string, value: any): void;
+}>();
+
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -69,10 +73,12 @@ function onCopyLink() {
 
 function onViewMySharedByUser() {
     router.push(`/workflows/list_shared_with_me?owner=${props.workflow.owner}`);
+    emit("update-filter", "user", `'${props.workflow.owner}'`);
 }
 
 function onViewUserPublished() {
     router.push(`/workflows/list_published?owner=${props.workflow.owner}`);
+    emit("update-filter", "user", `'${props.workflow.owner}'`);
 }
 </script>
 

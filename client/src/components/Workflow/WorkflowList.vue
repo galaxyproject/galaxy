@@ -169,7 +169,7 @@ watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
 
 onMounted(() => {
     if (router.currentRoute.query.owner) {
-        updateFilterValue("user", router.currentRoute.query.owner);
+        updateFilterValue("user", `'${router.currentRoute.query.owner}'`);
     }
     load();
 });
@@ -273,9 +273,9 @@ onMounted(() => {
                         >: {{ value }}
                     </li>
                 </ul>
-                <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()"
-                    >Remove invalid filters from query</a
-                >
+                <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
+                    Remove invalid filters from query
+                </a>
             </BAlert>
         </span>
 
@@ -294,7 +294,8 @@ onMounted(() => {
                 :grid-view="view === 'grid'"
                 :class="view === 'grid' ? 'grid-view' : 'list-view'"
                 @refreshList="load"
-                @tagClick="(tag) => updateFilterValue('tag', tag)" />
+                @tagClick="(tag) => updateFilterValue('tag', `'${tag}'`)"
+                @update-filter="updateFilterValue" />
 
             <BPagination
                 v-if="!loading && totalWorkflows > limit"

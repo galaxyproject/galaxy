@@ -37,6 +37,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "tagClick", tag: string): void;
     (e: "refreshList", overlayLoading?: boolean, b?: boolean): void;
+    (e: "update-filter", key: string, value: any): void;
 }>();
 
 const userStore = useUserStore();
@@ -124,7 +125,7 @@ async function onTagClick(tag: string) {
                 'workflow-shared': workflow.published,
             }">
             <div class="workflow-card-header">
-                <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
+                <WorkflowIndicators :workflow="workflow" :published-view="publishedView" @update-filter="(k, v) => emit('update-filter', k, v)" />
 
                 <div class="workflow-count-actions">
                     <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />

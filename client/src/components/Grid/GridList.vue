@@ -378,7 +378,7 @@ watch(operationMessage, () => {
                             :value="rowData[fieldEntry.key]"
                             :disabled="fieldEntry.disabled"
                             @input="onTagInput(rowData, $event, fieldEntry.handler)"
-                            @tag-click="applyFilter('tag', $event)" />
+                            @tag-click="applyFilter('tag', $event, true)" />
                         <span v-else v-localize> Not available. </span>
                     </div>
                     <FontAwesomeIcon v-else icon="fa-shield-alt" />
