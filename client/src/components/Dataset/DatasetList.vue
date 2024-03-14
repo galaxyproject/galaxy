@@ -17,7 +17,7 @@
                 </template>
                 <template v-slot:cell(history_id)="row">
                     <SwitchToHistoryLink
-                        :historyId="row.item.history_id"
+                        :history-id="row.item.history_id"
                         :filters="{ deleted: row.item.deleted, visible: row.item.visible, hid: row.item.hid }" />
                 </template>
                 <template v-slot:cell(tags)="row">
