@@ -24,6 +24,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
+    username: undefined,
 });
 </script>
 
@@ -65,8 +66,16 @@ const props = withDefaults(defineProps<Props>(), {
             <BNavItem id="histories-published-tab" :active="activeList === 'published'" to="/histories/list_published">
                 Public Histories
             </BNavItem>
-            <BNavItem id="histories-published-tab" :active="activeList === 'archived'" to="/histories/archived">
+            <BNavItem
+                id="histories-archived-tab"
+                :active="activeList === 'archived'"
+                :disabled="userStore.isAnonymous"
+                to="/histories/archived">
                 Archived Histories
+                <LoginRequired
+                    v-if="userStore.isAnonymous"
+                    target="histories-archived-tab"
+                    title="Manage your Histories" />
             </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="historiesGridConfig" embedded />
