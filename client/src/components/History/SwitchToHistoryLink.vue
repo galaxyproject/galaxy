@@ -18,6 +18,7 @@ const historyStore = useHistoryStore();
 
 interface Props {
     historyId: string;
+    filters?: Record<string, string | boolean>;
 }
 
 const props = defineProps<Props>();
@@ -30,7 +31,11 @@ const actionText = computed(() => (canSwitch.value ? "Switch to" : "View in new 
 
 function onClick(history: HistorySummary) {
     if (canSwitch.value) {
-        historyStore.setCurrentHistory(history.id);
+        if (props.filters) {
+            historyStore.applyFilters(history.id, props.filters);
+        } else {
+            historyStore.setCurrentHistory(history.id);
+        }
         return;
     }
     viewHistoryInNewTab(history);

@@ -16,7 +16,9 @@
                     <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
                 </template>
                 <template v-slot:cell(history_id)="row">
-                    <DatasetHistory :item="row.item" />
+                    <SwitchToHistoryLink
+                        :historyId="row.item.history_id"
+                        :filters="{ deleted: row.item.deleted, visible: row.item.visible, hid: row.item.hid }" />
                 </template>
                 <template v-slot:cell(tags)="row">
                     <StatelessTags
@@ -49,17 +51,17 @@ import { copyDataset, getDatasets } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import DatasetHistory from "./DatasetHistory";
-import DatasetName from "./DatasetName";
+import DatasetName from "./DatasetName.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 export default {
     components: {
-        DatasetHistory,
         DatasetName,
         LoadingSpan,
         DelayedInput,
         UtcDate,
         StatelessTags,
+        SwitchToHistoryLink,
     },
     data() {
         return {
