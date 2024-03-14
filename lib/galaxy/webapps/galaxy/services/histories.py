@@ -226,7 +226,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            [self._serialize_history(trans, entry, serialization_params) for entry in entries],
+            [self._serialize_history(trans, entry, serialization_params, default_view="summary") for entry in entries],
             total_matches,
         )
 
