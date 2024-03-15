@@ -35,6 +35,9 @@ jobs:
         run: cat tpv/requirements_test.txt | sed -e '/^galaxy-/ s/-/_/g' | sed -E 's/^galaxy_(.*)$/\.\.\/packages\/\1/g;' > requirements_local.txt
       - name: replace test requirements with updated requirements that point to local packages
         run: mv requirements_local.txt tpv/requirements_test.txt
+      - name: Display requirement contents
+        run: cat requirements_test.txt
+        working-directory: 'tpv'
       - name: Install required packages
         run: pip install tox
       - name: Run tox
