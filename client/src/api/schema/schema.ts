@@ -16926,6 +16926,11 @@ export interface components {
              */
             inputs?: Record<string, never>[] | null;
             /**
+             * Label
+             * @description The label of the step.
+             */
+            label?: string | null;
+            /**
              * Name
              * @description The name of the step.
              */
@@ -16946,16 +16951,6 @@ export interface components {
              */
             post_job_actions?: Record<string, never> | Record<string, never>[] | null;
             /**
-             * Label
-             * @description The label of the step.
-             */
-            step_label?: string | null;
-            /**
-             * Type
-             * @description The type of the module that represents a step in the workflow.
-             */
-            step_type: components["schemas"]["WorkflowModuleType"];
-            /**
              * Tool ID
              * @description The tool ID associated with the step.
              */
@@ -16975,6 +16970,11 @@ export interface components {
              * @description The tooltip for the step.
              */
             tooltip?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
             /**
              * UUID
              * @description The UUID of the step.
@@ -17090,6 +17090,11 @@ export interface components {
              */
             inputs?: Record<string, never>[] | null;
             /**
+             * Label
+             * @description The label of the step.
+             */
+            label?: string | null;
+            /**
              * Name
              * @description The name of the step.
              */
@@ -17109,16 +17114,6 @@ export interface components {
              * @description A dictionary of post-job actions for the step.
              */
             post_job_actions?: Record<string, never> | Record<string, never>[] | null;
-            /**
-             * Label
-             * @description The label of the step.
-             */
-            step_label?: string | null;
-            /**
-             * Type
-             * @description The type of the module that represents a step in the workflow.
-             */
-            step_type: components["schemas"]["WorkflowModuleType"];
             /**
              * Sub Workflow
              * @description The sub-workflow associated with the step.
@@ -17149,6 +17144,11 @@ export interface components {
              * @description The version of the tool associated with the step.
              */
             tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
             /**
              * UUID
              * @description The UUID (Universally Unique Identifier) of the step.
@@ -17353,11 +17353,6 @@ export interface components {
              */
             post_job_actions?: Record<string, never> | Record<string, never>[] | null;
             /**
-             * Type
-             * @description The type of the module that represents a step in the workflow.
-             */
-            step_type: components["schemas"]["WorkflowModuleType"];
-            /**
              * Tool ID
              * @description The tool ID associated with the step.
              */
@@ -17372,6 +17367,11 @@ export interface components {
              * @description The version of the tool associated with the step.
              */
             tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
             /**
              * When
              * @description The when expression for the step.
@@ -17459,7 +17459,7 @@ export interface components {
              */
             step_index: number;
             /**
-             * Label
+             * Step Label
              * @description The label of the step.
              */
             step_label?: string | null;
@@ -17469,10 +17469,10 @@ export interface components {
              */
             step_name: string;
             /**
-             * Type
-             * @description The type of the module that represents a step in the workflow.
+             * Step Type
+             * @description The type of the step.
              */
-            step_type: components["schemas"]["WorkflowModuleType"];
+            step_type: string;
             /**
              * Step Version
              * @description The version of the step's module.
