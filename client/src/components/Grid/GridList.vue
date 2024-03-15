@@ -82,6 +82,7 @@ const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() => Object.fromEntries(filterClass.getFiltersForText(filterText.value, true, false)));
 const validFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).invalidFilters);
+const hasInvalidFilters = computed(() => Object.keys(invalidFilters.value).length > 0);
 
 // hide message helper
 const hideMessage = useDebounceFn(() => {
@@ -116,7 +117,7 @@ async function getGridData() {
     resultsLoading.value = true;
     selected.value = new Set();
     if (props.gridConfig) {
-        if (Object.keys(invalidFilters.value).length > 0) {
+        if (hasInvalidFilters.value) {
             // there are invalid filters, so we don't want to search
             initDataLoading.value = false;
             resultsLoading.value = false;
@@ -291,8 +292,8 @@ watch(operationMessage, () => {
             <hr v-if="showAdvanced" />
         </div>
         <LoadingSpan v-if="initDataLoading" />
-        <span v-else-if="!isAvailable || Object.keys(invalidFilters).length > 0" variant="info" show>
-            <BAlert v-if="Object.keys(invalidFilters).length === 0" variant="info" show>
+        <span v-else-if="!isAvailable || hasInvalidFilters" variant="info" show>
+            <BAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
                     <span v-localize>Nothing found with:</span>
                     <b>{{ filterText }}</b>

@@ -74,12 +74,14 @@ export function helpHtml(activeList = "my") {
 export function WorkflowFilters(activeList = "my") {
     const commonFilters = {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        n: { handler: contains("n"), menuItem: false },
         tag: {
             placeholder: "tag(s)",
             type: "MultiTags",
             handler: contains("tag", "tag", expandNameTag),
             menuItem: true,
         },
+        t: { type: "MultiTags", handler: contains("t", "t", expandNameTag), menuItem: false },
     };
 
     if (activeList === "my") {
@@ -129,6 +131,7 @@ export function WorkflowFilters(activeList = "my") {
                     handler: contains("user"),
                     menuItem: true,
                 },
+                u: { handler: contains("u"), menuItem: false },
                 published: {
                     placeholder: "Filter on published workflows",
                     type: Boolean,
@@ -151,6 +154,7 @@ export function WorkflowFilters(activeList = "my") {
                     handler: contains("user"),
                     menuItem: true,
                 },
+                u: { handler: contains("u"), menuItem: false },
                 shared_with_me: {
                     placeholder: "Filter on workflows shared with me",
                     type: Boolean,

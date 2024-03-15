@@ -125,7 +125,10 @@ async function onTagClick(tag: string) {
                 'workflow-shared': workflow.published,
             }">
             <div class="workflow-card-header">
-                <WorkflowIndicators :workflow="workflow" :published-view="publishedView" @update-filter="(k, v) => emit('update-filter', k, v)" />
+                <WorkflowIndicators
+                    :workflow="workflow"
+                    :published-view="publishedView"
+                    @update-filter="(k, v) => emit('update-filter', k, v)" />
 
                 <div class="workflow-count-actions">
                     <WorkflowInvocationsCount v-if="!isAnonymous && !shared" class="mx-1" :workflow="workflow" />

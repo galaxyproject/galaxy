@@ -78,6 +78,7 @@ const rawFilters = computed(() =>
 );
 const validFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => workflowFilters.value.getValidFilters(rawFilters.value, true).invalidFilters);
+const hasInvalidFilters = computed(() => Object.keys(invalidFilters.value).length > 0);
 
 function updateFilterValue(filterKey: string, newValue: any) {
     const currentFilterText = filterText.value;
@@ -97,7 +98,7 @@ async function load(overlayLoading = false, silent = false) {
         }
     }
     let search;
-    if (Object.keys(invalidFilters.value).length === 0) {
+    if (!hasInvalidFilters.value) {
         search = validatedFilterText();
 
         // append default backend query filters for provided `props.activeList`
@@ -260,8 +261,8 @@ onMounted(() => {
         </BAlert>
 
         <!-- There are either `noResults` or `invalidFilters` -->
-        <span v-else-if="!loading && !overlay && (noResults || Object.keys(invalidFilters).length > 0)">
-            <BAlert v-if="Object.keys(invalidFilters).length === 0" id="no-workflow-found" variant="info" show>
+        <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)">
+            <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
                 No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
             </BAlert>
 
