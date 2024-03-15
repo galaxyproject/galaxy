@@ -2,7 +2,7 @@
     <b-button
         v-if="showAdvanced"
         variant="link"
-        class="w-100"
+        class="w-100 text-decoration-none"
         size="sm"
         @click="$emit('update:show-advanced', !showAdvanced)">
         <slot name="panel-view-selector"></slot><span class="sr-only">Close advanced tool search menu</span>
