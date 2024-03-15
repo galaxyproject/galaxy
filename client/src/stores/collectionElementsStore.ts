@@ -62,8 +62,6 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
-    const lastQueue = new LastQueue(1000, true);
-
     type FetchParams = {
         storedElements: DCEEntry[];
         collection: CollectionEntry;
@@ -106,6 +104,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
+    const lastQueue = new LastQueue<typeof fetchMissing>(1000, true);
+
     async function fetchMissingElements(collection: CollectionEntry, offset: number, limit = FETCH_LIMIT) {
         const key = getCollectionKey(collection);
         let storedElements = storedCollectionElements.value[key];
@@ -116,11 +116,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
 
         try {
-            const data = await (lastQueue.enqueue(
-                fetchMissing,
-                { storedElements, collection, offset, limit },
-                key
-            ) as ReturnType<typeof fetchMissing>);
+            const data = await lastQueue.enqueue(fetchMissing, { storedElements, collection, offset, limit }, key);
 
             if (data) {
                 storedElements.splice(data.elementOffset, data.fetchedElements.length, ...data.fetchedElements);
