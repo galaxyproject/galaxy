@@ -74,18 +74,24 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         const collectionKey = getCollectionKey(collection);
 
         try {
-            // We should fetch only missing (placeholder) elements from the range
-            const firstMissingIndexInRange = storedElements
-                .slice(offset, offset + limit)
-                .findIndex((element) => (isPlaceholder(element) && !element.fetching) || isInvalid(element));
+            if (storedElements.length !== 0) {
+                // We should fetch only missing (placeholder) elements from the range
+                const firstMissingIndexInRange = storedElements
+                    .slice(offset, offset + limit)
+                    .findIndex((element) => (isPlaceholder(element) && !element.fetching) || isInvalid(element));
 
-            if (firstMissingIndexInRange === -1) {
-                // All elements in the range are already stored or being fetched
-                return;
+                if (firstMissingIndexInRange === -1) {
+                    // All elements in the range are already stored or being fetched
+                    return;
+                }
+
+                // Adjust the offset to the first missing element
+                offset += firstMissingIndexInRange;
+            } else {
+                // Edge case where element_count is incorrect
+                // TODO: remove me once element_count is reported reliably
+                offset = 0;
             }
-
-            // Adjust the offset to the first missing element
-            offset += firstMissingIndexInRange;
 
             set(loadingCollectionElements.value, collectionKey, true);
             // Mark all elements in the range as fetching
@@ -124,7 +130,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 const to = from + data.fetchedElements.length;
 
                 for (let index = from; index < to; index++) {
-                    set(storedElements, index, ensureDefined(data.fetchedElements[index - from]));
+                    const element = ensureDefined(data.fetchedElements[index - from]);
+                    set(storedElements, index, element);
                 }
 
                 set(storedCollectionElements.value, key, storedElements);
