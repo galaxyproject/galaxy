@@ -1,0 +1,44 @@
+name: Test Galaxy package integration with TPV
+on:
+  push:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+  pull_request:
+    paths-ignore:
+      - 'client/**'
+      - 'doc/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10']
+    steps:
+      - name: Checkout galaxy code
+        uses: actions/checkout@v3
+      - name: Checkout tpv code
+        uses: actions/checkout@v3
+        with:
+          repository: galaxyproject/total-perspective-vortex
+          path: 'tpv'
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: replace tpv galaxy dependencies with local package paths from galaxy source
+        shell: bash
+        run: cat tpv/requirements_test.txt | sed -e '/^galaxy-/ s/-/_/g' | sed -E 's/^galaxy_(.*)$/\.\.\/packages\/\1/g;' > requirements_local.txt
+      - name: replace test requirements with updated requirements that point to local packages
+        run: mv requirements_local.txt tpv/requirements_test.txt
+      - name: Install required packages
+        run: pip install tox
+      - name: Run tox
+        run: tox -e py${{ matrix.python-version }}
+        env:
+          PYTHONUNBUFFERED: "True"
+        working-directory: 'tpv'
