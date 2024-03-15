@@ -4,7 +4,7 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
@@ -76,6 +76,8 @@ const emit = defineEmits<{
 
 const entryPointStore = useEntryPointStore();
 const eventStore = useEventStore();
+
+const contentItem = ref<HTMLElement | null>(null);
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -298,6 +300,16 @@ function onTagClick(tag: string) {
     }
 }
 
+function onButtonSelect(e: Event) {
+    const event = e as KeyboardEvent;
+    if (event.shiftKey) {
+        onClick(e);
+    }
+    contentItem.value?.focus();
+    emit("init-key-selection");
+    emit("update:selected", !props.selected);
+}
+
 function toggleHighlights() {
     emit("toggleHighlights", props.item);
 }
@@ -312,6 +324,7 @@ function unexpandedClick(event: Event) {
 <template>
     <div
         :id="contentId"
+        ref="contentItem"
         :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
         :data-state="dataState"
@@ -322,7 +335,7 @@ function unexpandedClick(event: Event) {
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1" data-description="content item header info">
-                    <BButton v-if="selectable" class="selector p-0" @click.stop="emit('update:selected', !selected)">
+                    <BButton v-if="selectable" class="selector p-0" @click.stop="onButtonSelect">
                         <FontAwesomeIcon v-if="selected" fixed-width size="lg" :icon="faCheckSquare" />
                         <FontAwesomeIcon v-else fixed-width size="lg" :icon="faSquare" />
                     </BButton>
