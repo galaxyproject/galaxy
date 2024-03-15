@@ -74,7 +74,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         const collectionKey = getCollectionKey(collection);
 
         try {
-            if (storedElements.length !== 0) {
+            if (collection.element_count !== null) {
                 // We should fetch only missing (placeholder) elements from the range
                 const firstMissingIndexInRange = storedElements
                     .slice(offset, offset + limit)
