@@ -2858,7 +2858,7 @@ $attribute_list::5
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 Asserts the output is an image and has a specific mean intensity value,
-plus/minus ``eps`` (e.g., ``<image_has_mean_intensity mean_intensity="0.83" />``).
+plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
 Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
 
 $attribute_list::5
