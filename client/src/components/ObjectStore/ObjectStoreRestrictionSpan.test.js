@@ -13,7 +13,7 @@ describe("ObjectStoreRestrictionSpan", () => {
             propsData: { isPrivate: true },
             localVue,
         });
-        expect(wrapper.find(".stored-how").text()).toMatch("restricted to a single user");
+        expect(wrapper.find(".stored-how").text()).toMatch("private");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
     });
 
@@ -22,7 +22,7 @@ describe("ObjectStoreRestrictionSpan", () => {
             propsData: { isPrivate: false },
             localVue,
         });
-        expect(wrapper.find(".stored-how").text()).toMatch("allows standard Galaxy sharing features");
+        expect(wrapper.find(".stored-how").text()).toMatch("sharable");
         expect(wrapper.find(".stored-how").attributes("title")).toBeTruthy();
     });
 });
