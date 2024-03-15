@@ -155,9 +155,10 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
 
         # Expect only specific keys
         expected_keys = ["name"]
-        unexpected_keys = ["deleted", "state"]
+        unexpected_keys = ["id", "deleted", "state"]
         index_response = self._get(f"histories?keys={','.join(expected_keys)}").json()
         for history in index_response:
+            assert len(history) == len(expected_keys)
             for key in expected_keys:
                 assert key in history
             for key in unexpected_keys:
@@ -181,10 +182,11 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
 
         # Expect only specific keys
         expected_keys = ["name"]
-        unexpected_keys = ["deleted", "state"]
+        unexpected_keys = ["id", "deleted", "state"]
         data = dict(search=expected_name_contains, show_published=False, keys=",".join(expected_keys))
         index_response = self._get("histories", data=data).json()
         for history in index_response:
+            assert len(history) == len(expected_keys)
             for key in expected_keys:
                 assert key in history
             for key in unexpected_keys:
