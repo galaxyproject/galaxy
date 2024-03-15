@@ -28,7 +28,6 @@ from galaxy.schema.schema import (
     SubworkflowStep,
     ToolStep,
     WorkflowInput,
-    WorkflowModuleType,
 )
 
 WorkflowAnnotationField = Annotated[
@@ -270,25 +269,10 @@ class SetWorkflowMenuSummary(Model):
 
 
 class WorkflowDictStepsBase(Model):
-    type: WorkflowModuleType = Field(
-        ...,
-        title="Type",
-        alias="step_type",
-        description="The type of the module that represents a step in the workflow.",
-    )
-    # fields below are not in all models initially, but as they were optional in all
-    # models that had them I think it should be no problem to put them here
-    # in the base in order to avoid code duplication
     when: Optional[str] = Field(
         None,
         title="When",
         description="The when expression for the step.",
-    )
-    label: Optional[str] = Field(
-        None,
-        alias="step_label",
-        title="Label",
-        description="The label of the step.",
     )
     # TODO - could be modeled further see manager
     post_job_actions: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
@@ -340,61 +324,16 @@ class WorkflowDictStepsBase(Model):
     )
 
 
-class WorkflowDictPreviewSteps(WorkflowDictStepsBase):
-    order_index: int = Field(
+class WorkflowDictStepsExtendedBase(WorkflowDictStepsBase):
+    type: str = Field(
         ...,
-        title="Order Index",
-        description="The order index of the step.",
+        title="Type",
+        description="The type of the module that represents a step in the workflow.",
     )
-    annotation: WorkflowAnnotationField = None
-    label: str = Field(
-        ...,
+    label: Optional[str] = Field(
+        None,
         title="Label",
         description="The label of the step.",
-    )
-    inputs: List[Dict[str, Any]] = Field(
-        ...,
-        title="Inputs",
-        description="The inputs of the step.",
-    )
-
-
-class WorkflowDictEditorSteps(WorkflowDictStepsBase):
-    id: int = Field(
-        ...,
-        title="ID",
-        description="The order index of the step.",
-    )
-    name: Optional[str] = Field(
-        None,
-        title="Name",
-        description="The name of the step.",
-    )
-    inputs: Optional[List[Dict[str, Any]]] = Field(
-        None,
-        title="Inputs",
-        description="The inputs of the step.",
-    )
-    config_form: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Config Form",
-        description="The configuration form for the step.",
-    )
-    annotation: WorkflowAnnotationField
-    uuid: Optional[str] = Field(
-        None,
-        title="UUID",
-        description="The UUID of the step.",
-    )
-    tooltip: Optional[str] = Field(
-        None,
-        title="Tooltip",
-        description="The tooltip for the step.",
-    )
-    input_connections: Optional[Dict[str, Any]] = Field(
-        None,
-        title="Input Connections",
-        description="A dictionary representing the input connections for the step.",
     )
 
 
@@ -436,9 +375,77 @@ class WorkflowDictRunSteps(WorkflowDictStepsBase):
         title="Messages",
         description="Upgrade messages for the step.",
     )
+    step_type: str = Field(
+        ...,
+        title="Step Type",
+        description="The type of the step.",
+    )
+    step_label: Optional[str] = Field(
+        None,
+        title="Step Label",
+        description="The label of the step.",
+    )
 
 
-class WorkflowDictExportSteps(WorkflowDictStepsBase):
+class WorkflowDictPreviewSteps(WorkflowDictStepsExtendedBase):
+    order_index: int = Field(
+        ...,
+        title="Order Index",
+        description="The order index of the step.",
+    )
+    annotation: WorkflowAnnotationField = None
+    label: str = Field(
+        ...,
+        title="Label",
+        description="The label of the step.",
+    )
+    inputs: List[Dict[str, Any]] = Field(
+        ...,
+        title="Inputs",
+        description="The inputs of the step.",
+    )
+
+
+class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The order index of the step.",
+    )
+    name: Optional[str] = Field(
+        None,
+        title="Name",
+        description="The name of the step.",
+    )
+    inputs: Optional[List[Dict[str, Any]]] = Field(
+        None,
+        title="Inputs",
+        description="The inputs of the step.",
+    )
+    config_form: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Config Form",
+        description="The configuration form for the step.",
+    )
+    annotation: WorkflowAnnotationField
+    uuid: Optional[str] = Field(
+        None,
+        title="UUID",
+        description="The UUID of the step.",
+    )
+    tooltip: Optional[str] = Field(
+        None,
+        title="Tooltip",
+        description="The tooltip for the step.",
+    )
+    input_connections: Optional[Dict[str, Any]] = Field(
+        None,
+        title="Input Connections",
+        description="A dictionary representing the input connections for the step.",
+    )
+
+
+class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
     id: int = Field(
         ...,
         title="ID",
