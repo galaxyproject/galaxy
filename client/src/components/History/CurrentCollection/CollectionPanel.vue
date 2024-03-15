@@ -109,6 +109,7 @@ watch(
     jobState,
     () => {
         collectionElementsStore.invalidateCollectionElements(dsc.value);
+        collectionElementsStore.fetchMissingElements(dsc.value, offset.value);
     },
     { deep: true }
 );
