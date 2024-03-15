@@ -38,13 +38,15 @@ describe("useCollectionElementsStore", () => {
         expect(store.storedCollectionElements).toEqual({});
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
 
-        const offset = 0;
-        const limit = 5;
-        // Getting collection elements should trigger a fetch and change the loading state
-        store.getCollectionElements(collection, offset, limit);
-        expect(store.isLoadingCollectionElements(collection)).toEqual(true);
-        await flushPromises();
+        // Getting collection elements should be side effect free
+        store.getCollectionElements(collection);
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
+        await flushPromises();
+        expect(fetchCollectionElements).not.toHaveBeenCalled();
+
+        const limit = 5;
+        store.fetchMissingElements(collection, 0, limit);
+        await flushPromises();
         expect(fetchCollectionElements).toHaveBeenCalled();
 
         const collectionKey = store.getCollectionKey(collection);
@@ -70,18 +72,20 @@ describe("useCollectionElementsStore", () => {
         const offset = 0;
         const limit = storedCount;
         // Getting the same collection elements range should not trigger a fetch
-        store.getCollectionElements(collection, offset, limit);
+        store.fetchMissingElements(collection, offset, limit);
         expect(store.isLoadingCollectionElements(collection)).toEqual(false);
         expect(fetchCollectionElements).not.toHaveBeenCalled();
     });
 
     it("should fetch only missing elements if the requested range is not already stored", async () => {
+        jest.useFakeTimers();
+
         const totalElements = 10;
         const collection: HDCASummary = mockCollection("1", totalElements);
         const store = useCollectionElementsStore();
 
         const initialElements = 3;
-        store.getCollectionElements(collection, 0, initialElements);
+        store.fetchMissingElements(collection, 0, initialElements);
         await flushPromises();
         expect(fetchCollectionElements).toHaveBeenCalled();
         const collectionKey = store.getCollectionKey(collection);
@@ -92,11 +96,10 @@ describe("useCollectionElementsStore", () => {
 
         const offset = 2;
         const limit = 5;
-        // Getting collection elements should trigger a fetch in this case
-        store.getCollectionElements(collection, offset, limit);
-        expect(store.isLoadingCollectionElements(collection)).toEqual(true);
+        // Fetching collection elements should trigger a fetch in this case
+        store.fetchMissingElements(collection, offset, limit);
+        jest.runAllTimers();
         await flushPromises();
-        expect(store.isLoadingCollectionElements(collection)).toEqual(false);
         expect(fetchCollectionElements).toHaveBeenCalled();
 
         elements = store.storedCollectionElements[collectionKey];
