@@ -669,7 +669,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         else:
             self.galaxy_session = galaxy_session
             if self.webapp.name == "galaxy":
-                self.get_or_create_default_history()
+                self.session_manager.get_or_create_default_history(galaxy_session, self.app.security_agent)
         # Do we need to flush the session?
         if galaxy_session_requires_flush:
             self.sa_session.add(galaxy_session)
@@ -908,7 +908,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not history and most_recent:
             history = self.get_most_recent_history()
         if not history and util.string_as_bool(create):
-            history = self.get_or_create_default_history()
+            history = self.session_manager.get_or_create_default_history(self.galaxy_session, self.app.security_agent)
         return history
 
     def set_history(self, history):
@@ -921,40 +921,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     @property
     def history(self):
         return self.get_history()
-
-    def get_or_create_default_history(self):
-        """
-        Gets or creates a default history and associates it with the current
-        session.
-        """
-        history = self.galaxy_session.current_history
-        if history and not history.deleted:
-            return history
-
-        user = self.galaxy_session.user
-        if user:
-            # Look for default history that (a) has default name + is not deleted and
-            # (b) has no datasets. If suitable history found, use it; otherwise, create
-            # new history.
-            stmt = select(self.app.model.History).filter_by(
-                user=user, name=self.app.model.History.default_name, deleted=False
-            )
-            unnamed_histories = self.sa_session.scalars(stmt)
-            default_history = None
-            for history in unnamed_histories:
-                if history.empty:
-                    # Found suitable default history.
-                    default_history = history
-                    break
-
-            # Set or create history.
-            if default_history:
-                history = default_history
-                self.set_history(history)
-        else:
-            history = self.new_history()
-
-        return history
 
     def get_most_recent_history(self):
         """

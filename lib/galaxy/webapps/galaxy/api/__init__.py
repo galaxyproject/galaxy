@@ -67,6 +67,7 @@ from galaxy import (
 )
 from galaxy.exceptions import (
     AdminRequiredException,
+    RequestParameterMissingException,
     UserCannotRunAsException,
 )
 from galaxy.managers.session import GalaxySessionManager
@@ -358,7 +359,19 @@ def get_admin_user(trans: SessionRequestContext = DependsOnTrans):
     return trans.user
 
 
+def get_or_create_default_history(
+    trans: SessionRequestContext = DependsOnTrans,
+    session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
+):
+    if not trans.galaxy_session:
+        raise RequestParameterMissingException("No galaxysession cookie provided")
+    history = session_manager.get_or_create_default_history(trans.galaxy_session, trans.app.security_agent)
+    trans.history = history
+    return history
+
+
 AdminUserRequired = Depends(get_admin_user)
+DefaultHistoryRequired = Depends(get_or_create_default_history)
 
 
 class BaseGalaxyAPIController(BaseAPIController):
@@ -380,6 +393,7 @@ class FrameworkRouter(APIRouter):
     """A FastAPI Router tailored to Galaxy."""
 
     admin_user_dependency: Any
+    default_history_dependency: Any
 
     def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
         """
@@ -463,6 +477,13 @@ class FrameworkRouter(APIRouter):
             else:
                 kwd["dependencies"] = [self.admin_user_dependency]
 
+        require_default_history = kwd.pop("require_default_history", False)
+        if require_default_history:
+            if "dependencies" in kwd:
+                kwd["dependencies"].append(self.default_history_dependency)
+            else:
+                kwd["dependencies"] = [self.default_history_dependency]
+
         public = kwd.pop("public", False)
         openapi_extra = kwd.pop("openapi_extra", {})
         if public:
@@ -483,6 +504,7 @@ class FrameworkRouter(APIRouter):
 
 class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
+    default_history_dependency = DefaultHistoryRequired
 
 
 class APIContentTypeRoute(APIRoute):
