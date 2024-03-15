@@ -7730,7 +7730,7 @@ class WorkflowStep(Base, RepresentById):
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
-    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
 
     parent_comment = relationship(
         "WorkflowComment",
@@ -8177,7 +8177,7 @@ class WorkflowComment(Base, RepresentById):
     type = Column(String(16))
     color = Column(String(16))
     data = Column(JSONType)
-    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
 
     workflow = relationship(
         "Workflow",

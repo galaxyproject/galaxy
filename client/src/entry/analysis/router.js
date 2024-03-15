@@ -291,6 +291,7 @@ export function getRouter(Galaxy) {
                         props: {
                             activeList: "archived",
                         },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list",
