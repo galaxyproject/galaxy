@@ -4,6 +4,7 @@ import { computed, del, ref, set } from "vue";
 import type { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase } from "@/api";
 import { isHDCA } from "@/api";
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
+import { ensureDefined } from "@/utils/assertions";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 
 /**
@@ -119,7 +120,13 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             const data = await lastQueue.enqueue(fetchMissing, { storedElements, collection, offset, limit }, key);
 
             if (data) {
-                storedElements.splice(data.elementOffset, data.fetchedElements.length, ...data.fetchedElements);
+                const from = data.elementOffset;
+                const to = from + data.fetchedElements.length;
+
+                for (let index = from; index < to; index++) {
+                    storedElements[index] = ensureDefined(data.fetchedElements[index - from]);
+                }
+
                 set(storedCollectionElements.value, key, storedElements);
             }
         } catch (e) {
