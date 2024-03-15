@@ -9,3 +9,4 @@ recursive-include galaxy/tools/bundled/ *.pl *.py *.R *.sh
 include galaxy/tools/bundled/interactive/default_notebook.ipynb
 include galaxy/tools/expressions/*.js
 include galaxy/workflow/resources/*.sample
+include galaxy/carbon_emissions/carbon_intensity.csv
