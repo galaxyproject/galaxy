@@ -4,7 +4,6 @@ import { computed, del, ref, set } from "vue";
 import type { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase } from "@/api";
 import { isHDCA } from "@/api";
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
-import { mergeArray } from "@/store/historyStore/model/utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 
 /**
@@ -26,7 +25,11 @@ export interface ContentPlaceholder {
     fetching?: boolean;
 }
 
-export type DCEEntry = ContentPlaceholder | DCESummary;
+export type InvalidDCEEntry = (ContentPlaceholder | DCESummary) & {
+    valid: false;
+};
+
+export type DCEEntry = ContentPlaceholder | DCESummary | InvalidDCEEntry;
 
 const FETCH_LIMIT = 50;
 
@@ -49,9 +52,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     const getCollectionElements = computed(() => {
         return (collection: CollectionEntry) => {
-            const storedElements =
-                storedCollectionElements.value[getCollectionKey(collection)] ?? initWithPlaceholderElements(collection);
-            return storedElements;
+            return storedCollectionElements.value[getCollectionKey(collection)];
         };
     });
 
@@ -64,25 +65,26 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const lastQueue = new LastQueue(1000, true);
 
     type FetchParams = {
+        storedElements: DCEEntry[];
         collection: CollectionEntry;
         offset: number;
         limit: number;
     };
 
-    async function fetchMissing({ collection, offset, limit = FETCH_LIMIT }: FetchParams) {
+    async function fetchMissing({ storedElements, collection, offset, limit = FETCH_LIMIT }: FetchParams) {
         const collectionKey = getCollectionKey(collection);
-        const storedElements = getCollectionElements.value(collection);
 
         try {
             // We should fetch only missing (placeholder) elements from the range
             const firstMissingIndexInRange = storedElements
                 .slice(offset, offset + limit)
-                .findIndex((element) => isPlaceholder(element) && !element.fetching);
+                .findIndex((element) => (isPlaceholder(element) && !element.fetching) || isInvalid(element));
 
             if (firstMissingIndexInRange === -1) {
                 // All elements in the range are already stored or being fetched
                 return;
             }
+
             // Adjust the offset to the first missing element
             offset += firstMissingIndexInRange;
 
@@ -98,16 +100,32 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 limit: limit,
             });
 
-            return fetchedElements;
+            return { fetchedElements, elementOffset: offset };
         } finally {
             del(loadingCollectionElements.value, collectionKey);
         }
     }
 
-    async function fetchMissingElements(collection: CollectionEntry, offset: number) {
+    async function fetchMissingElements(collection: CollectionEntry, offset: number, limit = FETCH_LIMIT) {
+        const key = getCollectionKey(collection);
+        let storedElements = storedCollectionElements.value[key];
+
+        if (!storedElements) {
+            storedElements = initWithPlaceholderElements(collection);
+            set(storedCollectionElements.value, key, storedElements);
+        }
+
         try {
-            const elements = await lastQueue.enqueue(fetchMissing, { collection, offset });
-            mergeArray(getCollectionKey(collection), elements, storedCollectionElements.value, "id");
+            const data = await (lastQueue.enqueue(
+                fetchMissing,
+                { storedElements, collection, offset, limit },
+                key
+            ) as ReturnType<typeof fetchMissing>);
+
+            if (data) {
+                storedElements.splice(data.elementOffset, data.fetchedElements.length, ...data.fetchedElements);
+                set(storedCollectionElements.value, key, storedElements);
+            }
         } catch (e) {
             if (!(e instanceof ActionSkippedError)) {
                 throw e;
@@ -115,9 +133,11 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    async function loadCollectionElements(collection: CollectionEntry) {
-        const elements = await fetchElementsFromCollection({ entry: collection });
-        set(storedCollectionElements.value, getCollectionKey(collection), elements);
+    async function invalidateCollectionElements(collection: CollectionEntry) {
+        const storedElements = storedCollectionElements.value[getCollectionKey(collection)] ?? [];
+        storedElements.forEach((element) => {
+            (element as InvalidDCEEntry).valid = false;
+        });
     }
 
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
@@ -152,6 +172,10 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         return "id" in element === false;
     }
 
+    function isInvalid(element: DCEEntry): element is InvalidDCEEntry {
+        return (element as InvalidDCEEntry)["valid"] === false;
+    }
+
     function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
         const totalElements = collection.element_count ?? 0;
         const placeholderElements = new Array<ContentPlaceholder>(totalElements);
@@ -168,7 +192,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         isLoadingCollectionElements,
         getCollection,
         fetchCollection,
-        loadCollectionElements,
+        invalidateCollectionElements,
         saveCollections,
         getCollectionKey,
         fetchMissingElements,

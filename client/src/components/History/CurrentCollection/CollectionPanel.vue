@@ -52,7 +52,7 @@ watch(
     { immediate: true }
 );
 
-const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value));
+const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value) ?? []);
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
 const populatedStateMsg = computed(() =>
@@ -108,7 +108,7 @@ watch(
 watch(
     jobState,
     () => {
-        collectionElementsStore.loadCollectionElements(dsc.value);
+        collectionElementsStore.invalidateCollectionElements(dsc.value);
     },
     { deep: true }
 );
