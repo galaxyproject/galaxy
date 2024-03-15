@@ -863,7 +863,6 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         extra_info = None
         mode = kwargs.get("mode", "Auto")
-        indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
@@ -928,8 +927,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
             # Get mean depth.
-            if not indexer:
-                indexer = self._get_indexer(trans, dataset)
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
             mean_depth = stats["data"]["mean"]
 
@@ -983,10 +981,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return data
 
     def _get_indexer(self, trans, dataset):
-        try:
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
-            if indexer is None:
-                raise Exception("No indexer available for this dataset")
-            return indexer
-        except Exception as e:
-            raise galaxy_exceptions.ObjectNotFound(f"Error getting indexer: {util.unicodify(e)}")
+        indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+        if indexer is None:
+            msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"
+            log.exception(msg)
+            raise galaxy_exceptions.ObjectNotFound(msg)
+        return indexer
