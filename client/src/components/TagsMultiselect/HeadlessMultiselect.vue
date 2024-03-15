@@ -15,6 +15,7 @@ import { computed, nextTick, ref, watch } from "vue";
 import Vue2Teleport from "vue2-teleport";
 
 import { useUid } from "@/composables/utils/uid";
+import { normalizeTag } from "@/stores/userTagsStore";
 
 library.add(faCheck, faChevronUp, faPlus, faTags, faTimes);
 
@@ -147,6 +148,8 @@ function getOptionWithId(id: number) {
  * was not part of the provided options
  */
 function onOptionSelected(option: string) {
+    option = normalizeTag(option);
+
     if (!optionsAsSet.value.has(option)) {
         emit("addOption", option);
         return;
@@ -318,7 +321,7 @@ whenever(isOpen, async () => {
                     :data-parent-id="props.id"
                     class="headless-multiselect__option"
                     role="option"
-                    :aria-selected="props.selected.includes(option)"
+                    :aria-selected="props.selected.includes(normalizeTag(option))"
                     :class="{
                         invalid: i === 0 && !searchValueValid,
                         highlighted: highlightedOption === i,
@@ -332,7 +335,7 @@ whenever(isOpen, async () => {
                         {{ option }}
                     </span>
 
-                    <span v-if="props.selected.includes(option)" class="headless-multiselect__info">
+                    <span v-if="props.selected.includes(normalizeTag(option))" class="headless-multiselect__info">
                         <template v-if="highlightedOption === i">
                             <FontAwesomeIcon
                                 class="headless-multiselect__needs-highlight"

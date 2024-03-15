@@ -26,7 +26,7 @@ class UserTagStoreDatabase extends Dexie {
 
 const maxDbEntriesPerUser = 10000;
 
-function normalizeTag(tag: string) {
+export function normalizeTag(tag: string) {
     return tag.replace(/^#/, "name:");
 }
 
