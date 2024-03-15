@@ -25,7 +25,7 @@ const name = computed(() => {
 
 <template>
     <span id="drag-ghost" class="py-2 px-3 rounded">
-        <FontAwesomeIcon icon="paper-plane" class="mr-1" />
+        <FontAwesomeIcon :icon="faPaperPlane" class="mr-1" />
         <TextShort class="font-weight-bold" :text="name" />
     </span>
 </template>
