@@ -124,7 +124,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 const to = from + data.fetchedElements.length;
 
                 for (let index = from; index < to; index++) {
-                    storedElements[index] = ensureDefined(data.fetchedElements[index - from]);
+                    set(storedElements, index, ensureDefined(data.fetchedElements[index - from]));
                 }
 
                 set(storedCollectionElements.value, key, storedElements);
