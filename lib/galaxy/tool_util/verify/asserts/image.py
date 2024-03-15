@@ -241,6 +241,7 @@ def _get_image_labels(
 def assert_has_image_n_labels(
     output_bytes: bytes,
     channel: Optional[Union[int, str]] = None,
+    labels: Optional[Union[str, List[int]]] = None,
     exclude_labels: Optional[Union[str, List[int]]] = None,
     n: Optional[Union[int, str]] = None,
     delta: Union[int, str] = 0,
@@ -251,7 +252,7 @@ def assert_has_image_n_labels(
     """
     Asserts the specified output is an image and has the specified number of unique values (e.g., uniquely labeled objects).
     """
-    present_labels = _get_image_labels(output_bytes, channel, exclude_labels)[1]
+    present_labels = _get_image_labels(output_bytes, channel, labels, exclude_labels)[1]
     _assert_number(
         len(present_labels),
         n,
