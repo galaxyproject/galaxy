@@ -102,6 +102,7 @@
                     <has_image_height height="32" />
                     <has_image_channels channels="1" />
                     <has_image_n_labels n="1" exclude_labels="0" />
+                    <has_image_n_labels n="0" exclude_labels="0,1" />
                     <has_image_mean_object_size mean_object_size="256" exclude_labels="0" />
                 </assert_contents>
             </output>
