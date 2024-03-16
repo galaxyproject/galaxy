@@ -12,7 +12,7 @@ export default {
     },
     computed: {
         title() {
-            return this.l(`Preferred Target Object Store ${this.titleSuffix || ""}`);
+            return this.l(`Preferred Target Storage Location ${this.titleSuffix || ""}`);
         },
     },
 };

@@ -148,7 +148,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable
                         </ToolTargetPreferredObjectStorePopover>
                         <b-modal
                             v-model="showPreferredObjectStoreModal"
-                            title="Tool Execution Preferred Object Store"
+                            title="Tool Execution Preferred Storage Location"
                             modal-class="tool-preferred-object-store-modal"
                             title-tag="h3"
                             size="sm"
