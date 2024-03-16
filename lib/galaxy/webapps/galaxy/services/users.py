@@ -122,10 +122,9 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            # Can't return info about this user, may not have a history yet.
-            # return {}
-            raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
-        usage = self.quota_agent.get_usage(trans, history=trans.history)
+            usage = None
+        else:
+            usage = self.quota_agent.get_usage(trans, history=trans.history)
         percent = self.quota_agent.get_percent(trans=trans, usage=usage)
         usage = usage or 0
         return {
