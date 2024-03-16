@@ -136,6 +136,7 @@ const message = computed(() => {
             "
             triggers="hover"
             placement="bottom"
+            variant="secondary"
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
             <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />
