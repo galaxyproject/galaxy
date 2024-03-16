@@ -363,8 +363,8 @@ def get_or_create_default_history(
     trans: SessionRequestContext = DependsOnTrans,
     session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
 ):
-    if not trans.galaxy_session:
-        raise RequestParameterMissingException("No galaxysession cookie provided")
+    if not trans.user and not trans.galaxy_session:
+        raise RequestParameterMissingException("Cannot fetch or create history for unknown user session")
     history = session_manager.get_or_create_default_history(trans.galaxy_session, trans.app.security_agent)
     trans.history = history
     return history
