@@ -422,11 +422,15 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if category_id:
             category = suc.get_category(trans.app, category_id)
             if category:
-                trailing_string = f"in Category {str(category.name)}"
-            else:
-                trailing_string = "in Category"
+                kwd["f-Category.name"] = category.name
+
+        # kwd[id] is lost when you move
+        if "f-Category.name" in kwd:
+            category_name_str = kwd["f-Category.name"]
+            trailing_string = f"in Category {category_name_str}"
         else:
-            trailing_string = "in Category"
+            trailing_string = "in all Categories."
+
         title = trans.app.repository_grid_filter_manager.get_grid_title(
             trans, trailing_string=trailing_string, default="Repositories"
         )
