@@ -122,10 +122,13 @@ class APIKeyModel(BaseModel):
 T = TypeVar("T", bound="BaseModel")
 
 
+# TODO: This is a workaround to make all fields optional.
+#       It should be removed when Python/pydantic supports this feature natively.
+# https://github.com/pydantic/pydantic/issues/1673
 def partial_model(
     include: Optional[list[str]] = None, exclude: Optional[list[str]] = None
 ) -> Callable[[type[T]], type[T]]:
-    """Return a decorator to make model fields optional"""
+    """Decorator to make all model fields optional"""
 
     if exclude is None:
         exclude = []
