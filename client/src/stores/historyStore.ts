@@ -241,12 +241,14 @@ export const useHistoryStore = defineStore("historyStore", () => {
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
             isLoadingHistory.add(historyId);
-            await getHistoryByIdFromServer(historyId)
-                .then((history) => setHistory(history as HistorySummary))
-                .catch((error: Error) => console.warn(error))
-                .finally(() => {
+            try {
+                const history = await getHistoryByIdFromServer(historyId);
+                setHistory(history as HistorySummary);
+            } catch (error) {
+                console.error(error);
+            } finally {
                     isLoadingHistory.delete(historyId);
-                });
+            }
         }
     }
 
