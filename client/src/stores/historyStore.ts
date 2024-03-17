@@ -100,7 +100,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     function setHistory(history: HistorySummary) {
-        set(storedHistories.value, history.id, history);
+        if (storedHistories.value[history.id] !== undefined) {
+            // Merge the incoming history with existing one to keep additional information
+            Object.assign(storedHistories.value[history.id]!, history);
+        } else {
+            set(storedHistories.value, history.id, history);
+        }
     }
 
     function setHistories(histories: HistorySummary[]) {
