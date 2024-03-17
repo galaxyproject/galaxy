@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, del, ref, set } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
@@ -96,11 +96,11 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     function setFilterText(historyId: string, filterText: string) {
-        Vue.set(storedFilterTexts.value, historyId, filterText);
+        set(storedFilterTexts.value, historyId, filterText);
     }
 
     function setHistory(history: HistorySummary) {
-        Vue.set(storedHistories.value, history.id, history);
+        set(storedHistories.value, history.id, history);
     }
 
     function setHistories(histories: HistorySummary[]) {
@@ -179,7 +179,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         } else {
             await createNewHistory();
         }
-        Vue.delete(storedHistories.value, deletedHistory.id);
+        del(storedHistories.value, deletedHistory.id);
         unpinHistories([deletedHistory.id]);
         await handleTotalCountChange(1, true);
     }
@@ -247,7 +247,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
             } catch (error) {
                 console.error(error);
             } finally {
-                    isLoadingHistory.delete(historyId);
+                isLoadingHistory.delete(historyId);
             }
         }
     }
