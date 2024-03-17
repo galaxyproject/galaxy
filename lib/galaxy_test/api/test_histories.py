@@ -106,6 +106,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert show_response["url"] == f"/api/histories/{history_id}"
         assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
 
+    def test_show_respects_view(self):
+        history_id = self._create_history(f"TestHistoryForShowView_{uuid4()}")["id"]
+        # By default the view is "detailed"
+        show_response = self._get(f"histories/{history_id}").json()
+        assert "state" in show_response
+
+        # Change the view to summary
+        show_response = self._get(f"histories/{history_id}", {"view": "summary"}).json()
+        assert "state" not in show_response
+
+        # Expect only specific keys
+        expected_keys = ["name"]
+        unexpected_keys = ["id", "deleted", "state"]
+        show_response = self._get(f"histories/{history_id}", {"keys": ",".join(expected_keys)}).json()
+        assert len(show_response) == len(expected_keys)
+        for key in expected_keys:
+            assert key in show_response
+        for key in unexpected_keys:
+            assert key not in show_response
+
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
