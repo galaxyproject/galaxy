@@ -191,7 +191,7 @@ class FastAPIHistories:
                 trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
             )
         else:
-            payload = HistoryIndexQueryPayload.construct(
+            payload = HistoryIndexQueryPayload.model_construct(
                 show_own=show_own,
                 show_published=show_published,
                 show_shared=show_shared,
@@ -201,7 +201,9 @@ class FastAPIHistories:
                 offset=offset,
                 search=search,
             )
-            entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
+            entries, total_matches = self.service.index_query(
+                trans, payload, serialization_params, include_total_count=True
+            )
             response.headers["total_matches"] = str(total_matches)
             return entries
 
