@@ -39,6 +39,7 @@ from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     EncodedLibraryFolderDatabaseIdField,
+    is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -313,8 +314,11 @@ class WithModelClass:
     def set_default(cls, data):
         if isinstance(data, dict):
             if "model_class" not in data and issubclass(cls, BaseModel):
+                model_class_annotation = cls.model_fields["model_class"].annotation
+                if is_optional(model_class_annotation):
+                    return data
                 data = data.copy()
-                data["model_class"] = literal_to_value(cls.model_fields["model_class"].annotation)
+                data["model_class"] = literal_to_value(model_class_annotation)
         return data
 
 

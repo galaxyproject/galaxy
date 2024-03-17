@@ -163,6 +163,7 @@ class FastAPIHistories:
     @router.get(
         "/api/histories",
         summary="Returns histories available to the current user.",
+        response_model_exclude_unset=True,
     )
     def index(
         self,
