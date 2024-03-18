@@ -6938,7 +6938,7 @@ export interface components {
              * Type
              * @constant
              */
-            type: "parameter";
+            type: "parameter_input";
             /** When */
             when: string | null;
         };

@@ -2236,7 +2236,7 @@ class InputDataCollectionStep(WorkflowStepBase):
 
 
 class InputParameterStep(WorkflowStepBase):
-    type: Literal["parameter"]
+    type: Literal["parameter_input"]
 
 
 class PauseStep(WorkflowStepBase):
