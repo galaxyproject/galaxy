@@ -563,6 +563,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/run",
                         component: Home,
+                        redirect: redirectAnon(),
                         props: (route) => ({
                             config: Galaxy.config,
                             query: { workflow_id: route.query.id },

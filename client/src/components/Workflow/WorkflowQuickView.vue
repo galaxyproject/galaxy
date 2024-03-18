@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { type AxiosError } from "axios";
 import { BAlert, BCard } from "bootstrap-vue";
-import { ref, watch } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { getWorkflowFull, getWorkflowInfo } from "@/components/Workflow/workflows.services";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import { useUserStore } from "@/stores/userStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { assertDefined } from "@/utils/assertions";
 
@@ -20,8 +22,10 @@ const props = defineProps<{
     id: string;
 }>();
 
+const userStore = useUserStore();
 const { datatypesMapper } = useDatatypesMapper();
 
+const { isAnonymous } = storeToRefs(userStore);
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
 stateStore.scale = 0.75;
@@ -40,6 +44,14 @@ const workflowInfo = ref<
       }
     | undefined
 >();
+
+const runButtonTitle = computed(() => {
+    if (isAnonymous.value) {
+        return "Log in to run workflow";
+    } else {
+        return "Run workflow";
+    }
+});
 
 watch(
     () => props.id,
@@ -89,7 +101,7 @@ watch(
                 <span class="d-flex mb-2 flex-gapx-1">
                     <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0"> Workflow Preview </Heading>
 
-                    <WorkflowRunButton :id="props.id" full />
+                    <WorkflowRunButton :id="props.id" :title="runButtonTitle" :disabled="isAnonymous" full />
                 </span>
             </div>
 
