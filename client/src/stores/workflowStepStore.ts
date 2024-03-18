@@ -208,7 +208,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
     const connectionStore = useConnectionStore(workflowId);
 
     function addStep(newStep: NewStep): Step {
-        const stepId = newStep.id ? newStep.id : getStepIndex.value + 1;
+        const stepId = newStep.id ?? getStepIndex.value + 1;
         const step = Object.freeze({ ...newStep, id: stepId } as Step);
 
         set(steps.value, stepId.toString(), step);
