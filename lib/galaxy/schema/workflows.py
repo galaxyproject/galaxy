@@ -694,6 +694,7 @@ class WorkflowDictFormat2Summary(Model):
         title="Steps",
         description="A dictionary representing the steps of the workflow.",
     )
+    doc: WorkflowAnnotationField = None
 
 
 class WorkflowDictFormat2WrappedYamlSummary(Model):
