@@ -25,14 +25,12 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
 
-const loadingObjectStoreInfoMessage = ref("Loading object store information");
+const loadingObjectStoreInfoMessage = ref("Loading storage location information");
 const whyIsSelectionPreferredText = ref(`
-Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.
-Select a preferred object store for new datasets. This is should be thought of as a preferred
-object store because depending the job and workflow configuration execution configuration of
-this Galaxy instance - a different object store may be selected. After a dataset is created,
+Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
+this Galaxy a different storage location may be ultimately used. After a dataset is created,
 click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the correct place, contact your Galaxy administrator for more information.
+is not stored in the place you want, contact Galaxy administrator for more information.
 `);
 
 function variant(objectStoreId: string) {

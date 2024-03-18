@@ -7,17 +7,17 @@
                 v-b-modal.modal-select-preferred-object-store
                 class="preferred-storage"
                 href="javascript:void(0)"
-                ><b v-localize>Preferred Object Store</b></a
+                ><b v-localize>Preferred Storage Location</b></a
             >
             <div v-localize class="form-text text-muted">
-                Select a preferred default object store for the outputs of new jobs to be created in.
+                Select a preferred storage location for the outputs of new jobs.
             </div>
             <BModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
                 v-model="showModal"
                 centered
-                title="Preferred Object Store"
+                title="Preferred Storage Location"
                 :title-tag="titleTag"
                 hide-footer
                 static

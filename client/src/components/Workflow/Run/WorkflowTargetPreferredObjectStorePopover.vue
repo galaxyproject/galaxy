@@ -2,9 +2,7 @@
     <b-popover :target="target" triggers="hover" placement="bottomleft" boundary="window">
         <template v-slot:title>{{ title }}</template>
         <div class="popover-wide">
-            <p v-if="invocationPreferredObjectStoreId">
-                This target object store has been set at the invocation level.
-            </p>
+            <p v-if="invocationPreferredObjectStoreId">Storage location has been set at the invocation level.</p>
             <ShowSelectedObjectStore
                 v-if="invocationPreferredObjectStoreId"
                 :preferred-object-store-id="invocationPreferredObjectStoreId"
@@ -15,7 +13,7 @@
                 used.
             </div>
             <div v-localize>
-                Change this preference object store target by clicking on the storage button in the worklfow run header.
+                Change preferred storage location by clicking on the storage button in the worklfow run header.
             </div>
         </div>
     </b-popover>

@@ -206,7 +206,7 @@ onMounted(() => {
 
             <BModal
                 v-model="showPreferredObjectStoreModal"
-                title="History Preferred Object Store"
+                title="History Preferred Storage Location"
                 modal-class="history-preferred-object-store-modal"
                 title-tag="h3"
                 size="sm"
