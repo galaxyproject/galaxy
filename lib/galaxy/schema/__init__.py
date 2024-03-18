@@ -8,6 +8,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
+    Type,
     TypeVar,
     Union,
 )
@@ -126,16 +128,16 @@ T = TypeVar("T", bound="BaseModel")
 #       It should be removed when Python/pydantic supports this feature natively.
 # https://github.com/pydantic/pydantic/issues/1673
 def partial_model(
-    include: Optional[list[str]] = None, exclude: Optional[list[str]] = None
-) -> Callable[[type[T]], type[T]]:
+    include: Optional[List[str]] = None, exclude: Optional[List[str]] = None
+) -> Callable[[Type[T]], Type[T]]:
     """Decorator to make all model fields optional"""
 
     if exclude is None:
         exclude = []
 
     @typing.no_type_check  # Mypy doesn't understand pydantic's create_model
-    def decorator(model: type[T]) -> type[T]:
-        def make_optional(field: FieldInfo, default: Any = None) -> tuple[Any, FieldInfo]:
+    def decorator(model: Type[T]) -> Type[T]:
+        def make_optional(field: FieldInfo, default: Any = None) -> Tuple[Any, FieldInfo]:
             new = deepcopy(field)
             new.default = default
             new.annotation = Optional[field.annotation or Any]
