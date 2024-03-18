@@ -207,12 +207,16 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     const connectionStore = useConnectionStore(workflowId);
 
-    function addStep(newStep: NewStep): Step {
+    function addStep(newStep: NewStep, createConnections = true): Step {
         const stepId = newStep.id ?? getStepIndex.value + 1;
         const step = Object.freeze({ ...newStep, id: stepId } as Step);
 
         set(steps.value, stepId.toString(), step);
-        stepToConnections(step).map((connection) => connectionStore.addConnection(connection));
+
+        if (createConnections) {
+            stepToConnections(step).forEach((connection) => connectionStore.addConnection(connection));
+        }
+
         stepExtraInputs.value[step.id] = findStepExtraInputs(step);
 
         return step;
