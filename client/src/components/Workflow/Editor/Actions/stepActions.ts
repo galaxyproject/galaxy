@@ -1,5 +1,6 @@
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
@@ -161,20 +162,25 @@ export class InsertStepAction extends UndoRedoAction {
 export class RemoveStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
+    connectionStore;
     showAttributesCallback;
     step: Step;
+    connections: Connection[];
 
     constructor(
         stepStore: WorkflowStepStore,
         stateStore: WorkflowStateStore,
+        connectionStore: WorkflowConnectionStore,
         showAttributesCallback: () => void,
         step: Step
     ) {
         super();
         this.stepStore = stepStore;
         this.stateStore = stateStore;
+        this.connectionStore = connectionStore;
         this.showAttributesCallback = showAttributesCallback;
         this.step = structuredClone(step);
+        this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
     }
 
     run() {
@@ -184,7 +190,8 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     undo() {
-        this.stepStore.addStep(structuredClone(this.step));
+        this.stepStore.addStep(structuredClone(this.step), false);
+        this.connections.forEach((connection) => this.connectionStore.addConnection(connection));
         this.stateStore.activeNodeId = this.step.id;
         this.stateStore.hasChanges = true;
     }
@@ -217,7 +224,8 @@ export class CopyStepAction extends UndoRedoAction {
 export function useStepActions(
     stepStore: WorkflowStepStore,
     undoRedoStore: UndoRedoStore,
-    stateStore: WorkflowStateStore
+    stateStore: WorkflowStateStore,
+    connectionStore: WorkflowConnectionStore
 ) {
     /**
      * If the pending action is a `LazyMutateStepAction` and matches the step id and field key, returns it.
@@ -281,7 +289,7 @@ export function useStepActions(
     }
 
     function removeStep(step: Step, showAttributesCallback: () => void) {
-        const action = new RemoveStepAction(stepStore, stateStore, showAttributesCallback, step);
+        const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
         undoRedoStore.applyAction(action);
     }
 

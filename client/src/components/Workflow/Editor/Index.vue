@@ -385,7 +385,7 @@ export default {
             emit("update:confirmation", false);
         });
 
-        const stepActions = useStepActions(stepStore, undoRedoStore, stateStore);
+        const stepActions = useStepActions(stepStore, undoRedoStore, stateStore, connectionStore);
 
         return {
             id,
