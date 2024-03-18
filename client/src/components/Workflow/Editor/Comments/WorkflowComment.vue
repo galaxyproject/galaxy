@@ -7,10 +7,10 @@ import type { WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEdi
 
 import {
     ChangeColorAction,
-    ChangeDataAction,
-    ChangePositionAction,
-    ChangeSizeAction,
     DeleteCommentAction,
+    LazyChangeDataAction,
+    LazyChangePositionAction,
+    LazyChangeSizeAction,
 } from "../Actions/commentActions";
 
 import FrameComment from "./FrameComment.vue";
@@ -37,31 +37,31 @@ const cssVariables = computed(() => ({
 }));
 
 const { commentStore, undoRedoStore } = useWorkflowStores();
-let lazyAction: ChangeDataAction | ChangePositionAction | ChangeSizeAction | null = null;
+let lazyAction: LazyChangeDataAction | LazyChangePositionAction | LazyChangeSizeAction | null = null;
 
 function onUpdateData(data: any) {
-    if (lazyAction instanceof ChangeDataAction && undoRedoStore.isQueued(lazyAction)) {
+    if (lazyAction instanceof LazyChangeDataAction && undoRedoStore.isQueued(lazyAction)) {
         lazyAction.updateData(data);
     } else {
-        lazyAction = new ChangeDataAction(commentStore, props.comment, data);
+        lazyAction = new LazyChangeDataAction(commentStore, props.comment, data);
         undoRedoStore.applyLazyAction(lazyAction);
     }
 }
 
 function onResize(size: [number, number]) {
-    if (lazyAction instanceof ChangeSizeAction && undoRedoStore.isQueued(lazyAction)) {
+    if (lazyAction instanceof LazyChangeSizeAction && undoRedoStore.isQueued(lazyAction)) {
         lazyAction.updateData(size);
     } else {
-        lazyAction = new ChangeSizeAction(commentStore, props.comment, size);
+        lazyAction = new LazyChangeSizeAction(commentStore, props.comment, size);
         undoRedoStore.applyLazyAction(lazyAction);
     }
 }
 
 function onMove(position: [number, number]) {
-    if (lazyAction instanceof ChangePositionAction && undoRedoStore.isQueued(lazyAction)) {
+    if (lazyAction instanceof LazyChangePositionAction && undoRedoStore.isQueued(lazyAction)) {
         lazyAction.updateData(position);
     } else {
-        lazyAction = new ChangePositionAction(commentStore, props.comment, position);
+        lazyAction = new LazyChangePositionAction(commentStore, props.comment, position);
         undoRedoStore.applyLazyAction(lazyAction);
     }
 }
