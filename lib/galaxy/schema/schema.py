@@ -1353,9 +1353,9 @@ class CustomHistoryView(HistoryDetailed):
 
 AnyHistoryView = Annotated[
     Union[
-        HistorySummary,
-        HistoryDetailed,
         CustomHistoryView,
+        HistoryDetailed,
+        HistorySummary,
     ],
     Field(union_mode="left_to_right"),
 ]
