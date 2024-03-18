@@ -122,10 +122,11 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            usage = None
+            usage = 0
+            percent = 0.0
         else:
             usage = self.quota_agent.get_usage(trans, history=trans.history)
-        percent = self.quota_agent.get_percent(trans=trans, usage=usage)
+            percent = self.quota_agent.get_percent(trans=trans, usage=usage)
         usage = usage or 0
         return {
             "total_disk_usage": int(usage),
