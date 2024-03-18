@@ -168,6 +168,8 @@ export default {
             const extraParams = this.ownerGrid ? {} : { include_terminal: false };
             if (this.storedWorkflowId) {
                 extraParams["workflow_id"] = this.storedWorkflowId;
+            } else {
+                extraParams["include_nested_invocations"] = false;
             }
             if (this.historyId) {
                 extraParams["history_id"] = this.historyId;
@@ -195,25 +197,6 @@ export default {
     methods: {
         ...mapActions(useHistoryStore, ["loadHistoryById"]),
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceIdCached"]),
-        async provider(ctx) {
-            ctx.root = this.root;
-            const extraParams = this.ownerGrid ? {} : { include_terminal: false };
-            if (this.storedWorkflowId) {
-                extraParams["workflow_id"] = this.storedWorkflowId;
-            } else {
-                extraParams["include_nested_invocations"] = false;
-            }
-            if (this.historyId) {
-                extraParams["history_id"] = this.historyId;
-            }
-            if (this.userId) {
-                extraParams["user_id"] = this.userId;
-            }
-            const promise = invocationsProvider(ctx, this.setRows, extraParams).catch(this.onError);
-            const invocationItems = await promise;
-            this.invocationItems = invocationItems;
-            return invocationItems;
-        },
         swapRowDetails(row) {
             row.toggleDetails();
         },
