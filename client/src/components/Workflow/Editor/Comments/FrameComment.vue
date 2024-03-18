@@ -13,7 +13,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-import { MoveMultipleAction } from "../Actions/commentActions";
+import { LazyMoveMultipleAction } from "../Actions/commentActions";
 import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
@@ -145,7 +145,7 @@ type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 let stepsInBounds: StepWithPosition[] = [];
 let commentsInBounds: WorkflowComment[] = [];
 
-let lazyAction: MoveMultipleAction | null = null;
+let lazyAction: LazyMoveMultipleAction | null = null;
 
 function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
@@ -164,7 +164,7 @@ function onDragStart() {
 
     commentsInBounds.push(props.comment);
 
-    lazyAction = new MoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
+    lazyAction = new LazyMoveMultipleAction(commentStore, stepStore, commentsInBounds, stepsInBounds, aabb);
     undoRedoStore.applyLazyAction(lazyAction);
 }
 

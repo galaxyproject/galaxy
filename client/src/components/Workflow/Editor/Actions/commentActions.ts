@@ -61,7 +61,7 @@ export class ChangeColorAction extends UndoRedoAction {
     }
 }
 
-class MutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoAction {
+class LazyMutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoAction {
     private commentId: number;
     private startData: WorkflowComment[K];
     private endData: WorkflowComment[K];
@@ -95,21 +95,21 @@ class MutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoActio
     }
 }
 
-export class ChangeDataAction extends MutateCommentAction<"data"> {
+export class LazyChangeDataAction extends LazyMutateCommentAction<"data"> {
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, data: WorkflowComment["data"]) {
         const callback = store.changeData;
         super(comment, "data", data, callback);
     }
 }
 
-export class ChangePositionAction extends MutateCommentAction<"position"> {
+export class LazyChangePositionAction extends LazyMutateCommentAction<"position"> {
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, position: [number, number]) {
         const callback = store.changePosition;
         super(comment, "position", position, callback);
     }
 }
 
-export class ChangeSizeAction extends MutateCommentAction<"size"> {
+export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, size: [number, number]) {
         const callback = store.changeSize;
         super(comment, "size", size, callback);
@@ -118,7 +118,7 @@ export class ChangeSizeAction extends MutateCommentAction<"size"> {
 
 type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
-export class MoveMultipleAction extends UndoRedoAction {
+export class LazyMoveMultipleAction extends UndoRedoAction {
     private commentStore;
     private stepStore;
     private comments;
