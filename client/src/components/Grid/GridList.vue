@@ -82,7 +82,8 @@ const filterClass = props.gridConfig.filtering;
 const rawFilters = computed(() => Object.fromEntries(filterClass.getFiltersForText(filterText.value, true, false)));
 const validFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).validFilters);
 const invalidFilters = computed(() => filterClass.getValidFilters(rawFilters.value, true).invalidFilters);
-const hasInvalidFilters = computed(() => Object.keys(invalidFilters.value).length > 0);
+const isSurroundedByQuotes = computed(() => /^["'].*["']$/.test(filterText.value));
+const hasInvalidFilters = computed(() => !isSurroundedByQuotes.value && Object.keys(invalidFilters.value).length > 0);
 
 // hide message helper
 const hideMessage = useDebounceFn(() => {
@@ -221,8 +222,11 @@ function onSelectAll(current: boolean): void {
  * A valid filter/query for the backend
  */
 function validatedFilterText() {
-    // there are no filters derived from the `filterText`; return the `filterText` as is
-    if (Object.keys(rawFilters.value).length === 0) {
+    if (isSurroundedByQuotes.value) {
+        // the filterText is surrounded by quotes, remove them
+        return filterText.value.slice(1, -1);
+    } else if (Object.keys(rawFilters.value).length === 0) {
+        // there are no filters derived from the `filterText`
         return filterText.value;
     }
     // there are valid filters derived from the `filterText`
@@ -310,6 +314,15 @@ watch(operationMessage, () => {
                 </ul>
                 <a href="javascript:void(0)" class="ui-link" @click="filterText = validatedFilterText()">
                     Remove invalid filters from query
+                </a>
+                or
+                <a
+                    v-b-tooltip.noninteractive.hover
+                    title="Note that this might produce inaccurate results"
+                    href="javascript:void(0)"
+                    class="ui-link"
+                    @click="filterText = `'${filterText}'`">
+                    Match the exact query provided
                 </a>
             </BAlert>
         </span>
