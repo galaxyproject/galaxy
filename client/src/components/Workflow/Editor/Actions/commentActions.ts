@@ -14,7 +14,7 @@ class CommentAction extends UndoRedoAction {
     constructor(store: WorkflowCommentStore, comment: BaseWorkflowComment) {
         super();
         this.store = store;
-        this.comment = structuredClone(this.store.commentsRecord[comment.id]!);
+        this.comment = structuredClone(comment) as WorkflowComment;
     }
 }
 
