@@ -16,15 +16,15 @@ An example for this may be a tab, or pop-up having it's own separate undo-redo s
 How undo-redo operations are handled is determined by Undo-Redo actions.
 There are two ways of creating actions:
 
-* extending the `UndoRedoAction` class, and calling `undoRedoStore.applyAction`
-* using the `undoRedoStore.action` factory
+-   extending the `UndoRedoAction` class, and calling `undoRedoStore.applyAction`
+-   using the `undoRedoStore.action` factory
 
 Actions always provide 4 callbacks, all of them optional:
 
-* run / onRun: ran as soon as the action is applied to the store
-* undo / onUndo: ran when an action is rolled back
-* redo / onRedo: ran when an action is re-applied. If not defined, `run` will be ran instead
-* destroy / onDestroy: ran when an action is discarded, either by the undo stack reaching it's max size, or if a new action is applied when this action is in the redo stack
+-   run / onRun: ran as soon as the action is applied to the store
+-   undo / onUndo: ran when an action is rolled back
+-   redo / onRedo: ran when an action is re-applied. If not defined, `run` will be ran instead
+-   destroy / onDestroy: ran when an action is discarded, either by the undo stack reaching it's max size, or if a new action is applied when this action is in the redo stack
 
 Example: extending the `UndoRedoAction` class:
 
@@ -61,9 +61,10 @@ const commentStore = useWorkflowCommentStore("some-scope");
 
 const newComment = structuredClone(commentStore[comment.id]!);
 
-undoRedoStore.action()
+undoRedoStore
+    .action()
     .onRun(() => commentStore.deleteComment(newComment.id))
-    .onUndo(() => commentStore.addComments([ newComment.id ]))
+    .onUndo(() => commentStore.addComments([newComment.id]))
     .apply();
 ```
 
@@ -98,13 +99,9 @@ class ChangeCommentPositionAction extends UndoRedoAction {
     private startPosition: Position;
     private endPosition: Position;
 
-    constructor(
-        store: WorkflowCommentStore,
-        comment: WorkflowComment,
-        position: Position
-    ) {
+    constructor(store: WorkflowCommentStore, comment: WorkflowComment, position: Position) {
         super();
-        this.store
+        this.store;
         this.commentId = comment.id;
         this.startPosition = structuredClone(position);
         this.endPosition = structuredClone(position);
