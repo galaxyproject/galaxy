@@ -70,7 +70,12 @@ describe("InvocationsList.vue", () => {
         beforeEach(async () => {
             axiosMock
                 .onGet("/api/invocations", {
-                    params: { limit: 50, offset: 0, include_terminal: false, workflow_id: "abcde145678" },
+                    params: {
+                        limit: 50,
+                        offset: 0,
+                        include_terminal: false,
+                        workflow_id: "abcde145678",
+                    },
                 })
                 .reply(200, [], { total_matches: "0" });
             const propsData = {
@@ -102,7 +107,13 @@ describe("InvocationsList.vue", () => {
         beforeEach(async () => {
             axiosMock
                 .onGet("/api/invocations", {
-                    params: { limit: 50, offset: 0, include_terminal: false, history_id: "abcde145678" },
+                    params: {
+                        limit: 50,
+                        offset: 0,
+                        include_terminal: false,
+                        history_id: "abcde145678",
+                        include_nested_invocations: false,
+                    },
                 })
                 .reply(200, [], { total_matches: "0" });
             const propsData = {
@@ -132,7 +143,9 @@ describe("InvocationsList.vue", () => {
     describe("with invocation", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
+                .onGet("/api/invocations", {
+                    params: { limit: 50, offset: 0, include_terminal: false, include_nested_invocations: false },
+                })
                 .reply(200, [mockInvocationData], { total_matches: "1" });
             const propsData = {
                 ownerGrid: false,
@@ -202,7 +215,9 @@ describe("InvocationsList.vue", () => {
     describe("paginations", () => {
         beforeEach(async () => {
             axiosMock
-                .onGet("/api/invocations", { params: { limit: 1, offset: 0, include_terminal: false } })
+                .onGet("/api/invocations", {
+                    params: { limit: 1, offset: 0, include_terminal: false, include_nested_invocations: false },
+                })
                 .reply(200, [mockInvocationData], { total_matches: "3" });
             const propsData = {
                 ownerGrid: false,
