@@ -93,7 +93,13 @@ function onViewUserPublished() {
             @click="emit('update-filter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
         </BButton>
-        <FontAwesomeIcon v-else-if="workflow.published" :icon="faGlobe" fixed-width size="sm" />
+        <FontAwesomeIcon
+            v-else-if="workflow.published"
+            v-b-tooltip.noninteractive.hover
+            title="Published workflow"
+            :icon="faGlobe"
+            fixed-width
+            size="sm" />
 
         <BButton
             v-if="sourceType.includes('trs')"
