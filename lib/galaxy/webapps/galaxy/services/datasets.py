@@ -863,12 +863,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         extra_info = None
         mode = kwargs.get("mode", "Auto")
-        indexer = None
 
         # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             return indexer.get_data(chrom, low, high, **kwargs)
 
         # TODO:
@@ -878,7 +877,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         # If mode is Auto, need to determine what type of data to return.
         if mode == "Auto":
             # Get stats from indexer.
-            indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
 
             # If stats were requested, return them.
@@ -928,8 +927,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 )
 
             # Get mean depth.
-            if not indexer:
-                indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+            indexer = self._get_indexer(trans, dataset)
             stats = indexer.get_data(chrom, low, high, stats=True)
             mean_depth = stats["data"]["mean"]
 
@@ -981,3 +979,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         data = data_provider.get_data(**kwargs)
 
         return data
+
+    def _get_indexer(self, trans, dataset):
+        indexer = self.data_provider_registry.get_data_provider(trans, original_dataset=dataset, source="index")
+        if indexer is None:
+            msg = f"No indexer available for dataset {self.encode_id(dataset.id)}"
+            log.exception(msg)
+            raise galaxy_exceptions.ObjectNotFound(msg)
+        return indexer
