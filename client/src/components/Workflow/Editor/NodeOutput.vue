@@ -28,7 +28,7 @@ import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
 import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
-import { OutputTerminals } from "./modules/terminals";
+import type { OutputTerminals } from "./modules/terminals";
 
 import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
