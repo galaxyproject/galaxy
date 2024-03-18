@@ -7,10 +7,18 @@ import { components } from "@/api/schema";
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
+export interface HistorySummaryExtended extends HistorySummary {
+    size: number;
+    contents_active: components["schemas"]["HistoryActiveContentCounts"];
+    user_id: string;
+}
+
 /**
  * Contains additional details about a History.
  */
 export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
+
+export type AnyHistory = HistorySummary | HistorySummaryExtended | HistoryDetailed;
 
 /**
  * Contains minimal information about a HistoryContentItem.
@@ -126,6 +134,14 @@ export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
  */
 export type MetadataFiles = components["schemas"]["MetadataFile"][];
 
+export function isHistorySummary(history: AnyHistory): history is HistorySummary {
+    return !("user_id" in history);
+}
+
+export function isHistorySummaryExtended(history: AnyHistory): history is HistorySummaryExtended {
+    return "contents_active" in history && "user_id" in history;
+}
+
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
 export interface User extends QuotaUsageResponse {
@@ -147,4 +163,16 @@ export type GenericUser = User | AnonymousUser;
 
 export function isRegisteredUser(user: User | AnonymousUser | null): user is User {
     return !user?.isAnonymous;
+}
+
+export function userOwnsHistory(user: User | AnonymousUser | null, history: AnyHistory) {
+    return (
+        // Assuming histories without user_id are owned by the current user
+        (isRegisteredUser(user) && !hasOwner(history)) ||
+        (isRegisteredUser(user) && hasOwner(history) && user.id === history.user_id)
+    );
+}
+
+function hasOwner(history: AnyHistory): history is HistorySummaryExtended {
+    return "user_id" in history;
 }
