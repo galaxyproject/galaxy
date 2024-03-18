@@ -2875,7 +2875,7 @@ class ExpressionTool(Tool):
                         break
                 if copy_object is None:
                     raise exceptions.MessageException("Failed to find dataset output.")
-                out_data[key].copy_from(copy_object)
+                out_data[key].copy_from(copy_object, include_metadata=True)
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
