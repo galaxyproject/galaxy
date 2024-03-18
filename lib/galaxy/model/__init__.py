@@ -7887,7 +7887,9 @@ class WorkflowStep(Base, RepresentById):
     uuid: Mapped[Optional[str]] = mapped_column(UUIDType)
     label: Mapped[Optional[str]] = mapped_column(Unicode(255))
     temp_input_connections = None
-    parent_comment_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
+    parent_comment_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True
+    )
 
     parent_comment = relationship(
         "WorkflowComment",
@@ -8337,7 +8339,9 @@ class WorkflowComment(Base, RepresentById):
     type: Mapped[Optional[str]] = mapped_column(String(16))
     color: Mapped[Optional[str]] = mapped_column(String(16))
     data: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    parent_comment_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
+    parent_comment_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True
+    )
 
     workflow = relationship(
         "Workflow",
