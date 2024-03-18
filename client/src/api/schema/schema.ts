@@ -2336,7 +2336,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
         };
         /** ArchivedHistorySummary */
         ArchivedHistorySummary: {
@@ -2409,7 +2408,6 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
-            [key: string]: unknown | undefined;
         };
         /** AsyncFile */
         AsyncFile: {
@@ -3615,6 +3613,13 @@ export interface components {
              */
             contents_active?: components["schemas"]["HistoryActiveContentCounts"] | null;
             /**
+             * Contents States
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            contents_states?: {
+                [key: string]: number | undefined;
+            } | null;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
@@ -3660,6 +3665,11 @@ export interface components {
              * @description The name of the history.
              */
             name?: string | null;
+            /**
+             * Nice Size
+             * @description The total size of the contents of this history in a human-readable format.
+             */
+            nice_size?: string | null;
             /**
              * Preferred Object Store ID
              * @description The ID of the object store that should be used to store new datasets in this history.
@@ -3731,7 +3741,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
         };
         /**
          * DCESummary
@@ -6772,7 +6781,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
         };
         /**
          * HistorySummary
@@ -6843,7 +6851,6 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
-            [key: string]: unknown | undefined;
         };
         /**
          * Hyperlink
@@ -11661,7 +11668,6 @@ export interface components {
              * @description A list of content items to update with the changes.
              */
             items: components["schemas"]["UpdateContentItem"][];
-            [key: string]: unknown | undefined;
         };
         /**
          * UpdateHistoryContentsPayload
@@ -11697,7 +11703,6 @@ export interface components {
              * @description Whether this item is visible in the history.
              */
             visible?: boolean | null;
-            [key: string]: unknown | undefined;
         };
         /** UpdateLibraryFolderPayload */
         UpdateLibraryFolderPayload: {
@@ -15279,9 +15284,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15321,9 +15326,9 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15407,9 +15412,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15445,9 +15450,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15513,9 +15518,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15550,9 +15555,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15587,9 +15592,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15647,9 +15652,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15689,9 +15694,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15732,9 +15737,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
                     )[];
                 };
             };
@@ -15769,9 +15774,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15810,9 +15815,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15852,9 +15857,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15946,9 +15951,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["CustomHistoryView"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
