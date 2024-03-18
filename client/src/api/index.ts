@@ -125,3 +125,26 @@ export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
  * Contains dataset metadata information.
  */
 export type MetadataFiles = components["schemas"]["MetadataFile"][];
+
+type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+
+export interface User extends QuotaUsageResponse {
+    id: string;
+    email: string;
+    tags_used: string[];
+    isAnonymous: false;
+    is_admin?: boolean;
+    username?: string;
+}
+
+export interface AnonymousUser {
+    isAnonymous: true;
+    username?: string;
+    is_admin?: false;
+}
+
+export type GenericUser = User | AnonymousUser;
+
+export function isRegisteredUser(user: User | AnonymousUser | null): user is User {
+    return !user?.isAnonymous;
+}
