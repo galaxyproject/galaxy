@@ -17252,6 +17252,11 @@ export interface components {
                 | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
                 | null;
             /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            doc?: string | null;
+            /**
              * Inputs
              * @description A dictionary representing the inputs of the workflow.
              */
