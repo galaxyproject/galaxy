@@ -1349,6 +1349,16 @@ class CustomHistoryView(HistoryDetailed):
         title="Contents Active",
         description=("Contains the number of active, deleted or hidden items in a History."),
     )
+    contents_states: Optional[HistoryStateCounts] = Field(
+        default=None,
+        title="Contents States",
+        description="A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.",
+    )
+    nice_size: Optional[str] = Field(
+        default=None,
+        title="Nice Size",
+        description="The total size of the contents of this history in a human-readable format.",
+    )
 
 
 AnyHistoryView = Annotated[
