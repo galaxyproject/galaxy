@@ -76,20 +76,7 @@ class Terminal extends EventEmitter {
     public get mapOver(): CollectionTypeDescriptor {
         return this.stores.stepStore.stepMapOver[this.stepId] || NULL_COLLECTION_TYPE_DESCRIPTION;
     }
-    connect(other: Terminal) {
-        this.makeConnection(other);
-    }
-    makeConnection(other: Terminal) {
-        const connection: Connection = {
-            input: { stepId: this.stepId, name: this.name, connectorType: "input" },
-            output: { stepId: other.stepId, name: other.name, connectorType: "output" },
-        };
-        this.stores.connectionStore.addConnection(connection);
-    }
-    disconnect(other: BaseOutputTerminal | Connection) {
-        this.dropConnection(other);
-    }
-    dropConnection(other: BaseOutputTerminal | Connection) {
+    buildConnection(other: Terminal | Connection) {
         let connection: Connection;
         if (other instanceof Terminal) {
             connection = {
@@ -99,6 +86,28 @@ class Terminal extends EventEmitter {
         } else {
             connection = other;
         }
+        return connection;
+    }
+    connect(other: Terminal | Connection) {
+        this.stores.undoRedoStore
+            .action()
+            .onRun(() => this.makeConnection(other))
+            .onUndo(() => this.dropConnection(other))
+            .apply();
+    }
+    makeConnection(other: Terminal | Connection) {
+        const connection = this.buildConnection(other);
+        this.stores.connectionStore.addConnection(connection);
+    }
+    disconnect(other: Terminal | Connection) {
+        this.stores.undoRedoStore
+            .action()
+            .onRun(() => this.dropConnection(other))
+            .onUndo(() => this.makeConnection(other))
+            .apply();
+    }
+    dropConnection(other: Terminal | Connection) {
+        const connection = this.buildConnection(other);
         this.stores.connectionStore.removeConnection(getConnectionId(connection));
         this.resetMappingIfNeeded(connection);
     }
