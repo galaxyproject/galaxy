@@ -1072,8 +1072,6 @@ class HDCADetailed(HDCASummary):
 class HistoryBase(Model):
     """Provides basic configuration for all the History models."""
 
-    model_config = ConfigDict(extra="allow")
-
 
 class HistoryContentItemBase(Model):
     """Identifies a dataset or collection contained in a History."""
@@ -1099,8 +1097,10 @@ class UpdateContentItem(HistoryContentItem):
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
-class UpdateHistoryContentsBatchPayload(HistoryBase):
+class UpdateHistoryContentsBatchPayload(Model):
     """Contains property values that will be updated for all the history `items` provided."""
+
+    model_config = ConfigDict(extra="allow")
 
     items: List[UpdateContentItem] = Field(
         ...,
