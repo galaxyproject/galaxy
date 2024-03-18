@@ -174,7 +174,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             assert "state" in history
 
         # Expect only specific keys
-        expected_keys = ["name"]
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
         unexpected_keys = ["id", "deleted", "state"]
         index_response = self._get(f"histories?keys={','.join(expected_keys)}").json()
         for history in index_response:
@@ -183,6 +183,16 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
                 assert key in history
             for key in unexpected_keys:
                 assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
 
     def test_index_search_mode_views(self):
         # Make sure there is at least one history
@@ -201,7 +211,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             assert "state" in history
 
         # Expect only specific keys
-        expected_keys = ["name"]
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
         unexpected_keys = ["id", "deleted", "state"]
         data = dict(search=expected_name_contains, show_published=False, keys=",".join(expected_keys))
         index_response = self._get("histories", data=data).json()
@@ -211,6 +221,16 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
                 assert key in history
             for key in unexpected_keys:
                 assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(search=expected_name_contains, show_published=False, view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
 
     def test_index_case_insensitive_contains_query(self):
         # Create the histories with a different user to ensure the test
