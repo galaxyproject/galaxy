@@ -212,6 +212,36 @@ watch(
     }
 );
 
+function dragSameHistory() {
+    return getDragData().sameHistory;
+}
+
+function getDragData() {
+    const eventStore = useEventStore();
+    const multiple = eventStore.multipleDragData;
+    let data: HistoryItem[] | undefined;
+    let historyId: string | undefined;
+    try {
+        if (multiple) {
+            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            // set historyId to the first history_id in the multiple drag data
+            const firstItem = Object.values(dragData)[0];
+            if (firstItem) {
+                historyId = firstItem.history_id;
+            }
+            data = Object.values(dragData);
+        } else {
+            data = [eventStore.getDragData() as HistoryItem];
+            if (data[0]) {
+                historyId = data[0].history_id;
+            }
+        }
+    } catch (error) {
+        // this was not a valid object for this dropzone, ignore
+    }
+    return { data, sameHistory: historyId === props.history.id, multiple };
+}
+
 function getHighlight(item: HistoryItem) {
     if (unref(isLoading)) {
         return undefined;
@@ -319,45 +349,33 @@ function onOperationError(error: any) {
 }
 
 function onDragEnter(e: DragEvent) {
+    if (dragSameHistory()) {
+        return;
+    }
     dragTarget.value = e.target;
     showDropZone.value = true;
 }
 
+function onDragOver(e: DragEvent) {
+    if (dragSameHistory()) {
+        return;
+    }
+    e.preventDefault();
+}
+
 function onDragLeave(e: DragEvent) {
+    if (dragSameHistory()) {
+        return;
+    }
     if (dragTarget.value === e.target) {
         showDropZone.value = false;
     }
 }
 
-async function onDrop(evt: any) {
-    const eventStore = useEventStore();
+async function onDrop() {
     showDropZone.value = false;
-    let data: HistoryItem[] | undefined;
-    let historyId: string | undefined;
-    const multiple = eventStore.multipleDragData;
-    try {
-        if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
-            // set historyId to the first history_id in the multiple drag data
-            const firstItem = Object.values(dragData)[0];
-            if (firstItem) {
-                historyId = firstItem.history_id;
-            }
-            data = Object.values(dragData);
-        } else {
-            data = [eventStore.getDragData() as HistoryItem];
-            if (data[0]) {
-                historyId = data[0].history_id;
-            }
-        }
-    } catch (error) {
-        // this was not a valid object for this dropzone, ignore
-    }
-
-    if (!data) {
-        return;
-    } else if (historyId === props.history.id) {
-        Toast.error("Cannot copy to the same history");
+    const { data, sameHistory, multiple } = getDragData();
+    if (!data || sameHistory) {
         return;
     }
 
@@ -486,7 +504,7 @@ function setItemDragstart(
                 class="history-layout d-flex flex-column w-100 h-100"
                 @drop.prevent="onDrop"
                 @dragenter.prevent="onDragEnter"
-                @dragover.prevent
+                @dragover="onDragOver"
                 @dragleave.prevent="onDragLeave">
                 <slot name="navigation" :history="history" />
 

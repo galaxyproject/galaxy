@@ -317,9 +317,12 @@ function unexpandedClick(event: Event) {
         :data-state="dataState"
         tabindex="0"
         role="button"
+        draggable
+        @dragstart="onDragStart"
+        @dragend="onDragEnd"
         @keydown="onKeyDown">
         <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events, vuejs-accessibility/no-static-element-interactions -->
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
+        <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1" data-description="content item header info">
                     <BButton v-if="selectable" class="selector p-0" @click.stop="emit('update:selected', !selected)">

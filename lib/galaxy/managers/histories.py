@@ -215,6 +215,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             total_matches = None
         if payload.sort_by == "username":
             sort_column = model.User.username
+            stmt = stmt.add_columns(sort_column)
         else:
             sort_column = getattr(model.History, payload.sort_by)
         if payload.sort_desc:
