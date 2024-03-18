@@ -381,8 +381,24 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
     };
 });
 
+function makeConnection(inputId: number, inputName: string, outputId: number, outputName: string): Connection {
+    return {
+        input: {
+            stepId: inputId,
+            name: inputName,
+            connectorType: "input",
+        },
+        output: {
+            stepId: outputId,
+            name: outputName,
+            connectorType: "output",
+        },
+    };
+}
+
 function stepToConnections(step: Step): Connection[] {
     const connections: Connection[] = [];
+
     if (step.input_connections) {
         Object.entries(step?.input_connections).forEach(([inputName, outputArray]) => {
             if (outputArray === undefined) {
@@ -392,18 +408,7 @@ function stepToConnections(step: Step): Connection[] {
                 outputArray = [outputArray];
             }
             outputArray.forEach((output) => {
-                const connection: Connection = {
-                    input: {
-                        stepId: step.id,
-                        name: inputName,
-                        connectorType: "input",
-                    },
-                    output: {
-                        stepId: output.id,
-                        name: output.output_name,
-                        connectorType: "output",
-                    },
-                };
+                const connection = makeConnection(step.id, inputName, output.id, output.output_name);
                 const connectionInput = step.inputs.find((input) => input.name == inputName);
                 if (connectionInput && "input_subworkflow_step_id" in connectionInput) {
                     connection.input.input_subworkflow_step_id = connectionInput.input_subworkflow_step_id;
@@ -412,6 +417,7 @@ function stepToConnections(step: Step): Connection[] {
             });
         });
     }
+
     return connections;
 }
 
