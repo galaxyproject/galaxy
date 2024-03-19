@@ -67,6 +67,7 @@ from galaxy.model import (
     Task,
 )
 from galaxy.model.base import transaction
+from galaxy.model.store import copy_dataset_instance_metadata_attributes
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.structured_app import MinimalManagerApp
@@ -1949,9 +1950,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 ]
 
             for dataset_assoc in output_dataset_associations:
-                if getattr(dataset_assoc.dataset, "discovered", False):
-                    # skip outputs that have been discovered
-                    continue
+                is_discovered_dataset = getattr(dataset_assoc.dataset, "discovered", False)
                 context = self.get_dataset_finish_context(job_context, dataset_assoc)
                 # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
                 # lets not allow this to occur
@@ -1960,6 +1959,12 @@ class MinimalJobWrapper(HasResourceParameters):
                     dataset_assoc.dataset.dataset.history_associations
                     + dataset_assoc.dataset.dataset.library_associations
                 ):
+                    if is_discovered_dataset:
+                        if dataset is dataset_assoc.dataset:
+                            continue
+                        elif dataset.extension == dataset_assoc.dataset.extension or dataset.extension == "auto":
+                            copy_dataset_instance_metadata_attributes(dataset_assoc.dataset, dataset)
+                            continue
                     output_name = dataset_assoc.name
 
                     # Handles retry internally on error for instance...
