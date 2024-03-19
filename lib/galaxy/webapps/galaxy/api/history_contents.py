@@ -496,6 +496,7 @@ class FastAPIHistoryContents:
         name="history_content_typed",
         summary="Return detailed information about a specific HDA or HDCA with the given `ID` within a history.",
         operation_id="history_contents__show",
+        response_model_exclude_unset=True,
     )
     def show(
         self,
@@ -525,6 +526,7 @@ class FastAPIHistoryContents:
         summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
         operation_id="history_contents__show_legacy",
+        response_model_exclude_unset=True,
     )
     def show_legacy(
         self,
@@ -674,6 +676,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s",
         summary="Create a new `HDA` or `HDCA` in the given History.",
         operation_id="history_contents__create_typed",
+        response_model_exclude_unset=True,
     )
     def create_typed(
         self,
@@ -691,6 +694,7 @@ class FastAPIHistoryContents:
         summary="Create a new `HDA` or `HDCA` in the given History.",
         deprecated=True,
         operation_id="history_contents__create",
+        response_model_exclude_unset=True,
     )
     def create(
         self,
@@ -787,6 +791,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s/{id}",
         summary="Updates the values for the history content item with the given ``ID`` and path specified type.",
         operation_id="history_contents__update_typed",
+        response_model_exclude_unset=True,
     )
     def update_typed(
         self,
@@ -807,6 +812,7 @@ class FastAPIHistoryContents:
         summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
         operation_id="history_contents__update_legacy",
+        response_model_exclude_unset=True,
     )
     def update_legacy(
         self,
@@ -970,7 +976,11 @@ class FastAPIHistoryContents:
             return archive
         return StreamingResponse(archive.response(), headers=archive.get_headers())
 
-    @router.post("/api/histories/{history_id}/contents_from_store", summary="Create contents from store.")
+    @router.post(
+        "/api/histories/{history_id}/contents_from_store",
+        summary="Create contents from store.",
+        response_model_exclude_unset=True,
+    )
     def create_from_store(
         self,
         history_id: HistoryIDPathParam,
