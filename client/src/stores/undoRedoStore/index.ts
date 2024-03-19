@@ -117,6 +117,9 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
     const nextUndoAction = computed(() => undoActionStack.value[undoActionStack.value.length - 1]);
     const nextRedoAction = computed(() => redoActionStack.value[redoActionStack.value.length - 1]);
 
+    const hasUndo = computed(() => Boolean(nextUndoAction.value));
+    const hasRedo = computed(() => Boolean(nextRedoAction.value));
+
     const undoText = computed(() => {
         if (!nextUndoAction.value) {
             return "Nothing to undo";
@@ -155,6 +158,8 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         nextRedoAction,
         undoText,
         redoText,
+        hasUndo,
+        hasRedo,
         $reset,
     };
 });

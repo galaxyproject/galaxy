@@ -44,6 +44,21 @@
                     <span class="sr-only">Workflow Editor</span>
                     <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
                     <i v-else>Create New Workflow</i>
+
+                    <b-button-group>
+                        <b-button
+                            :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
+                            :variant="undoRedoStore.hasUndo ? 'secondary' : 'muted'"
+                            @click="undoRedoStore.undo()">
+                            <FontAwesomeIcon icon="fa-arrow-left" />
+                        </b-button>
+                        <b-button
+                            :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
+                            :variant="undoRedoStore.hasRedo ? 'secondary' : 'muted'"
+                            @click="undoRedoStore.redo()">
+                            <FontAwesomeIcon icon="fa-arrow-right" />
+                        </b-button>
+                    </b-button-group>
                 </div>
             </div>
             <WorkflowGraph
@@ -163,7 +178,11 @@
 </template>
 
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
+import { logicalOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
@@ -203,6 +222,8 @@ import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
+library.add(faArrowLeft, faArrowRight);
+
 export default {
     components: {
         MarkdownEditor,
@@ -218,6 +239,7 @@ export default {
         RefactorConfirmationModal,
         MessagesModal,
         WorkflowGraph,
+        FontAwesomeIcon,
     },
     props: {
         workflowId: {
@@ -254,10 +276,10 @@ export default {
         const { connectionStore, stepStore, stateStore, commentStore, undoRedoStore } = provideScopedWorkflowStores(id);
 
         const { undo, redo } = undoRedoStore;
-        const { ctrl_z, ctrl_y } = useMagicKeys();
+        const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
 
-        whenever(ctrl_z, undo);
-        whenever(ctrl_y, redo);
+        whenever(logicalOr(ctrl_z, meta_z), undo);
+        whenever(logicalOr(ctrl_shift_z, meta_shift_z), redo);
 
         const isCanvas = ref(true);
 
