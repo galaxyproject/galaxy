@@ -70,8 +70,8 @@
         <UserPreferencesElement
             icon="fa-th-list"
             title="Manage Activity Bar"
-            description="Click here to show or hide the activity bar."
-            badge="New!"
+            description="Click here to show or hide the activity bar while it is in beta.  In a future release, this will be the default behavior."
+            badge="Beta!"
             @click="toggleActivityBar = !toggleActivityBar">
             <b-collapse v-model="toggleActivityBar">
                 <UserActivityBarSettings />
