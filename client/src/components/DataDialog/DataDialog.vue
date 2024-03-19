@@ -172,10 +172,10 @@ watch(
         :modal-show="modalShow"
         :hide-modal="onCancel"
         :undo-show="undoShow"
-        :back-func="() => load()"
         :on-ok="onOk"
         :disable-ok="!hasValue"
-        :multiple="multiple">
+        :multiple="multiple"
+        @onBack="load()">
         <template v-slot:search>
             <DataDialogSearch v-model="filter" />
         </template>

@@ -7,7 +7,6 @@ import { BAlert, BButton, BModal } from "bootstrap-vue";
 library.add(faCaretLeft, faSpinner);
 
 interface Props {
-    backFunc?: () => void;
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
@@ -21,7 +20,6 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-    backFunc: () => {},
     disableOk: false,
     errorMessage: "",
     fileMode: true,
@@ -33,6 +31,11 @@ withDefaults(defineProps<Props>(), {
     optionsShow: false,
     undoShow: false,
 });
+
+const emit = defineEmits<{
+    (e: "onBack"): void;
+    (e: "onOk"): void;
+}>();
 </script>
 
 <template>
@@ -54,7 +57,7 @@ withDefaults(defineProps<Props>(), {
         <template v-slot:modal-footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <BButton v-if="undoShow" id="back-btn" size="sm" @click="backFunc">
+                    <BButton v-if="undoShow" id="back-btn" size="sm" @click="emit('onBack')">
                         <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
                     </BButton>

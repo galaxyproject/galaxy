@@ -341,12 +341,12 @@ onMounted(() => {
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="() => load()"
         :undo-show="undoShow"
         :on-ok="onOk"
         :multiple="multiple"
         :file-mode="fileMode"
-        :disable-ok="okButtonDisabled">
+        :disable-ok="okButtonDisabled"
+        @onBack="load()">
         <template v-slot:search>
             <DataDialogSearch v-model="filter" />
         </template>
