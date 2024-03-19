@@ -1271,8 +1271,12 @@ class HistoryActiveContentCounts(Model):
     )
 
 
+# TODO: https://github.com/galaxyproject/galaxy/issues/17785
 HistoryStateCounts = Dict[DatasetState, int]
 HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
+
+HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
+HistoryContentStateCounts = Dict[HistoryContentStates, int]
 
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
@@ -1349,7 +1353,7 @@ class CustomHistoryView(HistoryDetailed):
         title="Contents Active",
         description=("Contains the number of active, deleted or hidden items in a History."),
     )
-    contents_states: Optional[HistoryStateCounts] = Field(
+    contents_states: Optional[HistoryContentStateCounts] = Field(
         default=None,
         title="Contents States",
         description="A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.",
