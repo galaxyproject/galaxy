@@ -4,7 +4,7 @@ import { faAngleDoubleUp, faQuestion, faRedo, faSearch } from "@fortawesome/free
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BModal } from "bootstrap-vue";
 import { kebabCase } from "lodash";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
@@ -68,7 +68,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "update:filter-text", filter: string): void;
-    (e: "on-backend-filter", filter: string): void;
     (e: "update:show-advanced", showAdvanced: boolean): void;
     (e: "on-search", filters: Record<string, string | boolean>, filterText?: string, backendFilter?: string): void;
 }>();
@@ -127,25 +126,6 @@ function onToggle() {
 function updateFilterText(newFilterText: string) {
     emit("update:filter-text", newFilterText);
 }
-
-// as the filterText changes, emit a backend-filter that can be used as a backend query
-watch(
-    () => props.filterText,
-    (newFilterText: string) => {
-        const defaultBackendFilter = props.filterClass.getFilterText(props.filterClass.defaultFilters, true);
-        const currentBackendFilter = props.filterClass.getFilterText(filters.value, true);
-
-        const backendFilter =
-            defaultBackendFilter === currentBackendFilter
-                ? `${
-                      defaultBackendFilter && !newFilterText.includes(defaultBackendFilter)
-                          ? defaultBackendFilter + " "
-                          : ""
-                  }` + newFilterText
-                : props.filterClass.getFilterText(filters.value, true);
-        emit("on-backend-filter", backendFilter);
-    }
-);
 </script>
 
 <template>
