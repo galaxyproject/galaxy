@@ -17,18 +17,17 @@
                 @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="undoShow" size="sm" class="float-left" @click="load()">
-                <div class="fa fa-caret-left mr-1" />
+            <b-btn v-if="undoShow" size="sm" @click="load()">
+                <div class="fa fa-caret-left" />
                 Back
             </b-btn>
-            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
-                <div class="fa fa-upload ml-1" />
+            <b-btn v-if="allowUpload" size="sm" @click="onUpload">
+                <div class="fa fa-upload" />
                 Upload
             </b-btn>
             <b-btn
                 v-if="multiple"
                 size="sm"
-                class="float-right ml-1"
                 variant="primary"
                 :disabled="!hasValue"
                 @click="onOk">
