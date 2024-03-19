@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
@@ -24,8 +21,6 @@ import { DirectoryRecord, Model, RecordItem } from "./model";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-
-library.add(faCaretLeft);
 
 interface FilesDialogProps {
     /** Whether to allow multiple selections */
