@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BButton } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
@@ -187,10 +188,10 @@ watch(
                 @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="allowUpload" size="sm" @click="onUpload">
+            <BButton v-if="allowUpload" size="sm" @click="onUpload">
                 <div class="fa fa-upload" />
                 Upload
-            </b-btn>
+            </BButton>
         </template>
     </SelectionDialog>
 </template>
