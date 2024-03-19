@@ -15,6 +15,10 @@
             <div class="w-100">
                 <div v-if="!errorMessage">
                     <slot name="buttons"/>
+                    <b-btn v-if="undoShow" id="back-btn" size="sm" @click="backFunc">
+                        <FontAwesomeIcon :icon="['fas', 'caret-left']" />
+                        Back
+                    </b-btn>
                     <b-btn size="sm" class="selection-dialog-modal-cancel" @click="hideModal">
                         Cancel
                     </b-btn>

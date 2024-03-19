@@ -3,7 +3,9 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel">
+        :hide-modal="onCancel"
+        :undo-show="undoShow"
+        :back-func="load">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -17,10 +19,6 @@
                 @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="undoShow" size="sm" @click="load()">
-                <div class="fa fa-caret-left" />
-                Back
-            </b-btn>
             <b-btn v-if="allowUpload" size="sm" @click="onUpload">
                 <div class="fa fa-upload" />
                 Upload
