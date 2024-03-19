@@ -14,7 +14,6 @@ interface Props {
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
-    onOk?: () => void;
     optionsShow?: boolean;
     undoShow?: boolean;
 }
@@ -27,7 +26,6 @@ withDefaults(defineProps<Props>(), {
     modalShow: true,
     modalStatic: false,
     multiple: false,
-    onOk: () => {},
     optionsShow: false,
     undoShow: false,
 });
@@ -72,7 +70,7 @@ const emit = defineEmits<{
                         class="file-dialog-modal-ok"
                         variant="primary"
                         :disabled="disableOk"
-                        @click="onOk">
+                        @click="emit('onOk')">
                         {{ fileMode ? "Ok" : "Select this folder" }}
                     </BButton>
                 </div>

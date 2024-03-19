@@ -337,16 +337,16 @@ onMounted(() => {
 
 <template>
     <SelectionDialog
-        :error-message="errorMessage"
-        :options-show="optionsShow"
-        :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
-        :undo-show="undoShow"
-        :on-ok="onOk"
-        :multiple="multiple"
-        :file-mode="fileMode"
         :disable-ok="okButtonDisabled"
-        @onBack="load()">
+        :error-message="errorMessage"
+        :file-mode="fileMode"
+        :hide-modal="() => (modalShow = false)"
+        :modal-show="modalShow"
+        :multiple="multiple"
+        :options-show="optionsShow"
+        :undo-show="undoShow"
+        @onBack="load()"
+        @onOk="onOk">
         <template v-slot:search>
             <DataDialogSearch v-model="filter" />
         </template>
@@ -365,14 +365,14 @@ onMounted(() => {
         <template v-slot:options>
             <DataDialogTable
                 v-if="optionsShow"
+                :filter="filter"
+                :is-busy="isBusy"
                 :items="items"
                 :multiple="multiple"
-                :filter="filter"
                 :select-all-icon="selectAllIcon"
-                :show-select-icon="undoShow && multiple"
                 :show-details="showDetails"
+                :show-select-icon="undoShow && multiple"
                 :show-time="showTime"
-                :is-busy="isBusy"
                 @clicked="clicked"
                 @open="open"
                 @toggleSelectAll="toggleSelectAll" />
