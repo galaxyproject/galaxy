@@ -5,7 +5,10 @@
         :modal-show="modalShow"
         :hide-modal="onCancel"
         :undo-show="undoShow"
-        :back-func="load">
+        :back-func="load"
+        :on-ok="onOk"
+        :disable-ok="!hasValue"
+        :multiple="multiple">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -22,14 +25,6 @@
             <b-btn v-if="allowUpload" size="sm" @click="onUpload">
                 <div class="fa fa-upload" />
                 Upload
-            </b-btn>
-            <b-btn
-                v-if="multiple"
-                size="sm"
-                variant="primary"
-                :disabled="!hasValue"
-                @click="onOk">
-                Ok
             </b-btn>
         </template>
     </selection-dialog>

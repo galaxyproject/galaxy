@@ -20,9 +20,21 @@
                     </b-btn>
                     <slot v-if="!errorMessage" name="buttons"/>
                 </div>
-                <b-btn id="close-btn" size="sm" variant="primary" @click="hideModal">
-                    Cancel
-                </b-btn>
+                <div>
+                    <b-btn id="close-btn" size="sm" variant="secondary" @click="hideModal">
+                        Cancel
+                    </b-btn>
+                    <BButton
+                        v-if="multiple || !fileMode"
+                        id="ok-btn"
+                        size="sm"
+                        class="file-dialog-modal-ok"
+                        variant="primary"
+                        :disabled="disableOk"
+                        @click="onOk">
+                        {{ fileMode ? "Ok" : "Select this folder" }}
+                    </BButton>
+                </div>
             </div>
         </template>
     </b-modal>
@@ -74,9 +86,22 @@ export default {
             required: false,
             default: () => {},
         },
+        onOk: {
+            type: Function,
+            required: false,
+            default: () => {},
+        },
         undoShow: {
             type: Boolean,
             required: false,
+        },
+        disableOk: {
+            type: Boolean,
+            default: false,
+        },
+        fileMode: {
+            type: Boolean,
+            default: true,
         },
     },
 };

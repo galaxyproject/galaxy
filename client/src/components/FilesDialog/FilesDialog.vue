@@ -343,7 +343,11 @@ onMounted(() => {
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
         :back-func="load"
-        :undo-show="undoShow">
+        :undo-show="undoShow"
+        :on-ok="onOk"
+        :multiple="multiple"
+        :file-mode="fileMode"
+        :disable-ok="okButtonDisabled">
         <template v-slot:search>
             <DataDialogSearch v-model="filter" />
         </template>
@@ -373,18 +377,6 @@ onMounted(() => {
                 @clicked="clicked"
                 @open="open"
                 @toggleSelectAll="toggleSelectAll" />
-        </template>
-        <template v-slot:buttons>
-            <BButton
-                v-if="multiple || !fileMode"
-                id="ok-btn"
-                size="sm"
-                class="file-dialog-modal-ok"
-                variant="primary"
-                :disabled="okButtonDisabled"
-                @click="onOk">
-                {{ fileMode ? "Ok" : "Select this folder" }}
-            </BButton>
         </template>
     </SelectionDialog>
 </template>
