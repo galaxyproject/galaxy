@@ -13,6 +13,10 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     stepStore;
     onUndoRedo?: () => void;
 
+    get name() {
+        return "modify step";
+    }
+
     constructor(stepStore: WorkflowStepStore, stepId: number, key: K, fromValue: Step[K], toValue: Step[K]) {
         super();
         this.stepStore = stepStore;
@@ -47,6 +51,10 @@ export class UpdateStepAction extends UndoRedoAction {
     fromPartial;
     toPartial;
     onUndoRedo?: () => void;
+
+    get name() {
+        return "modify step";
+    }
 
     constructor(
         stepStore: WorkflowStepStore,
@@ -128,6 +136,10 @@ export class InsertStepAction extends UndoRedoAction {
         this.stepData = stepData;
     }
 
+    get name() {
+        return `insert ${this.stepData.name} step`;
+    }
+
     stepDataToTuple() {
         return Object.values(this.stepData) as Parameters<WorkflowStepStore["insertNewStep"]>;
     }
@@ -183,6 +195,10 @@ export class RemoveStepAction extends UndoRedoAction {
         this.connections = structuredClone(this.connectionStore.getConnectionsForStep(this.step.id));
     }
 
+    get name() {
+        return `remove step ${this.step.label ?? this.step.name}`;
+    }
+
     run() {
         this.stepStore.removeStep(this.step.id);
         this.showAttributesCallback();
@@ -208,6 +224,10 @@ export class CopyStepAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.step = structuredClone(step);
+    }
+
+    get name() {
+        return `duplicate step ${this.step.label ?? this.step.name}`;
     }
 
     run() {
