@@ -329,11 +329,6 @@ function finalize() {
     props.callback(results);
 }
 
-function goBack() {
-    // Loading without a record navigates back one level
-    load();
-}
-
 function onOk() {
     if (!fileMode.value && currentDirectory.value) {
         selectSingleRecord(currentDirectory.value);
@@ -352,7 +347,7 @@ onMounted(() => {
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="goBack"
+        :back-func="load"
         :undo-show="undoShow">
         <template v-slot:search>
             <DataDialogSearch v-model="filter" />
