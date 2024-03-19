@@ -1170,7 +1170,7 @@ class HistoryContentBulkOperationResult(Model):
     errors: List[BulkOperationItemError]
 
 
-class UpdateHistoryContentsPayload(HistoryBase):
+class UpdateHistoryContentsPayload(Model):
     """Can contain arbitrary/dynamic fields that will be updated for a particular history item."""
 
     name: Optional[str] = Field(
@@ -1199,12 +1199,13 @@ class UpdateHistoryContentsPayload(HistoryBase):
         description="A list of tags to add to this item.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "visible": False,
                 "annotation": "Test",
             }
-        }
+        },
     )
 
 

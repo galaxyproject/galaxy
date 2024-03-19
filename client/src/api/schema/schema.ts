@@ -11701,6 +11701,7 @@ export interface components {
              * @description Whether this item is visible in the history.
              */
             visible?: boolean | null;
+            [key: string]: unknown | undefined;
         };
         /** UpdateLibraryFolderPayload */
         UpdateLibraryFolderPayload: {
