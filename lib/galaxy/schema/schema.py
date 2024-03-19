@@ -3187,15 +3187,26 @@ class UpdateDatasetPermissionsPayload(Model):
     )
 
 
-class CustomHistoryItem(Model):
-    """Can contain any serializable property of the item.
+@partial_model()
+class CustomHistoryHDA(HDADetailed):
+    """Can contain any serializable property of an HDA.
 
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
 
-    model_config = ConfigDict(extra="allow")
+@partial_model()
+class CustomHistoryHDCA(HDCADetailed):
+    """Can contain any serializable property of an HDCA.
 
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+    pass
+
+
+AnyCustomHistoryItem = Union[CustomHistoryHDA, CustomHistoryHDCA]
 
 AnyHDA = Union[HDADetailed, HDASummary]
 AnyHDCA = Union[HDCADetailed, HDCASummary]
@@ -3203,7 +3214,7 @@ AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,
         AnyHDCA,
-        CustomHistoryItem,
+        AnyCustomHistoryItem,
     ],
     Field(union_mode="left_to_right"),
 ]
@@ -3240,7 +3251,7 @@ class DeleteHistoryContentPayload(Model):
     )
 
 
-class DeleteHistoryContentResult(CustomHistoryItem):
+class DeleteHistoryContentResult(Model):
     """Contains minimum information about the deletion state of a history item.
 
     Can also contain any other properties of the item."""
