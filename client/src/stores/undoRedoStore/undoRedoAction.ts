@@ -1,11 +1,11 @@
 export class UndoRedoAction {
-    private internalName?: string;
+    protected internalName?: string;
 
     get name(): string | undefined {
         return this.internalName;
     }
 
-    set name(name: string) {
+    set name(name: string | undefined) {
         this.internalName = name;
     }
 
