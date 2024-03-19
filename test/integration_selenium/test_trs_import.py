@@ -49,7 +49,8 @@ class TestTrsImport(SeleniumIntegrationTestCase):
         return cls.temp_config_dir("trs")
 
     def assert_workflow_imported(self, name):
-        self.workflow_index_search_for(name)
+        # surround name with quotes to consider case where name contains colons
+        self.workflow_index_search_for(f'"{name}"')
         assert len(self.workflow_card_elements()) == 1, f"workflow ${name} not imported"
 
     def test_import_workflow_by_url_dockstore(self):
