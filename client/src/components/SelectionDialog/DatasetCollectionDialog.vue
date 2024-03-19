@@ -25,11 +25,21 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { errorMessageAsString } from "utils/simple-error";
 
-import SelectionDialogMixin from "./SelectionDialogMixin";
+import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 export default {
-    mixins: [SelectionDialogMixin],
+    components: {
+        "selection-dialog": SelectionDialog,
+        "data-dialog-table": DataDialogTable,
+        "data-dialog-search": DataDialogSearch,
+    },
     props: {
+        callback: {
+            type: Function,
+            default: () => {},
+        },
         history: {
             type: String,
             required: true,
