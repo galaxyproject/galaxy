@@ -342,7 +342,7 @@ onMounted(() => {
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="load"
+        :back-func="() => load()"
         :undo-show="undoShow"
         :on-ok="onOk"
         :multiple="multiple"

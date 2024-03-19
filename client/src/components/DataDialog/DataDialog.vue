@@ -5,7 +5,7 @@
         :modal-show="modalShow"
         :hide-modal="onCancel"
         :undo-show="undoShow"
-        :back-func="load"
+        :back-func="() => load()"
         :on-ok="onOk"
         :disable-ok="!hasValue"
         :multiple="multiple">
