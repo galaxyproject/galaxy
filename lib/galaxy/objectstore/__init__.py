@@ -1609,6 +1609,22 @@ class QuotaSourceMap:
         return quota_sources
 
 
+class ObjectCreationProblem(Exception):
+    pass
+
+
+# Calling these client_message to make it clear they should use the language of the
+# Galaxy UI/UX - for instance "storage location" not "objectstore".
+class ObjectCreationProblemSharingDisabled(ObjectCreationProblem):
+    client_message = "Job attempted to create sharable output datasets in a storage location with sharing disabled"
+
+
+class ObjectCreationProblemStoreFull(ObjectCreationProblem):
+    client_message = (
+        "Job attempted to create output datasets in a full storage location, please contact your admin for more details"
+    )
+
+
 class ObjectStorePopulator:
     """Small helper for interacting with the object store and making sure all
     datasets from a job end up with the same object_store_id.
@@ -1635,9 +1651,9 @@ class ObjectStorePopulator:
             ensure_non_private = require_shareable
             concrete_store = self.object_store.create(dataset, ensure_non_private=ensure_non_private)
             if concrete_store.private and require_shareable:
-                raise Exception("Attempted to create shared output datasets in objectstore with sharing disabled")
+                raise ObjectCreationProblemSharingDisabled()
         except ObjectInvalid:
-            raise Exception("Unable to create output dataset: object store is full")
+            raise ObjectCreationProblemStoreFull()
         self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
 
 
