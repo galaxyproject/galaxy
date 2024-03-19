@@ -70,6 +70,10 @@ class WorkRequestContext(ProvidesHistoryContext):
     def history(self):
         return self.get_history()
 
+    @history.setter
+    def history(self, history):
+        self.__history = history
+
     def get_user(self):
         """Return the current user if logged in or None."""
         return self.__user

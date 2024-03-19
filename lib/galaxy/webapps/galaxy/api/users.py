@@ -641,6 +641,7 @@ class FastAPIUsers:
         "/api/users/{user_id}",
         name="get_user",
         summary="Return information about a specified or the current user. Only admin can see deleted or other users",
+        require_default_history=True,
     )
     def show(
         self,
