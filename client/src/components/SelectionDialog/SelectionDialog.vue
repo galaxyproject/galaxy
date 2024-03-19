@@ -1,71 +1,67 @@
 <script setup lang="ts">
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BModal } from "bootstrap-vue";
 
-Vue.use(BootstrapVue);
-
-library.add(faCaretLeft);
+library.add(faCaretLeft, faSpinner);
 
 interface Props {
-    multiple?: boolean;
-    modalStatic?: boolean;
-    optionsShow?: boolean;
-    errorMessage?: string;
-    modalShow?: boolean;
-    undoShow?: boolean;
+    backFunc?: () => void;
     disableOk?: boolean;
+    errorMessage?: string;
     fileMode?: boolean;
     hideModal?: () => void;
-    backFunc?: () => void;
+    modalShow?: boolean;
+    modalStatic?: boolean;
+    multiple?: boolean;
     onOk?: () => void;
+    optionsShow?: boolean;
+    undoShow?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    multiple: false,
-    modalStatic: false,
-    errorMessage: "",
-    optionsShow: false,
-    modalShow: true,
-    hideModal: () => {},
+withDefaults(defineProps<Props>(), {
     backFunc: () => {},
-    onOk: () => {},
-    undoShow: false,
     disableOk: false,
+    errorMessage: "",
     fileMode: true,
-
+    hideModal: () => {},
+    modalShow: true,
+    modalStatic: false,
+    multiple: false,
+    onOk: () => {},
+    optionsShow: false,
+    undoShow: false,
 });
 </script>
 
 <template>
-    <b-modal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
+    <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
         <slot name="helper"> </slot>
-        <b-alert v-if="errorMessage" variant="danger" show>
+        <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </b-alert>
+        </BAlert>
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
-            <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
+            <div v-else>
+                <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
+                <span>Please wait...</span>
+            </div>
         </div>
         <template v-slot:modal-footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <b-btn v-if="undoShow" id="back-btn" size="sm" @click="backFunc">
+                    <BButton v-if="undoShow" id="back-btn" size="sm" @click="backFunc">
                         <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
-                    </b-btn>
-                    <slot v-if="!errorMessage" name="buttons"/>
+                    </BButton>
+                    <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <div>
-                    <b-btn id="close-btn" size="sm" variant="secondary" @click="hideModal">
-                        Cancel
-                    </b-btn>
+                    <BButton id="close-btn" size="sm" variant="secondary" @click="hideModal"> Cancel </BButton>
                     <BButton
                         v-if="multiple || !fileMode"
                         id="ok-btn"
@@ -79,7 +75,7 @@ const props = withDefaults(defineProps<Props>(), {
                 </div>
             </div>
         </template>
-    </b-modal>
+    </BModal>
 </template>
 
 <style>
