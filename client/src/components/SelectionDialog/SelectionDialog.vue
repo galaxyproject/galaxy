@@ -1,3 +1,45 @@
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+
+Vue.use(BootstrapVue);
+
+library.add(faCaretLeft);
+
+interface Props {
+    multiple?: boolean;
+    modalStatic?: boolean;
+    optionsShow?: boolean;
+    errorMessage?: string;
+    modalShow?: boolean;
+    undoShow?: boolean;
+    disableOk?: boolean;
+    fileMode?: boolean;
+    hideModal?: () => void;
+    backFunc?: () => void;
+    onOk?: () => void;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    multiple: false,
+    modalStatic: false,
+    errorMessage: "",
+    optionsShow: false,
+    modalShow: true,
+    hideModal: () => {},
+    backFunc: () => {},
+    onOk: () => {},
+    undoShow: false,
+    disableOk: false,
+    fileMode: true,
+
+});
+</script>
+
 <template>
     <b-modal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
@@ -39,73 +81,6 @@
         </template>
     </b-modal>
 </template>
-
-<script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
-
-Vue.use(BootstrapVue);
-
-library.add(faCaretLeft);
-
-export default {
-    components: {
-        FontAwesomeIcon,
-    },
-    props: {
-        multiple: {
-            type: Boolean,
-            default: false,
-        },
-        modalStatic: {
-            type: Boolean,
-            default: false,
-        },
-        errorMessage: {
-            type: String,
-            default: null,
-        },
-        optionsShow: {
-            type: Boolean,
-            default: false,
-        },
-        modalShow: {
-            type: Boolean,
-            default: true,
-        },
-        hideModal: {
-            type: Function,
-            required: true,
-        },
-        backFunc: {
-            type: Function,
-            required: false,
-            default: () => {},
-        },
-        onOk: {
-            type: Function,
-            required: false,
-            default: () => {},
-        },
-        undoShow: {
-            type: Boolean,
-            required: false,
-        },
-        disableOk: {
-            type: Boolean,
-            default: false,
-        },
-        fileMode: {
-            type: Boolean,
-            default: true,
-        },
-    },
-};
-</script>
 
 <style>
 .selection-dialog-modal .modal-body {
