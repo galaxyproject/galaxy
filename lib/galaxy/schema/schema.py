@@ -3195,6 +3195,12 @@ class CustomHistoryHDA(HDADetailed):
     parameters without a particular view (predefined set of keys).
     """
 
+    # TODO: Fix this workaround for partial_model not supporting UUID fields for some reason.
+    # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
+    # Also ignoring mypy complaints about the type redefinition.
+    uuid: Optional[UUID4]  # type: ignore
+
+
 @partial_model()
 class CustomHistoryHDCA(HDCADetailed):
     """Can contain any serializable property of an HDCA.
