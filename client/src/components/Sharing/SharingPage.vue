@@ -45,7 +45,7 @@ const defaultExtra = () =>
 
 const item = ref<Item>({
     title: "title",
-    username_and_slug: "username/slug",
+    username_and_slug: "__username__/__slug__",
     importable: false,
     published: false,
     users_shared_with: [],
@@ -208,7 +208,7 @@ function onPublish(published: boolean) {
 const hasUsername = ref(Boolean(getGalaxyInstance().user.get("username")));
 const newUsername = ref("");
 
-const slugSet = computed(() => itemUrl.slug != "slug" && itemUrl.prefix != "username");
+const slugSet = computed(() => itemUrl.slug != "__slug__" && itemUrl.prefix != "__username__");
 
 async function setUsername() {
     axios
@@ -273,7 +273,7 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
                         @submit="onSubmitSlug" />
                 </div>
                 <div v-else>
-                    <p>Currently publishing {{ modelClass }}, a shareable URL will be available here momentarily.</p>
+                    <p>Currently publishing {{ modelClass }}.  A shareable URL will be available here momentarily.</p>
                 </div>
             </div>
             <div v-else class="mb-4">
