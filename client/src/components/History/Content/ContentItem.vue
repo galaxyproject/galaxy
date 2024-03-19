@@ -304,9 +304,10 @@ function onButtonSelect(e: Event) {
     const event = e as KeyboardEvent;
     if (event.shiftKey) {
         onClick(e);
+    } else {
+        emit("init-key-selection");
     }
     contentItem.value?.focus();
-    emit("init-key-selection");
     emit("update:selected", !props.selected);
 }
 
