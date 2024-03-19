@@ -97,7 +97,6 @@ function selectSingleRecord(record: RecordItem, selectOnly = false) {
     } else {
         selectionModel.value.add(record);
     }
-
     hasValue.value = selectionModel.value.count() > 0;
     if (props.multiple) {
         formatRows();

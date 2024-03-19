@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { BButton } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
@@ -23,7 +24,7 @@ interface Props {
     multiple?: boolean;
     title?: string;
     history: string;
-    callback: (results: unknown) => void;
+    callback: (results: Array<Record>) => void;
 }
 
 interface Record {
@@ -44,7 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "onCancel"): void;
     (e: "onUpload"): void;
-    (e: "onOk", results: unknown): void;
+    (e: "onOk", results: Array<Record>): void;
 }>();
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
@@ -121,8 +122,8 @@ function onCancel() {
 }
 
 /** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
-function onLoad(record: unknown) {
-    //load(record.url);
+function onLoad(record: Record) {
+    load(record.url);
 }
 
 /** Performs server request to retrieve data records **/
@@ -189,7 +190,7 @@ watch(
         </template>
         <template v-slot:buttons>
             <BButton v-if="allowUpload" size="sm" @click="onUpload">
-                <div class="fa fa-upload" />
+                <Icon :icon="faUpload" />
                 Upload
             </BButton>
         </template>
