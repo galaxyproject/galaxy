@@ -380,10 +380,6 @@ onMounted(() => {
                 @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
-            <BButton v-if="undoShow" id="back-btn" size="sm" @click="load()">
-                <FontAwesomeIcon :icon="['fas', 'caret-left']" />
-                Back
-            </BButton>
             <BButton
                 v-if="multiple || !fileMode"
                 id="ok-btn"
