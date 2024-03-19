@@ -16,6 +16,12 @@ import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue"
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
+interface Record {
+    id: string;
+    isLeaf: boolean;
+    url: string;
+}
+
 interface Props {
     allowUpload?: boolean;
     format?: string;
@@ -25,12 +31,6 @@ interface Props {
     title?: string;
     history: string;
     callback: (results: Array<Record>) => void;
-}
-
-interface Record {
-    id: string;
-    isLeaf: boolean;
-    url: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -168,12 +168,12 @@ watch(
 <template>
     <SelectionDialog
         :error-message="errorMessage"
-        :options-show="optionsShow"
-        :modal-show="modalShow"
-        :hide-modal="onCancel"
-        :undo-show="undoShow"
         :disable-ok="!hasValue"
+        :hide-modal="onCancel"
+        :modal-show="modalShow"
         :multiple="multiple"
+        :options-show="optionsShow"
+        :undo-show="undoShow"
         @onBack="load()"
         @onOk="onOk">
         <template v-slot:search>
@@ -182,9 +182,9 @@ watch(
         <template v-slot:options>
             <DataDialogTable
                 v-if="optionsShow"
+                :filter="filter"
                 :items="items"
                 :multiple="multiple"
-                :filter="filter"
                 @clicked="onClick"
                 @open="onLoad" />
         </template>

@@ -23,24 +23,24 @@ import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface FilesDialogProps {
-    /** Whether to allow multiple selections */
-    multiple?: boolean;
-    /** Browsing mode to define the selection behavior */
-    mode?: FileSourceBrowsingMode;
-    /** Whether to show only writable sources */
-    requireWritable?: boolean;
-    /** Options to filter the file sources */
-    filterOptions?: FilterFileSourcesOptions;
     /** Callback function to be called passing the results when selection is complete */
     callback?: (files: any) => void;
+    /** Options to filter the file sources */
+    filterOptions?: FilterFileSourcesOptions;
+    /** Browsing mode to define the selection behavior */
+    mode?: FileSourceBrowsingMode;
+    /** Whether to allow multiple selections */
+    multiple?: boolean;
+    /** Whether to show only writable sources */
+    requireWritable?: boolean;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
-    multiple: false,
-    mode: "file",
-    requireWritable: false,
-    filterOptions: undefined,
     callback: () => {},
+    filterOptions: undefined,
+    mode: "file",
+    multiple: false,
+    requireWritable: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
