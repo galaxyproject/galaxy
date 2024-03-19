@@ -47,7 +47,7 @@ withDefaults(defineProps<Props>(), {
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
             <div v-else>
-                <FontAwesomeIcon v-if="loading" :icon="faSpinner" spin />
+                <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>
             </div>
         </div>
