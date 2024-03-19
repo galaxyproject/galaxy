@@ -33,7 +33,7 @@ const placeholder = computed(() => `Type to Search ${props.title}`);
 </script>
 
 <template>
-    <BInputGroup>
+    <BInputGroup class="w-100">
         <BFormInput v-model="filter" :placeholder="placeholder" />
         <BInputGroupAppend>
             <BButton :disabled="!filter" @click="filter = ''"><FontAwesomeIcon icon="times" /></BButton>

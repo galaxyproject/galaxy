@@ -38,14 +38,14 @@ withDefaults(defineProps<Props>(), {
 <template>
     <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
-            <slot name="search"> </slot>
+            <slot name="search" />
         </template>
-        <slot name="helper"> </slot>
+        <slot name="helper" />
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <slot v-if="optionsShow" name="options"> </slot>
+            <slot v-if="optionsShow" name="options" />
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>
