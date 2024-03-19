@@ -137,7 +137,7 @@ export class InsertStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `insert ${this.stepData.name} step`;
+        return `insert ${this.stepData.name}`;
     }
 
     stepDataToTuple() {
@@ -196,7 +196,7 @@ export class RemoveStepAction extends UndoRedoAction {
     }
 
     get name() {
-        return `remove step ${this.step.label ?? this.step.name}`;
+        return `remove ${this.step.label ?? this.step.name}`;
     }
 
     run() {
