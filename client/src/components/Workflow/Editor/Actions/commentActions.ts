@@ -19,6 +19,10 @@ class CommentAction extends UndoRedoAction {
 }
 
 export class AddCommentAction extends CommentAction {
+    get name() {
+        return `add ${this.comment.type} comment`;
+    }
+
     undo() {
         this.store.deleteComment(this.comment.id);
     }
@@ -29,6 +33,10 @@ export class AddCommentAction extends CommentAction {
 }
 
 export class DeleteCommentAction extends CommentAction {
+    get name() {
+        return `delete ${this.comment.type} comment`;
+    }
+
     run() {
         this.store.deleteComment(this.comment.id);
     }
@@ -43,6 +51,7 @@ export class ChangeColorAction extends UndoRedoAction {
     private toColor: WorkflowCommentColor;
     private fromColor: WorkflowCommentColor;
     private store: WorkflowCommentStore;
+    protected type;
 
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, color: WorkflowCommentColor) {
         super();
@@ -50,6 +59,11 @@ export class ChangeColorAction extends UndoRedoAction {
         this.commentId = comment.id;
         this.fromColor = comment.color;
         this.toColor = color;
+        this.type = comment.type;
+    }
+
+    get name() {
+        return `change ${this.type} comment color to ${this.toColor}`;
     }
 
     run() {
@@ -65,6 +79,7 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoA
     private commentId: number;
     private startData: WorkflowComment[K];
     private endData: WorkflowComment[K];
+    protected type;
     protected applyDataCallback: (commentId: number, data: WorkflowComment[K]) => void;
 
     constructor(
@@ -79,6 +94,11 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoA
         this.endData = structuredClone(data);
         this.applyDataCallback = applyDataCallback;
         this.applyDataCallback(this.commentId, this.endData);
+        this.type = comment.type;
+    }
+
+    get name() {
+        return `change ${this.type} comment`;
     }
 
     updateData(data: WorkflowComment[K]) {
@@ -107,12 +127,20 @@ export class LazyChangePositionAction extends LazyMutateCommentAction<"position"
         const callback = store.changePosition;
         super(comment, "position", position, callback);
     }
+
+    get name() {
+        return `change ${this.type} comment position`;
+    }
 }
 
 export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
     constructor(store: WorkflowCommentStore, comment: WorkflowComment, size: [number, number]) {
         const callback = store.changeSize;
         super(comment, "size", size, callback);
+    }
+
+    get name() {
+        return `resize ${this.type} comment`;
     }
 }
 
@@ -129,6 +157,10 @@ export class LazyMoveMultipleAction extends UndoRedoAction {
 
     private positionFrom;
     private positionTo;
+
+    get name() {
+        return "move multiple nodes";
+    }
 
     constructor(
         commentStore: WorkflowCommentStore,

@@ -114,6 +114,29 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
 
     const isQueued = computed(() => (action?: UndoRedoAction | null) => pendingLazyAction.value === action);
 
+    const nextUndoAction = computed(() => undoActionStack.value[undoActionStack.value.length - 1]);
+    const nextRedoAction = computed(() => redoActionStack.value[redoActionStack.value.length - 1]);
+
+    const undoText = computed(() => {
+        if (!nextUndoAction.value) {
+            return "Nothing to undo";
+        } else if (!nextUndoAction.value.name) {
+            return "Undo";
+        } else {
+            return `Undo ${nextUndoAction.value.name}`;
+        }
+    });
+
+    const redoText = computed(() => {
+        if (!nextRedoAction.value) {
+            return "Nothing to redo";
+        } else if (!nextRedoAction.value.name) {
+            return "Redo";
+        } else {
+            return `Redo ${nextRedoAction.value.name}`;
+        }
+    });
+
     return {
         undoActionStack,
         redoActionStack,
@@ -128,6 +151,10 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
         setLazyActionTimeout,
         isQueued,
         pendingLazyAction,
+        nextUndoAction,
+        nextRedoAction,
+        undoText,
+        redoText,
         $reset,
     };
 });
@@ -162,6 +189,11 @@ class FactoryAction extends UndoRedoAction {
 
     onDestroy(callback: typeof this.destroyCallback) {
         this.destroyCallback = callback;
+        return this;
+    }
+
+    setName(name: string) {
+        this.name = name;
         return this;
     }
 

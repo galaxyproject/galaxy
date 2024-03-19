@@ -30,6 +30,10 @@ export class LazySetValueAction<T> extends UndoRedoAction {
         this.showAttributesCallback();
         this.setValueHandler(this.toValue);
     }
+
+    get name() {
+        return "modify workflow";
+    }
 }
 
 export class SetValueActionHandler<T> {
