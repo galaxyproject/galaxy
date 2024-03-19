@@ -273,7 +273,7 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
                         @submit="onSubmitSlug" />
                 </div>
                 <div v-else>
-                    <p>Currently publishing {{ modelClass }}.  A shareable URL will be available here momentarily.</p>
+                    <p>Currently publishing {{ modelClass }}. A shareable URL will be available here momentarily.</p>
                 </div>
             </div>
             <div v-else class="mb-4">
