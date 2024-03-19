@@ -629,8 +629,6 @@ class HistoryItemBase(Model):
 class HistoryItemCommon(HistoryItemBase):
     """Common information provided by items contained in a History."""
 
-    model_config = ConfigDict(extra="allow")
-
     type_id: Optional[str] = Field(
         default=None,
         title="Type - ID",
