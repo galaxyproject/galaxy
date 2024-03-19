@@ -127,8 +127,8 @@ function userTitle(title: string) {
                 </BButton>
 
                 <BDropdown
-                    no-caret
                     v-b-tooltip.top.hover.noninteractive
+                    no-caret
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
