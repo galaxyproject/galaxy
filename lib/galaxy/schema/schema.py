@@ -1254,18 +1254,18 @@ class HistorySummary(HistoryBase, WithModelClass):
 class HistoryActiveContentCounts(Model):
     """Contains the number of active, deleted or hidden items in a History."""
 
-    active: Optional[int] = Field(
-        default=0,
+    active: int = Field(
+        ...,
         title="Active",
         description="Number of active datasets.",
     )
-    hidden: Optional[int] = Field(
-        default=0,
+    hidden: int = Field(
+        ...,
         title="Hidden",
         description="Number of hidden datasets.",
     )
-    deleted: Optional[int] = Field(
-        default=0,
+    deleted: int = Field(
+        ...,
         title="Deleted",
         description="Number of deleted datasets.",
     )

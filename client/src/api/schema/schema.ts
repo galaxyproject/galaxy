@@ -6531,21 +6531,18 @@ export interface components {
             /**
              * Active
              * @description Number of active datasets.
-             * @default 0
              */
-            active?: number | null;
+            active: number;
             /**
              * Deleted
              * @description Number of deleted datasets.
-             * @default 0
              */
-            deleted?: number | null;
+            deleted: number;
             /**
              * Hidden
              * @description Number of hidden datasets.
-             * @default 0
              */
-            hidden?: number | null;
+            hidden: number;
         };
         /** HistoryContentBulkOperationPayload */
         HistoryContentBulkOperationPayload: {
