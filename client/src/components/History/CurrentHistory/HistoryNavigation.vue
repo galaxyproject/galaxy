@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArchive,
+    faBars,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -42,6 +43,7 @@ import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 library.add(
     faArchive,
+    faBars,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -125,6 +127,7 @@ function userTitle(title: string) {
                 </BButton>
 
                 <BDropdown
+                    no-caret
                     v-b-tooltip.top.hover.noninteractive
                     size="sm"
                     variant="link"
@@ -133,6 +136,7 @@ function userTitle(title: string) {
                     title="History options"
                     data-description="history options">
                     <template v-slot:button-content>
+                        <FontAwesomeIcon fixed-width :icon="faBars" />
                         <span class="sr-only">History Options</span>
                     </template>
 
