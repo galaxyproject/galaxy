@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 
-library.add(faCaretLeft, faSpinner);
+library.add(faCaretLeft, faCheck, faSpinner, faTimes);
 
 interface Props {
     disableOk?: boolean;
@@ -62,7 +62,10 @@ const emit = defineEmits<{
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <div>
-                    <BButton id="close-btn" size="sm" variant="secondary" @click="hideModal"> Cancel </BButton>
+                    <BButton id="close-btn" size="sm" variant="secondary" @click="hideModal">
+                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        Cancel
+                    </BButton>
                     <BButton
                         v-if="multiple || !fileMode"
                         id="ok-btn"
@@ -71,6 +74,7 @@ const emit = defineEmits<{
                         variant="primary"
                         :disabled="disableOk"
                         @click="emit('onOk')">
+                        <FontAwesomeIcon :icon="['fas', 'check']" />
                         {{ fileMode ? "Ok" : "Select this folder" }}
                     </BButton>
                 </div>

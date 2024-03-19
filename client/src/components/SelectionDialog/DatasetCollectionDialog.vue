@@ -25,9 +25,9 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { errorMessageAsString } from "utils/simple-error";
 
+import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 export default {
     components: {
