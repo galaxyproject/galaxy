@@ -11665,6 +11665,7 @@ export interface components {
              * @description A list of content items to update with the changes.
              */
             items: components["schemas"]["UpdateContentItem"][];
+            [key: string]: unknown | undefined;
         };
         /**
          * UpdateHistoryContentsPayload

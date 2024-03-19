@@ -1100,20 +1100,19 @@ class UpdateContentItem(HistoryContentItem):
 class UpdateHistoryContentsBatchPayload(Model):
     """Contains property values that will be updated for all the history `items` provided."""
 
-    model_config = ConfigDict(extra="allow")
-
     items: List[UpdateContentItem] = Field(
         ...,
         title="Items",
         description="A list of content items to update with the changes.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "items": [{"history_content_type": "dataset", "id": "string"}],
                 "visible": False,
             }
-        }
+        },
     )
 
 
