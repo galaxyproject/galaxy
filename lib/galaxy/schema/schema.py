@@ -1069,10 +1069,6 @@ class HDCADetailed(HDCASummary):
     )
 
 
-class HistoryBase(Model):
-    """Provides basic configuration for all the History models."""
-
-
 class HistoryContentItemBase(Model):
     """Identifies a dataset or collection contained in a History."""
 
@@ -1209,7 +1205,7 @@ class UpdateHistoryContentsPayload(Model):
     )
 
 
-class HistorySummary(HistoryBase, WithModelClass):
+class HistorySummary(Model, WithModelClass):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
