@@ -5,6 +5,7 @@ import { type Connection, getConnectionId, useConnectionStore } from "@/stores/w
 import { assertDefined } from "@/utils/assertions";
 
 import { defineScopedStore } from "./scopedStore";
+import { useWorkflowStateStore } from "./workflowEditorStateStore";
 
 interface StepPosition {
     top: number;
@@ -349,6 +350,8 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         updateStep(inputStep);
     }
 
+    const { deleteStepPosition } = useWorkflowStateStore(workflowId);
+
     function removeStep(stepId: number) {
         connectionStore
             .getConnectionsForStep(stepId)
@@ -357,6 +360,8 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         del(steps.value, stepId.toString());
         del(stepExtraInputs.value, stepId);
         del(stepMapOver.value, stepId.toString());
+
+        deleteStepPosition(stepId);
     }
 
     return {

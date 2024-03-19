@@ -1,7 +1,7 @@
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-interface Workflow {
+export interface Workflow {
     name: string;
     annotation: string;
     license: string;

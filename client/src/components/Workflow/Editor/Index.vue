@@ -201,7 +201,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { Services } from "../services";
 import { InsertStepAction, useStepActions } from "./Actions/stepActions";
-import { SetValueActionHandler } from "./Actions/workflowActions";
+import { CopyIntoWorkflowAction, SetValueActionHandler } from "./Actions/workflowActions";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple } from "./modules/model";
 import { getModule, getVersions, loadWorkflow, saveWorkflow } from "./modules/services";
@@ -651,7 +651,12 @@ export default {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
             loadWorkflow({ id }).then((data) => {
-                fromSimple(this.id, data, true, defaultPosition(this.graphOffset, this.transform));
+                const action = new CopyIntoWorkflowAction(
+                    this.id,
+                    data,
+                    defaultPosition(this.graphOffset, this.transform)
+                );
+                this.undoRedoStore.applyAction(action);
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);

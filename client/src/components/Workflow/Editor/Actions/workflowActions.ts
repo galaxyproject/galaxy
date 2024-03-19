@@ -1,4 +1,9 @@
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { defaultPosition } from "../composables/useDefaultStepPosition";
+import { fromSimple, Workflow } from "../modules/model";
 
 export class LazySetValueAction<T> extends UndoRedoAction {
     setValueHandler;
@@ -67,5 +72,52 @@ export class SetValueActionHandler<T> {
             this.lazyAction.name = this.name;
             this.undoRedoStore.applyLazyAction(this.lazyAction);
         }
+    }
+}
+
+export class CopyIntoWorkflowAction extends UndoRedoAction {
+    workflowId;
+    data;
+    newCommentIds: number[] = [];
+    newStepIds: number[] = [];
+    position;
+    stepStore;
+    commentStore;
+
+    constructor(workflowId: string, data: Workflow, position: ReturnType<typeof defaultPosition>) {
+        super();
+
+        this.workflowId = workflowId;
+        this.data = structuredClone(data);
+        this.position = structuredClone(position);
+
+        this.stepStore = useWorkflowStepStore(this.workflowId);
+        this.commentStore = useWorkflowCommentStore(this.workflowId);
+    }
+
+    get name() {
+        return `Copy ${this.data.name} into workflow`;
+    }
+
+    async run() {
+        const commentIdsBefore = new Set(this.commentStore.comments.map((comment) => comment.id));
+        const stepIdsBefore = new Set(Object.values(this.stepStore.steps).map((step) => step.id));
+
+        await fromSimple(this.workflowId, structuredClone(this.data), true, structuredClone(this.position));
+
+        const commentIdsAfter = this.commentStore.comments.map((comment) => comment.id);
+        const stepIdsAfter = Object.values(this.stepStore.steps).map((step) => step.id);
+
+        this.newCommentIds = commentIdsAfter.filter((id) => !commentIdsBefore.has(id));
+        this.newStepIds = stepIdsAfter.filter((id) => !stepIdsBefore.has(id));
+    }
+
+    async redo() {
+        fromSimple(this.workflowId, structuredClone(this.data), true, structuredClone(this.position));
+    }
+
+    undo() {
+        this.newCommentIds.forEach((id) => this.commentStore.deleteComment(id));
+        this.newStepIds.forEach((id) => this.stepStore.removeStep(id));
     }
 }
