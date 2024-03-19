@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
 import {
