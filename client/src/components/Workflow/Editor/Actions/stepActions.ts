@@ -14,7 +14,11 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
     onUndoRedo?: () => void;
 
     get name() {
-        return "modify step";
+        return this.internalName ?? "modify step";
+    }
+
+    set name(name: string | undefined) {
+        this.internalName = name;
     }
 
     constructor(stepStore: WorkflowStepStore, stepId: number, key: K, fromValue: Step[K], toValue: Step[K]) {
@@ -53,7 +57,11 @@ export class UpdateStepAction extends UndoRedoAction {
     onUndoRedo?: () => void;
 
     get name() {
-        return "modify step";
+        return this.internalName ?? "modify step";
+    }
+
+    set name(name: string | undefined) {
+        this.internalName = name;
     }
 
     constructor(
@@ -265,13 +273,18 @@ export function useStepActions(
      * Mutates a queued lazy action, if a matching one exists,
      * otherwise creates a new lazy action ans queues it.
      */
-    function changeValueOrCreateAction<K extends keyof Step>(step: Step, key: K, value: Step[K]) {
+    function changeValueOrCreateAction<K extends keyof Step>(step: Step, key: K, value: Step[K], name?: string) {
         const actionForKey = actionForIdAndKey(step.id, key);
 
         if (actionForKey) {
             actionForKey.changeValue(value);
         } else {
             const action = new LazyMutateStepAction(stepStore, step.id, key, step[key], value);
+
+            if (name) {
+                action.name = name;
+            }
+
             undoRedoStore.applyLazyAction(action);
 
             action.onUndoRedo = () => {
@@ -282,15 +295,15 @@ export function useStepActions(
     }
 
     function setPosition(step: Step, position: NonNullable<Step["position"]>) {
-        changeValueOrCreateAction(step, "position", position);
+        changeValueOrCreateAction(step, "position", position, "change step position");
     }
 
     function setAnnotation(step: Step, annotation: Step["annotation"]) {
-        changeValueOrCreateAction(step, "annotation", annotation);
+        changeValueOrCreateAction(step, "annotation", annotation, "modify step annotation");
     }
 
     function setLabel(step: Step, label: Step["label"]) {
-        changeValueOrCreateAction(step, "label", label);
+        changeValueOrCreateAction(step, "label", label, "modify step label");
     }
 
     const { refresh } = useRefreshFromStore();

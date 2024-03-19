@@ -181,7 +181,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
-import { logicalOr } from "@vueuse/math";
+import { logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
@@ -274,8 +274,8 @@ export default {
         const { undo, redo } = undoRedoStore;
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
 
-        whenever(logicalOr(ctrl_z, meta_z), undo);
-        whenever(logicalOr(ctrl_shift_z, meta_shift_z), redo);
+        whenever(logicOr(ctrl_z, meta_z), undo);
+        whenever(logicOr(ctrl_shift_z, meta_shift_z), redo);
 
         const isCanvas = ref(true);
 
@@ -297,7 +297,8 @@ export default {
         const setNameActionHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (name.value = value),
-            showAttributes
+            showAttributes,
+            "set workflow name"
         );
         /** user set name. queues an undo/redo action */
         function setName(newName) {
@@ -312,7 +313,8 @@ export default {
         const setReportActionHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (report.value = structuredClone(value)),
-            showAttributes
+            showAttributes,
+            "modify report"
         );
         /** user set report. queues an undo/redo action */
         function setReport(newReport) {
@@ -323,7 +325,8 @@ export default {
         const setLicenseHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (license.value = value),
-            showAttributes
+            showAttributes,
+            "set license"
         );
         /** user set license. queues an undo/redo action */
         function setLicense(newLicense) {
@@ -336,7 +339,8 @@ export default {
         const setCreatorHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (creator.value = value),
-            showAttributes
+            showAttributes,
+            "set creator"
         );
         /** user set creator. queues an undo/redo action */
         function setCreator(newCreator) {
@@ -347,7 +351,8 @@ export default {
         const setAnnotationHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (annotation.value = value),
-            showAttributes
+            showAttributes,
+            "modify annotation"
         );
         /** user set annotation. queues an undo/redo action */
         function setAnnotation(newAnnotation) {
@@ -360,7 +365,8 @@ export default {
         const setTagsHandler = new SetValueActionHandler(
             undoRedoStore,
             (value) => (tags.value = structuredClone(value)),
-            showAttributes
+            showAttributes,
+            "change tags"
         );
         /** user set tags. queues an undo/redo action */
         function setTags(newTags) {

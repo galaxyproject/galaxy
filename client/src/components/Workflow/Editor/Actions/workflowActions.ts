@@ -32,7 +32,11 @@ export class LazySetValueAction<T> extends UndoRedoAction {
     }
 
     get name() {
-        return "modify workflow";
+        return this.internalName ?? "modify workflow";
+    }
+
+    set name(name: string | undefined) {
+        this.internalName = name;
     }
 }
 
@@ -41,11 +45,18 @@ export class SetValueActionHandler<T> {
     setValueHandler;
     showAttributesCallback;
     lazyAction: LazySetValueAction<T> | null = null;
+    name?: string;
 
-    constructor(undoRedoStore: UndoRedoStore, setValueHandler: (value: T) => void, showCanvasCallback: () => void) {
+    constructor(
+        undoRedoStore: UndoRedoStore,
+        setValueHandler: (value: T) => void,
+        showCanvasCallback: () => void,
+        name?: string
+    ) {
         this.undoRedoStore = undoRedoStore;
         this.setValueHandler = setValueHandler;
         this.showAttributesCallback = showCanvasCallback;
+        this.name = name;
     }
 
     set(from: T, to: T) {
@@ -53,6 +64,7 @@ export class SetValueActionHandler<T> {
             this.lazyAction.changeValue(to);
         } else {
             this.lazyAction = new LazySetValueAction<T>(from, to, this.setValueHandler, this.showAttributesCallback);
+            this.lazyAction.name = this.name;
             this.undoRedoStore.applyLazyAction(this.lazyAction);
         }
     }
