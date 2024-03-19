@@ -208,6 +208,8 @@ function onPublish(published: boolean) {
 const hasUsername = ref(Boolean(getGalaxyInstance().user.get("username")));
 const newUsername = ref("");
 
+const slugSet = computed(() => itemUrl.slug != "slug" && itemUrl.prefix != "username");
+
 async function setUsername() {
     axios
         .put(`${getAppRoot()}api/users/${getGalaxyInstance().user.id}/information/inputs`, {
@@ -258,13 +260,21 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
             </div>
 
             <div v-if="item.importable" class="mb-4">
-                <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
-                <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
-                <EditableUrl
-                    :prefix="itemUrl.prefix"
-                    :slug="itemUrl.slug"
-                    @change="onChangeSlug"
-                    @submit="onSubmitSlug" />
+                <div v-if="slugSet">
+                    <p>
+                        This {{ modelClass }} is currently {{ itemStatus }}.
+                        <br />
+                        Anyone can view and import this {{ modelClass }} by visiting the following URL:
+                    </p>
+                    <EditableUrl
+                        :prefix="itemUrl.prefix"
+                        :slug="itemUrl.slug"
+                        @change="onChangeSlug"
+                        @submit="onSubmitSlug" />
+                </div>
+                <div v-else>
+                    <p>Currently publishing {{ modelClass }}, a shareable URL will be available here momentarily.</p>
+                </div>
             </div>
             <div v-else class="mb-4">
                 Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can
