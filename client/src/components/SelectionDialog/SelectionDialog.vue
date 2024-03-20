@@ -1,21 +1,41 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft, faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faCheck, faLeaf, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
+import { ref } from "vue";
+
+import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
+import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 
 library.add(faCaretLeft, faCheck, faSpinner, faTimes);
+
+export interface Record {
+    id: string;
+    label: string;
+    details: string;
+    isLeaf: boolean;
+    url: string;
+    labelTitle: string | undefined;
+}
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
     hideModal?: () => void;
+    isBusy?: boolean;
+    items: Array<Record>;
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
+    selectAllIcon?: string;
+    showDetails?: boolean;
+    showSelectIcon?: boolean;
+    showTime?: boolean;
+    title?: string;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -23,30 +43,53 @@ withDefaults(defineProps<Props>(), {
     errorMessage: "",
     fileMode: true,
     hideModal: () => {},
+    isBusy: false,
     modalShow: true,
     modalStatic: false,
     multiple: false,
     optionsShow: false,
     undoShow: false,
+    showDetails: false,
+    showSelectIcon: false,
+    showTime: false,
+    title: "",
 });
 
 const emit = defineEmits<{
     (e: "onBack"): void;
+    (e: "onClick", record: Record): void;
     (e: "onOk"): void;
+    (e: "onOpen", record: Record): void;
+    (e: "toggleSelectAll"): void;
 }>();
+
+const filter = ref("");
 </script>
 
 <template>
     <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
-            <slot name="search" />
+            <DataDialogSearch v-model="filter" :title="title" />
         </template>
         <slot name="helper" />
         <BAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <slot v-if="optionsShow" name="options" />
+            <DataDialogTable
+                v-if="optionsShow"
+                :filter="filter"
+                :is-busy="isBusy"
+                :items="items"
+                :multiple="multiple"
+                :select-all-icon="selectAllIcon"
+                :show-details="showDetails"
+                :show-select-icon="undoShow && multiple"
+                :show-time="showTime"
+                @clicked="emit('onClick', $event)"
+                @open="emit('onOpen', $event)"
+                @toggleSelectAll="emit('toggleSelectAll')" 
+                />
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>

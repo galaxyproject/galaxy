@@ -3,37 +3,23 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel">
-        <template v-slot:search>
-            <data-dialog-search v-model="filter" :title="title" />
-        </template>
-        <template v-slot:options>
-            <data-dialog-table
-                v-if="optionsShow"
-                :items="items"
-                :multiple="false"
-                :is-encoded="isEncoded"
-                :filter="filter"
-                :leaf-icon="leafIcon"
-                :show-details="!!detailsKey"
-                @clicked="onOk"
-                @load="load" />
-        </template>
-    </selection-dialog>
+        :hide-modal="onCancel"
+        :is-encoded="isEncoded"
+        :leaf-icon="leafIcon"
+        :items="items"
+        :show-details="!!detailsKey"
+        :title="title"
+        @onClick="onOk" />
 </template>
 
 <script>
 import { errorMessageAsString } from "utils/simple-error";
 
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 export default {
     components: {
         "selection-dialog": SelectionDialog,
-        "data-dialog-table": DataDialogTable,
-        "data-dialog-search": DataDialogSearch,
     },
     props: {
         callback: {

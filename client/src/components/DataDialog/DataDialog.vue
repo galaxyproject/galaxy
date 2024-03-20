@@ -12,8 +12,6 @@ import { Model } from "./model";
 import { Services } from "./services";
 import { UrlTracker } from "./utilities";
 
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface Record {
@@ -62,11 +60,6 @@ const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
 let urlTracker = new UrlTracker(getHistoryUrl());
 
-/** Returns the default url i.e. the url of the current history **/
-function getHistoryUrl() {
-    return `${getAppRoot()}api/histories/${props.history}/contents?deleted=false`;
-}
-
 /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
 function formatRows() {
     for (const item of items.value) {
@@ -76,6 +69,17 @@ function formatRows() {
         }
         Vue.set(item, "_rowVariant", _rowVariant);
     }
+}
+
+/** Returns the default url i.e. the url of the current history **/
+function getHistoryUrl() {
+    return `${getAppRoot()}api/histories/${props.history}/contents?deleted=false`;
+}
+
+/** Called when the modal is hidden */
+function onCancel() {
+    modalShow.value = false;
+    emit("onCancel");
 }
 
 /** Collects selected datasets in value array **/
@@ -93,6 +97,19 @@ function onClick(record: Record) {
     }
 }
 
+/** Called when selection is complete, values are formatted and parsed to external callback **/
+function onOk() {
+    const results = model.finalize();
+    modalShow.value = false;
+    props.callback(results);
+    emit("onOk", results);
+}
+
+/** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
+function onOpen(record: Record) {
+    load(record.url);
+}
+
 /** Called when user decides to upload new data */
 function onUpload() {
     const propsData = {
@@ -105,25 +122,6 @@ function onUpload() {
     openGlobalUploadModal(propsData);
     modalShow.value = false;
     emit("onUpload");
-}
-
-/** Called when selection is complete, values are formatted and parsed to external callback **/
-function onOk() {
-    const results = model.finalize();
-    modalShow.value = false;
-    props.callback(results);
-    emit("onOk", results);
-}
-
-/** Called when the modal is hidden */
-function onCancel() {
-    modalShow.value = false;
-    emit("onCancel");
-}
-
-/** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
-function onLoad(record: Record) {
-    load(record.url);
 }
 
 /** Performs server request to retrieve data records **/
@@ -170,24 +168,15 @@ watch(
         :error-message="errorMessage"
         :disable-ok="!hasValue"
         :hide-modal="onCancel"
+        :items="items"
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
         :undo-show="undoShow"
         @onBack="load()"
-        @onOk="onOk">
-        <template v-slot:search>
-            <DataDialogSearch v-model="filter" />
-        </template>
-        <template v-slot:options>
-            <DataDialogTable
-                v-if="optionsShow"
-                :filter="filter"
-                :items="items"
-                :multiple="multiple"
-                @clicked="onClick"
-                @open="onLoad" />
-        </template>
+        @onClick="onClick"
+        @onOk="onOk"
+        @onOpen="onOpen">
         <template v-slot:buttons>
             <BButton v-if="allowUpload" size="sm" @click="onUpload">
                 <Icon :icon="faUpload" />

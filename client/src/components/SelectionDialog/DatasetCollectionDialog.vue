@@ -3,21 +3,11 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel">
-        <template v-slot:search>
-            <data-dialog-search v-model="filter" />
-        </template>
-        <template v-slot:options>
-            <data-dialog-table
-                v-if="optionsShow"
-                :items="items"
-                :multiple="false"
-                :filter="filter"
-                leaf-icon="fa fa-folder"
-                @clicked="clicked"
-                @load="load" />
-        </template>
-    </selection-dialog>
+        :hide-modal="onCancel"
+        leaf-icon="fa fa-folder"
+        :items="items"
+        @onClick="clicked"
+    />
 </template>
 
 <script>
@@ -25,15 +15,11 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { errorMessageAsString } from "utils/simple-error";
 
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 export default {
     components: {
         "selection-dialog": SelectionDialog,
-        "data-dialog-table": DataDialogTable,
-        "data-dialog-search": DataDialogSearch,
     },
     props: {
         callback: {

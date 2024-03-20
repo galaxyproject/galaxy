@@ -18,8 +18,6 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { DirectoryRecord, Model, RecordItem } from "./model";
 
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 interface FilesDialogProps {
@@ -341,15 +339,20 @@ onMounted(() => {
         :error-message="errorMessage"
         :file-mode="fileMode"
         :hide-modal="() => (modalShow = false)"
+        :is-busy="isBusy"
+        :items="items"
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
+        :select-all-icon="selectAllIcon"
+        :show-select-icon="undoShow && multiple"
+        :show-time="showTime"
         :undo-show="undoShow"
         @onBack="load()"
-        @onOk="onOk">
-        <template v-slot:search>
-            <DataDialogSearch v-model="filter" />
-        </template>
+        @onClick="clicked"
+        @onOk="onOk"
+        @onOpen="open"
+        @toggleSelectAll="toggleSelectAll">
         <template v-slot:helper>
             <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
@@ -361,21 +364,6 @@ onMounted(() => {
                     form with your email to create a password for your account.</span
                 >
             </BAlert>
-        </template>
-        <template v-slot:options>
-            <DataDialogTable
-                v-if="optionsShow"
-                :filter="filter"
-                :is-busy="isBusy"
-                :items="items"
-                :multiple="multiple"
-                :select-all-icon="selectAllIcon"
-                :show-details="showDetails"
-                :show-select-icon="undoShow && multiple"
-                :show-time="showTime"
-                @clicked="clicked"
-                @open="open"
-                @toggleSelectAll="toggleSelectAll" />
         </template>
     </SelectionDialog>
 </template>
