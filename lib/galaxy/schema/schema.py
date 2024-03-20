@@ -116,6 +116,15 @@ class DatasetCollectionPopulatedState(str, Enum):
     FAILED = "failed"  # some problem populating state, won't be populated
 
 
+class HashFunctionNames(str, Enum):
+    """Hash function names that can be used to generate checksums for datasets."""
+
+    md5 = "MD5"
+    sha1 = "SHA-1"
+    sha256 = "SHA-256"
+    sha512 = "SHA-512"
+
+
 # Generic and common Field annotations that can be reused across models
 
 RelativeUrlField = Annotated[
@@ -699,6 +708,30 @@ class DatasetValidatedState(str, Enum):
     OK = "ok"
 
 
+class DatasetHash(Model):
+    model_class: Literal["DatasetHash"] = ModelClassField(Literal["DatasetHash"])
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the dataset hash.",
+    )
+    hash_function: HashFunctionNames = Field(
+        ...,
+        title="Hash Function",
+        description="The hash function used to generate the hash.",
+    )
+    hash_value: str = Field(
+        ...,
+        title="Hash Value",
+        description="The hash value.",
+    )
+    extra_files_path: Optional[str] = Field(
+        None,
+        title="Extra Files Path",
+        description="The path to the extra files used to generate the hash.",
+    )
+
+
 class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
@@ -834,6 +867,14 @@ class HDADetailed(HDASummary, WithModelClass):
         title="Created from basename",
         description="The basename of the output that produced this dataset.",  # TODO: is that correct?
     )
+    hashes: Annotated[
+        List[DatasetHash],
+        Field(
+            ...,
+            title="Hashes",
+            description="The list of hashes associated with this dataset.",
+        ),
+    ]
 
 
 class HDAExtended(HDADetailed):

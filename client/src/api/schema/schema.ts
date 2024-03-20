@@ -3677,6 +3677,11 @@ export interface components {
              */
             genome_build?: string | null;
             /**
+             * Hashes
+             * @description The list of hashes associated with this dataset.
+             */
+            hashes?: components["schemas"]["DatasetHash"][] | null;
+            /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              */
@@ -4318,6 +4323,36 @@ export interface components {
          * @description A list of extra files associated with a dataset.
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /** DatasetHash */
+        DatasetHash: {
+            /**
+             * Extra Files Path
+             * @description The path to the extra files used to generate the hash.
+             */
+            extra_files_path?: string | null;
+            /**
+             * Hash Function
+             * @description The hash function used to generate the hash.
+             */
+            hash_function: components["schemas"]["HashFunctionNames"];
+            /**
+             * Hash Value
+             * @description The hash value.
+             */
+            hash_value: string;
+            /**
+             * ID
+             * @description Encoded ID of the dataset hash.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "DatasetHash";
+        };
         /**
          * DatasetInheritanceChain
          * @default []
@@ -5925,6 +5960,11 @@ export interface components {
              */
             genome_build?: string | null;
             /**
+             * Hashes
+             * @description The list of hashes associated with this dataset.
+             */
+            hashes: components["schemas"]["DatasetHash"][];
+            /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
              * @default hda
@@ -6571,6 +6611,12 @@ export interface components {
          * @enum {string}
          */
         HashFunctionNameEnum: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+        /**
+         * HashFunctionNames
+         * @description Hash function names that can be used to generate checksums for datasets.
+         * @enum {string}
+         */
+        HashFunctionNames: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
         /** HdaDestination */
         HdaDestination: {
             /**
