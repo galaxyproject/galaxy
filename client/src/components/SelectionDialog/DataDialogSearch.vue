@@ -29,7 +29,7 @@ const filter = computed({
     },
 });
 
-const placeholder = computed(() => `Type to Search ${props.title}`);
+const placeholder = computed(() => `search ${props.title.toLowerCase()}`);
 </script>
 
 <template>

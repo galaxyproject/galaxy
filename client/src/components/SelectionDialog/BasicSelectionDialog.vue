@@ -22,10 +22,6 @@ export default {
         "selection-dialog": SelectionDialog,
     },
     props: {
-        callback: {
-            type: Function,
-            default: () => {},
-        },
         getData: {
             type: Function,
             required: true,
@@ -101,6 +97,7 @@ export default {
                         isLeaf: true,
                     };
                 });
+                console.log(this.items);
                 this.optionsShow = true;
             } catch (err) {
                 this.errorMessage = errorMessageAsString(err);

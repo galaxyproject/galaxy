@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft, faCheck, faLeaf, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
@@ -88,8 +88,7 @@ const filter = ref("");
                 :show-time="showTime"
                 @onClick="emit('onClick', $event)"
                 @onOpen="emit('onOpen', $event)"
-                @onSelectAll="emit('onSelectAll')"
-                />
+                @onSelectAll="emit('onSelectAll')" />
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>

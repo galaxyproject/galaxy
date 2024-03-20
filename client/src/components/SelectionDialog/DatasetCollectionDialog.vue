@@ -6,8 +6,7 @@
         :hide-modal="onCancel"
         leaf-icon="fa fa-folder"
         :items="items"
-        @onClick="clicked"
-    />
+        @onClick="clicked" />
 </template>
 
 <script>

@@ -22,28 +22,29 @@ interface Record {
 
 interface Props {
     allowUpload?: boolean;
+    callback?: (results: Array<Record>) => void;
     format?: string;
-    modalStatic?: boolean;
     library?: boolean;
+    modalStatic?: boolean;
     multiple?: boolean;
     title?: string;
     history: string;
-    callback: (results: Array<Record>) => void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    multiple: false,
+    allowUpload: true,
+    callback: () => {},
     format: "download",
     library: true,
     modalStatic: false,
-    allowUpload: true,
+    multiple: false,
     title: "",
 });
 
 const emit = defineEmits<{
     (e: "onCancel"): void;
-    (e: "onUpload"): void;
     (e: "onOk", results: Array<Record>): void;
+    (e: "onUpload"): void;
 }>();
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
@@ -51,10 +52,10 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 const errorMessage = ref("");
 const filter = ref("");
 const items: Ref<Array<Record>> = ref([]);
+const hasValue = ref(false);
 const modalShow = ref(true);
 const optionsShow = ref(true);
 const undoShow = ref(false);
-const hasValue = ref(false);
 
 const services = new Services();
 const model = new Model({ multiple: props.multiple, format: props.format });
