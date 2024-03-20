@@ -18,6 +18,7 @@ interface Props {
     fileMode?: boolean;
     isBusy?: boolean;
     items: Array<SelectionItem>;
+    leafIcon?: string;
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
@@ -35,6 +36,7 @@ withDefaults(defineProps<Props>(), {
     errorMessage: "",
     fileMode: true,
     isBusy: false,
+    leafIcon: "fa fa-file-o",
     modalShow: true,
     modalStatic: false,
     multiple: false,
@@ -78,6 +80,7 @@ const filter = ref("");
                 :filter="filter"
                 :is-busy="isBusy"
                 :items="items"
+                :leaf-icon="leafIcon"
                 :multiple="multiple"
                 :select-all-icon="selectAllIcon"
                 :show-details="showDetails"
