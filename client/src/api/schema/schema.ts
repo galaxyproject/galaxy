@@ -6968,12 +6968,12 @@ export interface components {
          * Can contain different views and kinds of items.
          */
         HistoryContentsResult: (
+            | components["schemas"]["CustomHistoryHDA"]
+            | components["schemas"]["CustomHistoryHDCA"]
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
-            | components["schemas"]["CustomHistoryHDA"]
-            | components["schemas"]["CustomHistoryHDCA"]
         )[];
         /**
          * HistoryContentsWithStatsResult
@@ -6985,12 +6985,12 @@ export interface components {
              * @description The items matching the search query. Only the items fitting in the current page limit will be returned.
              */
             contents: (
+                | components["schemas"]["CustomHistoryHDA"]
+                | components["schemas"]["CustomHistoryHDCA"]
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
-                | components["schemas"]["CustomHistoryHDA"]
-                | components["schemas"]["CustomHistoryHDCA"]
             )[];
             /**
              * Stats
@@ -13577,12 +13577,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"]
                     )[];
                 };
             };
@@ -16505,19 +16505,19 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"]
                         | (
+                              | components["schemas"]["CustomHistoryHDA"]
+                              | components["schemas"]["CustomHistoryHDCA"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
-                              | components["schemas"]["CustomHistoryHDA"]
-                              | components["schemas"]["CustomHistoryHDCA"]
                           )[];
                 };
             };
@@ -17096,12 +17096,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -17148,12 +17148,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -17381,19 +17381,19 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"]
                         | (
+                              | components["schemas"]["CustomHistoryHDA"]
+                              | components["schemas"]["CustomHistoryHDCA"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
-                              | components["schemas"]["CustomHistoryHDA"]
-                              | components["schemas"]["CustomHistoryHDCA"]
                           )[];
                 };
             };
@@ -17439,12 +17439,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -17490,12 +17490,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -17722,12 +17722,12 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryHDA"]
+                        | components["schemas"]["CustomHistoryHDCA"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryHDA"]
-                        | components["schemas"]["CustomHistoryHDCA"]
                     )[];
                 };
             };

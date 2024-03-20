@@ -3216,9 +3216,9 @@ AnyHDA = Union[HDADetailed, HDASummary]
 AnyHDCA = Union[HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
+        AnyCustomHistoryItem,
         AnyHDA,
         AnyHDCA,
-        AnyCustomHistoryItem,
     ],
     Field(union_mode="left_to_right"),
 ]
