@@ -105,15 +105,6 @@ function filtered(items: Array<SelectionItem>) {
     currentPage.value = 1;
 }
 
-/** Collects selected datasets in value array **/
-function clicked(record: SelectionItem) {
-    emit("onClick", record);
-}
-
-function open(record: SelectionItem) {
-    emit("onOpen", record);
-}
-
 watch(
     () => props.items,
     () => {
@@ -148,7 +139,7 @@ watch(
                     :current-page="currentPage"
                     :busy="isBusy"
                     primary-key="id"
-                    @row-clicked="clicked"
+                    @row-clicked="emit('onClick', $event)"
                     @filtered="filtered">
                     <template v-slot:head(select_icon)="">
                         <FontAwesomeIcon
@@ -170,7 +161,7 @@ watch(
                                     <i :class="leafIcon" />
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
-                                <div v-else @click.stop="open(data.item)">
+                                <div v-else @click.stop="emit('onOpen', data.item)">
                                     <FontAwesomeIcon icon="folder" />
                                     <b-link :title="`label-${data.item.url}`">{{
                                         data.value ? data.value : "-"
