@@ -4999,8 +4999,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.hid = hid
         # Relationships
         self.history = history
-        self.copied_from_history_dataset_association = copied_from_history_dataset_association
-        self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
+        if copied_from_history_dataset_association:
+            self.copied_from_history_dataset_association_id = copied_from_history_dataset_association.id
+        if copied_from_library_dataset_dataset_association:
+            self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association.id
 
     def __strict_check_before_flush__(self):
         if self.extension != "len":
@@ -5093,9 +5095,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             visible=self.visible,
             deleted=self.deleted,
             parent_id=parent_id,
+            copied_from_history_dataset_association=self,
             flush=False,
         )
-        hda.copied_from_history_dataset_association_id = self.id
         # update init non-keywords as well
         hda.purged = self.purged
 
