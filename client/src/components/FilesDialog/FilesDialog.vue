@@ -288,7 +288,7 @@ function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): RecordIte
 }
 
 /** select all files in current folder**/
-function toggleSelectAll() {
+function onSelectAll() {
     if (!currentDirectory.value) {
         return;
     }
@@ -352,7 +352,7 @@ onMounted(() => {
         @onClick="clicked"
         @onOk="onOk"
         @onOpen="open"
-        @toggleSelectAll="toggleSelectAll">
+        @onSelectAll="onSelectAll">
         <template v-slot:helper>
             <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at

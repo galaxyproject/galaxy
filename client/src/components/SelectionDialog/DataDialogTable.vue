@@ -19,7 +19,7 @@
                     class="select-checkbox cursor-pointer"
                     title="Check to select all datasets"
                     :icon="selectionIcon(selectAllIcon)"
-                    @click="$emit('toggleSelectAll')" />
+                    @click="$emit('onSelectAll')" />
             </template>
             <template v-slot:cell(select_icon)="data">
                 <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
@@ -184,10 +184,10 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function (record) {
-            this.$emit("clicked", record);
+            this.$emit("onClick", record);
         },
         open: function (record) {
-            this.$emit("open", record);
+            this.$emit("onOpen", record);
         },
     },
 };

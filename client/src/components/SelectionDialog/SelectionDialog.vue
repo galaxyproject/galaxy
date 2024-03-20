@@ -60,7 +60,7 @@ const emit = defineEmits<{
     (e: "onClick", record: Record): void;
     (e: "onOk"): void;
     (e: "onOpen", record: Record): void;
-    (e: "toggleSelectAll"): void;
+    (e: "onSelectAll"): void;
 }>();
 
 const filter = ref("");
@@ -86,9 +86,9 @@ const filter = ref("");
                 :show-details="showDetails"
                 :show-select-icon="undoShow && multiple"
                 :show-time="showTime"
-                @clicked="emit('onClick', $event)"
-                @open="emit('onOpen', $event)"
-                @toggleSelectAll="emit('toggleSelectAll')" 
+                @onClick="emit('onClick', $event)"
+                @onOpen="emit('onOpen', $event)"
+                @onSelectAll="emit('onSelectAll')"
                 />
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
