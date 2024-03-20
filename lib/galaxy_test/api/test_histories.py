@@ -106,6 +106,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert show_response["url"] == f"/api/histories/{history_id}"
         assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
 
+    def test_show_respects_view(self):
+        history_id = self._create_history(f"TestHistoryForShowView_{uuid4()}")["id"]
+        # By default the view is "detailed"
+        show_response = self._get(f"histories/{history_id}").json()
+        assert "state" in show_response
+
+        # Change the view to summary
+        show_response = self._get(f"histories/{history_id}", {"view": "summary"}).json()
+        assert "state" not in show_response
+
+        # Expect only specific keys
+        expected_keys = ["name"]
+        unexpected_keys = ["id", "deleted", "state"]
+        show_response = self._get(f"histories/{history_id}", {"keys": ",".join(expected_keys)}).json()
+        assert len(show_response) == len(expected_keys)
+        for key in expected_keys:
+            assert key in show_response
+        for key in unexpected_keys:
+            assert key not in show_response
+
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
         show_response = self._get("histories/most_recently_used").json()
@@ -154,14 +174,25 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             assert "state" in history
 
         # Expect only specific keys
-        expected_keys = ["name"]
-        unexpected_keys = ["deleted", "state"]
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
+        unexpected_keys = ["id", "deleted", "state"]
         index_response = self._get(f"histories?keys={','.join(expected_keys)}").json()
         for history in index_response:
+            assert len(history) == len(expected_keys)
             for key in expected_keys:
                 assert key in history
             for key in unexpected_keys:
                 assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
 
     def test_index_search_mode_views(self):
         # Make sure there is at least one history
@@ -180,15 +211,26 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             assert "state" in history
 
         # Expect only specific keys
-        expected_keys = ["name"]
-        unexpected_keys = ["deleted", "state"]
+        expected_keys = ["nice_size", "contents_active", "contents_states"]
+        unexpected_keys = ["id", "deleted", "state"]
         data = dict(search=expected_name_contains, show_published=False, keys=",".join(expected_keys))
         index_response = self._get("histories", data=data).json()
         for history in index_response:
+            assert len(history) == len(expected_keys)
             for key in expected_keys:
                 assert key in history
             for key in unexpected_keys:
                 assert key not in history
+
+        # Expect combination of view and keys
+        view = "summary"
+        expected_keys = ["create_time", "count"]
+        data = dict(search=expected_name_contains, show_published=False, view=view, keys=",".join(expected_keys))
+        index_response = self._get("histories", data=data).json()
+        for history in index_response:
+            for key in expected_keys:
+                assert key in history
+            self._assert_has_keys(history, "id", "name", "url", "update_time", "deleted", "purged", "tags")
 
     def test_index_case_insensitive_contains_query(self):
         # Create the histories with a different user to ensure the test

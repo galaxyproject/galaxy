@@ -1,5 +1,9 @@
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    get_origin,
+    TYPE_CHECKING,
+    Union,
+)
 
 from pydantic import (
     BeforeValidator,
@@ -110,6 +114,11 @@ def literal_to_value(arg):
     if len(val) > 1:
         raise Exception("Can't extract default argument for unions")
     return val[0]
+
+
+def is_optional(field):
+    args = get_args(field)
+    return get_origin(field) is Union and len(args) == 2 and type(None) in args
 
 
 def ModelClassField(default_value):

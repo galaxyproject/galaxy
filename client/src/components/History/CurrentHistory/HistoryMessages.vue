@@ -14,13 +14,13 @@ const props = defineProps<Props>();
 const userOverQuota = ref(false);
 
 const hasMessages = computed(() => {
-    return userOverQuota.value || props.history.isDeleted;
+    return userOverQuota.value || props.history.deleted;
 });
 </script>
 
 <template>
     <div v-if="hasMessages" class="mx-3 my-2">
-        <BAlert :show="history.isDeleted" variant="warning">
+        <BAlert :show="history.deleted" variant="warning">
             {{ localize("This history has been deleted") }}
         </BAlert>
 
