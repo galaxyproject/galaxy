@@ -133,14 +133,14 @@ function load(url: string = "") {
     undoShow.value = !urlTracker.atRoot();
     services
         .get(url)
-        .then((items) => {
+        .then((incoming) => {
             if (props.library && urlTracker.atRoot()) {
-                items.unshift({
+                incoming.unshift({
                     label: "Data Libraries",
                     url: `${getAppRoot()}api/libraries`,
                 });
             }
-            items.value = items;
+            items.value = incoming;
             formatRows();
             optionsShow.value = true;
         })
