@@ -953,6 +953,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 self.set_history(history)
             else:
                 history = self.new_history()
+        else:
+            history = self.new_history()
 
         return history
 
