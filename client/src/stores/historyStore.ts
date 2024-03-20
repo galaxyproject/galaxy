@@ -145,7 +145,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setCurrentHistoryId(history.id);
     }
 
-    async function applyFilters(historyId: string, filters: Record<string, string | boolean>) {
+    async function applyFilters(historyId: string, filters: Record<string, string | number | boolean>) {
         if (currentHistoryId.value !== historyId) {
             await setCurrentHistory(historyId);
         }
