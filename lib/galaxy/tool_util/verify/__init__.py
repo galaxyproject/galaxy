@@ -501,14 +501,19 @@ def get_image_metric(
 
 
 def _load_image(filepath: str) -> "numpy.typing.NDArray":
+    """
+    Reads the given image, trying tifffile and Pillow for reading.
+    """
+    # Try reading with tifffile first. It fails if the file is not a TIFF.
     try:
-        # Try reading with tifffile first. It fails if the file is not a TIFF.
         arr = tifffile.imread(filepath)
-    except tifffile.TiffFileError:
 
-        # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
+    # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
+    except tifffile.TiffFileError:
         with Image.open(filepath) as im:
             arr = numpy.array(im)
+
+    # Return loaded image
     return arr
 
 
