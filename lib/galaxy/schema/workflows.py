@@ -698,7 +698,7 @@ class WorkflowDictFormat2Summary(Model):
 
 
 class WorkflowDictFormat2WrappedYamlSummary(Model):
-    yaml_content: str = Field(
+    yaml_content: Any = Field(
         ...,
         title="YAML Content",
         description="The content of the workflow in YAML format.",
