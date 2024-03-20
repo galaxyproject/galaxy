@@ -1,11 +1,12 @@
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import { defaultPosition } from "../composables/useDefaultStepPosition";
 import { fromSimple, Workflow } from "../modules/model";
 
-export class LazySetValueAction<T> extends UndoRedoAction {
+export class LazySetValueAction<T> extends LazyUndoRedoAction {
     setValueHandler;
     showAttributesCallback;
     fromValue;
@@ -17,8 +18,10 @@ export class LazySetValueAction<T> extends UndoRedoAction {
         this.toValue = structuredClone(toValue);
         this.setValueHandler = setValueHandler;
         this.showAttributesCallback = showCanvasCallback;
+    }
 
-        this.setValueHandler(toValue);
+    queued() {
+        this.setValueHandler(this.toValue);
     }
 
     changeValue(value: T) {

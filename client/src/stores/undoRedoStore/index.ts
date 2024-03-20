@@ -2,7 +2,7 @@ import { computed, ref } from "vue";
 
 import { defineScopedStore } from "@/stores/scopedStore";
 
-import { UndoRedoAction } from "./undoRedoAction";
+import { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export { UndoRedoAction } from "./undoRedoAction";
 
@@ -85,10 +85,11 @@ export const useUndoRedoStore = defineScopedStore("undoRedoStore", () => {
      * @param action action to queue
      * @param timeout when to run the action in milliseconds. default to 1000 milliseconds
      */
-    function applyLazyAction(action: UndoRedoAction, timeout = 1000) {
+    function applyLazyAction(action: LazyUndoRedoAction, timeout = 1000) {
         flushLazyAction();
         clearRedoStack();
         pendingLazyAction.value = action;
+        action.queued();
         lazyActionTimeout = setTimeout(() => flushLazyAction(), timeout);
     }
 

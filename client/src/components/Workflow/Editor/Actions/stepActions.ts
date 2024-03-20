@@ -1,11 +1,12 @@
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
 import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
-class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
+class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;
     fromValue: Step[K];
     toValue: Step[K];
@@ -28,7 +29,9 @@ class LazyMutateStepAction<K extends keyof Step> extends UndoRedoAction {
         this.key = key;
         this.fromValue = fromValue;
         this.toValue = toValue;
+    }
 
+    queued() {
         this.stepStore.updateStepValue(this.stepId, this.key, this.toValue);
     }
 

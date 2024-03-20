@@ -1,4 +1,5 @@
 import { UndoRedoAction } from "@/stores/undoRedoStore";
+import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
 import type {
     BaseWorkflowComment,
     WorkflowComment,
@@ -75,7 +76,7 @@ export class ChangeColorAction extends UndoRedoAction {
     }
 }
 
-class LazyMutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoAction {
+class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoRedoAction {
     private commentId: number;
     private startData: WorkflowComment[K];
     private endData: WorkflowComment[K];
@@ -93,8 +94,11 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends UndoRedoA
         this.startData = structuredClone(comment[key]);
         this.endData = structuredClone(data);
         this.applyDataCallback = applyDataCallback;
-        this.applyDataCallback(this.commentId, this.endData);
         this.type = comment.type;
+    }
+
+    queued() {
+        this.applyDataCallback(this.commentId, this.endData);
     }
 
     get name() {
@@ -146,7 +150,7 @@ export class LazyChangeSizeAction extends LazyMutateCommentAction<"size"> {
 
 type StepWithPosition = Step & { position: NonNullable<Step["position"]> };
 
-export class LazyMoveMultipleAction extends UndoRedoAction {
+export class LazyMoveMultipleAction extends LazyUndoRedoAction {
     private commentStore;
     private stepStore;
     private comments;
@@ -167,7 +171,8 @@ export class LazyMoveMultipleAction extends UndoRedoAction {
         stepStore: WorkflowStepStore,
         comments: WorkflowComment[],
         steps: StepWithPosition[],
-        position: { x: number; y: number }
+        position: { x: number; y: number },
+        positionTo?: { x: number; y: number }
     ) {
         super();
         this.commentStore = commentStore;
@@ -187,7 +192,7 @@ export class LazyMoveMultipleAction extends UndoRedoAction {
         });
 
         this.positionFrom = { ...position };
-        this.positionTo = { ...position };
+        this.positionTo = positionTo ? { ...positionTo } : { ...position };
     }
 
     changePosition(position: { x: number; y: number }) {
@@ -209,6 +214,10 @@ export class LazyMoveMultipleAction extends UndoRedoAction {
             const commentPosition = [position.x + offset[0], position.y + offset[1]] as [number, number];
             this.commentStore.changePosition(comment.id, commentPosition);
         });
+    }
+
+    queued() {
+        this.setPosition(this.positionTo);
     }
 
     undo() {
