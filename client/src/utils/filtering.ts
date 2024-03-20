@@ -399,6 +399,7 @@ export default class Filtering<T> {
      * @returns Filters as 2D array of of [field, value] pairs
      * */
     getFiltersForText(filterText: string, removeAny = true, validate = true): [string, T][] {
+        filterText = filterText.trim();
         const pairSplitRE = this.quoteStrings
             ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
             : /(\S+):(.*?)(?=\s+\S+:|$)/g;
