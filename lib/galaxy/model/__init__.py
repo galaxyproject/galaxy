@@ -5093,9 +5093,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             visible=self.visible,
             deleted=self.deleted,
             parent_id=parent_id,
-            copied_from_history_dataset_association=self,
             flush=False,
         )
+        hda.copied_from_history_dataset_association_id = self.id
         # update init non-keywords as well
         hda.purged = self.purged
 
