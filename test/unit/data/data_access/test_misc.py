@@ -21,7 +21,26 @@ class User:
             make_user(username="a")
 
 
-# replacing test_galaxy_mapping.py
+def test_history_update(make_history, make_hda, session):
+    h1 = make_history()
+    old_update_time = h1.update_time
+
+    hda = make_hda(history=h1, create_dataset=True, sa_session=session)
+    # history updated due to hda insert
+    assert h1.update_time > old_update_time
+
+    old_update_time = h1.update_time
+    hda.name = "new name"
+    session.add(hda)
+    session.commit()
+    # history updated due to hda update
+    assert h1.update_time > old_update_time
+
+    old_update_time = h1.update_time
+    hda2 = hda.copy()
+    assert hda2
+    # history NOT updated when hda copied
+    assert h1.update_time == old_update_time
 
 
 def test_ratings(

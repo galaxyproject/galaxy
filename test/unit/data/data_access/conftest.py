@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from galaxy import model as m
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
+from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
 from . import MockObjectStore
 
 # utility fixtures
@@ -38,6 +39,7 @@ def setup(engine):
     datatypes_registry = DatatypesRegistry()
     datatypes_registry.load_datatypes()
     m.set_datatypes_registry(datatypes_registry)
+    install_timestamp_triggers(engine)
     print("\nSETUP CALLED")
 
 

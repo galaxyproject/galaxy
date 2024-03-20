@@ -17,4 +17,4 @@ class MockObjectStore:
 def verify_items(items1, length, items2=None):
     assert len(items1) == length
     if items2:
-        assert set(items2) == set(i for i in items1)
+        assert set(items2) == set(items1)
