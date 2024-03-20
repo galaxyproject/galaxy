@@ -875,6 +875,14 @@ class HDADetailed(HDASummary, WithModelClass):
             description="The list of hashes associated with this dataset.",
         ),
     ]
+    drs_id: Annotated[
+        str,
+        Field(
+            ...,
+            title="DRS ID",
+            description="The DRS ID of the dataset.",
+        ),
+    ]
 
 
 class HDAExtended(HDADetailed):

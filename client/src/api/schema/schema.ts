@@ -3652,6 +3652,11 @@ export interface components {
              */
             download_url?: string | null;
             /**
+             * DRS ID
+             * @description The DRS ID of the dataset.
+             */
+            drs_id?: string | null;
+            /**
              * Extension
              * @description The extension of the dataset.
              */
@@ -5933,6 +5938,11 @@ export interface components {
              * @description The URL to download this item from the server.
              */
             download_url: string;
+            /**
+             * DRS ID
+             * @description The DRS ID of the dataset.
+             */
+            drs_id: string;
             /**
              * Extension
              * @description The extension of the dataset.
