@@ -285,7 +285,7 @@ class WorkflowDictStepsBase(Model):
         title="Tool Version",
         description="The version of the tool associated with the step.",
     )
-    errors: Optional[Union[List[str], str]] = Field(
+    errors: Optional[Union[List[str], str, Dict[str, Any]]] = Field(
         None,
         title="Errors",
         description="Any errors associated with the step.",
