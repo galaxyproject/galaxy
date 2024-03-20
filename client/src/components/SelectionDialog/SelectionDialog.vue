@@ -130,15 +130,15 @@ watch(
                 <BTable
                     small
                     hover
+                    primary-key="id"
+                    :busy="isBusy"
+                    :current-page="currentPage"
                     :items="items"
                     :fields="fields"
                     :filter="filter"
                     :per-page="perPage"
-                    :current-page="currentPage"
-                    :busy="isBusy"
-                    primary-key="id"
-                    @row-clicked="emit('onClick', $event)"
-                    @filtered="filtered">
+                    @filtered="filtered"
+                    @row-clicked="emit('onClick', $event)">
                     <template v-slot:head(select_icon)="">
                         <FontAwesomeIcon
                             class="select-checkbox cursor-pointer"
@@ -176,9 +176,9 @@ watch(
                     </template>
                 </BTable>
                 <div v-if="isBusy" class="text-center">
-                    <b-spinner small type="grow"></b-spinner>
-                    <b-spinner small type="grow"></b-spinner>
-                    <b-spinner small type="grow"></b-spinner>
+                    <b-spinner small type="grow" />
+                    <b-spinner small type="grow" />
+                    <b-spinner small type="grow" />
                 </div>
                 <div v-if="nItems === 0">
                     <div v-if="filter">
@@ -187,12 +187,6 @@ watch(
                     </div>
                     <div v-else>No entries.</div>
                 </div>
-                <b-pagination
-                    v-if="nItems > perPage"
-                    v-model="currentPage"
-                    class="justify-content-md-center"
-                    :per-page="perPage"
-                    :total-rows="nItems" />
             </div>
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
@@ -208,6 +202,13 @@ watch(
                     </BButton>
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
+                <b-pagination
+                    v-if="nItems > perPage"
+                    v-model="currentPage"
+                    class="justify-content-md-center m-0"
+                    size="sm"
+                    :per-page="perPage"
+                    :total-rows="nItems" />
                 <div>
                     <BButton id="close-btn" size="sm" variant="secondary" @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
