@@ -13095,7 +13095,7 @@ export interface components {
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string[] | string | null;
+            errors?: string[] | string | Record<string, never> | null;
             /**
              * ID
              * @description The order index of the step.
@@ -13252,7 +13252,7 @@ export interface components {
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string[] | string | null;
+            errors?: string[] | string | Record<string, never> | null;
             /**
              * ID
              * @description The order index of the step.
@@ -13494,7 +13494,7 @@ export interface components {
              * YAML Content
              * @description The content of the workflow in YAML format.
              */
-            yaml_content: string;
+            yaml_content: Record<string, never>;
         };
         /** WorkflowDictPreviewSteps */
         WorkflowDictPreviewSteps: {
@@ -13512,7 +13512,7 @@ export interface components {
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string[] | string | null;
+            errors?: string[] | string | Record<string, never> | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -13608,7 +13608,7 @@ export interface components {
              * Errors
              * @description Any errors associated with the step.
              */
-            errors?: string[] | string | null;
+            errors?: string[] | string | Record<string, never> | null;
             /**
              * Inputs
              * @description The inputs of the step.
@@ -24027,14 +24027,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json":
-                        | components["schemas"]["WorkflowDictEditorSummary"]
-                        | components["schemas"]["StoredWorkflowDetailed"]
-                        | components["schemas"]["WorkflowDictRunSummary"]
-                        | components["schemas"]["WorkflowDictPreviewSummary"]
-                        | components["schemas"]["WorkflowDictFormat2Summary"]
-                        | components["schemas"]["WorkflowDictExportSummary"]
-                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -24211,7 +24204,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
