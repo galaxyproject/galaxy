@@ -102,7 +102,7 @@ export interface NewStep {
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
     tool_version?: string;
-    tooltip?: string;
+    tooltip?: string | null;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
     when?: string | null;

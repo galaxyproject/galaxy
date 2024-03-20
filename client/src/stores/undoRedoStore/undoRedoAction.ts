@@ -25,3 +25,9 @@ export class UndoRedoAction {
         return;
     }
 }
+
+export class LazyUndoRedoAction extends UndoRedoAction {
+    queued() {
+        return;
+    }
+}
