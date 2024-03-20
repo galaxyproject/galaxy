@@ -33,11 +33,13 @@ from typing_extensions import (
     Literal,
 )
 
+from galaxy.schema import partial_model
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     EncodedLibraryFolderDatabaseIdField,
+    is_optional,
     LibraryFolderDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -312,8 +314,11 @@ class WithModelClass:
     def set_default(cls, data):
         if isinstance(data, dict):
             if "model_class" not in data and issubclass(cls, BaseModel):
+                model_class_annotation = cls.model_fields["model_class"].annotation
+                if is_optional(model_class_annotation):
+                    return data
                 data = data.copy()
-                data["model_class"] = literal_to_value(cls.model_fields["model_class"].annotation)
+                data["model_class"] = literal_to_value(model_class_annotation)
         return data
 
 
@@ -1064,12 +1069,6 @@ class HDCADetailed(HDCASummary):
     )
 
 
-class HistoryBase(Model):
-    """Provides basic configuration for all the History models."""
-
-    model_config = ConfigDict(extra="allow")
-
-
 class HistoryContentItemBase(Model):
     """Identifies a dataset or collection contained in a History."""
 
@@ -1094,7 +1093,7 @@ class UpdateContentItem(HistoryContentItem):
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
-class UpdateHistoryContentsBatchPayload(HistoryBase):
+class UpdateHistoryContentsBatchPayload(Model):
     """Contains property values that will be updated for all the history `items` provided."""
 
     items: List[UpdateContentItem] = Field(
@@ -1103,12 +1102,13 @@ class UpdateHistoryContentsBatchPayload(HistoryBase):
         description="A list of content items to update with the changes.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "items": [{"history_content_type": "dataset", "id": "string"}],
                 "visible": False,
             }
-        }
+        },
     )
 
 
@@ -1166,7 +1166,7 @@ class HistoryContentBulkOperationResult(Model):
     errors: List[BulkOperationItemError]
 
 
-class UpdateHistoryContentsPayload(HistoryBase):
+class UpdateHistoryContentsPayload(Model):
     """Can contain arbitrary/dynamic fields that will be updated for a particular history item."""
 
     name: Optional[str] = Field(
@@ -1195,28 +1195,17 @@ class UpdateHistoryContentsPayload(HistoryBase):
         description="A list of tags to add to this item.",
     )
     model_config = ConfigDict(
+        extra="allow",
         json_schema_extra={
             "example": {
                 "visible": False,
                 "annotation": "Test",
             }
-        }
+        },
     )
 
 
-class HistoryMinimal(HistoryBase, WithModelClass):
-    """Minimal History Response with optional fields"""
-
-    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
-    id: Optional[HistoryID] = None
-    user_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="User ID",
-        description="The encoded ID of the user that owns this History.",
-    )
-
-
-class HistorySummary(HistoryBase, WithModelClass):
+class HistorySummary(Model, WithModelClass):
     """History summary information."""
 
     model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
@@ -1278,8 +1267,12 @@ class HistoryActiveContentCounts(Model):
     )
 
 
+# TODO: https://github.com/galaxyproject/galaxy/issues/17785
 HistoryStateCounts = Dict[DatasetState, int]
 HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
+
+HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
+HistoryContentStateCounts = Dict[HistoryContentStates, int]
 
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
@@ -1341,10 +1334,40 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
     )
 
 
-AnyHistoryView = Union[
-    HistoryDetailed,
-    HistorySummary,
-    HistoryMinimal,
+@partial_model()
+class CustomHistoryView(HistoryDetailed):
+    """History Response with all optional fields.
+
+    It is used for serializing only specific attributes using the "keys"
+    query parameter. Unfortunately, we cannot know the exact fields that
+    will be requested, so we have to allow all fields to be optional.
+    """
+
+    # Define a few more useful fields to be optional that are not part of HistoryDetailed
+    contents_active: Optional[HistoryActiveContentCounts] = Field(
+        default=None,
+        title="Contents Active",
+        description=("Contains the number of active, deleted or hidden items in a History."),
+    )
+    contents_states: Optional[HistoryContentStateCounts] = Field(
+        default=None,
+        title="Contents States",
+        description="A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.",
+    )
+    nice_size: Optional[str] = Field(
+        default=None,
+        title="Nice Size",
+        description="The total size of the contents of this history in a human-readable format.",
+    )
+
+
+AnyHistoryView = Annotated[
+    Union[
+        CustomHistoryView,
+        HistoryDetailed,
+        HistorySummary,
+    ],
+    Field(union_mode="left_to_right"),
 ]
 
 

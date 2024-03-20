@@ -481,12 +481,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if (
                             dataset_association is not dataset_instance
                             and dataset_association.extension == dataset_instance.extension
+                            or dataset_association.extension == "auto"
                         ):
-                            dataset_association.metadata = dataset_instance.metadata
-                            dataset_association.blurb = dataset_instance.blurb
-                            dataset_association.peek = dataset_instance.peek
-                            dataset_association.info = dataset_instance.info
-                            dataset_association.tool_version = dataset_instance.tool_version
+                            copy_dataset_instance_metadata_attributes(
+                                source=dataset_instance, target=dataset_association
+                            )
                 if job:
                     dataset_instance.dataset.job_id = job.id
 
@@ -3085,3 +3084,12 @@ def payload_to_source_uri(payload) -> str:
             dump(store_dict, f)
         source_uri = f"file://{import_json}"
     return source_uri
+
+
+def copy_dataset_instance_metadata_attributes(source: model.DatasetInstance, target: model.DatasetInstance) -> None:
+    target.metadata = source.metadata
+    target.blurb = source.blurb
+    target.peek = source.peek
+    target.info = source.info
+    target.tool_version = source.tool_version
+    target.extension = source.extension

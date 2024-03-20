@@ -183,9 +183,9 @@ class HistoryContentsManager(base.SortableManager):
         hdca_select = self._active_counts_statement(model.HistoryDatasetCollectionAssociation, history.id)
         subquery = hda_select.union_all(hdca_select).subquery()
         statement = select(
-            cast(func.sum(subquery.c.deleted), Integer).label("deleted"),
-            cast(func.sum(subquery.c.hidden), Integer).label("hidden"),
-            cast(func.sum(subquery.c.active), Integer).label("active"),
+            cast(func.coalesce(func.sum(subquery.c.deleted), 0), Integer).label("deleted"),
+            cast(func.coalesce(func.sum(subquery.c.hidden), 0), Integer).label("hidden"),
+            cast(func.coalesce(func.sum(subquery.c.active), 0), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
         return dict(returned._mapping)

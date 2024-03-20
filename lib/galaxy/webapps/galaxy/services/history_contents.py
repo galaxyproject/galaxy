@@ -666,7 +666,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 hda_ids.append(item.id)
             else:
                 hdca_ids.append(item.id)
-        payload_dict = payload.dict(exclude_unset=True)
+        payload_dict = payload.model_dump(exclude_unset=True)
         hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
         rval = []
         for hda in hdas:

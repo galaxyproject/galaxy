@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { components } from "@/api/schema";
+import type { AnonymousUser, User } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -10,25 +10,6 @@ import {
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
-
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
-
-export interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
-    isAnonymous: false;
-    is_admin?: boolean;
-    username?: string;
-}
-
-export interface AnonymousUser {
-    isAnonymous: true;
-    username?: string;
-    is_admin?: false;
-}
-
-export type GenericUser = User | AnonymousUser;
 
 interface Preferences {
     theme: string;
@@ -138,10 +119,6 @@ export const useUserStore = defineStore("userStore", () => {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
 
-    function isRegisteredUser(user: User | AnonymousUser | null): user is User {
-        return !user?.isAnonymous;
-    }
-
     return {
         currentUser,
         currentPreferences,
@@ -157,7 +134,6 @@ export const useUserStore = defineStore("userStore", () => {
         addFavoriteTool,
         removeFavoriteTool,
         toggleSideBar,
-        isRegisteredUser,
         $reset,
     };
 });

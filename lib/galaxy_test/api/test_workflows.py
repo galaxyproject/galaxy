@@ -2006,7 +2006,7 @@ test_data:
         # Makes sure that setting metadata on expression tool data outputs
         # doesn't break result evaluation.
         with self.dataset_populator.test_history() as history_id:
-            self._run_workflow(
+            summary = self._run_workflow(
                 """class: GalaxyWorkflow
 inputs:
   some_file:
@@ -2031,6 +2031,9 @@ steps:
           - __index__: 0
             value:
               __class__: RuntimeValue
+outputs:
+  pick_out:
+    outputSource: pick_value/data_param
 """,
                 test_data="""
 some_file:
@@ -2040,6 +2043,14 @@ some_file:
 """,
                 history_id=history_id,
             )
+        invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        # Make sure metadata is actually available
+        pick_value_hda = invocation_details["outputs"]["pick_out"]
+        dataset_details = self.dataset_populator.get_history_dataset_details(
+            history_id=history_id, content_id=pick_value_hda["id"]
+        )
+        assert dataset_details["metadata_reference_names"]
+        assert dataset_details["metadata_bam_index"]
 
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:

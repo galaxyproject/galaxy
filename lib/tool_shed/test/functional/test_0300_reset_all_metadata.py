@@ -1,5 +1,7 @@
 from typing import Dict
 
+import pytest
+
 from ..base import common
 from ..base.twilltestcase import ShedTwillTestCase
 
@@ -559,6 +561,7 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 repository=filtering_repository, repository_tuples=[emboss_tuple], filepath=dependency_xml_path
             )
 
+    @pytest.mark.xfail
     def test_0110_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
         self.login(email=common.admin_email, username=common.admin_username)

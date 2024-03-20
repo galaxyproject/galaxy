@@ -44,8 +44,6 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
             if (userHash) {
                 tags.value = await db.tags.where("userHash").equals(userHash).sortBy("lastUsed");
 
-                console.log(tags.value);
-
                 if (tags.value.length > maxDbEntriesPerUser) {
                     await removeOldestEntries(tags.value.length - maxDbEntriesPerUser);
                 }

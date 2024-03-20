@@ -13,7 +13,7 @@ import {
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import type { HistorySummary } from "@/api";
+import { type HistorySummary, userOwnsHistory } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -42,11 +42,11 @@ const saveTitle = computed(() => {
 const saveVariant = computed(() => {
     return loading.value ? "info" : formValid.value ? "primary" : "secondary";
 });
-const userOwnsHistory = computed(() => {
-    return userStore.isRegisteredUser(currentUser.value) && currentUser.value.id == props.history?.user_id;
+const isOwner = computed(() => {
+    return userOwnsHistory(currentUser.value, props.history);
 });
 const newNameValid = computed(() => {
-    if (userOwnsHistory.value && name.value == props.history.name) {
+    if (isOwner.value && name.value == props.history.name) {
         return false;
     }
     return name.value.length > 0;
