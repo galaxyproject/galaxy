@@ -2395,10 +2395,8 @@ class DirectoryModelExportStore(ModelExportStore):
                         f"Expected a HistoryDatasetAssociation or LibraryDatasetDatasetAssociation, but got a {type(hda)}: {hda}"
                     )
                 job_hda = hda
-                while getattr(
-                    job_hda, "copied_from_history_dataset_association", None
-                ):  # should this check library datasets as well?
-                    job_hda = job_hda.copied_from_history_dataset_association  # type: ignore[union-attr]
+                while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    job_hda = job_hda.copied_from_history_dataset_association
                 if not job_hda.creating_job_associations:
                     # No viable HDA found.
                     continue
