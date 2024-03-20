@@ -11,7 +11,7 @@ type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
 // custom interface for how we use getDatasets
 interface GetDatasetsOptions extends GetDatasetsQuery {
     sortBy?: string;
-    sortDesc?: string;
+    sortDesc?: boolean;
     query?: string;
 }
 
