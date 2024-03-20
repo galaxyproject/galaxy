@@ -23,7 +23,6 @@ interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
-    hideModal?: () => void;
     isBusy?: boolean;
     items: Array<Record>;
     modalShow?: boolean;
@@ -42,7 +41,6 @@ withDefaults(defineProps<Props>(), {
     disableOk: false,
     errorMessage: "",
     fileMode: true,
-    hideModal: () => {},
     isBusy: false,
     modalShow: true,
     modalStatic: false,
@@ -57,6 +55,7 @@ withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "onBack"): void;
+    (e: "onCancel"): void;
     (e: "onClick", record: Record): void;
     (e: "onOk"): void;
     (e: "onOpen", record: Record): void;
@@ -67,7 +66,7 @@ const filter = ref("");
 </script>
 
 <template>
-    <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
+    <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="emit('onCancel')">
         <template v-slot:modal-header>
             <DataDialogSearch v-model="filter" :title="title" />
         </template>
@@ -104,7 +103,7 @@ const filter = ref("");
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <div>
-                    <BButton id="close-btn" size="sm" variant="secondary" @click="hideModal">
+                    <BButton id="close-btn" size="sm" variant="secondary" @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="['fas', 'times']" />
                         Cancel
                     </BButton>

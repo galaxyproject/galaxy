@@ -168,13 +168,13 @@ watch(
     <SelectionDialog
         :error-message="errorMessage"
         :disable-ok="!hasValue"
-        :hide-modal="onCancel"
         :items="items"
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
         :undo-show="undoShow"
         @onBack="load()"
+        @onCancel="onCancel"
         @onClick="onClick"
         @onOk="onOk"
         @onOpen="onOpen">

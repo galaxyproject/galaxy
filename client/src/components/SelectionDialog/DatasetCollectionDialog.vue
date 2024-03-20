@@ -3,9 +3,9 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
         leaf-icon="fa fa-folder"
         :items="items"
+        @onCancel="onCancel"
         @onClick="clicked" />
 </template>
 

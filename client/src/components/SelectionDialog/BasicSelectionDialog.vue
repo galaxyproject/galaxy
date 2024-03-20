@@ -3,12 +3,12 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
         :is-encoded="isEncoded"
         :leaf-icon="leafIcon"
         :items="items"
         :show-details="!!detailsKey"
         :title="title"
+        @onCancel="onCancel"
         @onClick="onOk" />
 </template>
 
