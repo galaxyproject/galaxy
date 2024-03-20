@@ -16,7 +16,7 @@ import { selectionStates } from "@/components/SelectionDialog/selectionStates";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { DirectoryRecord, Model, RecordItem } from "./model";
+import { Model, RecordItem } from "./model";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
@@ -46,7 +46,7 @@ const { config, isConfigLoaded } = useConfig();
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const allSelected = ref(false);
-const selectedDirectories = ref<DirectoryRecord[]>([]);
+const selectedDirectories = ref<RecordItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
 const items = ref<RecordItem[]>([]);
@@ -57,7 +57,7 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
-const currentDirectory = ref<DirectoryRecord>();
+const currentDirectory = ref<RecordItem>();
 const showFTPHelper = ref(false);
 const selectAllIcon = ref(selectionStates.unselected);
 const urlTracker = ref(new UrlTracker(""));
@@ -128,7 +128,7 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
     }
 }
 
-function selectDirectoryRecursive(record: DirectoryRecord) {
+function selectDirectoryRecursive(record: RecordItem) {
     // if directory is `selected` or `mixed` unselect everything
     if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
@@ -200,12 +200,12 @@ function checkIfAllSelected(): boolean {
     return isAllSelected;
 }
 
-function open(record: DirectoryRecord) {
+function open(record: RecordItem) {
     load(record);
 }
 
 /** Performs server request to retrieve data records **/
-function load(record?: DirectoryRecord) {
+function load(record?: RecordItem) {
     currentDirectory.value = urlTracker.value.getUrl(record);
     showFTPHelper.value = record?.url === "gxftp://";
     filter.value = undefined;

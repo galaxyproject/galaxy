@@ -66,7 +66,12 @@ const filter = ref("");
 </script>
 
 <template>
-    <BModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="emit('onCancel')">
+    <BModal
+        v-if="modalShow"
+        modal-class="selection-dialog-modal"
+        visible
+        :static="modalStatic"
+        @hide="emit('onCancel')">
         <template v-slot:modal-header>
             <DataDialogSearch v-model="filter" :title="title" />
         </template>

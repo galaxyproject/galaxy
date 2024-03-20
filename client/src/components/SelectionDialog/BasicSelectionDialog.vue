@@ -97,7 +97,6 @@ export default {
                         isLeaf: true,
                     };
                 });
-                console.log(this.items);
                 this.optionsShow = true;
             } catch (err) {
                 this.errorMessage = errorMessageAsString(err);
