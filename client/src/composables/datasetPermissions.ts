@@ -10,7 +10,7 @@ interface InputOption {
     roleValue: number;
 }
 
-interface Input {
+export interface Input {
     value: number[];
     options: [string, number][];
 }
@@ -46,6 +46,12 @@ export function initRefs() {
     };
 }
 
+export function permissionInputParts(inputs: Input[]) {
+    const manageInput: Input = inputs[0] as Input;
+    const accessInput: Input = inputs[1] as Input;
+    return { manageInput, accessInput };
+}
+
 export function updateRefs(
     inputs: Input[],
     managePermissionsOptions: Ref<InputOption[]>,
@@ -53,8 +59,7 @@ export function updateRefs(
     managePermissions: Ref<number[]>,
     accessPermissions: Ref<number[]>
 ) {
-    const manageInput: Input = inputs[0] as Input;
-    const accessInput: Input = inputs[1] as Input;
+    const { manageInput, accessInput } = permissionInputParts(inputs);
     managePermissionsOptions.value = manageInput.options.map((v: [string, number]) => {
         return <InputOption>{ roleName: v[0], roleValue: v[1] };
     });

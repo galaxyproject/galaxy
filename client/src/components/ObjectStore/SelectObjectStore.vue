@@ -2,6 +2,7 @@
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
+import { ConcreteObjectStoreModel } from "@/api";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
@@ -42,15 +43,17 @@ function variant(objectStoreId: string) {
 }
 
 const emit = defineEmits<{
-    (e: "onSubmit", id: string | null): void;
+    (e: "onSubmit", id: string | null, isPrivate: boolean): void;
 }>();
 
 const error = computed(() => {
     return props.parentError || loadErrorMessage.value;
 });
 
-async function handleSubmit(preferredObjectStoreId: string) {
-    emit("onSubmit", preferredObjectStoreId);
+async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | null) {
+    const id: string | null = (preferredObjectStore ? preferredObjectStore.object_store_id : null) as string | null;
+    const isPrivate: boolean = preferredObjectStore ? preferredObjectStore.private : false;
+    emit("onSubmit", id, isPrivate);
 }
 </script>
 
@@ -79,7 +82,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             :object-store="objectStore"
                             :variant="variant(objectStore.object_store_id)"
                             class="preferred-object-store-select-button"
-                            @click="handleSubmit(objectStore.object_store_id)" />
+                            @click="handleSubmit(objectStore)" />
                     </b-button-group>
                 </b-col>
                 <b-col cols="5">
