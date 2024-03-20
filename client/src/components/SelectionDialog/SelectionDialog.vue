@@ -1,22 +1,31 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft, faCheck, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import BootstrapVue, { BAlert, BButton, BModal, BTable } from "bootstrap-vue";
+import Vue, { computed, ref, watch } from "vue";
+
+import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
 import { type SelectionItem } from "./selectionTypes";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 
-library.add(faCaretLeft, faCheck, faSpinner, faTimes);
+Vue.use(BootstrapVue);
+library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
+
+const LABEL_FIELD = { key: "label", sortable: true };
+const DETAILS_FIELD = { key: "details", sortable: true };
+const TIME_FIELD = { key: "time", sortable: true };
+const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
     isBusy?: boolean;
+    isEncoded?: boolean;
     items: Array<SelectionItem>;
     leafIcon?: string;
     modalShow?: boolean;
@@ -31,17 +40,19 @@ interface Props {
     title?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     disableOk: false,
     errorMessage: "",
     fileMode: true,
     isBusy: false,
+    isEncoded: false,
     leafIcon: "fa fa-file-o",
     modalShow: true,
     modalStatic: false,
     multiple: false,
     optionsShow: false,
     undoShow: false,
+    selectAllIcon: SELECTION_STATES.UNSELECTED,
     showDetails: false,
     showSelectIcon: false,
     showTime: false,
@@ -58,6 +69,57 @@ const emit = defineEmits<{
 }>();
 
 const filter = ref("");
+const currentPage = ref(1);
+const nItems = ref(0);
+const perPage = ref(100);
+
+const fields = computed(() => {
+    const fields = [];
+    if (props.showSelectIcon) {
+        fields.push(SELECT_ICON_FIELD);
+    }
+    fields.push(LABEL_FIELD);
+    if (props.showDetails) {
+        fields.push(DETAILS_FIELD);
+    }
+    if (props.showTime) {
+        fields.push(TIME_FIELD);
+    }
+    return fields;
+});
+
+function selectionIcon(variant: string) {
+    switch (variant) {
+        case SELECTION_STATES.SELECTED:
+            return ["far", "check-square"];
+        case SELECTION_STATES.MIXED:
+            return ["fas", "minus-square"];
+        default:
+            return ["far", "square"];
+    }
+}
+
+/** Resets pagination when a filter/search word is entered **/
+function filtered(items: Array<SelectionItem>) {
+    nItems.value = items.length;
+    currentPage.value = 1;
+}
+
+/** Collects selected datasets in value array **/
+function clicked(record: SelectionItem) {
+    emit("onClick", record);
+}
+
+function open(record: SelectionItem) {
+    emit("onOpen", record);
+}
+
+watch(
+    () => props.items,
+    () => {
+        filtered(props.items);
+    }
+);
 </script>
 
 <template>
@@ -75,20 +137,74 @@ const filter = ref("");
             {{ errorMessage }}
         </BAlert>
         <div v-else>
-            <DataDialogTable
-                v-if="optionsShow"
-                :filter="filter"
-                :is-busy="isBusy"
-                :items="items"
-                :leaf-icon="leafIcon"
-                :multiple="multiple"
-                :select-all-icon="selectAllIcon"
-                :show-details="showDetails"
-                :show-select-icon="showSelectIcon"
-                :show-time="showTime"
-                @onClick="emit('onClick', $event)"
-                @onOpen="emit('onOpen', $event)"
-                @onSelectAll="emit('onSelectAll')" />
+            <div v-if="optionsShow">
+                <BTable
+                    small
+                    hover
+                    :items="items"
+                    :fields="fields"
+                    :filter="filter"
+                    :per-page="perPage"
+                    :current-page="currentPage"
+                    :busy="isBusy"
+                    primary-key="id"
+                    @row-clicked="clicked"
+                    @filtered="filtered">
+                    <template v-slot:head(select_icon)="">
+                        <FontAwesomeIcon
+                            class="select-checkbox cursor-pointer"
+                            title="Check to select all datasets"
+                            :icon="selectionIcon(selectAllIcon)"
+                            @click="$emit('onSelectAll')" />
+                    </template>
+                    <template v-slot:cell(select_icon)="data">
+                        <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
+                    </template>
+                    <template v-slot:cell(label)="data">
+                        <div style="cursor: pointer">
+                            <pre
+                                v-if="isEncoded"
+                                :title="`label-${data.item.url}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
+                            <span v-else>
+                                <div v-if="data.item.isLeaf">
+                                    <i :class="leafIcon" />
+                                    <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                                </div>
+                                <div v-else @click.stop="open(data.item)">
+                                    <FontAwesomeIcon icon="folder" />
+                                    <b-link :title="`label-${data.item.url}`">{{
+                                        data.value ? data.value : "-"
+                                    }}</b-link>
+                                </div>
+                            </span>
+                        </div>
+                    </template>
+                    <template v-slot:cell(details)="data">
+                        <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
+                    </template>
+                    <template v-slot:cell(time)="data">
+                        {{ data.value ? data.value : "-" }}
+                    </template>
+                </BTable>
+                <div v-if="isBusy" class="text-center">
+                    <b-spinner small type="grow"></b-spinner>
+                    <b-spinner small type="grow"></b-spinner>
+                    <b-spinner small type="grow"></b-spinner>
+                </div>
+                <div v-if="nItems === 0">
+                    <div v-if="filter">
+                        No search results found for: <b>{{ filter }}</b
+                        >.
+                    </div>
+                    <div v-else>No entries.</div>
+                </div>
+                <b-pagination
+                    v-if="nItems > perPage"
+                    v-model="currentPage"
+                    class="justify-content-md-center"
+                    :per-page="perPage"
+                    :total-rows="nItems" />
+            </div>
             <div v-else>
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>
