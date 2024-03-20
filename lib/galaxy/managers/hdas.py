@@ -498,7 +498,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 # TODO: accessible needs to go away
                 "accessible",
                 # remapped
-                "genome_build",
                 "misc_info",
                 "misc_blurb",
                 "file_ext",

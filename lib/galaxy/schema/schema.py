@@ -686,6 +686,7 @@ class HDASummary(HDACommon):
         title="Purged",
         description="Whether this dataset has been removed from disk.",
     )
+    genome_build: Optional[str] = GenomeBuildField
 
 
 class HDAInaccessible(HDACommon):
@@ -738,7 +739,6 @@ class HDADetailed(HDASummary, WithModelClass):
     model_class: Annotated[HDA_MODEL_CLASS, ModelClassField(HDA_MODEL_CLASS)]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
-    genome_build: Optional[str] = GenomeBuildField
     misc_info: Optional[str] = Field(
         default=None,
         title="Miscellaneous Information",
