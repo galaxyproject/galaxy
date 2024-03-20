@@ -22,6 +22,11 @@
       <param name="in" value="im1_uint8.png" />
       <output name="out" value="im1_uint8.png" compare="image_diff" metric="rms" eps="0" />
     </test>
+    <!-- test pair of equal images (float tiff) -->
+    <test>
+      <param name="in" value="im4_float.tif" />
+      <output name="out" value="im4_float.tif" compare="image_diff" />
+    </test>
     <!-- test pair of different images -->
     <test>
       <param name="in" value="im2_a.png" />

@@ -18,6 +18,10 @@ try:
     from PIL import Image
 except ImportError:
     pass
+try:
+    import tifffile
+except ImportError:
+    pass
 
 if TYPE_CHECKING:
     import numpy.typing
@@ -58,18 +62,17 @@ def assert_has_image_width(
     """
     Asserts the specified output is an image and has a width of the specified value.
     """
-    buf = io.BytesIO(output_bytes)
-    with Image.open(buf) as im:
-        _assert_number(
-            im.size[0],
-            width,
-            delta,
-            min,
-            max,
-            negate,
-            "{expected} width {n}+-{delta}",
-            "{expected} width to be in [{min}:{max}]",
-        )
+    im_arr = _get_image(output_bytes)
+    _assert_number(
+        im_arr.shape[1],
+        width,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} width {n}+-{delta}",
+        "{expected} width to be in [{min}:{max}]",
+    )
 
 
 def assert_has_image_height(
@@ -83,18 +86,17 @@ def assert_has_image_height(
     """
     Asserts the specified output is an image and has a height of the specified value.
     """
-    buf = io.BytesIO(output_bytes)
-    with Image.open(buf) as im:
-        _assert_number(
-            im.size[1],
-            height,
-            delta,
-            min,
-            max,
-            negate,
-            "{expected} height {n}+-{delta}",
-            "{expected} height to be in [{min}:{max}]",
-        )
+    im_arr = _get_image(output_bytes)
+    _assert_number(
+        im_arr.shape[0],
+        height,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} height {n}+-{delta}",
+        "{expected} height to be in [{min}:{max}]",
+    )
 
 
 def assert_has_image_channels(
@@ -108,18 +110,18 @@ def assert_has_image_channels(
     """
     Asserts the specified output is an image and has the specified number of channels.
     """
-    buf = io.BytesIO(output_bytes)
-    with Image.open(buf) as im:
-        _assert_number(
-            len(im.getbands()),
-            channels,
-            delta,
-            min,
-            max,
-            negate,
-            "{expected} image channels {n}+-{delta}",
-            "{expected} image channels to be in [{min}:{max}]",
-        )
+    im_arr = _get_image(output_bytes)
+    n_channels = 1 if im_arr.ndim < 3 else im_arr.shape[2]  # we assume here that the image is a 2-D image
+    _assert_number(
+        n_channels,
+        channels,
+        delta,
+        min,
+        max,
+        negate,
+        "{expected} image channels {n}+-{delta}",
+        "{expected} image channels to be in [{min}:{max}]",
+    )
 
 
 def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, float]:
@@ -139,10 +141,20 @@ def _get_image(
 ) -> "numpy.typing.NDArray":
     """
     Returns the output image or a specific channel.
+
+    The function tries to read the image using tifffile and Pillow.
     """
     buf = io.BytesIO(output_bytes)
-    with Image.open(buf) as im:
-        im_arr = numpy.array(im)
+
+    # Try reading with tifffile first. It fails if the file is not a TIFF.
+    try:
+        im_arr = tifffile.imread(buf)
+
+    # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
+    except tifffile.TiffFileError:
+        buf.seek(0)
+        with Image.open(buf) as im:
+            im_arr = numpy.array(im)
 
     # Select the specified channel (if any).
     if channel is not None:
