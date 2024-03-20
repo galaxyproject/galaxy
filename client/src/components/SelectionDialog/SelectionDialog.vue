@@ -3,8 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue, { BAlert, BButton, BModal, BTable } from "bootstrap-vue";
-import Vue, { computed, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
@@ -12,7 +11,6 @@ import { type SelectionItem } from "./selectionTypes";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
-Vue.use(BootstrapVue);
 library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
 const LABEL_FIELD = { key: "label", sortable: true };
@@ -91,11 +89,11 @@ const fields = computed(() => {
 function selectionIcon(variant: string) {
     switch (variant) {
         case SELECTION_STATES.SELECTED:
-            return ["far", "check-square"];
+            return faCheckSquare;
         case SELECTION_STATES.MIXED:
-            return ["fas", "minus-square"];
+            return faMinusSquare;
         default:
-            return ["far", "square"];
+            return faSquare;
     }
 }
 
@@ -162,7 +160,7 @@ watch(
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
-                                    <FontAwesomeIcon icon="folder" />
+                                    <FontAwesomeIcon :icon="faFolder" />
                                     <b-link :title="`label-${data.item.url}`">{{
                                         data.value ? data.value : "-"
                                     }}</b-link>
@@ -205,14 +203,14 @@ watch(
             <div class="d-flex justify-content-between w-100">
                 <div>
                     <BButton v-if="undoShow" id="back-btn" size="sm" @click="emit('onBack')">
-                        <FontAwesomeIcon :icon="['fas', 'caret-left']" />
+                        <FontAwesomeIcon :icon="faCaretLeft" />
                         Back
                     </BButton>
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
                 <div>
                     <BButton id="close-btn" size="sm" variant="secondary" @click="emit('onCancel')">
-                        <FontAwesomeIcon :icon="['fas', 'times']" />
+                        <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </BButton>
                     <BButton
@@ -223,7 +221,7 @@ watch(
                         variant="primary"
                         :disabled="disableOk"
                         @click="emit('onOk')">
-                        <FontAwesomeIcon :icon="['fas', 'check']" />
+                        <FontAwesomeIcon :icon="faCheck" />
                         {{ fileMode ? "Ok" : "Select this folder" }}
                     </BButton>
                 </div>
