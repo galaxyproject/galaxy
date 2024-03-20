@@ -5,26 +5,19 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BModal } from "bootstrap-vue";
 import { ref } from "vue";
 
+import { type SelectionItem } from "./selectionTypes";
+
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 
 library.add(faCaretLeft, faCheck, faSpinner, faTimes);
-
-export interface Record {
-    id: string;
-    label: string;
-    details: string;
-    isLeaf: boolean;
-    url: string;
-    labelTitle: string | undefined;
-}
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
     isBusy?: boolean;
-    items: Array<Record>;
+    items: Array<SelectionItem>;
     modalShow?: boolean;
     modalStatic?: boolean;
     multiple?: boolean;
@@ -56,9 +49,9 @@ withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "onBack"): void;
     (e: "onCancel"): void;
-    (e: "onClick", record: Record): void;
+    (e: "onClick", record: SelectionItem): void;
     (e: "onOk"): void;
-    (e: "onOpen", record: Record): void;
+    (e: "onOpen", record: SelectionItem): void;
     (e: "onSelectAll"): void;
 }>();
 

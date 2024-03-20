@@ -12,11 +12,11 @@ import {
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { isSubPath } from "@/components/FilesDialog/utilities";
-import { selectionStates } from "@/components/SelectionDialog/selectionStates";
+import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { Model, RecordItem } from "./model";
+import { Model } from "./model";
 
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
@@ -46,10 +46,10 @@ const { config, isConfigLoaded } = useConfig();
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const allSelected = ref(false);
-const selectedDirectories = ref<RecordItem[]>([]);
+const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
-const items = ref<RecordItem[]>([]);
+const items = ref<SelectionItem[]>([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
@@ -57,9 +57,9 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
-const currentDirectory = ref<RecordItem>();
+const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
-const selectAllIcon = ref(selectionStates.unselected);
+const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 
 const fileMode = computed(() => props.mode == "file");
@@ -68,7 +68,7 @@ const okButtonDisabled = computed(
 );
 
 /** Collects selected datasets in value array **/
-function clicked(record: RecordItem) {
+function clicked(record: SelectionItem) {
     // ignore the click during directory mode
     if (!fileMode.value) {
         return;
@@ -83,7 +83,7 @@ function clicked(record: RecordItem) {
     formatRows();
 }
 
-function selectSingleRecord(record: RecordItem, selectOnly = false) {
+function selectSingleRecord(record: SelectionItem, selectOnly = false) {
     const selected = selectionModel.value.exists(record.id);
     if (selected) {
         unselectPath(record.url, true);
@@ -128,7 +128,7 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
     }
 }
 
-function selectDirectoryRecursive(record: RecordItem) {
+function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
     if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
@@ -158,9 +158,9 @@ function selectDirectoryRecursive(record: RecordItem) {
 function formatRows() {
     const getIcon = (isSelected: boolean, path: string) => {
         if (isSelected) {
-            return selectionStates.selected;
+            return SELECTION_STATES.SELECTED;
         } else {
-            return selectionModel.value.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
+            return selectionModel.value.pathExists(path) ? SELECTION_STATES.MIXED : SELECTION_STATES.UNSELECTED;
         }
     };
 
@@ -200,12 +200,12 @@ function checkIfAllSelected(): boolean {
     return isAllSelected;
 }
 
-function open(record: RecordItem) {
+function open(record: SelectionItem) {
     load(record);
 }
 
 /** Performs server request to retrieve data records **/
-function load(record?: RecordItem) {
+function load(record?: SelectionItem) {
     currentDirectory.value = urlTracker.value.getUrl(record);
     showFTPHelper.value = record?.url === "gxftp://";
     filter.value = undefined;
@@ -261,7 +261,7 @@ function filterByMode(results: RemoteEntry[]): RemoteEntry[] {
     return results;
 }
 
-function entryToRecord(entry: RemoteEntry): RecordItem {
+function entryToRecord(entry: RemoteEntry): SelectionItem {
     const result = {
         id: entry.uri,
         label: entry.name,
@@ -269,20 +269,18 @@ function entryToRecord(entry: RemoteEntry): RecordItem {
         details: entry.class === "File" ? entry.ctime : "",
         isLeaf: entry.class === "File",
         url: entry.uri,
-        labelTitle: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
     };
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): RecordItem {
+function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): SelectionItem {
     const result = {
         id: plugin.id,
         label: plugin.label,
         details: plugin.doc,
         isLeaf: false,
         url: plugin.uri_root,
-        labelTitle: plugin.uri_root,
     };
     return result;
 }

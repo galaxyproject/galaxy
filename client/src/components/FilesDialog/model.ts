@@ -2,22 +2,14 @@
  * Model to track selected URI for FilesDialog - mirroring DataDialog's model.
  */
 import { isSubPath } from "@/components/FilesDialog/utilities";
-
-export interface RecordItem {
-    id: string;
-    label: string;
-    details: string;
-    isLeaf: boolean;
-    url: string;
-    labelTitle: string | undefined;
-}
+import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 
 interface ModelOptions {
     multiple?: boolean;
 }
 
 export class Model {
-    private values: Record<string, RecordItem>;
+    private values: Record<string, SelectionItem>;
     private multiple: boolean;
 
     constructor(options: ModelOptions = {}) {
@@ -26,7 +18,7 @@ export class Model {
     }
 
     /** Adds a new record to the value stack **/
-    add(record: RecordItem) {
+    add(record: SelectionItem) {
         if (!this.multiple) {
             this.values = {};
         }
@@ -70,13 +62,13 @@ export class Model {
     }
 
     /** Finalizes the results from added records **/
-    finalize(): RecordItem | RecordItem[] {
-        const results: RecordItem[] = [];
+    finalize(): SelectionItem | SelectionItem[] {
+        const results: SelectionItem[] = [];
         Object.values(this.values).forEach((v) => {
             results.push(v);
         });
         if (results.length > 0 && !this.multiple) {
-            return results.at(0) as RecordItem;
+            return results.at(0) as SelectionItem;
         }
         return results;
     }

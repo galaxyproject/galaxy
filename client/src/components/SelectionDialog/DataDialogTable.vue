@@ -28,23 +28,21 @@
                 <div style="cursor: pointer">
                     <pre
                         v-if="isEncoded"
-                        :title="`label-${data.item.labelTitle}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
+                        :title="`label-${data.item.url}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                     <span v-else>
                         <div v-if="data.item.isLeaf">
                             <i :class="leafIcon" />
-                            <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
+                            <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
                         <div v-else @click.stop="open(data.item)">
                             <FontAwesomeIcon icon="folder" />
-                            <b-link :title="`label-${data.item.labelTitle}`">{{
-                                data.value ? data.value : "-"
-                            }}</b-link>
+                            <b-link :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</b-link>
                         </div>
                     </span>
                 </div>
             </template>
             <template v-slot:cell(details)="data">
-                <span :title="`details-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
+                <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
             </template>
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
@@ -77,7 +75,7 @@ import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regula
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { selectionStates } from "components/SelectionDialog/selectionStates";
+import { SELECTION_STATES } from "components/SelectionDialog/selectionTypes";
 import Vue from "vue";
 
 Vue.use(BootstrapVue);
@@ -107,7 +105,7 @@ export default {
         },
         selectAllIcon: {
             type: String,
-            default: selectionStates.unselected,
+            default: SELECTION_STATES.UNSELECTED,
         },
         leafIcon: {
             type: String,
@@ -169,9 +167,9 @@ export default {
     methods: {
         selectionIcon(variant) {
             switch (variant) {
-                case selectionStates.selected:
+                case SELECTION_STATES.SELECTED:
                     return ["far", "check-square"];
-                case selectionStates.mixed:
+                case SELECTION_STATES.MIXED:
                     return ["fas", "minus-square"];
                 default:
                     return ["far", "square"];
