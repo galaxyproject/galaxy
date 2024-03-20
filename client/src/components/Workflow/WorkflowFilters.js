@@ -89,28 +89,28 @@ export function WorkflowFilters(activeList = "my") {
             {
                 ...commonFilters,
                 published: {
-                    placeholder: "Filter on published workflows",
+                    placeholder: "Published",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("published", "published", toBool),
                     menuItem: true,
                 },
                 importable: {
-                    placeholder: "Filter on importable workflows",
+                    placeholder: "Importable",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("importable", "importable", toBool),
                     menuItem: true,
                 },
                 shared_with_me: {
-                    placeholder: "Filter on workflows shared with me",
+                    placeholder: "Shared with me",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("shared_with_me", "shared_with_me", toBool),
                     menuItem: true,
                 },
                 deleted: {
-                    placeholder: "Filter on deleted workflows",
+                    placeholder: "Deleted",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("deleted", "deleted", toBool),
@@ -133,7 +133,7 @@ export function WorkflowFilters(activeList = "my") {
                 },
                 u: { handler: contains("u"), menuItem: false },
                 published: {
-                    placeholder: "Filter on published workflows",
+                    placeholder: "Published",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("published", "published", toBool),
@@ -156,7 +156,7 @@ export function WorkflowFilters(activeList = "my") {
                 },
                 u: { handler: contains("u"), menuItem: false },
                 shared_with_me: {
-                    placeholder: "Filter on workflows shared with me",
+                    placeholder: "Shared with me",
                     type: Boolean,
                     boolType: "is",
                     handler: equals("shared_with_me", "shared_with_me", toBool),

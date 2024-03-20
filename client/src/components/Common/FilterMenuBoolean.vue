@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BFormGroup, BFormRadioGroup } from "bootstrap-vue";
+import { BFormCheckbox, BFormGroup, BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
@@ -12,11 +12,15 @@ interface Props {
     filters: {
         [k: string]: FilterType;
     };
+    view?: "dropdown" | "popover" | "compact";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    view: "dropdown",
+});
 
 const boolType = computed(() => props.filter.boolType || "default");
+const isCheckbox = computed(() => boolType.value === "is" && props.view === "compact");
 
 const options =
     boolType.value == "default"
@@ -50,10 +54,11 @@ const value = computed({
 
 <template>
     <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
-    <div @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
-        <small>{{ props.filter.placeholder }}:</small>
+    <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
+        <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
-        <BFormGroup class="m-0">
+        <BFormCheckbox v-if="isCheckbox" v-model="value" :data-description="`filter ${props.name}`" />
+        <BFormGroup v-else class="m-0">
             <BFormRadioGroup
                 v-model="value"
                 :options="options"

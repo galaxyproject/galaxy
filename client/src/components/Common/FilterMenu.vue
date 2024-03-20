@@ -54,8 +54,8 @@ interface Props {
     searchError?: BackendFilterError;
     /** Whether the advanced menu is currently expanded */
     showAdvanced?: boolean;
-    /** Whether to use a popover for the menu options */
-    isPopover?: boolean;
+    /** What view to use for the menu */
+    view?: "dropdown" | "popover" | "compact";
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -66,7 +66,7 @@ const props = withDefaults(defineProps<Props>(), {
     menuType: "linked",
     showAdvanced: false,
     searchError: undefined,
-    isPopover: false,
+    view: "dropdown",
 });
 
 const emit = defineEmits<{
@@ -135,6 +135,11 @@ function getValidFilter(filter: string): ValidFilter<any> {
  */
 function onOption(filter: string, value: any) {
     filters.value[filter] = value;
+
+    // for the compact view, we want to immediately search
+    if (props.view === "compact") {
+        onSearch();
+    }
 }
 
 function onPopoverShown() {
@@ -152,7 +157,11 @@ function onSearch() {
         emit("on-search", filters.value, newFilterText, newBackendFilter);
     } else {
         updateFilterText(newFilterText);
-        onToggle();
+
+        // for the compact view, we do not want to close the advanced menu
+        if (props.view !== "compact") {
+            onToggle();
+        }
     }
 }
 
@@ -194,8 +203,10 @@ function updateFilterText(newFilterText: string) {
         </BButton>
 
         <component
-            :is="!props.isPopover ? 'div' : BPopover"
-            v-if="(props.isPopover && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced"
+            :is="props.view !== 'popover' ? 'div' : BPopover"
+            v-if="
+                (props.view === 'popover' && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced
+            "
             class="mt-2"
             :show.sync="localAdvancedToggle"
             :target="toggleMenuButton"
@@ -206,11 +217,13 @@ function updateFilterText(newFilterText: string) {
             <span ref="advancedMenu">
                 <div v-for="filter in Object.keys(validFilters)" :key="filter">
                     <span v-if="validFilters[filter]?.menuItem">
+                        <!-- Boolean filters go in another section in compact view -->
                         <FilterMenuBoolean
-                            v-if="validFilters[filter]?.type == Boolean"
+                            v-if="props.view !== 'compact' && validFilters[filter]?.type == Boolean"
                             :name="filter"
                             :filter="getValidFilter(filter)"
                             :filters="filters"
+                            :view="props.view"
                             @change="onOption"
                             @on-enter="onSearch"
                             @on-esc="onToggle" />
@@ -246,7 +259,7 @@ function updateFilterText(newFilterText: string) {
                             :identifier="identifier"
                             @change="onOption" />
                         <FilterMenuInput
-                            v-else
+                            v-else-if="validFilters[filter]?.type !== Boolean"
                             :name="filter"
                             :filter="getValidFilter(filter)"
                             :filters="filters"
@@ -259,9 +272,26 @@ function updateFilterText(newFilterText: string) {
                 </div>
             </span>
 
+            <!-- Compact view: Boolean filters go side by side -->
+            <div v-if="props.view === 'compact'" class="d-flex">
+                <span v-for="filter in Object.keys(validFilters)" :key="filter">
+                    <FilterMenuBoolean
+                        v-if="validFilters[filter]?.menuItem && validFilters[filter]?.type == Boolean"
+                        class="mr-2 mt-1"
+                        :name="filter"
+                        :filter="getValidFilter(filter)"
+                        :filters="filters"
+                        :view="props.view"
+                        @change="onOption"
+                        @on-enter="onSearch"
+                        @on-esc="onToggle" />
+                </span>
+            </div>
+
             <!-- Perform search or cancel out (or open help modal for whole Menu if exists) -->
-            <div class="mb-3 mt-2">
+            <div class="mt-2">
                 <BButton
+                    v-if="props.view !== 'compact'"
                     :id="`${identifier}-advanced-filter-submit`"
                     class="mr-1"
                     size="sm"
@@ -282,6 +312,7 @@ function updateFilterText(newFilterText: string) {
                     <slot name="menu-help-text"></slot>
                 </BModal>
             </div>
+            <hr v-if="props.showAdvanced" class="w-100" />
         </component>
     </div>
 </template>
