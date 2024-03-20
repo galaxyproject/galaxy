@@ -927,34 +927,28 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Gets or creates a default history and associates it with the current
         session.
         """
+
+        # Just return the current history if one exists and is not deleted.
         history = self.galaxy_session.current_history
         if history and not history.deleted:
             return history
 
+        # Look for an existing history that has the default name, is not
+        # deleted, and is empty. If this exists, we associate it with the
+        # current session and return it.
         user = self.galaxy_session.user
         if user:
-            # Look for default history that (a) has default name + is not deleted and
-            # (b) has no datasets. If suitable history found, use it; otherwise, create
-            # new history.
             stmt = select(self.app.model.History).filter_by(
                 user=user, name=self.app.model.History.default_name, deleted=False
             )
             unnamed_histories = self.sa_session.scalars(stmt)
-            default_history = None
             for history in unnamed_histories:
                 if history.empty:
-                    # Found suitable default history.
-                    default_history = history
-                    break
+                    self.set_history(history)
+                    return history
 
-            # Set or create history.
-            if default_history:
-                history = default_history
-                self.set_history(history)
-        else:
-            history = self.new_history()
-
-        return history
+        # No suitable history found, create a new one.
+        return self.new_history()
 
     def get_most_recent_history(self):
         """
