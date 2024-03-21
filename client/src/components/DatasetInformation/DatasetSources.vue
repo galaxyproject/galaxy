@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import DatasetSource from "@/components/DatasetInformation/DatasetSource.vue";
+
+interface Props {
+    sources: {
+        source_uri: string;
+        transform: {
+            action: "to_posix_lines" | "spaces_to_tabs" | "datatype_groom";
+            datatype_ext: "bam" | "qname_sorted.bam" | "qname_input_sorted.bam" | "isa-tab" | "isa-json";
+        }[];
+    }[];
+}
+
+defineProps<Props>();
+</script>
+
 <template>
     <span class="dataset-sources">
         <ul class="dataset-sources-list">
@@ -5,22 +21,6 @@
         </ul>
     </span>
 </template>
-
-<script>
-import DatasetSource from "./DatasetSource";
-
-export default {
-    components: {
-        DatasetSource,
-    },
-    props: {
-        sources: {
-            type: Array,
-            required: true,
-        },
-    },
-};
-</script>
 
 <style scoped>
 .dataset-sources-list {
