@@ -3254,7 +3254,7 @@ class UpdateDatasetPermissionsPayload(Model):
 
 
 @partial_model()
-class CustomHistoryHDA(HDADetailed):
+class HDACustom(HDADetailed):
     """Can contain any serializable property of an HDA.
 
     Allows arbitrary custom keys to be specified in the serialization
@@ -3278,7 +3278,7 @@ class CustomHistoryHDA(HDADetailed):
 
 
 @partial_model()
-class CustomHistoryHDCA(HDCADetailed):
+class HDCACustom(HDCADetailed):
     """Can contain any serializable property of an HDCA.
 
     Allows arbitrary custom keys to be specified in the serialization
@@ -3288,13 +3288,10 @@ class CustomHistoryHDCA(HDCADetailed):
     pass
 
 
-AnyCustomHistoryItem = Union[CustomHistoryHDA, CustomHistoryHDCA]
-
-AnyHDA = Union[HDADetailed, HDASummary]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
+AnyHDA = Union[HDACustom, HDADetailed, HDASummary]
+AnyHDCA = Union[HDCACustom, HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
-        AnyCustomHistoryItem,
         AnyHDA,
         AnyHDCA,
     ],
