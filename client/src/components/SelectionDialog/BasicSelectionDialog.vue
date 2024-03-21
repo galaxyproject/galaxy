@@ -1,5 +1,78 @@
+<script setup lang="ts">
+import { onMounted, type Ref, ref } from "vue";
+
+import { ApiResponse } from "@/api/schema";
+import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+interface Props {
+    detailsKey?: string;
+    getData: () => Promise<ApiResponse<Array<object>>>;
+    isEncoded?: boolean;
+    labelKey?: string;
+    leafIcon?: string;
+    timeKey?: string;
+    title: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    detailsKey: "",
+    isEncoded: false,
+    labelKey: "id",
+    leafIcon: "",
+    timeKey: "update_time",
+});
+
+const emit = defineEmits<{
+    (e: "onCancel"): void;
+    (e: "onOk", results: SelectionItem): void;
+    (e: "onUpload"): void;
+}>();
+
+const errorMessage = ref("");
+const items: Ref<Array<SelectionItem>> = ref([]);
+const modalShow = ref(true);
+const optionsShow = ref(false);
+
+async function load() {
+    optionsShow.value = false;
+    try {
+        const response = await props.getData();
+        const incoming = response.data;
+        items.value = incoming.map((item: any) => {
+            let timeStamp = item[props.timeKey];
+            if (timeStamp) {
+                const date = new Date(timeStamp);
+                timeStamp = date.toLocaleString("default", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    minute: "numeric",
+                    hour: "numeric",
+                });
+            }
+            return {
+                id: item.id,
+                label: item[props.labelKey] || null,
+                details: item[props.detailsKey] || null,
+                time: timeStamp || null,
+                isLeaf: true,
+                url: "",
+            };
+        });
+        optionsShow.value = true;
+    } catch (err) {
+        errorMessage.value = errorMessageAsString(err);
+    }
+}
+
+onMounted(() => load());
+</script>
+
 <template>
-    <selection-dialog
+    <SelectionDialog
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
@@ -8,100 +81,6 @@
         :items="items"
         :show-details="!!detailsKey"
         :title="title"
-        @onCancel="onCancel"
-        @onClick="onOk" />
+        @onCancel="emit('onCancel')"
+        @onClick="emit('onOk', $event)" />
 </template>
-
-<script>
-import { errorMessageAsString } from "utils/simple-error";
-
-import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
-
-export default {
-    components: {
-        "selection-dialog": SelectionDialog,
-    },
-    props: {
-        getData: {
-            type: Function,
-            required: true,
-        },
-        title: {
-            type: String,
-            required: true,
-        },
-        leafIcon: {
-            type: String,
-            default: null,
-        },
-        labelKey: {
-            type: String,
-            default: "id",
-        },
-        detailsKey: {
-            type: String,
-            default: null,
-        },
-        timeKey: {
-            type: String,
-            default: "update_time",
-        },
-        isEncoded: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            errorMessage: null,
-            filter: null,
-            items: [],
-            modalShow: true,
-            optionsShow: false,
-            hasValue: false,
-        };
-    },
-    created() {
-        this.load();
-    },
-    methods: {
-        onOk(record) {
-            this.$emit("onOk", record);
-        },
-        onCancel() {
-            this.$emit("onCancel");
-        },
-        async load() {
-            this.filter = null;
-            this.optionsShow = false;
-            try {
-                const response = await this.getData();
-                const items = response.data;
-                this.items = items.map((item) => {
-                    let timeStamp = item[this.timeKey];
-                    if (timeStamp) {
-                        const date = new Date(timeStamp);
-                        timeStamp = date.toLocaleString("default", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                            minute: "numeric",
-                            hour: "numeric",
-                        });
-                    }
-                    return {
-                        id: item.id,
-                        label: item[this.labelKey] || null,
-                        details: item[this.detailsKey] || null,
-                        time: timeStamp || null,
-                        isLeaf: true,
-                    };
-                });
-                this.optionsShow = true;
-            } catch (err) {
-                this.errorMessage = errorMessageAsString(err);
-            }
-        },
-    },
-};
-</script>
