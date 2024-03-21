@@ -206,6 +206,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_metadata_value_size": max_metadata_value_size,
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
+            "change_datatype_actions": job.get_change_datatype_actions(),
         }
 
         # export model objects and object store configuration for extended metadata also.
