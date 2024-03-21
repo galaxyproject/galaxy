@@ -384,6 +384,7 @@ class FastAPIHistoryContents:
         "/api/histories/{history_id}/contents/{type}s",
         summary="Returns the contents of the given history filtered by type.",
         operation_id="history_contents__index_typed",
+        response_model_exclude_unset=True,
     )
     def index_typed(
         self,
@@ -438,6 +439,7 @@ class FastAPIHistoryContents:
             },
         },
         operation_id="history_contents__index",
+        response_model_exclude_unset=True,
     )
     def index(
         self,
@@ -741,6 +743,7 @@ class FastAPIHistoryContents:
     @router.put(
         "/api/histories/{history_id}/contents",
         summary="Batch update specific properties of a set items contained in the given History.",
+        response_model_exclude_unset=True,
     )
     def update_batch(
         self,
