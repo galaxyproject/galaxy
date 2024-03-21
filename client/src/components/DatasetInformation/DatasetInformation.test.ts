@@ -1,12 +1,13 @@
-import { mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/jest/helpers";
+import { mount, Wrapper } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
 
-import DatasetInformation from "./DatasetInformation";
-import datasetResponse from "./testData/datasetResponse";
+import datasetResponse from "./testData/datasetResponse.json";
+
+import DatasetInformation from "./DatasetInformation.vue";
 
 const HDA_ID = "FOO_HDA_ID";
 
@@ -22,9 +23,9 @@ const mockDatasetProvider = {
 const localVue = getLocalVue();
 
 describe("DatasetInformation/DatasetInformation", () => {
-    let wrapper;
-    let datasetInfoTable;
-    let axiosMock;
+    let wrapper: Wrapper<Vue>;
+    let axiosMock: MockAdapter;
+    let datasetInfoTable: Wrapper<Vue>;
 
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
@@ -40,34 +41,41 @@ describe("DatasetInformation/DatasetInformation", () => {
             hda_id: HDA_ID,
         };
 
-        wrapper = mount(DatasetInformation, {
+        wrapper = mount(DatasetInformation as object, {
             propsData,
             stubs: {
                 DatasetProvider: mockDatasetProvider,
             },
             localVue,
         });
+
         datasetInfoTable = wrapper.find("#dataset-details");
+
         await flushPromises();
     });
 
     it("dataset information should exist", async () => {
         // table should exist
         expect(datasetInfoTable).toBeTruthy();
+
         const rows = datasetInfoTable.findAll("tbody > tr");
+
         // should contain 11 rows
         expect(rows.length).toBe(11);
     });
 
-    it("filesize should be formatted", async () => {
-        const filesize = datasetInfoTable.find("#filesize > strong");
-        expect(filesize.html()).toBe(`<strong>${datasetResponse.file_size}</strong>`);
+    it("file size should be formatted", async () => {
+        const fileSize = datasetInfoTable.find("#file-size > strong");
+
+        expect(fileSize.html()).toBe(`<strong>${datasetResponse.file_size}</strong>`);
     });
 
     it("Date should be formatted", async () => {
         const date = datasetInfoTable.find(".utc-time").text();
+
         const parsedDate = parseISO(`${datasetResponse.create_time}Z`);
         const formattedDate = format(parsedDate, "eeee MMM do H:mm:ss yyyy zz");
+
         expect(date).toBe(formattedDate);
     });
 
@@ -82,6 +90,7 @@ describe("DatasetInformation/DatasetInformation", () => {
 
         rendered_entries.forEach((entry) => {
             const renderedText = datasetInfoTable.find(`#${entry.htmlAttribute}`).text();
+
             if (entry.htmlAttribute === "file-contents") {
                 expect(renderedText).toBe("contents");
             } else {
