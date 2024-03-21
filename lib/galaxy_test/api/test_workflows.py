@@ -870,6 +870,15 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         update_response = self._update_workflow(workflow_id, update_payload).json()
         assert update_response["tags"] == []
 
+    def test_set_workflow_menu(self):
+        original_name = "test update name"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        workflow_id = workflow["id"]
+        response = self._put(f"/api/workflows/menu", {"workflow_ids": workflow_id}, json=True)
+        self._assert_status_code_is(response, 200)
+
     def test_update_name(self):
         original_name = "test update name"
         workflow_object = self.workflow_populator.load_workflow(name=original_name)
