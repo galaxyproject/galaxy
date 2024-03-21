@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { type components } from "@/api/schema";
+import { HDASummary } from "@/api/datasets";
 import { useHistoryStore } from "@/stores/historyStore";
-
-type HDASummary = components["schemas"]["HDASummary"];
 
 interface Props {
     item: HDASummary;

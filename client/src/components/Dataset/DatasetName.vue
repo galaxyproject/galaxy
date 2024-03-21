@@ -5,11 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BLink } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type components } from "@/api/schema";
+import { HDASummary } from "@/api/datasets";
 
 library.add(faCaretDown, faCopy, faEye, faTimesCircle, faPause);
-
-type HDASummary = components["schemas"]["HDASummary"];
 
 interface Props {
     item: HDASummary;

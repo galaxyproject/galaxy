@@ -6,6 +6,8 @@ import { withPrefix } from "@/utils/redirect";
 
 export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
 
+export type HDASummary = components["schemas"]["HDASummary"];
+
 type GetDatasetsApiOptions = FetchArgType<typeof datasetsFetcher>;
 type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
 // custom interface for how we use getDatasets

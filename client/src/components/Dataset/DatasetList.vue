@@ -3,8 +3,7 @@ import { BAlert, BTable } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 
-import { copyDataset, getDatasets } from "@/api/datasets";
-import { type components } from "@/api/schema";
+import { copyDataset, getDatasets, HDASummary } from "@/api/datasets";
 import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -14,8 +13,6 @@ import DatasetName from "@/components/Dataset/DatasetName.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
-
-type HDASummary = components["schemas"]["HDASummary"];
 
 const historyStore = useHistoryStore();
 const { currentHistoryId } = storeToRefs(historyStore);
