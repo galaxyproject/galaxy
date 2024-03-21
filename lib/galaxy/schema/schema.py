@@ -729,6 +729,26 @@ class DatasetHash(Model):
     )
 
 
+class DatasetSource(Model):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Encoded ID of the dataset source.",
+    )
+    source_uri: Annotated[RelativeUrl, Field(..., title="Source URI", description="The URI of the dataset source.")]
+    extra_files_path: Annotated[
+        Optional[str], Field(None, title="Extra Files Path", description="The path to the extra files.")
+    ]
+    transform: Annotated[
+        Optional[List[Any]],  # TODO: type this
+        Field(
+            None,
+            title="Transform",
+            description="The transformations applied to the dataset source.",
+        ),
+    ]
+
+
 class HDADetailed(HDASummary, WithModelClass):
     """History Dataset Association detailed information."""
 
@@ -877,6 +897,14 @@ class HDADetailed(HDASummary, WithModelClass):
             ...,
             title="DRS ID",
             description="The DRS ID of the dataset.",
+        ),
+    ]
+    sources: Annotated[
+        List[DatasetSource],
+        Field(
+            ...,
+            title="Sources",
+            description="The list of sources associated with this dataset.",
         ),
     ]
 
