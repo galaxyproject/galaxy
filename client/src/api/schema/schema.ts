@@ -6133,142 +6133,6 @@ export interface components {
              */
             visible: boolean;
         };
-        /** HDCACustom */
-        HDCACustom: {
-            /**
-             * Dataset Collection ID
-             * @example 0123456789ABCDEF
-             */
-            collection_id?: string;
-            /**
-             * Collection Type
-             * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
-             */
-            collection_type?: string | null;
-            /**
-             * Contents URL
-             * @description The relative URL to access the contents of this History.
-             */
-            contents_url?: string | null;
-            /**
-             * Create Time
-             * @description The time and date this item was created.
-             */
-            create_time?: string | null;
-            /**
-             * Deleted
-             * @description Whether this item is marked as deleted.
-             */
-            deleted?: boolean | null;
-            /**
-             * Element Count
-             * @description The number of elements contained in the dataset collection. It may be None or undefined if the collection could not be populated.
-             */
-            element_count?: number | null;
-            /**
-             * Elements
-             * @description The summary information of each of the elements inside the dataset collection.
-             */
-            elements?: components["schemas"]["DCESummary"][] | null;
-            /**
-             * Elements Datatypes
-             * @description A set containing all the different element datatypes in the collection.
-             */
-            elements_datatypes?: string[] | null;
-            /**
-             * HID
-             * @description The index position of this item in the History.
-             */
-            hid?: number | null;
-            /**
-             * History Content Type
-             * @description This is always `dataset_collection` for dataset collections.
-             */
-            history_content_type?: "dataset_collection" | null;
-            /**
-             * History ID
-             * @example 0123456789ABCDEF
-             */
-            history_id?: string;
-            /**
-             * Id
-             * @example 0123456789ABCDEF
-             */
-            id?: string;
-            /**
-             * Implicit Collection Jobs Id
-             * @description Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection
-             */
-            implicit_collection_jobs_id?: string | null;
-            /**
-             * Job Source ID
-             * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
-             */
-            job_source_id?: string | null;
-            /**
-             * Job Source Type
-             * @description The type of job (model class) that produced this dataset collection. Used to track the state of the job.
-             */
-            job_source_type?: components["schemas"]["JobSourceType"] | null;
-            /**
-             * Job State Summary
-             * @description Overview of the job states working inside the dataset collection.
-             */
-            job_state_summary?: components["schemas"]["HDCJobStateSummary"] | null;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
-             */
-            model_class?: "HistoryDatasetCollectionAssociation";
-            /**
-             * Name
-             * @description The name of the item.
-             */
-            name?: string | null;
-            /**
-             * Populated
-             * @description Whether the dataset collection elements (and any subcollections elements) were successfully populated.
-             */
-            populated?: boolean | null;
-            /**
-             * Populated State
-             * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
-             */
-            populated_state?: components["schemas"]["DatasetCollectionPopulatedState"] | null;
-            /**
-             * Populated State Message
-             * @description Optional message with further information in case the population of the dataset collection failed.
-             */
-            populated_state_message?: string | null;
-            tags?: components["schemas"]["TagCollection"] | null;
-            /**
-             * Type
-             * @description This is always `collection` for dataset collections.
-             */
-            type?: "collection" | null;
-            /**
-             * Type - ID
-             * @description The type and the encoded ID of this item. Used for caching.
-             */
-            type_id?: string | null;
-            /**
-             * Update Time
-             * @description The last time and date this item was updated.
-             */
-            update_time?: string | null;
-            /**
-             * URL
-             * @deprecated
-             * @description The relative URL to access this item.
-             */
-            url?: string | null;
-            /**
-             * Visible
-             * @description Whether this item is visible or hidden to the user by default.
-             */
-            visible?: boolean | null;
-        };
         /**
          * HDCADetailed
          * @description History Dataset Collection Association detailed information.
@@ -7041,7 +6905,6 @@ export interface components {
             | components["schemas"]["HDACustom"]
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
-            | components["schemas"]["HDCACustom"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
         )[];
@@ -7058,7 +6921,6 @@ export interface components {
                 | components["schemas"]["HDACustom"]
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
-                | components["schemas"]["HDCACustom"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
             )[];
@@ -13649,7 +13511,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
@@ -16580,14 +16441,12 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDCACustom"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17171,7 +17030,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17223,7 +17081,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17456,14 +17313,12 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                         | (
                               | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
-                              | components["schemas"]["HDCACustom"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
                           )[];
@@ -17514,7 +17369,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17565,7 +17419,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"];
                 };
@@ -17797,7 +17650,6 @@ export interface operations {
                         | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
-                        | components["schemas"]["HDCACustom"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
                     )[];
