@@ -1667,6 +1667,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def add_post_job_action(self, pja):
         self.post_job_actions.append(PostJobActionAssociation(pja, self))
 
+    def get_change_datatype_actions(self):
+        return {
+            pja.post_job_action.output_name: pja.post_job_action.action_arguments["newtype"]
+            for pja in self.post_job_actions
+            if pja.post_job_action.action_type == "ChangeDatatypeAction"
+        }
+
     @property
     def all_entry_points_configured(self):
         # consider an actual DB attribute for this.
