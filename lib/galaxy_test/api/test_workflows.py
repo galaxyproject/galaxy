@@ -876,7 +876,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
         workflow = upload_response.json()
         workflow_id = workflow["id"]
-        response = self._put(f"/api/workflows/menu", {"workflow_ids": workflow_id}, json=True)
+        response = self._put("/api/workflows/menu", {"workflow_ids": workflow_id}, json=True)
         self._assert_status_code_is(response, 200)
 
     def test_update_name(self):
