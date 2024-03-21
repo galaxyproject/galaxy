@@ -470,15 +470,17 @@ function setItemDragstart(
                 setShowSelection,
                 selectAllInCurrentQuery,
                 isSelected,
-                selectTo,
+                rangeSelect,
                 setSelected,
-                shiftSelect,
+                shiftArrowKeySelect,
                 initKeySelection,
                 resetSelection,
+                initSelectedItem,
             }"
             :scope-key="queryKey"
             :get-item-key="getItemKey"
             :filter-text="filterText"
+            :all-items="historyItems"
             :total-items-in-query="totalMatchesCount"
             @query-selection-break="querySelectionBreak = true">
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
@@ -545,7 +547,7 @@ function setItemDragstart(
                             <HistorySelectionStatus
                                 v-if="showSelection"
                                 :selection-size="selectionSize"
-                                @select-all="selectAllInCurrentQuery(historyItems)"
+                                @select-all="selectAllInCurrentQuery()"
                                 @reset-selection="resetSelection" />
                         </template>
                     </HistoryOperations>
@@ -597,6 +599,9 @@ function setItemDragstart(
                                     :writable="canEditHistory"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="isDataset(item)"
+                                    :is-range-select-anchor="
+                                        initSelectedItem && itemUniqueKey(item) === itemUniqueKey(initSelectedItem)
+                                    "
                                     :highlight="getHighlight(item)"
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
@@ -613,11 +618,11 @@ function setItemDragstart(
                                     "
                                     @hide-selection="setShowSelection(false)"
                                     @init-key-selection="initKeySelection"
-                                    @shift-select="
-                                        (eventKey) => shiftSelect(item, arrowNavigate(item, eventKey), eventKey)
+                                    @shift-arrow-select="
+                                        (eventKey) => shiftArrowKeySelect(item, arrowNavigate(item, eventKey), eventKey)
                                     "
-                                    @select-all="selectAllInCurrentQuery(historyItems, false)"
-                                    @selected-to="(reset) => selectTo(item, lastItemFocused, historyItems, reset)"
+                                    @select-all="selectAllInCurrentQuery(false)"
+                                    @selected-to="rangeSelect(item, lastItemFocused)"
                                     @tag-click="updateFilterValue('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterValue('related', item.hid)"
