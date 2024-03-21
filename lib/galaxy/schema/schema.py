@@ -3266,6 +3266,10 @@ class HDACustom(HDADetailed):
         ),
     ]
 
+    # We need to allow extra fields so we can have the metadata_* fields serialized.
+    # TODO: try to find a better way to handle this.
+    model_config = ConfigDict(extra="allow")
+
 
 @partial_model()
 class HDCACustom(HDCADetailed):
