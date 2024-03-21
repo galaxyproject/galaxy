@@ -29,6 +29,14 @@ const operatorForAlias = {
     eq: ":",
 } as const satisfies Record<string, string>;
 
+export type ErrorType = {
+    filter: string;
+    index?: string;
+    value?: string;
+    typeError?: string;
+    msg: string;
+};
+
 type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
@@ -391,6 +399,7 @@ export default class Filtering<T> {
      * @returns Filters as 2D array of of [field, value] pairs
      * */
     getFiltersForText(filterText: string, removeAny = true, validate = true): [string, T][] {
+        filterText = filterText.trim();
         const pairSplitRE = this.quoteStrings
             ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
             : /(\S+):(.*?)(?=\s+\S+:|$)/g;

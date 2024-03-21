@@ -218,6 +218,7 @@ onMounted(() => {
                 :filter-text.sync="filterText"
                 :loading="loading || overlay"
                 has-help
+                view="compact"
                 :placeholder="searchPlaceHolder"
                 :show-advanced.sync="showAdvanced">
                 <template v-slot:menu-help-text>

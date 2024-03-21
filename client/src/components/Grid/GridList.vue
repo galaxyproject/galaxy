@@ -292,8 +292,8 @@ watch(operationMessage, () => {
                 :filter-class="filterClass"
                 :filter-text.sync="filterText"
                 :loading="initDataLoading || resultsLoading"
-                :show-advanced.sync="showAdvanced" />
-            <hr v-if="showAdvanced" />
+                :show-advanced.sync="showAdvanced"
+                view="compact" />
         </div>
         <LoadingSpan v-if="initDataLoading" />
         <span v-else-if="!isAvailable || hasInvalidFilters" variant="info" show>
