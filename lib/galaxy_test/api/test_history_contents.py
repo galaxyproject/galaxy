@@ -265,10 +265,13 @@ class TestHistoryContentsApi(ApiTestCase):
 
         # Expect only specific keys to be returned.
         view = None
-        keys = detailed_view_only_keys
+        keys = detailed_view_only_keys + ["id"]
         item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
         self._assert_has_keys(item, *keys)
         assert len(item) == len(keys)
+        # Make sure the id is encoded in the response.
+        assert isinstance(item["id"], str)
+        assert item["id"] == hda_id
 
         # Expect combined view and keys to be returned.
         view = "summary"
