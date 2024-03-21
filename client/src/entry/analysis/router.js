@@ -123,7 +123,11 @@ export function getRouter(Galaxy) {
                 }),
             },
             /** Workflow editor */
-            { path: "/workflows/edit", component: WorkflowEditorModule },
+            {
+                path: "/workflows/edit",
+                component: WorkflowEditorModule,
+                redirect: redirectAnon(),
+            },
             /** Published resources routes */
             {
                 path: "/published/history",
@@ -521,6 +525,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/import",
                         component: WorkflowImport,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/invocations",
@@ -564,6 +569,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/run",
                         component: Home,
+                        redirect: redirectAnon(),
                         props: (route) => ({
                             config: Galaxy.config,
                             query: { workflow_id: route.query.id },
