@@ -92,7 +92,7 @@ def __main__():
                         # Write previous transcript.
                         if cur_transcript_id:
                             # Write BED entry.
-                            out.write(
+                            out.write(  # type: ignore[unreachable]
                                 get_bed_line(
                                     cur_transcript_chrome,
                                     cur_transcript_id,
@@ -120,7 +120,7 @@ def __main__():
                     # Write previous transcript.
                     if cur_transcript_id:
                         # Write BED entry.
-                        out.write(
+                        out.write(  # type: ignore[unreachable]
                             get_bed_line(
                                 cur_transcript_chrome, cur_transcript_id, cur_transcript_strand, cur_transcripts_blocks
                             )

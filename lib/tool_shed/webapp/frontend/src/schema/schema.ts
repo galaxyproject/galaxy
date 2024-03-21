@@ -257,7 +257,7 @@ export interface components {
             /** Commit Message */
             commit_message?: Record<string, never>
             /** Files */
-            files?: string[]
+            files?: string[] | null
         }
         /** BuildSearchIndexResponse */
         BuildSearchIndexResponse: {
@@ -290,7 +290,7 @@ export interface components {
              * Type
              * @description The digest method used to create the checksum.
              * The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].
-             * Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
+             * Other values MAY be used, as long as implementers are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
              */
             type: string
@@ -298,22 +298,22 @@ export interface components {
         /** CreateCategoryRequest */
         CreateCategoryRequest: {
             /** Description */
-            description?: string
+            description?: string | null
             /** Name */
             name: string
         }
         /** CreateRepositoryRequest */
         CreateRepositoryRequest: {
             /** Category IDs */
-            "category_ids[]": string
+            "category_ids[]": string[] | string | null
             /** Description */
-            description?: string
+            description?: string | null
             /** Homepage Url */
-            homepage_url?: string
+            homepage_url?: string | null
             /** Name */
             name: string
             /** Remote Repository Url */
-            remote_repository_url?: string
+            remote_repository_url?: string | null
             /** Synopsis */
             synopsis: string
             /**
@@ -334,14 +334,10 @@ export interface components {
         }
         /**
          * DescriptorType
-         * @description An enumeration.
-         * @enum {unknown}
+         * @enum {string}
          */
         DescriptorType: "CWL" | "WDL" | "NFL" | "GALAXY" | "SMK"
-        /**
-         * DescriptorTypeVersion
-         * @description The language version for a given descriptor type. The version should correspond to the actual declared version of the descriptor. For example, tools defined in CWL could have a version of `v1.0.2` whereas WDL tools may have a version of `1.0` or `draft-2`
-         */
+        /** DescriptorTypeVersion */
         DescriptorTypeVersion: string
         /** DetailedRepository */
         DetailedRepository: {
@@ -354,11 +350,11 @@ export interface components {
             /** Description */
             description: string
             /** Homepage Url */
-            homepage_url?: string
+            homepage_url?: string | null
             /** Id */
             id: string
             /** Long Description */
-            long_description?: string
+            long_description: string | null
             /** Name */
             name: string
             /** Owner */
@@ -366,7 +362,7 @@ export interface components {
             /** Private */
             private: boolean
             /** Remote Repository Url */
-            remote_repository_url?: string
+            remote_repository_url?: string | null
             /** Times Downloaded */
             times_downloaded: number
             /** Type */
@@ -391,67 +387,51 @@ export interface components {
             /**
              * Checksum
              * @description A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes.  This exposes the hashcode for specific image versions to verify that the container version pulled is actually the version that was indexed by the registry.
-             * @example [
-             *   {
-             *     "checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
-             *     "type": "sha256"
-             *   }
-             * ]
              */
-            checksum?: components["schemas"]["Checksum"][]
+            checksum?: components["schemas"]["Checksum"][] | null
             /**
              * Image Name
              * @description Used in conjunction with a registry_url if provided to locate images.
-             * @example [
-             *   "quay.io/seqware/seqware_full/1.1",
-             *   "ubuntu:latest"
-             * ]
              */
-            image_name?: string
-            image_type?: components["schemas"]["ImageType"]
+            image_name?: string | null
+            image_type?: components["schemas"]["ImageType"] | null
             /**
              * Registry Host
              * @description A docker registry or a URL to a Singularity registry. Used along with image_name to locate a specific image.
-             * @example [
-             *   "registry.hub.docker.com"
-             * ]
              */
-            registry_host?: string
+            registry_host?: string | null
             /**
              * Size
              * @description Size of the container in bytes.
              */
-            size?: number
+            size?: number | null
             /**
              * Updated
              * @description Last time the container was updated.
              */
-            updated?: string
+            updated?: string | null
         }
         /**
          * ImageType
-         * @description An enumeration.
-         * @enum {unknown}
+         * @enum {string}
          */
         ImageType: "Docker" | "Singularity" | "Conda"
         /** InstallInfo */
         InstallInfo: {
-            metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"]
-            repo_info?: components["schemas"]["RepositoryExtraInstallInfo"]
+            metadata_info?: components["schemas"]["RepositoryMetadataInstallInfo"] | null
+            repo_info?: components["schemas"]["RepositoryExtraInstallInfo"] | null
         }
         /** Organization */
         Organization: {
             /**
              * Name
              * @description Name of the organization responsible for the service
-             * @example My organization
              */
             name: string
             /**
              * Url
              * Format: uri
              * @description URL of the website of the organization (RFC 3986 format)
-             * @example https://example.com
              */
             url: string
         }
@@ -479,7 +459,7 @@ export interface components {
             /** Description */
             description: string
             /** Homepage Url */
-            homepage_url?: string
+            homepage_url?: string | null
             /** Id */
             id: string
             /** Name */
@@ -489,7 +469,7 @@ export interface components {
             /** Private */
             private: boolean
             /** Remote Repository Url */
-            remote_repository_url?: string
+            remote_repository_url?: string | null
             /** Times Downloaded */
             times_downloaded: number
             /** Type */
@@ -510,15 +490,15 @@ export interface components {
             /** Id */
             id: string
             /** Includes Datatypes */
-            includes_datatypes?: boolean
+            includes_datatypes?: boolean | null
             /** Includes Tool Dependencies */
-            includes_tool_dependencies?: boolean
+            includes_tool_dependencies?: boolean | null
             /** Includes Tools */
             includes_tools: boolean
             /** Includes Tools For Display In Tool Panel */
             includes_tools_for_display_in_tool_panel: boolean
             /** Includes Workflows */
-            includes_workflows?: boolean
+            includes_workflows?: boolean | null
             /** Invalid Tools */
             invalid_tools: string[]
             /** Malicious */
@@ -533,7 +513,7 @@ export interface components {
             /** Repository Id */
             repository_id: string
             /** Tools */
-            tools?: components["schemas"]["RepositoryTool"][]
+            tools?: components["schemas"]["RepositoryTool"][] | null
         }
         /** RepositoryExtraInstallInfo */
         RepositoryExtraInstallInfo: {
@@ -548,7 +528,7 @@ export interface components {
             /** Repository Clone Url */
             repository_clone_url: string
             /** Repository Dependencies */
-            repository_dependencies?: Record<string, never>
+            repository_dependencies?: Record<string, never> | null
             /** Repository Owner */
             repository_owner: string
         }
@@ -577,7 +557,7 @@ export interface components {
             /** Url */
             url: string
             /** Valid Tools */
-            valid_tools: components["schemas"]["ValidToolDict"][]
+            valid_tools: components["schemas"]["ValidTool"][]
         }
         /** RepositoryPermissions */
         RepositoryPermissions: {
@@ -599,15 +579,15 @@ export interface components {
             /** Id */
             id: string
             /** Includes Datatypes */
-            includes_datatypes?: boolean
+            includes_datatypes?: boolean | null
             /** Includes Tool Dependencies */
-            includes_tool_dependencies?: boolean
+            includes_tool_dependencies?: boolean | null
             /** Includes Tools */
             includes_tools: boolean
             /** Includes Tools For Display In Tool Panel */
             includes_tools_for_display_in_tool_panel: boolean
             /** Includes Workflows */
-            includes_workflows?: boolean
+            includes_workflows?: boolean | null
             /** Invalid Tools */
             invalid_tools: string[]
             /** Malicious */
@@ -622,7 +602,7 @@ export interface components {
             /** Repository Id */
             repository_id: string
             /** Tools */
-            tools?: components["schemas"]["RepositoryTool"][]
+            tools?: components["schemas"]["RepositoryTool"][] | null
         }
         /** RepositoryRevisionReadmes */
         RepositoryRevisionReadmes: {
@@ -645,17 +625,17 @@ export interface components {
             /** Full Last Updated */
             full_last_updated: string
             /** Homepage Url */
-            homepage_url?: string
+            homepage_url?: string | null
             /** Id */
             id: string
             /** Last Update */
-            last_update?: string
+            last_update?: string | null
             /** Long Description */
-            long_description?: string
+            long_description?: string | null
             /** Name */
             name: string
             /** Remote Repository Url */
-            remote_repository_url?: string
+            remote_repository_url?: string | null
             /** Repo Lineage */
             repo_lineage: string
             /** Repo Owner Username */
@@ -714,66 +694,50 @@ export interface components {
         Service: {
             /**
              * Contacturl
-             * Format: uri
              * @description URL of the contact for the provider of this service, e.g. a link to a contact form (RFC 3986 format), or an email (RFC 2368 format).
-             * @example mailto:support@example.com
              */
-            contactUrl?: string
+            contactUrl?: string | null
             /**
              * Createdat
-             * Format: date-time
              * @description Timestamp describing when the service was first deployed and available (RFC 3339 format)
-             * @example 2019-06-04T12:58:19Z
              */
-            createdAt?: string
+            createdAt?: string | null
             /**
              * Description
              * @description Description of the service. Should be human readable and provide information about the service.
-             * @example This service provides...
              */
-            description?: string
+            description?: string | null
             /**
              * Documentationurl
-             * Format: uri
              * @description URL of the documentation of this service (RFC 3986 format). This should help someone learn how to use your service, including any specifics required to access data, e.g. authentication.
-             * @example https://docs.myservice.example.com
              */
-            documentationUrl?: string
+            documentationUrl?: string | null
             /**
              * Environment
              * @description Environment the service is running in. Use this to distinguish between production, development and testing/staging deployments. Suggested values are prod, test, dev, staging. However this is advised and not enforced.
-             * @example test
              */
-            environment?: string
+            environment?: string | null
             /**
              * Id
              * @description Unique ID of this service. Reverse domain name notation is recommended, though not required. The identifier should attempt to be globally unique so it can be used in downstream aggregator services e.g. Service Registry.
-             * @example org.ga4gh.myservice
              */
             id: string
             /**
              * Name
              * @description Name of this service. Should be human readable.
-             * @example My project
              */
             name: string
-            /**
-             * Organization
-             * @description Organization providing the service
-             */
+            /** @description Organization providing the service */
             organization: components["schemas"]["Organization"]
             type: components["schemas"]["ServiceType"]
             /**
              * Updatedat
-             * Format: date-time
              * @description Timestamp describing when the service was last updated (RFC 3339 format)
-             * @example 2019-06-04T12:58:19Z
              */
-            updatedAt?: string
+            updatedAt?: string | null
             /**
              * Version
              * @description Version of the service being described. Semantic versioning is recommended, but other identifiers, such as dates or commit hashes, are also allowed. The version should be changed whenever the service is updated.
-             * @example 1.0.0
              */
             version: string
         }
@@ -782,19 +746,16 @@ export interface components {
             /**
              * Artifact
              * @description Name of the API or GA4GH specification implemented. Official GA4GH types should be assigned as part of standards approval process. Custom artifacts are supported.
-             * @example beacon
              */
             artifact: string
             /**
              * Group
              * @description Namespace in reverse domain name format. Use `org.ga4gh` for implementations compliant with official GA4GH specifications. For services with custom APIs not standardized by GA4GH, or implementations diverging from official GA4GH specifications, use a different namespace (e.g. your organization's reverse domain name).
-             * @example org.ga4gh
              */
             group: string
             /**
              * Version
              * @description Version of the API or specification. GA4GH specifications use semantic versioning.
-             * @example 1.0.0
              */
             version: string
         }
@@ -807,38 +768,37 @@ export interface components {
              * This can be used to expose alternative ids (such as GUIDs) for a tool
              * for registries. Can be used to match tools across registries.
              */
-            aliases?: string[]
+            aliases?: string[] | null
             /**
              * Checker Url
              * @description Optional url to the checker tool that will exit successfully if this tool produced the expected result given test data.
              */
-            checker_url?: string
+            checker_url?: string | null
             /**
              * Description
              * @description The description of the tool.
              */
-            description?: string
+            description?: string | null
             /**
              * Has Checker
              * @description Whether this tool has a checker tool associated with it.
              */
-            has_checker?: boolean
+            has_checker?: boolean | null
             /**
              * Id
              * @description A unique identifier of the tool, scoped to this registry.
-             * @example 123456
              */
             id: string
             /**
              * Meta Version
              * @description The version of this tool in the registry. Iterates when fields like the description, author, etc. are updated.
              */
-            meta_version?: string
+            meta_version?: string | null
             /**
              * Name
              * @description The name of the tool.
              */
-            name?: string
+            name?: string | null
             /**
              * Organization
              * @description The organization that published the image.
@@ -848,7 +808,6 @@ export interface components {
             /**
              * Url
              * @description The URL for this tool in this registry.
-             * @example http://agora.broadinstitute.org/tools/123456
              */
             url: string
             /**
@@ -863,17 +822,17 @@ export interface components {
              * Description
              * @description A longer explanation of what this class is and what it can accomplish.
              */
-            description?: string
+            description?: string | null
             /**
              * Id
              * @description The unique identifier for the class.
              */
-            id?: string
+            id?: string | null
             /**
              * Name
              * @description A short friendly name for the class.
              */
-            name?: string
+            name?: string | null
         }
         /** ToolVersion */
         ToolVersion: {
@@ -881,82 +840,74 @@ export interface components {
              * Author
              * @description Contact information for the author of this version of the tool in the registry. (More complex authorship information is handled by the descriptor).
              */
-            author?: string[]
+            author?: string[] | null
             /**
              * Containerfile
              * @description Reports if this tool has a containerfile available. (For Docker-based tools, this would indicate the presence of a Dockerfile)
              */
-            containerfile?: boolean
-            /** @description The type (or types) of descriptors available. */
-            descriptor_type?: components["schemas"]["DescriptorType"][]
+            containerfile?: boolean | null
+            /**
+             * Descriptor Type
+             * @description The type (or types) of descriptors available.
+             */
+            descriptor_type?: components["schemas"]["DescriptorType"][] | null
             /**
              * Descriptor Type Version
              * @description A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.
-             * @example {
-             *   "WDL": ["1.0", "1.0"],
-             *   "CWL": ["v1.0.2"],
-             *   "NFL": ["DSL2"]
-             * }
              */
             descriptor_type_version?: {
                 [key: string]: components["schemas"]["DescriptorTypeVersion"][] | undefined
-            }
+            } | null
             /**
              * Id
              * @description An identifier of the version of this tool for this particular tool registry.
-             * @example v1
              */
             id: string
             /**
              * Images
              * @description All known docker images (and versions/hashes) used by this tool. If the tool has to evaluate any of the docker images strings at runtime, those ones cannot be reported here.
              */
-            images?: components["schemas"]["ImageData"][]
+            images?: components["schemas"]["ImageData"][] | null
             /**
              * Included Apps
              * @description An array of IDs for the applications that are stored inside this tool.
-             * @example [
-             *   "https://bio.tools/tool/mytum.de/SNAP2/1",
-             *   "https://bio.tools/bioexcel_seqqc"
-             * ]
              */
-            included_apps?: string[]
+            included_apps?: string[] | null
             /**
              * Is Production
              * @description This version of a tool is guaranteed to not change over time (for example, a  tool built from a tag in git as opposed to a branch). A production quality tool  is required to have a checksum
              */
-            is_production?: boolean
+            is_production?: boolean | null
             /**
              * Meta Version
              * @description The version of this tool version in the registry. Iterates when fields like the description, author, etc. are updated.
              */
-            meta_version?: string
+            meta_version?: string | null
             /**
              * Name
              * @description The name of the version.
              */
-            name?: string
+            name?: string | null
             /**
              * Signed
              * @description Reports whether this version of the tool has been signed.
              */
-            signed?: boolean
+            signed?: boolean | null
             /**
              * Url
              * @description The URL for this tool version in this registry.
-             * @example http://agora.broadinstitute.org/tools/123456/versions/1
              */
             url: string
             /**
              * Verified
              * @description Reports whether this tool has been verified by a specific organization or individual.
              */
-            verified?: boolean
+            verified?: boolean | null
             /**
              * Verified Source
              * @description Source of metadata that can support a verified tool, such as an email or URL.
              */
-            verified_source?: string[]
+            verified_source?: string[] | null
         }
         /** UiChangePasswordRequest */
         UiChangePasswordRequest: {
@@ -1012,7 +963,7 @@ export interface components {
              */
             activation_sent?: boolean
             /** Contact Email */
-            contact_email?: string
+            contact_email?: string | null
             /** Email */
             email: string
         }
@@ -1030,8 +981,8 @@ export interface components {
             /** Message */
             message: string
         }
-        /** ValidToolDict */
-        ValidToolDict: {
+        /** ValidTool */
+        ValidTool: {
             /** Add To Tool Panel */
             add_to_tool_panel: boolean
             /** Description */
@@ -1053,12 +1004,12 @@ export interface components {
             /** Version */
             version: string
             /** Version String Cmd */
-            version_string_cmd: string
+            version_string_cmd?: string | null
         }
         /** ValidationError */
         ValidationError: {
             /** Location */
-            loc: string[]
+            loc: (string | number)[]
             /** Message */
             msg: string
             /** Error Type */
@@ -1173,7 +1124,7 @@ export interface operations {
                 installable?: boolean
                 sort_key?: string
                 sort_order?: string
-                page?: number
+                page?: number | null
             }
             /** @description The encoded database identifier of the category. */
             path: {
@@ -1281,12 +1232,12 @@ export interface operations {
          */
         parameters?: {
             query?: {
-                q?: string
-                page?: number
-                page_size?: number
-                deleted?: boolean
-                owner?: string
-                name?: string
+                q?: string | null
+                page?: number | null
+                page_size?: number | null
+                deleted?: boolean | null
+                owner?: string | null
+                name?: string | null
             }
         }
         responses: {
@@ -1338,9 +1289,9 @@ export interface operations {
          */
         parameters?: {
             query?: {
-                owner?: string
-                name?: string
-                tsr_id?: string
+                owner?: string | null
+                name?: string | null
+                tsr_id?: string | null
             }
         }
         responses: {
@@ -1436,10 +1387,10 @@ export interface operations {
         /** Updates */
         parameters: {
             query: {
-                owner?: string
-                name?: string
+                owner?: string | null
+                name?: string | null
                 changeset_revision: string
-                hexlify?: boolean
+                hexlify?: boolean | null
             }
         }
         responses: {
@@ -1561,7 +1512,7 @@ export interface operations {
         parameters: {
             /** @description Set commit message as a query parameter. */
             query?: {
-                commit_message?: string
+                commit_message?: string | null
             }
             /** @description The encoded database identifier of the repository. */
             path: {

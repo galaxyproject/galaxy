@@ -1,6 +1,7 @@
 """
 A simple WSGI application/framework.
 """
+
 import io
 import json
 import logging
@@ -250,9 +251,9 @@ class WebApplication:
                 raise
         trans.controller = controller_name
         trans.action = action
-        environ[
-            "controller_action_key"
-        ] = f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+        environ["controller_action_key"] = (
+            f"{'api' if environ['is_api_request'] else 'web'}.{controller_name}.{action or 'default'}"
+        )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update(map_match)
@@ -426,8 +427,7 @@ class Request(webob.Request):
     @lazy_property
     def cookies(self):
         cookies = SimpleCookie()
-        cookie_header = self.environ.get("HTTP_COOKIE")
-        if cookie_header:
+        if cookie_header := self.environ.get("HTTP_COOKIE"):
             all_cookies = webob.cookies.parse_cookie(cookie_header)
             galaxy_cookies = {k.decode(): v.decode() for k, v in all_cookies if k.startswith(b"galaxy")}
             if galaxy_cookies:
@@ -548,6 +548,9 @@ def send_file(start_response, trans, body):
         trans.response.headers["accept-ranges"] = "bytes"
         start = None
         end = None
+        if trans.request.method == "HEAD":
+            trans.response.headers["content-length"] = os.path.getsize(body.name)
+            body = b""
         if trans.request.range:
             start = int(trans.request.range.start)
             file_size = int(trans.response.headers["content-length"])
@@ -555,7 +558,8 @@ def send_file(start_response, trans, body):
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206
-        body = iterate_file(body, start, end)
+        if body:
+            body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 

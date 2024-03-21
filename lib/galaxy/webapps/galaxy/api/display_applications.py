@@ -1,6 +1,7 @@
 """
 API operations on annotations.
 """
+
 import logging
 from typing import (
     Dict,
@@ -31,6 +32,7 @@ class FastAPIDisplay:
 
     @router.get(
         "/api/display_applications",
+        public=True,
         summary="Returns the list of display applications.",
         name="display_applications_index",
     )

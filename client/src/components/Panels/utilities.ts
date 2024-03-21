@@ -23,7 +23,6 @@ const UNSECTIONED_SECTION = {
     name: "Unsectioned Tools",
     description: "Tools that don't appear under any section in the unsearched panel",
 };
-const VALID_SECTION_TYPES = ["edam_operations", "edam_topics"]; // other than `default`
 
 /** These are keys used to order/sort results in `ToolSearch`.
  * The value for each is the sort order, higher number = higher rank.
@@ -39,13 +38,14 @@ export interface ToolSearchKeys {
     startsWith?: number;
     /** query contains matches `Tool.name + Tool.description` */
     combined?: number;
-    /** property matches   */
+    /** `Tool.name + Tool.description` contains at least
+     * `MINIMUM_WORD_MATCH` words from query
+     */
     wordMatch?: number;
 }
 
 interface SearchMatch {
     id: string;
-    sections: (string | undefined)[];
     order: number;
 }
 
@@ -158,22 +158,13 @@ export function getValidToolsInCurrentView(
     isWorkflowPanel = false,
     excludedSectionIds: string[] = []
 ) {
-    const addedToolTexts: string[] = [];
     const toolEntries = Object.entries(toolsById).filter(([, tool]) => {
-        // filter out duplicate tools (different ids, same exact name+description)
-        // related ticket: https://github.com/galaxyproject/galaxy/issues/16145
-        const toolText = tool.name + tool.description;
-        if (addedToolTexts.includes(toolText)) {
-            return false;
-        } else {
-            addedToolTexts.push(toolText);
-        }
         // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
         return (
             !tool.hidden &&
             tool.disabled !== true &&
             !(isWorkflowPanel && !tool.is_workflow_compatible) &&
-            !excludedSectionIds.includes(tool.panel_section_id || "")
+            !excludedSectionIds.includes(tool.panel_section_id)
         );
     });
     return Object.fromEntries(toolEntries);
@@ -305,7 +296,7 @@ export function searchToolsByKeys(
                 if (!usesDL) {
                     if (actualValue.match(queryValue)) {
                         // if string.match() returns true, matching tool found
-                        matchedTools.push({ id: tool.id, sections: getPanelSectionsForTool(tool, panelView), order });
+                        matchedTools.push({ id: tool.id, order });
                         break;
                     } else if (
                         key === "combined" &&
@@ -313,11 +304,7 @@ export function searchToolsByKeys(
                         wordMatches.length >= MINIMUM_WORD_MATCH
                     ) {
                         // we are looking at combined name+description, and there are enough word matches
-                        matchedTools.push({
-                            id: tool.id,
-                            sections: getPanelSectionsForTool(tool, panelView),
-                            order: keys.wordMatch,
-                        });
+                        matchedTools.push({ id: tool.id, order: keys.wordMatch });
                         break;
                     }
                 } else if (usesDL) {
@@ -333,11 +320,7 @@ export function searchToolsByKeys(
                         if (foundTerm && (!closestTerm || (closestTerm && foundTerm.length < closestTerm.length))) {
                             closestTerm = foundTerm;
                         }
-                        matchedTools.push({
-                            id: tool.id,
-                            sections: getPanelSectionsForTool(tool, panelView),
-                            order,
-                        });
+                        matchedTools.push({ id: tool.id, order });
                         break;
                     }
                 }
@@ -366,12 +349,11 @@ export function createSortedResultObject(
 ) {
     const idResults: string[] = [];
     // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
-    // track of the best version of each tool, and also sorting by indexed order of keys
+    // track unique ids of each tool, and also sorting by indexed order of keys
     const resultPanel = orderBy(matchedTools, ["order"], ["desc"]).reduce(
         (acc: Record<string, Tool | ToolSection>, match: SearchMatch) => {
-            // we either found specific section(s) for tool, or we need to search all sections
-            const sections: (string | undefined)[] =
-                match.sections.length !== 0 ? match.sections : Object.keys(currentPanel);
+            // we need to search all sections in panel for this tool id
+            const sections = Object.keys(currentPanel);
             for (const section of sections) {
                 let toolAdded = false;
                 const existingPanelItem = section ? currentPanel[section] : undefined;
@@ -415,43 +397,6 @@ export function createSortedResultObject(
         {}
     );
     return { idResults, resultPanel };
-}
-
-/**
- * Gets the section(s) a tool belongs to for a given panelView.
- * Unless view=`default`, all other views must be of format `class:view_type`,
- * where `Tool` object has a `view_name` key containing an array of section ids.
- * e.g.: view = `ontology:edam_operations` => `Tool.edam_operations = [section ids]`.
- *
- * Therefore, this would not handle the case where view = `ontology:edam_merged`, since
- * Tool.edam_merged is not a valid key, and we would just return `[uncategorized]`.
- *
- * Just prevents looking through whole panel to find section id for tool,
- * we still end up doing that (in `createSortedResultObject`) in case we return [] here
- * @param tool
- * @param panelView
- * @returns Array of section ids
- */
-function getPanelSectionsForTool(tool: Tool, panelView: string) {
-    if (panelView === "default" && tool.panel_section_id) {
-        if (tool.panel_section_id.startsWith("tool_")) {
-            return [tool.panel_section_id.split("tool_")[1]];
-        } else {
-            return [tool.panel_section_id];
-        }
-    } else if (panelView !== "default") {
-        const sectionType = panelView.split(":")[1] as keyof Tool;
-        if (
-            sectionType &&
-            VALID_SECTION_TYPES.includes(sectionType as string) &&
-            (tool[sectionType] as string[])?.length !== 0
-        ) {
-            return tool[sectionType] as string[];
-        } else {
-            return ["uncategorized"];
-        }
-    }
-    return [];
 }
 
 /**

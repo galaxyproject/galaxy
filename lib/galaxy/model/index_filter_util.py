@@ -1,4 +1,5 @@
 """Utility functions used to adapt galaxy.util.search to Galaxy model index queries."""
+
 from typing import (
     List,
     Union,

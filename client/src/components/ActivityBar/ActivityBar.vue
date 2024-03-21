@@ -1,45 +1,42 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
-import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
+import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
+import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
-import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
 const userStore = useUserStore();
+
+const { hashedUserId } = useHashedUserId();
+
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
 
-// sync built-in activities with cached activities
-activityStore.sync();
-
 // activities from store
 const { activities } = storeToRefs(activityStore);
-
-// context menu references
-const contextMenuVisible = ref(false);
-const contextMenuX = ref(0);
-const contextMenuY = ref(0);
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -48,8 +45,11 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// sync built-in activities with cached activities
+activityStore.sync();
+
 /**
- * Checks if the route of an activitiy is currently being visited and panels are collapsed
+ * Checks if the route of an activity is currently being visited and panels are collapsed
  */
 function isActiveRoute(activityTo: string) {
     return route.path === activityTo && isActiveSideBar("");
@@ -62,12 +62,21 @@ function isActiveSideBar(menuKey: string) {
     return userStore.toggledSideBar === menuKey;
 }
 
+const isSideBarOpen = computed(() => userStore.toggledSideBar !== "");
+
+/**
+ * Checks if an activity that has a panel should have the `is-active` prop
+ */
+function panelActivityIsActive(activity: Activity) {
+    return isActiveSideBar(activity.id) || (activity.to !== null && isActiveRoute(activity.to));
+}
+
 /**
  * Evaluates the drop data and keeps track of the drop area
  */
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
-    if (eventData) {
+    if (eventData && !eventStore.multipleDragData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
         emit("dragstart", dragItem.value);
@@ -109,23 +118,21 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string) {
+function onToggleSidebar(toggle: string = "", to: string | null = null) {
+    // if an activity's dedicated panel/sideBar is already active
+    // but the route is different, don't collapse
+    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
+        return;
+    }
     userStore.toggleSideBar(toggle);
 }
 
-/**
- * Positions and displays the context menu
- */
-function toggleContextMenu(evt: MouseEvent) {
-    if (evt && !contextMenuVisible.value) {
-        evt.preventDefault();
-        contextMenuVisible.value = true;
-        contextMenuX.value = evt.x;
-        contextMenuY.value = evt.y;
-    } else {
-        contextMenuVisible.value = false;
+watch(
+    () => hashedUserId.value,
+    () => {
+        activityStore.sync();
     }
-}
+);
 </script>
 
 <template>
@@ -133,7 +140,6 @@ function toggleContextMenu(evt: MouseEvent) {
         <div
             class="activity-bar d-flex flex-column no-highlight"
             data-description="activity bar"
-            @contextmenu="toggleContextMenu"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
@@ -148,17 +154,16 @@ function toggleContextMenu(evt: MouseEvent) {
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
-                        <div v-if="activity.visible">
+                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onToggleSidebar()" />
+                                :tooltip="activity.tooltip" />
                             <InteractiveItem
-                                v-else-if="activity.id === 'interactivetools'"
+                                v-else-if="activity.to && activity.id === 'interactivetools'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -168,15 +173,15 @@ function toggleContextMenu(evt: MouseEvent) {
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'workflows'].includes(activity.id)"
+                                v-else-if="['tools', 'visualizations', 'multiview'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
-                                :is-active="isActiveSideBar(activity.id)"
+                                :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar(activity.id)" />
+                                :to="activity.to || ''"
+                                @click="onToggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else-if="activity.to"
                                 :id="`activity-${activity.id}`"
@@ -191,34 +196,30 @@ function toggleContextMenu(evt: MouseEvent) {
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <NotificationItem
-                    v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
+                    v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
-                    :is-active="isActiveRoute('/user/notifications')"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
-                    to="/user/notifications"
-                    @click="onToggleSidebar()" />
+                    @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
-                    :is-active="isActiveRoute('/user')"
+                    :is-active="isActiveSideBar('settings')"
                     title="Settings"
                     tooltip="Edit preferences"
-                    to="/user"
-                    @click="onToggleSidebar()" />
+                    @click="onToggleSidebar('settings')" />
             </b-nav>
         </div>
-        <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
-            <ToolPanel />
+        <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
+            <ToolPanel v-if="isActiveSideBar('tools')" />
+            <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
+            <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <SettingsPanel v-else-if="isActiveSideBar('settings')" />
         </FlexPanel>
-        <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
-            <WorkflowBox />
-        </FlexPanel>
-        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
-            <ActivitySettings />
-        </ContextMenu>
     </div>
 </template>
 

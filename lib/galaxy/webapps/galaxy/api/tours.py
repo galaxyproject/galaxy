@@ -1,6 +1,7 @@
 """
 API Controller providing Galaxy Tours
 """
+
 import logging
 
 from galaxy.tours import (
@@ -23,12 +24,12 @@ router = Router(tags=["tours"])
 class FastAPITours:
     registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
 
-    @router.get("/api/tours")
+    @router.get("/api/tours", public=True)
     def index(self) -> TourList:
         """Return list of available tours."""
         return self.registry.get_tours()
 
-    @router.get("/api/tours/{tour_id}")
+    @router.get("/api/tours/{tour_id}", public=True)
     def show(self, tour_id: str) -> TourDetails:
         """Return a tour definition."""
         return self.registry.tour_contents(tour_id)

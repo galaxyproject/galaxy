@@ -21,11 +21,8 @@ describe("JobInformation/JobInformation.vue", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
-        axiosMock
-            .onGet(
-                "/api/jobs/test_id?full=True"
-            )
-            .reply(200, jobResponse);
+        axiosMock.onGet("/api/jobs/test_id?full=True").reply(200, jobResponse);
+        axiosMock.onGet("/api/invocations?job_id=test_id").reply(200, []);
     });
 
     afterEach(() => {
@@ -72,7 +69,7 @@ describe("JobInformation/JobInformation.vue", () => {
     });
 
     it("job messages", async () => {
-        const rendered_link = jobInfoTable.findAll(`#job-messages li`);
+        const rendered_link = jobInfoTable.findAll(`#job-messages .job-message`);
         expect(rendered_link.length).toBe(jobResponse.job_messages.length);
         for (let i = 0; i < rendered_link.length; i++) {
             const msg = rendered_link.at(i).text();

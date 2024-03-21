@@ -1,4 +1,4 @@
-export interface DataOption {
+export type DataOption = {
     id: string;
     hid: number;
     is_dataset?: boolean;
@@ -7,4 +7,4 @@ export interface DataOption {
     name: string;
     src: string;
     tags: Array<string>;
-}
+};

@@ -56,6 +56,9 @@ describe("History SelectorModal.vue", () => {
             propsData: props,
             localVue,
             pinia,
+            stubs: {
+                icon: { template: "<div></div>" },
+            },
         });
         historyStore = useHistoryStore();
         axiosMock = new MockAdapter(axios);
@@ -82,7 +85,7 @@ describe("History SelectorModal.vue", () => {
 
         let displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
         expect(displayedRows.length).toBe(10);
-        expect(wrapper.find(".load-more-hist-button").exists()).toBe(true);
+        expect(wrapper.find("[data-description='load more histories button']").exists()).toBe(true);
 
         getUpdatedAxiosMock();
         await historyStore.loadHistories();
@@ -92,7 +95,7 @@ describe("History SelectorModal.vue", () => {
 
         displayedRows = wrapper.findAllComponents(BListGroupItem).wrappers;
         expect(displayedRows.length).toBe(15);
-        expect(wrapper.find(".load-more-hist-button").exists()).toBe(false);
+        expect(wrapper.find("[data-description='load more histories button']").exists()).toBe(false);
         axiosMock.restore();
     });
 
@@ -127,7 +130,7 @@ describe("History SelectorModal.vue", () => {
             const selectedHistories = wrapper.findAll(".list-group-item.active").wrappers;
             expect(selectedHistories.length).toBe(2);
 
-            const button = wrapper.find("footer > .btn-primary");
+            const button = wrapper.find("[data-description='change selected histories button']");
 
             await button.trigger("click");
 

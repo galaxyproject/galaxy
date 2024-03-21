@@ -1,6 +1,7 @@
 """
 Manager and Serializer for TS repositories.
 """
+
 import json
 import logging
 from collections import namedtuple
@@ -33,6 +34,7 @@ from galaxy.exceptions import (
 )
 from galaxy.tool_shed.util import dependency_display
 from galaxy.util import listify
+from galaxy.util.tool_shed.encoding_util import tool_shed_encode
 from tool_shed.context import (
     ProvidesRepositoriesContext,
     ProvidesUserContext,
@@ -40,10 +42,7 @@ from tool_shed.context import (
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.util import (
-    encoding_util,
-    hg_util,
-)
+from tool_shed.util import hg_util
 from tool_shed.util.metadata_util import (
     get_all_dependencies,
     get_current_repository_metadata_for_changeset_revision,
@@ -194,10 +193,8 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[
                 else:
                     tool_shed_status_dict["revision_upgrade"] = "False"
                 break
-        return (
-            encoding_util.tool_shed_encode(tool_shed_status_dict) if hexlify_this else json.dumps(tool_shed_status_dict)
-        )
-    return encoding_util.tool_shed_encode({}) if hexlify_this else json.dumps({})
+        return tool_shed_encode(tool_shed_status_dict) if hexlify_this else json.dumps(tool_shed_status_dict)
+    return tool_shed_encode({}) if hexlify_this else json.dumps({})
 
 
 def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
@@ -388,7 +385,9 @@ def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, dow
         metadata_dict = metadata.to_dict(
             value_mapper={"id": app.security.encode_id, "repository_id": app.security.encode_id}
         )
-        metadata_dict["repository"] = repository.to_dict(value_mapper={"id": app.security.encode_id})
+        metadata_dict["repository"] = repository.to_dict(
+            value_mapper={"id": app.security.encode_id, "user_id": app.security.encode_id}
+        )
         if metadata.has_repository_dependencies and recursive:
             metadata_dict["repository_dependencies"] = get_all_dependencies(
                 app, metadata, processed_dependency_links=[]
@@ -462,8 +461,7 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     assert user
     category_ids = listify(request.category_ids)
     name = request.name
-    invalid_message = validate_repository_name(app, name, user)
-    if invalid_message:
+    if invalid_message := validate_repository_name(app, name, user):
         raise RequestParameterInvalidException(invalid_message)
 
     repo, _ = low_level_create_repository(

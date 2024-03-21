@@ -107,8 +107,7 @@ def _build_tag(tag, hide_attributes):
                     assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
-    best_practices = _get_bp_link(annotation_el)
-    if best_practices:
+    if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
         tag_help.write(
             """
@@ -141,7 +140,7 @@ def _get_bp_link(annotation_el):
     anchor = annotation_el.attrib.get("{http://galaxyproject.org/xml/1.0}best_practices", None)
     link = None
     if anchor:
-        link = "https://planemo.readthedocs.io/en/latest/standards/docs/best_practices/tool_xml.html#%s" % anchor
+        link = "https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#%s" % anchor
     return link
 
 
@@ -168,6 +167,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             details = details.replace("\n", " ").strip()
+            details = details.replace("|", "\\|").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:
                 details += (

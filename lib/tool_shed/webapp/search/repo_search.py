@@ -1,4 +1,5 @@
 """Module for searching the toolshed repositories"""
+
 import logging
 
 import whoosh.index

@@ -119,10 +119,10 @@ export default {
             return this.getAttributes(this.collectionId);
         },
         databaseKeyFromElements: function () {
-            return this.attributesData.dbkey;
+            return this.attributesData?.dbkey;
         },
         datatypeFromElements: function () {
-            return this.attributesData.extension;
+            return this.attributesData?.extension;
         },
     },
     methods: {

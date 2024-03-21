@@ -41,7 +41,7 @@ class GalaxySeleniumContext(NavigatesGalaxy):
         return target
 
     @abstractmethod
-    def _screenshot_path(self, label: str, extension=".png") -> str:
+    def _screenshot_path(self, label: str, extension=".png") -> Optional[str]:
         """Path to store screenshots in."""
 
 

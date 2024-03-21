@@ -28,6 +28,11 @@ export type DatasetSummary = components["schemas"]["HDASummary"];
 export type DatasetDetails = components["schemas"]["HDADetailed"];
 
 /**
+ * Contains storage (object store, quota, etc..) details for a dataset.
+ */
+export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails"];
+
+/**
  * Represents a HistoryDatasetAssociation with either summary or detailed information.
  */
 export type DatasetEntry = DatasetSummary | DatasetDetails;
@@ -72,6 +77,8 @@ export type DCObject = components["schemas"]["DCObject"];
 
 export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
 
+export type ConcreteObjectStoreModel = components["schemas"]["ConcreteObjectStoreModel"];
+
 /**
  * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
  * with additional information to simplify its handling.
@@ -106,3 +113,15 @@ export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
 export function isCollectionElement(element: DCESummary): element is DCECollection {
     return element.element_type === "dataset_collection";
 }
+
+/**
+ * Returns true if the given dataset entry is an instance of DatasetDetails.
+ */
+export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
+    return "peek" in entry;
+}
+
+/**
+ * Contains dataset metadata information.
+ */
+export type MetadataFiles = components["schemas"]["MetadataFile"][];

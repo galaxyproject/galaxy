@@ -1,6 +1,7 @@
 """
 Mixins for Ratable model managers and serializers.
 """
+
 import logging
 from typing import Type
 

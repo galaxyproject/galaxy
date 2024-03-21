@@ -2,6 +2,7 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
+
 import copy
 import errno
 import logging
@@ -50,6 +51,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.model.base import check_database_connection
 from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
@@ -599,8 +601,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if hasattr(job_wrapper, "task_id"):
             job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
-        user = job_wrapper.get_job().user
-        if user:
+        if user := job_wrapper.get_job().user:
             for key, value in params.items():
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)
@@ -984,6 +985,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         galaxy_job_id = None
         remote_job_id = None
         try:
+            check_database_connection(self.sa_session)
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...

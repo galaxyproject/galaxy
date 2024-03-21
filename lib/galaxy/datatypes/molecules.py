@@ -5,6 +5,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
 )
 
 from galaxy.datatypes import metadata
@@ -198,6 +199,136 @@ class GenericMolFile(Text):
     ]
 
 
+class AtomicStructFile(GenericMolFile):
+    """
+    Abstract class for structure files which use the ASE IO library for metadata.
+    """
+
+    meta_error = False
+    file_ext = ""
+    ase_format = ""
+
+    MetadataElement(
+        name="atom_data",
+        default=[],
+        desc="Atom symbols and positions",
+        readonly=True,
+        visible=False,
+    )
+    MetadataElement(
+        name="number_of_atoms",
+        desc="Number of atoms",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="chemical_formula",
+        desc="Chemical formula",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="is_periodic",
+        desc="Periodic boundary conditions",
+        readonly=True,
+        visible=True,
+    )
+    MetadataElement(
+        name="lattice_parameters",
+        desc="Lattice parameters",
+        readonly=True,
+        visible=True,
+    )
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """
+        Find Atom IDs for metadata.
+        """
+        self.meta_error = False
+        if ase_io is None:
+            # Don't have optional dependency, can't set advanced values
+            return
+        else:
+            # enhanced metadata
+            try:
+                ase_data = ase_io.read(dataset.get_file_name(), index=":", format=self.ase_format)
+            except Exception as e:
+                log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
+                self.meta_error = True
+                return
+
+            atom_data = []
+            chemical_formula = []
+            is_periodic = []
+            lattice_parameters = []
+            try:
+                for block in ase_data:
+                    atom_data.append(
+                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
+                    )
+                    chemical_formula.append(block.get_chemical_formula())
+                    pbc = block.get_pbc()
+                    try:
+                        p = bool(pbc)
+                    except ValueError:  # pbc is an array
+                        p = bool(pbc.any())
+                    is_periodic.append(p)
+                    lattice_parameters.append(list(block.get_cell().cellpar()))
+            except Exception as e:
+                log.warning("%s, set_meta Exception during ASE metadata collection: %s", self, unicodify(e))
+                self.meta_error = True
+                return
+
+            dataset.metadata.number_of_molecules = len(ase_data)
+            dataset.metadata.atom_data = atom_data
+            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
+            dataset.metadata.chemical_formula = chemical_formula
+            dataset.metadata.is_periodic = is_periodic
+            dataset.metadata.lattice_parameters = list(lattice_parameters)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.get_file_name())
+            dataset.info = self.get_dataset_info(dataset.metadata)
+            number_of_molecules = dataset.metadata.number_of_molecules
+            file_ext_upper = self.file_ext.upper()
+            structure_string = "structure" if number_of_molecules == 1 else "structures"
+            dataset.blurb = f"{file_ext_upper} file containing {number_of_molecules} {structure_string}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def get_dataset_info(self, metadata):
+        if self.meta_error:
+            info = "Error finding metadata. The file may be formatted incorrectly."
+        elif ase_io:
+            # enhanced info
+            info_list = []
+            if metadata.number_of_molecules == 1:
+                info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
+                if metadata.is_periodic[0]:
+                    info_list.append("Periodic:\nYes")
+                    info_list.append(
+                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
+                    )
+                else:
+                    info_list.append("Periodic:\nNo")
+                info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
+            elif metadata.number_of_molecules > 1:
+                info_list.append("File contains multiple structures; full metadata will not be displayed.")
+                formulae = "\n".join(metadata.chemical_formula)
+                info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
+            info = "\n--\n".join(info_list)
+        else:
+            info = """
+            Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
+            You can still use this dataset in tools and workflows.
+            For full metadata, ask your admin to install the 'ase' Python package
+            """
+
+        return info
+
+
 class MOL(GenericMolFile):
     file_ext = "mol"
 
@@ -261,7 +392,7 @@ class SDF(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -344,7 +475,7 @@ class MOL2(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("@<TRIPOS>MOLECULE", dataset.get_file_name())
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -430,7 +561,7 @@ class FPS(GenericMolFile):
         dataset.metadata.number_of_molecules = count_special_lines("^#", dataset.get_file_name(), invert=True)
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by fingerprint records.
         """
@@ -554,7 +685,7 @@ class OBFS(Binary):
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
             return None
@@ -817,44 +948,13 @@ class PQR(GenericMolFile):
 
 
 @build_sniff_from_prefix
-class Cell(GenericMolFile):
+class Cell(AtomicStructFile):
     """
     CASTEP CELL format.
     """
 
     file_ext = "cell"
-    meta_error = False
-    MetadataElement(
-        name="atom_data",
-        default=[],
-        desc="Atom symbols and positions",
-        readonly=True,
-        visible=False,
-    )
-    MetadataElement(
-        name="number_of_atoms",
-        desc="Number of atoms",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="chemical_formula",
-        desc="Chemical formula",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="is_periodic",
-        desc="Periodic boundary conditions",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="lattice_parameters",
-        desc="Lattice parameters",
-        readonly=True,
-        visible=True,
-    )
+    ase_format = "castep-cell"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -882,128 +982,15 @@ class Cell(GenericMolFile):
                 return True
         return False
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Find Atom IDs for metadata.
-        """
-        self.meta_error = False
-        if ase_io is None:
-            # Don't have optional dependency, can't set advanced values
-            return
-        else:
-            # enhanced metadata
-            try:
-                ase_data = ase_io.read(dataset.get_file_name(), format="castep-cell")
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            try:
-                atom_data = [
-                    str(sym) + str(pos) for sym, pos in zip(ase_data.get_chemical_symbols(), ase_data.get_positions())
-                ]
-                chemical_formula = ase_data.get_chemical_formula()
-                pbc = ase_data.get_pbc()
-                lattice_parameters = ase_data.get_cell().cellpar()
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE metadata collection: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            # CELL file can only have one molecule
-            dataset.metadata.number_of_molecules = 1
-            dataset.metadata.atom_data = atom_data
-            dataset.metadata.number_of_atoms = len(dataset.metadata.atom_data)
-            dataset.metadata.chemical_formula = chemical_formula
-            try:
-                dataset.metadata.is_periodic = bool(pbc)
-            except ValueError:  # pbc is an array
-                dataset.metadata.is_periodic = bool(pbc.any())
-            dataset.metadata.lattice_parameters = list(lattice_parameters)
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.get_file_name())
-            dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
-            dataset.blurb = f"CASTEP CELL file containing {dataset.metadata.number_of_molecules} {structure_string}"
-
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def get_dataset_info(self, metadata):
-        if self.meta_error:
-            info = "Error finding metadata. The file may be formatted incorrectly."
-        elif ase_io:
-            # enhanced info
-            info_list = []
-            info_list.append(f"Chemical formula:\n{metadata.chemical_formula}")
-            if metadata.is_periodic:
-                info_list.append("Periodic:\nYes")
-                info_list.append(
-                    f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters])}"
-                )
-            else:
-                info_list.append("Periodic:\nNo")
-            info_list.append(f"Atoms in file:\n{metadata.number_of_atoms}")
-            info = "\n--\n".join(info_list)
-        else:
-            info = """
-Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-You can still use this dataset in tools and workflows.
-For full metadata, ask your admin to install the 'ase' Python package."""
-
-        return info
-
 
 @build_sniff_from_prefix
-class CIF(GenericMolFile):
+class CIF(AtomicStructFile):
     """
     CIF format.
     """
 
     file_ext = "cif"
-    meta_error = False
-    MetadataElement(
-        name="data_block_names",
-        default=[],
-        desc="Names of the data blocks",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="atom_data",
-        default=[],
-        desc="Atom symbols and positions",
-        readonly=True,
-        visible=False,
-    )
-    MetadataElement(
-        name="number_of_atoms",
-        desc="Number of atoms",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="chemical_formula",
-        desc="Chemical formula",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="is_periodic",
-        desc="Periodic boundary conditions",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="lattice_parameters",
-        desc="Lattice parameters",
-        readonly=True,
-        visible=True,
-    )
+    ase_format = "cif"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -1023,6 +1010,9 @@ class CIF(GenericMolFile):
         >>> fname = get_test_fname('1.star')
         >>> CIF().sniff(fname)
         False
+        >>> fname = get_test_fname('LaMnO3.cif')
+        >>> CIF().sniff(fname)
+        True
         """
 
         # check for optional CIF version marker '#\#CIF_<version>' at start of file
@@ -1033,7 +1023,7 @@ class CIF(GenericMolFile):
         # first non-comment line must begin with 'data_'
         # and '_atom_site_fract_(x|y|z)' must be specified somewhere in the file
         for line in file_prefix.line_iterator():
-            if not line:
+            if not line.rstrip():
                 continue
             elif line[0] == "#":  # comment so skip
                 continue
@@ -1043,132 +1033,16 @@ class CIF(GenericMolFile):
                 return False
         return False
 
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Find Atom IDs for metadata.
-        """
-        self.meta_error = False
-        if ase_io is None:
-            # Don't have optional dependency, can't set advanced values
-            return
-        else:
-            # enhanced metadata
-            try:
-                ase_data = ase_io.read(dataset.get_file_name(), index=":", format="cif")
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            atom_data = []
-            chemical_formula = []
-            is_periodic = []
-            lattice_parameters = []
-            try:
-                for block in ase_data:
-                    atom_data.append(
-                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
-                    )
-                    chemical_formula.append(block.get_chemical_formula())
-                    pbc = block.get_pbc()
-                    try:
-                        p = bool(pbc)
-                    except ValueError:  # pbc is an array
-                        p = bool(pbc.any())
-                    is_periodic.append(p)
-                    lattice_parameters.append(list(block.get_cell().cellpar()))
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE metadata collection: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            dataset.metadata.number_of_molecules = len(ase_data)
-            dataset.metadata.atom_data = atom_data
-            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
-            dataset.metadata.chemical_formula = chemical_formula
-            dataset.metadata.is_periodic = is_periodic
-            dataset.metadata.lattice_parameters = list(lattice_parameters)
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.get_file_name())
-            dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
-            dataset.blurb = f"CIF file containing {dataset.metadata.number_of_molecules} {structure_string}"
-
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def get_dataset_info(self, metadata):
-        if self.meta_error:
-            info = "Error finding metadata. The file may be formatted incorrectly."
-        elif ase_io:
-            # enhanced info
-            info_list = []
-            if metadata.number_of_molecules == 1:
-                info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
-                if metadata.is_periodic[0]:
-                    info_list.append("Periodic:\nYes")
-                    info_list.append(
-                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
-                    )
-                else:
-                    info_list.append("Periodic:\nNo")
-                info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
-            elif metadata.number_of_molecules > 1:
-                info_list.append("File contains multiple structures; full metadata will not be displayed.")
-                formulae = "\n".join(metadata.chemical_formula)
-                info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
-            info = "\n--\n".join(info_list)
-        else:
-            info = """
-Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-You can still use this dataset in tools and workflows.
-For full metadata, ask your admin to install the 'ase' Python package."""
-
-        return info
-
 
 @build_sniff_from_prefix
-class XYZ(GenericMolFile):
+class XYZ(AtomicStructFile):
     """
     XYZ format.
     """
 
     file_ext = "xyz"
-    meta_error = False
-    MetadataElement(
-        name="atom_data",
-        default=[],
-        desc="Atom symbols and positions",
-        readonly=True,
-        visible=False,
-    )
-    MetadataElement(
-        name="number_of_atoms",
-        desc="Number of atoms",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="chemical_formula",
-        desc="Chemical formula",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="is_periodic",
-        desc="Periodic boundary conditions",
-        readonly=True,
-        visible=True,
-    )
-    MetadataElement(
-        name="lattice_parameters",
-        desc="Lattice parameters",
-        readonly=True,
-        visible=True,
-    )
+    # ASE recommend always parsing as extended xyz
+    ase_format = "extxyz"
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
@@ -1239,92 +1113,6 @@ class XYZ(GenericMolFile):
                 else:
                     raise
         return blocks
-
-    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        """
-        Find Atom IDs for metadata.
-        """
-        self.meta_error = False
-        if ase_io is None:
-            # Don't have optional dependency, can't set advanced values
-            return
-        else:
-            # enhanced metadata
-            try:
-                # ASE recommend always parsing as extended xyz
-                ase_data = ase_io.read(dataset.get_file_name(), index=":", format="extxyz")
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE read: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            atom_data = []
-            chemical_formula = []
-            is_periodic = []
-            lattice_parameters = []
-            try:
-                for block in ase_data:
-                    atom_data.append(
-                        [str(sym) + str(pos) for sym, pos in zip(block.get_chemical_symbols(), block.get_positions())]
-                    )
-                    chemical_formula.append(block.get_chemical_formula())
-                    pbc = block.get_pbc()
-                    try:
-                        p = bool(pbc)
-                    except ValueError:  # pbc is an array
-                        p = bool(pbc.any())
-                    is_periodic.append(p)
-                    lattice_parameters.append(list(block.get_cell().cellpar()))
-            except Exception as e:
-                log.warning("%s, set_meta Exception during ASE metadata collection: %s", self, unicodify(e))
-                self.meta_error = True
-                return
-
-            dataset.metadata.number_of_molecules = len(ase_data)
-            dataset.metadata.atom_data = atom_data
-            dataset.metadata.number_of_atoms = [len(atoms) for atoms in dataset.metadata.atom_data]
-            dataset.metadata.chemical_formula = chemical_formula
-            dataset.metadata.is_periodic = is_periodic
-            dataset.metadata.lattice_parameters = list(lattice_parameters)
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.get_file_name())
-            dataset.info = self.get_dataset_info(dataset.metadata)
-            structure_string = "structure" if dataset.metadata.number_of_molecules == 1 else "structures"
-            dataset.blurb = f"XYZ file containing {dataset.metadata.number_of_molecules} {structure_string}"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-    def get_dataset_info(self, metadata):
-        if self.meta_error:
-            info = "Error finding metadata. The file may be formatted incorrectly."
-        elif ase_io:
-            # enhanced info
-            info_list = []
-            if metadata.number_of_molecules == 1:
-                info_list.append(f"Chemical formula:\n{metadata.chemical_formula[0]}")
-                if metadata.is_periodic[0]:
-                    info_list.append("Periodic:\nYes")
-                    info_list.append(
-                        f"Lattice parameters in axis-angle format:\n{', '.join([str(round(x, 2)) for x in metadata.lattice_parameters[0]])}"
-                    )
-                else:
-                    info_list.append("Periodic:\nNo")
-                info_list.append(f"Atoms in file:\n{metadata.number_of_atoms[0]}")
-            elif metadata.number_of_molecules > 1:
-                info_list.append("File contains multiple structures; full metadata will not be displayed.")
-                formulae = "\n".join(metadata.chemical_formula)
-                info_list.append(f"Chemical formula for each structure in this file:\n{formulae}")
-            info = "\n--\n".join(info_list)
-        else:
-            info = """
-Metadata is limited as the Atomic Simulation Environment (ASE) is not installed.
-You can still use this dataset in tools and workflows.
-For full metadata, ask your admin to install the 'ase' Python package."""
-
-        return info
 
 
 @build_sniff_from_prefix
@@ -1441,10 +1229,6 @@ class ExtendedXYZ(XYZ):
 
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
         return blocks
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset)
-        dataset.blurb = "Extended " + dataset.blurb
 
 
 class grd(Text):
@@ -1631,7 +1415,7 @@ class CML(GenericXml):
         return True
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by molecule records.
         """
@@ -1767,3 +1551,24 @@ class GRO(GenericMolFile):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class Magres(AtomicStructFile):
+    """Report on a MAGRES calculation"""
+
+    file_ext = "magres"
+    ase_format = "magres"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Determines whether the file is a MAGRES log
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('ethanol.magres')
+        >>> Magres().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.cif')
+        >>> Magres().sniff(fname)
+        False
+        """
+        return file_prefix.startswith("#$magres-abinitio-v")

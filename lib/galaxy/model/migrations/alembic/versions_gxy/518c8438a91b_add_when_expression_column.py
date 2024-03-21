@@ -5,6 +5,7 @@ Revises: 59e024ceaca1
 Create Date: 2022-10-24 16:43:39.565871
 
 """
+
 from sqlalchemy import Column
 
 from galaxy.model.custom_types import JSONType

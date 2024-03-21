@@ -1,6 +1,7 @@
 """
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
+
 import datetime
 import os
 import time
@@ -37,7 +38,10 @@ from galaxy.jobs import (
 )
 from galaxy.jobs.mapper import JobNotReadyException
 from galaxy.managers.jobs import get_jobs_to_check_at_startup
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    check_database_connection,
+    transaction,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
 from galaxy.util.custom_logging import get_logger
@@ -291,12 +295,13 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the database and requeues or cleans up as necessary. Only run as the job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        with self.sa_session() as session, session.begin():
-            try:
-                for job in get_jobs_to_check_at_startup(session, self.track_jobs_in_database, self.app.config):
-                    with session.begin_nested():
-                        self._check_job_at_startup(job)
-            finally:
+        with self.sa_session() as session:
+            for job in get_jobs_to_check_at_startup(session, self.track_jobs_in_database, self.app.config):
+                try:
+                    self._check_job_at_startup(job)
+                except Exception:
+                    log.exception("Error while recovering job %s during application startup.", job.id)
+            with transaction(session):
                 session.commit()
 
     def _check_job_at_startup(self, job):
@@ -399,6 +404,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the waiting queue. If the job has dependencies with errors, it is marked as having errors and removed from the
         queue. If the job belongs to an inactive user it is ignored.  Otherwise, the job is dispatched.
         """
+        check_database_connection(self.sa_session)
         # Pull all new jobs from the queue at once
         jobs_to_check = []
         resubmit_jobs = []
@@ -615,7 +621,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                             )
                         ),
                         input_association.deleted == true(),
-                        input_association._state == input_association.states.FAILED_METADATA,
+                        input_association._state.in_(
+                            (input_association.states.FAILED_METADATA, input_association.states.SETTING_METADATA)
+                        ),
                     )
                 )
                 .all()
@@ -878,7 +886,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 )
                 .group_by(model.Job.table.c.destination_id)
             )
-            for row in result:
+            for row in result.mappings():
                 # Add the count from the database to the cached count
                 rval[row["destination_id"]] = rval.get(row["destination_id"], 0) + row["job_count"]
         return rval
@@ -896,7 +904,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))))
                 .group_by(model.Job.table.c.user_id, model.Job.table.c.destination_id)
             )
-            for row in result:
+            for row in result.mappings():
                 if row["user_id"] not in self.user_job_count_per_destination:
                     self.user_job_count_per_destination[row["user_id"]] = {}
                 self.user_job_count_per_destination[row["user_id"]][row["destination_id"]] = row["job_count"]
@@ -1249,8 +1257,7 @@ class DefaultJobDispatcher:
             from galaxy.celery import celery_app
 
             celery_app.control.revoke(job.job_runner_external_id)
-        job_runner_name = job.get_job_runner_name()
-        if job_runner_name is not None:
+        if (job_runner_name := job.get_job_runner_name()) is not None:
             runner_name = job_runner_name.split(":", 1)[0]
             log.debug(f"Stopping job {job_wrapper.get_id_tag()} in {runner_name} runner")
             try:

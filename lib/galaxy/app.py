@@ -101,11 +101,17 @@ from galaxy.quota import (
     get_quota_agent,
     QuotaAgent,
 )
-from galaxy.schema.fields import BaseDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
     Vault,
     VaultFactory,
+)
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
@@ -138,18 +144,9 @@ from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.web import (
-    legacy_url_for,
-    url_for,
-)
+from galaxy.web import url_for
 from galaxy.web.framework.base import server_starttime
 from galaxy.web.proxy import ProxyManager
-from galaxy.web.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.web_stack import (
     application_stack_instance,
     ApplicationStack,
@@ -262,6 +259,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._register_singleton(GalaxyModelMapping, self.model)
         self._register_singleton(galaxy_scoped_session, self.model.context)
         self._register_singleton(install_model_scoped_session, self.install_model.context)
+        # Load quota management.
+        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
@@ -410,7 +409,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _configure_security(self):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
-        BaseDatabaseIdField.security = self.security
+        Security.security = self.security
 
     def _configure_engines(self, db_url, install_db_url, combined_install_database):
         trace_logger = getattr(self, "trace_logger", None)
@@ -521,7 +520,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(
-            JobMetrics, JobMetrics(self.config.job_metrics_config_file, app=self)
+            JobMetrics, JobMetrics(self.config.job_metrics_config_file, self.config.job_metrics, app=self)
         )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
@@ -573,8 +572,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, Inst
         self.host_security_agent = galaxy.model.security.HostAgent(
             model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions
         )
-        # Load quota management.
-        self.quota_agent = self._register_singleton(QuotaAgent, get_quota_agent(self.config, self.model))
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
         # to setup the installed repositories ... this is not ideal
@@ -703,9 +700,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.datatypes_registry.load_external_metadata_tool(self.toolbox)
         # Load history import/export tools.
         load_lib_tools(self.toolbox)
-        # Load built-in converters
-        if self.config.display_builtin_converters:
-            self.toolbox.load_builtin_converters()
         self.toolbox.persist_cache(register_postfork=True)
         # visualizations registry: associates resources with visualizations, controls how to render
         self.visualizations_registry = self._register_singleton(
@@ -798,7 +792,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Inject url_for for components to more easily optionally depend
         # on url_for.
         self.url_for = url_for
-        self.legacy_url_for = legacy_url_for
 
         self.server_starttime = server_starttime  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup
@@ -846,8 +839,7 @@ class StatsdStructuredExecutionTimer(StructuredExecutionTimer):
 
 class ExecutionTimerFactory:
     def __init__(self, config):
-        statsd_host = getattr(config, "statsd_host", None)
-        if statsd_host:
+        if statsd_host := getattr(config, "statsd_host", None):
             from galaxy.web.statsd_client import GalaxyStatsdClient
 
             self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(

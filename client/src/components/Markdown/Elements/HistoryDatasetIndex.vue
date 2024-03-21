@@ -1,19 +1,19 @@
-<template>
-    <DatasetIndex class="dataset-index" :history_dataset_id="args.history_dataset_id" :path="args.path" />
-</template>
+<script setup lang="ts">
+import DatasetIndex from "@/components/Dataset/DatasetIndex/DatasetIndex.vue";
 
-<script>
-import DatasetIndex from "components/Dataset/DatasetIndex/DatasetIndex";
+interface DatasetLinkArgs {
+    history_dataset_id: string;
+    path?: string;
+    label?: string;
+}
 
-export default {
-    components: {
-        DatasetIndex,
-    },
-    props: {
-        args: {
-            type: Object,
-            default: null,
-        },
-    },
-};
+interface Props {
+    args: DatasetLinkArgs;
+}
+
+const props = defineProps<Props>();
 </script>
+
+<template>
+    <DatasetIndex class="dataset-index" :history-dataset-id="props.args.history_dataset_id" :path="props.args.path" />
+</template>

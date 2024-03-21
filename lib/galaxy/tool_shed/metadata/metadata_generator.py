@@ -68,8 +68,7 @@ class RepositoryProtocol(Protocol):
     name: str
     id: str
 
-    def repo_path(self, app) -> Optional[str]:
-        ...
+    def repo_path(self, app) -> Optional[str]: ...
 
 
 class BaseMetadataGenerator:
@@ -135,8 +134,7 @@ class BaseMetadataGenerator:
                 tool_conf_name = os.path.join(tool_path, tool_conf_name)
             tools[tool_conf_name] = tool
         root = tree.getroot()
-        data_manager_tool_path = root.get("tool_path", None)
-        if data_manager_tool_path:
+        if data_manager_tool_path := root.get("tool_path", None):
             relative_data_manager_dir = os.path.join(relative_data_manager_dir, data_manager_tool_path)
         for i, data_manager_elem in enumerate(root.findall("data_manager")):
             tool_file = data_manager_elem.get("tool_file", None)
@@ -493,9 +491,9 @@ class BaseMetadataGenerator:
             root = tree.getroot()
             xml_is_valid = root.tag == "repositories"
         if xml_is_valid:
-            invalid_repository_dependencies_dict = dict(description=root.get("description"))
+            invalid_repository_dependencies_dict: Dict[str, Any] = dict(description=root.get("description"))
             invalid_repository_dependency_tups = []
-            valid_repository_dependencies_dict = dict(description=root.get("description"))
+            valid_repository_dependencies_dict: Dict[str, Any] = dict(description=root.get("description"))
             valid_repository_dependency_tups = []
             for repository_elem in root.findall("repository"):
                 repository_dependency_tup, repository_dependency_is_valid, err_msg = self.handle_repository_elem(

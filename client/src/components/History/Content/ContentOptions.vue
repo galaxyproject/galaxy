@@ -1,3 +1,81 @@
+<script setup lang="ts">
+import { BDropdown } from "bootstrap-vue";
+import { computed, type Ref, ref } from "vue";
+
+import { prependPath } from "@/utils/redirect";
+
+const props = defineProps({
+    writable: { type: Boolean, default: true },
+    isDataset: { type: Boolean, required: true },
+    isDeleted: { type: Boolean, default: false },
+    isHistoryItem: { type: Boolean, required: true },
+    isVisible: { type: Boolean, default: true },
+    state: { type: String, default: "" },
+    itemUrls: { type: Object, required: true },
+    keyboardSelectable: { type: Boolean, default: true },
+});
+
+const emit = defineEmits<{
+    (e: "display"): void;
+    (e: "showCollectionInfo"): void;
+    (e: "edit"): void;
+    (e: "delete", recursive?: boolean): void;
+    (e: "undelete"): void;
+    (e: "unhide"): void;
+}>();
+
+const deleteCollectionMenu: Ref<BDropdown | null> = ref(null);
+
+const displayButtonTitle = computed(() => (displayDisabled.value ? "This dataset is not yet viewable." : "Display"));
+
+const displayDisabled = computed(() => ["discarded", "new", "upload", "queued"].includes(props.state));
+
+const editButtonTitle = computed(() => (editDisabled.value ? "This dataset is not yet editable." : "Edit attributes"));
+
+const editDisabled = computed(() =>
+    ["discarded", "new", "upload", "queued", "running", "waiting"].includes(props.state)
+);
+
+const displayUrl = computed(() => prependPath(props.itemUrls.display));
+
+const editUrl = computed(() => prependPath(props.itemUrls.edit));
+
+const isCollection = computed(() => !props.isDataset);
+
+const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
+
+const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
+
+const tabindex = computed(() => (props.keyboardSelectable ? "0" : "-1"));
+
+function onDelete($event: MouseEvent) {
+    if (isCollection.value) {
+        deleteCollectionMenu.value?.show();
+    } else {
+        onDeleteItem();
+    }
+}
+
+function onDeleteItem() {
+    emit("delete");
+}
+
+function onDeleteItemRecursively() {
+    const recursive = true;
+    emit("delete", recursive);
+}
+
+function onDisplay($event: MouseEvent) {
+    // Wrap display handler to allow ctrl/meta click to open in new tab
+    // instead of triggering display.
+    if ($event.ctrlKey || $event.metaKey) {
+        window.open(displayUrl.value, "_blank");
+    } else {
+        emit("display");
+    }
+}
+</script>
+
 <template>
     <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
@@ -8,7 +86,7 @@
             size="sm"
             variant="link"
             :href="showCollectionDetailsUrl"
-            @click.prevent.stop="$emit('showCollectionInfo')">
+            @click.prevent.stop="emit('showCollectionInfo')">
             <icon icon="info-circle" />
         </b-button>
         <!-- Common for all content items -->
@@ -33,7 +111,7 @@
             size="sm"
             variant="link"
             :href="editUrl"
-            @click.prevent.stop="$emit('edit')">
+            @click.prevent.stop="emit('edit')">
             <icon icon="pen" />
         </b-button>
         <b-button
@@ -45,7 +123,7 @@
             variant="link"
             @click.stop="onDelete($event)">
             <icon v-if="isDataset" icon="trash" />
-            <b-dropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+            <BDropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
                 <template v-slot:button-content>
                     <icon icon="trash" />
                 </template>
@@ -57,7 +135,7 @@
                     <icon icon="copy" />
                     Collection and elements
                 </b-dropdown-item>
-            </b-dropdown>
+            </BDropdown>
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
@@ -66,7 +144,7 @@
             title="Undelete"
             size="sm"
             variant="link"
-            @click.stop="$emit('undelete')">
+            @click.stop="emit('undelete')">
             <icon icon="trash-restore" />
         </b-button>
         <b-button
@@ -76,91 +154,12 @@
             title="Unhide"
             size="sm"
             variant="link"
-            @click.stop="$emit('unhide')">
+            @click.stop="emit('unhide')">
             <icon icon="eye-slash" />
         </b-button>
     </span>
 </template>
 
-<script>
-import { prependPath } from "@/utils/redirect";
-
-export default {
-    props: {
-        writable: { type: Boolean, default: true },
-        isDataset: { type: Boolean, required: true },
-        isDeleted: { type: Boolean, default: false },
-        isHistoryItem: { type: Boolean, required: true },
-        isVisible: { type: Boolean, default: true },
-        state: { type: String, default: "" },
-        itemUrls: { type: Object, required: true },
-        keyboardSelectable: { type: Boolean, default: true },
-    },
-    computed: {
-        displayButtonTitle() {
-            if (this.displayDisabled) {
-                return "This dataset is not yet viewable.";
-            }
-            return "Display";
-        },
-        displayDisabled() {
-            return ["discarded", "new", "upload", "queued"].includes(this.state);
-        },
-        editButtonTitle() {
-            if (this.editDisabled) {
-                return "This dataset is not yet editable.";
-            }
-            return "Edit attributes";
-        },
-        editDisabled() {
-            return ["discarded", "new", "upload", "queued", "running", "waiting"].includes(this.state);
-        },
-        displayUrl() {
-            return prependPath(this.itemUrls.display);
-        },
-        editUrl() {
-            return prependPath(this.itemUrls.edit);
-        },
-        isCollection() {
-            return !this.isDataset;
-        },
-        canShowCollectionDetails() {
-            return !!this.itemUrls.showDetails;
-        },
-        showCollectionDetailsUrl() {
-            return prependPath(this.itemUrls.showDetails);
-        },
-        tabindex() {
-            return this.keyboardSelectable ? "0" : "-1";
-        },
-    },
-    methods: {
-        onDisplay($event) {
-            // Wrap display handler to allow ctrl/meta click to open in new tab
-            // instead of triggering display.
-            if ($event.ctrlKey || $event.metaKey) {
-                window.open(this.displayUrl, "_blank");
-            } else {
-                this.$emit("display");
-            }
-        },
-        onDelete() {
-            if (this.isCollection) {
-                this.$refs.deleteCollectionMenu.show();
-            } else {
-                this.onDeleteItem();
-            }
-        },
-        onDeleteItem() {
-            this.$emit("delete");
-        },
-        onDeleteItemRecursively() {
-            const recursive = true;
-            this.$emit("delete", recursive);
-        },
-    },
-};
-</script>
 <style lang="css">
 .dropdown-menu .dropdown-item {
     font-weight: normal;

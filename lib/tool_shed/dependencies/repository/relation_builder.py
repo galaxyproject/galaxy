@@ -156,8 +156,7 @@ class RelationBuilder:
         """
         # Assume the current repository does not have repository dependencies defined for it.
         current_repository_key = None
-        metadata = self.repository_metadata.metadata
-        if metadata:
+        if metadata := self.repository_metadata.metadata:
             # The value of self.tool_shed_url must include the port, but doesn't have to include
             # the protocol.
             if "repository_dependencies" in metadata:

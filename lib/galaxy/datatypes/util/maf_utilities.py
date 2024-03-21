@@ -658,9 +658,6 @@ def get_starts_ends_fields_from_gene_bed(line):
     if len(fields) < 12:
         raise Exception(f"Not a proper 12 column BED line ({line}).")
     tx_start = int(fields[1])
-    strand = fields[5]
-    if strand != "-":
-        strand = "+"  # Default strand is +
     cds_start = int(fields[6])
     cds_end = int(fields[7])
 

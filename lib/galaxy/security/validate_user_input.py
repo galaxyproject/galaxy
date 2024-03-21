@@ -4,6 +4,7 @@ Utilities for validating inputs related to user objects.
 The validate_* methods in this file return simple messages that do not contain
 user inputs - so these methods do not need to be escaped.
 """
+
 import logging
 import re
 from typing import Optional
@@ -129,8 +130,7 @@ def validate_publicname(trans, publicname, user=None):
     """
     if user and user.username == publicname:
         return ""
-    message = validate_publicname_str(publicname)
-    if message:
+    if message := validate_publicname_str(publicname):
         return message
 
     stmt = select(trans.app.model.User).filter_by(username=publicname).limit(1)

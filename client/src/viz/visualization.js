@@ -2,8 +2,6 @@ import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import $ from "jquery";
 import { Dataset } from "mvc/dataset/data";
-import GridView from "mvc/grid/grid-view";
-import Tabs from "mvc/ui/ui-tabs";
 import { getAppRoot } from "onload/loadConfig";
 import _ from "underscore";
 import config_mod from "utils/config";
@@ -46,68 +44,34 @@ var CustomToJSON = {
  * definitions for selected datasets.
  */
 var select_datasets = (filters, success_fn) => {
-    // history dataset selection tab
-    var history_grid = new GridView({
-        url_base: `${getAppRoot()}visualization/list_history_datasets`,
-        filters: filters,
-        embedded: true,
-    });
-
-    // library dataset selection tab
-    var library_grid = new GridView({
-        url_base: `${getAppRoot()}visualization/list_library_datasets`,
-        embedded: true,
-    });
-
-    // build tabs
-    var tabs = new Tabs.View();
-    tabs.add({
-        id: "histories",
-        title: _l("Histories"),
-        $el: $("<div/>").append(history_grid.$el),
-    });
-    tabs.add({
-        id: "libraries",
-        title: _l("Libraries"),
-        $el: $("<div/>").append(library_grid.$el),
-    });
-
-    // modal
     const Galaxy = getGalaxyInstance();
-    Galaxy.modal.show({
-        title: _l("Select datasets for new tracks"),
-        body: tabs.$el,
-        closing_events: true,
-        buttons: {
-            Cancel: function () {
-                Galaxy.modal.hide();
-            },
-            Add: function () {
-                var requests = [];
-                tabs.$("input.grid-row-select-checkbox[name=id]:checked").each(function () {
-                    window.console.log($(this).val());
-                    requests[requests.length] = $.ajax({
-                        url: `${getAppRoot()}api/datasets/${$(this).val()}`,
+    Galaxy.data.dialog(
+        (files) => {
+            var requests = [];
+            files.forEach((f) => {
+                requests.push(
+                    $.ajax({
+                        url: `${getAppRoot()}api/datasets/${f.id}`,
                         dataType: "json",
                         data: {
                             data_type: "track_config",
-                            hda_ldda: tabs.current() == "histories" ? "hda" : "ldda",
+                            hda_ldda: f.src === "ldda" ? "ldda" : "hda",
                         },
-                    });
-                });
-                // To preserve order, wait until there are definitions for all tracks and then add
-                // them sequentially.
-                $.when.apply($, requests).then(function () {
-                    // jQuery always returns an Array for arguments, so need to look at first element
-                    // to determine whether multiple requests were made and consequently how to
-                    // map arguments to track definitions.
-                    var track_defs = arguments[0] instanceof Array ? $.map(arguments, (arg) => arg[0]) : [arguments[0]];
-                    success_fn(track_defs);
-                });
-                Galaxy.modal.hide();
-            },
+                    })
+                );
+            });
+            // To preserve order, wait until there are definitions for all tracks and then add
+            // them sequentially.
+            $.when.apply($, requests).then(function () {
+                // jQuery always returns an Array for arguments, so need to look at first element
+                // to determine whether multiple requests were made and consequently how to
+                // map arguments to track definitions.
+                var track_defs = arguments[0] instanceof Array ? $.map(arguments, (arg) => arg[0]) : [arguments[0]];
+                success_fn(track_defs);
+            });
         },
-    });
+        { format: null, multiple: true }
+    );
 };
 
 // --------- Models ---------

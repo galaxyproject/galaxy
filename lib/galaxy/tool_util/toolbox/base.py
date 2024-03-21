@@ -261,14 +261,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         execution_timer = ExecutionTimer()
         self._tool_tag_manager.reset_tags()
         config_filenames = listify(config_filenames)
-        for config_filename in config_filenames:
-            if os.path.isdir(config_filename):
-                directory_contents = sorted(os.listdir(config_filename))
-                directory_config_files = [
-                    config_file for config_file in directory_contents if config_file.endswith(".xml")
-                ]
-                config_filenames.remove(config_filename)
-                config_filenames.extend(directory_config_files)
+        config_directories = [config_filename for config_filename in config_filenames if os.path.isdir(config_filename)]
+        config_filenames = [
+            config_filename for config_filename in config_filenames if config_filename not in config_directories
+        ]
+        for config_directory in config_directories:
+            directory_contents = sorted(os.listdir(config_directory))
+            directory_config_files = [config_file for config_file in directory_contents if config_file.endswith(".xml")]
+            config_filenames.extend(directory_config_files)
         for config_filename in config_filenames:
             if not self.can_load_config_file(config_filename):
                 continue
@@ -375,7 +375,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return [v.to_model() for v in self._tool_panel_views.values()]
 
     def panel_view_dicts(self) -> Dict[str, Dict]:
-        return {m.id: m.dict() for m in self.panel_views()}
+        return {m.id: m.model_dump(mode="json") for m in self.panel_views()}
 
     def panel_has_tool(self, tool, panel_view_id):
         panel_view_rendered = self._tool_panel_view_rendered[panel_view_id]
@@ -661,6 +661,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 section = ToolSection(elem)
                 for section_elem in elem:
                     section_id = section_elem.get("id")
+                    assert (
+                        section_id
+                    ), f"Element '{etree.tostring(section_elem, encoding='unicode')}' did not specify 'id' attribute"
                     if section_elem.tag == "tool":
                         section.elems.stub_tool(section_id)
                     elif section_elem.tag == "workflow":
@@ -760,9 +763,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def is_missing_shed_tool(self, tool_id: str) -> bool:
         """Confirm that the tool ID does reference a shed tool and is not installed."""
-        if tool_id is None:
-            # This is not a tool ID.
-            return False
         if "repos" not in tool_id:
             # This is not a shed tool.
             return False
@@ -1386,8 +1386,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
     @abc.abstractmethod
-    def _looks_like_a_tool(self, path: str) -> bool:
-        ...
+    def _looks_like_a_tool(self, path: str) -> bool: ...
 
 
 def _filter_for_panel(item, item_type, filters, context):

@@ -729,6 +729,33 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         self._assert_status_code_is(response, 400)
         self._assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"])
 
+    def test_index_total_matches(self):
+        with self._different_user("isolated.wf.user@test.email"):
+            my_workflow_id = self.workflow_populator.simple_workflow("mine_1")
+            self.workflow_populator.simple_workflow("mine_2")
+            my_email = self.dataset_populator.user_email()
+            with self._different_user():
+                their_shared_workflow_id = self.workflow_populator.simple_workflow("theirs_1")
+                self.workflow_populator.share_with_user(their_shared_workflow_id, my_email)
+                their_workflow_to_import_id = self.workflow_populator.simple_workflow("theirs_2", publish=True)
+                self.workflow_populator.set_tags(their_workflow_to_import_id, ["theirs_2", "test"])
+
+            import_response = self.__import_workflow(their_workflow_to_import_id)
+            self._assert_status_code_is(import_response, 200)
+            imported_wf_id = import_response.json()["id"]
+
+            # add tags to my workflows
+            self.workflow_populator.set_tags(my_workflow_id, ["mine_1", "test"])
+            self.workflow_populator.set_tags(imported_wf_id, ["imported", "test"])
+
+            # We should have 4 workflows now (2 mine, 1 shared with me, 1 imported)
+            expected_number_of_workflows = 4
+            workflows_response = self._get("workflows")
+            self._assert_status_code_is(workflows_response, 200)
+            assert workflows_response.headers["Total_matches"] == f"{expected_number_of_workflows}"
+            workflows = workflows_response.json()
+            assert len(workflows) == expected_number_of_workflows
+
     def test_upload(self):
         self.__test_upload(use_deprecated_route=False)
 
@@ -3228,6 +3255,128 @@ input_c:
             # Follow proves one job was filtered out of the result of cat1
             assert len(filter_jobs_by_tool("cat1")) == 1, jobs
 
+    def test_keep_success_mapping_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    in:
+       input: input_c
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    in:
+      input: mixed_collection/out_file1
+
+  cat:
+    tool_id: cat1
+    in:
+      input1: filtered_collection/output
+""",
+                test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            jobs = summary.jobs
+
+            def filter_jobs_by_tool(tool_id):
+                return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+            assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
+            assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
+            # Follow proves one job was filtered out of the exit_code_from_file
+            # And a single one has been sent to cat1
+            assert len(filter_jobs_by_tool("cat1")) == 1, jobs
+
+    def test_keep_success_mapping_paused(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    in:
+       input: input_c
+
+  cat:
+    tool_id: cat1
+    in:
+      input1: mixed_collection/out_file1
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    in:
+      input: cat/out_file1
+""",
+                test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+    - identifier: i3
+      content: "0"
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            jobs = summary.jobs
+
+            def filter_jobs_by_tool(tool_id):
+                return [j for j in summary.jobs if j["tool_id"] == tool_id]
+
+            # Get invocation to access output collections
+            invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            # Check there are 3 exit_code_from_file
+            assert len(filter_jobs_by_tool("exit_code_from_file")) == 3, jobs
+            # Check output collection has 3 elements
+            output_mixed_collection_id = invocation["steps"][1]["output_collections"]["out_file1"]["id"]
+            mixed_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_mixed_collection_id, assert_ok=False
+            )
+            assert mixed_collection["element_count"] == 3, mixed_collection
+            # Check 3 jobs cat1 has been "scheduled":
+            assert len(filter_jobs_by_tool("cat1")) == 3, jobs
+            # Check 2 are 'ok' the other is 'paused'
+            output_cat_id = invocation["steps"][2]["output_collections"]["out_file1"]["id"]
+            cat_collection = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_cat_id, assert_ok=False
+            )
+            assert cat_collection["element_count"] == 3, cat_collection
+            cat1_states = [e["object"]["state"] for e in cat_collection["elements"]]
+            assert "paused" in cat1_states, jobs
+            assert len([s for s in cat1_states if s == "ok"]) == 2, cat_collection
+            # Check the KEEP_SUCCESS_DATASETS have been run
+            assert len(filter_jobs_by_tool("__KEEP_SUCCESS_DATASETS__")) == 1, jobs
+            # Check the output has 2 elements
+            output_filtered_id = invocation["steps"][3]["output_collections"]["output"]["id"]
+            output_filtered = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=output_filtered_id, assert_ok=False
+            )
+            assert output_filtered["element_count"] == 2, output_filtered
+
     def test_workflow_request(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_queue")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow)
@@ -5145,7 +5294,7 @@ outer_input:
         workflow = self.workflow_populator.load_workflow(name="test_for_run_cannot_access")
         workflow_request, _, workflow_id = self._setup_workflow_run(workflow)
         with self._different_user():
-            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+            run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
             self._assert_status_code_is(run_workflow_response, 403)
 
     def test_400_on_invalid_workflow_id(self):
@@ -5160,7 +5309,7 @@ outer_input:
         with self._different_user():
             other_history_id = self.dataset_populator.new_history()
         workflow_request["history"] = f"hist_id={other_history_id}"
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 403)
 
     def test_cannot_run_bootstrap_admin_workflow(self):
@@ -6511,7 +6660,7 @@ steps:
                 "parameters_normalized": True,
                 "parameters": dumps(parameters),
             }
-            invocation_response = self._post(f"workflows/{workflow_id}/usage", data=workflow_request)
+            invocation_response = self._post(f"workflows/{workflow_id}/usage", data=workflow_request, json=True)
             self._assert_status_code_is(invocation_response, 200)
             time.sleep(5)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -6563,7 +6712,7 @@ steps:
                 "parameters_normalized": True,
                 "parameters": dumps(parameters),
             }
-            invocation_response = self._post(f"workflows/{workflow_id}/usage", data=workflow_request)
+            invocation_response = self._post(f"workflows/{workflow_id}/usage", data=workflow_request, json=True)
             self._assert_status_code_is(invocation_response, 200)
             time.sleep(5)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -6606,7 +6755,7 @@ steps:
                 history=f"hist_id={history_id}", parameters=dumps(dict(validation_repeat={"r2_0|text": ""}))
             )
             url = f"workflows/{workflow_id}/invocations"
-            invocation_response = self._post(url, data=workflow_request)
+            invocation_response = self._post(url, data=workflow_request, json=True)
             # Take a valid stat and make it invalid, assert workflow won't run.
             self._assert_status_code_is(invocation_response, 400)
 
@@ -7117,6 +7266,20 @@ input_c:
         with self._different_user():
             usage_details_response = self._get(f"workflows/{workflow_id}/usage/{invocation_id}")
             self._assert_status_code_is(usage_details_response, 403)
+
+    def test_invocation_filtering_exclude_subworkflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                WORKFLOW_NESTED_SIMPLE,
+                test_data="""
+outer_input:
+  value: 1.bed
+  type: File
+""",
+                history_id=history_id,
+            )
+            assert len(self.workflow_populator.history_invocations(history_id)) == 2
+            assert len(self.workflow_populator.history_invocations(history_id, include_nested_invocations=False)) == 1
 
     def test_workflow_publishing(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")

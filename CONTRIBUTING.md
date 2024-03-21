@@ -1,14 +1,12 @@
 # Contributing
 
 Galaxy welcomes new development!  This document briefly describes how to
-contribute to the [core galaxy
-repository](https://github.com/galaxyproject/galaxy).
-For information on contributing more broadly to the Galaxy ecosystem and a
-deeper discussion of some of these points - please see the
-[Develop](https://galaxyproject.org/develop) section of the [Galaxy Community
-Hub](https://galaxyproject.org) and the [Galaxy Code
-Architecture](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html#1) slides that are part of the [Galaxy Training
-Materials](https://training.galaxyproject.org/).
+contribute to the [core galaxy repository](https://github.com/galaxyproject/galaxy).
+For general information on the Galaxy ecosystem, please see the
+[Galaxy Community Hub](https://galaxyproject.org).
+For a description of how the Galaxy code is structured, see the
+[Galaxy Code Architecture slides](https://training.galaxyproject.org/training-material/topics/dev/tutorials/architecture/slides.html)
+that are part of the [Galaxy Training Materials](https://training.galaxyproject.org/).
 
 ## Before you Begin
 
@@ -16,9 +14,11 @@ If you have an idea for a feature to add or an approach for a bugfix, it is
 best to communicate with Galaxy developers early. The primary venue for this is
 the [GitHub issue tracker](https://github.com/galaxyproject/galaxy/issues).
 Browse through existing GitHub issues and if one seems related, comment on it.
-For more direct communication, Galaxy developers are generally available via
-[Gitter](https://gitter.im/galaxyproject/dev) and on the [development mailing
-list](http://dev.list.galaxyproject.org).
+For more direct communication, Galaxy developers are generally available on
+the [Galaxy Matrix space](https://matrix.to/#/#galaxyproject:matrix.org), in
+particular on the [galaxyprojec/dev channel](https://matrix.to/#/#galaxyproject_dev:gitter.im)
+and in the various [Working Group](https://galaxyproject.org/community/wg/)
+channels.
 
 If you're looking to help but aren't sure where to start, we also maintain a
 [tag](https://github.com/galaxyproject/galaxy/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)

@@ -36,7 +36,7 @@ steps:
             exact_tools=True,
         )
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         editor = self.components.workflow_editor
         editor.node._(label="compose_text_param").wait_for_and_click()
         editor.tool_version_button.wait_for_and_click()
@@ -65,7 +65,7 @@ steps:
         """
         )
         self.workflow_index_open()
-        self.workflow_index_click_option("Edit")
+        self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.1.1' instead of version '0.0.0'")
         self.screenshot("workflow_editor_tool_repository_upgrade")
         self.components.workflow_editor.modal_button_continue.wait_for_and_click()

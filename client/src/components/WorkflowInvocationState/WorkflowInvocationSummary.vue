@@ -2,11 +2,19 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                <b-button
+                    v-b-tooltip.hover
+                    :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
+                    :disabled="!invocationStateSuccess"
+                    size="sm"
+                    class="invocation-report-link"
+                    :href="invocationLink">
                     View Report
                 </b-button>
                 <b-button
                     v-b-tooltip.hover
+                    :title="invocationStateSuccess ? generatePdfTooltip : disabledReportTooltip"
+                    :disabled="!invocationStateSuccess"
                     size="sm"
                     class="invocation-pdf-link"
                     :href="invocationPdfLink"
@@ -68,7 +76,6 @@ import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import ProgressBar from "components/ProgressBar";
 import { getRootFromIndexLink } from "onload";
-import { mapGetters } from "vuex";
 
 import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
@@ -109,10 +116,11 @@ export default {
         return {
             stepStatesInterval: null,
             jobStatesInterval: null,
+            reportTooltip: "View report for this workflow invocation",
+            generatePdfTooltip: "Generate PDF report for this workflow invocation",
         };
     },
     computed: {
-        ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
         invocationId() {
             return this.invocation?.id;
         },
@@ -125,6 +133,28 @@ export default {
         },
         invocationState: function () {
             return this.invocation?.state || "new";
+        },
+        invocationStateSuccess: function () {
+            return this.invocationState == "scheduled" && this.runningCount === 0 && this.invocationAndJobTerminal;
+        },
+        disabledReportTooltip: function () {
+            const state = this.invocationState;
+            const runCount = this.runningCount;
+            if (this.invocationState != "scheduled") {
+                return (
+                    "This workflow is not currently scheduled. The current state is ",
+                    state,
+                    ". Once the workflow is fully scheduled and jobs have complete this option will become available."
+                );
+            } else if (runCount != 0) {
+                return (
+                    "The workflow invocation still contains ",
+                    runCount,
+                    " running job(s). Once these jobs have completed this option will become available. "
+                );
+            } else {
+                return "Steps for this workflow are still running. A report will be available once complete.";
+            }
         },
         stepCount: function () {
             return this.invocation?.steps.length;

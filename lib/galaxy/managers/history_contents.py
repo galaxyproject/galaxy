@@ -2,6 +2,7 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+
 import json
 import logging
 from typing import (
@@ -83,6 +84,7 @@ class HistoryContentsManager(base.SortableManager):
         "collection_id",
         "name",
         "state",
+        "object_store_id",
         "size",
         "deleted",
         "purged",
@@ -186,7 +188,7 @@ class HistoryContentsManager(base.SortableManager):
             cast(func.sum(subquery.c.active), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted
@@ -353,6 +355,8 @@ class HistoryContentsManager(base.SortableManager):
             history_content_type=literal("dataset"),
             size=model.Dataset.file_size,
             state=model.Dataset.state,
+            object_store_id=model.Dataset.object_store_id,
+            quota_source_label=model.Dataset.object_store_id,
             # do not have inner collections
             collection_id=literal(None),
         )
@@ -379,6 +383,8 @@ class HistoryContentsManager(base.SortableManager):
             dataset_id=literal(None),
             size=literal(None),
             state=model.DatasetCollection.populated_state,
+            object_store_id=literal(None),
+            quota_source_label=literal(None),
             # TODO: should be purgable? fix
             purged=literal(False),
             extension=literal(None),
@@ -568,8 +574,31 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-        column_filter = get_filter(attr, op, val)
-        if column_filter is not None:
+            if attr == "object_store_id":
+                if op == "eq":
+                    return sql.column("object_store_id") == val
+
+                if op == "in":
+                    object_store_ids = [s for s in val.split(",") if s]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+            if attr == "quota_source_label":
+                if op == "eq":
+                    ids = self.app.object_store.get_quota_source_map().ids_per_quota_source(
+                        include_default_quota_source=True
+                    )
+                    if val == "__null__":
+                        val = None
+                    if val not in ids:
+                        raise KeyError(f"Could not find key {val} in object store keys {list(ids.keys())}")
+                    object_store_ids = ids[val]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+        if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 
@@ -610,8 +639,9 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
+        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
-        genomes.GenomeFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
@@ -624,6 +654,8 @@ class HistoryContentsFilters(
                 # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
                 "name": {"op": ("eq", "contains", "like")},
                 "state": {"op": ("eq", "in")},
+                "object_store_id": {"op": ("eq", "in")},
+                "quota_source_label": {"op": ("eq")},
                 "visible": {"op": ("eq"), "val": parse_bool},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},

@@ -58,9 +58,11 @@ class Folder:
 
     def remove_repository_dependency(self, repository_dependency):
         listified_repository_dependency = repository_dependency.listify
-        for contained_repository_dependency in self.repository_dependencies:
-            if contained_repository_dependency.listify == listified_repository_dependency:
-                self.repository_dependencies.remove(contained_repository_dependency)
+        self.repository_dependencies = [
+            contained_repository_dependency
+            for contained_repository_dependency in self.repository_dependencies
+            if contained_repository_dependency.listify != listified_repository_dependency
+        ]
 
     def to_dict(self):
         folders = []

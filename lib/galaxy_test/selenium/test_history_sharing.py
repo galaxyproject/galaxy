@@ -79,9 +79,10 @@ class TestHistorySharing(SeleniumTestCase):
         self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
         self.navigate_to_histories_shared_with_me_page()
         self.components.shared_histories.selector.wait_for_present()
+        self.components.shared_histories.histories.wait_for_present()
         rows = self.components.shared_histories.histories.all()
         assert len(rows) > 0
-        assert any(user1_email in row.text for row in rows)
+        assert any(user1_email.split("@")[0] in row.text for row in rows)
 
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()

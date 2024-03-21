@@ -84,7 +84,6 @@ def parse_outputs(args):
 
 def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     ext = None
-    compression_type = None
     line_count = None
     link_data_only_str = dataset.get("link_data_only", "copy_files")
     if link_data_only_str not in ["link_to_files", "copy_files"]:
@@ -149,14 +148,6 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
         convert_to_posix_lines=dataset.to_posix_lines,
         convert_spaces_to_tabs=dataset.space_to_tab,
     )
-
-    # Strip compression extension from name
-    if (
-        compression_type
-        and not getattr(datatype, "compressed", False)
-        and dataset.name.endswith("." + compression_type)
-    ):
-        dataset.name = dataset.name[: -len("." + compression_type)]
 
     # Move dataset
     if link_data_only:

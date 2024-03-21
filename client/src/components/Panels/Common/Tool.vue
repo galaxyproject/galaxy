@@ -4,7 +4,14 @@
             <span v-if="!hideName">{{ tool.name }}</span>
             <span class="description">{{ tool.description }}</span>
         </a>
-        <a v-else :class="targetClass" :data-tool-id="tool.id" :href="tool.link" :target="tool.target" @click="onClick">
+        <a
+            v-else
+            :class="targetClass"
+            :data-tool-id="tool.id"
+            :href="tool.link"
+            :target="tool.target"
+            :title="tool.help"
+            @click="onClick">
             <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
             <span class="labels">
                 <span

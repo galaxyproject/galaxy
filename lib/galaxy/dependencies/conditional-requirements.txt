@@ -1,5 +1,5 @@
 # These dependencies are only required when certain config options are set
-psycopg2-binary==2.9.5
+psycopg2-binary==2.9.9
 mysqlclient
 fluent-logger
 sentry-sdk[fastapi]
@@ -35,7 +35,7 @@ custos-sdk
 chronos-python==1.2.1
 
 # Kubernetes job runner
-pykube==0.15.0
+pykube-ng==21.3.0
 
 # Synnefo / Pithos+ object store client
 kamaki
@@ -60,3 +60,6 @@ weasyprint
 
 # AWS Batch runner
 boto3
+
+#For Rucio storage plugin
+rucio-clients==33.6.0

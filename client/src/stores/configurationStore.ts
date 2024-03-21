@@ -4,7 +4,7 @@ import { computed, ref } from "vue";
 import { fetcher } from "@/api/schema";
 
 // Temporary set to any until schema model is defined
-type GalaxyConfiguration = any;
+export type GalaxyConfiguration = any;
 
 const fetchConfiguration = fetcher.path("/api/configuration").method("get").create();
 

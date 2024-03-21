@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faMarkdown } from "@fortawesome/free-brands-svg-icons";
-import { faEraser, faMagnet, faMousePointer, faObjectGroup, faPen } from "@fortawesome/free-solid-svg-icons";
+import {
+    faChevronDown,
+    faChevronUp,
+    faEraser,
+    faMagnet,
+    faMousePointer,
+    faObjectGroup,
+    faPen,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BButton, BButtonGroup, BFormInput } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
 import { computed, toRefs, watch } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
@@ -16,12 +25,13 @@ import { useToolLogic } from "./useToolLogic";
 
 import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
-library.add(faMagnet, faMousePointer, faObjectGroup, faMarkdown, faPen, faEraser);
+library.add(faMarkdown, faChevronUp, faChevronDown, faEraser, faMagnet, faMousePointer, faObjectGroup, faPen);
 
 const { toolbarStore, commentStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
 
 const { commentOptions } = toolbarStore;
+const { toolbarVisible } = storeToRefs(toolbarStore);
 
 const snapButtonTitle = computed(() => {
     if (snapActive.value) {
@@ -103,90 +113,110 @@ whenever(ctrl_4!, () => (toolbarStore.currentTool = "markdownComment"));
 whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
 whenever(ctrl_6!, () => (toolbarStore.currentTool = "freehandComment"));
 whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
+
+const toggleVisibilityButtonTitle = computed(() => {
+    if (toolbarVisible.value) {
+        return "hide Toolbar";
+    } else {
+        return "show Toolbar";
+    }
+});
 </script>
 
 <template>
     <div class="workflow-editor-toolbar">
         <div class="tools">
-            <BButtonGroup vertical>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    class="button"
-                    data-tool="pointer"
-                    title="Pointer Tool (Ctrl + 1)"
-                    :pressed="currentTool === 'pointer'"
-                    variant="outline-primary"
-                    @click="onClickPointer">
-                    <FontAwesomeIcon icon="fa-mouse-pointer" size="lg" />
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    class="button"
-                    data-tool="toggle_snap"
-                    :title="snapButtonTitle"
-                    :pressed.sync="snapActive"
-                    variant="outline-primary">
-                    <FontAwesomeIcon icon="fa-magnet" size="lg" />
-                </BButton>
-            </BButtonGroup>
+            <template v-if="toolbarVisible">
+                <BButtonGroup vertical>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        class="button"
+                        data-tool="pointer"
+                        title="Pointer Tool (Ctrl + 1)"
+                        :pressed="currentTool === 'pointer'"
+                        variant="outline-primary"
+                        @click="onClickPointer">
+                        <FontAwesomeIcon icon="fa-mouse-pointer" size="lg" />
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        class="button"
+                        data-tool="toggle_snap"
+                        :title="snapButtonTitle"
+                        :pressed.sync="snapActive"
+                        variant="outline-primary">
+                        <FontAwesomeIcon icon="fa-magnet" size="lg" />
+                    </BButton>
+                </BButtonGroup>
 
-            <BButtonGroup vertical>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    class="button font-weight-bold"
-                    data-tool="text_comment"
-                    title="Text comment (Ctrl + 3)"
-                    :pressed="currentTool === 'textComment'"
-                    variant="outline-primary"
-                    @click="() => onCommentToolClick('textComment')">
-                    <span class="icon-t">T</span>
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    class="button"
-                    data-tool="markdown_comment"
-                    title="Markdown comment (Ctrl + 4)"
-                    :pressed="currentTool === 'markdownComment'"
-                    variant="outline-primary"
-                    @click="() => onCommentToolClick('markdownComment')">
-                    <FontAwesomeIcon :icon="['fab', 'markdown']" size="lg" />
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    class="button"
-                    data-tool="frame_comment"
-                    title="Frame comment (Ctrl + 5)"
-                    :pressed="currentTool === 'frameComment'"
-                    variant="outline-primary"
-                    @click="() => onCommentToolClick('frameComment')">
-                    <FontAwesomeIcon icon="fa-object-group" size="lg" />
-                </BButton>
-            </BButtonGroup>
+                <BButtonGroup vertical>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        class="button font-weight-bold"
+                        data-tool="text_comment"
+                        title="Text comment (Ctrl + 3)"
+                        :pressed="currentTool === 'textComment'"
+                        variant="outline-primary"
+                        @click="() => onCommentToolClick('textComment')">
+                        <span class="icon-t">T</span>
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        class="button"
+                        data-tool="markdown_comment"
+                        title="Markdown comment (Ctrl + 4)"
+                        :pressed="currentTool === 'markdownComment'"
+                        variant="outline-primary"
+                        @click="() => onCommentToolClick('markdownComment')">
+                        <FontAwesomeIcon :icon="['fab', 'markdown']" size="lg" />
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        class="button"
+                        data-tool="frame_comment"
+                        title="Frame comment (Ctrl + 5)"
+                        :pressed="currentTool === 'frameComment'"
+                        variant="outline-primary"
+                        @click="() => onCommentToolClick('frameComment')">
+                        <FontAwesomeIcon icon="fa-object-group" size="lg" />
+                    </BButton>
+                </BButtonGroup>
 
-            <BButtonGroup vertical>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    title="Freehand Pen (Ctrl + 6)"
-                    data-tool="freehand_pen"
-                    :pressed="currentTool === 'freehandComment'"
-                    class="button"
-                    variant="outline-primary"
-                    @click="() => onCommentToolClick('freehandComment')">
-                    <FontAwesomeIcon icon="fa-pen" size="lg" />
-                </BButton>
-                <BButton
-                    v-b-tooltip.hover.noninteractive.right
-                    title="Freehand Eraser (Ctrl + 7)"
-                    data-tool="freehand_eraser"
-                    :pressed="currentTool === 'freehandEraser'"
-                    class="button"
-                    variant="outline-primary"
-                    @click="() => onCommentToolClick('freehandEraser')">
-                    <FontAwesomeIcon icon="fa-eraser" size="lg" />
-                </BButton>
-            </BButtonGroup>
+                <BButtonGroup vertical>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        title="Freehand Pen (Ctrl + 6)"
+                        data-tool="freehand_pen"
+                        :pressed="currentTool === 'freehandComment'"
+                        class="button"
+                        variant="outline-primary"
+                        @click="() => onCommentToolClick('freehandComment')">
+                        <FontAwesomeIcon icon="fa-pen" size="lg" />
+                    </BButton>
+                    <BButton
+                        v-b-tooltip.hover.noninteractive.right
+                        title="Freehand Eraser (Ctrl + 7)"
+                        data-tool="freehand_eraser"
+                        :pressed="currentTool === 'freehandEraser'"
+                        class="button"
+                        variant="outline-primary"
+                        @click="() => onCommentToolClick('freehandEraser')">
+                        <FontAwesomeIcon icon="fa-eraser" size="lg" />
+                    </BButton>
+                </BButtonGroup>
+            </template>
+
+            <BButton
+                v-b-tooltip.hover.noninteractive.right
+                class="toggle-visibility-button"
+                :title="toggleVisibilityButtonTitle"
+                variant="outline-primary"
+                @click="toolbarVisible = !toolbarVisible">
+                <FontAwesomeIcon v-if="toolbarVisible" icon="fa-chevron-up" />
+                <FontAwesomeIcon v-else icon="fa-chevron-down" />
+            </BButton>
         </div>
-        <div class="options">
+        <div v-if="toolbarVisible" class="options">
             <div
                 v-if="
                     toolbarStore.snapActive && !['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)
@@ -325,6 +355,12 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 }
             }
         }
+    }
+
+    .toggle-visibility-button {
+        height: 1.5rem;
+        display: grid;
+        align-items: center;
     }
 
     .options {

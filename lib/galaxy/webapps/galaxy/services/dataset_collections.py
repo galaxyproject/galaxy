@@ -8,8 +8,9 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
+    ConfigDict,
     Field,
+    RootModel,
     ValidationError,
 )
 from typing_extensions import Literal
@@ -56,15 +57,13 @@ class UpdateCollectionAttributePayload(Model):
     """Contains attributes that can be updated for all elements in a dataset collection."""
 
     dbkey: str = Field(..., description="TODO")
-
-    class Config:
-        extra = Extra.forbid  # will cause validation to fail if extra attributes are included,
+    model_config = ConfigDict(extra="forbid")
 
 
 class DatasetCollectionAttributesResult(Model):
     dbkey: str = Field(..., description="TODO")
     # Are the following fields really used/needed?
-    extension: str = Field(..., description="The dataset file extension.", example="txt")
+    extension: str = Field(..., description="The dataset file extension.", examples=["txt"])
     model_class: Literal["HistoryDatasetCollectionAssociation"] = ModelClassField("HistoryDatasetCollectionAssociation")
     dbkeys: Optional[Set[str]]
     extensions: Optional[Set[str]]
@@ -78,16 +77,16 @@ class SuitableConverter(Model):
     original_type: str = Field(..., description="The type to convert from.")
 
 
-class SuitableConverters(Model):
+class SuitableConverters(RootModel):
     """Collection of converters that can be used on a particular dataset collection."""
 
-    __root__: List[SuitableConverter]
+    root: List[SuitableConverter]
 
 
-class DatasetCollectionContentElements(Model):
+class DatasetCollectionContentElements(RootModel):
     """Represents a collection of elements contained in the dataset collection."""
 
-    __root__: List[DCESummary]
+    root: List[DCESummary]
 
 
 class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
@@ -217,7 +216,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             if not trans.app.security_agent.can_access_collection(trans.get_current_user_roles(), collection):
                 raise exceptions.ItemAccessibilityException("Collection not accessible by user.")
         serialized_dce = dictify_element_reference(dce, recursive=False, security=trans.security)
-        return trans.security.encode_all_ids(serialized_dce, recursive=True)
+        return serialized_dce
 
     def contents(
         self,
@@ -248,8 +247,8 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
-            trans, "history", hdca_id, check_ownership=True
+        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+            trans, "history", hdca_id
         )
 
         # check to make sure the dsc is part of the validated hdca
@@ -271,12 +270,11 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
                     hdca_id=self.encode_id(hdca.id),
                     parent_id=self.encode_id(result["object"]["id"]),
                 )
-            trans.security.encode_all_ids(result, recursive=True)
             return result
 
         rval = [serialize_element(el) for el in contents]
         try:
-            return DatasetCollectionContentElements.construct(__root__=rval)
+            return DatasetCollectionContentElements(root=rval)
         except ValidationError:
             log.exception(
                 f"Serializing DatasetCollectionContentsElements failed. Collection is populated: {hdca.collection.populated}"

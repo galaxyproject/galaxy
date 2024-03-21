@@ -9,6 +9,7 @@ import Vue, { computed, Ref, ref } from "vue";
 import { createWhooshQuery, filterTools, types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export interface Tool {
     model_class: string;
@@ -26,7 +27,7 @@ export interface Tool {
     link: string;
     min_width: number;
     target: string;
-    panel_section_id: string | null;
+    panel_section_id: string;
     panel_section_name: string | null;
     form_style: string;
     disabled?: boolean;
@@ -73,9 +74,11 @@ export interface PanelView {
 
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
+    const defaultPanelView: Ref<string> = ref("");
     const toolsById = ref<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const panel = ref<Record<string, Record<string, Tool | ToolSection>>>({});
+    const panelViews = ref<Record<string, PanelView>>({});
     const loading = ref(false);
 
     const getToolForId = computed(() => {
@@ -177,6 +180,23 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
+    async function fetchPanelViews() {
+        if (loading.value || (defaultPanelView.value && Object.keys(panelViews.value).length > 0)) {
+            return;
+        }
+        loading.value = true;
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
+            const { default_panel_view, views } = data;
+            defaultPanelView.value = default_panel_view;
+            panelViews.value = views;
+        } catch (e) {
+            rethrowSimple(e);
+        } finally {
+            loading.value = false;
+        }
+    }
+
     // Used to initialize the ToolPanel with the default panel view for this site.
     async function initCurrentPanelView(siteDefaultPanelView: string) {
         if (!loading.value && !isPanelPopulated.value) {
@@ -209,7 +229,6 @@ export const useToolStore = defineStore("toolStore", () => {
             }
             loading.value = true;
             try {
-                await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
                 const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
                 currentPanelView.value = panelView;
                 savePanelView(panelView, data);
@@ -249,7 +268,9 @@ export const useToolStore = defineStore("toolStore", () => {
     return {
         toolsById,
         panel,
+        panelViews,
         currentPanelView,
+        defaultPanelView,
         loading,
         getToolForId,
         getToolNameById,
@@ -259,6 +280,7 @@ export const useToolStore = defineStore("toolStore", () => {
         sectionDatalist,
         fetchToolForId,
         fetchTools,
+        fetchPanelViews,
         initCurrentPanelView,
         setCurrentPanelView,
         fetchPanel,

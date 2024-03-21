@@ -27,7 +27,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,
@@ -64,8 +64,6 @@ class PagesService(ServiceBase):
     ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
 
-        :param deleted: Display deleted pages
-
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """
@@ -76,9 +74,7 @@ class PagesService(ServiceBase):
 
         pages, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            PageSummaryList.construct(
-                __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
-            ),
+            PageSummaryList(root=[p.to_dict() for p in pages]),
             total_matches,
         )
 
@@ -87,10 +83,10 @@ class PagesService(ServiceBase):
         Create a page and return Page summary
         """
         page = self.manager.create_page(trans, payload)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval = page.to_dict()
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.construct(**rval)
+        return PageSummary(**rval)
 
     def delete(self, trans, id: DecodedDatabaseIdField):
         """
@@ -104,6 +100,18 @@ class PagesService(ServiceBase):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
+    def undelete(self, trans, id: DecodedDatabaseIdField):
+        """
+        Undelete page
+
+        :param  id:    ID of the page to be undeleted
+        """
+        page = base.get_object(trans, id, "Page", check_ownership=True)
+
+        page.deleted = False
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
     def show(self, trans, id: DecodedDatabaseIdField) -> PageDetails:
         """View a page summary and the content of the latest revision
 
@@ -113,11 +121,11 @@ class PagesService(ServiceBase):
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
-        rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
+        rval = page.to_dict()
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageDetails.construct(**rval)
+        return PageDetails(**rval)
 
     def show_pdf(self, trans, id: DecodedDatabaseIdField):
         """

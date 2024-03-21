@@ -18,7 +18,12 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
+import adminFormsGridConfig from "components/Grid/configs/adminForms";
+import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
+import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
+import adminRolesGridConfig from "components/Grid/configs/adminRoles";
+import adminUsersGridConfig from "components/Grid/configs/adminUsers";
+import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
 import Admin from "entry/analysis/modules/Admin";
@@ -125,45 +130,43 @@ export default [
             // grids
             {
                 path: "forms",
-                component: Grid,
-                props: {
-                    urlBase: "forms/forms_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminFormsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "groups",
-                component: Grid,
-                props: {
-                    urlBase: "admin/groups_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminGroupsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "quotas",
-                component: Grid,
-                props: {
-                    urlBase: "admin/quotas_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminQuotasGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "roles",
-                component: Grid,
-                props: {
-                    urlBase: "admin/roles_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminRolesGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "users",
-                component: Grid,
-                props: {
-                    urlBase: "admin/users_list",
-                },
-            },
-            {
-                path: "tool_versions",
-                component: Grid,
-                props: {
-                    urlBase: "admin/tool_versions_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminUsersGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             // forms
             {
@@ -191,7 +194,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/roles",
                 }),
             },
             {
@@ -199,7 +202,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/groups",
                 }),
             },
             {

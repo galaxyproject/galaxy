@@ -388,6 +388,7 @@ const removeTagsAction = computed(() => {
             :drag-data="{ stepId: stepId, output: effectiveOutput }"
             :draggable="!readonly"
             :disabled="readonly"
+            :snappable="false"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"

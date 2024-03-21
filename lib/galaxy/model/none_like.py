@@ -38,5 +38,5 @@ class NoneDataset(RecursiveNone):
     def missing_meta(self):
         return False
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return "None"

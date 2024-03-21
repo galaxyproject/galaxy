@@ -1,19 +1,45 @@
 """
 API operations on FormDefinition objects.
 """
+
 import logging
 
 from sqlalchemy import select
 
 from galaxy import web
 from galaxy.forms.forms import form_factory
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.forms import FormManager
 from galaxy.model import FormDefinition
 from galaxy.model.base import transaction
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.util import XML
 from galaxy.webapps.base.controller import url_for
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
 from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
+
+router = Router(tags=["forms"])
+
+
+@router.cbv
+class FastAPIForms:
+    form_manager: FormManager = depends(FormManager)
+
+    @router.delete("/api/forms/{id}", require_admin=True)
+    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.delete(trans, form)
+
+    @router.post("/api/forms/{id}/undelete", require_admin=True)
+    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans):
+        form = self.form_manager.get(trans, id)
+        self.form_manager.undelete(trans, form)
 
 
 class FormDefinitionAPIController(BaseGalaxyAPIController):

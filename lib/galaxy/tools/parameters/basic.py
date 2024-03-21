@@ -8,7 +8,9 @@ import logging
 import os
 import os.path
 import re
+import typing
 import urllib.parse
+from collections.abc import MutableMapping
 from typing import (
     Any,
     Dict,
@@ -19,6 +21,7 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
 from webob.compat import cgi_FieldStorage
 
 from galaxy import util
@@ -39,6 +42,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -66,12 +70,6 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class workflow_building_modes:
-    DISABLED = False
-    ENABLED = True
-    USE_HISTORY = 1
-
-
 WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r"\$\{.+?\}")
 
 
@@ -91,7 +89,7 @@ def contains_workflow_parameter(value, search=False):
 
 def is_runtime_value(value):
     return isinstance(value, RuntimeValue) or (
-        isinstance(value, dict) and value.get("__class__") in ["RuntimeValue", "ConnectedValue"]
+        isinstance(value, MutableMapping) and value.get("__class__") in ["RuntimeValue", "ConnectedValue"]
     )
 
 
@@ -110,8 +108,7 @@ def is_runtime_context(trans, other_values):
 
 
 def parse_dynamic_options(param, input_source):
-    options_elem = input_source.parse_dynamic_options_elem()
-    if options_elem is not None:
+    if (options_elem := input_source.parse_dynamic_options_elem()) is not None:
         return dynamic_options.DynamicOptions(options_elem, param)
     return None
 
@@ -180,8 +177,7 @@ class ToolParameter(Dictifiable):
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
-        sanitizer_elem = input_source.parse_sanitizer_elem()
-        if sanitizer_elem is not None:
+        if (sanitizer_elem := input_source.parse_sanitizer_elem()) is not None:
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:
             self.sanitizer = None
@@ -244,7 +240,7 @@ class ToolParameter(Dictifiable):
             if isinstance(self, HiddenToolParameter):
                 raise ParameterValueError(message_suffix="Runtime Parameter not valid", parameter_name=self.name)
             return runtime_to_object(value)
-        elif isinstance(value, dict) and value.get("__class__") == "UnvalidatedValue":
+        elif isinstance(value, MutableMapping) and value.get("__class__") == "UnvalidatedValue":
             return value["value"]
         # Delegate to the 'to_python' method
         if ignore_errors:
@@ -594,7 +590,7 @@ class BooleanToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         truevalue = input_source.get("truevalue", "true")
         falsevalue = input_source.get("falsevalue", "false")
-        if tool and tool.profile >= 23.1:
+        if tool and Version(str(tool.profile)) >= Version("23.1"):
             if truevalue == falsevalue:
                 raise ParameterValueError("Cannot set true and false to the same value", self.name)
             if truevalue.lower() == "false":
@@ -669,8 +665,8 @@ class FileToolParameter(ToolParameter):
         # should be pluggable)
         if isinstance(value, FilesPayload):
             # multi-part upload handled and persisted in service layer
-            return value.dict()
-        elif isinstance(value, dict):
+            return value.model_dump()
+        elif isinstance(value, MutableMapping):
             if "session_id" in value:
                 # handle api upload
                 session_id = value["session_id"]
@@ -702,7 +698,7 @@ class FileToolParameter(ToolParameter):
             return None
         elif isinstance(value, str):
             return value
-        elif isinstance(value, dict):
+        elif isinstance(value, MutableMapping):
             # or should we jsonify?
             try:
                 return value["local_filename"]
@@ -776,7 +772,7 @@ class FTPFileToolParameter(ToolParameter):
             if val in [None, ""]:
                 lst = []
                 break
-            if isinstance(val, dict):
+            if isinstance(val, MutableMapping):
                 lst.append(val["name"])
             else:
                 lst.append(val)
@@ -981,7 +977,10 @@ class SelectToolParameter(ToolParameter):
         """
         determine the set of values of legal options
         """
-        return {v for _, v, _ in self.get_options(trans, other_values)}
+        return {
+            history_item_dict_to_python(v, trans.app, self.name) or v
+            for _, v, _ in self.get_options(trans, other_values)
+        }
 
     def get_legal_names(self, trans, other_values):
         """
@@ -1022,7 +1021,7 @@ class SelectToolParameter(ToolParameter):
                 "an invalid option (None) was selected, please verify", self.name, None, is_dynamic=self.is_dynamic
             )
         elif not legal_values:
-            if self.optional and self.tool.profile < 18.09:
+            if self.optional and Version(str(self.tool.profile)) < Version("18.09"):
                 # Covers optional parameters with default values that reference other optional parameters.
                 # These will have a value but no legal_values.
                 # See https://github.com/galaxyproject/tools-iuc/pull/1842#issuecomment-394083768 for context.
@@ -1096,7 +1095,12 @@ class SelectToolParameter(ToolParameter):
         return value
 
     def to_json(self, value, app, use_security):
+        if isinstance(value, HistoryDatasetAssociation):
+            return history_item_to_json(value, app, use_security=use_security)
         return value
+
+    def to_python(self, value, app):
+        return history_item_dict_to_python(value, app, self.name) or super().to_python(value, app)
 
     def get_initial_value(self, trans, other_values):
         try:
@@ -1481,20 +1485,32 @@ class ColumnListParameter(SelectToolParameter):
         Show column labels rather than c1..cn if use_header_names=True
         """
         options: List[Tuple[str, Union[str, Tuple[str, str]], bool]] = []
-        if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
+        # if available use column_names metadata for option names
+        # otherwise read first row - assume is a header with tab separated names
+        if self.usecolnames:
             dataset = other_values.get(self.data_ref, None)
-            try:
-                with open(dataset.get_file_name()) as f:
-                    head = f.readline()
-                cnames = head.rstrip("\n\r ").split("\t")
-                column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
-                if self.numerical:  # If numerical was requested, filter columns based on metadata
-                    if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
-                        if len(dataset.metadata.column_types) >= len(cnames):
-                            numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
-                            column_list = [column_list[i] for i in numerics]
-            except Exception:
-                column_list = self.get_column_list(trans, other_values)
+            if (
+                hasattr(dataset, "metadata")
+                and hasattr(dataset.metadata, "column_names")
+                and dataset.metadata.element_is_set("column_names")
+            ):
+                log.error(f"column_names {dataset.metadata.column_names}")
+                column_list = [
+                    ("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(dataset.metadata.column_names)
+                ]
+            else:
+                try:
+                    with open(dataset.get_file_name()) as f:
+                        head = f.readline()
+                    cnames = head.rstrip("\n\r ").split("\t")
+                    column_list = [("%d" % (i + 1), "c%d: %s" % (i + 1, x)) for i, x in enumerate(cnames)]
+                except Exception:
+                    column_list = self.get_column_list(trans, other_values)
+            if self.numerical:  # If numerical was requested, filter columns based on metadata
+                if hasattr(dataset, "metadata") and hasattr(dataset.metadata, "column_types"):
+                    if len(dataset.metadata.column_types) >= len(column_list):
+                        numerics = [i for i, x in enumerate(dataset.metadata.column_types) if x in ["int", "float"]]
+                        column_list = [column_list[i] for i in numerics]
         else:
             column_list = self.get_column_list(trans, other_values)
         for col in column_list:
@@ -1618,8 +1634,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.display = elem.get("display", None)
         self.hierarchy = elem.get("hierarchy", "exact")  # exact or recurse
         self.separator = elem.get("separator", ",")
-        from_file = elem.get("from_file", None)
-        if from_file:
+        if from_file := elem.get("from_file", None):
             if not os.path.isabs(from_file):
                 from_file = os.path.join(tool.app.config.tool_data_path, from_file)
             elem = XML(f"<root>{open(from_file).read()}</root>")
@@ -1906,8 +1921,7 @@ class BaseDataToolParameter(ToolParameter):
             return RuntimeValue()
         if self.optional:
             return None
-        history = trans.history
-        if history is not None:
+        if (history := trans.history) is not None:
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
             if isinstance(self, DataToolParameter):
@@ -1922,45 +1936,22 @@ class BaseDataToolParameter(ToolParameter):
                         return hdca
 
     def to_json(self, value, app, use_security):
-        def single_to_json(value):
-            src = None
-            if isinstance(value, dict) and "src" in value and "id" in value:
-                return value
-            elif isinstance(value, DatasetCollectionElement):
-                src = "dce"
-            elif isinstance(value, HistoryDatasetCollectionAssociation):
-                src = "hdca"
-            elif isinstance(value, LibraryDatasetDatasetAssociation):
-                src = "ldda"
-            elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
-                # hasattr 'id' fires a query on persistent objects after a flush so better
-                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
-                # nice to drop it.
-                src = "hda"
-            if src is not None:
-                object_id = cached_id(value)
-                return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}
 
         if value not in [None, "", "None"]:
             if isinstance(value, list) and len(value) > 0:
-                values = [single_to_json(v) for v in value]
+                values = [history_item_to_json(v, app, use_security) for v in value]
             else:
-                values = [single_to_json(value)]
+                values = [history_item_to_json(value, app, use_security)]
             return {"values": values}
         return None
 
     def to_python(self, value, app):
-        def single_to_python(value):
-            if isinstance(value, dict) and "src" in value:
-                if value["src"] not in ("hda", "dce", "ldda", "hdca"):
-                    raise ParameterValueError(f"Invalid value {value}", self.name)
-                return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
 
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             if hasattr(self, "multiple") and self.multiple is True:
-                return [single_to_python(v) for v in value["values"]]
+                return [history_item_dict_to_python(v, app, self.name) for v in value["values"]]
             elif len(value["values"]) > 0:
-                return single_to_python(value["values"][0])
+                return history_item_dict_to_python(value["values"][0], app, self.name)
 
         # Handle legacy string values potentially stored in databases
         none_values = [None, "", "None"]
@@ -2034,7 +2025,7 @@ class BaseDataToolParameter(ToolParameter):
 
 
 def src_id_to_item(
-    sa_session: "Session", value: Dict[str, Any], security: "IdEncodingHelper"
+    sa_session: "Session", value: typing.MutableMapping[str, Any], security: "IdEncodingHelper"
 ) -> Union[
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -2127,7 +2118,7 @@ class DataToolParameter(BaseDataToolParameter):
             if self.default_object:
                 return raw_to_galaxy(trans, self.default_object)
             return None
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
@@ -2142,7 +2133,7 @@ class DataToolParameter(BaseDataToolParameter):
         if isinstance(value, list):
             found_srcs = set()
             for single_value in value:
-                if isinstance(single_value, dict) and "src" in single_value and "id" in single_value:
+                if isinstance(single_value, MutableMapping) and "src" in single_value and "id" in single_value:
                     found_srcs.add(single_value["src"])
                     rval.append(
                         src_id_to_item(sa_session=trans.sa_session, value=single_value, security=trans.security)
@@ -2171,7 +2162,7 @@ class DataToolParameter(BaseDataToolParameter):
                     )
         elif isinstance(value, (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
             rval.append(value)
-        elif isinstance(value, dict) and "src" in value and "id" in value:
+        elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             rval.append(src_id_to_item(sa_session=trans.sa_session, value=value, security=trans.security))
         elif str(value).startswith("__collection_reduce__|"):
             encoded_ids = [v[len("__collection_reduce__|") :] for v in str(value).split(",")]
@@ -2252,9 +2243,9 @@ class DataToolParameter(BaseDataToolParameter):
                     or (not input.dynamic_options and not input.options)
                     or not input.options.converter_safe
                 ):
-                    converter_safe[
-                        0
-                    ] = False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    converter_safe[0] = (
+                        False  # This option does not allow for conversion, i.e. uses contents of dataset file to generate options
+                    )
 
         self.tool.visit_inputs(other_values, visitor)
         return False not in converter_safe
@@ -2467,7 +2458,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             if self.default_object:
                 return raw_to_galaxy(trans, self.default_object)
             return None
-        if isinstance(value, dict) and "values" in value:
+        if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
@@ -2478,13 +2469,13 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             # a DatasetCollectionElement instead of a
             # HistoryDatasetCollectionAssociation.
             rval = value
-        elif isinstance(value, dict) and "src" in value and "id" in value:
+        elif isinstance(value, MutableMapping) and "src" in value and "id" in value:
             if value["src"] == "hdca":
                 rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
         elif isinstance(value, list):
             if len(value) > 0:
                 value = value[0]
-                if isinstance(value, dict) and "src" in value and "id" in value:
+                if isinstance(value, MutableMapping) and "src" in value and "id" in value:
                     if value["src"] == "hdca":
                         rval = session.get(HistoryDatasetCollectionAssociation, trans.security.decode_id(value["id"]))
                     elif value["src"] == "dce":
@@ -2651,8 +2642,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
-        target_name = self.data_ref
-        if target_name in other_values:
+        if (target_name := self.data_ref) in other_values:
             target = other_values[target_name]
             if not is_runtime_value(target):
                 d["target"] = {
@@ -2663,7 +2653,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
-        if not isinstance(value, dict):
+        if not isinstance(value, MutableMapping):
             raise ValueError("No rules specified for rules parameter.")
 
         if "rules" not in value:
@@ -2790,7 +2780,7 @@ parameter_types = dict(
 
 def runtime_to_json(runtime_value):
     if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"
+        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
     ):
         return {"__class__": "ConnectedValue"}
     else:
@@ -2799,7 +2789,7 @@ def runtime_to_json(runtime_value):
 
 def runtime_to_object(runtime_value):
     if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"
+        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
     ):
         return ConnectedValue()
     else:
@@ -2816,3 +2806,30 @@ class ConnectedValue(RuntimeValue):
     """
     Wrapper to note a value that is not yet set, but will be inferred from a connection.
     """
+
+
+def history_item_dict_to_python(value, app, name):
+    if isinstance(value, MutableMapping) and "src" in value:
+        if value["src"] not in ("hda", "dce", "ldda", "hdca"):
+            raise ParameterValueError(f"Invalid value {value}", name)
+        return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
+
+
+def history_item_to_json(value, app, use_security):
+    src = None
+    if isinstance(value, MutableMapping) and "src" in value and "id" in value:
+        return value
+    elif isinstance(value, DatasetCollectionElement):
+        src = "dce"
+    elif isinstance(value, HistoryDatasetCollectionAssociation):
+        src = "hdca"
+    elif isinstance(value, LibraryDatasetDatasetAssociation):
+        src = "ldda"
+    elif isinstance(value, HistoryDatasetAssociation) or hasattr(value, "id"):
+        # hasattr 'id' fires a query on persistent objects after a flush so better
+        # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
+        # nice to drop it.
+        src = "hda"
+    if src is not None:
+        object_id = cached_id(value)
+        return {"id": app.security.encode_id(object_id) if use_security else object_id, "src": src}

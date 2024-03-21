@@ -1034,6 +1034,20 @@ mapping:
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
 
+      object_store_config:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying an object_store_config_file, the object store configuration can be embedded into
+          Galaxy's config with this option.
+
+          This option has no effect if the file specified by object_store_config_file exists. Otherwise, if this option
+          is set, it overrides any other objectstore settings.
+
+          The syntax, available storage plugins, and documentation of their options is explained in detail in the
+          object store sample configuration file, `object_store_conf.sample.yml`
+
       object_store_cache_monitor_driver:
         type: str
         default: 'auto'
@@ -1872,8 +1886,16 @@ mapping:
         required: False
         desc: |
           The upload store is a temporary directory in which files uploaded by the
-          tus middleware or server will be placed.
+          tus middleware or server for user uploads will be placed.
           Defaults to new_file_path if not set.
+
+      tus_upload_store_job_files:
+        type: str
+        required: False
+        desc: |
+          The upload store is a temporary directory in which files uploaded by the
+          tus middleware or server for remote job files (Pulsar) will be placed.
+          Defaults to tus_upload_store if not set.
 
       chunk_upload_size:
         type: int
@@ -2903,6 +2925,19 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      oidc_scope_prefix:
+        type: str
+        default: https://galaxyproject.org/api
+        required: false
+        desc: |
+          Sets the prefix for OIDC scopes specific to this Galaxy instance.
+          If an API call is made against this Galaxy instance using an OIDC bearer token,
+          any scopes must be prefixed with this value e.g. https://galaxyproject.org/api.
+          More concretely, to request all permissions that the user has, the scope
+          would have to be specified as "<prefix>:*". e.g "https://galaxyproject.org/api:*".
+          Currently, only * is recognised as a valid scope, and future iterations may
+          provide more fine-grained scopes.
+
       auth_config_file:
         type: str
         default: auth_conf.xml
@@ -3129,7 +3164,24 @@ mapping:
         path_resolves_to: config_dir
         required: false
         desc: |
-          XML config file that contains the job metric collection configuration.
+          YAML or XML config file that contains the job metric collection configuration.
+
+      job_metrics:
+        type: seq
+        sequence:
+          - type: any
+        desc: |
+          Rather than specifying a job_metrics_config_file, the definition of the
+          metrics to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a job_metrics_config_file is used.
+
+          The syntax, available instrumenters, and documentation of their options is explained in detail in the
+          documentation:
+
+          https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+
+          By default, the core plugin is enabled. Setting this option to false or an empty list disables metrics
+          entirely.
 
       expose_potentially_sensitive_job_metrics:
         type: bool
@@ -3920,3 +3972,19 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      help_forum_api_url:
+        type: str
+        required: false
+        default: https://help.galaxyproject.org/
+        per_host: true
+        desc: |
+          The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
+
+      enable_help_forum_tool_panel_integration:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.

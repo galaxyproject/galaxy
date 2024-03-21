@@ -14,15 +14,21 @@ As a result this test is highly coupled with internals in a way most
 integration tests avoid - but @jmchilton's fear of not touching this
 API has gone too far.
 """
+
 import io
 import os
 import tempfile
+from typing import Dict
 
 import requests
 from sqlalchemy import select
+from tusclient import client
 
 from galaxy import model
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -32,6 +38,7 @@ SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 TEST_INPUT_TEXT = "test input content\n"
 TEST_FILE_IO = io.StringIO("some initial text data")
+TEST_TUS_CHUNK_SIZE = 1024
 
 
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
@@ -63,6 +70,10 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job_id, job_key = self._api_job_keys(job)
         data = {"path": self.input_hda.get_file_name(), "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        head_response = requests.head(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(head_response)
+        assert head_response.text == ""
+        assert head_response.headers["content-length"] == str(len(TEST_INPUT_TEXT))
         response = requests.get(get_url, params=data)
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
@@ -103,6 +114,38 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files())
         _assert_insufficient_permissions(response)
 
+    def test_write_with_tus(self):
+        # shared setup with above test
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        path = self._app.object_store.get_filename(output_hda.dataset)
+        assert path
+
+        upload_url = self._api_url(f"job_files/resumable_upload?job_key={job_key}", use_key=False)
+        headers: Dict[str, str] = {}
+        my_client = client.TusClient(upload_url, headers=headers)
+
+        storage = None
+        metadata: Dict[str, str] = {}
+        t_file = tempfile.NamedTemporaryFile("w")
+        t_file.write("some initial text data")
+        t_file.flush()
+
+        input_path = t_file.name
+
+        uploader = my_client.uploader(input_path, metadata=metadata, url_storage=storage)
+        uploader.chunk_size = TEST_TUS_CHUNK_SIZE
+        uploader.upload()
+        upload_session_url = uploader.url
+        assert upload_session_url
+        tus_session_id = upload_session_url.rsplit("/", 1)[1]  # type: ignore[unreachable]
+
+        data = {"path": path, "job_key": job_key, "session_id": tus_session_id}
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=False)
+        response = requests.post(post_url, data=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert open(path).read() == "some initial text data"
+
     def test_write_protection(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
@@ -134,6 +177,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session.commit()
         job = model.Job()
         job.history = history
+        ensure_object_added_to_session(job, object_in_session=history)
         job.user = user
         job.handler = "unknown-handler"
         job.state = state

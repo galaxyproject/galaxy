@@ -1442,6 +1442,24 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_config``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying an object_store_config_file, the object
+    store configuration can be embedded into Galaxy's config with this
+    option.
+    This option has no effect if the file specified by
+    object_store_config_file exists. Otherwise, if this option is set,
+    it overrides any other objectstore settings.
+    The syntax, available instrumenters, and documentation of their
+    options is explained in detail in the object store sample
+    configuration file, `object_store_conf.sample.yml`
+:Default: ``None``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_cache_monitor_driver``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -4289,12 +4307,30 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    XML config file that contains the job metric collection
+    YAML or XML config file that contains the job metric collection
     configuration.
     The value of this option will be resolved with respect to
     <config_dir>.
 :Default: ``job_metrics_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~
+``job_metrics``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a job_metrics_config_file, the definition
+    of the metrics to enable can be embedded into Galaxy's config with
+    this option. This has no effect if a job_metrics_config_file is
+    used.
+    The syntax, available instrumenters, and documentation of their
+    options is explained in detail in the documentation:
+    https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+    By default, the core plugin is enabled. Setting this option to
+    false or an empty list disables metrics entirely.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5375,6 +5411,29 @@
     in a Celery task.
 :Default: ``86400``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``help_forum_api_url``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL pointing to the Galaxy Help Forum API base URL. The API
+    must be compatible with Discourse API
+    (https://docs.discourse.org/).
+:Default: ``https://help.galaxyproject.org/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``help_forum_tool_panel_integration_enabled``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable the integration of the Galaxy Help Forum in the tool panel.
+    This requires the help_forum_api_url to be set.
+:Default: ``false``
+:Type: bool
 
 
 

@@ -1,5 +1,6 @@
 """
 """
+
 from unittest import mock
 
 import sqlalchemy
@@ -9,6 +10,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers.base import SkipAttribute
 from galaxy.managers.datasets import (
     DatasetManager,
@@ -188,12 +190,7 @@ class TestDatasetManager(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", mock_url_builder)
 class TestDatasetSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()

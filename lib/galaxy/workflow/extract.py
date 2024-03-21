@@ -1,6 +1,7 @@
 """ This module contains functionality to aid in extracting workflows from
 histories.
 """
+
 import logging
 from typing import Optional
 
@@ -8,7 +9,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -71,6 +75,7 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
+    ensure_object_added_to_session(workflow, session=trans.sa_session)
     with transaction(trans.sa_session):
         trans.sa_session.commit()
     return stored
@@ -296,8 +301,7 @@ class WorkflowSummary:
 
         hid = dataset_collection.hid
         self.collection_types[hid] = dataset_collection.collection.collection_type
-        cja = dataset_collection.creating_job_associations
-        if cja:
+        if cja := dataset_collection.creating_job_associations:
             # Use the "first" job to represent all mapped jobs.
             representative_assoc = cja[0]
             representative_job = representative_assoc.job

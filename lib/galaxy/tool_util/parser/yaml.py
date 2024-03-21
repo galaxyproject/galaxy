@@ -267,7 +267,7 @@ def _parse_test(i, test_dict) -> ToolSourceTest:
     return test_dict
 
 
-def __to_test_assert_list(assertions) -> AssertionList:
+def to_test_assert_list(assertions) -> AssertionList:
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()
@@ -281,6 +281,12 @@ def __to_test_assert_list(assertions) -> AssertionList:
     for assertion in assertions:
         # TODO: not handling nested assertions correctly,
         # not sure these are used though.
+        if "that" not in assertion:
+            new_assertion = {}
+            for assertion_key, assertion_value in assertion.items():
+                new_assertion["that"] = assertion_key
+                new_assertion.update(assertion_value)
+            assertion = new_assertion
         children = []
         if "children" in assertion:
             children = assertion["children"]
@@ -293,6 +299,9 @@ def __to_test_assert_list(assertions) -> AssertionList:
         assert_list.append(assert_dict)
 
     return assert_list or None  # XML variant is None if no assertions made
+
+
+__to_test_assert_list = to_test_assert_list
 
 
 class YamlPageSource(PageSource):

@@ -176,6 +176,42 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get(f"histories{query}").json()
             assert len(index_response) == 3
 
+    def test_index_advanced_filter(self):
+        # Create the histories with a different user to ensure the test
+        # is not conflicted with the current user's histories.
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4()
+            expected_history_name = f"Test History That Match Query_{unique_id}"
+            self._create_history(expected_history_name)
+            self._create_history(expected_history_name.upper())
+            history_0 = self._create_history(expected_history_name.lower())["id"]
+            history_1 = self._create_history(f"Another history_{uuid4()}")["id"]
+            self._delete(f"histories/{history_1}")
+
+            name_contains = "history"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            name_contains = "history that match query"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            name_contains = "ANOTHER"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 0
+
+            data = dict(search="is:deleted", show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 1
+
+            self._update(history_0, {"published": True})
+            data = dict(search=f"query_{unique_id} is:published")
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 1
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]

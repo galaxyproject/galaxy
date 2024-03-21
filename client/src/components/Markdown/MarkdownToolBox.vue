@@ -47,62 +47,48 @@ import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
+import { directiveEntry } from "./directives.ts";
 import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 
-const historySharedElements = [
-    {
-        id: "history_dataset_display",
-        name: "Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_collection_display",
-        name: "Collection",
-        emitter: "onHistoryCollectionId",
-    },
-    {
-        id: "history_dataset_as_image",
-        name: "Image",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_index",
-        name: "Dataset Index",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_embedded",
-        name: "Embedded Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_type",
-        name: "Dataset Type",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_link",
-        name: "Link to Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_name",
-        name: "Name of Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_peek",
-        name: "Peek into Dataset",
-        emitter: "onHistoryDatasetId",
-    },
-    {
-        id: "history_dataset_info",
-        name: "Dataset Details",
-        emitter: "onHistoryDatasetId",
-    },
-];
+function historySharedElements(mode) {
+    return [
+        directiveEntry("history_dataset_display", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_collection_display", mode, {
+            emitter: "onHistoryCollectionId",
+        }),
+        directiveEntry("history_dataset_as_image", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_index", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_embedded", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_as_table", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_type", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_link", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_name", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_peek", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+        directiveEntry("history_dataset_info", mode, {
+            emitter: "onHistoryDatasetId",
+        }),
+    ];
+}
 
 export default {
     components: {
@@ -119,7 +105,7 @@ export default {
         return {
             selectedArgumentName: null,
             selectedType: null,
-            selectedLabels: null,
+            selectedLabels: undefined,
             selectedShow: false,
             selectedPayload: null,
             visualizationIndex: {},
@@ -128,127 +114,45 @@ export default {
                 title: "History",
                 name: "history",
                 elems: [
-                    ...historySharedElements,
-                    {
-                        id: "history_link",
-                        name: "Link to Import",
+                    ...historySharedElements("page"),
+                    directiveEntry("history_link", "page", {
                         emitter: "onHistoryId",
-                    },
+                    }),
                 ],
             },
             historyInEditorSection: {
                 title: "History",
                 name: "history",
-                elems: [
-                    ...historySharedElements,
-                    {
-                        id: "history_link",
-                        name: "Link to Import",
-                    },
-                ],
-            },
-            jobSection: {
-                title: "Jobs",
-                name: "jobs",
-                elems: [
-                    {
-                        id: "job_metrics",
-                        name: "Job Metrics",
-                        description: "as table",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "job_parameters",
-                        name: "Job Parameters",
-                        description: "as table",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "tool_stdout",
-                        name: "Tool Output",
-                        description: "of job run",
-                        emitter: "onJobId",
-                    },
-                    {
-                        id: "tool_stderr",
-                        name: "Tool Error",
-                        description: "of job run",
-                        emitter: "onJobId",
-                    },
-                ],
+                elems: [...historySharedElements("report"), directiveEntry("history_link", "report")],
             },
             workflowSection: {
                 title: "Workflow",
                 name: "workflow",
                 elems: [
-                    {
-                        id: "invocation_time",
-                        name: "Invocation Time",
+                    directiveEntry("invocation_time", "page", {
                         emitter: "onInvocationId",
-                    },
-                    {
-                        id: "workflow_display",
-                        name: "Workflow Display",
+                    }),
+                    directiveEntry("workflow_display", "page", {
                         emitter: "onWorkflowId",
-                    },
-                    {
-                        id: "workflow_license",
-                        name: "Workflow License",
+                    }),
+                    directiveEntry("workflow_license", "page", {
                         emitter: "onWorkflowId",
-                    },
-                    {
-                        id: "workflow_image",
-                        name: "Workflow Image",
+                    }),
+                    directiveEntry("workflow_image", "page", {
                         emitter: "onWorkflowId",
-                    },
+                    }),
                 ],
             },
             workflowInEditorSection: {
                 title: "Workflow",
                 name: "workflow",
                 elems: [
-                    {
-                        id: "invocation_inputs",
-                        name: "Invocation Inputs",
-                    },
-                    {
-                        id: "invocation_outputs",
-                        name: "Invocation Output",
-                    },
-                    {
-                        id: "invocation_time",
-                        name: "Time a Workflow",
-                        description: "was invoked",
-                    },
-                    {
-                        id: "workflow_display",
-                        name: "Current Workflow",
-                        description: "containing all steps",
-                    },
-                    {
-                        id: "workflow_image",
-                        name: "Current Workflow Image",
-                    },
-                    {
-                        id: "workflow_license",
-                        name: "Current Workflow License",
-                    },
-                ],
-            },
-            otherSection: {
-                title: "Miscellaneous",
-                name: "others",
-                elems: [
-                    {
-                        id: "generate_galaxy_version",
-                        name: "Galaxy Version",
-                        description: "as text",
-                    },
-                    {
-                        id: "generate_time",
-                        name: "Current Time",
-                        description: "as text",
-                    },
+                    directiveEntry("invocation_inputs", "report"),
+                    directiveEntry("invocation_outputs", "report"),
+                    directiveEntry("invocation_time", "report"),
+                    directiveEntry("workflow_display", "report"),
+                    directiveEntry("workflow_license", "report"),
+                    directiveEntry("workflow_image", "report"),
                 ],
             },
             linksSection: {
@@ -304,8 +208,41 @@ export default {
         isWorkflow() {
             return !!this.steps;
         },
+        mode() {
+            return this.isWorkflow ? "report" : "page";
+        },
         hasVisualizations() {
             return this.visualizationSection.elems.length > 0;
+        },
+        otherSection() {
+            return {
+                title: "Miscellaneous",
+                name: "others",
+                elems: [
+                    directiveEntry("generate_galaxy_version", this.mode),
+                    directiveEntry("generate_time", this.mode),
+                ],
+            };
+        },
+        jobSection() {
+            return {
+                title: "Jobs",
+                name: "jobs",
+                elems: [
+                    directiveEntry("job_metrics", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("job_parameters", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("tool_stdout", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                    directiveEntry("tool_stderr", this.mode, {
+                        emitter: "onJobId",
+                    }),
+                ],
+            };
         },
     },
     created() {

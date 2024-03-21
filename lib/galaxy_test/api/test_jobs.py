@@ -44,11 +44,12 @@ class TestJobsApi(ApiTestCase, TestsTools):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
         job = jobs[0]
-        self._assert_not_has_keys(job, "external_id")
+        assert job["external_id"] is None
 
         jobs = self.__jobs_index(admin=True)
         job = jobs[0]
-        self._assert_has_keys(job, "command_line", "external_id")
+        assert job["command_line"]
+        assert job["external_id"]
 
     @pytest.mark.require_new_history
     def test_admin_job_list(self, history_id):
@@ -353,7 +354,7 @@ steps:
         assert not job_lock_response.json()["active"]
 
         show_jobs_response = self._get(f"jobs/{job_id}", admin=False)
-        self._assert_not_has_keys(show_jobs_response.json(), "external_id")
+        assert show_jobs_response.json()["external_id"] is None
 
         # TODO: Re-activate test case when API accepts privacy settings
         # with self._different_user():
@@ -361,7 +362,8 @@ steps:
         #    self._assert_status_code_is( show_jobs_response, 200 )
 
         show_jobs_response = self._get(f"jobs/{job_id}", admin=True)
-        self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
+        assert show_jobs_response.json()["external_id"] is not None
+        assert show_jobs_response.json()["command_line"] is not None
 
     def _run_detect_errors(self, history_id, inputs):
         payload = self.dataset_populator.run_tool_payload(
@@ -488,7 +490,7 @@ steps:
         job_id = run_response["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id)
         dataset_id = run_response["outputs"][0]["id"]
-        response = self._post(f"jobs/{job_id}/error", data={"dataset_id": dataset_id})
+        response = self._post(f"jobs/{job_id}/error", data={"dataset_id": dataset_id}, json=True)
         assert response.status_code == 200, response.text
 
     @skip_without_tool("detect_errors_aggressive")
@@ -739,6 +741,22 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
+    def test_implicit_collection_jobs(self, history_id):
+        run_response = self._run_map_over_error(history_id)
+        implicit_collection_id = run_response["implicit_collections"][0]["id"]
+        failed_hdca = self.dataset_populator.get_history_collection_details(
+            history_id=history_id,
+            content_id=implicit_collection_id,
+            assert_ok=False,
+        )
+        job_id = run_response["jobs"][0]["id"]
+        icj_id = failed_hdca["implicit_collection_jobs_id"]
+        assert icj_id
+        index = self.__jobs_index(data=dict(implicit_collection_jobs_id=icj_id))
+        assert len(index) == 1
+        assert index[0]["id"] == job_id
+        assert index[0]["state"] == "error", index
+
     @pytest.mark.require_new_history
     def test_search_with_hdca_list_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
@@ -937,9 +955,95 @@ steps:
         )
         assert rerun_content == run_content
 
+    @pytest.mark.require_new_history
+    def test_get_inputs_and_outputs(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+        job_id = search_response.json()[0]["id"]
+        job_first_output_name, job_first_output_values = list(search_response.json()[0]["outputs"].items())[0]
+        # get the inputs of the job
+        job_response = self._get(f"jobs/{job_id}/inputs")
+        self._assert_status_code_is(job_response, 200)
+        job_first_input = job_response.json()[0]
+        # validate input response
+        assert job_first_input.get("name") == "input1"
+        assert job_first_input.get("dataset") == {"src": "hda", "id": dataset_id}
+        # get the outputs of the job
+        job_response = self._get(f"jobs/{job_id}/outputs")
+        self._assert_status_code_is(job_response, 200)
+        job_first_output = job_response.json()[0]
+        # validate output response
+        assert job_first_output.get("name") == job_first_output_name
+        assert job_first_output.get("dataset").get("id") == job_first_output_values.get("id")
+        assert job_first_output.get("dataset").get("src") == job_first_output_values.get("src")
+
+    @pytest.mark.require_new_history
+    def test_delete_job(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
+        # create a job
+        tool_response = self._post("tools", data=search_payload)
+        job_id = tool_response.json()["jobs"][0]["id"]
+        # delete the job without message
+        delete_job_response = self._delete(f"jobs/{job_id}")
+        self._assert_status_code_is(delete_job_response, 200)
+        assert delete_job_response.json() is True
+        # now that we deleted the job we should not find it anymore
+        search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
+        empty_search_response = self._post("jobs/search", data=search_payload, json=True)
+        self._assert_status_code_is(empty_search_response, 200)
+        assert len(empty_search_response.json()) == 0
+
+    @pytest.mark.require_new_history
+    def test_destination_params(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+        job_id = search_response.json()[0]["id"]
+        destination_params_response = self._get(f"/api/jobs/{job_id}/destination_params", admin=True)
+        self._assert_status_code_is(destination_params_response, 200)
+
+    @pytest.mark.require_new_history
+    def test_job_metrics(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+        job_id = search_response.json()[0]["id"]
+        metrics_by_job_response = self._get(f"/api/jobs/{job_id}/metrics", data={"hda_ldda": "hda"})
+        self._assert_status_code_is(metrics_by_job_response, 200)
+        metrics_by_dataset_response = self._get(f"/api/datasets/{dataset_id}/metrics", data={"hda_ldda": "hda"})
+        self._assert_status_code_is(metrics_by_dataset_response, 200)
+
+    @pytest.mark.require_new_history
+    def test_parameters_display(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+        job_id = search_response.json()[0]["id"]
+        display_parameters_by_job_response = self._get(
+            f"/api/jobs/{job_id}/parameters_display", data={"hda_ldda": "hda"}
+        )
+        self._assert_status_code_is(display_parameters_by_job_response, 200)
+        display_parameters_by_dataset_response = self._get(
+            f"/api/datasets/{dataset_id}/parameters_display", data={"hda_ldda": "hda"}
+        )
+        self._assert_status_code_is(display_parameters_by_dataset_response, 200)
+
+    def _create_and_search_job(self, history_id, inputs, tool_id):
+        # create a job
+        search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
+        tool_response = self._post("tools", data=search_payload)
+        self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
+        # search for the job and get the corresponding values
+        search_response = self._post("jobs/search", data=search_payload, json=True)
+        self._assert_status_code_is(search_response, 200)
+        return search_response
+
     def _job_search(self, tool_id, history_id, inputs):
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
-        empty_search_response = self._post("jobs/search", data=search_payload)
+        empty_search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(empty_search_response, 200)
         assert len(empty_search_response.json()) == 0
         tool_response = self._post("tools", data=search_payload)
@@ -966,7 +1070,7 @@ steps:
         return search_count
 
     def _search_count(self, search_payload):
-        search_response = self._post("jobs/search", data=search_payload)
+        search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(search_response, 200)
         search_json = search_response.json()
         return len(search_json)

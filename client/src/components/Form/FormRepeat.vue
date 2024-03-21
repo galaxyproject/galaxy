@@ -3,8 +3,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { defineAsyncComponent, nextTick, type PropType } from "vue";
+import { computed } from "vue";
 
 import { useKeyedObjects } from "@/composables/keyedObjects";
+import localize from "@/utils/localization";
 
 import FormCard from "./FormCard.vue";
 
@@ -13,9 +15,32 @@ const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 interface Input {
     name: string;
     title: string;
+    min: number;
+    default: number;
+    max: number | string;
     help?: string;
     cache: Array<Record<string, unknown>>;
 }
+
+const maxRepeats = computed(() => {
+    return typeof props.input.max === "number" ? props.input.cache?.length >= props.input.max : false;
+});
+
+const minRepeats = computed(() => {
+    return typeof props.input.min === "number" ? props.input.cache?.length > props.input.min : true;
+});
+
+const buttonTooltip = computed(() => {
+    return maxRepeats.value
+        ? localize(`Maximum number of ${props.input.title || "Repeat"} fields reached`)
+        : localize(`Click to add ${props.input.title || "Repeat"} fields`);
+});
+
+const deleteTooltip = computed(() => {
+    return !minRepeats.value
+        ? localize(`Minimum number of ${props.input.title || "Repeat"} fields reached`)
+        : localize(`Click to delete ${props.input.title || "Repeat"} fields`);
+});
 
 const props = defineProps({
     input: {
@@ -128,16 +153,18 @@ const { keyObject } = useKeyedObjects();
                         </b-button>
                     </b-button-group>
 
-                    <b-button
-                        v-b-tooltip.hover.bottom
-                        title="delete"
-                        role="button"
-                        variant="link"
-                        size="sm"
-                        class="ml-0"
-                        @click="() => onDelete(cacheId)">
-                        <FontAwesomeIcon icon="trash-alt" />
-                    </b-button>
+                    <span v-b-tooltip.hover.bottom :title="deleteTooltip">
+                        <b-button
+                            :disabled="!minRepeats"
+                            title="delete"
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="ml-0"
+                            @click="() => onDelete(cacheId)">
+                            <FontAwesomeIcon icon="trash-alt" />
+                        </b-button>
+                    </span>
                 </span>
             </template>
 
@@ -146,9 +173,11 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <b-button v-if="!props.sustainRepeats" @click="onInsert">
-            <FontAwesomeIcon icon="plus" class="mr-1" />
-            <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
-        </b-button>
+        <span v-b-tooltip.hover :title="buttonTooltip">
+            <b-button v-if="!props.sustainRepeats" :disabled="maxRepeats" @click="onInsert">
+                <FontAwesomeIcon icon="plus" class="mr-1" />
+                <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
+            </b-button>
+        </span>
     </div>
 </template>

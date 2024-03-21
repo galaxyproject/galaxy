@@ -248,8 +248,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
     @web.expose
     @web.json
     def logout(self, trans, logout_all=False, **kwd):
-        message = trans.check_csrf_token(kwd)
-        if message:
+        if message := trans.check_csrf_token(kwd):
             return self.message_exception(trans, message)
         # Since logging an event requires a session, we'll log prior to ending the session
         trans.log_event("User logged out")
@@ -341,8 +340,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
     def reset_password(self, trans, payload=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         payload = payload or {}
-        message = self.user_manager.send_reset_email(trans, payload)
-        if message:
+        if message := self.user_manager.send_reset_email(trans, payload):
             return self.message_exception(trans, message)
         return {"message": "Reset link has been sent to your email."}
 

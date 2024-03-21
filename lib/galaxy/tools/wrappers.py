@@ -19,6 +19,9 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+from typing_extensions import TypeAlias
+
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -128,7 +131,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
             and input.type == "text"
             and input.optional
             and input.optionality_inferred
-            and (profile is None or profile < 23.0)
+            and (profile is None or Version(str(profile)) < Version("23.0"))
         ):
             # Tools with old profile versions may treat an optional text parameter as `""`
             value = ""
@@ -214,14 +217,17 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
             self._input = input
             self._value = value
             self._other_values = other_values
-            self._fields: Dict[str, str] = {}
+            self._fields: Dict[str, List[str]] = {}
             self._compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:
             if name not in self._fields:
-                self._fields[name] = self._input.options.get_field_by_name_for_value(
-                    name, self._value, None, self._other_values
-                )
+                if isinstance(self._value, DatasetInstance):
+                    self._fields[name] = [self._input.options.get_option_from_dataset(self._value)[name]]
+                else:
+                    self._fields[name] = self._input.options.get_field_by_name_for_value(
+                        name, self._value, None, self._other_values
+                    )
             values = map(str, self._fields[name])
             if name in PATH_ATTRIBUTES and self._compute_environment:
                 # If we infer this is a path, rewrite it if needed.
@@ -470,11 +476,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         else:
             return str(self.unsanitized.get_file_name())
 
+    @property
+    def file_name(self) -> str:
+        return str(self)
+
     def __getattr__(self, key: Any) -> Any:
-        if self.false_path is not None and key == "get_file_name":
-            # Path to dataset was rewritten for this job.
-            return lambda *args, **kwargs: self.false_path
-        elif key in ("extra_files_path", "files_path"):
+        if key in ("extra_files_path", "files_path"):
             if not self.compute_environment:
                 # Only happens in WrappedParameters context, refactor!
                 return self.unsanitized.extra_files_path
@@ -599,6 +606,9 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
     __nonzero__ = __bool__
 
 
+DatasetCollectionElementWrapper: TypeAlias = Union["DatasetCollectionWrapper", DatasetFilenameWrapper]
+
+
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     name: Optional[str]
     collection: DatasetCollection
@@ -636,15 +646,15 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = {}
+        element_instances: Dict[str, DatasetCollectionElementWrapper] = {}
 
-        element_instance_list = []
+        element_instance_list: List[DatasetCollectionElementWrapper] = []
         for dataset_collection_element in elements:
             element_object = dataset_collection_element.element_object
             element_identifier = dataset_collection_element.element_identifier
 
             if dataset_collection_element.is_collection:
-                element_wrapper: Union[DatasetCollectionWrapper, DatasetFilenameWrapper] = DatasetCollectionWrapper(
+                element_wrapper: DatasetCollectionElementWrapper = DatasetCollectionWrapper(
                     job_working_directory, dataset_collection_element, **kwargs
                 )
             else:
@@ -751,7 +761,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def is_input_supplied(self) -> bool:
         return self.__input_supplied
 
-    def __getitem__(self, key: Union[str, int]) -> Union[None, "DatasetCollectionWrapper", DatasetFilenameWrapper]:
+    def __getitem__(self, key: Union[str, int]) -> Optional[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return None
         if isinstance(key, int):
@@ -759,7 +769,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         else:
             return self.__element_instances[key]
 
-    def __getattr__(self, key: str) -> Union[None, "DatasetCollectionWrapper", DatasetFilenameWrapper]:
+    def __getattr__(self, key: str) -> Optional[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return None
         try:
@@ -769,7 +779,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
     def __iter__(
         self,
-    ) -> Iterator[Union["DatasetCollectionWrapper", DatasetFilenameWrapper]]:
+    ) -> Iterator[DatasetCollectionElementWrapper]:
         if not self.__input_supplied:
             return [].__iter__()
         return self.__element_instance_list.__iter__()
@@ -792,9 +802,8 @@ class ElementIdentifierMapper:
             self.identifier_key_dict = {}
 
     def identifier(self, dataset_value: str, input_values: Dict[str, str]) -> Optional[str]:
-        identifier_key = self.identifier_key_dict.get(dataset_value, None)
         element_identifier = None
-        if identifier_key:
+        if identifier_key := self.identifier_key_dict.get(dataset_value, None):
             element_identifier = input_values.get(identifier_key, None)
 
         return element_identifier

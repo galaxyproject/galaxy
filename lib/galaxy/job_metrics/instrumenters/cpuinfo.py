@@ -1,4 +1,5 @@
 """The module describes the ``cpuinfo`` job metrics plugin."""
+
 import logging
 import re
 from typing import Any

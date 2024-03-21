@@ -8,6 +8,7 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
+  <tool file="image_diff.xml"/>
   <tool file="output_format_input.xml"/>
   <tool file="ucsc_tablebrowser.xml"/>
   <tool file="test_data_source.xml"/>
@@ -23,6 +24,7 @@
   <tool file="multi_repeats.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
+  <tool file="select_from_url.xml" />
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
@@ -135,6 +137,7 @@
   <tool file="column_param_list.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="select_optional.xml"/>
+  <tool file="select_dynamic.xml"/>
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -225,6 +228,12 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
+  <section id="test_section_multi" name="Test Section with Multiple Versions">
+    <tool file="multiple_versions_v01.xml" />
+    <tool file="multiple_versions_v01galaxy6.xml" />
+    <tool file="multiple_versions_v02.xml" />
+  </section>
+
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
 
@@ -283,9 +292,11 @@
   <tool file="${model_tools_path}/unzip_collection.xml" />
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
+  <tool file="${model_tools_path}/keep_success_collection.xml" />
   <tool file="${model_tools_path}/filter_empty_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
+  <tool file="${model_tools_path}/harmonize_two_collections_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />

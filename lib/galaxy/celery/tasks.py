@@ -58,22 +58,22 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
+from galaxy.short_term_storage import ShortTermStorageMonitor
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
-from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
 log = get_logger(__name__)
 
 
-@lru_cache()
+@lru_cache
 def setup_data_table_manager(app):
     app._configure_tool_data_tables(from_shed_config=False)
 
 
-@lru_cache()
+@lru_cache
 def cached_create_tool_from_representation(app, raw_tool_source):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
@@ -197,10 +197,11 @@ def set_metadata(
             hda_manager.overwrite_metadata(dataset_instance)
         dataset_instance.datatype.set_meta(dataset_instance)
         dataset_instance.set_peek()
-        dataset_instance.dataset.state = dataset_instance.dataset.states.OK
+        # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
+        dataset_instance.set_metadata_success_state()
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
-        dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+        dataset_instance.state = dataset_instance.states.FAILED_METADATA
     with transaction(sa_session):
         sa_session.commit()
 

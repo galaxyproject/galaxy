@@ -3,7 +3,7 @@ from typing import Tuple
 import pytest
 
 from galaxy.schema.schema import ModelStoreFormat
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import model_store_storage_target
 
 

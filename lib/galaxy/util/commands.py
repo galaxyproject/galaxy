@@ -1,4 +1,5 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
+
 import logging
 import os
 import shlex
@@ -55,7 +56,7 @@ def redirect_aware_commmunicate(p, sys=_sys):
     return out, err
 
 
-def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]) -> int:
+def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> int:
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
@@ -68,9 +69,7 @@ def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **k
         return p.wait()
 
 
-def shell_process(
-    cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]
-) -> subprocess.Popen:
+def shell_process(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Any) -> subprocess.Popen:
     """A high-level method wrapping subprocess.Popen.
 
     Handles details such as environment extension and in process I/O

@@ -35,6 +35,10 @@ const props = defineProps({
         type: Number,
         default: 60,
     },
+    snappable: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 type Position = { x: number; y: number };
@@ -157,6 +161,7 @@ function onStart() {
         :stop-propagation="stopPropagation"
         :drag-data="dragData"
         :disabled="disabled"
+        :snappable="snappable"
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"

@@ -4,6 +4,7 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
+
 import logging
 import sys
 from typing import (
@@ -17,7 +18,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.structured_app import StructuredApp
-from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class ConfigurationManager:
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.model_dump())
 
     def version(self) -> Dict[str, Any]:
         version_info = {
@@ -55,6 +55,13 @@ class ConfigurationManager:
             encoded_id = encoded_id[1:]
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
+
+    def encode_id(
+        self,
+        decoded_id: int,
+    ) -> Dict[str, str]:
+        encoded_id = self._app.security.encode_id(decoded_id)
+        return {"encoded_id": encoded_id}
 
     def tool_lineages(self) -> List[Dict[str, Dict]]:
         rval = []
@@ -183,7 +190,7 @@ class ConfigSerializer(base.ModelSerializer):
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
-            "server_startttime": lambda item, key, **context: server_starttime,
+            "server_starttime": lambda item, key, **context: self.app.server_starttime,
             "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
             "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
             "registration_warning_message": _use_config,
@@ -206,6 +213,7 @@ class ConfigSerializer(base.ModelSerializer):
             ),
             "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
             "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
@@ -218,6 +226,8 @@ class ConfigSerializer(base.ModelSerializer):
             "organization_name": _use_config,
             "organization_url": _use_config,
             "fixed_delegated_auth": _defaults_to(False),
+            "help_forum_api_url": _use_config,
+            "enable_help_forum_tool_panel_integration": _use_config,
         }
 
 

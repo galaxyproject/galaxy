@@ -107,8 +107,7 @@ class RealAxeResults(AxeResults):
 
     def assert_does_not_violate(self, id: str) -> None:
         violations = self._json["violations"]
-        result = _check_list_for_id(violations, id)
-        if result:
+        if result := _check_list_for_id(violations, id):
             violation = Violation(result)
             raise AssertionError(violation.message)
 

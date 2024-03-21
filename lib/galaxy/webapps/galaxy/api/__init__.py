@@ -1,6 +1,7 @@
 """
 This module *does not* contain API routes. It exclusively contains dependencies to be used in FastAPI routes
 """
+
 import inspect
 from enum import Enum
 from string import Template
@@ -8,7 +9,6 @@ from typing import (
     Any,
     AsyncGenerator,
     cast,
-    MutableMapping,
     NamedTuple,
     Optional,
     Tuple,
@@ -21,7 +21,9 @@ from urllib.parse import (
 )
 
 from a2wsgi.wsgi import build_environ
+from a2wsgi.wsgi_typing import Environ
 from fastapi import (
+    APIRouter,
     Form,
     Header,
     Query,
@@ -36,11 +38,15 @@ from fastapi.security import (
     APIKeyCookie,
     APIKeyHeader,
     APIKeyQuery,
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
 )
-from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter
 from pydantic import ValidationError
 from pydantic.main import BaseModel
+from routes import (
+    Mapper,
+    request_config,
+)
 from starlette.datastructures import Headers
 from starlette.routing import (
     Match,
@@ -71,6 +77,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.galaxy.api.cbv import cbv
 from galaxy.work.context import (
     GalaxyAbstractRequest,
     GalaxyAbstractResponse,
@@ -80,6 +87,7 @@ from galaxy.work.context import (
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
+api_bearer_token = HTTPBearer(auto_error=False)
 
 
 def get_app() -> StructuredApp:
@@ -139,6 +147,7 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
+    bearer_token: HTTPAuthorizationCredentials = Security(api_bearer_token),
     run_as: Optional[DecodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
@@ -149,9 +158,12 @@ def get_api_user(
     ),
 ) -> Optional[User]:
     api_key = key or x_api_key
-    if not api_key:
+    if api_key:
+        user = user_manager.by_api_key(api_key=api_key)
+    elif bearer_token:
+        user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)
+    else:
         return None
-    user = user_manager.by_api_key(api_key=api_key)
     if run_as:
         if user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)
@@ -205,7 +217,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     def __init__(self, request: Request):
         self.__request = request
-        self.__environ: Optional[MutableMapping[str, Any]] = None
+        self.__environ: Optional[Environ] = None
 
     @property
     def base(self) -> str:
@@ -214,9 +226,8 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
-        root_path = scope.get("root_path")
         url = self.base
-        if root_path:
+        if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
 
@@ -225,7 +236,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         return self.__request.base_url.netloc
 
     @property
-    def environ(self) -> MutableMapping[str, Any]:
+    def environ(self) -> Environ:
         """
         Fallback WSGI environ.
 
@@ -306,6 +317,15 @@ def get_current_history_from_session(galaxy_session: Optional[model.GalaxySessio
     return None
 
 
+def fix_url_for(mapper: Mapper, galaxy_request: GalaxyASGIRequest):
+    rc = request_config()
+    rc.environ = galaxy_request.environ
+    rc.mapper = mapper
+    if hasattr(rc, "using_request_local"):
+        rc.request_local = lambda: rc
+        rc = request_config()
+
+
 def get_trans(
     request: Request,
     response: Response,
@@ -316,6 +336,8 @@ def get_trans(
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
     galaxy_response = GalaxyASGIResponse(response)
+    if mapper := getattr(app, "legacy_mapper", None):
+        fix_url_for(mapper, galaxy_request)
     return SessionRequestContext(
         app=app,
         user=user,
@@ -354,8 +376,8 @@ class RestVerb(str, Enum):
     options = "OPTIONS"
 
 
-class FrameworkRouter(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy."""
+class FrameworkRouter(APIRouter):
+    """A FastAPI Router tailored to Galaxy."""
 
     admin_user_dependency: Any
 
@@ -441,6 +463,12 @@ class FrameworkRouter(InferringRouter):
             else:
                 kwd["dependencies"] = [self.admin_user_dependency]
 
+        public = kwd.pop("public", False)
+        openapi_extra = kwd.pop("openapi_extra", {})
+        if public:
+            openapi_extra["security"] = []
+        if openapi_extra:
+            kwd["openapi_extra"] = openapi_extra
         return kwd
 
     @property
@@ -492,18 +520,18 @@ def as_form(cls: Type[BaseModel]):
     """
     new_params = [
         inspect.Parameter(
-            field.alias,
+            field_name,
             inspect.Parameter.POSITIONAL_ONLY,
-            default=(Form(field.default) if not field.required else Form(...)),
+            default=(Form(field.default) if not field.is_required() else Form(...)),
         )
-        for field in cls.__fields__.values()
+        for field_name, field in cls.model_fields.items()
     ]
 
     async def _as_form(**data):
         try:
             return cls(**data)
         except ValidationError as e:
-            raise RequestValidationError(e.raw_errors)
+            raise RequestValidationError(e.errors())
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
@@ -558,8 +586,7 @@ class IndexQueryTag(NamedTuple):
 
     def as_markdown(self):
         desc = self.description
-        alias = self.alias
-        if alias:
+        if alias := self.alias:
             desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
         if self.admin_only:
             desc += " This tag is only available for requests using admin keys and/or sessions."

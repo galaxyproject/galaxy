@@ -1,4 +1,5 @@
 import os
+import uuid
 from functools import (
     lru_cache,
     wraps,
@@ -101,8 +102,7 @@ def get_galaxy_app():
 
 @lru_cache(maxsize=1)
 def build_app():
-    kwargs = get_app_properties()
-    if kwargs:
+    if kwargs := get_app_properties():
         kwargs["check_migrate_databases"] = False
         kwargs["use_display_applications"] = False
         kwargs["use_converters"] = False
@@ -167,6 +167,10 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             app = get_galaxy_app()
             assert app
 
+            # Ensure sqlalchemy session registry scope is specific to this instance of the celery task
+            scoped_id = str(uuid.uuid4())
+            app.model.set_request_id(scoped_id)
+
             desc = func.__name__
             if action is not None:
                 desc += f" to {action}"
@@ -184,6 +188,9 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
             except Exception:
                 log.warning(f"Celery task execution failed for {desc} {timer}")
                 raise
+            finally:
+                # Close and remove any open session this task has created
+                app.model.unset_request_id(scoped_id)
 
         return wrapper
 

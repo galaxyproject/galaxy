@@ -132,8 +132,7 @@ class PBSJobRunner(AsynchronousJobRunner):
 
         # Determine the queue, set the PBS destination (not the same thing as a Galaxy job destination)
         pbs_destination = f"@{server}"
-        pbs_queue = url_split[3] or None
-        if pbs_queue is not None:
+        if (pbs_queue := url_split[3] or None) is not None:
             pbs_destination = f"{pbs_queue}{pbs_destination}"
 
         params = dict(destination=pbs_destination)

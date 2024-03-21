@@ -2,6 +2,7 @@
 
 This datatype was created for use with the iSEE interactive tool.
 """
+
 from typing import Optional
 
 from galaxy.datatypes.data import Data

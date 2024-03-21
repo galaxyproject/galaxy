@@ -1,6 +1,7 @@
 """
 API operations on the contents of a history dataset.
 """
+
 import logging
 import os
 from enum import Enum
@@ -13,7 +14,11 @@ from typing import (
     Union,
 )
 
-from pydantic import Field
+from pydantic import (
+    ConfigDict,
+    Field,
+    RootModel,
+)
 from starlette.datastructures import URL
 
 from galaxy import (
@@ -27,7 +32,10 @@ from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.datasets import (
+    DatasetAssociationManager,
+    DatasetManager,
+)
 from galaxy.managers.hdas import (
     HDAManager,
     HDASerializer,
@@ -40,6 +48,7 @@ from galaxy.managers.history_contents import (
 )
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model.base import transaction
+from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -51,10 +60,7 @@ from galaxy.schema.drs import (
     Checksum,
     DrsObject,
 )
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -140,9 +146,14 @@ class DatasetStorageDetails(Model):
     shareable: bool = Field(
         description="Is this dataset shareable.",
     )
-    quota: dict = Field(description="Information about quota sources around dataset storage.")
-    badges: List[Dict[str, Any]] = Field(
-        description="A mapping of object store labels to badges describing object store properties."
+    quota: ConcreteObjectStoreQuotaSourceDetails = Field(
+        description="Information about quota sources around dataset storage."
+    )
+    badges: List[BadgeDict] = Field(
+        description="A list of badges describing object store properties for concrete object store dataset is stored in."
+    )
+    relocatable: bool = Field(
+        description="Indicator of whether the objectstore for this dataset can be switched by this user."
     )
 
 
@@ -155,8 +166,8 @@ class DatasetInheritanceChainEntry(Model):
     )
 
 
-class DatasetInheritanceChain(Model):
-    __root__: List[DatasetInheritanceChainEntry] = Field(
+class DatasetInheritanceChain(RootModel):
+    root: List[DatasetInheritanceChainEntry] = Field(
         default=[],
         title="Dataset inheritance chain",
     )
@@ -177,6 +188,12 @@ class ExtraFileEntry(Model):
     )
 
 
+class DatasetExtraFiles(RootModel):
+    """A list of extra files associated with a dataset."""
+
+    root: List[ExtraFileEntry]
+
+
 class DatasetTextContentDetails(Model):
     item_data: Optional[str] = Field(
         description="First chunk of text content (maximum 1MB) of the dataset.",
@@ -189,17 +206,17 @@ class DatasetTextContentDetails(Model):
     )
 
 
-class ConvertedDatasetsMap(Model):
+class ConvertedDatasetsMap(RootModel):
     """Map of `file extension` -> `converted dataset encoded id`"""
 
-    __root__: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
-
-    class Config:
-        schema_extra = {
+    root: Dict[str, DecodedDatabaseIdField]  # extension -> dataset ID
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "csv": "dataset_id",
             }
         }
+    )
 
 
 class DataMode(str, Enum):
@@ -209,9 +226,9 @@ class DataMode(str, Enum):
 
 class DataResult(Model):
     data: List[Any]
-    dataset_type: Optional[str]
-    message: Optional[str]
-    extra_info: Optional[Any]  # Seems to be always None, deprecate?
+    dataset_type: Optional[str] = None
+    message: Optional[str] = None
+    extra_info: Optional[Any] = None  # Seems to be always None, deprecate?
 
 
 class BamDataResult(DataResult):
@@ -237,9 +254,14 @@ class ComputeDatasetHashPayload(Model):
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
     extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
+    model_config = ConfigDict(use_enum_values=True)
 
-    class Config:
-        use_enum_values = True  # When using .dict()
+
+class UpdateObjectStoreIdPayload(Model):
+    object_store_id: str = Field(
+        ...,
+        description="Object store ID to update to, it must be an object store with the same device ID as the target dataset currently.",
+    )
 
 
 class DatasetErrorMessage(Model):
@@ -276,6 +298,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         history_contents_manager: HistoryContentsManager,
         history_contents_filters: HistoryContentsFilters,
         data_provider_registry: DataProviderRegistry,
+        dataset_manager: DatasetManager,
     ):
         super().__init__(security)
         self.history_manager = history_manager
@@ -286,6 +309,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self.history_contents_manager = history_contents_manager
         self.history_contents_filters = history_contents_filters
         self.data_provider_registry = data_provider_registry
+        self.dataset_manager = dataset_manager
 
     @property
     def serializer_by_type(self) -> Dict[str, ModelSerializer]:
@@ -323,7 +347,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.dict()
+                content, user=user, trans=trans, encode_id=False, **serialization_params.model_dump()
             )
             for content in contents
         ]
@@ -400,7 +424,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             # not implemented on nestedobjectstores yet.
             percent_used = None
         except FileNotFoundError:
-            # uninitalized directory (emtpy) disk object store can cause this...
+            # uninitialized directory (empty) disk object store can cause this...
             percent_used = None
 
         quota_source = dataset.quota_source_info
@@ -408,7 +432,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             source=quota_source.label,
             enabled=quota_source.use,
         )
-
+        relocatable = trans.app.security_agent.can_change_object_store_id(trans.user, dataset)
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
@@ -423,6 +447,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             sources=sources,
             quota=quota,
             badges=badges,
+            relocatable=relocatable,
         )
 
     def show_inheritance_chain(
@@ -440,7 +465,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         for dep in inherit_chain:
             result.append(DatasetInheritanceChainEntry(name=f"{dep[0].name}", dep=dep[1]))
 
-        return DatasetInheritanceChain(__root__=result)
+        return DatasetInheritanceChain(root=result)
 
     def compute_hash(
         self,
@@ -461,10 +486,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
     def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
         if object_id.startswith("hda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("hda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("hda-") :], kind="drs")
             hda_ldda = DatasetSourceType.hda
         elif object_id.startswith("ldda-"):
-            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("ldda-") :]), kind="drs")
+            decoded_object_id = self.decode_id(object_id[len("ldda-") :], kind="drs")
             hda_ldda = DatasetSourceType.ldda
         else:
             raise galaxy_exceptions.RequestParameterInvalidException(
@@ -530,7 +555,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Updates permissions of a dataset.
         """
         self.check_user_is_authenticated(trans)
-        payload_dict = payload.dict(by_alias=True)
+        payload_dict = payload.model_dump(by_alias=True)
         dataset_manager = self.dataset_manager_by_type[hda_ldda]
         dataset = dataset_manager.get_accessible(dataset_id, trans.user)
         dataset_manager.update_permissions(trans, dataset, **payload_dict)
@@ -667,7 +692,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         serialization_params.default_view = "detailed"
         converted = self._get_or_create_converted(trans, hda, ext)
         return self.hda_serializer.serialize_to_view(
-            converted, user=trans.user, trans=trans, **serialization_params.dict()
+            converted, user=trans.user, trans=trans, **serialization_params.model_dump()
         )
 
     def converted(
@@ -716,7 +741,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if success_count:
             with transaction(trans.sa_session):
                 trans.sa_session.commit()
-        return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+        return DeleteDatasetBatchResult.model_construct(success_count=success_count, errors=errors)
 
     def get_structured_content(
         self,
@@ -741,6 +766,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except Exception as e:
             raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
         return content, headers
+
+    def update_object_store_id(self, trans, dataset_id: DecodedDatabaseIdField, payload: UpdateObjectStoreIdPayload):
+        hda = self.hda_manager.get_accessible(dataset_id, trans.user)
+        dataset = hda.dataset
+        self.dataset_manager.update_object_store_id(trans, dataset, payload.object_store_id)
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:
@@ -850,15 +880,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         # Get datasources and check for messages.
         data_sources = dataset.get_datasources(trans)
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        return_message = self._get_highest_priority_msg(messages_list)
-        if return_message:
+        if return_message := self._get_highest_priority_msg(messages_list):
             return return_message
 
         extra_info = None
@@ -953,8 +981,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         registry = self.data_provider_registry

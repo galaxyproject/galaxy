@@ -283,13 +283,6 @@ def _load_macro_file(path: StrPath, xml_base_dir, macros) -> List[str]:
     return _load_macros(root, xml_base_dir, macros)
 
 
-def _xml_set_children(element, new_children):
-    for old_child in element:
-        element.remove(old_child)
-    for i, new_child in enumerate(new_children):
-        element.insert(i, new_child)
-
-
 def _xml_replace(query, targets):
     parent_el = query.find("..")
     matching_index = -1

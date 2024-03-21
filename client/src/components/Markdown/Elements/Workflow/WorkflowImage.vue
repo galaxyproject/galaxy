@@ -5,15 +5,21 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 interface WorkflowImageProps {
     workflowId: string;
+    workflowVersion?: string;
     size?: string;
 }
 
 const props = withDefaults(defineProps<WorkflowImageProps>(), {
     size: "lg",
+    workflowVersion: null,
 });
 
 const src = computed(() => {
-    return `${getAppRoot()}workflow/gen_image?id=${props.workflowId}&embed=true`;
+    let extraArgs = "";
+    if (props.workflowVersion) {
+        extraArgs = `&version=${props.workflowVersion}`;
+    }
+    return `${getAppRoot()}workflow/gen_image?id=${props.workflowId}&embed=true${extraArgs}`;
 });
 const width = computed(() => {
     const size = props.size;

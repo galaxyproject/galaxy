@@ -14,6 +14,8 @@ from .browser import (
 )
 
 tc.options["equiv_refresh_interval"] = 0
+# Resetting all repository metadata can take a really long time
+tc.timeout(240)
 
 
 def visit_url(url: str, allowed_codes: List[int]) -> str:

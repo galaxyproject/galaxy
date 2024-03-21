@@ -25,7 +25,7 @@ function toggle(expansionMap: Record<string, boolean>, itemId: string) {
     <div>
         <div v-for="(item, index) in dsc.elements" :key="index">
             <ContentItem
-                :id="item.element_index"
+                :id="item.element_index + 1"
                 :item="item.object"
                 :name="item.element_identifier"
                 :is-dataset="item.element_type == 'hda'"

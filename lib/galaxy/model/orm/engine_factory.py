@@ -102,7 +102,7 @@ def build_engine(
 
     engine_options = engine_options or {}
     engine_options = set_sqlite_connect_args(engine_options, url)
-    engine = create_engine(url, **engine_options)
+    engine = create_engine(url, **engine_options, future=True)
 
     # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())

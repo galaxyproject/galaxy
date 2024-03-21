@@ -150,6 +150,9 @@ Please mind `http` and `https`.
         <!-- <icon>https://path/to/icon</icon>  -->
         <!-- (Optional) Enable PKCE for this IDP -->
         <!-- <pkce_support>false</pkce_support> -->
+        <!-- (Optional) the audiences accepted on the access-token for this IDP. -->
+        <!-- <accepted_audiences>galaxy</accepted_audiences> -->
+
     </provider>
 
     <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
@@ -196,5 +199,19 @@ Please mind `http` and `https`.
          -->
         <api_url> ... </api_url>
     </provider>
+
+    <!-- Documentation: https://docs.egi.eu/providers/check-in/sp -->
+    <provider name="egi_checkin">
+	<!-- Client id and secret can be obtained by registering your client at EGI Check-in
+	Federation Registry: https://aai.egi.eu/federation -->
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+	<redirect_uri>http://localhost:8080/authnz/checkin/callback</redirect_uri>
+	<icon>https://im.egi.eu/im-dashboard/static/images/egicheckin.png</icon>
+        <prompt>consent</prompt>
+	<!-- (Optional) Which Check-in environment to use (prod, demo, dev), default is prod -->
+	<!-- <checkin_env>dev</checkin_env> -->
+    </provider>
+
 
 </OIDC>

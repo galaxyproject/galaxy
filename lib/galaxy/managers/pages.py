@@ -5,6 +5,7 @@ Pages are markup created and saved by users that can contain Galaxy objects
 (such as datasets) and are often used to describe or present an analysis
 from within Galaxy.
 """
+
 import logging
 import re
 from html.entities import name2codepoint
@@ -142,36 +143,34 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
     ) -> Tuple[sqlalchemy.engine.Result, int]:
         show_deleted = payload.deleted
+        show_own = payload.show_own
+        show_published = payload.show_published
         show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if show_shared is None:
-            show_shared = not show_deleted
-
-        if show_shared and show_deleted:
+        if show_shared and show_deleted and not is_admin:
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        stmt = select(Page)
+        if not user and not show_published:
+            message = "Requires user to log in."
+            raise exceptions.RequestParameterInvalidException(message)
 
-        if not is_admin:
-            filters = [Page.user == trans.user]
-            if payload.show_published:
-                filters.append(Page.published == true())
-            if user and show_shared:
-                filters.append(PageUserShareAssociation.user == user)
-                stmt = stmt.outerjoin(Page.users_shared_with)
-            stmt = stmt.where(or_(*filters))
+        stmt = select(self.model_class)
 
-        if not show_deleted:
-            stmt = stmt.where(Page.deleted == false())
-        elif not is_admin:
-            # don't let non-admins see other user's deleted pages
-            stmt = stmt.where(or_(Page.deleted == false(), Page.user == user))
+        filters = []
+        if show_own or (not show_published and not show_shared and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if user and show_shared:
+            filters.append(self.user_share_model.user == user)
+            stmt = stmt.outerjoin(self.model_class.users_shared_with)
+        stmt = stmt.where(or_(*filters))
 
         if payload.user_id:
-            stmt = stmt.where(Page.user_id == payload.user_id)
+            stmt = stmt.where(self.model_class.user_id == payload.user_id)
 
         if payload.search:
             search_query = payload.search
@@ -197,6 +196,8 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                     elif key == "user":
                         stmt = append_user_filter(stmt, Page, term)
                     elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
                         if q == "published":
                             stmt = stmt.where(Page.published == true())
                         if q == "importable":
@@ -221,6 +222,12 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                             term,
                         )
                     )
+
+        if (show_published or show_shared) and not is_admin:
+            show_deleted = False
+
+        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false())).distinct()
+
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
@@ -263,8 +270,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page = trans.app.model.Page()
         page.title = payload.title
         page.slug = payload.slug
-        page_annotation = payload.annotation
-        if page_annotation is not None:
+        if (page_annotation := payload.annotation) is not None:
             page_annotation = sanitize_html(page_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
 

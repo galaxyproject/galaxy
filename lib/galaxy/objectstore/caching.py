@@ -1,5 +1,6 @@
 """
 """
+
 import logging
 import os
 import threading
@@ -12,7 +13,10 @@ from typing import (
 
 from typing_extensions import NamedTuple
 
-from galaxy.util import nice_size
+from galaxy.util import (
+    nice_size,
+    string_as_bool,
+)
 from galaxy.util.sleeper import Sleeper
 
 log = logging.getLogger(__name__)
@@ -124,11 +128,13 @@ def parse_caching_config_dict_from_xml(config_xml):
         cache_size = float(c_xml.get("size", -1))
         staging_path = c_xml.get("path", None)
         monitor = c_xml.get("monitor", "auto")
+        cache_updated_data = string_as_bool(c_xml.get("cache_updated_data", "True"))
 
         cache_dict = {
             "size": cache_size,
             "path": staging_path,
             "monitor": monitor,
+            "cache_updated_data": cache_updated_data,
         }
     else:
         cache_dict = {}

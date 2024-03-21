@@ -159,7 +159,6 @@ class History(BaseUIController):
         user_cutoff = int(kwd.get("user_cutoff", 60))
         descending = 1 if kwd.get("descending", "desc") == "desc" else -1
         reverse = descending == 1
-        user_selection = kwd.get("user_selection", None)
 
         # select d.state, h.name
         # from dataset d, history h , history_dataset_association hda
@@ -169,7 +168,7 @@ class History(BaseUIController):
             galaxy.model.History.table,
             galaxy.model.HistoryDatasetAssociation.table,
         ]
-        if user_selection is not None:
+        if (user_selection := kwd.get("user_selection", None)) is not None:
             from_obj.append(galaxy.model.User.table)
             whereclause = and_(
                 galaxy.model.Dataset.table.c.id == galaxy.model.HistoryDatasetAssociation.table.c.dataset_id,

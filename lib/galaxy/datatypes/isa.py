@@ -129,8 +129,7 @@ class _Isa(Data):
         We will use it to parse and access information from the archive."""
 
         investigation = None
-        main_file = self._get_main_file(dataset)
-        if main_file is not None:
+        if (main_file := self._get_main_file(dataset)) is not None:
             investigation = self._make_investigation_instance(main_file)
 
         return investigation

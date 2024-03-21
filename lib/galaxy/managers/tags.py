@@ -48,8 +48,8 @@ class TagsManager:
         """Apply a new set of tags to an item; previous tags are deleted."""
         user = trans.user
         new_tags: Optional[str] = None
-        if payload.item_tags and len(payload.item_tags.__root__) > 0:
-            new_tags = ",".join(payload.item_tags.__root__)
+        if payload.item_tags and len(payload.item_tags.root) > 0:
+            new_tags = ",".join(payload.item_tags.root)
         item = self._get_item(trans.tag_handler, payload)
         trans.tag_handler.delete_item_tags(user, item)
         trans.tag_handler.apply_item_tags(user, item, new_tags)

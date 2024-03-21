@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, unref } from "vue";
+import { computed, ref, unref, watch } from "vue";
 
 import { useJobMetricsStore } from "@/stores/jobMetricsStore";
 
@@ -45,7 +45,7 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    shouldShowCarbonEmissionsEstimates: {
+    shouldShowCarbonEmissionEstimates: {
         type: Boolean,
         default: true,
     },
@@ -60,7 +60,14 @@ async function getJobMetrics() {
         await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
     }
 }
-getJobMetrics();
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true }
+);
 
 const ec2Instances = ref<EC2[]>();
 import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
@@ -202,9 +209,7 @@ const estimatedServerInstance = computed(() => {
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="
-                shouldShowCarbonEmissionsEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated
-            "
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
             :carbon-intensity="carbonIntensity"
             :geographical-server-location-name="geographicalServerLocationName"
             :power-usage-effectiveness="powerUsageEffectiveness"

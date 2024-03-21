@@ -15,6 +15,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    RootModel,
 )
 
 
@@ -22,7 +23,7 @@ class Checksum(BaseModel):
     checksum: str = Field(..., description="The hex-string encoded checksum for the data. ")
     type: str = Field(
         ...,
-        description="The digest method used to create the checksum.\nThe value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].\nOther values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].\nGA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.",
+        description="The digest method used to create the checksum.\nThe value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].\nOther values MAY be used, as long as implementers are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].\nGA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.",
     )
 
 
@@ -65,8 +66,8 @@ class DescriptorType(Enum):
     SMK = "SMK"
 
 
-class DescriptorTypeVersion(BaseModel):
-    __root__: str = Field(
+class DescriptorTypeVersion(RootModel):
+    root: str = Field(
         ...,
         description="The language version for a given descriptor type. The version should correspond to the actual declared version of the descriptor. For example, tools defined in CWL could have a version of `v1.0.2` whereas WDL tools may have a version of `1.0` or `draft-2`",
     )
@@ -92,7 +93,7 @@ class FileWrapper(BaseModel):
     checksum: Optional[List[Checksum]] = Field(
         None,
         description="A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes. ",
-        example=[{"checksum": "ea2a5db69bd20a42976838790bc29294df3af02b", "type": "sha1"}],
+        examples=[{"checksum": "ea2a5db69bd20a42976838790bc29294df3af02b", "type": "sha1"}],
     )
     image_type: Optional[Union[ImageType, DescriptorType]] = Field(
         None, description="Optionally return additional information on the type of file this is"
@@ -100,14 +101,16 @@ class FileWrapper(BaseModel):
     url: Optional[str] = Field(
         None,
         description="Optional url to the underlying content, should include version information, and can include a git hash.  Note that this URL should resolve to the raw unwrapped content that would otherwise be available in content. One of url or content is required.",
-        example={
-            "descriptorfile": {
-                "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl"
-            },
-            "containerfile": {
-                "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/c83478829802b4d36374870843821abe1b625a71/delly_docker/Dockerfile"
-            },
-        },
+        examples=[
+            {
+                "descriptorfile": {
+                    "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/ea2a5db69bd20a42976838790bc29294df3af02b/delly_docker/Delly.cwl"
+                },
+                "containerfile": {
+                    "url": "https://raw.githubusercontent.com/ICGC-TCGA-PanCancer/pcawg_delly_workflow/c83478829802b4d36374870843821abe1b625a71/delly_docker/Dockerfile"
+                },
+            }
+        ],
     )
 
 
@@ -120,19 +123,19 @@ class ImageData(BaseModel):
     registry_host: Optional[str] = Field(
         None,
         description="A docker registry or a URL to a Singularity registry. Used along with image_name to locate a specific image.",
-        example=["registry.hub.docker.com"],
+        examples=["registry.hub.docker.com"],
     )
     image_name: Optional[str] = Field(
         None,
         description="Used in conjunction with a registry_url if provided to locate images.",
-        example=["quay.io/seqware/seqware_full/1.1", "ubuntu:latest"],
+        examples=["quay.io/seqware/seqware_full/1.1", "ubuntu:latest"],
     )
     size: Optional[int] = Field(None, description="Size of the container in bytes.")
     updated: Optional[str] = Field(None, description="Last time the container was updated.")
     checksum: Optional[List[Checksum]] = Field(
         None,
         description="A production (immutable) tool version is required to have a hashcode. Not required otherwise, but might be useful to detect changes.  This exposes the hashcode for specific image versions to verify that the container version pulled is actually the version that was indexed by the registry.",
-        example=[{"checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182", "type": "sha256"}],
+        examples=[{"checksum": "77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182", "type": "sha256"}],
     )
     image_type: Optional[ImageType] = None
 
@@ -146,10 +149,10 @@ class ToolVersion(BaseModel):
     url: str = Field(
         ...,
         description="The URL for this tool version in this registry.",
-        example="http://agora.broadinstitute.org/tools/123456/versions/1",
+        examples=["http://agora.broadinstitute.org/tools/123456/versions/1"],
     )
     id: str = Field(
-        ..., description="An identifier of the version of this tool for this particular tool registry.", example="v1"
+        ..., description="An identifier of the version of this tool for this particular tool registry.", examples=["v1"]
     )
     is_production: Optional[bool] = Field(
         None,
@@ -165,7 +168,7 @@ class ToolVersion(BaseModel):
     descriptor_type_version: Optional[Dict[str, List[DescriptorTypeVersion]]] = Field(
         None,
         description="A map providing information about the language versions used in this tool. The keys should be the same values used in the `descriptor_type` field, and the value should be an array of all the language versions used for the given `descriptor_type`. Depending on the `descriptor_type` (e.g. CWL) multiple version values may be used in a single tool.",
-        example='{\n  "WDL": ["1.0", "1.0"],\n  "CWL": ["v1.0.2"],\n  "NFL": ["DSL2"]\n}\n',
+        examples=['{\n  "WDL": ["1.0", "1.0"],\n  "CWL": ["v1.0.2"],\n  "NFL": ["DSL2"]\n}\n'],
     )
     containerfile: Optional[bool] = Field(
         None,
@@ -185,7 +188,7 @@ class ToolVersion(BaseModel):
     included_apps: Optional[List[str]] = Field(
         None,
         description="An array of IDs for the applications that are stored inside this tool.",
-        example=["https://bio.tools/tool/mytum.de/SNAP2/1", "https://bio.tools/bioexcel_seqqc"],
+        examples=["https://bio.tools/tool/mytum.de/SNAP2/1", "https://bio.tools/bioexcel_seqqc"],
     )
 
 
@@ -193,9 +196,9 @@ class Tool(BaseModel):
     url: str = Field(
         ...,
         description="The URL for this tool in this registry.",
-        example="http://agora.broadinstitute.org/tools/123456",
+        examples=["http://agora.broadinstitute.org/tools/123456"],
     )
-    id: str = Field(..., description="A unique identifier of the tool, scoped to this registry.", example=123456)
+    id: str = Field(..., description="A unique identifier of the tool, scoped to this registry.", examples=[123456])
     aliases: Optional[List[str]] = Field(
         None,
         description="Support for this parameter is optional for tool registries that support aliases.\nA list of strings that can be used to identify this tool which could be  straight up URLs. \nThis can be used to expose alternative ids (such as GUIDs) for a tool\nfor registries. Can be used to match tools across registries.",

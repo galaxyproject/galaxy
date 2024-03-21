@@ -53,9 +53,11 @@ const doExport = () => {
                 :require-writable="true"
                 :filter-options="defaultExportFilterOptions" />
         </BFormGroup>
+
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />
         </BFormGroup>
+
         <BRow align-h="end">
             <BCol>
                 <BButton

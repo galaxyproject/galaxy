@@ -37,7 +37,6 @@ NoDefault = _NoDefault()
 
 
 class ErrorMiddleware:
-
     """
     Error handling middleware
 
@@ -223,7 +222,6 @@ class ResponseStartChecker:
 
 
 class CatchingIter:
-
     """
     A wrapper around the application iterator that will catch
     exceptions raised by the a generator, or by the close method, and
@@ -286,7 +284,6 @@ class CatchingIter:
 
 
 class Supplement:
-
     """
     This is a supplement used to display standard WSGI information in
     the traceback.

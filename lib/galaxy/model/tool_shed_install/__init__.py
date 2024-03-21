@@ -55,12 +55,10 @@ else:
 
 class HasToolBox(common_util.HasToolShedRegistry, Protocol):
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
-        ...
+    def tool_dependency_dir(self) -> Optional[str]: ...
 
     @property
-    def toolbox(self) -> AbstractToolBox:
-        ...
+    def toolbox(self) -> AbstractToolBox: ...
 
 
 class Base(metaclass=DeclarativeMeta):
@@ -242,10 +240,9 @@ class ToolShedRepository(Base):
 
     def get_tool_relative_path(self, app: HasToolBox):
         # This is a somewhat public function, used by data_manager_manual for instance
-        shed_conf_dict = self.get_shed_config_dict(app)
         tool_path = None
         relative_path = None
-        if shed_conf_dict:
+        if shed_conf_dict := self.get_shed_config_dict(app):
             tool_path = shed_conf_dict["tool_path"]
             relative_path = os.path.join(
                 self.tool_shed_path_name, "repos", self.owner, self.name, self.installed_changeset_revision
@@ -411,8 +408,7 @@ class ToolShedRepository(Base):
         return missing_dependencies
 
     def repo_files_directory(self, app: HasToolBox):
-        repo_path = self.repo_path(app)
-        if repo_path:
+        if repo_path := self.repo_path(app):
             return os.path.join(repo_path, self.name)
         return None
 

@@ -425,9 +425,9 @@ class Data(metaclass=DataMeta):
         self, dataset: DatasetHasHidProtocol, to_ext: Optional[str], headers: Headers, **kwd
     ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.get_file_name()).st_size)
-        headers[
-            "content-type"
-        ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        headers["content-type"] = (
+            "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+        )
         filename = self._download_filename(
             dataset,
             to_ext,
@@ -476,9 +476,9 @@ class Data(metaclass=DataMeta):
                 element_identifier=kwd.get("element_identifier"),
                 filename_pattern=kwd.get("filename_pattern"),
             )
-            headers[
-                "content-type"
-            ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            headers["content-type"] = (
+                "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            )
             headers["Content-Disposition"] = f'attachment; filename="{filename}"'
             return open(data.get_file_name(), "rb"), headers
 
@@ -783,7 +783,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: DatasetProtocol, type: str, app, base_url: str, request, target_frame: str = "_blank", **kwd
+        self, dataset: DatasetProtocol, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -794,7 +794,7 @@ class Data(metaclass=DataMeta):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]["links_function"])(
-                    dataset, type, app, base_url, request, **kwd
+                    dataset, type, app, base_url, **kwd
                 )
         except Exception:
             log.exception(
@@ -1100,7 +1100,7 @@ class Text(Data):
                     else:
                         est_lines = self.estimate_file_lines(dataset)
                         if est_lines is not None:
-                            dataset.blurb = f"~{util.commaify(util.roundify(str(est_lines)))} {inflector.cond_plural(est_lines, self.line_class)}"
+                            dataset.blurb = f"~{util.shorten_with_metric_prefix(est_lines)} {inflector.cond_plural(est_lines, self.line_class)}"
                         else:
                             dataset.blurb = "Error: Cannot estimate lines in dataset"
             else:
@@ -1110,7 +1110,7 @@ class Text(Data):
             dataset.blurb = "file purged from disk"
 
     @classmethod
-    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Optional[Dict]) -> None:
         """
         Split the input files by line.
         """

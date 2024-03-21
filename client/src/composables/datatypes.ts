@@ -5,14 +5,14 @@ import { datatypesFetcher, edamDataFetcher, edamFormatsFetcher } from "@/api/dat
 
 export interface DetailedDatatypes {
     extension: string;
-    description?: string;
-    descriptionUrl?: string;
-    edamFormat?: string;
-    edamFormatLabel?: string;
-    edamFormatDefinition?: string;
-    edamData?: string;
-    edamDataLabel?: string;
-    edamDataDefinition?: string;
+    description?: string | null;
+    descriptionUrl?: string | null;
+    edamFormat?: string | null;
+    edamFormatLabel?: string | null;
+    edamFormatDefinition?: string | null;
+    edamData?: string | null;
+    edamDataLabel?: string | null;
+    edamDataDefinition?: string | null;
 }
 
 /**

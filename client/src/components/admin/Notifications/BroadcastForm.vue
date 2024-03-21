@@ -175,7 +175,8 @@ if (props.id) {
                 :optional="false"
                 help="The message can be written in markdown."
                 placeholder="Enter message"
-                required />
+                required
+                area />
 
             <BFormGroup id="broadcast-action-link-group" label="Action Links" label-for="broadcast-action-link">
                 <BRow v-for="(actionLink, index) in broadcastData.content.action_links" :key="index" class="my-2">

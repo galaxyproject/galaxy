@@ -154,23 +154,27 @@ onMounted(() => {
 </script>
 
 <template>
-    <Multiselect
-        v-if="hasOptions"
-        :id="id"
-        v-model="currentValue"
-        :allow-empty="optional"
-        :aria-expanded="ariaExpanded"
-        :close-on-select="!multiple"
-        :disabled="disabled"
-        :deselect-label="deselectLabel"
-        label="label"
-        :multiple="multiple"
-        :options="reorderedOptions"
-        :placeholder="placeholder"
-        :selected-label="selectedLabel"
-        select-label="Click to select"
-        track-by="value"
-        @open="onOpen"
-        @close="onClose" />
-    <b-alert v-else v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+    <div>
+        <Multiselect
+            v-if="hasOptions"
+            :id="id"
+            v-model="currentValue"
+            :allow-empty="optional"
+            :aria-expanded="ariaExpanded"
+            :close-on-select="!multiple"
+            :disabled="disabled"
+            :deselect-label="deselectLabel"
+            label="label"
+            :multiple="multiple"
+            :options="reorderedOptions"
+            :placeholder="placeholder"
+            :selected-label="selectedLabel"
+            select-label="Click to select"
+            track-by="value"
+            @open="onOpen"
+            @close="onClose" />
+        <slot v-else name="no-options">
+            <b-alert v-localize class="w-100" variant="warning" show> No options available. </b-alert>
+        </slot>
+    </div>
 </template>

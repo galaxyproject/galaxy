@@ -31,13 +31,13 @@ export interface ExportRecord {
     readonly canDownload: boolean;
     readonly modelStoreFormat: string;
     readonly exportParams?: ExportParams;
-    readonly duration?: number;
+    readonly duration?: number | null;
     readonly canExpire: boolean;
     readonly isPermanent: boolean;
     readonly expirationDate?: Date;
     readonly expirationElapsedTime?: string;
     readonly hasExpired: boolean;
-    readonly errorMessage?: string;
+    readonly errorMessage?: string | null;
 }
 
 export class ExportParamsModel implements ExportParams {

@@ -204,7 +204,7 @@ class NotificationManager:
 
     def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
         stmt = (
-            select(self.broadcast_notification_columns)
+            select(*self.broadcast_notification_columns)
             .select_from(Notification)
             .where(
                 and_(
@@ -323,7 +323,7 @@ class NotificationManager:
             payload.source,
             payload.category,
             payload.variant,
-            payload.content.dict(),
+            payload.content.model_dump(),
         )
         notification.publication_time = payload.publication_time
         notification.expiration_time = payload.expiration_time
@@ -333,7 +333,7 @@ class NotificationManager:
         self, user: User, since: Optional[datetime] = None, active_only: Optional[bool] = True
     ):
         stmt = (
-            select(self.user_notification_columns)
+            select(*self.user_notification_columns)
             .select_from(Notification)
             .join(
                 UserNotificationAssociation,
@@ -356,7 +356,7 @@ class NotificationManager:
 
     def _broadcasted_notifications_query(self, since: Optional[datetime] = None, active_only: Optional[bool] = True):
         stmt = (
-            select(self.broadcast_notification_columns)
+            select(*self.broadcast_notification_columns)
             .select_from(Notification)
             .where(Notification.category == MandatoryNotificationCategory.broadcast)
         )
@@ -409,7 +409,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         user_ids_from_roles_stmt = self._get_all_user_ids_from_roles_query(all_role_ids)
 
         union_stmt = union(user_ids_from_groups_stmt, user_ids_from_roles_stmt)
-        user_ids_from_groups_and_roles = set([id for id, in self.sa_session.execute(union_stmt)])
+        user_ids_from_groups_and_roles = {id for id, in self.sa_session.execute(union_stmt)}
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
         stmt = select(User).where(User.id.in_(unique_user_ids))
@@ -448,7 +448,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
                 .where(GroupRoleAssociation.role_id.in_(role_ids))
                 .distinct()
             )
-            group_ids_from_roles = set([id for id, in self.sa_session.execute(stmt) if id is not None])
+            group_ids_from_roles = {id for id, in self.sa_session.execute(stmt) if id is not None}
             new_group_ids = group_ids_from_roles - processed_group_ids
 
             # Get role IDs associated with any of the given group IDs
@@ -458,7 +458,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
                 .where(GroupRoleAssociation.group_id.in_(group_ids))
                 .distinct()
             )
-            role_ids_from_groups = set([id for id, in self.sa_session.execute(stmt) if id is not None])
+            role_ids_from_groups = {id for id, in self.sa_session.execute(stmt) if id is not None}
             new_role_ids = role_ids_from_groups - processed_role_ids
 
             # Stop if there are no new group or role IDs to process

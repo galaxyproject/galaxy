@@ -10,6 +10,7 @@
             :show-welcome-with-login="showWelcomeWithLogin"
             :terms-url="termsUrl"
             :welcome-url="welcomeUrl"
+            :show-reset-link="showResetLink"
             @toggle-login="toggleLogin" />
         <RegisterForm
             v-else
@@ -42,6 +43,10 @@ export default {
         allowUserCreation: {
             type: Boolean,
             required: true,
+        },
+        showResetLink: {
+            type: Boolean,
+            default: true,
         },
         enableOidc: {
             type: Boolean,

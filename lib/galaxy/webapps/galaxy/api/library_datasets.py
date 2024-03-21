@@ -1,4 +1,5 @@
 """API operations on the library datasets."""
+
 import glob
 import logging
 import os
@@ -434,8 +435,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         kwd["file_type"] = kwd.get("file_type", "auto")
         kwd["link_data_only"] = "link_to_files" if util.string_as_bool(kwd.get("link_data", False)) else "copy_files"
         kwd["tag_using_filenames"] = util.string_as_bool(kwd.get("tag_using_filenames", None))
-        encoded_folder_id = kwd.get("encoded_folder_id", None)
-        if encoded_folder_id is not None:
+        if (encoded_folder_id := kwd.get("encoded_folder_id", None)) is not None:
             folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
         else:
             raise exceptions.RequestParameterMissingException("The required attribute encoded_folder_id is missing.")

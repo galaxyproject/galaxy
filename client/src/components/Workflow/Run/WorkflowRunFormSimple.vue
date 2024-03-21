@@ -1,8 +1,14 @@
 <template>
     <div>
-        <div class="h4 clearfix mb-3">
+        <div v-if="isConfigLoaded" class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
+            <ButtonSpinner
+                id="run-workflow"
+                :wait="waitingForRequest"
+                :disabled="hasValidationErrors"
+                class="float-right"
+                title="Run Workflow"
+                @onClick="onExecute" />
             <b-dropdown
                 v-if="showRuntimeSettings(currentUser)"
                 id="dropdown-form"
@@ -39,7 +45,11 @@
                 </b-dropdown-form>
             </b-dropdown>
         </div>
-        <FormDisplay :inputs="formInputs" @onChange="onChange" />
+        <FormDisplay
+            :inputs="formInputs"
+            :allow-empty-value-on-required-input="true"
+            @onChange="onChange"
+            @onValidation="onValidation" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
     </div>
@@ -50,8 +60,9 @@ import ButtonSpinner from "components/Common/ButtonSpinner";
 import FormDisplay from "components/Form/FormDisplay";
 import { allowCachedJobs } from "components/Tool/utilities";
 import { isWorkflowInput } from "components/Workflow/constants";
-import { mapState } from "pinia";
+import { storeToRefs } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
+import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -81,22 +92,24 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const { currentUser } = storeToRefs(useUserStore());
+        return { config, isConfigLoaded, currentUser };
     },
     data() {
         const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
         return {
             formData: {},
             inputTypes: {},
+            stepValidations: {},
             sendToNewHistory: newHistory,
             useCachedJobs: this.useJobCache, // TODO:
             splitObjectStore: false,
             preferredObjectStoreId: null,
             preferredIntermediateObjectStoreId: null,
+            waitingForRequest: false,
         };
     },
     computed: {
-        ...mapState(useUserStore, ["currentUser"]),
         formInputs() {
             const inputs = [];
             // Add workflow parameters.
@@ -127,13 +140,23 @@ export default {
             });
             return inputs;
         },
+        hasValidationErrors() {
+            return Boolean(Object.values(this.stepValidations).find((value) => value !== null && value !== undefined));
+        },
     },
     methods: {
+        onValidation(validation) {
+            if (validation) {
+                Vue.set(this.stepValidations, validation[0], validation[1]);
+            } else {
+                this.stepValidations = {};
+            }
+        },
         reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
+            return user && allowCachedJobs(user.preferences);
         },
         showRuntimeSettings(user) {
-            return this.targetHistory.indexOf("prefer") >= 0 || this.reuseAllowed(user);
+            return this.targetHistory.indexOf("prefer") >= 0 || (user && this.reuseAllowed(user));
         },
         onChange(data) {
             this.formData = data;
@@ -182,13 +205,15 @@ export default {
                     data.preferred_object_store_id = this.preferredObjectStoreId;
                 }
             }
+            this.waitingForRequest = true;
             invokeWorkflow(this.model.workflowId, data)
                 .then((invocations) => {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
                     this.$emit("submissionError", errorMessageAsString(error));
-                });
+                })
+                .finally(() => (this.waitingForRequest = false));
         },
     },
 };

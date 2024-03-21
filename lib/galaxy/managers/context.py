@@ -28,6 +28,7 @@ should annotate their dependency on the narrowest context they require.
 A method that requires a user but not a history should declare its
 ``trans`` argument as requiring type :class:`galaxy.managers.context.ProvidesUserContext`.
 """
+
 # TODO: Refactor this class so that galaxy.managers depends on a package
 # containing this.
 # TODO: Provide different classes for real users and potentially bootstrapped
@@ -234,8 +235,7 @@ class ProvidesUserContext(ProvidesAppContext):
         return self.user is None
 
     def get_current_user_roles(self) -> List[Role]:
-        user = self.user
-        if user:
+        if user := self.user:
             roles = user.all_roles()
         else:
             roles = []

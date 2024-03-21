@@ -115,5 +115,5 @@ def test_executions():
     ar = RefactorActions(actions=[{"action_type": "extract_untyped_parameter", "name": "foo"}])
     execution = RefactorActionExecution(action={"action_type": "extract_untyped_parameter", "name": "foo"}, messages=[])
     assert isinstance(execution.messages, (list,))
-    execution = RefactorActionExecution(action=ar.actions[0].dict(), messages=[])
+    execution = RefactorActionExecution(action=ar.actions[0].model_dump(), messages=[])
     assert isinstance(execution.messages, (list,))

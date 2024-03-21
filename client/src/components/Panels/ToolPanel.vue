@@ -2,12 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { getAppRoot } from "@/onload";
-import { type PanelView, useToolStore } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
 import { types_to_icons } from "./utilities";
@@ -35,29 +33,22 @@ const emit = defineEmits<{
 }>();
 
 const arePanelsFetched = ref(false);
-const defaultPanelView = ref("");
 const toolStore = useToolStore();
-const { currentPanelView, isPanelPopulated } = storeToRefs(toolStore);
+const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panelViews } = storeToRefs(toolStore);
 
+const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
-const panelViews = ref<Record<string, PanelView> | null>(null);
 const showAdvanced = ref(false);
 
 onMounted(async () => {
-    await axios
-        .get(`${getAppRoot()}api/tool_panels`)
-        .then(async ({ data }) => {
-            const { default_panel_view, views } = data;
-            defaultPanelView.value = default_panel_view;
-            panelViews.value = views;
-            await initializeTools();
-        })
-        .catch((error) => {
-            console.error(error);
-        })
-        .finally(() => {
-            arePanelsFetched.value = true;
-        });
+    try {
+        await toolStore.fetchPanelViews();
+        await initializeTools();
+    } catch (error) {
+        console.error(error);
+    } finally {
+        arePanelsFetched.value = true;
+    }
 });
 
 watch(
@@ -80,6 +71,8 @@ watch(
 const toolPanelHeader = computed(() => {
     if (showAdvanced.value) {
         return localize("Advanced Tool Search");
+    } else if (loading.value && loadingView.value) {
+        return localize(loadingView.value);
     } else if (
         currentPanelView.value !== "default" &&
         panelViews.value &&
@@ -116,7 +109,9 @@ async function initializeTools() {
 }
 
 async function updatePanelView(panelView: string) {
+    loadingView.value = panelViews.value[panelView]?.name;
     await toolStore.setCurrentPanelView(panelView);
+    loadingView.value = undefined;
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -144,12 +139,14 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     v-if="panelViews && Object.keys(panelViews).length > 1"
                     :panel-views="panelViews"
                     :current-panel-view="currentPanelView"
+                    :show-advanced.sync="showAdvanced"
+                    :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
                                 <span
-                                    v-if="viewIcon"
+                                    v-if="viewIcon && !loading"
                                     :class="['fas', `fa-${viewIcon}`, 'mr-1']"
                                     data-description="panel view header icon" />
                                 <Heading
@@ -157,8 +154,11 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                                     :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
                                     h2
                                     inline
-                                    size="sm"
-                                    >{{ toolPanelHeader }}
+                                    size="sm">
+                                    <span v-if="loading && loadingView">
+                                        <LoadingSpan :message="toolPanelHeader" />
+                                    </span>
+                                    <span v-else>{{ toolPanelHeader }}</span>
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">

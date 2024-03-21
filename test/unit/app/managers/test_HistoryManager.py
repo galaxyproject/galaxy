@@ -13,6 +13,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import (
     base,
     hdas,
@@ -266,7 +267,7 @@ class TestHistoryManager(BaseTestCase):
         assert len(self.history_manager.get_share_assocs(item1, user=non_owner)) == 1
         assert isinstance(item1.slug, str)
 
-        self.log("should be able to unshare with specific users")
+        self.log("should be able to unshare with specific users")  # type: ignore[unreachable]
         share_assoc = self.history_manager.unshare_with(item1, non_owner)
         assert isinstance(share_assoc, model.HistoryUserShareAssociation)
         assert not self.history_manager.is_accessible(item1, non_owner)
@@ -391,14 +392,8 @@ class TestHistoryManager(BaseTestCase):
         assert manager.ratings_count(item) == 2
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.histories.HistorySerializer.url_for", testable_url_for)
-@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.histories.HistorySerializer.url_for", mock_url_builder)
+@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", mock_url_builder)
 class TestHistorySerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()

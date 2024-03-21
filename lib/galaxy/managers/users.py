@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Users.
 """
+
 import hashlib
 import logging
 import random
@@ -39,6 +40,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.base import combine_lists
 from galaxy.model import (
+    Job,
     User,
     UserAddress,
     UserQuotaUsage,
@@ -56,7 +58,6 @@ from galaxy.structured_app import (
     MinimalManagerApp,
 )
 from galaxy.util.hash_util import new_secure_hash_v2
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -161,6 +162,21 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 "The configuration of this Galaxy instance does not allow admins to delete users."
             )
         super().delete(user, flush=flush)
+        self._stop_all_jobs_from_user(user)
+
+    def _stop_all_jobs_from_user(self, user):
+        active_jobs = self._get_all_active_jobs_from_user(user)
+        session = self.session()
+        for job in active_jobs:
+            job.mark_deleted(self.app.config.track_jobs_in_database)
+        with transaction(session):
+            session.commit()
+
+    def _get_all_active_jobs_from_user(self, user: User) -> List[Job]:
+        """Get all jobs that are not ready yet and belong to the given user."""
+        stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
+        jobs = self.session().scalars(stmt)
+        return jobs
 
     def undelete(self, user, flush=True):
         """Remove the deleted flag for the given user."""
@@ -294,6 +310,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if newest_key.key != provided_key.key:
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
+
+    def by_oidc_access_token(self, access_token: str):
+        if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
+            user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)  # type: ignore[attr-defined]
+            return user
+        else:
+            return None
 
     def check_bootstrap_admin_api_key(self, api_key):
         bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
@@ -494,13 +517,25 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
+    def impersonate(self, trans, user):
+        if not trans.app.config.allow_user_impersonation:
+            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+        if user:
+            trans.handle_user_logout()
+            trans.handle_user_login(user)
+        else:
+            raise exceptions.Message("Please provide a valid user.")
+
     def send_activation_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
         """
         activation_token = self.__get_activation_token(trans, email)
-        activation_link = url_for(
-            controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
+        activation_link = trans.url_builder(
+            "/user/activate",
+            activation_token=activation_token,
+            email=escape(email),
+            qualified=True,
         )
         template_context = {
             "name": escape(username),
@@ -553,7 +588,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                reset_url = url_for(controller="login", action="start", token=prt.token)
+                reset_url = trans.url_builder("/login/start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
                     trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
@@ -757,11 +792,12 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        history_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: Dict[str, base.Deserializer] = {
+            "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
         }
-        self.deserializers.update(history_deserializers)
+        self.deserializers.update(user_deserializers)
 
     def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
         preferred_object_store_id = val

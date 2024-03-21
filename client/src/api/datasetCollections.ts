@@ -1,4 +1,4 @@
-import { CollectionEntry, DatasetCollectionAttributes, DCESummary, HDCADetailed, isHDCA } from "@/api";
+import { CollectionEntry, DCESummary, HDCADetailed, isHDCA } from "@/api";
 import { fetcher } from "@/api/schema";
 
 const DEFAULT_LIMIT = 50;
@@ -57,9 +57,7 @@ export async function fetchElementsFromCollection(params: {
     });
 }
 
-const getCollectionAttributes = fetcher.path("/api/dataset_collections/{id}/attributes").method("get").create();
-
-export async function fetchCollectionAttributes(params: { hdcaId: string }): Promise<DatasetCollectionAttributes> {
-    const { data } = await getCollectionAttributes({ id: params.hdcaId, instance_type: "history" });
-    return data;
-}
+export const fetchCollectionAttributes = fetcher
+    .path("/api/dataset_collections/{id}/attributes")
+    .method("get")
+    .create();

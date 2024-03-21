@@ -1,6 +1,7 @@
 """
 Functionality for dealing with tool errors.
 """
+
 import string
 
 import markupsafe
@@ -8,7 +9,6 @@ import markupsafe
 from galaxy import (
     model,
     util,
-    web,
 )
 from galaxy.security.validate_user_input import validate_email_str
 from galaxy.util import unicodify
@@ -159,11 +159,11 @@ class ErrorReporter:
     def create_report(self, user, email="", message="", redact_user_details_in_bugreport=False, **kwd):
         hda = self.hda
         job = self.job
-        host = web.url_for("/", qualified=True)
+        host = self.app.url_for("/", qualified=True)
         history_id_encoded = self.app.security.encode_id(hda.history_id)
-        history_view_link = web.url_for("/histories/view", id=history_id_encoded, qualified=True)
+        history_view_link = self.app.url_for("/histories/view", id=history_id_encoded, qualified=True)
         hda_id_encoded = self.app.security.encode_id(hda.id)
-        hda_show_params_link = web.url_for(
+        hda_show_params_link = self.app.url_for(
             controller="dataset", action="details", dataset_id=hda_id_encoded, qualified=True
         )
         # Build the email message
@@ -254,6 +254,13 @@ class EmailErrorReporter(ErrorReporter):
         except Exception:
             pass
 
+        reply_to = user.email if user else None
         return util.send_mail(
-            self.app.config.email_from, to, subject, self.report, self.app.config, html=self.html_report
+            self.app.config.email_from,
+            to,
+            subject,
+            self.report,
+            self.app.config,
+            html=self.html_report,
+            reply_to=reply_to,
         )

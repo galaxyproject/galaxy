@@ -1,6 +1,7 @@
 """
 XML format classes
 """
+
 import logging
 import re
 from typing import List

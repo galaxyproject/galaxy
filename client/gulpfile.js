@@ -35,6 +35,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "pv",
     "nora",
     "venn",
+    "tiffviewer",
     "ts_visjs",
 ];
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
@@ -120,6 +121,20 @@ function buildPlugins(callback, forceRebuild) {
             skipBuild = false;
         } else {
             if (fs.existsSync(hashFilePath)) {
+                const hashFileContent = fs.readFileSync(hashFilePath, "utf8").trim();
+                const isHash = /^[0-9a-f]{7,40}$/.test(hashFileContent); // Check for a 7 to 40 character hexadecimal string
+
+                if (!isHash) {
+                    console.log(`Hash file for ${pluginName} exists but does not have a valid git hash.`);
+                    skipBuild = false;
+                } else {
+                    skipBuild =
+                        child_process.spawnSync("git", ["diff", "--quiet", hashFileContent, "--", pluginDir], {
+                            stdio: "inherit",
+                            shell: true,
+                        }).status === 0;
+                }
+
                 skipBuild =
                     child_process.spawnSync("git", ["diff", "--quiet", `$(cat ${hashFilePath})`, "--", pluginDir], {
                         stdio: "inherit",

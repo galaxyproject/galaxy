@@ -24,16 +24,18 @@ COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column
 class TestShedRepositoriesApi(ShedApiTestCase):
     def test_create(self):
         populator = self.populator
-        category_id = populator.new_category(prefix="testcreate").id
+        category1_id = populator.new_category(prefix="testcreate").id
+        populator.assert_category_has_n_repositories(category1_id, 0)
 
-        repos_by_category = populator.repositories_by_category(category_id)
-        repos = repos_by_category.repositories
-        assert len(repos) == 0
+        populator.new_repository(category1_id)
+        populator.assert_category_has_n_repositories(category1_id, 1)
 
-        populator.new_repository(category_id)
-        repos_by_category = populator.repositories_by_category(category_id)
-        repos = repos_by_category.repositories
-        assert len(repos) == 1
+        # Test creating repository with multiple categories
+        category2_id = populator.new_category(prefix="testcreate").id
+        populator.assert_category_has_n_repositories(category2_id, 0)
+        populator.new_repository([category1_id, category2_id])
+        populator.assert_category_has_n_repositories(category1_id, 2)
+        populator.assert_category_has_n_repositories(category2_id, 1)
 
     def test_update_repository(self):
         populator = self.populator
@@ -52,7 +54,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="repoformetadata")
         repository_metadata = populator.get_metadata(repository)
-        metadata_for_revisions = repository_metadata.__root__
+        metadata_for_revisions = repository_metadata.root
         assert len(metadata_for_revisions) == 1
         only_key = list(metadata_for_revisions.keys())[0]
         assert only_key.startswith("0:")
@@ -66,7 +68,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         repository = populator.setup_bismark_repo()
         repository_metadata = populator.get_metadata(repository)
         assert repository_metadata
-        for _, value in repository_metadata.__root__.items():
+        for _, value in repository_metadata.root.items():
             assert value.invalid_tools
 
     def test_index_simple(self):
@@ -160,7 +162,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository.owner
         assert repository.name
         revisions = populator.get_ordered_installable_revisions(repository.owner, repository.name)
-        assert len(revisions.__root__) == 1
+        assert len(revisions.root) == 1
 
     def test_reset_on_repository(self):
         populator = self.populator
@@ -168,14 +170,14 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository.owner
         assert repository.name
         revisions = populator.get_ordered_installable_revisions(repository.owner, repository.name)
-        assert len(revisions.__root__) == 1
+        assert len(revisions.root) == 1
         metadata_response = populator.reset_metadata(repository)
         assert metadata_response.start_time
         assert metadata_response.stop_time
         assert metadata_response.status == "ok"
         assert len(metadata_response.repository_status) == 1
         revisions = populator.get_ordered_installable_revisions(repository.owner, repository.name)
-        assert len(revisions.__root__) == 1
+        assert len(revisions.root) == 1
 
     def test_repository_search(self):
         populator = self.populator
@@ -253,7 +255,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
     def _get_only_revision(self, repository: HasRepositoryId) -> RepositoryRevisionMetadata:
         populator = self.populator
         repository_metadata = populator.get_metadata(repository)
-        metadata_for_revisions = repository_metadata.__root__
+        metadata_for_revisions = repository_metadata.root
         assert len(metadata_for_revisions) == 1
         only_key = list(metadata_for_revisions.keys())[0]
         assert only_key.startswith("0:")

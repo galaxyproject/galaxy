@@ -33,7 +33,7 @@
                 </div>
             </div>
         </div>
-        <MarkdownHelp ref="help" />
+        <MarkdownHelpModal ref="help" :mode="mode" />
     </div>
 </template>
 
@@ -46,7 +46,7 @@ import FlexPanel from "components/Panels/FlexPanel";
 import _ from "underscore";
 import Vue from "vue";
 
-import MarkdownHelp from "./MarkdownHelp";
+import MarkdownHelpModal from "./MarkdownHelpModal";
 import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
@@ -60,7 +60,7 @@ export default {
         MarkdownToolBox,
         FlexPanel,
         FontAwesomeIcon,
-        MarkdownHelp,
+        MarkdownHelpModal,
     },
     props: {
         markdownText: {
@@ -78,6 +78,10 @@ export default {
         title: {
             type: String,
             default: null,
+        },
+        mode: {
+            type: String,
+            default: "report",
         },
     },
     data() {

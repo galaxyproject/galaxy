@@ -42,6 +42,7 @@ from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
     JobParameter,
@@ -110,12 +111,18 @@ class JobManager:
         self.dataset_manager = DatasetManager(app)
 
     def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
+        """The caller is responsible for security checks on the resulting job if
+        history_id, invocation_id, or implicit_collection_jobs_id is set.
+        Otherwise this will only return the user's jobs or all jobs if the requesting
+        user is acting as an admin.
+        """
         is_admin = trans.user_is_admin
         user_details = payload.user_details
         decoded_user_id = payload.user_id
         history_id = payload.history_id
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
+        implicit_collection_jobs_id = payload.implicit_collection_jobs_id
         search = payload.search
         order_by = payload.order_by
 
@@ -205,7 +212,9 @@ class JobManager:
             if user_details:
                 stmt = stmt.outerjoin(Job.user)
         else:
-            stmt = stmt.where(Job.user_id == trans.user.id)
+            if history_id is None and invocation_id is None and implicit_collection_jobs_id is None:
+                stmt = stmt.where(Job.user_id == trans.user.id)
+            # caller better check security
 
         stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
         stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
@@ -219,7 +228,15 @@ class JobManager:
         order_by_columns = Job
         if workflow_id or invocation_id:
             stmt, order_by_columns = add_workflow_jobs()
-
+        elif implicit_collection_jobs_id:
+            stmt = (
+                stmt.join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+                .join(
+                    ImplicitCollectionJobs,
+                    ImplicitCollectionJobs.id == ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id,
+                )
+                .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == implicit_collection_jobs_id)
+            )
         if search:
             stmt = add_search_criteria(stmt)
 
@@ -241,8 +258,8 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id):
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+    def get_accessible_job(self, trans, decoded_job_id) -> Job:
+        job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
         belongs_to_user = (
@@ -411,7 +428,6 @@ class JobSearch:
         )
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = None
             if v == {"__class__": "RuntimeValue"}:
                 # TODO: verify this is always None. e.g. run with runtime input input
                 v = None
@@ -420,10 +436,8 @@ class JobSearch:
                 continue
             elif k == "chromInfo" and "?.len" in v:
                 continue
-                wildcard_value = '"%?.len"'
-            if not wildcard_value:
-                value_dump = json.dumps(v, sort_keys=True)
-                wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
+            value_dump = json.dumps(v, sort_keys=True)
+            wildcard_value = value_dump.replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(JobParameter)
             if value_dump == wildcard_value:
                 subq = subq.join(a).where(
@@ -621,9 +635,6 @@ class JobSearch:
                         continue
                     elif k == "chromInfo" and "?.len" in v:
                         continue
-                        wildcard_value = '"%?.len"'
-                    if not wildcard_value:
-                        wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(
                         and_(model.Job.id == a.job_id, a.name == k, a.value == json.dumps(v, sort_keys=True))
@@ -656,9 +667,9 @@ class JobSearch:
         return None
 
 
-def view_show_job(trans, job, full: bool) -> typing.Dict:
+def view_show_job(trans, job: Job, full: bool) -> typing.Dict:
     is_admin = trans.user_is_admin
-    job_dict = trans.app.security.encode_all_ids(job.to_dict("element", system_details=is_admin), True)
+    job_dict = job.to_dict("element", system_details=is_admin)
     if trans.app.config.expose_dataset_path and "command_line" not in job_dict:
         job_dict["command_line"] = job.command_line
     if full:
@@ -905,18 +916,19 @@ def summarize_destination_params(trans, job):
         "Runner Job ID": job.job_runner_external_id,
         "Handler": job.handler,
     }
-    job_destination_params = job.destination_params
-    if job_destination_params:
+    if job_destination_params := job.destination_params:
         destination_params.update(job_destination_params)
     return destination_params
 
 
-def summarize_job_parameters(trans, job):
+def summarize_job_parameters(trans, job: Job):
     """Produce a dict-ified version of job parameters ready for tabular rendering.
 
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    # More client logic here than is ideal but it is hard to reason about
+    # tool parameter types on the client relative to the server.
 
     def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
         if upgrade_messages is None:
@@ -926,23 +938,24 @@ def summarize_job_parameters(trans, job):
 
         for input in input_params.values():
             if input.name in param_values:
+                input_value = param_values[input.name]
                 if input.type == "repeat":
-                    for i in range(len(param_values[input.name])):
-                        rval.extend(inputs_recursive(input.inputs, param_values[input.name][i], depth=depth + 1))
+                    for i in range(len(input_value)):
+                        rval.extend(inputs_recursive(input.inputs, input_value[i], depth=depth + 1))
                 elif input.type == "section":
                     # Get the value of the current Section parameter
                     rval.append(dict(text=input.name, depth=depth))
                     rval.extend(
                         inputs_recursive(
                             input.inputs,
-                            param_values[input.name],
+                            input_value,
                             depth=depth + 1,
                             upgrade_messages=upgrade_messages.get(input.name),
                         )
                     )
                 elif input.type == "conditional":
                     try:
-                        current_case = param_values[input.name]["__current_case__"]
+                        current_case = input_value["__current_case__"]
                         is_valid = True
                     except Exception:
                         current_case = None
@@ -954,7 +967,7 @@ def summarize_job_parameters(trans, job):
                         rval.extend(
                             inputs_recursive(
                                 input.cases[current_case].inputs,
-                                param_values[input.name],
+                                input_value,
                                 depth=depth + 1,
                                 upgrade_messages=upgrade_messages.get(input.name),
                             )
@@ -973,20 +986,24 @@ def summarize_job_parameters(trans, job):
                         dict(
                             text=input.group_title(param_values),
                             depth=depth,
-                            value=f"{len(param_values[input.name])} uploaded datasets",
+                            value=f"{len(input_value)} uploaded datasets",
                         )
                     )
-                elif input.type == "data" or input.type == "data_collection":
+                elif (
+                    input.type == "data"
+                    or input.type == "data_collection"
+                    or isinstance(input_value, model.HistoryDatasetAssociation)
+                ):
                     value = []
-                    for element in listify(param_values[input.name]):
-                        encoded_id = trans.security.encode_id(element.id)
+                    for element in listify(input_value):
+                        element_id = element.id
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element
-                            value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                            value.append({"src": "hda", "id": element_id, "hid": hda.hid, "name": hda.name})
                         elif isinstance(element, model.DatasetCollectionElement):
-                            value.append({"src": "dce", "id": encoded_id, "name": element.element_identifier})
+                            value.append({"src": "dce", "id": element_id, "name": element.element_identifier})
                         elif isinstance(element, model.HistoryDatasetCollectionAssociation):
-                            value.append({"src": "hdca", "id": encoded_id, "hid": element.hid, "name": element.name})
+                            value.append({"src": "hdca", "id": element_id, "hid": element.hid, "name": element.name})
                         else:
                             raise Exception(
                                 f"Unhandled data input parameter type encountered {element.__class__.__name__}"
@@ -1002,7 +1019,7 @@ def summarize_job_parameters(trans, job):
                         dict(
                             text=label,
                             depth=depth,
-                            value=input.value_to_display_text(param_values[input.name]),
+                            value=input.value_to_display_text(input_value),
                             notes=upgrade_messages.get(input.name, ""),
                         )
                     )
@@ -1047,7 +1064,7 @@ def summarize_job_parameters(trans, job):
     return {
         "parameters": parameters,
         "has_parameter_errors": has_parameter_errors,
-        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects, security=trans.security),
+        "outputs": summarize_job_outputs(job=job, tool=tool, params=params_objects),
     }
 
 
@@ -1062,7 +1079,7 @@ def get_output_name(tool, output, params):
         pass
 
 
-def summarize_job_outputs(job: model.Job, tool, params, security):
+def summarize_job_outputs(job: model.Job, tool, params):
     outputs = defaultdict(list)
     output_labels = {}
     possible_outputs = (
@@ -1082,7 +1099,7 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
             outputs[output_name].append(
                 {
                     "label": label,
-                    "value": {"src": src, "id": security.encode_id(getattr(output_association, attribute))},
+                    "value": {"src": src, "id": getattr(output_association, attribute)},
                 }
             )
     return outputs

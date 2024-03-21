@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Datasets.
 """
+
 import glob
 import logging
 import os
@@ -60,6 +61,8 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.permissions = DatasetRBACPermissions(app)
         # needed for admin test
         self.user_manager = users.UserManager(app)
+        self.quota_agent = app.quota_agent
+        self.security_agent = app.model.security_agent
 
     def create(self, manage_roles=None, access_roles=None, flush=True, **kwargs):
         """
@@ -143,6 +146,36 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         roles = user.all_roles_exploiting_cache() if user else []
         return self.app.security_agent.can_access_dataset(roles, dataset)
 
+    def update_object_store_id(self, trans, dataset, object_store_id: str):
+        device_source_map = self.app.object_store.get_device_source_map()
+        old_object_store_id = dataset.object_store_id
+        new_object_store_id = object_store_id
+        if old_object_store_id == new_object_store_id:
+            return None
+        old_device_id = device_source_map.get_device_id(old_object_store_id)
+        new_device_id = device_source_map.get_device_id(new_object_store_id)
+        if old_device_id != new_device_id:
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot swap object store IDs for object stores that don't share a device ID."
+            )
+
+        if not self.security_agent.can_change_object_store_id(trans.user, dataset):
+            # TODO: probably want separate exceptions for doesn't own the dataset and dataset
+            # has been shared.
+            raise exceptions.InsufficientPermissionsException("Cannot change dataset permissions...")
+
+        quota_source_map = self.app.object_store.get_quota_source_map()
+        if quota_source_map:
+            old_label = quota_source_map.get_quota_source_label(old_object_store_id)
+            new_label = quota_source_map.get_quota_source_label(new_object_store_id)
+            if old_label != new_label:
+                self.quota_agent.relabel_quota_for_dataset(dataset, old_label, new_label)
+        sa_session = self.app.model.context
+        with transaction(sa_session):
+            dataset.object_store_id = new_object_store_id
+            sa_session.add(dataset)
+            sa_session.commit()
+
     def compute_hash(self, request: ComputeDatasetHashTaskRequest):
         # For files in extra_files_path
         dataset = self.by_id(request.dataset_id)
@@ -156,7 +189,7 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
         extra_files_path = request.extra_files_path
         dataset_hash = model.DatasetHash(
-            hash_function=hash_function.value,
+            hash_function=hash_function,
             hash_value=calculated_hash_value,
             extra_files_path=extra_files_path,
         )
@@ -273,7 +306,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
-                return dataset.get_file_name()
+                return dataset.get_file_name(sync_cache=False)
         self.skip()
 
     def serialize_extra_files_path(self, item, key, user=None, **context):

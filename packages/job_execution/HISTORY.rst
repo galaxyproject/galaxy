@@ -4,10 +4,49 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+24.0.dev0
 ---------
 
 
+
+-------------------
+23.2.1 (2024-02-21)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Replace file_name property with get_file_name function by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#16783 <https://github.com/galaxyproject/galaxy/pull/16783>`_
+* Enable some flake8-logging-format rules in ruff by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16915 <https://github.com/galaxyproject/galaxy/pull/16915>`_
+* Move and re-use persist_extra_files by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16955 <https://github.com/galaxyproject/galaxy/pull/16955>`_
+* optimize object store cache operations by `@SergeyYakubov <https://github.com/SergeyYakubov>`_ in `#17025 <https://github.com/galaxyproject/galaxy/pull/17025>`_
+
+-------------------
+23.1.4 (2024-01-04)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix library import from path linking files by `@davelopez <https://github.com/davelopez>`_ in `#16919 <https://github.com/galaxyproject/galaxy/pull/16919>`_
+* Don't store job in JobIO instance attributes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16965 <https://github.com/galaxyproject/galaxy/pull/16965>`_
+* Fix extra files collection if using ``store_by="id"`` and `outputs_to_working_directory` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17067 <https://github.com/galaxyproject/galaxy/pull/17067>`_
 
 -------------------
 23.1.1 (2023-10-23)

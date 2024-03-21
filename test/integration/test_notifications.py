@@ -7,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
 )
 from uuid import uuid4
 
@@ -268,6 +269,35 @@ class TestNotificationsIntegration(IntegrationTestCase):
         assert "Scheduled" in subjects
         assert "Expired" in subjects
 
+    def test_notification_input_dates_consider_timezone(self):
+        payload = notification_broadcast_test_data(subject="Test", message="Test")
+        payload["publication_time"] = "2021-01-01T12:00:00+02:00"
+        payload["expiration_time"] = "2021-01-01T12:00:00Z"
+        response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+        notification = response.json()["notification"]
+        assert notification["publication_time"] == "2021-01-01T10:00:00"
+        assert notification["expiration_time"] == "2021-01-01T12:00:00"
+
+    def test_broadcast_notification_action_links(self):
+        # Broadcast notifications can have relative and absolute links
+        response = self._send_broadcast_notification(
+            action_links=[("View Workflows", "/workflows/list"), ("Go to GTN", "https://training.galaxyproject.org")]
+        )
+        notification_id = response["notification"]["id"]
+        response = self._get(f"notifications/broadcast/{notification_id}")
+        self._assert_status_code_is_ok(response)
+        notification = response.json()
+        assert "content" in notification
+        assert "action_links" in notification["content"]
+        assert len(notification["content"]["action_links"]) == 2
+        action_link = notification["content"]["action_links"][0]
+        assert action_link["action_name"] == "View Workflows"
+        assert action_link["link"] == "/workflows/list"
+        action_link = notification["content"]["action_links"][1]
+        assert action_link["action_name"] == "Go to GTN"
+        assert action_link["link"] == "https://training.galaxyproject.org"
+
     def test_sharing_items_creates_notifications_when_expected(self):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
@@ -349,12 +379,17 @@ class TestNotificationsIntegration(IntegrationTestCase):
         message: Optional[str] = None,
         publication_time: Optional[datetime] = None,
         expiration_time: Optional[datetime] = None,
+        action_links: Optional[List[Tuple[str, str]]] = None,
     ):
         payload = notification_broadcast_test_data()
         if subject is not None:
             payload["content"]["subject"] = subject
         if message is not None:
             payload["content"]["message"] = message
+        if action_links is not None:
+            payload["content"]["action_links"] = [
+                {"action_name": action_name, "link": link} for action_name, link in action_links
+            ]
         if publication_time is not None:
             payload["publication_time"] = publication_time.isoformat()
         if expiration_time is not None:

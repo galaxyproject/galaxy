@@ -22,6 +22,10 @@ if (props.excludeStates) {
     }
 }
 
+function dataState(state: string) {
+    return state === "new_populated_state" ? "new" : state;
+}
+
 function onFilter(value: string) {
     emit("set-filter", `state`, value);
 }
@@ -30,12 +34,20 @@ function onFilter(value: string) {
 <template>
     <div>
         <p>Here are all available item states in Galaxy:</p>
-        <p><i>(Note that the colors for each state correspond to content item state colors in the history)</i></p>
+        <p>
+            <i>
+                (Note that the colors for each state correspond to content item state colors in the history, and if it
+                exists, hovering over the icon on a history item will display the state message.)
+            </i>
+        </p>
         <dl v-for="(state, key, index) in states" :key="index">
-            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
+            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="dataState(key)">
                 <dt>
-                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
+                    <a v-if="!state.nonDb" class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a
+                    >
+                    <span v-else
+                        ><code>{{ key }}</code></span
                     >
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>

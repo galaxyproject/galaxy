@@ -151,8 +151,7 @@ def get_revision_label(app, repository, changeset_revision, include_date=True, i
     which includes the revision date if the receive include_date is True.
     """
     repo = repository.hg_repo
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
         return get_revision_label_from_ctx(ctx, include_date=include_date, include_hash=include_hash)
     else:
         if include_hash:
@@ -168,8 +167,7 @@ def get_rev_label_changeset_revision_from_repository_metadata(
         repository = repository_metadata.repository
     repo = repository.hg_repo
     changeset_revision = repository_metadata.changeset_revision
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
         rev = "%04d" % ctx.rev()
         if include_date:
             changeset_revision_date = get_readable_ctx_date(ctx)
@@ -209,8 +207,7 @@ def get_rev_label_from_changeset_revision(repo, changeset_revision, include_date
     Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash
     which includes the revision date if the receive include_date is True.
     """
-    ctx = get_changectx_for_changeset(repo, changeset_revision)
-    if ctx:
+    if ctx := get_changectx_for_changeset(repo, changeset_revision):
         rev = "%04d" % ctx.rev()
         label = get_revision_label_from_ctx(ctx, include_date=include_date)
     else:

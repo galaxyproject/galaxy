@@ -6,8 +6,8 @@
 
 set -e
 
-SUPPORTED_PYTHON_VERSIONS="3.7 3.8 3.9 3.10 3.11"
-NOT_SUPPORTED_NEXT_PYTHON_VERSION="3.12"
+SUPPORTED_PYTHON_VERSIONS="3.8 3.9 3.10 3.11 3.12"
+NOT_SUPPORTED_NEXT_PYTHON_VERSION="3.13"
 
 this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 
@@ -86,9 +86,9 @@ split_requirement () {
 }
 
 # For some packages there is no recent version that works on all Python versions
-# supported by Galaxy, so Poetry resorts to an old version that didn't have a
-# maximum Python version pin. Here we replace any such requirement with multiple
-# Python-version-specific requirements.
+# supported by Galaxy, so Poetry resorts to an old version. Here we replace any
+# such requirement with multiple Python-version-specific requirements.
+# Packages which specify a maximum Python version pin:
 split_requirement matplotlib
 split_requirement numpy
 split_requirement scipy

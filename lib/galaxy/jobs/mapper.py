@@ -160,8 +160,7 @@ class JobRunnerMapper:
         rules_module_name = destination.params.get("rules_module")
         rule_modules = self.__get_rule_modules_or_defaults(rules_module_name)
         expand_function = None
-        expand_function_name = destination.params.get("function")
-        if expand_function_name:
+        if expand_function_name := destination.params.get("function"):
             expand_function = self.__last_matching_function_in_modules(rule_modules, expand_function_name)
             if not expand_function:
                 message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % expand_function_name

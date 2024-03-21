@@ -7,6 +7,19 @@
     backends to the distributed and hierarchical object stores (including
     distributed and hierarchical themselves).
 -->
+<!--
+    Most of the Object Stores have <cache> option like:
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+
+    Here
+    "path" - local path to store cached data,
+    "size" - size of the cache in gigabytes.
+    "cache_updated_data" - optional parameter that allows to control data
+       is being sent directly
+       to an object store without storing it in the cache.
+       By default data is also copied to the cache (cache_updated_data="True").
+-->
+
 
 <!--
     Sample Disk Object Store
@@ -135,7 +148,7 @@
 <object_store type="aws_s3">
      <auth access_key="...." secret_key="....." />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
-     <cache path="database/object_store_cache" size="1000" />
+     <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
      <extra_dir type="job_work" path="database/job_working_directory_s3"/>
      <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
@@ -150,7 +163,7 @@
     <resource name="demoResc" />
     <zone name="tempZone" />
     <connection host="localhost" port="1247" timeout="30" refresh_time="300" connection_pool_monitor_interval="3600"/>
-    <cache path="database/object_store_cache_irods" size="1000" />
+    <cache path="database/object_store_cache_irods" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_irods"/>
     <extra_dir type="temp" path="database/tmp_irods"/>
 </object_store>
@@ -166,7 +179,7 @@
     <auth access_key="...." secret_key="....." />
     <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
     <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
-    <cache path="database/object_store_cache" size="1000" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_swift"/>
     <extra_dir type="temp" path="database/tmp_swift"/>
 </object_store>
@@ -181,7 +194,7 @@
 <object_store type="azure_blob">
     <auth account_name="..." account_key="...." />
     <container name="unique_container_name" max_chunk_size="250"/>
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
@@ -196,7 +209,7 @@
 <object_store type="cloud" provider="aws" order="0">
     <auth access_key="..." secret_key="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
     <extra_dir type="temp" path="database/tmp_s3"/>
 </object_store>
@@ -211,7 +224,7 @@
 <object_store type="cloud" provider="azure" order="0">
     <auth subscription_id="..." client_id="..." secret="..." tenant="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="100" />
+    <cache path="database/object_store_cache" size="100" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_azure"/>
     <extra_dir type="temp" path="database/tmp_azure"/>
 </object_store>
@@ -226,7 +239,7 @@
 <object_store type="cloud" provider="google" order="0">
     <auth credentials_file="..." />
     <bucket name="..." use_reduced_redundancy="False" />
-    <cache path="database/object_store_cache" size="1000" />
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
     <extra_dir type="job_work" path="database/job_working_directory_gcp"/>
     <extra_dir type="temp" path="database/tmp_gcp"/>
 </object_store>
@@ -319,7 +332,7 @@
             <resource name="demoResc" />
             <zone name="tempZone" />
             <connection host="localhost" port="1247" timeout="30" refresh_time="300" connection_pool_monitor_interval="3600"/>
-            <cache path="database/object_store_cache_irods" size="1000" />
+            <cache path="database/object_store_cache_irods" size="1000" cache_updated_data="True" />
             <badges>
                 <less_stable />
                 <backed_up>This data is backed up using iRODs native hierarchal storage management mechanisms. The rules describing how data is stored and backed up in iRODS can be found in our institutional [iRODS documentation](https://irods.org/uploads/2018/Saum-SURFsara-Data_Archiving_in_iRODS-slides.pdf)</backed_up>

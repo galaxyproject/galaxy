@@ -369,8 +369,7 @@ class ParamContext:
 
     def for_state(self):
         name = self.name if self.index is None else "%s_%d" % (self.name, self.index)
-        parent_for_state = self.parent_context.for_state()
-        if parent_for_state:
+        if parent_for_state := self.parent_context.for_state():
             return f"{parent_for_state}|{name}"
         else:
             return name

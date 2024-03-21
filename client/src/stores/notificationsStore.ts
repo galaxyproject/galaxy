@@ -7,19 +7,24 @@ import {
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
 } from "@/api/notifications";
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
 
-const STATUS_POLLING_DELAY = 5000;
+const ACTIVE_POLLING_INTERVAL = 5000;
+const INACTIVE_POLLING_INTERVAL = 30000;
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
+    const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
+        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+        longPollingInterval: INACTIVE_POLLING_INTERVAL,
+    });
     const broadcastsStore = useBroadcastsStore();
 
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotification[]>([]);
 
-    const pollId = ref<NodeJS.Timeout | undefined>(undefined);
     const loadingNotifications = ref<boolean>(false);
     const lastNotificationUpdate = ref<Date | null>(null);
 
@@ -31,12 +36,12 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     async function getNotificationStatus() {
-        stopPollingNotifications();
         try {
             if (!lastNotificationUpdate.value) {
                 loadingNotifications.value = true;
                 await broadcastsStore.loadBroadcasts();
                 await loadNotifications();
+                updateUnreadCount();
             } else {
                 const data = await loadNotificationsStatus(lastNotificationUpdate.value);
                 totalUnreadCount.value = data.total_unread_count;
@@ -56,26 +61,20 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         }
     }
 
-    async function startPollingNotifications() {
-        await getNotificationStatus();
-        pollId.value = setTimeout(() => startPollingNotifications(), STATUS_POLLING_DELAY);
-    }
-
-    function stopPollingNotifications() {
-        clearTimeout(pollId.value);
-        pollId.value = undefined;
-    }
-
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
         await updateBatchNotificationsOnServer(request);
         if (request.changes.deleted) {
             notifications.value = notifications.value.filter((n) => !request.notification_ids.includes(n.id));
         }
-        await startPollingNotifications();
+        startWatchingNotifications();
     }
 
     async function updateNotification(notification: UserNotification, changes: NotificationChanges) {
         return updateBatchNotification({ notification_ids: [notification.id], changes });
+    }
+
+    function updateUnreadCount() {
+        totalUnreadCount.value = notifications.value.filter((n) => !n.seen_time).length;
     }
 
     return {
@@ -85,6 +84,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         loadingNotifications,
         updateNotification,
         updateBatchNotification,
-        startPollingNotifications,
+        startWatchingNotifications,
     };
 });

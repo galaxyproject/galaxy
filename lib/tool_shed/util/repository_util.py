@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from typing import (
+    List,
     Optional,
     Tuple,
     TYPE_CHECKING,
@@ -190,7 +191,7 @@ def create_repository(
     description,
     long_description,
     user_id,
-    category_ids=None,
+    category_ids: Optional[List[str]] = None,
     remote_repository_url=None,
     homepage_url=None,
 ) -> Tuple["Repository", str]:

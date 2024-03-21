@@ -1,6 +1,7 @@
 """
 API operations on the contents of a data library.
 """
+
 import logging
 from typing import Optional
 
@@ -332,7 +333,6 @@ class LibraryContentsController(
             last_used_build = dbkey[0]
         else:
             last_used_build = dbkey
-        roles = kwd.get("roles", "")
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         folder = trans.sa_session.get(LibraryFolder, folder_id)
@@ -344,7 +344,7 @@ class LibraryContentsController(
         error = False
         if upload_option == "upload_paths":
             validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
-        elif roles:
+        elif roles := kwd.get("roles", ""):
             # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
             # on the dataset that would cause accessibility issues.
             vars = dict(DATASET_ACCESS_in=roles)

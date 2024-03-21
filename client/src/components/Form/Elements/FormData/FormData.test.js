@@ -36,7 +36,7 @@ const defaultOptions = {
         { id: "hda1", hid: 1, name: "hdaName1", src: "hda", tags: ["tag1"] },
         { id: "hda2", hid: 2, name: "hdaName2", src: "hda", tags: ["tag1", "tag2"] },
         { id: "hda3", hid: 3, name: "hdaName3", src: "hda", tags: ["tag2", "tag3"] },
-        { id: "hda3", hid: 4, name: "hdaName4", src: "hda" },
+        { id: "hda4", hid: 4, name: "hdaName4", src: "hda" },
     ],
     hdca: [
         { id: "hdca5", hid: 5, name: "hdcaName5", src: "hdca" },
@@ -61,7 +61,7 @@ describe("FormData", () => {
         const value_1 = {
             batch: false,
             product: false,
-            values: [{ id: "hda3", src: "hda", map_over_type: null }],
+            values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
         const options = wrapper.find(".btn-group").findAll("button");
         expect(options.length).toBe(4);
@@ -122,7 +122,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toBe("4: hdaName4");
+        expect(selectedValues.at(0).text()).toBe("3: hdaName3");
         expect(selectedValues.at(1).text()).toBe("2: hdaName2");
         const value_0 = {
             batch: false,
@@ -151,6 +151,94 @@ describe("FormData", () => {
         await wrapper.setProps({ value: value_2 });
         expect(wrapper.emitted().input.length).toBe(3);
         expect(wrapper.emitted().input[2][0]).toEqual(null);
+    });
+
+    it("properly sorts multiple datasets", async () => {
+        const wrapper = createTarget({
+            value: {
+                // the order of values does not matter here
+                values: [
+                    { id: "hda2", src: "hda" },
+                    { id: "hda3", src: "hda" },
+                    { id: "hda1", src: "hda" },
+                ],
+            },
+            multiple: true,
+            optional: true,
+            options: defaultOptions,
+        });
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(3);
+        // the values in the multiselect are sorted by hid DESC
+        expect(selectedValues.at(0).text()).toBe("3: hdaName3");
+        expect(selectedValues.at(1).text()).toBe("2: hdaName2");
+        expect(selectedValues.at(2).text()).toBe("1: hdaName1");
+        await selectedValues.at(0).trigger("click");
+        const value_sorted = {
+            batch: false,
+            product: false,
+            values: [
+                // the values in the emitted input are sorted by hid ASC
+                { id: "hda1", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+            ],
+        };
+        expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
+    });
+
+    it("sorts mixed dces and hdas", async () => {
+        const sortOptions = {
+            hda: [
+                { id: "hda1", hid: 1, name: "hdaName1", src: "hda", tags: ["tag1"] },
+                { id: "hda2", hid: 2, name: "hdaName2", src: "hda", tags: ["tag1", "tag2"] },
+                { id: "hda3", hid: 3, name: "hdaName3", src: "hda", tags: ["tag2", "tag3"] },
+                { id: "hda4", hid: 4, name: "hdaName4", src: "hda" },
+            ],
+            dce: [
+                { id: "dce1", name: "dceName1", src: "dce", is_dataset: true },
+                { id: "dce2", name: "dceName2", src: "dce", is_dataset: true },
+                { id: "dce3", name: "dceName3", src: "dce", is_dataset: true },
+                { id: "dce4", name: "dceName4", src: "dce", is_dataset: true },
+            ],
+        };
+        const wrapper = createTarget({
+            //intermix hdas and dces in the selected options
+            value: {
+                values: [
+                    { id: "hda1", src: "hda" },
+                    { id: "dce4", src: "dce" },
+                    { id: "dce2", src: "dce" },
+                    { id: "hda2", src: "hda" },
+                    { id: "dce3", src: "dce" },
+                ],
+            },
+            multiple: true,
+            optional: true,
+            options: sortOptions,
+        });
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(5);
+        // when dces are mixed in their values are shown first and are
+        // ordered by id descending
+        expect(selectedValues.at(0).text()).toBe("dceName4 (as dataset)");
+        expect(selectedValues.at(1).text()).toBe("dceName3 (as dataset)");
+        expect(selectedValues.at(2).text()).toBe("dceName2 (as dataset)");
+        expect(selectedValues.at(3).text()).toBe("2: hdaName2");
+        expect(selectedValues.at(4).text()).toBe("1: hdaName1");
+        await selectedValues.at(0).trigger("click");
+        const value_sorted = {
+            batch: false,
+            product: false,
+            values: [
+                // when dces are mixed in, they are emitted first
+                // and are sorted by id descending
+                { id: "dce3", map_over_type: null, src: "dce" },
+                { id: "dce2", map_over_type: null, src: "dce" },
+                { id: "hda1", map_over_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+            ],
+        };
+        expect(wrapper.emitted().input[1][0]).toEqual(value_sorted);
     });
 
     it("dataset collection as hda", async () => {
@@ -294,24 +382,28 @@ describe("FormData", () => {
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
         await wrapper.find("[title='Multiple datasets'").trigger("click");
-        expect(wrapper.emitted().input[1][0]).toEqual({
-            batch: true,
-            product: false,
-            values: [{ id: "dce4", map_over_type: null, src: "dce" }],
-        });
+        expect(wrapper.emitted().input[1][0]).toEqual(null);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
         expect(elements_0.length).toEqual(6);
         await elements_0.at(3).find("span").trigger("click");
         const value_0 = {
             batch: true,
             product: false,
-            values: [
-                { id: "dce4", map_over_type: null, src: "dce" },
-                { id: "hda3", map_over_type: null, src: "hda" },
-            ],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[2][0]).toEqual(value_0);
         await wrapper.setProps({ value: value_0 });
+        await elements_0.at(0).find("span").trigger("click");
+        const value_1 = {
+            batch: true,
+            product: false,
+            values: [
+                { id: "hda3", map_over_type: null, src: "hda" },
+                { id: "dce4", map_over_type: null, src: "dce" },
+            ],
+        };
+        expect(wrapper.emitted().input[3][0]).toEqual(value_1);
+        await wrapper.setProps({ value: value_1 });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".custom-switch span").text()).toBe(
             "Linked: Datasets will be run in matched order with other datasets."
@@ -321,12 +413,12 @@ describe("FormData", () => {
         expect(wrapper.find(".custom-switch span").text()).toBe(
             "Unlinked: Dataset will be run against *all* other datasets."
         );
-        expect(wrapper.emitted().input[3][0]).toEqual({
+        expect(wrapper.emitted().input[4][0]).toEqual({
             batch: true,
             product: true,
             values: [
-                { id: "dce4", map_over_type: null, src: "dce" },
                 { id: "hda3", map_over_type: null, src: "hda" },
+                { id: "dce4", map_over_type: null, src: "dce" },
             ],
         });
     });
@@ -357,13 +449,7 @@ describe("FormData", () => {
         expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets'").trigger("click");
         expect(options.at(0).classes()).toContain("active");
-        expect(wrapper.emitted().input[2][0]).toEqual({
-            batch: false,
-            product: false,
-            values: [{ id: "dce4", map_over_type: null, src: "dce" }],
-        });
-        const newSelectedValues = wrapper.findAll(SELECTED_VALUE);
-        expect(newSelectedValues.at(0).text()).toBe("dceName4 (as dataset)");
+        expect(wrapper.emitted().input[2][0]).toEqual(null);
     });
 
     it("tagging filter", async () => {

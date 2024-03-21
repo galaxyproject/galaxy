@@ -1046,7 +1046,7 @@
 
 <%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False, render_repository_actions_for='tool_shed' )">
     <%
-        from tool_shed.util.encoding_util import tool_shed_encode
+        from galaxy.util.tool_shed.encoding_util import tool_shed_encode
 
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata

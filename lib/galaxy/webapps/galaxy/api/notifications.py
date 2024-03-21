@@ -3,19 +3,16 @@ API operations on Notification objects.
 """
 
 import logging
-from datetime import datetime
 from typing import Optional
 
 from fastapi import (
     Body,
-    Path,
     Query,
     Response,
     status,
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
@@ -33,6 +30,8 @@ from galaxy.schema.notifications import (
     UserNotificationsBatchUpdateRequest,
     UserNotificationUpdateRequest,
 )
+from galaxy.schema.types import OffsetNaiveDatetime
+from galaxy.webapps.galaxy.api.common import NotificationIdPathParam
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from . import (
     depends,
@@ -56,7 +55,7 @@ class FastAPINotifications:
     def get_notifications_status(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        since: datetime = Query(),
+        since: OffsetNaiveDatetime = Query(),
     ) -> NotificationStatusSummary:
         """Anonymous users cannot receive personal notifications, only broadcasted notifications."""
         return self.service.get_notifications_status(trans, since)
@@ -110,8 +109,8 @@ class FastAPINotifications:
     )
     def get_broadcasted(
         self,
+        notification_id: NotificationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        notification_id: DecodedDatabaseIdField = Path(),
     ) -> BroadcastNotificationResponse:
         """Only Admin users can access inactive notifications (scheduled or recently expired)."""
         return self.service.get_broadcasted_notification(trans, notification_id)
@@ -133,8 +132,8 @@ class FastAPINotifications:
     )
     def show_notification(
         self,
+        notification_id: NotificationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        notification_id: DecodedDatabaseIdField = Path(),
     ) -> UserNotificationResponse:
         user = self.service.get_authenticated_user(trans)
         return self.service.get_user_notification(user, notification_id)
@@ -147,8 +146,8 @@ class FastAPINotifications:
     )
     def update_broadcasted_notification(
         self,
+        notification_id: NotificationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        notification_id: DecodedDatabaseIdField = Path(),
         payload: NotificationBroadcastUpdateRequest = Body(),
     ):
         """Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications."""
@@ -162,8 +161,8 @@ class FastAPINotifications:
     )
     def update_user_notification(
         self,
+        notification_id: NotificationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        notification_id: DecodedDatabaseIdField = Path(),
         payload: UserNotificationUpdateRequest = Body(),
     ):
         self.service.update_user_notification(trans, notification_id, payload)
@@ -187,8 +186,8 @@ class FastAPINotifications:
     )
     def delete_user_notification(
         self,
+        notification_id: NotificationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        notification_id: DecodedDatabaseIdField = Path(),
     ):
         """When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
 

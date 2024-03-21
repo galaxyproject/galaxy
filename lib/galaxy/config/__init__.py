@@ -1,6 +1,7 @@
 """
 Universe configuration builder.
 """
+
 # absolute_import needed for tool_shed package.
 
 import configparser
@@ -59,11 +60,10 @@ from ..version import (
 if TYPE_CHECKING:
     from galaxy.model import User
 
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib_resources import files
 
 log = logging.getLogger(__name__)
 
@@ -232,9 +232,9 @@ class BaseAppConfiguration(HasDynamicProperties):
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
     renamed_options: Optional[Dict[str, str]] = None
     deprecated_dirs: Dict[str, str] = {}
-    paths_to_check_against_root: Set[
-        str
-    ] = set()  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
+    paths_to_check_against_root: Set[str] = (
+        set()
+    )  # backward compatibility: if resolved path doesn't exist, try resolving w.r.t root
     add_sample_file_to_defaults: Set[str] = set()  # for these options, add sample config files to their defaults
     listify_options: Set[str] = set()  # values for these options are processed as lists of values
     object_store_store_by: str
@@ -685,7 +685,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     add_sample_file_to_defaults = {
         "build_sites_config_file",
         "datatypes_config_file",
-        "job_metrics_config_file",
         "tool_data_table_config_path",
         "tool_config_file",
     }
@@ -861,7 +860,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
-        self.tool_path = self._in_root_dir(self.tool_path)
+        if not running_from_source and kwargs.get("tool_path") is None:
+            try:
+                self.tool_path = str(files("galaxy.tools") / "bundled")
+            except ModuleNotFoundError:
+                # Might not be a full galaxy installation
+                self.tool_path = self._in_root_dir(self.tool_path)
+        else:
+            self.tool_path = self._in_root_dir(self.tool_path)
         self.tool_data_path = self._in_root_dir(self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path") is None:
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
@@ -1173,7 +1179,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         log_destination = kwargs.get("log_destination")
         log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))
         log_rotate_count = int(kwargs.get("log_rotate_count", 0))
-        galaxy_daemon_log_destination = os.environ.get("GALAXY_DAEMON_LOG")
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
                 "class": "logging.StreamHandler",
@@ -1192,7 +1197,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 "maxBytes": log_rotate_size,
                 "backupCount": log_rotate_count,
             }
-        if galaxy_daemon_log_destination:
+        if galaxy_daemon_log_destination := os.environ.get("GALAXY_DAEMON_LOG"):
             LOGGING_CONFIG_DEFAULT["handlers"]["files"] = {
                 "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",

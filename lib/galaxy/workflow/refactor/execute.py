@@ -71,7 +71,7 @@ class WorkflowRefactorExecutor:
             if refactor_method is None:
                 raise RequestParameterInvalidException(f"Unknown workflow editing action encountered [{action_type}]")
             execution = RefactorActionExecution(
-                action=action.dict(),
+                action=action,
                 messages=[],
             )
             refactor_method(action, execution)

@@ -13,15 +13,19 @@
 <html>
     <head>
         ${h.stylesheet_link( app_root + 'style.css' )}
-        ${h.javascript_link( app_root + 'dist/aladin-lite-galaxy/aladin.js' )}
     </head>
     <body>
         <div id="div_title"><span id="span_plugin_name">FITS aladin viewer</span> : <span id="span_file_name">${hda.name | h}</span></div>
         <div id="aladin-lite-div"></div>
 
         <script>
-            let file_url = '${file_url}';
+            const fileUrl = '${file_url}';
+            const appRoot = '${app_root}'
+            const aladinLiteCDNUrl = "https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"
+            const aladinLiteScriptLocation = "dist/aladin-lite-galaxy/aladin.js"
+            const aladinLiteScriptAlternativeLocation = "dist/aladin.js"
         </script>
+
         ${h.javascript_link( app_root + 'script.js' )}
     </body>
 </html>

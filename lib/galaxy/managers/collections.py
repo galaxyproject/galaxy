@@ -43,11 +43,11 @@ from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.schema.schema import DatasetCollectionInstanceType
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.util import validation
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
+from galaxy.util import validation
 
 log = logging.getLogger(__name__)
 
@@ -631,9 +631,8 @@ class DatasetCollectionManager:
             message = message_template % element_identifier
             raise RequestParameterInvalidException(message)
 
-        tags = element_identifier.pop("tags", None)
         tag_str = ""
-        if tags:
+        if tags := element_identifier.pop("tags", None):
             tag_str = ",".join(str(_) for _ in tags)
         if src_type == "hda":
             hda = self.hda_manager.get_accessible(element_id, trans.user)
@@ -672,14 +671,12 @@ class DatasetCollectionManager:
     @overload
     def get_dataset_collection_instance(
         self, trans: ProvidesHistoryContext, instance_type: Literal["history"], id, **kwds: Any
-    ) -> model.HistoryDatasetCollectionAssociation:
-        ...
+    ) -> model.HistoryDatasetCollectionAssociation: ...
 
     @overload
     def get_dataset_collection_instance(
         self, trans: ProvidesHistoryContext, instance_type: Literal["library"], id, **kwds: Any
-    ) -> model.LibraryDatasetCollectionAssociation:
-        ...
+    ) -> model.LibraryDatasetCollectionAssociation: ...
 
     def get_dataset_collection_instance(
         self, trans: ProvidesHistoryContext, instance_type: DatasetCollectionInstanceType, id, **kwds: Any

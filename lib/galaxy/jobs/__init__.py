@@ -1,6 +1,7 @@
 """
 Support for running a tool in Galaxy via an internal job management system
 """
+
 import copy
 import datetime
 import errno
@@ -74,12 +75,12 @@ from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.tools.evaluation import (
     PartialToolEvaluator,
     ToolEvaluator,
 )
 from galaxy.util import (
-    etree,
     parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
@@ -165,8 +166,7 @@ def job_config_xml_to_dict(config, root):
     config_dict["runners"] = runners
 
     # Parser plugins section populate 'runners' and 'dynamic' in config_dict.
-    plugins = root.find("plugins")
-    if plugins is not None:
+    if (plugins := root.find("plugins")) is not None:
         for plugin in ConfiguresHandlers._findall_with_required(plugins, "plugin", ("id", "type", "load")):
             if plugin.get("type") == "runner":
                 workers = plugin.get("workers", plugins.get("workers", JobConfiguration.DEFAULT_NWORKERS))
@@ -243,8 +243,7 @@ def job_config_xml_to_dict(config, root):
     resource_groups = {}
 
     # Parse resources...
-    resources = root.find("resources")
-    if resources is not None:
+    if (resources := root.find("resources")) is not None:
         default_resource_group = resources.get("default", None)
         if default_resource_group:
             resources_config_dict["default"] = default_resource_group
@@ -259,9 +258,8 @@ def job_config_xml_to_dict(config, root):
     config_dict["resources"] = resources_config_dict
 
     # Parse tool mappings
-    tools = root.find("tools")
     config_dict["tools"] = []
-    if tools is not None:
+    if (tools := root.find("tools")) is not None:
         for tool in tools.findall("tool"):
             # There can be multiple definitions with identical ids, but different params
             tool_mapping_conf = {}
@@ -275,8 +273,7 @@ def job_config_xml_to_dict(config, root):
             config_dict["tools"].append(tool_mapping_conf)
 
     limits_config = []
-    limits = root.find("limits")
-    if limits is not None:
+    if (limits := root.find("limits")) is not None:
         for limit in JobConfiguration._findall_with_required(limits, "limit", ("type",)):
             limit_dict = {}
             for key in ["type", "tag", "id", "window"]:
@@ -647,7 +644,7 @@ class JobConfiguration(ConfiguresHandlers):
                             field_name, self.resource_parameters
                         )
                         raise KeyError(message)
-                    fields.append(etree.fromstring(self.resource_parameters[field_name]))
+                    fields.append(parse_xml_string(self.resource_parameters[field_name]))
 
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
@@ -1237,8 +1234,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
-            jeha = self.sa_session.scalars(stmt).first()
-            if jeha:
+            if jeha := self.sa_session.scalars(stmt).first():
                 return jeha.fda
             stmt = select(model.GenomeIndexToolData).filter_by(job=job).limit(1)
             return self.sa_session.scalars(stmt).first()
@@ -1249,15 +1245,13 @@ class MinimalJobWrapper(HasResourceParameters):
 
         tool_evaluator = self._get_tool_evaluator(job)
         compute_environment = compute_environment or self.default_compute_environment(job)
-        if hasattr(self.app, "interactivetool_manager"):
-            self.interactivetools = tool_evaluator.populate_interactivetools()
-            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
         tool_evaluator.set_compute_environment(compute_environment, get_special=get_special)
         (
             self.command_line,
             self.version_command_line,
             self.extra_filenames,
             self.environment_variables,
+            self.interactivetools,
         ) = tool_evaluator.build()
         job.command_line = self.command_line
 
@@ -1510,8 +1504,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if job is None:
             job = self.get_job()
 
-        destination_params = job.destination_params
-        if "__resubmit_delay_seconds" in destination_params:
+        if "__resubmit_delay_seconds" in (destination_params := job.destination_params):
             delay = float(destination_params["__resubmit_delay_seconds"])
             if job.seconds_since_updated < delay:
                 return False
@@ -1746,7 +1739,7 @@ class MinimalJobWrapper(HasResourceParameters):
             dataset.dataset.uuid = context["uuid"]
         self.__update_output(job, dataset)
         if not purged:
-            collect_extra_files(self.object_store, dataset, self.working_directory)
+            collect_extra_files(self.object_store, dataset, self.working_directory, self.outputs_to_working_directory)
         if job.states.ERROR == final_job_state:
             dataset.blurb = "error"
             if not implicit_collection_jobs:
@@ -1771,7 +1764,7 @@ class MinimalJobWrapper(HasResourceParameters):
             )
             if not metadata_set_successfully:
                 if self.tool.tool_type == "expression":
-                    dataset._state = model.Dataset.states.OK
+                    dataset.set_metadata_success_state()
                 elif retry_internally:
                     # If Galaxy was expected to sniff type and didn't - do so.
                     if dataset.ext == "_sniff_":
@@ -1783,7 +1776,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # call datatype.set_meta directly for the initial set_meta call during dataset creation
                     dataset.datatype.set_meta(dataset, overwrite=False)
                 else:
-                    dataset._state = model.Dataset.states.FAILED_METADATA
+                    dataset.state = model.HistoryDatasetAssociation.states.FAILED_METADATA
             else:
                 self.external_output_metadata.load_metadata(
                     dataset,
@@ -1947,7 +1940,13 @@ class MinimalJobWrapper(HasResourceParameters):
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
             except MaxDiscoveredFilesExceededError as e:
                 final_job_state = job.states.ERROR
-                job.job_messages = [str(e)]
+                job.job_messages = [
+                    {
+                        "type": "internal",
+                        "desc": str(e),
+                        "error_level": StdioErrorLevel.FATAL,
+                    }
+                ]
 
             for dataset_assoc in output_dataset_associations:
                 if getattr(dataset_assoc.dataset, "discovered", False):
@@ -2096,12 +2095,8 @@ class MinimalJobWrapper(HasResourceParameters):
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
-        job_id_tag = "<unknown job id>"
-        if job is not None:
-            job_id_tag = job.get_id_tag()
-
         state, tool_stdout, tool_stderr, job_messages = check_output(
-            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
 
         # Store the modified stdout and stderr in the job:
@@ -2410,8 +2405,7 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def user(self):
         job = self.get_job()
-        user_email = job.get_user_email()
-        if user_email:
+        if user_email := job.get_user_email():
             return user_email
         elif job.galaxy_session is not None:
             return f"anonymous@{job.galaxy_session.remote_addr.split()[-1]}"
@@ -2623,6 +2617,7 @@ class TaskWrapper(JobWrapper):
                 self.version_command_line,
                 extra_filenames,
                 self.environment_variables,
+                *_,
             ) = tool_evaluator.build()
             self.extra_filenames.extend(extra_filenames)
 

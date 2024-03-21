@@ -9,10 +9,11 @@ from galaxy.celery.tasks import (
     purge_hda,
 )
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.schema.tasks import GeneratePdfDownload
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
@@ -31,12 +32,26 @@ def process_page(request: CreatePagePayload):
     return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
+@galaxy_task
+def invalidate_connection(sa_session: galaxy_scoped_session):
+    sa_session().connection().invalidate()
+
+
+@galaxy_task
+def use_session(sa_session: galaxy_scoped_session):
+    sa_session().query(HistoryDatasetAssociation).get(1)
+
+
 class TestCeleryTasksIntegration(IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_recover_from_invalid_connection(self):
+        invalidate_connection.delay().get()
+        use_session.delay().get()
 
     def test_random_simple_task_to_verify_framework_for_testing(self):
         assert mul.delay(4, 4).get(timeout=10) == 16

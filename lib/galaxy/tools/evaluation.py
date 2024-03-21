@@ -15,6 +15,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
@@ -121,6 +123,7 @@ class ToolEvaluator:
         self.environment_variables: List[Dict[str, str]] = []
         self.version_command_line: Optional[str] = None
         self.command_line: Optional[str] = None
+        self.interactivetools: List[Dict[str, Any]] = []
 
     def set_compute_environment(self, compute_environment: ComputeEnvironment, get_special: Optional[Callable] = None):
         """
@@ -406,7 +409,7 @@ class ToolEvaluator:
                 if wrapper:
                     param_dict[name] = wrapper
                     continue
-            if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
+            if not isinstance(param_dict_value, ToolParameterValueWrapper):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     tool=self.tool,
@@ -514,7 +517,12 @@ class ToolEvaluator:
             # the paths rewritten.
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
-    def populate_interactivetools(self):
+    def _create_interactivetools_entry_points(self):
+        if hasattr(self.app, "interactivetool_manager"):
+            self.interactivetools = self._populate_interactivetools_template()
+            self.app.interactivetool_manager.create_interactivetool(self.job, self.tool, self.interactivetools)
+
+    def _populate_interactivetools_template(self):
         """
         Populate InteractiveTools templated values.
         """
@@ -560,9 +568,9 @@ class ToolEvaluator:
                     # Remove key so that new wrapped object will occupy key slot
                     del param_dict[key]
                     # And replace with new wrapped key
-                    param_dict[
-                        wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)
-                    ] = wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    param_dict[wrap_with_safe_string(key, no_wrap_classes=ToolParameterValueWrapper)] = (
+                        wrap_with_safe_string(value, no_wrap_classes=ToolParameterValueWrapper)
+                    )
 
     def build(self):
         """
@@ -571,12 +579,21 @@ class ToolEvaluator:
         compute environment.
         """
         config_file = self.tool.config_file
+        global_tool_logs(
+            self._create_interactivetools_entry_points, config_file, "Building Interactive Tool Entry Points"
+        )
         global_tool_logs(self._build_config_files, config_file, "Building Config Files")
         global_tool_logs(self._build_param_file, config_file, "Building Param File")
         global_tool_logs(self._build_command_line, config_file, "Building Command Line")
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
-        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
+        return (
+            self.command_line,
+            self.version_command_line,
+            self.extra_filenames,
+            self.environment_variables,
+            self.interactivetools,
+        )
 
     def _build_command_line(self):
         """
@@ -613,8 +630,7 @@ class ToolEvaluator:
         self.command_line = command_line
 
     def _build_version_command(self):
-        version_string_cmd_raw = self.tool.version_string_cmd
-        if version_string_cmd_raw:
+        if version_string_cmd_raw := self.tool.version_string_cmd:
             version_command_template = string.Template(version_string_cmd_raw)
             version_command = version_command_template.safe_substitute(
                 {"__tool_directory__": self.compute_environment.tool_directory()}
@@ -687,19 +703,17 @@ class ToolEvaluator:
             )
             config_file_basename = os.path.basename(config_filename)
             # environment setup in job file template happens before `cd $working_directory`
-            environment_variable[
-                "value"
-            ] = f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
+            environment_variable["value"] = (
+                f'`cat "{self.compute_environment.env_config_directory()}/{config_file_basename}"`'
+            )
             environment_variable["raw"] = True
             environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
 
-        home_dir = self.compute_environment.home_directory()
-        tmp_dir = self.compute_environment.tmp_directory()
-        if home_dir:
+        if home_dir := self.compute_environment.home_directory():
             environment_variable = dict(name="HOME", value=f'"{home_dir}"', raw=True)
             environment_variables.append(environment_variable)
-        if tmp_dir:
+        if tmp_dir := self.compute_environment.tmp_directory():
             for tmp_directory_var in self.tool.tmp_directory_vars:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
@@ -729,7 +743,7 @@ class ToolEvaluator:
         param_dict = self.param_dict
         directory = self.local_working_directory
         command = self.tool.command
-        if self.tool.profile < 16.04 and command and "$param_file" in command:
+        if Version(str(self.tool.profile)) < Version("16.04") and command and "$param_file" in command:
             with tempfile.NamedTemporaryFile(mode="w", dir=directory, delete=False) as param:
                 for key, value in param_dict.items():
                     # parameters can be strings or lists of strings, coerce to list
@@ -806,8 +820,7 @@ class ToolEvaluator:
 
     @property
     def _user(self):
-        history = self._history
-        if history:
+        if history := self._history:
             return history.user
         else:
             return self.job.user
@@ -823,7 +836,13 @@ class PartialToolEvaluator(ToolEvaluator):
     def build(self):
         config_file = self.tool.config_file
         global_tool_logs(self._build_environment_variables, config_file, "Building Environment Variables")
-        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
+        return (
+            self.command_line,
+            self.version_command_line,
+            self.extra_filenames,
+            self.environment_variables,
+            self.interactivetools,
+        )
 
 
 class RemoteToolEvaluator(ToolEvaluator):
@@ -841,4 +860,10 @@ class RemoteToolEvaluator(ToolEvaluator):
         global_tool_logs(self._build_param_file, config_file, "Building Param File")
         global_tool_logs(self._build_command_line, config_file, "Building Command Line")
         global_tool_logs(self._build_version_command, config_file, "Building Version Command Line")
-        return self.command_line, self.version_command_line, self.extra_filenames, self.environment_variables
+        return (
+            self.command_line,
+            self.version_command_line,
+            self.extra_filenames,
+            self.environment_variables,
+            self.interactivetools,
+        )

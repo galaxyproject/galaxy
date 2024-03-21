@@ -89,7 +89,7 @@ watch(
 /* lifecyle */
 onBeforeMount(() => {
     entryPointStore = useEntryPointStore();
-    entryPointStore.ensurePollingEntryPoints();
+    entryPointStore.startWatchingEntryPoints();
     entryPointStore.$subscribe((mutation, state) => {
         updateVisibility(state.entryPoints.length > 0);
     });

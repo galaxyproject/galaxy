@@ -83,8 +83,7 @@ class GroupsController(BaseShedAPIController):
         Content-Disposition: form-data; name="description" Group_Description
         """
         group_dict = dict(message="", status="ok")
-        name = payload.get("name", "")
-        if name:
+        if name := payload.get("name", ""):
             description = payload.get("description", "")
             if not description:
                 description = ""

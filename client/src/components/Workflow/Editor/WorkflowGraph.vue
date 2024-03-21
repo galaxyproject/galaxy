@@ -153,7 +153,7 @@ function onZoom(zoomLevel: number, panTo: XYPosition | null = null) {
     if (panTo) {
         panBy({ x: panTo.x - transform.value.x, y: panTo.y - transform.value.y });
     }
-    stateStore.setScale(zoomLevel);
+    stateStore.scale = zoomLevel;
 }
 function onStopDragging() {
     stateStore.draggingPosition = null;
@@ -167,16 +167,16 @@ function onDragConnector(position: TerminalPosition, draggingTerminal: OutputTer
 }
 function onActivate(nodeId: number | null) {
     if (activeNodeId.value !== nodeId) {
-        stateStore.setActiveNode(nodeId);
+        stateStore.activeNodeId = nodeId;
     }
 }
 function onDeactivate() {
-    stateStore.setActiveNode(null);
+    stateStore.activeNodeId = null;
 }
 
 watch(
     () => transform.value.k,
-    () => stateStore.setScale(transform.value.k)
+    () => (stateStore.scale = transform.value.k)
 );
 
 watch(transform, () => emit("transform", transform.value));

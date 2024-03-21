@@ -1,6 +1,7 @@
 """
 Base class(es) for all DataProviders.
 """
+
 # there's a blurry line between functionality here and functionality in datatypes module
 # attempting to keep parsing to a minimum here and focus on chopping/pagination/reformat(/filtering-maybe?)
 #   and using as much pre-computed info/metadata from the datatypes module as possible
@@ -56,8 +57,7 @@ class HasSettings(type):
             if base_settings:
                 settings.update(base_settings)
         # get settings defined in this class
-        new_settings = attributes.pop("settings", None)
-        if new_settings:
+        if new_settings := attributes.pop("settings", None):
             settings.update(new_settings)
         attributes["settings"] = settings
         return type.__new__(cls, name, base_classes, attributes)

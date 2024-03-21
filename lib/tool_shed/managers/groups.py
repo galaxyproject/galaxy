@@ -1,6 +1,7 @@
 """
 Manager and Serializer for TS groups.
 """
+
 import logging
 
 from sqlalchemy import (

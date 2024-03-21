@@ -70,20 +70,21 @@ class UsersService(ServiceBase):
     def recalculate_disk_usage(
         self,
         trans: ProvidesUserContext,
+        user_id: int,
     ):
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
         if trans.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import recalculate_user_disk_usage
 
-            result = recalculate_user_disk_usage.delay(task_user_id=getattr(trans.user, "id", None))
+            result = recalculate_user_disk_usage.delay(task_user_id=user_id)
             return async_task_summary(result)
         else:
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
                 kwargs={
-                    "user_id": trans.user.id,
+                    "user_id": user_id,
                 },
             )
             return None
@@ -92,7 +93,7 @@ class UsersService(ServiceBase):
         """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.get_api_key(user)
-        return APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
+        return APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
 
     def get_or_create_api_key(self, trans: ProvidesUserContext, user_id: int) -> str:
         """Returns the current API key (as plain string) or creates a new one."""
@@ -103,7 +104,7 @@ class UsersService(ServiceBase):
         """Creates a new API key for the given user"""
         user = self.get_user(trans, user_id)
         api_key = self.api_key_manager.create_api_key(user)
-        result = APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time)
+        result = APIKeyModel.model_construct(key=api_key.key, create_time=api_key.create_time)
         return result
 
     def delete_api_key(self, trans: ProvidesUserContext, user_id: int) -> None:
@@ -193,7 +194,7 @@ class UsersService(ServiceBase):
         self,
         user: User,
     ) -> DetailedUserModel:
-        user_response = self.user_serializer.serialize_to_view(user, view="detailed")
+        user_response = self.user_serializer.serialize_to_view(user, view="detailed", encode_id=False)
         return DetailedUserModel(**user_response)
 
     def get_index(
@@ -238,11 +239,11 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                item = trans.user.to_dict(value_mapper={"id": trans.security.encode_id})
+                item = trans.user.to_dict()
                 return [item]
             stmt = stmt.filter(User.deleted == false())
         for user in trans.sa_session.scalars(stmt).all():
-            item = user.to_dict(value_mapper={"id": trans.security.encode_id})
+            item = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
             if user is not trans.user and not trans.user_is_admin:

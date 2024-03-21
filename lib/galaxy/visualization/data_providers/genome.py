@@ -1164,8 +1164,7 @@ class BBIDataProvider(GenomeDataProvider):
     dataset_type = "bigwig"
 
     @abc.abstractmethod
-    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]:
-        ...
+    def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]: ...
 
     def valid_chroms(self):
         # No way to return this info as of now
@@ -1233,8 +1232,7 @@ class BBIDataProvider(GenomeDataProvider):
             # Get summary; this samples at intervals of length
             # (end - start)/num_points -- i.e. drops any fractional component
             # of interval length.
-            summary = _summarize_bbi(bbi, chrom, start, end, num_points)
-            if summary:
+            if summary := _summarize_bbi(bbi, chrom, start, end, num_points):
                 # mean = summary.sum_data / summary.valid_count
 
                 # Standard deviation by bin, not yet used

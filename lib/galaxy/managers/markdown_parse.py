@@ -5,6 +5,7 @@ This file is meant to be relatively self contained and just used to "parse" and 
 Galaxy Markdown. Keeping things isolated to allow re-use of these utilities in other
 projects (e.g. gxformat2).
 """
+
 import re
 from typing import (
     cast,
@@ -30,6 +31,16 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_dataset_display": ["input", "output", "history_dataset_id"],
     "history_dataset_embedded": ["input", "output", "history_dataset_id"],
     "history_dataset_as_image": ["input", "output", "history_dataset_id", "path"],
+    "history_dataset_as_table": [
+        "input",
+        "output",
+        "history_dataset_id",
+        "path",
+        "title",
+        "footer",
+        "show_column_headers",
+        "compact",
+    ],
     "history_dataset_peek": ["input", "output", "history_dataset_id"],
     "history_dataset_info": ["input", "output", "history_dataset_id"],
     "history_dataset_link": ["input", "output", "history_dataset_id", "path", "label"],
@@ -37,13 +48,13 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_dataset_name": ["input", "output", "history_dataset_id"],
     "history_dataset_type": ["input", "output", "history_dataset_id"],
     "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
-    "workflow_display": ["workflow_id"],
+    "workflow_display": ["workflow_id", "workflow_checkpoint"],
     "workflow_license": ["workflow_id"],
-    "workflow_image": ["workflow_id", "size"],
-    "job_metrics": ["step", "job_id"],
-    "job_parameters": ["step", "job_id"],
-    "tool_stderr": ["step", "job_id"],
-    "tool_stdout": ["step", "job_id"],
+    "workflow_image": ["workflow_id", "size", "workflow_checkpoint"],
+    "job_metrics": ["step", "job_id", "implicit_collection_jobs_id"],
+    "job_parameters": ["step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stderr": ["step", "job_id", "implicit_collection_jobs_id"],
+    "tool_stdout": ["step", "job_id", "implicit_collection_jobs_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
     "instance_access_link": [],

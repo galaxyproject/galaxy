@@ -77,7 +77,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         notification_data = NotificationCreateData(**data)
 
         request = NotificationCreateRequest(
-            recipients=NotificationRecipients.construct(
+            recipients=NotificationRecipients.model_construct(
                 user_ids=[user.id for user in users],
             ),
             notification=notification_data,
@@ -95,14 +95,12 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         assert actual_notification.variant == expected_notification["variant"]
         assert actual_notification.category == expected_notification["category"]
 
-        expected_publication_time = expected_notification.get("publication_time")
-        if expected_publication_time:
+        if expected_publication_time := expected_notification.get("publication_time"):
             assert actual_notification.publication_time == expected_publication_time
         else:
             assert actual_notification.publication_time is not None
 
-        expected_expiration_time = expected_notification.get("expiration_time")
-        if expected_expiration_time:
+        if expected_expiration_time := expected_notification.get("expiration_time"):
             assert actual_notification.expiration_time == expected_expiration_time
         else:
             assert actual_notification.expiration_time is not None
@@ -276,7 +274,7 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert user_notification.seen_time is None
         assert user_notification.deleted is False
         request = UserNotificationUpdateRequest(seen=True)
-        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
+        self.notification_manager.update_user_notifications(user, {notification.id}, request)
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is not None
         assert user_notification.deleted is False
@@ -414,7 +412,7 @@ class TestNotificationRecipientResolver(NotificationsBaseTestCase):
             groups=[group1],
         )
 
-        recipients = NotificationRecipients.construct(
+        recipients = NotificationRecipients.model_construct(
             user_ids=[users[9].id],
             group_ids=[group3.id],
             role_ids=[role3.id],

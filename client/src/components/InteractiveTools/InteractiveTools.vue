@@ -134,9 +134,8 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints", "removeEntryPoint"]),
+        ...mapActions(useEntryPointStore, ["removeEntryPoint"]),
         load() {
-            this.ensurePollingEntryPoints();
             this.filter = "";
         },
         filtered: function (items) {

@@ -5,6 +5,7 @@ Revises: 6a67bf27e6a6
 Create Date: 2022-06-01 17:50:22.629894
 
 """
+
 from sqlalchemy import (
     Column,
     DateTime,

@@ -3,6 +3,7 @@ import shutil
 
 import pytest
 
+from galaxy_test.base.populators import skip_without_tool
 from ._base import (
     BaseSwiftObjectStoreIntegrationTestCase,
     files_count,
@@ -78,3 +79,42 @@ class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):
         assert files_count(self.object_store_cache_path) == 1
         only_file = next(iter(get_files(self.object_store_cache_path)))
         assert os.path.getsize(only_file) == 4
+
+
+class TestCacheOperationWithNoCacheUpdate(BaseSwiftObjectStoreIntegrationTestCase):
+    @classmethod
+    def updateCacheData(cls):
+        return False
+
+    def tearDown(self):
+        shutil.rmtree(self.object_store_cache_path)
+        os.mkdir(self.object_store_cache_path)
+        return super().tearDown()
+
+    @skip_without_tool("create_2")
+    def test_cache_populated_after_tool_run(self):
+        history_id = self.dataset_populator.new_history()
+        running_response = self.dataset_populator.run_tool_raw(
+            "create_2",
+            {"sleep_time": 0},
+            history_id,
+        )
+        result = self.dataset_populator.wait_for_tool_run(
+            run_response=running_response, history_id=history_id, assert_ok=False
+        ).json()
+        details = self.dataset_populator.get_job_details(result["jobs"][0]["id"], full=True).json()
+        assert details["state"] == "ok"
+        # check files in the cache are empty after job finishes (they are created by Galaxy before the tool executes)
+        assert files_count(self.object_store_cache_path) == 2
+        hda1_details = self.dataset_populator.get_history_dataset_details(history_id, assert_ok=True, hid=1)
+        hda2_details = self.dataset_populator.get_history_dataset_details(history_id, assert_ok=True, hid=2)
+        assert os.path.getsize(hda1_details["file_name"]) == 0
+        assert os.path.getsize(hda2_details["file_name"]) == 0
+        # get dataset content - this should trigger pulling to the cache
+        content1 = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=hda1_details["dataset_id"])
+        content2 = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=hda2_details["dataset_id"])
+        assert content1 == "1\n"
+        assert content2 == "2\n"
+        # check files in the cache are not empty now
+        assert os.path.getsize(hda1_details["file_name"]) != 0
+        assert os.path.getsize(hda2_details["file_name"]) != 0

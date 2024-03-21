@@ -1,6 +1,7 @@
 """
 Contains library functions
 """
+
 import json
 import logging
 import os.path
@@ -224,8 +225,7 @@ class LibraryActions:
         return uploaded_datasets, 200, None
 
     def _get_path_files_and_folders(self, params, preserve_dirs):
-        problem_response = self._check_path_paste_params(params)
-        if problem_response:
+        if problem_response := self._check_path_paste_params(params):
             return problem_response
         files_and_folders = []
         for line, path in self._paths_list(params):

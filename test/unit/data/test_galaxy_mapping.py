@@ -56,12 +56,12 @@ class BaseModelTestCase(TestCase):
     @classmethod
     def persist(cls, *args, **kwargs):
         session = cls.session()
-        flush = kwargs.get("flush", True)
+        commit = kwargs.get("commit", True)
         for arg in args:
             session.add(arg)
-            if flush:
-                session.flush()
-        if kwargs.get("expunge", not flush):
+            if commit:
+                session.commit()
+        if kwargs.get("expunge", not commit):
             cls.expunge()
         return arg  # Return last or only arg.
 
@@ -255,7 +255,7 @@ class TestMappings(BaseModelTestCase):
             model.DatasetCollectionElement(collection=c1, element=d1, element_identifier=f"{i}", element_index=i)
             for i in range(elements)
         ]
-        self.persist(u, h1, d1, c1, *dces, flush=False, expunge=False)
+        self.persist(u, h1, d1, c1, *dces, commit=False, expunge=False)
         self.model.session.flush()
         for i in range(elements):
             assert c1[i] == dces[i]
@@ -356,6 +356,22 @@ class TestMappings(BaseModelTestCase):
         # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
 
+    def test_dataset_action_tuples(self):
+        u = model.User(email="foo", password="foo")
+        h1 = model.History(user=u)
+        hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        r1 = model.Role()
+        dp1 = model.DatasetPermissions(action="action1", dataset=hda1.dataset, role=r1)
+        dp2 = model.DatasetPermissions(action=None, dataset=hda1.dataset, role=r1)
+        dp3 = model.DatasetPermissions(action="action3", dataset=hda1.dataset, role=r1)
+        c1 = model.DatasetCollection(collection_type="type1")
+        dce1 = model.DatasetCollectionElement(collection=c1, element=hda1)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=hda2)
+        self.model.session.add_all([u, h1, hda1, hda2, r1, dp1, dp2, dp3, c1, dce1, dce2])
+        self.model.session.flush()
+        assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
+
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
@@ -392,18 +408,31 @@ class TestMappings(BaseModelTestCase):
         )
         self.model.session.add_all([d1, d2, c1, dce1, dce2, c2, dce3, c3, c4, dce4])
         self.model.session.flush()
-        q = c2._get_nested_collection_attributes(
+
+        stmt = c2._build_nested_collection_attributes_stmt(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
-        assert [(r._fields) for r in q] == [
+        result = self.model.session.execute(stmt).all()
+        assert [(r._fields) for r in result] == [
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
             ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
-        assert q.all() == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation,))
-        assert q.all() == [d1, d2]
-        q = c2._get_nested_collection_attributes(return_entities=(model.HistoryDatasetAssociation, model.Dataset))
-        assert q.all() == [(d1, d1.dataset), (d2, d2.dataset)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
+
+        stmt = c2._build_nested_collection_attributes_stmt(return_entities=(model.HistoryDatasetAssociation,))
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1,), (d2,)]
+
+        stmt = c2._build_nested_collection_attributes_stmt(
+            return_entities=(model.HistoryDatasetAssociation, model.Dataset)
+        )
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1, d1.dataset), (d2, d2.dataset)]
         # Assert properties that use _get_nested_collection_attributes return correct content
         assert c2.dataset_instances == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
@@ -422,13 +451,14 @@ class TestMappings(BaseModelTestCase):
         assert c3.dataset_instances == []
         assert c3.dataset_elements == []
         assert c3.dataset_states_and_extensions_summary == (set(), set())
-        q = c4._get_nested_collection_attributes(element_attributes=("element_identifier",))
-        assert q.all() == [("outer_list", "inner_list", "forward"), ("outer_list", "inner_list", "reverse")]
-        assert c4.dataset_elements == [dce1, dce2]
-        assert c4.element_identifiers_extensions_and_paths == [
-            (("outer_list", "inner_list", "forward"), "bam", "mock_dataset_14.dat"),
-            (("outer_list", "inner_list", "reverse"), "txt", "mock_dataset_14.dat"),
+
+        stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
+        result = self.model.session.execute(stmt).all()
+        assert result == [
+            ("outer_list", "inner_list", "forward"),
+            ("outer_list", "inner_list", "reverse"),
         ]
+        assert c4.dataset_elements == [dce1, dce2]
 
     def test_dataset_dbkeys_and_extensions_summary(self):
         u = model.User(email="mary2@example.com", password="password")
@@ -692,6 +722,17 @@ class TestMappings(BaseModelTestCase):
         session.add(lf)
         session.flush()
 
+    def test_current_session(self):
+        user = model.User(email="testworkflows@bx.psu.edu", password="password")
+        galaxy_session = model.GalaxySession()
+        galaxy_session.user = user
+        self.persist(user, galaxy_session)
+        assert user.current_galaxy_session == galaxy_session
+        new_galaxy_session = model.GalaxySession()
+        user.galaxy_sessions.append(new_galaxy_session)
+        self.persist(user, new_galaxy_session)
+        assert user.current_galaxy_session == new_galaxy_session
+
     def test_flush_refreshes(self):
         # Normally I don't believe in unit testing library code, but the behaviors around attribute
         # states and flushing in SQL Alchemy is very subtle and it is good to have a executable
@@ -858,6 +899,23 @@ class TestMappings(BaseModelTestCase):
         copied_workflow = loaded_workflow.copy(user=user)
         annotations = copied_workflow.steps[0].annotations
         assert len(annotations) == 1
+
+        stored_workflow = loaded_workflow.stored_workflow
+        counts = stored_workflow.invocation_counts()
+        assert counts
+
+        workflow_invocation_0 = _invocation_for_workflow(user, loaded_workflow)
+        workflow_invocation_1 = _invocation_for_workflow(user, loaded_workflow)
+        workflow_invocation_1.state = "scheduled"
+        self.model.session.add(workflow_invocation_0)
+        self.model.session.add(workflow_invocation_1)
+        # self.persist(workflow_invocation_0)
+        # self.persist(workflow_invocation_1)
+        self.model.session.flush()
+        counts = stored_workflow.invocation_counts()
+        print(counts)
+        assert counts.root["new"] == 2
+        assert counts.root["scheduled"] == 1
 
     def test_role_creation(self):
         security_agent = GalaxyRBACAgent(self.model)
@@ -1095,8 +1153,7 @@ class TestMappings(BaseModelTestCase):
 
     def _set_permissions(self, security_agent, dataset, permissions):
         # TODO: refactor set_all_dataset_permissions to actually throw an exception :|
-        error = security_agent.set_all_dataset_permissions(dataset, permissions)
-        if error:
+        if error := security_agent.set_all_dataset_permissions(dataset, permissions):
             raise Exception(error)
 
     def new_hda(self, history, **kwds):
@@ -1124,6 +1181,7 @@ def _invocation_for_workflow(user, workflow):
     workflow_invocation = galaxy.model.WorkflowInvocation()
     workflow_invocation.workflow = workflow
     workflow_invocation.history = h1
+    workflow_invocation.state = "new"
     return workflow_invocation
 
 

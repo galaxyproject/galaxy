@@ -1,4 +1,5 @@
 """Tool Shed Security"""
+
 import logging
 from typing import List
 
@@ -273,8 +274,7 @@ class CommunityRBACAgent(RBACAgent):
         if user.username == archive_owner:
             return True
         # A member of the IUC is authorized to create new repositories that are owned by another user.
-        iuc_group = get_iuc_group(self.sa_session)
-        if iuc_group is not None:
+        if (iuc_group := get_iuc_group(self.sa_session)) is not None:
             for uga in iuc_group.users:
                 if uga.user.id == user.id:
                     return True

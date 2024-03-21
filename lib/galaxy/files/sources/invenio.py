@@ -294,7 +294,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             # TODO: This is a temporary workaround for the fact that the "content" API
             # does not support downloading files from S3 or other remote storage classes.
             # More info: https://inveniordm.docs.cern.ch/reference/file_storage/#remote-files-r
-            download_file_content_url = f"{file_details_url.replace('/api','')}?download=1"
+            download_file_content_url = f"{file_details_url.replace('/api', '')}?download=1"
         return download_file_content_url
 
     def _is_api_url(self, url: str) -> bool:

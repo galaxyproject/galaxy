@@ -3,6 +3,7 @@ Once state information has been calculated, handle actually executing tools
 from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
+
 import collections
 import logging
 import typing
@@ -17,6 +18,7 @@ from typing import (
 )
 
 from boltons.iterutils import remap
+from packaging.version import Version
 
 from galaxy import model
 from galaxy.exceptions import ToolInputsNotOKException
@@ -140,8 +142,7 @@ def execute(
             execution_tracker.record_error(result)
 
     tool_action = tool.tool_action
-    check_inputs_ready = getattr(tool_action, "check_inputs_ready", None)
-    if check_inputs_ready:
+    if check_inputs_ready := getattr(tool_action, "check_inputs_ready", None):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
             try:
@@ -310,7 +311,7 @@ class ExecutionTracker:
         return output_collection_name
 
     def sliced_input_collection_structure(self, input_name):
-        unqualified_recurse = self.tool.profile < 18.09 and "|" not in input_name
+        unqualified_recurse = Version(str(self.tool.profile)) < Version("18.09") and "|" not in input_name
 
         def find_collection(input_dict, input_name):
             for key, value in input_dict.items():

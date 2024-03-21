@@ -117,7 +117,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
             "Mapping connection for copied collections not yet implemented in history import/export"
         )
 
-        old_history_id = self.dataset_populator.new_history()
+        old_history_id = self.dataset_populator.new_history()  # type: ignore[unreachable]
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_singleton(old_history_id)
 
         old_contents = self._history_contents(old_history_id)
@@ -478,7 +478,7 @@ test_data:
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
         workflow_request, history_id, workflow_id = self._setup_workflow_run(workflow, history_id=history_id)
-        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request)
+        run_workflow_response = self._post(f"workflows/{workflow_id}/invocations", data=workflow_request, json=True)
         self._assert_status_code_is(run_workflow_response, 200)
         invocation_response = run_workflow_response.json()
         self.workflow_populator.wait_for_invocation_and_jobs(
@@ -495,9 +495,7 @@ test_data:
         return collect_step_idx
 
     def _extract_and_download_workflow(self, history_id: str, **extract_payload):
-        reimport_as = extract_payload.get("reimport_as")
-
-        if reimport_as:
+        if reimport_as := extract_payload.get("reimport_as"):
             history_name = reimport_as
             self.dataset_populator.wait_for_history(history_id)
             self.dataset_populator.rename_history(history_id, history_name)

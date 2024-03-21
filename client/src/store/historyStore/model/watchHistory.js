@@ -7,20 +7,20 @@
 
 import { getGalaxyInstance } from "app";
 import { storeToRefs } from "pinia";
-import defaultStore from "store/index";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getCurrentHistoryFromServer } from "stores/services/history.services";
 import { loadSet } from "utils/setCache";
 import { urlData } from "utils/url";
 
+import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 const limit = 1000;
 
-let throttlePeriod = 3000;
-let watchTimeout = null;
+const ACTIVE_POLLING_INTERVAL = 3000;
+const INACTIVE_POLLING_INTERVAL = 60000;
 
 // last time the history has changed
 let lastUpdateTime = null;
@@ -28,27 +28,31 @@ let lastUpdateTime = null;
 // last time changed history items have been requested
 let lastRequestDate = new Date();
 
-// We only want to kick this off once we're actively watching history
-let watchingVisibility = false;
+const { startWatchingResource: startWatchingHistory } = useResourceWatcher(watchHistory, {
+    shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+    longPollingInterval: INACTIVE_POLLING_INTERVAL,
+});
 
-function setVisibilityThrottle() {
-    if (document.visibilityState === "visible") {
-        // Poll every 3 seconds when visible
-        throttlePeriod = 3000;
-        rewatchHistory();
-    } else {
-        // Poll every 60 seconds when hidden/backgrounded
-        throttlePeriod = 60000;
+export { startWatchingHistory };
+
+async function watchHistory() {
+    const { isWatching } = storeToRefs(useHistoryItemsStore());
+    try {
+        isWatching.value = true;
+        await watchHistoryOnce();
+    } catch (error) {
+        // error alerting the user that watch history failed
+        console.warn(error);
+        isWatching.value = false;
     }
 }
 
-export async function watchHistoryOnce(store) {
+export async function watchHistoryOnce() {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
     const collectionElementsStore = useCollectionElementsStore();
-    // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
-    watchTimeout = null;
+
     // get current history
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
@@ -94,35 +98,6 @@ export async function watchHistoryOnce(store) {
                 url: `${Galaxy.user.urlRoot()}/${Galaxy.user.id || "current"}`,
             });
         }
-    }
-}
-
-export async function watchHistory(store = defaultStore) {
-    const { isWatching } = storeToRefs(useHistoryItemsStore());
-    // Only set up visibility listeners once, whenever a watch is first started
-    if (watchingVisibility === false) {
-        watchingVisibility = true;
-        isWatching.value = watchingVisibility;
-        document.addEventListener("visibilitychange", setVisibilityThrottle);
-    }
-    try {
-        await watchHistoryOnce(store);
-    } catch (error) {
-        // error alerting the user that watch history failed
-        console.warn(error);
-        watchingVisibility = false;
-        isWatching.value = watchingVisibility;
-    } finally {
-        watchTimeout = setTimeout(() => {
-            watchHistory(store);
-        }, throttlePeriod);
-    }
-}
-
-export function rewatchHistory() {
-    if (watchTimeout) {
-        clearTimeout(watchTimeout);
-        watchHistory();
     }
 }
 

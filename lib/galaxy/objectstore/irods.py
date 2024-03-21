@@ -1,6 +1,7 @@
 """
 Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 """
+
 import logging
 import os
 import shutil
@@ -26,6 +27,7 @@ from galaxy.exceptions import (
 from galaxy.util import (
     directory_hash_id,
     ExecutionTimer,
+    string_as_bool,
     umask_fix_perms,
     unlink,
 )
@@ -81,6 +83,7 @@ def parse_config_xml(config_xml):
             _config_xml_error("cache")
         cache_size = float(c_xml[0].get("size", -1))
         staging_path = c_xml[0].get("path", None)
+        cache_updated_data = string_as_bool(c_xml[0].get("cache_updated_data", "True"))
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
@@ -109,6 +112,7 @@ def parse_config_xml(config_xml):
             "cache": {
                 "size": cache_size,
                 "path": staging_path,
+                "cache_updated_data": cache_updated_data,
             },
             "extra_dirs": extra_dirs,
             "private": DiskObjectStore.parse_private_from_config_xml(config_xml),
@@ -142,6 +146,7 @@ class CloudConfigMixin:
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
             },
         }
 
@@ -209,6 +214,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
         if self.staging_path is None:
             _config_dict_error("cache->path")
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         if not extra_dirs:
@@ -440,7 +446,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
-        options = {kw.DEST_RESC_NAME_KW: self.resource}
+        # we need to allow irods to override already existing zero-size output files created
+        # in object store cache during job setup (see also https://github.com/galaxyproject/galaxy/pull/17025#discussion_r1394517033)
+        # TODO: get rid of this flag when Galaxy stops pre-creating those output files in cache
+        options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
             cache_path = self._get_cache_path(rel_path)
@@ -716,6 +725,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
         rel_path = self._construct_path(obj, **kwargs)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
@@ -723,6 +733,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # iRODS does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -731,8 +743,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             log.debug("irods_pt _get_filename: %s", ipt_timer)
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
@@ -764,7 +776,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)

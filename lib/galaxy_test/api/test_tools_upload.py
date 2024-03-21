@@ -990,7 +990,8 @@ class TestToolsUpload(ApiTestCase):
             # Upload a file to a tus server.
             uploader = my_client.uploader(path, metadata=metadata)
             uploader.upload()
-            return uploader.url.rsplit("/", 1)[1]
+            assert uploader.url
+            return uploader.url.rsplit("/", 1)[1]  # type: ignore[unreachable]
 
         with self.dataset_populator.test_history() as history_id:
             session_id = upload_file(

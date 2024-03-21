@@ -8,9 +8,11 @@ from fastapi import (
     FastAPI,
     Request,
 )
+from fastapi.openapi.constants import REF_TEMPLATE
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import Response
 
+from galaxy.schema.invocation import CustomJsonSchema
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
@@ -44,6 +46,10 @@ api_tags_metadata = [
     {
         "name": "group_roles",
         "description": "Operations with group roles.",
+    },
+    {
+        "name": "groups",
+        "description": "Operations with groups.",
     },
     {
         "name": "group_users",
@@ -95,8 +101,7 @@ class GalaxyCORSMiddleware(CORSMiddleware):
 
 
 def add_galaxy_middleware(app: FastAPI, gx_app):
-    x_frame_options = gx_app.config.x_frame_options
-    if x_frame_options:
+    if x_frame_options := gx_app.config.x_frame_options:
 
         @app.middleware("http")
         async def add_x_frame_options(request: Request, call_next):
@@ -165,6 +170,7 @@ def get_openapi_schema() -> Dict[str, Any]:
         description=app.description,
         routes=app.routes,
         license_info=app.license_info,
+        schema_generator=CustomJsonSchema(ref_template=REF_TEMPLATE),
     )
 
 
@@ -178,7 +184,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
-    app.mount("/", wsgi_handler)
+    app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)

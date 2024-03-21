@@ -89,7 +89,7 @@ const { stateStore } = provideScopedWorkflowStores(props.id);
 
 watch(
     () => props.zoom,
-    () => stateStore.setScale(props.zoom),
+    () => (stateStore.scale = props.zoom),
     { immediate: true }
 );
 

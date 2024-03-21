@@ -277,7 +277,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :id="id"
                 v-model="currentValue"
                 :loading="loading"
-                :extension="attrs.extension"
+                :extensions="attrs.extensions"
                 :flavor="attrs.flavor"
                 :multiple="attrs.multiple"
                 :optional="attrs.optional"

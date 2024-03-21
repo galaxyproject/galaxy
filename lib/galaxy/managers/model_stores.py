@@ -39,12 +39,12 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
-from galaxy.structured_app import MinimalManagerApp
-from galaxy.version import VERSION
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.version import VERSION
 
 
 class ModelStoreUserContext(ProvidesUserContext):
@@ -233,7 +233,7 @@ class ModelStoreManager:
     ) -> Optional[ExportObjectMetadata]:
         if request.export_association_id is None:
             return None
-        request_dict = request.dict()
+        request_dict = request.model_dump()
         request_payload = (
             WriteStoreToPayload(**request_dict)
             if isinstance(request, WriteHistoryTo)
@@ -265,8 +265,7 @@ class ModelStoreManager:
         import_options = ImportOptions(
             allow_library_creation=request.for_library,
         )
-        history_id = request.history_id
-        if history_id:
+        if history_id := request.history_id:
             history = self._sa_session.get(model.History, history_id)
         else:
             history = None

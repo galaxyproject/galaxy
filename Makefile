@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=23.2
+RELEASE_CURR:=24.1
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -51,6 +51,11 @@ format:  ## Format Python code base
 
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
+
+pyupgrade:  ## Convert older code patterns to Python3.7/3.8 idiomatic ones
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
+	ack --type=python -f lib/galaxy/files/sources/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar

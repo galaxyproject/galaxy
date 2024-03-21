@@ -3,12 +3,7 @@ from html.parser import HTMLParser
 
 from markupsafe import escape
 from sqlalchemy import desc
-from sqlalchemy.orm import (
-    joinedload,
-    lazyload,
-    undefer,
-)
-from sqlalchemy.sql import expression
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     model,
@@ -22,14 +17,10 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago,
-)
 from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
@@ -42,131 +33,6 @@ from galaxy.workflow.extract import (
 from galaxy.workflow.modules import load_module_sections
 
 log = logging.getLogger(__name__)
-
-
-class StoredWorkflowListGrid(grids.Grid):
-    class StepsColumn(grids.GridColumn):
-        def get_value(self, trans, grid, workflow):
-            return len(workflow.latest_workflow.steps)
-
-    # Grid definition
-    use_panels = True
-    title = "Saved Workflows"
-    model_class = model.StoredWorkflow
-    default_filter = {"name": "All", "tags": "All"}
-    default_sort_key = "-update_time"
-    columns = [
-        grids.TextColumn("Name", key="name", attach_popup=True, filterable="advanced"),
-        grids.IndividualTagsColumn(
-            "Tags",
-            "tags",
-            model_tag_association_class=model.StoredWorkflowTagAssociation,
-            filterable="advanced",
-            grid_name="StoredWorkflowListGrid",
-        ),
-        StepsColumn("Steps"),
-        grids.GridColumn("Created", key="create_time", format=time_ago),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    operations = [
-        grids.GridOperation(
-            "Edit", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False
-        ),
-        grids.GridOperation("Run", condition=(lambda item: not item.deleted), async_compatible=False),
-        grids.GridOperation("Copy", condition=(lambda item: not item.deleted), async_compatible=False),
-        grids.GridOperation("Rename", condition=(lambda item: not item.deleted), async_compatible=False),
-        grids.GridOperation("Sharing", condition=(lambda item: not item.deleted), async_compatible=False),
-        grids.GridOperation("Delete", condition=(lambda item: item.deleted), async_compatible=True),
-    ]
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter_by(user=trans.user, deleted=False)
-
-
-class StoredWorkflowAllPublishedGrid(grids.Grid):
-    title = "Published Workflows"
-    model_class = model.StoredWorkflow
-    default_sort_key = "update_time"
-    default_filter = dict(public_url="All", username="All", tags="All")
-    columns = [
-        grids.PublicURLColumn("Name", key="name", filterable="advanced", attach_popup=True),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.StoredWorkflowAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
-        grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn(
-            "Community Tags",
-            key="tags",
-            model_tag_association_class=model.StoredWorkflowTagAssociation,
-            filterable="advanced",
-            grid_name="PublicWorkflowListGrid",
-        ),
-        grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search name, annotation, owner, and tags",
-            cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    operations = [
-        grids.GridOperation(
-            "Run",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(controller="workflows", action="run"),
-        ),
-        grids.GridOperation(
-            "Import", condition=(lambda item: not item.deleted), allow_multiple=False, url_args=dict(action="imp")
-        ),
-        grids.GridOperation(
-            "Save as File",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="export_to_file"),
-        ),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
-
-    def build_initial_query(self, trans, **kwargs):
-        # See optimization description comments and TODO for tags in matching public histories query.
-        # In addition to that - be sure to lazyload the latest_workflow - it isn't needed and it causes all
-        # of its steps to be eagerly loaded.
-        return (
-            trans.sa_session.query(self.model_class)
-            .join(self.model_class.user)
-            .options(
-                lazyload(self.model_class.latest_workflow),
-                joinedload(self.model_class.user).load_only(model.User.username),
-                joinedload(self.model_class.annotations),
-                undefer(self.model_class.average_rating),
-            )
-        )
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # A public workflow is published, has a slug, and is not deleted.
-        return (
-            query.filter(self.model_class.published == expression.true())
-            .filter(self.model_class.slug.isnot(None))
-            .filter(self.model_class.deleted == expression.false())
-        )
 
 
 # Simple HTML parser to get all content in a single tag.
@@ -189,28 +55,7 @@ class SingleTagContentsParser(HTMLParser):
 
 
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
-    stored_list_grid = StoredWorkflowListGrid()
-    published_list_grid = StoredWorkflowAllPublishedGrid()
     slug_builder = SlugBuilder()
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def list_grid(self, trans, **kwargs):
-        """List user's stored workflows."""
-        # status = message = None
-        if "operation" in kwargs:
-            operation = kwargs["operation"].lower()
-            if operation == "rename":
-                return self.rename(trans, **kwargs)
-            workflow_ids = util.listify(kwargs.get("id", []))
-            if operation == "sharing":
-                return self.sharing(trans, id=workflow_ids)
-        return self.stored_list_grid(trans, **kwargs)
-
-    @web.expose
-    @web.json
-    def list_published(self, trans, **kwargs):
-        return self.published_list_grid(trans, **kwargs)
 
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
@@ -326,10 +171,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id, embed="false", **kwargs):
+    def gen_image(self, trans, id, embed="false", version="", **kwargs):
         embed = util.asbool(embed)
+        if version:
+            version_int_or_none = int(version)
+        else:
+            version_int_or_none = None
         try:
-            s = trans.app.workflow_manager.get_workflow_svg_from_id(trans, id, for_embed=embed)
+            s = trans.app.workflow_manager.get_workflow_svg_from_id(
+                trans, id, version=version_int_or_none, for_embed=embed
+            )
             trans.response.set_content_type("image/svg+xml")
             return s
         except Exception as e:
@@ -641,6 +492,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 f'Workflow "{escape(workflow_name)}" created from current history. '
                 f'You can <a href="{edit_url}" target="_parent">edit</a> or <a href="{run_url}" target="_parent">run</a> the workflow.'
             )
-
-    def get_item(self, trans, id):
-        return self.get_stored_workflow(trans, id)

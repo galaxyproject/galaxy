@@ -1,5 +1,5 @@
 import hash from "object-hash";
-import { LastQueue } from "utils/promise-queue";
+import { LastQueue } from "utils/lastQueue";
 
 import { HasAttributesMixin } from "./utils";
 
@@ -68,6 +68,12 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
             );
         },
         methods: {
+            update(attributes) {
+                for (var attrname in attributes) {
+                    this.attributes[attrname] = attributes[attrname];
+                }
+                this.doQuery();
+            },
             doQuery() {
                 let lookupPromise;
                 if (this.useCache) {

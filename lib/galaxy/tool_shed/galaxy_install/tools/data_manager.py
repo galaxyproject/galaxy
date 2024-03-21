@@ -52,8 +52,7 @@ class DataManagerHandler:
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        data_managers_path = self.data_managers_path
-        if data_managers_path:
+        if data_managers_path := self.data_managers_path:
             root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
@@ -112,8 +111,8 @@ class DataManagerHandler:
                     data_manager_id = elem.get("id", None)
                     if data_manager_id is None:
                         log.error(
-                            "A data manager was defined that does not have an id and will not be installed:\n%s"
-                            % xml_to_string(elem)
+                            "A data manager was defined that does not have an id and will not be installed:\n%s",
+                            xml_to_string(elem),
                         )
                         continue
                     data_manager_dict = (
@@ -171,7 +170,7 @@ class DataManagerHandler:
                     )
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is etree.Comment:
+                elif elem.tag is etree.Comment:  # type: ignore[comparison-overlap]
                     pass
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")

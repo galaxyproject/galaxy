@@ -4,7 +4,7 @@
         <Multiselect
             v-if="items"
             v-model="selectedItem"
-            deselect-label="Can't remove this value"
+            :deselect-label="null"
             track-by="id"
             label="text"
             :options="items"

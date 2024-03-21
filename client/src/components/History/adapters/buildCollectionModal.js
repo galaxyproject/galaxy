@@ -45,12 +45,11 @@ const createBackboneContent = (historyId, selection) => {
         toJSON: () => selectionJson,
         // result must be a $.Deferred object instead of a promise because
         // that's the kind of deprecated data format that backbone likes to use.
-        createHDCA(element_identifiers, collection_type, name, hide_source_items, copy_elements, options = {}) {
+        createHDCA(element_identifiers, collection_type, name, hide_source_items, options = {}) {
             const def = jQuery.Deferred();
             return def.resolve(null, {
                 collection_type,
                 name,
-                copy_elements,
                 hide_source_items,
                 element_identifiers,
                 options,

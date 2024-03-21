@@ -15,17 +15,21 @@ export class QuotaUsage {
         this._data = data;
     }
 
+    get rawSourceLabel(): string | null {
+        return this._data.quota_source_label ?? null;
+    }
+
     /**
      * The name of the ObjectStore associated with the quota.
      */
     get sourceLabel(): string {
-        return this._data.quota_source_label ?? DEFAULT_QUOTA_SOURCE_LABEL;
+        return this.rawSourceLabel ?? DEFAULT_QUOTA_SOURCE_LABEL;
     }
 
     /**
      * The maximum allowed disk usage in bytes.
      */
-    get quotaInBytes(): number | undefined {
+    get quotaInBytes(): number | undefined | null {
         return this._data.quota_bytes;
     }
 
@@ -39,7 +43,7 @@ export class QuotaUsage {
     /**
      * The percentage of used quota.
      */
-    get quotaPercent(): number | undefined {
+    get quotaPercent(): number | undefined | null {
         return this._data.quota_percent;
     }
 
@@ -50,7 +54,7 @@ export class QuotaUsage {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        if (this.quotaInBytes !== undefined) {
+        if (this.quotaInBytes !== undefined && this.quotaInBytes !== null) {
             return bytesToString(this.quotaInBytes, true, undefined);
         }
         return "unknown";

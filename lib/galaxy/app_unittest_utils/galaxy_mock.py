@@ -1,6 +1,7 @@
 """
 Mock infrastructure for testing ModelManagers.
 """
+
 import os
 import shutil
 import tempfile
@@ -41,6 +42,12 @@ from galaxy.model.unittest_utils import (
     GalaxyDataTestConfig,
 )
 from galaxy.security import idencoding
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
@@ -52,12 +59,6 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
-from galaxy.web.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.web_stack import ApplicationStack
 
 
@@ -157,6 +158,10 @@ class MockApp(di.Container, GalaxyDataTestApp):
     @property
     def toolbox(self) -> ToolBox:
         return self._toolbox
+
+    @toolbox.setter
+    def toolbox(self, toolbox: ToolBox):
+        self._toolbox = toolbox
 
     def wait_for_toolbox_reload(self, toolbox):
         # TODO: If the tpm test case passes, does the operation really
@@ -258,6 +263,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
+        self.display_builtin_converters = True
         self.enable_notification_system = True
 
     @property
@@ -280,6 +286,10 @@ class MockWebapp:
         self.security = security
 
 
+def mock_url_builder(*a, **k):
+    return f"(fake url): {a}, {k}"
+
+
 class MockTrans:
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = cast(UniverseApplication, app or MockApp(**kwargs))
@@ -291,7 +301,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
-        self.url_builder = None
+        self.url_builder = mock_url_builder
 
         self.galaxy_session = None
         self.__user = user

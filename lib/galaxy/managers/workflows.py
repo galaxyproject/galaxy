@@ -23,7 +23,11 @@ from gxformat2 import (
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    SerializerFunctionWrapHandler,
+    WrapSerializer,
+)
 from sqlalchemy import (
     desc,
     false,
@@ -38,6 +42,7 @@ from sqlalchemy.orm import (
     Query,
     subqueryload,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -64,8 +69,12 @@ from galaxy.model import (
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
+    WorkflowInvocationToSubworkflowInvocationAssociation,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -84,8 +93,8 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     RuntimeValue,
-    workflow_building_modes,
 )
+from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
@@ -97,7 +106,6 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
-from galaxy.web import url_for
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
     module_factory,
@@ -184,7 +192,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         latest_workflow_load = joinedload(StoredWorkflow.latest_workflow)
         if not payload.skip_step_counts:
-            latest_workflow_load = latest_workflow_load.undefer("step_count")
+            latest_workflow_load = latest_workflow_load.undefer(Workflow.step_count)
         latest_workflow_load = latest_workflow_load.lazyload(Workflow.steps)
 
         stmt = stmt.options(joinedload(StoredWorkflow.annotations))
@@ -222,7 +230,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             stmt = stmt.where(StoredWorkflow.importable == true())
                         elif q == "deleted":
                             stmt = stmt.where(StoredWorkflow.deleted == true())
-                            show_deleted = true
+                            show_deleted = True
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -242,7 +250,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             term,
                         )
                     )
-        stmt = stmt.where(StoredWorkflow.deleted == (true() if show_deleted else false()))
+        stmt = stmt.where(StoredWorkflow.deleted == (true() if show_deleted else false())).distinct()
         if include_total_count:
             total_matches = get_count(trans.sa_session, stmt)
         else:
@@ -361,9 +369,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         return True
 
-    def get_workflow_svg_from_id(self, trans, id, for_embed=False) -> bytes:
+    def get_workflow_svg_from_id(self, trans, id, version=None, for_embed=False) -> bytes:
         stored = self.get_stored_accessible_workflow(trans, id)
-        return self.get_workflow_svg(trans, stored.latest_workflow, for_embed=for_embed)
+        workflow = stored.get_internal_version(version)
+        return self.get_workflow_svg(trans, workflow, for_embed=for_embed)
 
     def get_workflow_svg(self, trans, workflow, for_embed=False) -> bytes:
         try:
@@ -393,7 +402,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         workflow_canvas.add_steps()
         return workflow_canvas.finish(for_embed=for_embed)
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> WorkflowInvocation:
+    def get_invocation(self, trans, decoded_invocation_id: int, eager=False) -> WorkflowInvocation:
         workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
@@ -478,6 +487,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         offset=None,
         sort_by=None,
         sort_desc=None,
+        include_nested_invocations=True,
     ) -> Tuple[Query, int]:
         """Get invocations owned by the current user."""
 
@@ -495,6 +505,16 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
         if not include_terminal:
             stmt = stmt.where(WorkflowInvocation.state.in_(WorkflowInvocation.non_terminal_states))
+        if not include_nested_invocations:
+            subquery = (
+                select(WorkflowInvocationToSubworkflowInvocationAssociation.id)
+                .where(
+                    WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id
+                    == WorkflowInvocation.id
+                )
+                .exists()
+            )
+            stmt = stmt.where(~subquery)
 
         total_matches = get_count(trans.sa_session, stmt)
 
@@ -783,9 +803,8 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id: Dict[str, model.WorkflowStep] = {}
 
         # Preload dependent workflows with locally defined content_ids.
-        subworkflows = data.get("subworkflows")
         subworkflow_id_map = None
-        if subworkflows:
+        if subworkflows := data.get("subworkflows"):
             subworkflow_id_map = {}
             for key, subworkflow_dict in subworkflows.items():
                 subworkflow = self.__build_embedded_subworkflow(
@@ -803,7 +822,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     trans, step_dict, subworkflow_id_map, workflow_state_resolution_options, dry_run=dry_run
                 )
 
-        module_kwds = workflow_state_resolution_options.dict()
+        module_kwds = workflow_state_resolution_options.model_dump()
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
@@ -819,6 +838,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.has_cycles = True
         workflow.steps = steps
+        # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        # when AT LEAST ONE step in steps belonged to a session.
+        for step in steps:
+            if ensure_object_added_to_session(workflow, object_in_session=step):
+                break
 
         comments: List[model.WorkflowComment] = []
         comments_by_external_id: Dict[str, model.WorkflowComment] = {}
@@ -873,9 +897,9 @@ class WorkflowContentsManager(UsesAnnotations):
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
-            wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=True)
+            wf_dict = self._workflow_to_dict_instance(trans, stored, workflow=workflow, legacy=True)
         elif style == "instance":
-            wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=False)
+            wf_dict = self._workflow_to_dict_instance(trans, stored, workflow=workflow, legacy=False)
         elif style == "run":
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow, history=history or trans.history)
         elif style == "preview":
@@ -1122,6 +1146,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             step_dict = {}
             step_dict["order_index"] = step.order_index
+            step_dict["type"] = step.type
             if step.annotations:
                 step_dict["annotation"] = step.annotations[0].annotation
             try:
@@ -1132,6 +1157,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 continue
             if step.type == "tool":
                 tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
+                step_dict["tool_id"] = step.tool_id
+                step_dict["tool_version"] = step.tool_version
                 step_dict["label"] = step.label or tool.name
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == "subworkflow":
@@ -1205,7 +1232,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "workflow_outputs": [],
             }
             if tooltip:
-                step_dict["tooltip"] = module.get_tooltip(static_path=url_for("/static"))
+                step_dict["tooltip"] = module.get_tooltip(static_path="/static")
             # Connections
             input_connections = step.input_connections
             input_connections_type = {}
@@ -1252,9 +1279,9 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict["workflow_outputs"] = outputs
             if len(output_label_duplicate) > 0:
                 output_label_duplicate_string = ", ".join(output_label_duplicate)
-                upgrade_message_dict[
-                    "output_label_duplicate"
-                ] = f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                upgrade_message_dict["output_label_duplicate"] = (
+                    f"Ignoring duplicate labels: {output_label_duplicate_string}."
+                )
             if upgrade_message_dict:
                 data["upgrade_messages"][step.order_index] = upgrade_message_dict
 
@@ -1584,12 +1611,12 @@ class WorkflowContentsManager(UsesAnnotations):
             steps[step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, stored, workflow, legacy=True):
+    def _workflow_to_dict_instance(self, trans, stored, workflow, legacy=True):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view="element", value_mapper={"id": encode})
         item["name"] = workflow.name
-        item["url"] = url_for("workflow", id=item["id"])
+        item["url"] = trans.url_builder("workflow", id=item["id"])
         item["owner"] = stored.user.username
         item["email_hash"] = md5_hash_str(stored.user.email)
         item["slug"] = stored.slug
@@ -1748,8 +1775,7 @@ class WorkflowContentsManager(UsesAnnotations):
         self.__set_default_label(step, module, step_dict.get("tool_state"))
         module.save_to_step(step, detached=dry_run)
 
-        annotation = step_dict.get("annotation")
-        if annotation:
+        if annotation := step_dict.get("annotation"):
             annotation = sanitize_html(annotation)
             sa_session = None if dry_run else trans.sa_session
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
@@ -1949,15 +1975,17 @@ class RefactorRequest(RefactorActions):
     style: str = "export"
 
 
+def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> str:
+    try:
+        return nxt(v)
+    except Exception:
+        return safe_dumps(v)
+
+
 class RefactorResponse(BaseModel):
     action_executions: List[RefactorActionExecution]
-    workflow: dict
+    workflow: Annotated[dict, WrapSerializer(safe_wraps, when_used="json")]
     dry_run: bool
-
-    class Config:
-        # Workflows have dictionaries with integer keys, which pydantic doesn't coerce to strings.
-        # Integer object keys aren't valid JSON, so the client fails.
-        json_dumps = safe_dumps
 
 
 class WorkflowStateResolutionOptions(BaseModel):
@@ -2075,5 +2103,5 @@ def _get_invocation(session, eager, invocation_id):
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)

@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Roles.
 """
+
 import logging
 from typing import List
 
@@ -8,11 +9,19 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import exc as sqlalchemy_exceptions
+from sqlalchemy.orm import (
+    exc as sqlalchemy_exceptions,
+    Session,
+)
 
-import galaxy.exceptions
 from galaxy import model
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    Conflict,
+    InconsistentDatabase,
+    InternalServerError,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
@@ -50,14 +59,14 @@ class RoleManager(base.ModelManager[model.Role]):
             stmt = select(self.model_class).where(self.model_class.id == role_id)
             role = self.session().execute(stmt).scalar_one()
         except sqlalchemy_exceptions.MultipleResultsFound:
-            raise galaxy.exceptions.InconsistentDatabase("Multiple roles found with the same id.")
+            raise InconsistentDatabase("Multiple roles found with the same id.")
         except sqlalchemy_exceptions.NoResultFound:
-            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise ObjectNotFound("No accessible role found with the id provided.")
         except Exception as e:
-            raise galaxy.exceptions.InternalServerError(f"Error loading from the database.{unicodify(e)}")
+            raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
 
         if not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
-            raise galaxy.exceptions.RequestParameterInvalidException("No accessible role found with the id provided.")
+            raise ObjectNotFound("No accessible role found with the id provided.")
 
         return role
 
@@ -77,7 +86,7 @@ class RoleManager(base.ModelManager[model.Role]):
 
         stmt = select(Role).where(Role.name == name).limit(1)
         if trans.sa_session.scalars(stmt).first():
-            raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
+            raise Conflict(f"A role with that name already exists [{name}]")
 
         role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
 
@@ -97,3 +106,62 @@ class RoleManager(base.ModelManager[model.Role]):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return role
+
+    def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        role.deleted = True
+        trans.sa_session.add(role)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return role
+
+    def purge(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        # This method should only be called for a Role that has previously been deleted.
+        # Purging a deleted Role deletes all of the following from the database:
+        # - UserRoleAssociations where role_id == Role.id
+        # - DefaultUserPermissions where role_id == Role.id
+        # - DefaultHistoryPermissions where role_id == Role.id
+        # - GroupRoleAssociations where role_id == Role.id
+        # - DatasetPermissionss where role_id == Role.id
+        sa_session = trans.sa_session
+        if not role.deleted:
+            raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
+        # Delete UserRoleAssociations
+        for ura in role.users:
+            user = sa_session.query(trans.app.model.User).get(ura.user_id)
+            # Delete DefaultUserPermissions for associated users
+            for dup in user.default_permissions:
+                if role == dup.role:
+                    sa_session.delete(dup)
+            # Delete DefaultHistoryPermissions for associated users
+            for history in user.histories:
+                for dhp in history.default_permissions:
+                    if role == dhp.role:
+                        sa_session.delete(dhp)
+            sa_session.delete(ura)
+        # Delete GroupRoleAssociations
+        for gra in role.groups:
+            sa_session.delete(gra)
+        # Delete DatasetPermissionss
+        for dp in role.dataset_actions:
+            sa_session.delete(dp)
+        # Delete the role
+        sa_session.delete(role)
+        with transaction(sa_session):
+            sa_session.commit()
+        return role
+
+    def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        if not role.deleted:
+            raise RequestParameterInvalidException(
+                f"Role '{role.name}' has not been deleted, so it cannot be undeleted."
+            )
+        role.deleted = False
+        trans.sa_session.add(role)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return role
+
+
+def get_roles_by_ids(session: Session, role_ids):
+    stmt = select(Role).where(Role.id.in_(role_ids))
+    return session.scalars(stmt).all()

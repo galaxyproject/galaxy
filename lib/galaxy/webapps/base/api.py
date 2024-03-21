@@ -19,11 +19,9 @@ from starlette_context.middleware import RawContextMiddleware
 from starlette_context.plugins import RequestIdPlugin
 
 from galaxy.exceptions import MessageException
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.web.framework.base import walk_controller_modules
-from galaxy.web.framework.decorators import (
-    api_error_message,
-    validation_error_to_message_exception,
-)
+from galaxy.web.framework.decorators import validation_error_to_message_exception
 
 if typing.TYPE_CHECKING:
     from starlette.background import BackgroundTask
@@ -61,7 +59,6 @@ class GalaxyFileResponse(FileResponse):
 
     nginx_x_accel_redirect_base: typing.Optional[str] = None
     apache_xsendfile: typing.Optional[bool] = None
-    send_header_only: bool
 
     def __init__(
         self,
@@ -79,15 +76,11 @@ class GalaxyFileResponse(FileResponse):
             path, status_code, headers, media_type, background, filename, stat_result, method, content_disposition_type
         )
         self.headers["accept-ranges"] = "bytes"
-        send_header_only = self.nginx_x_accel_redirect_base or self.apache_xsendfile
+        self.xsendfile = self.nginx_x_accel_redirect_base or self.apache_xsendfile
         if self.nginx_x_accel_redirect_base:
             self.headers["x-accel-redirect"] = self.nginx_x_accel_redirect_base + os.path.abspath(path)
         elif self.apache_xsendfile:
             self.headers["x-sendfile"] = os.path.abspath(path)
-        if not self.send_header_only and send_header_only:
-            # Not a head request, but nginx_x_accel_redirect_base / send_header_only, we don't send a body
-            self.send_header_only = True
-            self.headers["content-length"] = "0"
 
     async def __call__(self, scope: "Scope", receive: "Receive", send: "Send") -> None:
         if self.stat_result is None:
@@ -102,9 +95,15 @@ class GalaxyFileResponse(FileResponse):
                     raise RuntimeError(f"File at path {self.path} is not a file.")
 
         # This is where we diverge from the superclass, this adds support for byte range requests
+        is_head_request = scope["method"].upper() == "HEAD"
+        if not is_head_request and self.xsendfile:
+            # Not a head request, but nginx_x_accel_redirect_base / send_header_only, we don't send a body
+            self.headers["content-length"] = "0"
+        send_header_only = self.xsendfile or is_head_request
+
         start = 0
         end = stat_result.st_size - 1
-        if not self.send_header_only:
+        if not send_header_only:
             http_range = ""
             for key, value in scope["headers"]:
                 if key == b"range":
@@ -122,7 +121,7 @@ class GalaxyFileResponse(FileResponse):
                 "headers": self.raw_headers,
             }
         )
-        if self.send_header_only:
+        if send_header_only:
             await send({"type": "http.response.body", "body": b"", "more_body": False})
         else:
             # This also diverges from the superclass by seeking to start and limiting to end if handling byte range requests
@@ -159,10 +158,9 @@ def add_sentry_middleware(app: FastAPI) -> None:
 
 
 def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
-    error_dict = api_error_message(None, exception=exc)
+    error_dict = api_error_to_dict(exception=exc)
     status_code = exc.status_code
-    path = request.url.path
-    if "ga4gh" in path:
+    if "ga4gh" in (path := request.url.path):
         # When serving GA4GH APIs use limited exceptions to conform their expected
         # error schema. Tailored to DRS currently.
         message = error_dict["err_msg"]

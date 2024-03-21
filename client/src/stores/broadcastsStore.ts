@@ -16,7 +16,7 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
     const dismissedBroadcasts = useUserLocalStorage<{ [key: string]: Expirable }>("dismissed-broadcasts", {});
 
     const activeBroadcasts = computed(() => {
-        return broadcasts.value.filter((b) => !dismissedBroadcasts.value[b.id]);
+        return broadcasts.value.filter(isActive);
     });
 
     async function loadBroadcasts() {
@@ -40,13 +40,27 @@ export const useBroadcastsStore = defineStore("broadcastsStore", () => {
         set(dismissedBroadcasts.value, broadcast.id, { expiration_time: broadcast.expiration_time });
     }
 
-    function hasExpired(expirationTimeStr?: string) {
+    function hasExpired(expirationTimeStr?: string | null) {
         if (!expirationTimeStr) {
             return false;
         }
         const expirationTime = new Date(`${expirationTimeStr}Z`);
         const now = new Date();
         return now > expirationTime;
+    }
+
+    function isActive(broadcast: BroadcastNotification) {
+        return (
+            !dismissedBroadcasts.value[broadcast.id] &&
+            !hasExpired(broadcast.expiration_time) &&
+            hasBeenPublished(broadcast)
+        );
+    }
+
+    function hasBeenPublished(broadcast: BroadcastNotification) {
+        const publicationTime = new Date(`${broadcast.publication_time}Z`);
+        const now = new Date();
+        return now >= publicationTime;
     }
 
     function clearExpiredDismissedBroadcasts() {

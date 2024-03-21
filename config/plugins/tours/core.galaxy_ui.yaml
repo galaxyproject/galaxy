@@ -117,26 +117,6 @@ steps:
       element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
-    - title: "Panel collapse"
-      element: "#left-collapse"
-      intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side."
-      postclick: true
-
-    - title: "Panel expand"
-      element: "#left-expand"
-      intro: "Click on the expansion icon to restore the panel."
-      postclick: true
-
-    - title: "Panel collapse"
-      element: "#right-collapse"
-      intro: "Clicking the panel arrow on the right hand side, collapses the history."
-      postclick: true
-
-    - title: "Panel expand"
-      element: "#right-expand"
-      intro: "Click on the expansion icon to restore the panel."
-      postclick: true
-
     - title: "Top panel"
       element: "#masthead"
       intro: "The top panel will give you access to a lot of useful things."
@@ -149,9 +129,9 @@ steps:
       element: "#workflow"
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
 
-    - title: "Shared data"
-      element: "#shared"
-      intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and your <b>Data Library</b> that are shared with you."
+    - title: "Data"
+      element: "#resources"
+      intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b> and <b>Visualizations</b>."
 
     - title: "Visualization"
       element: "#visualization"

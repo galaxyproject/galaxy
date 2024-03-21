@@ -3,10 +3,8 @@ import axios from "axios";
 import { mapActions, mapState } from "pinia";
 import { useDbKeyStore } from "stores/dbKeyStore";
 import { prependPath } from "utils/redirect";
-import { mapActions as vuexMapActions, mapGetters } from "vuex";
 
 import { useDatatypeStore } from "../../stores/datatypeStore";
-import { HasAttributesMixin } from "./utils";
 
 export const SimpleProviderMixin = {
     props: {
@@ -139,58 +137,4 @@ export const DatasetCollectionElementProvider = {
             return prependPath(`api/dataset_collection_element/${this.id}`);
         },
     },
-};
-
-/**
- * Provider component interface to the actual stores i.e. history items and collection elements stores.
- * @param {String} storeAction The store action is executed when the consuming component e.g. the history panel, changes the provider props.
- * @param {String} storeGetter The store getter passes its result to the slot of the corresponding provider.
- */
-export const StoreProvider = (storeAction, storeGetter) => {
-    return {
-        mixins: [HasAttributesMixin],
-        watch: {
-            $attrs(newVal, oldVal) {
-                if (JSON.stringify(newVal) != JSON.stringify(oldVal)) {
-                    this.load();
-                }
-            },
-        },
-        data() {
-            return {
-                loading: false,
-                error: null,
-            };
-        },
-        created() {
-            this.load();
-        },
-        computed: {
-            ...mapGetters([storeGetter]),
-            result() {
-                return this[storeGetter](this.attributes);
-            },
-        },
-        render() {
-            return this.$scopedSlots.default({
-                error: this.error,
-                loading: this.loading,
-                result: this.result,
-            });
-        },
-        methods: {
-            ...vuexMapActions([storeAction]),
-            async load() {
-                this.loading = true;
-                try {
-                    await this[storeAction](this.attributes);
-                    this.error = null;
-                    this.loading = false;
-                } catch (error) {
-                    this.error = error;
-                    this.loading = false;
-                }
-            },
-        },
-    };
 };

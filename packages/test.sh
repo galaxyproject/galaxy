@@ -13,25 +13,37 @@ for arg in "$@"; do
 done
 
 # Don't display the pip progress bar when running under CI
-[ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
+if [ "$CI" = 'true' ]; then
+    export PIP_PROGRESS_BAR=off
+fi
 
 # Change to packages directory.
 cd "$(dirname "$0")"
 
 # Use a throw-away virtualenv
-TEST_PYTHON=${TEST_PYTHON:-"python"}
+TEST_PYTHON=${TEST_PYTHON:-"python3"}
 TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
-virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
+"$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+# shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
 pip install --upgrade pip setuptools wheel
 if [ $FOR_PULSAR -eq 0 ]; then
     pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
-# ensure ordered by dependency DAG
-while read -r package_dir; do
-    printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
+# Ensure ordered by dependency DAG
+while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.com/questions/12916352/shell-script-read-missing-last-line
+    # Ignore empty lines
+    if [ -z "$package_dir" ]; then
+        continue
+    fi
+    # Ignore lines beginning with `#`
+    if  [[ $package_dir =~ ^#.* ]]; then
+        continue
+    fi
+
+    printf "\n========= TESTING PACKAGE %s =========\n\n" "$package_dir"
 
     cd "$package_dir"
 
@@ -39,7 +51,7 @@ while read -r package_dir; do
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
     elif [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[cwl,mulled,edam]'
+        pip install -e '.[cwl,mulled,edam,extended-assertions]'
     else
         pip install -e '.'
     fi

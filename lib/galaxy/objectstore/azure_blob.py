@@ -109,6 +109,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         self._initialize()
 
@@ -136,6 +137,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 "cache": {
                     "size": self.cache_size,
                     "path": self.staging_path,
+                    "cache_updated_data": self.cache_updated_data,
                 },
             }
         )
@@ -501,12 +503,15 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
+        sync_cache = kwargs.get("sync_cache", True)
 
         # for JOB_WORK directory
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -515,8 +520,8 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
@@ -542,7 +547,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)

@@ -81,7 +81,7 @@ def build_singularity_run_command(
     for key, value in env:
         if key == "HOME":
             home = value
-        command_parts.extend([f"SINGULARITYENV_{key}={value}"])
+        command_parts.extend([f'SINGULARITYENV_{key}="{value}"'])
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
         sudo=sudo,

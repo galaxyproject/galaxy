@@ -1,6 +1,7 @@
 """
 Proteomics Datatypes
 """
+
 import logging
 import re
 from typing import (

@@ -2,6 +2,7 @@ name: Update dependencies
 on:
   schedule:
     - cron: '0 3 * * 6'  # Run every saturday at 3 am.
+  workflow_dispatch:
 jobs:
   update_dependencies:
     name: Update dependencies
@@ -9,17 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.8']
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
-          # poetry requires Python >=3.8, but lint requirements currently need
-          # to be generated with `pip freeze`` on the oldest Python version
-          # supported by Galaxy.
-          python-version: |
-            ${{ matrix.python-version }}
-            3.8
+          python-version: ${{ matrix.python-version }}
       - name: Update dependencies
         run: | 
           python -m venv .venv

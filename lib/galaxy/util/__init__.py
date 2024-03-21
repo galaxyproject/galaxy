@@ -35,9 +35,12 @@ from hashlib import md5
 from os.path import relpath
 from typing import (
     Any,
+    cast,
+    Dict,
     Iterable,
     Iterator,
     List,
+    Mapping,
     Optional,
     overload,
     Tuple,
@@ -57,8 +60,11 @@ from boltons.iterutils import (
     remap,
 )
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
-from typing_extensions import Literal
+from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped]
+from typing_extensions import (
+    Literal,
+    Self,
+)
 
 try:
     import grp
@@ -68,22 +74,52 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-    from lxml.etree import _Element as Element
+
+    # lxml.etree.Element is a function that returns a new instance of the
+    # lxml.etree._Element class. This class doesn't have a proper __init__()
+    # method, so we can add a __new__() constructor that mimicks the
+    # xml.etree.ElementTree.Element initialization.
+    class Element(etree._Element):
+        def __new__(cls, tag, attrib={}, **extra) -> Self:  # noqa: B006
+            return cast(Self, etree.Element(tag, attrib, **extra))
+
+        def __iter__(self) -> Iterator[Self]:  # type: ignore[override]
+            return cast(Iterator[Self], super().__iter__())
+
+        def find(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Union[Self, None]:
+            ret = super().find(path, namespaces)
+            if ret is not None:
+                return cast(Self, ret)
+            else:
+                return None
+
+        def findall(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> List[Self]:  # type: ignore[override]
+            return cast(List[Self], super().findall(path, namespaces))
+
+    def SubElement(parent: Element, tag: str, attrib: Optional[Dict[str, str]] = None, **extra) -> Element:
+        return cast(Element, etree.SubElement(parent, tag, attrib, **extra))
 
     # lxml.etree.ElementTree is a function that returns a new instance of the
-    # lxml.etree._ElementTree class. This class doesn't have a proper
-    # __init__() method, so we can add a __new__() constructor that mimicks
+    # lxml.etree._ElementTree class. This class doesn't have a proper __init__()
+    # method, so we can add a __new__() constructor that mimicks the
     # xml.etree.ElementTree.ElementTree initialization.
     class ElementTree(etree._ElementTree):
-        def __new__(cls, element=None, file=None) -> etree.ElementTree:
-            return etree.ElementTree(element, file=file)
+        def __new__(cls, element=None, file=None) -> Self:
+            return cast(Self, etree.ElementTree(element, file=file))
+
+        def getroot(self) -> Element:
+            return cast(Element, super().getroot())
+
+    def XML(text: Union[str, bytes]) -> Element:
+        return cast(Element, etree.XML(text))
 
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-    from xml.etree.ElementTree import (  # type: ignore[assignment]
+    from xml.etree.ElementTree import (  # type: ignore[assignment]  # noqa: F401
         Element,
         ElementTree,
+        XML,
     )
 
 from .custom_logging import get_logger
@@ -120,6 +156,7 @@ DEFAULT_SOCKET_TIMEOUT = 600
 
 gzip_magic = b"\x1f\x8b"
 bz2_magic = b"BZh"
+xz_magic = b"\xfd7zXZ\x00"
 DEFAULT_ENCODING = os.environ.get("GALAXY_DEFAULT_ENCODING", "utf-8")
 NULL_CHAR = b"\x00"
 BINARY_CHARS = [NULL_CHAR]
@@ -128,8 +165,6 @@ FILENAME_VALID_CHARS = ".,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJK
 RW_R__R__ = stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH
 RWXR_XR_X = stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
 RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
-
-XML = etree.XML
 
 defaultdict = collections.defaultdict
 
@@ -142,7 +177,7 @@ def str_removeprefix(s: str, prefix: str):
     """
     if sys.version_info >= (3, 9):
         return s.removeprefix(prefix)
-    if s.startswith(prefix):
+    if s.startswith(prefix):  # type: ignore[unreachable]
         return s[len(prefix) :]
     return s
 
@@ -294,15 +329,24 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> ElementTree:
+def parse_xml(
+    fname: StrPath, strip_whitespace=True, remove_comments=True, schemafname: Union[StrPath, None] = None
+) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
+    schema = None
     if remove_comments and LXML_AVAILABLE:
         # If using stdlib etree comments are always removed,
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
+
+    if LXML_AVAILABLE and schemafname:
+        with open(str(schemafname), "rb") as schema_file:
+            schema_root = etree.XML(schema_file.read())
+            schema = etree.XMLSchema(schema_root)
+
     try:
-        tree = etree.parse(str(fname), parser=parser)
+        tree = cast(ElementTree, etree.parse(str(fname), parser=parser))
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -310,23 +354,29 @@ def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> El
                     elem.text = elem.text.strip()
                 if elem.tail is not None:
                     elem.tail = elem.tail.strip()
+        if schema:
+            schema.assertValid(tree)
     except OSError as e:
-        if e.errno is None and not os.path.exists(fname):
+        if e.errno is None and not os.path.exists(fname):  # type: ignore[unreachable]
             # lxml doesn't set errno
-            e.errno = errno.ENOENT
+            e.errno = errno.ENOENT  # type: ignore[unreachable]
         raise
     except etree.ParseError:
         log.exception("Error parsing file %s", fname)
+        raise
+    except etree.DocumentInvalid:
+        log.exception("Validation of file %s failed", fname)
         raise
     return tree
 
 
 def parse_xml_string(xml_string: str, strip_whitespace: bool = True) -> Element:
     try:
-        elem = etree.fromstring(xml_string)
+        elem = XML(xml_string)
     except ValueError as e:
         if "strings with encoding declaration are not supported" in unicodify(e):
-            elem = etree.fromstring(xml_string.encode("utf-8"))
+            # This happens with lxml for a string that starts with e.g. `<?xml version="1.0" encoding="UTF-8"?>`
+            elem = XML(xml_string.encode("utf-8"))
         else:
             raise e
     if strip_whitespace:
@@ -342,15 +392,14 @@ def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) ->
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem: Element, pretty: bool = False) -> str:
+def xml_to_string(elem: Optional[Element], pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
+    if elem is None:
+        return ""
     try:
-        if elem is not None:
-            xml_str = etree.tostring(elem, encoding="unicode")
-        else:
-            xml_str = ""
+        xml_str = etree.tostring(elem, encoding="unicode")
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, "text"):
@@ -979,7 +1028,7 @@ def parse_resource_parameters(resource_param_file):
         resource_definitions_root = resource_definitions.getroot()
         for parameter_elem in resource_definitions_root.findall("param"):
             name = parameter_elem.get("name")
-            resource_parameters[name] = etree.tostring(parameter_elem)
+            resource_parameters[name] = etree.tostring(parameter_elem, encoding="unicode")
 
     return resource_parameters
 
@@ -1031,25 +1080,21 @@ ItemType = TypeVar("ItemType")
 
 
 @overload
-def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List:
-    ...
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
 
 
 @overload
-def listify(item: str, do_strip: bool = False) -> List[str]:
-    ...
+def listify(item: str, do_strip: bool = False) -> List[str]: ...
 
 
 @overload
-def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]:
-    ...
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]: ...
 
 
 # Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
 # because then that would also match Union types.
 @overload
-def listify(item: Any, do_strip: bool = False) -> List:
-    ...
+def listify(item: Any, do_strip: bool = False) -> List: ...
 
 
 def listify(item: Any, do_strip: bool = False) -> List:
@@ -1091,16 +1136,6 @@ def commaify(amount):
         return commaify(new)
 
 
-def roundify(amount, sfs=2):
-    """
-    Take a number in string form and truncate to 'sfs' significant figures.
-    """
-    if len(amount) <= sfs:
-        return amount
-    else:
-        return amount[0:sfs] + "0" * (len(amount) - sfs)
-
-
 @overload
 def unicodify(  # type: ignore[misc]
     value: Literal[None],
@@ -1108,8 +1143,7 @@ def unicodify(  # type: ignore[misc]
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> None:
-    ...
+) -> None: ...
 
 
 @overload
@@ -1119,8 +1153,7 @@ def unicodify(
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> str:
-    ...
+) -> str: ...
 
 
 def unicodify(
@@ -1428,7 +1461,65 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def nice_size(size):
+def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
+    """
+    >>> metric_prefix(100, 1000)
+    (100.0, '')
+    >>> metric_prefix(999, 1000)
+    (999.0, '')
+    >>> metric_prefix(1000, 1000)
+    (1.0, 'K')
+    >>> metric_prefix(1001, 1000)
+    (1.001, 'K')
+    >>> metric_prefix(1000000, 1000)
+    (1.0, 'M')
+    >>> metric_prefix(1000**10, 1000)
+    (1.0, 'Q')
+    >>> metric_prefix(1000**11, 1000)
+    (1000.0, 'Q')
+    """
+    prefixes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]
+    if number < 0:
+        number = abs(number)
+        sign = -1
+    else:
+        sign = 1
+
+    for prefix in prefixes:
+        if number < base:
+            return sign * float(number), prefix
+        number /= base
+    else:
+        return sign * float(number) * base, prefix
+
+
+def shorten_with_metric_prefix(amount: int) -> str:
+    """
+    >>> shorten_with_metric_prefix(23000)
+    '23K'
+    >>> shorten_with_metric_prefix(2300000)
+    '2.3M'
+    >>> shorten_with_metric_prefix(23000000)
+    '23M'
+    >>> shorten_with_metric_prefix(1)
+    '1'
+    >>> shorten_with_metric_prefix(0)
+    '0'
+    >>> shorten_with_metric_prefix(100)
+    '100'
+    >>> shorten_with_metric_prefix(-100)
+    '-100'
+    """
+    m, prefix = metric_prefix(amount, 1000)
+    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
+    exp = f"{m_str}{prefix}"
+    if len(exp) <= len(str(amount)):
+        return exp
+    else:
+        return str(amount)
+
+
+def nice_size(size: Union[float, int, str]) -> str:
     """
     Returns a readably formatted string with the size
 
@@ -1441,23 +1532,15 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-    prefix = ""
     try:
         size = float(size)
-        if size < 0:
-            size = abs(size)
-            prefix = "-"
-    except Exception:
+    except ValueError:
         return "??? bytes"
-    for ind, word in enumerate(words):
-        step = 1024 ** (ind + 1)
-        if step > size:
-            size = size / float(1024**ind)
-            if word == "bytes":  # No decimals for bytes
-                return "%s%d bytes" % (prefix, size)
-            return f"{prefix}{size:.1f} {word}"
-    return "??? bytes"
+    size, prefix = metric_prefix(size, 1024)
+    if prefix == "":
+        return "%d bytes" % size
+    else:
+        return f"{size:.1f} {prefix}B"
 
 
 def size_to_bytes(size):
@@ -1506,7 +1589,7 @@ def size_to_bytes(size):
         raise ValueError(f"Unknown multiplier '{multiple}' in '{size}'")
 
 
-def send_mail(frm, to, subject, body, config, html=None):
+def send_mail(frm, to, subject, body, config, html=None, reply_to=None):
     """
     Sends an email.
 
@@ -1527,7 +1610,10 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     :type  html: str
     :param html: Alternative HTML representation of the body content. If
-                 provided will convert the message to a MIMEMultipart. (Default 'None')
+                 provided will convert the message to a MIMEMultipart. (Default None)
+
+    :type  reply_to: str
+    :param reply_to: Reply-to address (Default None)
     """
 
     to = listify(to)
@@ -1539,6 +1625,9 @@ def send_mail(frm, to, subject, body, config, html=None):
     msg["To"] = ", ".join(to)
     msg["From"] = frm
     msg["Subject"] = subject
+
+    if reply_to:
+        msg["Reply-To"] = reply_to
 
     if config.smtp_server is None:
         log.error("Mail is not configured for this Galaxy instance.")
@@ -1734,7 +1823,7 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
     parsed_url = urlparse(base_url)
     if scheme != "http":
         parsed_url.scheme = scheme
-    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {scheme}"
+    assert parsed_url.scheme in ("http", "https", "ftp"), f"Invalid URL scheme: {parsed_url.scheme}"
     if port != 80:
         url = "%s://%s:%d/%s" % (parsed_url.scheme, parsed_url.netloc.rstrip("/"), int(port), parsed_url.path)
     else:

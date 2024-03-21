@@ -21,7 +21,10 @@ from galaxy.model import (
     WorkflowRequestInputParameter,
     WorkflowRequestStepState,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -121,15 +124,17 @@ def _normalize_inputs(
                 inputs_key = possible_input_key
 
         default_not_set = object()
-        has_default = step.get_input_default_value(default_not_set) is not default_not_set
+        default_value = step.get_input_default_value(default_not_set)
+        has_default = default_value is not default_not_set
         optional = step.input_optional
         # Need to be careful here to make sure 'default' has correct type - not sure how to do that
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.
-        assert isinstance(optional, bool)
         assert isinstance(has_default, bool)
-        if not inputs_key and not has_default and not optional:
-            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
+        assert isinstance(optional, bool)
+        has_input_value = inputs_key and inputs[inputs_key] is not None
+        if not has_input_value and not has_default and not optional:
+            message = f"Workflow cannot be run because input step '{step.id}' ({step.label}) is not optional and no input provided."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -200,8 +205,7 @@ def _step_parameters(step: "WorkflowStep", param_map: Dict, legacy: bool = False
         param_dict.update(param_map.get(str(step.id), {}))
     else:
         param_dict.update(param_map.get(str(step.order_index), {}))
-    step_uuid = step.uuid
-    if step_uuid:
+    if step_uuid := step.uuid:
         uuid_params = param_map.get(str(step_uuid), {})
         param_dict.update(uuid_params)
     if param_dict:
@@ -485,6 +489,7 @@ def workflow_run_config_to_request(
     workflow_invocation = WorkflowInvocation()
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
+    ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:
         parameter = WorkflowRequestInputParameter(

@@ -1,5 +1,6 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
+
 import logging
 import operator
 import os
@@ -90,8 +91,7 @@ class PermissionProvider(AbstractPermissionProvider):
         return self._permissions
 
     def set_default_hda_permissions(self, primary_data):
-        permissions = self.permissions
-        if permissions is not UNSET:
+        if (permissions := self.permissions) is not UNSET:
             self._security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
 
     def copy_dataset_permissions(self, init_from, primary_data):
@@ -475,11 +475,11 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
-    primary_output_assigned = False
     new_outdata_name = None
     primary_datasets: Dict[str, Dict[str, Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation]]] = {}
     storage_callbacks: List[Callable] = []
-    for output_index, (name, outdata) in enumerate(output.items()):
+    for name, outdata in output.items():
+        primary_output_assigned = False
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
         output_def = job_context.output_def(name)
         if output_def is not None:
@@ -505,7 +505,7 @@ def collect_primary_datasets(job_context: Union[JobContext, SessionlessJobContex
             dbkey = fields_match.dbkey
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = job_context.input_dbkey
-            if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
+            if filename_index == 0 and extra_file_collector.assign_primary_output:
                 new_outdata_name = fields_match.name or f"{outdata.name} ({designation})"
                 outdata.change_datatype(ext)
                 outdata.dbkey = dbkey
@@ -676,9 +676,8 @@ class DatasetCollector:
         pattern = self._pattern_for_dataset(dataset_instance)
         if self.match_relative_path and parent_paths:
             filename = os.path.join(*parent_paths, filename)
-        re_match = re.match(pattern, filename)
         match_object = None
-        if re_match:
+        if re_match := re.match(pattern, filename):
             match_object = RegexCollectedDatasetMatch(re_match, self, filename, path=path)
         return match_object
 
@@ -727,11 +726,19 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", job_working_directory: str) -> None:
+def collect_extra_files(
+    object_store: ObjectStore,
+    dataset: "DatasetInstance",
+    job_working_directory: str,
+    outputs_to_working_directory: bool = False,
+):
     # TODO: should this use compute_environment to determine the extra files path ?
     assert dataset.dataset
-    file_name = dataset.dataset.extra_files_path_name_from(object_store)
-    assert file_name
+    real_file_name = file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    if outputs_to_working_directory:
+        # OutputsToWorkingDirectoryPathRewriter always rewrites extra files to uuid path,
+        # so we have to collect from that path even if the real extra files path is dataset_N_files
+        file_name = f"dataset_{dataset.dataset.uuid}_files"
     output_location = "outputs"
     temp_file_path = os.path.join(job_working_directory, output_location, file_name)
     if not os.path.exists(temp_file_path):
@@ -746,7 +753,12 @@ def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", j
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        persist_extra_files(object_store=object_store, src_extra_files_path=temp_file_path, primary_data=dataset)
+        persist_extra_files(
+            object_store=object_store,
+            src_extra_files_path=temp_file_path,
+            primary_data=dataset,
+            extra_files_path_name=real_file_name,
+        )
     except Exception as e:
         log.debug("Error in collect_associated_files: %s", unicodify(e))
 

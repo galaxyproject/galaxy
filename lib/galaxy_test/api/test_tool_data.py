@@ -14,7 +14,7 @@ from ._framework import ApiTestCase
 class TestToolDataApi(ApiTestCase):
     def test_admin_only(self):
         index_response = self._get("tool_data", admin=False)
-        self._assert_status_code_is(index_response, 403)
+        self._assert_status_code_is(index_response, 200)
 
     def test_list(self):
         index_response = self._get("tool_data", admin=True)

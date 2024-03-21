@@ -102,9 +102,9 @@ class RepositoriesController(BaseShedAPIController):
         # Update the repository registry.
         self.app.repository_registry.add_entry(repository)
         response_dict["status"] = "ok"
-        response_dict[
-            "message"
-        ] = f"Entries for repository {name} owned by {owner} have been added to the Tool Shed repository registry."
+        response_dict["message"] = (
+            f"Entries for repository {name} owned by {owner} have been added to the Tool Shed repository registry."
+        )
         return response_dict
 
     @web.legacy_expose_api_anonymous
@@ -214,8 +214,7 @@ class RepositoriesController(BaseShedAPIController):
         Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
         """
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
-        tsr_id = kwd.get("tsr_id", None)
-        if tsr_id is not None:
+        if (tsr_id := kwd.get("tsr_id", None)) is not None:
             repository = repository_util.get_repository_in_tool_shed(
                 self.app, tsr_id, eagerload_columns=[model.Repository.downloadable_revisions]
             )
@@ -271,8 +270,7 @@ class RepositoriesController(BaseShedAPIController):
         """
         repository_dicts = []
         deleted = util.asbool(deleted)
-        q = kwd.get("q", "")
-        if q:
+        if q := kwd.get("q", ""):
             page = kwd.get("page", 1)
             page_size = kwd.get("page_size", 10)
             try:
@@ -288,8 +286,7 @@ class RepositoriesController(BaseShedAPIController):
             else:
                 response = json.dumps(search_results)
             return response
-        tool_ids = kwd.get("tool_ids", None)
-        if tool_ids is not None:
+        if (tool_ids := kwd.get("tool_ids", None)) is not None:
             tool_ids = util.listify(tool_ids)
             response = index_tool_ids(self.app, tool_ids)
             return json.dumps(response)
@@ -320,9 +317,9 @@ class RepositoriesController(BaseShedAPIController):
         response_dict = {}
         if not trans.user_is_admin:
             response_dict["status"] = "error"
-            response_dict[
-                "message"
-            ] = "You are not authorized to remove entries from this Tool Shed's repository registry."
+            response_dict["message"] = (
+                "You are not authorized to remove entries from this Tool Shed's repository registry."
+            )
             return response_dict
         tool_shed_url = payload.get("tool_shed_url", "")
         if not tool_shed_url:
@@ -344,9 +341,9 @@ class RepositoriesController(BaseShedAPIController):
         # Update the repository registry.
         self.app.repository_registry.remove_entry(repository)
         response_dict["status"] = "ok"
-        response_dict[
-            "message"
-        ] = f"Entries for repository {name} owned by {owner} have been removed from the Tool Shed repository registry."
+        response_dict["message"] = (
+            f"Entries for repository {name} owned by {owner} have been removed from the Tool Shed repository registry."
+        )
         return response_dict
 
     @web.legacy_expose_api
@@ -466,7 +463,7 @@ class RepositoriesController(BaseShedAPIController):
         :param repository_id: the encoded id of the repository on which metadata is to be reset.
         """
         repository_id = payload.get("repository_id", None)
-        return reset_metadata_on_repository(trans, repository_id).dict()
+        return reset_metadata_on_repository(trans, repository_id).model_dump()
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):

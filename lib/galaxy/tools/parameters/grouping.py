@@ -1,6 +1,7 @@
 """
 Constructs for grouping tool parameters
 """
+
 import io
 import logging
 import os
@@ -412,8 +413,7 @@ class UploadDataset(Group):
                 return Bunch(type=None, path=None, name=None)
 
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
-            url_paste_file = group_incoming.get("url_paste", None)
-            if url_paste_file is not None:
+            if (url_paste_file := group_incoming.get("url_paste", None)) is not None:
                 url_paste = open(url_paste_file).read()
 
                 def start_of_url(content):

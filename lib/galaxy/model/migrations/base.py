@@ -1,6 +1,7 @@
 """
 Shared code for galaxy and tool shed migrations.
 """
+
 import abc
 import logging
 import os
@@ -49,8 +50,7 @@ class BaseParserBuilder(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _get_command_object(self):
-        ...
+    def _get_command_object(self): ...
 
     def __init__(self, parser, subcommand_required=True):
         self._cmd = self._get_command_object()
@@ -181,12 +181,10 @@ class BaseDbScript(abc.ABC):
     """Facade for common database schema migration operations."""
 
     @abc.abstractmethod
-    def _set_dburl(self, config_file: Optional[str] = None) -> None:
-        ...
+    def _set_dburl(self, config_file: Optional[str] = None) -> None: ...
 
     @abc.abstractmethod
-    def _upgrade_to_head(self, is_sql_mode: bool):
-        ...
+    def _upgrade_to_head(self, is_sql_mode: bool): ...
 
     def __init__(self, config_file: Optional[str] = None) -> None:
         self.alembic_config = self._get_alembic_cfg()
@@ -259,12 +257,10 @@ class BaseDbScript(abc.ABC):
 
 class BaseCommand(abc.ABC):
     @abc.abstractmethod
-    def init(self, args: Namespace) -> None:
-        ...
+    def init(self, args: Namespace) -> None: ...
 
     @abc.abstractmethod
-    def _get_dbscript(self, config_file: str) -> BaseDbScript:
-        ...
+    def _get_dbscript(self, config_file: str) -> BaseDbScript: ...
 
     def upgrade(self, args: Namespace) -> None:
         self._exec_command("upgrade", args)
@@ -307,8 +303,7 @@ class BaseAlembicManager(abc.ABC):
     """
 
     @abc.abstractmethod
-    def _get_alembic_root(self):
-        ...
+    def _get_alembic_root(self): ...
 
     @staticmethod
     def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
@@ -434,7 +429,7 @@ def get_url_string(engine: Engine) -> str:
 
 
 def load_metadata(metadata: MetaData, engine: Engine) -> None:
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         metadata.create_all(bind=conn)
 
 

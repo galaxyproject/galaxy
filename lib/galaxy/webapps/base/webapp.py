@@ -1,5 +1,6 @@
 """
 """
+
 import datetime
 import inspect
 import logging
@@ -37,7 +38,10 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -309,8 +313,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         super().__init__(environ)
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
-        x_frame_options = getattr(config, "x_frame_options", None)
-        if x_frame_options:
+        if x_frame_options := getattr(config, "x_frame_options", None):
             self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values
@@ -532,6 +535,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         """
         Authenticate for the API via key or session (if available).
         """
+        oidc_access_token = self.request.headers.get("Authorization", None)
+        oidc_token_supplied = (
+            self.environ.get("is_api_request", False) and oidc_access_token and "Bearer " in oidc_access_token
+        )
         api_key = self.request.params.get("key", None) or self.request.headers.get("x-api-key", None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get("is_api_request", False) and api_key
@@ -554,6 +561,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 )
                 self.user = None
                 self.galaxy_session = None
+        elif oidc_token_supplied:
+            # Sessionless API transaction with oidc token, we just need to associate a user.
+            oidc_access_token = oidc_access_token.replace("Bearer ", "")
+            try:
+                user = self.user_manager.by_oidc_access_token(oidc_access_token)
+            except AuthenticationFailed as e:
+                return str(e)
+            self.set_user(user)
         else:
             # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
             self.user = None
@@ -650,6 +665,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             galaxy_session = self.__create_new_session(prev_galaxy_session, user_for_new_session)
             galaxy_session_requires_flush = True
             self.galaxy_session = galaxy_session
+            if self.webapp.name == "galaxy":
+                self.get_or_create_default_history()
             self.__update_session_cookie(name=session_cookie)
         else:
             self.galaxy_session = galaxy_session
@@ -662,10 +679,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 self.sa_session.add(prev_galaxy_session)
             with transaction(self.sa_session):
                 self.sa_session.commit()
-        # If the old session was invalid, get a new (or existing default,
-        # unused) history with our new session
-        if invalidate_existing_session:
-            self.get_or_create_default_history()
 
     def _ensure_logged_in_user(self, session_cookie: str) -> None:
         # The value of session_cookie can be one of
@@ -1120,6 +1133,7 @@ def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=Non
     if user_for_new_session:
         # The new session should be associated with the user
         galaxy_session.user = user_for_new_session
+        ensure_object_added_to_session(galaxy_session, object_in_session=user_for_new_session)
     return galaxy_session
 
 

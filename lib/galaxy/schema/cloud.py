@@ -6,7 +6,7 @@ from typing import (
 
 from pydantic import (
     Field,
-    Required,
+    RootModel,
 )
 from typing_extensions import Literal
 
@@ -42,22 +42,22 @@ class InputArguments(Model):
 
 class CloudObjects(Model):
     history_id: DecodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="History ID",
         description="The ID of history to which the object should be received to.",
     )
     bucket: str = Field(
-        default=Required,
+        default=...,
         title="Bucket",
         description="The name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).",
     )
     objects: List[str] = Field(
-        default=Required,
+        default=...,
         title="Objects",
         description="A list of the names of objects to be fetched.",
     )
     authz_id: DecodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="Authentication ID",
         description="The ID of CloudAuthz to be used for authorizing access to the resource provider. You may get a list of the defined authorizations via `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a new authorization.",
     )
@@ -70,17 +70,17 @@ class CloudObjects(Model):
 
 class CloudDatasets(Model):
     history_id: DecodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="History ID",
         description="The ID of history from which the object should be downloaded",
     )
     bucket: str = Field(
-        default=Required,
+        default=...,
         title="Bucket",
         description="The name of a bucket to which data should be sent (e.g., a bucket name on AWS S3).",
     )
     authz_id: DecodedDatabaseIdField = Field(
-        default=Required,
+        default=...,
         title="Authentication ID",
         description="The ID of CloudAuthz to be used for authorizing access to the resource provider. You may get a list of the defined authorizations via `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a new authorization.",
     )
@@ -98,17 +98,17 @@ class CloudDatasets(Model):
 
 class CloudDatasetsResponse(Model):
     sent_dataset_labels: List[str] = Field(
-        default=Required,
+        default=...,
         title="Send datasets",
         description="The datasets for which Galaxy succeeded to create (and queue) send job",
     )
     failed_dataset_labels: List[str] = Field(
-        default=Required,
+        default=...,
         title="Failed datasets",
         description="The datasets for which Galaxy failed to create (and queue) send job",
     )
     bucket_name: str = Field(
-        default=Required,
+        default=...,
         title="Bucket",
         description="The name of bucket to which the listed datasets are queued to be sent",
     )
@@ -116,16 +116,16 @@ class CloudDatasetsResponse(Model):
 
 class StatusCode(Model):
     detail: str = Field(
-        default=Required,
+        default=...,
         title="Detail",
         description="The detail to expand on the status code",
     )
     status: int = Field(
-        default=Required,
+        default=...,
         title="Code",
         description="The actual status code",
     )
 
 
-class DatasetSummaryList(Model):
-    __root__: List[DatasetSummary]
+class DatasetSummaryList(RootModel):
+    root: List[DatasetSummary]

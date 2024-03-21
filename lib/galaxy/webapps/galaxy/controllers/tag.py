@@ -2,6 +2,7 @@
 Tags Controller: handles tagging/untagging of entities
 and provides autocomplete support.
 """
+
 import logging
 
 from sqlalchemy.sql import select

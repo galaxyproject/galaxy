@@ -1,6 +1,7 @@
 """
 Object Store plugin for the Amazon Simple Storage Service (S3)
 """
+
 import logging
 import multiprocessing
 import os
@@ -145,6 +146,7 @@ class CloudConfigMixin:
             "cache": {
                 "size": self.cache_size,
                 "path": self.staging_path,
+                "cache_updated_data": self.cache_updated_data,
             },
         }
 
@@ -186,6 +188,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
+        self.cache_updated_data = cache_dict.get("cache_updated_data", True)
 
         extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
@@ -634,7 +637,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _get_data(self, obj, start=0, count=-1, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
         # Check cache first and get file if not there
-        if not self._in_cache(rel_path):
+        if not self._in_cache(rel_path) or os.path.getsize(self._get_cache_path(rel_path)) == 0:
             self._pull_into_cache(rel_path)
         # Read the file content from cache
         data_file = open(self._get_cache_path(rel_path))
@@ -647,6 +650,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
         obj_dir = kwargs.get("obj_dir", False)
+        sync_cache = kwargs.get("sync_cache", True)
+
         rel_path = self._construct_path(obj, **kwargs)
 
         # for JOB_WORK directory
@@ -654,6 +659,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return os.path.abspath(rel_path)
 
         cache_path = self._get_cache_path(rel_path)
+        if not sync_cache:
+            return cache_path
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return
         # the expected cache path.
@@ -662,8 +669,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         #     if not os.path.exists(cache_path):
         #         os.makedirs(cache_path)
         #     return cache_path
-        # Check if the file exists in the cache first
-        if self._in_cache(rel_path):
+        # Check if the file exists in the cache first, always pull if file size in cache is zero
+        if self._in_cache(rel_path) and (dir_only or os.path.getsize(self._get_cache_path(rel_path)) > 0):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
@@ -691,7 +698,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 # Copy into cache
                 cache_file = self._get_cache_path(rel_path)
                 try:
-                    if source_file != cache_file:
+                    if source_file != cache_file and self.cache_updated_data:
                         # FIXME? Should this be a `move`?
                         shutil.copy2(source_file, cache_file)
                     self._fix_permissions(cache_file)
