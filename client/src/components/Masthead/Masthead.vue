@@ -10,6 +10,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
+import HelpModeSwitch from "./HelpModeSwitch";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
@@ -138,6 +139,9 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+            <BNavItem>
+                <HelpModeSwitch />
+            </BNavItem>
             <BNavItem
                 v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                 id="notifications-bell">
