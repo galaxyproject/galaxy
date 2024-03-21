@@ -184,6 +184,113 @@ class TestHistoryContentsApi(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?v=dev&details={hda1['id']}, ,{hda1['id']}")
         self._assert_status_code_is(contents_response, 400)
 
+    def test_index_view_and_keys_parameters_for_datasets(self, history_id):
+        created_hda = self.dataset_populator.new_dataset(history_id)
+        hda_id = created_hda["id"]
+        item_type = "dataset"
+
+        summary_view_keys = [
+            "id",
+            "name",
+            "history_id",
+            "hid",
+            "history_content_type",
+            "deleted",
+            "visible",
+            "type_id",
+            "type",
+            "create_time",
+            "update_time",
+            "url",
+            "tags",
+            "dataset_id",
+            "state",
+            "extension",
+            "purged",
+            "genome_build",
+        ]
+
+        detailed_view_only_keys = [
+            "created_from_basename",
+            "api_type",
+            "accessible",
+            "misc_info",
+            "resubmitted",
+            "misc_blurb",
+            "hda_ldda",
+            "file_size",
+            "hashes",
+            "drs_id",
+            "validated_state_message",
+            "creating_job",
+            "file_ext",
+            "copied_from_ldda_id",
+            "peek",
+            "validated_state",
+            "permissions",
+            "uuid",
+            "model_class",
+            "sources",
+            "annotation",
+            "display_apps",
+            "display_types",
+            "file_name",
+            "download_url",
+            "rerunnable",
+            "data_type",
+            "meta_files",
+        ]
+
+        detailed_view_keys = summary_view_keys + detailed_view_only_keys
+
+        # Expect summary view to be returned.
+        view = "summary"
+        keys = None
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *summary_view_keys)
+        for key in detailed_view_only_keys:
+            assert key not in item
+        # Expect "dynamic" metadata fields to NOT be returned.
+        metadata_keys = [key for key in item.keys() if key.startswith("metadata_")]
+        assert len(metadata_keys) == 0
+
+        # Expect detailed view to be returned.
+        view = "detailed"
+        keys = None
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *detailed_view_keys)
+        # Expect also "dynamic" metadata fields to be returned.
+        metadata_keys = [key for key in item.keys() if key.startswith("metadata_")]
+        assert len(metadata_keys) > 0
+
+        # Expect only specific keys to be returned.
+        view = None
+        keys = detailed_view_only_keys
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *keys)
+        assert len(item) == len(keys)
+
+        # Expect combined view and keys to be returned.
+        view = "summary"
+        keys = ["file_size"]
+        item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
+        self._assert_has_keys(item, *summary_view_keys, *keys)
+        assert "peek" not in item
+
+    def _get_history_item_with_custom_serialization(
+        self,
+        history_id: str,
+        content_id: str,
+        item_type: str,
+        expected_view: Optional[str] = None,
+        expected_keys: Optional[List[str]] = None,
+    ):
+        view = f"&view={expected_view}" if expected_view else ""
+        keys = f"&keys={','.join(expected_keys)}" if expected_keys else ""
+        response = self._get(f"histories/{history_id}/contents/{item_type}s/{content_id}?v=dev{view}{keys}")
+        self._assert_status_code_is_ok(response)
+        return response.json()
+
     def test_show_hda(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id)
         show_response = self.__show(history_id, hda1)
