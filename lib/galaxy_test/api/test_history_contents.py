@@ -184,7 +184,7 @@ class TestHistoryContentsApi(ApiTestCase):
         contents_response = self._get(f"histories/{history_id}/contents?v=dev&details={hda1['id']}, ,{hda1['id']}")
         self._assert_status_code_is(contents_response, 400)
 
-    def test_index_view_and_keys_parameters_for_datasets(self, history_id):
+    def test_view_and_keys_parameters_for_datasets(self, history_id):
         created_hda = self.dataset_populator.new_dataset(history_id)
         hda_id = created_hda["id"]
         item_type = "dataset"
@@ -279,6 +279,58 @@ class TestHistoryContentsApi(ApiTestCase):
         item = self._get_history_item_with_custom_serialization(history_id, hda_id, item_type, view, keys)
         self._assert_has_keys(item, *summary_view_keys, *keys)
         assert "peek" not in item
+
+    def test_view_and_keys_parameters_for_collections(self, history_id):
+        fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
+        created_dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = created_dataset_collection["id"]
+        item_type = "dataset_collection"
+
+        # Collections seems to have 3 different views, "collection", "element" and "element-reference".
+        # We cannot use the keys parameter with collections, so we will only test the view parameter.
+        collection_view_keys = [
+            "hid",
+            "history_id",
+            "history_content_type",
+            "visible",
+            "deleted",
+            "job_source_id",
+            "job_source_type",
+            "job_state_summary",
+            "create_time",
+            "update_time",
+            "id",
+            "name",
+            "collection_id",
+            "collection_type",
+            "populated",
+            "populated_state",
+            "populated_state_message",
+            "element_count",
+            "elements_datatypes",
+            "type",
+            "model_class",
+            "tags",
+            "url",
+            "contents_url",
+        ]
+
+        element_view_only_keys = ["elements", "implicit_collection_jobs_id"]
+        element_view_keys = collection_view_keys + element_view_only_keys
+
+        # Expect summary view to be returned.
+        view = "collection"
+        item = self._get_history_item_with_custom_serialization(history_id, hdca_id, item_type, view)
+        self._assert_has_keys(item, *collection_view_keys)
+        for key in element_view_only_keys:
+            assert key not in item
+
+        # Expect detailed view to be returned.
+        view = "element"
+        item = self._get_history_item_with_custom_serialization(history_id, hdca_id, item_type, view)
+        self._assert_has_keys(item, *element_view_keys)
+        # The `elements` field should be populated for the "element" view.
+        assert len(item["elements"]) > 0
 
     def _get_history_item_with_custom_serialization(
         self,
