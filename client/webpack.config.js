@@ -13,6 +13,7 @@ const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(scriptsBase, "style");
+const helpTextConfigPath = path.join(scriptsBase, "stores", "helpMode");
 
 const modulesExcludedFromLibs = [
     "jspdf",
@@ -103,6 +104,11 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                },
+                {
+                    test: /\.ya?ml$/,
+                    include: helpTextConfigPath,
+                    loader: "yaml-loader",
                 },
                 {
                     test: /\.tsx?$/,
