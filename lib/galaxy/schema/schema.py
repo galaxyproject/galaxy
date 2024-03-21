@@ -573,11 +573,7 @@ class Hyperlink(Model):
     target: str = Field(
         ..., title="Target", description="Specifies where to open the linked document.", examples=["_blank"]
     )
-    href: AnyUrl = Field(
-        ...,
-        title="HRef",
-        description="Specifies the linked document, resource, or location.",
-    )
+    href: Annotated[RelativeUrl, Field(..., title="Href", description="The URL of the linked document.")]
     text: str = Field(
         ...,
         title="Text",
