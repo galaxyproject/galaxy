@@ -9,11 +9,12 @@
                 for-what="Galaxy will default to storing this tool run's output in">
             </ShowSelectedObjectStore>
             <div v-else>
-                No selection has been made for this worklfow invocation. Defaults from history, user, or Galaxy will be
+                No selection has been made for this workflow invocation. Defaults from history, user, or Galaxy will be
                 used.
             </div>
             <div v-localize>
-                Change preferred storage location by clicking on the storage button in the worklfow run header.
+                Change {{ preferredOrEmptyString }} storage location by clicking on the storage button in the worklfow
+                run header.
             </div>
         </div>
     </b-popover>

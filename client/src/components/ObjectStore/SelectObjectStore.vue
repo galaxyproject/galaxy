@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import { ConcreteObjectStoreModel } from "@/api";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useObjectStoreStore } from "@/stores/objectStoreStore";
 
 import ObjectStoreSelectButton from "./ObjectStoreSelectButton.vue";
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 
 const store = useObjectStoreStore();
 const { isLoading, loadErrorMessage, selectableObjectStores } = storeToRefs(store);
+const { isOnlyPreference } = useStorageLocationConfiguration();
 
 const loadingObjectStoreInfoMessage = ref("Loading storage location information");
 const whyIsSelectionPreferredText = ref(`
@@ -64,7 +66,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
             <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
             </b-alert>
-            <b-row>
+            <b-row align-h="center">
                 <b-col cols="7">
                     <b-button-group vertical size="lg" style="width: 100%">
                         <b-button
@@ -85,7 +87,7 @@ async function handleSubmit(preferredObjectStore: ConcreteObjectStoreModel | nul
                             @click="handleSubmit(objectStore)" />
                     </b-button-group>
                 </b-col>
-                <b-col cols="5">
+                <b-col v-if="isOnlyPreference" cols="5">
                     <p v-localize style="float: right">
                         {{ whyIsSelectionPreferredText }}
                     </p>
