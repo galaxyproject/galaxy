@@ -57,7 +57,9 @@ const value = computed({
     <div :class="{ 'd-flex': isCheckbox }" @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
         <small :class="{ 'mr-1': isCheckbox }">{{ props.filter.placeholder }}:</small>
 
-        <BFormCheckbox v-if="isCheckbox" v-model="value" :data-description="`filter ${props.name}`" />
+        <div v-if="isCheckbox" :data-description="`filter ${props.name}`">
+            <BFormCheckbox v-model="value" />
+        </div>
         <BFormGroup v-else class="m-0">
             <BFormRadioGroup
                 v-model="value"
