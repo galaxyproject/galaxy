@@ -785,16 +785,6 @@ class HDADetailed(HDASummary, WithModelClass):
         title="Metadata",
         description="The metadata associated with this dataset.",
     )
-    metadata_dbkey: Optional[str] = Field(
-        "?",
-        title="Metadata DBKey",
-        description="TODO",
-    )
-    metadata_data_lines: int = Field(
-        0,
-        title="Metadata Data Lines",
-        description="TODO",
-    )
     meta_files: List[MetadataFile] = Field(
         ...,
         title="Metadata Files",
