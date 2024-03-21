@@ -278,7 +278,7 @@ class WorkflowDictStepsBase(Model):
     post_job_actions: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
         None,
         title="Post Job Actions",
-        description="A dictionary of post-job actions for the step.",
+        description="Set of actions that will be run when the job finishes.",
     )
     tool_version: Optional[str] = Field(
         None,
@@ -288,17 +288,17 @@ class WorkflowDictStepsBase(Model):
     errors: Optional[Union[List[str], str, Dict[str, Any]]] = Field(
         None,
         title="Errors",
-        description="Any errors associated with the step.",
+        description="An message indicating possible errors in the step.",
     )
     tool_id: Optional[str] = Field(
         None,
         title="Tool ID",
-        description="The tool ID associated with the step.",
+        description="The unique name of the tool associated with this step.",
     )
     position: Optional[Any] = Field(
         None,
         title="Position",
-        description="The position of the step.",
+        description="Layout position of this step in the graph",
     )
     # TODO - can be modeled further see manager
     outputs: Optional[List[Dict[str, Any]]] = Field(
@@ -320,7 +320,7 @@ class WorkflowDictStepsBase(Model):
     workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Workflow Outputs",
-        description="A list of workflow outputs for the step.",
+        description="Workflow outputs associated with this step.",
     )
 
 
@@ -349,11 +349,7 @@ class WorkflowDictRunSteps(WorkflowDictStepsBase):
         title="Replacement Parameters",
         description="Informal replacement parameters for the step.",
     )
-    step_name: str = Field(
-        ...,
-        title="Step Name",
-        description="The name of the step's module.",
-    )
+    step_name: str = Field(..., title="Step Name", description="The descriptive name of the module or step.")
     step_version: Optional[str] = Field(
         None,
         title="Step Version",
@@ -367,7 +363,7 @@ class WorkflowDictRunSteps(WorkflowDictStepsBase):
     output_connections: List[Dict[str, Any]] = Field(
         ...,
         title="Output Connections",
-        description="A list of dictionaries representing the output connections of the step.",
+        description="The output connections of the step.",
     )
     annotation: WorkflowAnnotationField = None
     messages: Optional[List[str]] = Field(
@@ -410,12 +406,12 @@ class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
     id: int = Field(
         ...,
         title="ID",
-        description="The order index of the step.",
+        description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
     name: Optional[str] = Field(
         None,
         title="Name",
-        description="The name of the step.",
+        description="The descriptive name of the module or step.",
     )
     inputs: Optional[List[Dict[str, Any]]] = Field(
         None,
@@ -431,7 +427,8 @@ class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
     uuid: Optional[str] = Field(
         None,
         title="UUID",
-        description="The UUID of the step.",
+        description="Universal unique identifier of the workflow.",
+        # description="The UUID (Universally Unique Identifier) of the step.",
     )
     tooltip: Optional[str] = Field(
         None,
@@ -441,7 +438,7 @@ class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
     input_connections: Optional[Dict[str, Any]] = Field(
         None,
         title="Input Connections",
-        description="A dictionary representing the input connections for the step.",
+        description="The input connections for the step.",
     )
 
 
@@ -449,17 +446,18 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
     id: int = Field(
         ...,
         title="ID",
-        description="The order index of the step.",
+        description="The identifier of the step. It matches the index order of the step inside the workflow.",
     )
     name: str = Field(
         ...,
         title="Name",
-        description="The name of the step.",
+        description="The descriptive name of the module or step.",
     )
     uuid: str = Field(
         ...,
         title="UUID",
-        description="The UUID (Universally Unique Identifier) of the step.",
+        description="Universal unique identifier of the workflow.",
+        # description="The UUID (Universally Unique Identifier) of the step.",
     )
     annotation: WorkflowAnnotationField = None
     # TODO - can be modeled see manager line 1483 or below
@@ -481,7 +479,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
     subworkflow: Optional[Dict[str, Any]] = Field(
         None,
         title="Sub Workflow",
-        description="The sub-workflow associated with the step.",
+        description="Full information about the subworkflow associated with this step.",
     )
     # TODO - can be modeled see manager line 1516 -1532
     inputs: Optional[List[Dict[str, Any]]] = Field(
@@ -509,7 +507,7 @@ class WorkflowDictBaseModel(Model):
     version: int = Field(
         ...,
         title="Version",
-        description="The version of the workflow.",
+        description="The version of the workflow represented by an incremental number.",
     )
 
 
@@ -517,7 +515,7 @@ class WorkflowDictPreviewSummary(WorkflowDictBaseModel):
     steps: List[WorkflowDictPreviewSteps] = Field(
         ...,
         title="Steps",
-        description="A dictionary with information about all the steps of the workflow.",
+        description="Information about all the steps of the workflow.",
     )
 
 
@@ -541,7 +539,7 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
     license: Optional[str] = Field(
         None,
         title="License",
-        description="The license information for the workflow.",
+        description="SPDX Identifier of the license associated with this workflow.",
     )
     creator: WorkflowCreator
     source_metadata: Optional[Dict[str, Any]] = Field(
@@ -552,7 +550,7 @@ class WorkflowDictEditorSummary(WorkflowDictBaseModel):
     steps: Dict[int, WorkflowDictEditorSteps] = Field(
         ...,
         title="Steps",
-        description="A dictionary with information about all the steps of the workflow.",
+        description="Information about all the steps of the workflow.",
     )
 
 
@@ -560,22 +558,24 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
     id: Optional[str] = Field(
         None,
         title="ID",
-        description="The encoded ID of the stored workflow.",
+        # description="The encoded ID of the stored workflow.",
+        description="TODO",
     )
     history_id: Optional[str] = Field(
         None,
         title="History ID",
-        description="The encoded ID of the history associated with the workflow (or None if not applicable).",
+        # description="The encoded ID of the history associated with the workflow (or None if not applicable).",
+        description="TODO",
     )
     step_version_changes: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Step Version Changes",
-        description="A list of version changes for the workflow steps.",
+        description="Version changes for the workflow steps.",
     )
     has_upgrade_messages: Optional[bool] = Field(
         None,
         title="Has Upgrade Messages",
-        description="A boolean indicating whether the workflow has upgrade messages.",
+        description="Whether the workflow has upgrade messages.",
     )
     workflow_resource_parameters: Optional[Dict[str, Any]] = Field(
         None,
@@ -585,7 +585,7 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
     steps: List[WorkflowDictRunSteps] = Field(
         ...,
         title="Steps",
-        description="A dictionary with information about all the steps of the workflow.",
+        description="Information about all the steps of the workflow.",
     )
 
 
@@ -593,7 +593,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
     a_galaxy_workflow: Optional[str] = Field(
         None,
         title="A Galaxy Workflow",
-        description="Is a Galaxy workflow.",
+        description="Whether this workflow is a Galaxy Workflow.",
     )
     format_version: Optional[str] = Field(
         None,
@@ -615,7 +615,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
     comments: Optional[List[Dict[str, Any]]] = Field(
         None,
         title="Comments",
-        description="A list of dictionaries representing comments associated with the workflow.",
+        description="Comments associated with the workflow.",
     )
     report: Optional[Dict[str, Any]] = Field(
         None,
@@ -626,7 +626,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
     license: Optional[str] = Field(
         None,
         title="License",
-        description="The license information for the workflow.",
+        description="SPDX Identifier of the license associated with this workflow.",
     )
     source_metadata: Optional[Dict[str, Any]] = Field(
         None,
@@ -636,7 +636,7 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
     steps: Dict[int, WorkflowDictExportSteps] = Field(
         ...,
         title="Steps",
-        description="A dictionary with information about all the steps of the workflow.",
+        description="Information about all the steps of the workflow.",
     )
 
 
@@ -656,7 +656,7 @@ class WorkflowDictFormat2Summary(Model):
     license: Optional[str] = Field(
         None,
         title="License",
-        description="The license information for the workflow.",
+        description="SPDX Identifier of the license associated with this workflow.",
     )
     release: Optional[str] = Field(
         None,
@@ -681,18 +681,18 @@ class WorkflowDictFormat2Summary(Model):
     inputs: Optional[Dict[str, Any]] = Field(
         None,
         title="Inputs",
-        description="A dictionary representing the inputs of the workflow.",
+        description="The inputs of the workflow.",
     )
     outputs: Optional[Dict[str, Any]] = Field(
         None,
         title="Outputs",
-        description="A dictionary representing the outputs of the workflow.",
+        description="The outputs of the workflow.",
     )
     # TODO - step into line 888 in manager
     steps: Dict[str, Any] = Field(
         ...,
         title="Steps",
-        description="A dictionary representing the steps of the workflow.",
+        description="Information about all the steps of the workflow.",
     )
     doc: WorkflowAnnotationField = None
 
