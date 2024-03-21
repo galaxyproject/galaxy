@@ -100,6 +100,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history = session.scalars(
             select(model.History)
             .filter_by(user=user, slug=slug, deleted=False)
+            # return public histories first if slug is not unique
             .order_by(model.History.importable.desc())
             .limit(1)
         ).first()
