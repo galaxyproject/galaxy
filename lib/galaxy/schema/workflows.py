@@ -703,3 +703,120 @@ class WorkflowDictFormat2WrappedYamlSummary(Model):
         title="YAML Content",
         description="The content of the workflow in YAML format.",
     )
+
+
+"""
+class WorkflowStepToExportBase(Model):
+    id: int = Field(
+        ...,
+        title="ID",
+        description="The identifier of the step. It matches the index order of the step inside the workflow.",
+    )
+    type: str = Field(..., title="Type", description="The type of workflow module.")
+    name: str = Field(..., title="Name", description="The descriptive name of the module or step.")
+    annotation: Optional[str] = AnnotationField
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
+        None, title="Tool ID", description="The unique name of the tool associated with this step."
+    )
+    uuid: UUID4 = Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier of the workflow.",
+    )
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+    )
+    inputs: List[Input] = Field(
+        ...,
+        title="Inputs",
+        description="TODO",
+    )
+    outputs: List[Output] = Field(
+        ...,
+        title="Outputs",
+        description="TODO",
+    )
+    input_connections: Dict[str, InputConnection] = Field(
+        {},
+        title="Input Connections",
+        description="TODO",
+    )
+    position: WorkflowStepLayoutPosition = Field(
+        ...,
+        title="Position",
+        description="Layout position of this step in the graph",
+    )
+    workflow_outputs: List[WorkflowOutput] = Field(
+        [], title="Workflow Outputs", description="Workflow outputs associated with this step."
+    )
+
+
+class WorkflowStepToExport(WorkflowStepToExportBase):
+    content_id: Optional[str] = Field(  # Duplicate of `tool_id` or viceversa?
+        None, title="Content ID", description="TODO"
+    )
+    tool_version: Optional[str] = Field(
+        None, title="Tool Version", description="The version of the tool associated with this step."
+    )
+    tool_state: Json = Field(
+        ...,
+        title="Tool State",
+        description="JSON string containing the serialized representation of the persistable state of the step.",
+    )
+    errors: Optional[str] = Field(
+        None,
+        title="Errors",
+        description="An message indicating possible errors in the step.",
+    )
+
+
+class WorkflowToolStepToExport(WorkflowStepToExportBase):
+    tool_shed_repository: ToolShedRepositorySummary = Field(
+        ..., title="Tool Shed Repository", description="Information about the origin repository of this tool."
+    )
+    post_job_actions: Dict[str, PostJobAction] = Field(
+        ..., title="Post-job Actions", description="Set of actions that will be run when the job finish."
+    )
+
+
+class SubworkflowStepToExport(WorkflowStepToExportBase):
+    subworkflow: "WorkflowToExport" = Field(
+        ..., title="Subworkflow", description="Full information about the subworkflow associated with this step."
+    )
+
+
+# TODO - move to schema of workflow
+class WorkflowToExport(Model):
+    a_galaxy_workflow: str = Field(  # Is this meant to be a bool instead?
+        "true", title="Galaxy Workflow", description="Whether this workflow is a Galaxy Workflow."
+    )
+    format_version: str = Field(
+        "0.1",
+        alias="format-version",  # why this field uses `-` instead of `_`?
+        title="Galaxy Workflow",
+        description="Whether this workflow is a Galaxy Workflow.",
+    )
+    name: str = Field(..., title="Name", description="The name of the workflow.")
+    annotation: Optional[str] = AnnotationField
+    tags: TagCollection
+    uuid: Optional[UUID4] = Field(
+        None,
+        title="UUID",
+        description="Universal unique identifier of the workflow.",
+    )
+    creator: Optional[List[Union[Person, Organization]]] = Field(
+        None,
+        title="Creator",
+        description=("Additional information about the creator (or multiple creators) of this workflow."),
+    )
+    license: Optional[str] = Field(
+        None, title="License", description="SPDX Identifier of the license associated with this workflow."
+    )
+    version: int = Field(
+        ..., title="Version", description="The version of the workflow represented by an incremental number."
+    )
+    steps: Dict[int, Union[SubworkflowStepToExport, WorkflowToolStepToExport, WorkflowStepToExport]] = Field(
+        {}, title="Steps", description="A dictionary with information about all the steps of the workflow."
+    )
+"""
