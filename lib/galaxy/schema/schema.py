@@ -844,11 +844,6 @@ class HDADetailed(HDASummary, WithModelClass):
         # https://github.com/pydantic/pydantic/issues/2255
         # deprecated=False,  # TODO: Should this field be deprecated in favor of display_apps?
     )
-    visualizations: List[Visualization] = Field(
-        ...,
-        title="Visualizations",
-        description="The collection of visualizations that can be applied to this dataset.",
-    )
     validated_state: DatasetValidatedState = Field(
         ...,
         title="Validated State",
@@ -3270,6 +3265,16 @@ class CustomHistoryHDA(HDADetailed):
     # The error otherwise is: `PydanticUserError: 'UuidVersion' cannot annotate 'nullable'.`
     # Also ignoring mypy complaints about the type redefinition.
     uuid: Optional[UUID4]  # type: ignore
+
+    # Add fields that are not part of any view here
+    visualizations: Annotated[
+        Optional[List[Visualization]],
+        Field(
+            None,
+            title="Visualizations",
+            description="The collection of visualizations that can be applied to this dataset.",
+        ),
+    ]
 
 
 @partial_model()
