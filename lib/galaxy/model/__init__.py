@@ -4364,6 +4364,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     permitted_actions = Dataset.permitted_actions
     purged: bool
     creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
+    copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
+    copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
 
     validated_states = DatasetValidatedState
 
@@ -4393,6 +4395,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         flush=True,
         metadata_deferred=False,
         creating_job_id=None,
+        copied_from_history_dataset_association=None,
+        copied_from_library_dataset_dataset_association=None,
     ):
         self.name = name or "Unnamed dataset"
         self.id = id
@@ -4416,6 +4420,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.validated_state = validated_state
         self.validated_state_message = validated_state_message
         # Relationships
+        if copied_from_history_dataset_association:
+            self.copied_from_history_dataset_association_id = copied_from_history_dataset_association.id
+        if copied_from_library_dataset_dataset_association:
+            self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association.id
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
             dataset = Dataset(state=Dataset.states.NEW)
@@ -4985,8 +4993,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self,
         hid=None,
         history=None,
-        copied_from_history_dataset_association=None,
-        copied_from_library_dataset_dataset_association=None,
         sa_session=None,
         **kwd,
     ):
@@ -4999,8 +5005,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.hid = hid
         # Relationships
         self.history = history
-        self.copied_from_history_dataset_association = copied_from_history_dataset_association
-        self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
     def __strict_check_before_flush__(self):
         if self.extension != "len":
@@ -5034,7 +5038,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
             # hist.deleted holds old value(s)
             changes[attr.key] = hist.deleted
-        if self.update_time and self.state == self.states.OK and not self.deleted:
+        if changes and self.update_time and self.state == self.states.OK and not self.deleted:
             # We only record changes to HDAs that exist in the database and have a update_time
             new_values = {}
             new_values["name"] = changes.get("name", self.name)
@@ -5770,10 +5774,9 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+
     def __init__(
         self,
-        copied_from_history_dataset_association=None,
-        copied_from_library_dataset_dataset_association=None,
         library_dataset=None,
         user=None,
         sa_session=None,
@@ -5782,10 +5785,6 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
         # parameter in kwd is True so that the new object can be flushed.  Is there a better way?
         DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
-        if copied_from_history_dataset_association:
-            self.copied_from_history_dataset_association_id = copied_from_history_dataset_association.id
-        if copied_from_library_dataset_dataset_association:
-            self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association.id
         self.library_dataset = library_dataset
         self.user = user
 
