@@ -1,38 +1,58 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
+import { BButton } from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
-import { computed, onMounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
 import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
 
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+library.add(faTimes);
+
 const md = MarkdownIt();
-const helpInfo = useHelpModeTextStore();
-const status = useHelpModeStatusStore();
+
+// local refs
+const { content, loading } = storeToRefs(useHelpModeTextStore());
+const { status, position } = storeToRefs(useHelpModeStatusStore());
+const el = ref<HTMLElement | null>(null);
+const helpModeHeader = ref<HTMLElement | null>(null);
+const helpTextRef = ref(null);
+
+// local computed refs
 const helpText = computed({
     get() {
-        return md.render(helpInfo.helpmodetext);
+        return md.render(content.value);
     },
     set() {
         //do nothing, this is set in components that add helptext
     },
 });
-const helpStatus = computed({
-    get() {
-        return status.helpmodestatus;
-    },
-    set(value: boolean) {
-        status.setHelpModeStatus(value);
-    },
+
+// draggable properties
+const {
+    x: dragX,
+    y: dragY,
+    style,
+} = useDraggable(helpModeHeader, {
+    initialValue: position.value,
 });
-function closeHelpMode() {
-    helpStatus.value = !helpStatus.value;
-}
-const el = ref<HTMLElement | null>(null);
-const { x, y, style } = useDraggable(el, {
-    initialValue: { x: 0, y: 0 },
-});
-const helpTextRef = ref(null);
+// watch both x and y, and do something if they change:
+watch(
+    () => [dragX.value, dragY.value],
+    ([newX, newY]) => {
+        if (newX && newY) {
+            position.value = { x: newX, y: newY };
+        }
+    }
+);
+
 onMounted(() => {
     const links = (helpTextRef.value as unknown as HTMLElement).querySelectorAll("a");
     links.forEach((link: HTMLAnchorElement) => {
@@ -40,23 +60,23 @@ onMounted(() => {
     });
 });
 </script>
+
 <template>
-    <div
-        ref="el"
-        :style="style"
-        style="position: fixed"
-        class="helptext unified-panel-body d-flex justify-content-between">
-        <div class="header">
-            <h1>Galaxy Help Mode</h1>
-            <button class="close-button" @click="closeHelpMode">
-                <i class="fas fa-times"></i>
-            </button>
+    <div ref="el" :style="style" class="help-text unified-panel-body d-flex justify-content-between">
+        <div ref="helpModeHeader" class="header">
+            <Heading h4 inline size="sm" class="flex-grow-1 mx-2">Galaxy Help Mode</Heading>
+            <BButton class="close-button" size="sm" @click="status = false">
+                <FontAwesomeIcon :icon="faTimes" />
+            </BButton>
         </div>
-        <div ref="helpTextRef" class="help-mode-container" v-html="helpText"></div>
+        <!-- eslint-disable-next-line vue/no-v-html -->
+        <div v-if="!loading" ref="helpTextRef" class="help-mode-container" v-html="helpText" />
+        <LoadingSpan v-else message="Loading help text" />
     </div>
 </template>
-<style>
-.helptext {
+
+<style scoped lang="scss">
+.help-text {
     display: flex;
     flex-direction: column;
     width: 25% !important;
@@ -68,6 +88,7 @@ onMounted(() => {
     border-width: 2px;
     border: solid;
     opacity: 90%;
+    position: fixed;
 }
 .header {
     display: flex;
@@ -76,6 +97,7 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #868686;
+    cursor: move;
     /* padding-bottom: 10px; */
 }
 .help-mode-container {

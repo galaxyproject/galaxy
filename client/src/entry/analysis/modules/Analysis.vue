@@ -1,4 +1,5 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -15,7 +16,7 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
-const status = useHelpModeStatusStore();
+const { status: helpModeStatus } = storeToRefs(useHelpModeStatusStore());
 
 // methods
 function hideCenter() {
@@ -49,6 +50,6 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
-        <HelpModeText v-if="status.helpmodestatus" />
+        <HelpModeText v-if="helpModeStatus" />
     </div>
 </template>
