@@ -2233,6 +2233,16 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Encoded Email
+             * @description Encoded owner email.
+             */
+            email_hash?: string | null;
+            /**
+             * Empty
+             * @description Whether this history is empty.
+             */
+            empty: boolean;
+            /**
              * Export Record Data
              * @description The export record data associated with this archived history. Used to recover the history.
              */
@@ -2243,6 +2253,11 @@ export interface components {
              * @default ?
              */
             genome_build?: string | null;
+            /**
+             * HID Counter
+             * @description The current HID counter for this History.
+             */
+            hid_counter: number;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -3630,10 +3645,25 @@ export interface components {
              */
             deleted?: boolean | null;
             /**
+             * Encoded Email
+             * @description Encoded owner email.
+             */
+            email_hash?: string | null;
+            /**
+             * Empty
+             * @description Whether this history is empty.
+             */
+            empty?: boolean | null;
+            /**
              * Genome Build
              * @description TODO
              */
             genome_build?: string | null;
+            /**
+             * HID Counter
+             * @description The current HID counter for this History.
+             */
+            hid_counter?: number | null;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -6986,11 +7016,26 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Encoded Email
+             * @description Encoded owner email.
+             */
+            email_hash?: string | null;
+            /**
+             * Empty
+             * @description Whether this history is empty.
+             */
+            empty: boolean;
+            /**
              * Genome Build
              * @description TODO
              * @default ?
              */
             genome_build?: string | null;
+            /**
+             * HID Counter
+             * @description The current HID counter for this History.
+             */
+            hid_counter: number;
             /**
              * History ID
              * @example 0123456789ABCDEF
@@ -7079,6 +7124,127 @@ export interface components {
              * @description Owner of the history
              */
             username?: string | null;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string | null;
+        };
+        /**
+         * HistoryDevDetailed
+         * @description View used by the client to display "some" detailed history information.
+         *
+         * Currently used by the `HistoryController` endpoints.
+         */
+        HistoryDevDetailed: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /** Contents Active */
+            contents_active: components["schemas"]["HistoryActiveContentCounts"];
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url: string;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count: number;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Genome Build
+             * @description TODO
+             * @default ?
+             */
+            genome_build?: string | null;
+            /**
+             * HID Counter
+             * @description The current HID counter for this History.
+             */
+            hid_counter: number;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable: boolean;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged: boolean;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size: number;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string | null;
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             */
+            user_id?: string | null;
             /**
              * Username and slug
              * @description The relative URL in the form of /u/{username}/h/{slug}
@@ -15592,6 +15758,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -15634,6 +15801,7 @@ export interface operations {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -15720,6 +15888,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -15758,6 +15927,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -15826,6 +15996,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -15863,6 +16034,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -15900,6 +16072,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -15960,6 +16133,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -16002,6 +16176,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -16045,6 +16220,7 @@ export interface operations {
                 content: {
                     "application/json": (
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
                     )[];
@@ -16082,6 +16258,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -16123,6 +16300,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -16165,6 +16343,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
@@ -16259,6 +16438,7 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["CustomHistoryView"]
+                        | components["schemas"]["HistoryDevDetailed"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"];
                 };
