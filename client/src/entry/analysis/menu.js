@@ -103,11 +103,6 @@ export function fetchMenu(options = {}) {
                     target: "_top",
                 },
                 {
-                    title: _l("Datasets"),
-                    url: "/datasets/list_published",
-                    hidden: !Galaxy.user.id,
-                },
-                {
                     title: _l("Histories"),
                     url: "/histories/list_published",
                 },
