@@ -189,8 +189,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await handleTotalCountChange(1, true);
     }
 
-    async function loadCurrentHistory() {
-        const history = await getCurrentHistoryFromServer();
+    async function loadCurrentHistory(since?: string) {
+        const history = await getCurrentHistoryFromServer(since);
         selectHistory(history as HistorySummary);
     }
 
