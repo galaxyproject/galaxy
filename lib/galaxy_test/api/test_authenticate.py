@@ -53,3 +53,25 @@ class TestAuthenticateApi(ApiTestCase):
         current_history_json_response.raise_for_status()
         current_history = current_history_json_response.json()
         assert current_history["contents_active"]["active"] == 1
+
+    def test_anon_history_creation(self):
+        # First request:
+        # We don't create any histories, just return a session cookie
+        response = get(self.url)
+        cookie = {"galaxysession": response.cookies["galaxysession"]}
+        # Check that we don't have any histories (API doesn't auto-create new histories)
+        histories_response = get(
+            urljoin(
+                self.url,
+                "api/histories",
+            )
+        )
+        assert not histories_response.json()
+        # Second request, we know client follows conventions by including cookies,
+        # default history is created.
+        get(self.url, cookies=cookie)
+        second_histories_response = get(
+            urljoin(self.url, "history/current_history_json"),
+            cookies=cookie,
+        )
+        assert second_histories_response.json()

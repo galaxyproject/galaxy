@@ -94,23 +94,17 @@ def realize_to_temp_file(file_sources, uri, user_context=None):
 def assert_realizes_as(file_sources, uri, expected, user_context=None):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if realized_contents != expected:
-        message = "Expected to realize contents at [{}] as [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] as [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
 def assert_realizes_contains(file_sources, uri, expected, user_context=None):
     realized_contents = realize_to_temp_file(file_sources, uri, user_context=user_context)
     if expected not in realized_contents:
-        message = "Expected to realize contents at [{}] to contain [{}], instead found [{}]".format(
-            uri,
-            expected,
-            realized_contents,
+        raise AssertionError(
+            f"Expected to realize contents at [{uri}] to contain [{expected}], instead found [{realized_contents}]"
         )
-        raise AssertionError(message)
 
 
 def assert_realizes_throws_exception(file_sources, uri, user_context=None) -> Exception:

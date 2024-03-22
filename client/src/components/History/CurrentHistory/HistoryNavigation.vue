@@ -2,16 +2,17 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faArchive,
+    faBars,
     faColumns,
     faCopy,
     faExchangeAlt,
     faFileArchive,
     faFileExport,
+    faList,
     faLock,
     faPlay,
     faPlus,
     faShareAlt,
-    faSitemap,
     faStream,
     faTrash,
     faUserLock,
@@ -24,6 +25,7 @@ import {
     BDropdownDivider,
     BDropdownItem,
     BDropdownText,
+    BFormCheckbox,
     BModal,
     BSpinner,
 } from "bootstrap-vue";
@@ -41,6 +43,7 @@ import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
 library.add(
     faArchive,
+    faBars,
     faColumns,
     faCopy,
     faExchangeAlt,
@@ -50,7 +53,7 @@ library.add(
     faPlay,
     faPlus,
     faShareAlt,
-    faSitemap,
+    faList,
     faStream,
     faTrash,
     faUserLock
@@ -63,18 +66,27 @@ interface Props {
     historiesLoading?: boolean;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     title: "Histories",
     historiesLoading: false,
 });
 
 const showSwitchModal = ref(false);
+const purgeHistory = ref(false);
 
 const userStore = useUserStore();
 const historyStore = useHistoryStore();
 
 const { isAnonymous } = storeToRefs(userStore);
 const { totalHistoryCount } = storeToRefs(historyStore);
+
+function onDelete() {
+    if (purgeHistory.value) {
+        historyStore.deleteHistory(props.history.id, true);
+    } else {
+        historyStore.deleteHistory(props.history.id, false);
+    }
+}
 
 function userTitle(title: string) {
     if (isAnonymous.value) {
@@ -116,6 +128,7 @@ function userTitle(title: string) {
 
                 <BDropdown
                     v-b-tooltip.top.hover.noninteractive
+                    no-caret
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
@@ -123,6 +136,7 @@ function userTitle(title: string) {
                     title="History options"
                     data-description="history options">
                     <template v-slot:button-content>
+                        <FontAwesomeIcon fixed-width :icon="faBars" />
                         <span class="sr-only">History Options</span>
                     </template>
 
@@ -204,7 +218,7 @@ function userTitle(title: string) {
                         :disabled="isAnonymous"
                         :title="userTitle('Display Workflow Invocations')"
                         @click="$router.push(`/histories/${history.id}/invocations`)">
-                        <FontAwesomeIcon fixed-width :icon="faSitemap" class="fa-rotate-270 mr-1" />
+                        <FontAwesomeIcon fixed-width :icon="faList" class="mr-1" />
                         <span v-localize>Show Invocations</span>
                     </BDropdownItem>
 
@@ -264,16 +278,14 @@ function userTitle(title: string) {
             id="delete-history-modal"
             title="Delete History?"
             title-tag="h2"
-            @ok="historyStore.deleteHistory(history.id, false)">
-            <p v-localize>Really delete the current history?</p>
-        </BModal>
-
-        <BModal
-            id="purge-history-modal"
-            title="Permanently Delete History?"
-            title-tag="h2"
-            @ok="historyStore.deleteHistory(history.id, true)">
-            <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
+            @ok="onDelete"
+            @show="purgeHistory = false">
+            <p v-localize>
+                Do you also want to permanently delete the history <i class="ml-1">{{ history.name }}</i>
+            </p>
+            <BFormCheckbox id="purge-history" v-model="purgeHistory">
+                <span v-localize>Yes, permanently delete this history.</span>
+            </BFormCheckbox>
         </BModal>
     </div>
 </template>

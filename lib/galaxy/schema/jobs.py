@@ -212,6 +212,12 @@ class JobOutput(Model):
     value: EncodedDataItemSourceId = Field(default=..., title="Dataset", description="The associated dataset.")
 
 
+class JobConsoleOutput(Model):
+    state: str = Field(None, title="Job State", description="The current job's state")
+    stdout: Optional[str] = Field(None, title="STDOUT", description="Job STDOUT text")
+    stderr: Optional[str] = Field(None, title="STDERR", description="Job STDERR text")
+
+
 class JobParameter(Model):
     text: str = Field(
         default=...,

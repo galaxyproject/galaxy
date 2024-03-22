@@ -254,7 +254,7 @@ class CondaContext(installable.InstallableContext):
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
         cmd_string = shlex_join(cmd)
-        kwds: Dict[str, Any] = dict()
+        kwds: Dict[str, Any] = {}
         try:
             if stdout_path:
                 kwds["stdout"] = open(stdout_path, "w")

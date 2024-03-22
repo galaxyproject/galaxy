@@ -65,7 +65,12 @@ from .sanitize import ToolParameterSanitizer
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
+    from galaxy.model import (
+        History,
+        HistoryItem,
+    )
     from galaxy.security.idencoding import IdEncodingHelper
+    from galaxy.structured_app import MinimalApp
 
 log = logging.getLogger(__name__)
 
@@ -2116,7 +2121,7 @@ class DataToolParameter(BaseDataToolParameter):
             raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", ""]:
             if self.default_object:
-                return raw_to_galaxy(trans, self.default_object)
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2456,7 +2461,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
             if self.default_object:
-                return raw_to_galaxy(trans, self.default_object)
+                return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
         if isinstance(value, MutableMapping) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2672,10 +2677,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
 # Code from CWL branch to massage in order to be shared across tools and workflows,
 # and for CWL artifacts as well as Galaxy ones.
-def raw_to_galaxy(trans, as_dict_value):
-    app = trans.app
-    history = trans.history
-
+def raw_to_galaxy(app: "MinimalApp", history: "History", as_dict_value: Dict[str, Any]) -> "HistoryItem":
     object_class = as_dict_value["class"]
     if object_class == "File":
         # TODO: relative_to = "/"
@@ -2714,15 +2716,15 @@ def raw_to_galaxy(trans, as_dict_value):
             dbkey="?",
             dataset=dataset,
             flush=False,
-            sa_session=trans.sa_session,
+            sa_session=app.model.session,
         )
         primary_data.state = Dataset.states.DEFERRED
         permissions = app.security_agent.history_get_default_permissions(history)
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
-        trans.sa_session.add(primary_data)
+        app.model.session.add(primary_data)
         history.stage_addition(primary_data)
         history.add_pending_items()
-        trans.sa_session.flush()
+        app.model.session.flush()
         return primary_data
     else:
         name = as_dict_value.get("name")
@@ -2741,7 +2743,7 @@ def raw_to_galaxy(trans, as_dict_value):
                 element_class = element_dict["class"]
                 identifier = element_dict["identifier"]
                 if element_class == "File":
-                    hda = raw_to_galaxy(trans, element_dict)
+                    hda = raw_to_galaxy(app, history, element_dict)
                     collection_builder.add_dataset(identifier, hda)
                 else:
                     subcollection_builder = collection_builder.get_level(identifier)
@@ -2750,8 +2752,8 @@ def raw_to_galaxy(trans, as_dict_value):
         collection_builder = builder.BoundCollectionBuilder(collection)
         write_elements_to_collection(as_dict_value, collection_builder)
         collection_builder.populate()
-        trans.sa_session.add(hdca)
-        trans.sa_session.flush()
+        app.model.session.add(hdca)
+        app.model.session.flush()
         return hdca
 
 

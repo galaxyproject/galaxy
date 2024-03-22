@@ -826,7 +826,7 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict()
+        state.inputs = {}
         return state
 
     def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
@@ -942,7 +942,7 @@ class InputModule(WorkflowModule):
         if input_value is None:
             default_value = step.get_input_default_value(NO_REPLACEMENT)
             if default_value is not NO_REPLACEMENT:
-                input_value = raw_to_galaxy(trans, default_value)
+                input_value = raw_to_galaxy(trans.app, trans.history, default_value)
 
         step_outputs = dict(output=input_value)
 
@@ -1673,7 +1673,7 @@ class PauseModule(WorkflowModule):
 
     def get_runtime_state(self):
         state = DefaultToolState()
-        state.inputs = dict()
+        state.inputs = {}
         return state
 
     def execute(

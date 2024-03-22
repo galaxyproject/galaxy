@@ -102,7 +102,7 @@ class TestRevisionCommand:
         run_command(f"{DEV_CMD} revision --rev-id 3 --message foo3")
 
         script_dir = ScriptDirectory.from_config(config)
-        revisions = [rev for rev in script_dir.walk_revisions()]
+        revisions = list(script_dir.walk_revisions())
         assert len(revisions) == 5  # verify total revisions: 2 base + 3 new
 
         rev = script_dir.get_revision("3")

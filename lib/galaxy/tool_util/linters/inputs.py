@@ -622,7 +622,7 @@ class InputsSelectOptionDuplicateValue(Linter):
             if param_type != "select":
                 continue
             select_options = param.findall("./option")
-            select_options_values = list()
+            select_options_values = []
             for option in select_options:
                 value = option.attrib.get("value", "")
                 select_options_values.append((value, option.attrib.get("selected", "false")))
@@ -648,7 +648,7 @@ class InputsSelectOptionDuplicateText(Linter):
             if param_type != "select":
                 continue
             select_options = param.findall("./option")
-            select_options_texts = list()
+            select_options_texts = []
             for option in select_options:
                 if option.text is None:
                     text = option.attrib.get("value", "").capitalize()
@@ -702,7 +702,7 @@ class InputsSelectOptionsDefinesOptions(Linter):
             if options is None:
                 continue
             filter_adds_options = any(
-                [f.get("type", None) in ["add_value", "data_meta"] for f in param.findall("./options/filter")]
+                f.get("type", None) in ["add_value", "data_meta"] for f in param.findall("./options/filter")
             )
             from_file = options.get("from_file", None)
             from_parameter = options.get("from_parameter", None)
@@ -1314,11 +1314,11 @@ class ConditionalWhenMissing(Linter):
                 continue
             if first_param_type == "select":
                 options = first_param.findall("./option[@value]")
-                option_ids = set([option.get("value") for option in options])
+                option_ids = {option.get("value") for option in options}
             else:  # boolean
-                option_ids = set([first_param.get("truevalue", "true"), first_param.get("falsevalue", "false")])
+                option_ids = {first_param.get("truevalue", "true"), first_param.get("falsevalue", "false")}
             whens = conditional.findall("./when[@value]")
-            when_ids = set([w.get("value") for w in whens if w.get("value") is not None])
+            when_ids = {w.get("value") for w in whens if w.get("value") is not None}
             for option_id in option_ids - when_ids:
                 lint_ctx.warn(
                     f"Conditional [{conditional_name}] no <when /> block found for {first_param_type} option '{option_id}'",
@@ -1337,9 +1337,9 @@ class ConditionalOptionMissing(Linter):
             if first_param_type != "select":
                 continue
             options = first_param.findall("./option[@value]")
-            option_ids = set([option.get("value") for option in options])
+            option_ids = {option.get("value") for option in options}
             whens = conditional.findall("./when[@value]")
-            when_ids = set([w.get("value") for w in whens if w.get("value") is not None])
+            when_ids = {w.get("value") for w in whens if w.get("value") is not None}
             for when_id in when_ids - option_ids:
                 lint_ctx.warn(
                     f"Conditional [{conditional_name}] no <option /> found for when block '{when_id}'",
@@ -1357,9 +1357,9 @@ class ConditionalOptionMissingBoolean(Linter):
         for conditional, conditional_name, first_param, first_param_type in _iter_conditional(tool_xml):
             if first_param_type != "boolean":
                 continue
-            option_ids = set([first_param.get("truevalue", "true"), first_param.get("falsevalue", "false")])
+            option_ids = {first_param.get("truevalue", "true"), first_param.get("falsevalue", "false")}
             whens = conditional.findall("./when[@value]")
-            when_ids = set([w.get("value") for w in whens if w.get("value")])
+            when_ids = {w.get("value") for w in whens if w.get("value")}
             for when_id in when_ids - option_ids:
                 lint_ctx.warn(
                     f"Conditional [{conditional_name}] no truevalue/falsevalue found for when block '{when_id}'",

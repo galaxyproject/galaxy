@@ -277,14 +277,7 @@ class Sequence(data.Text):
                     start_chunk = -1
                 # extract, unzip, trim, recompress
                 result.append(
-                    "(dd bs=1 skip={} count={} if={} 2> /dev/null )| zcat | ( tail -n +{} 2> /dev/null) | head -{} | gzip -c >> {}".format(
-                        start_copy,
-                        end_copy - start_copy,
-                        input_name,
-                        skip_sequences * 4 + 1,
-                        sequences_to_extract * 4,
-                        output_name,
-                    )
+                    f"(dd bs=1 skip={start_copy} count={end_copy - start_copy} if={input_name} 2> /dev/null )| zcat | ( tail -n +{skip_sequences * 4 + 1} 2> /dev/null) | head -{sequences_to_extract * 4} | gzip -c >> {output_name}"
                 )
             else:  # whole section - add it to the start_chunk/end_chunk accumulator
                 if start_chunk == -1:

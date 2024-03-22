@@ -2639,7 +2639,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def _run_and_get_outputs(self, tool_id, history_id, inputs=None, tool_version=None):
         if inputs is None:
-            inputs = dict()
+            inputs = {}
         return self._run_outputs(self._run(tool_id, history_id, inputs, tool_version=tool_version))
 
     def _run_outputs(self, create_response):

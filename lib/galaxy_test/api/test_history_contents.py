@@ -881,7 +881,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                     },
                 ],
             }
-            expected_hidden_item_ids = list(map(lambda item: item["id"], payload["items"]))
+            expected_hidden_item_ids = [item["id"] for item in payload["items"]]
             expected_hidden_item_count = len(expected_hidden_item_ids)
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             history_contents = self._get_history_contents(history_id)
@@ -1422,7 +1422,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
         history_contents = self._get_history_contents(history_id)
         datasets = filter(lambda item: item["history_content_type"] == "dataset", history_contents)
-        datasets_ids = list(map(lambda dataset: dataset["id"], datasets))
+        datasets_ids = [dataset["id"] for dataset in datasets]
         assert len(history_contents) == num_expected_datasets + num_expected_collections
         assert len(datasets_ids) == num_expected_datasets
         for dataset_id in datasets_ids:

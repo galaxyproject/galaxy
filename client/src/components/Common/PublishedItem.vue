@@ -46,12 +46,12 @@ const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
 
-const { showActivityBar, showToolbox } = usePanels();
+const { showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
+        <ActivityBar />
 
         <FlexPanel v-if="showToolbox" side="left">
             <ToolPanel />
@@ -82,11 +82,11 @@ const { showActivityBar, showToolbox } = usePanels();
                 <h2 class="h-sm">Related Pages</h2>
 
                 <div>
-                    <router-link :to="urlAll">All published {{ plural }}.</router-link>
+                    <router-link :to="urlAll">All published {{ plural }}</router-link>
                 </div>
 
                 <div>
-                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
+                    <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}</router-link>
                 </div>
             </div>
             <LoadingSpan v-else message="Loading item details" />

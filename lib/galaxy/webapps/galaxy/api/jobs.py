@@ -38,6 +38,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
+    JobConsoleOutput,
     JobDestinationParams,
     JobDisplayParametersSummary,
     JobErrorSummary,

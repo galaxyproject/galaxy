@@ -1,11 +1,11 @@
 <script setup>
 import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
-import { JobDetailsProvider } from "components/providers/JobProvider";
+import { JobConsoleOutputProvider, JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
+import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { formatDuration, intervalToDuration } from "date-fns";
-import JOB_STATES_MODEL from "utils/job-states-model";
-import { computed, reactive, ref } from "vue";
+import { computed, ref } from "vue";
 
 import { invocationForJob } from "@/api/invocations";
 
@@ -15,23 +15,6 @@ import CodeRow from "./CodeRow.vue";
 const job = ref(null);
 const invocationId = ref(null);
 
-const console_output = reactive(
-    {
-        stdout_position: 0,
-        stdout_length: 50000,
-        stdout_text: "",
-        stderr_position: 0,
-        stderr_length: 50000,
-        stdout_text: ""
-    }
-);
-// const stdout_position = ref(0);
-// const stdout_length = ref(50000);
-// const stdout_text = ref("");
-// const stderr_position = ref(0);
-// const stderr_length = ref(50000);
-// const stderr_text =  ref("");
-
 const props = defineProps({
     job_id: {
         type: String,
@@ -40,14 +23,22 @@ const props = defineProps({
     includeTimes: {
         type: Boolean,
         default: false,
-    },
+    }
 });
 
+const stdout_length = ref(50000);
+const stdout_text = ref("");
+const stderr_length = ref(50000);
+const stderr_text =  ref("");
+
+const stdout_position = computed(() => stdout_text.value.length);
+const stderr_position = computed(() => stderr_text.value.length);
+
 const runTime = computed(() =>
-    formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
+    formatDuration(intervalToDuration({ start: new Date(job.create_time), end: new Date(job.update_time) }))
 );
 
-const jobIsTerminal = computed(() => job.value && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(job.value.state));
+const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.state));
 
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
@@ -62,27 +53,23 @@ function updateJob(newJob) {
         fetchInvocation(newJob.id);
     }
     if (jobIsTerminal) {
-        if (job.tool_stdout) {
-            console_output.stdout_text += job.tool_stdout;
-            console_output.stdout_position += job.tool_stdout.length;
+        if (newJob.tool_stdout) {
+            stdout_text.value = newJob.tool_stdout;
         }
-        if (job.tool_stderr) {
-            console_output.stderr_text += job.tool_stderr;
-            console_output.stderr_position += job.tool_stderr.length;
+        if (newJob.tool_stderr) {
+            stderr_text.value = newJob.tool_stderr;
         }
     }
 }
 
 function updateConsoleOutputs(output) {
     // Keep stdout in memory and only fetch new text via JobProvider
-    if (output && !this.jobIsTerminal) {
+    if (output) {
         if (output.stdout != null) {
-            console_output.stdout_text += output.stdout;
-            console_output.stdout_position += output.stdout.length;
+            stdout_text.value += output.stdout;
         }
         if (output.stderr != null) {
-            console_output.stderr_text += output.stderr;
-            console_output.stderr_position += output.stderr.length;
+            stderr_text.value += output.stderr;
         }
     }
 }
@@ -113,7 +100,7 @@ async function fetchInvocation(jobId) {
         <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob"/>
         <JobConsoleOutputProvider
             auto-refresh
-            :job-id="job_id"
+            :job-id="props.job_id"
             :stdout_position="stdout_position"
             :stdout_length="stdout_length"
             :stderr_position="stderr_position"
@@ -171,13 +158,13 @@ async function fetchInvocation(jobId) {
                     id="stdout"
                     help-uri="unix.stdout"
                     :code-label="'Tool Standard Output'"
-                    :code-item="console_output.stdout_text" />
+                    :code-item="stdout_text" />
                 <CodeRow
                     v-if="job"
                     id="stderr"
                     help-uri="unix.stderr"
                     :code-label="'Tool Standard Error'"
-                    :code-item="console_output.stderr_text" />
+                    :code-item="stderr_text" />
                 <CodeRow
                     v-if="job && job.traceback"
                     id="traceback"

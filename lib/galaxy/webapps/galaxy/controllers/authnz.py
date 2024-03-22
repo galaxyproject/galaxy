@@ -89,10 +89,10 @@ class OIDC(JSAppLauncher):
         if not bool(kwargs):
             log.error(f"OIDC callback received no data for provider `{provider}` and user `{user}`")
             return trans.show_error_message(
-                "Did not receive any information from the `{}` identity provider to complete user `{}` authentication "
+                f"Did not receive any information from the `{provider}` identity provider to complete user `{user}` authentication "
                 "flow. Please try again, and if the problem persists, contact the Galaxy instance admin. Also note "
                 "that this endpoint is to receive authentication callbacks only, and should not be called/reached by "
-                "a user.".format(provider, user)
+                "a user."
             )
         if "error" in kwargs:
             log.error(
@@ -127,9 +127,9 @@ class OIDC(JSAppLauncher):
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later
@@ -152,9 +152,9 @@ class OIDC(JSAppLauncher):
         user = user if user is not None else trans.user
         if user is None:
             return trans.show_error_message(
-                "An unknown error occurred when handling the callback from `{}` "
+                f"An unknown error occurred when handling the callback from `{provider}` "
                 "identity provider. Please try again, and if the problem persists, "
-                "contact the Galaxy instance admin.".format(provider)
+                "contact the Galaxy instance admin."
             )
         trans.handle_user_login(user)
         # Record which idp provider was logged into, so we can logout of it later

@@ -92,8 +92,8 @@ class AppSchema(Schema):
         def check_exists(option, key):
             if not option:
                 message = (
-                    "Invalid schema: property '{}' listed as path resolution target "
-                    "for '{}' does not exist".format(resolves_to, key)
+                    f"Invalid schema: property '{resolves_to}' listed as path resolution target "
+                    f"for '{key}' does not exist"
                 )
                 raise_error(message)
 

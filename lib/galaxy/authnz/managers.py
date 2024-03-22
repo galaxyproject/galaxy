@@ -75,8 +75,8 @@ class AuthnzManager:
             for child in root:
                 if child.tag != "Setter":
                     log.error(
-                        "Expect a node with `Setter` tag, found a node with `{}` tag instead; "
-                        "skipping this node.".format(child.tag)
+                        "Expect a node with `Setter` tag, found a node with `%s` tag instead; skipping this node.",
+                        child.tag,
                     )
                     continue
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
@@ -118,8 +118,8 @@ class AuthnzManager:
             for child in root:
                 if child.tag != "provider":
                     log.error(
-                        "Expect a node with `provider` tag, found a node with `{}` tag instead; "
-                        "skipping the node.".format(child.tag)
+                        "Expect a node with `provider` tag, found a node with `%s` tag instead; skipping the node.",
+                        child.tag,
                     )
                     continue
                 if "name" not in child.attrib:
@@ -193,7 +193,7 @@ class AuthnzManager:
         if config_xml.find("well_known_oidc_config_uri") is not None:
             rtv["well_known_oidc_config_uri"] = config_xml.find("well_known_oidc_config_uri").text
         if config_xml.findall("allowed_idp") is not None:
-            self.allowed_idps = list(map(lambda idp: idp.text, config_xml.findall("allowed_idp")))
+            self.allowed_idps = [idp.text for idp in config_xml.findall("allowed_idp")]
         if config_xml.find("ca_bundle") is not None:
             rtv["ca_bundle"] = config_xml.find("ca_bundle").text
         if config_xml.find("icon") is not None:
@@ -268,18 +268,22 @@ class AuthnzManager:
                 config["id_token"] = cloudauthz.authn.get_id_token(strategy)
             except requests.exceptions.HTTPError as e:
                 msg = (
-                    "Sign-out from Galaxy and remove its access from `{}`, then log back in using `{}` "
-                    "account.".format(self._unify_provider_name(cloudauthz.authn.provider), cloudauthz.authn.uid)
+                    f"Sign-out from Galaxy and remove its access from `{self._unify_provider_name(cloudauthz.authn.provider)}`, "
+                    "then log back in using `{cloudauthz.authn.uid}` account."
                 )
                 log.debug(
-                    "Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
+                    "Failed to get/refresh ID token for user with ID `%s` for assuming authz_id `%s`. "
                     "User may not have a refresh token. If the problem persists, set the `prompt` key to "
-                    "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
-                    "Error Message: `{}`".format(user_id, cloudauthz.id, msg, e.response.text)
+                    "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: %s"
+                    "Error Message: `%s`",
+                    user_id,
+                    cloudauthz.id,
+                    msg,
+                    e.response.text,
                 )
                 raise exceptions.AuthenticationFailed(
-                    err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
-                    "contact Galaxy admin.".format(msg)
+                    err_msg=f"An error occurred getting your ID token. {msg}. If the problem persists, please "
+                    "contact Galaxy admin."
                 )
         return config
 
@@ -287,14 +291,13 @@ class AuthnzManager:
     def can_user_assume_authn(trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
         if qres is None:
-            msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(
-                trans.security.encode_id(authn_id)
-            )
+            msg = f"Authentication record with the given `authn_id` (`{trans.security.encode_id(authn_id)}`) not found."
             log.debug(msg)
             raise exceptions.ObjectNotFound(msg)
         if qres.user_id != trans.user.id:
-            msg = "The request authentication with ID `{}` is not accessible to user with ID " "`{}`.".format(
-                trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id)
+            msg = (
+                f"The request authentication with ID `{trans.security.encode_id(authn_id)}` is not accessible to user with ID "
+                f"`{trans.security.encode_id(trans.user.id)}`."
             )
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
@@ -322,8 +325,8 @@ class AuthnzManager:
             raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
         if user_id != qres.user_id:
             msg = (
-                "The request authorization configuration (with ID:`{}`) is not accessible for user with "
-                "ID:`{}`.".format(qres.id, user_id)
+                f"The request authorization configuration (with ID:`{qres.id}`) is not accessible for user with "
+                f"ID:`{user_id}`."
             )
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
@@ -499,11 +502,7 @@ class AuthnzManager:
                 return backend.disconnect(provider, trans, email, disconnect_redirect_url)
             return backend.disconnect(provider, trans, disconnect_redirect_url)
         except Exception:
-            msg = (
-                "An error occurred when disconnecting authentication with `{}` identity provider for user `{}`".format(
-                    provider, trans.user.username
-                )
-            )
+            msg = f"An error occurred when disconnecting authentication with `{provider}` identity provider for user `{trans.user.username}`"
             log.exception(msg)
             return False, msg, None
 
@@ -543,9 +542,9 @@ class AuthnzManager:
         try:
             ca = CloudAuthz()
             log.info(
-                "Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
-                    cloudauthz.id, user_id
-                )
+                "Requesting credentials using CloudAuthz with config id `%s` on be half of user `%s`.",
+                cloudauthz.id,
+                user_id,
             )
             credentials = ca.authorize(cloudauthz.provider, config)
             return credentials
@@ -594,8 +593,9 @@ class AuthnzManager:
         )
         credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
         log.info(
-            "Writing credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
-            "".format(cloudauthz.id, filename)
+            "Writing credentials generated using CloudAuthz with config id `%s` to the following file: `%s`",
+            cloudauthz.id,
+            filename,
         )
         with open(filename, "w") as f:
             f.write(json.dumps(credentials))

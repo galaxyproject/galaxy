@@ -2,14 +2,16 @@ import axios from "axios";
 
 import { getAppRoot } from "@/onload";
 
-import { ApiResponse, fetcher } from "./schema";
+import { ApiResponse, components, fetcher } from "./schema";
+
+export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
+export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
+export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
+export type InvocationStep = components["schemas"]["InvocationStep"];
 
 export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
 
-// TODO: Replace these interfaces with real schema models after https://github.com/galaxyproject/galaxy/pull/16707 is merged
-export interface WorkflowInvocation {
-    id: string;
-}
+export type WorkflowInvocation = WorkflowInvocationElementView | WorkflowInvocationCollectionView;
 
 export interface WorkflowInvocationJobsSummary {
     id: string;

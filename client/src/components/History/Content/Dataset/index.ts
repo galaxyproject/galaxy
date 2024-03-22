@@ -1,6 +1,8 @@
 export type ItemUrls = {
-    rerun: string;
-    visualize: string;
-    reportError: string;
-    showDetails: string;
+    display?: string;
+    edit: string;
+    rerun?: string;
+    visualize?: string;
+    reportError?: string;
+    showDetails: string | null;
 };

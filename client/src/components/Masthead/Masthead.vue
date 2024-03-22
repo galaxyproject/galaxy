@@ -16,7 +16,7 @@ import { getActiveTab } from "./utilities";
 
 import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
 
-const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
+const { isAnonymous } = storeToRefs(useUserStore());
 
 const route = useRoute();
 const { config, isConfigLoaded } = useConfig();
@@ -139,7 +139,7 @@ onMounted(() => {
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
             <BNavItem
-                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system && !showActivityBar"
+                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>

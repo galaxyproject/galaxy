@@ -1633,6 +1633,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def add_output_dataset(self, name, dataset):
         joda = JobToOutputDatasetAssociation(name, dataset)
+        if dataset.dataset.job is None:
+            # Only set job if dataset doesn't already have associated job.
+            # database operation tools that make copies should not modify the job here.
+            dataset.dataset.job = self
         add_object_to_object_session(self, joda)
         self.output_datasets.append(joda)
 
@@ -1996,24 +2000,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 state = :state,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT hda.dataset_id FROM history_dataset_association hda
-                INNER JOIN job_to_output_dataset jtod
-                ON jtod.dataset_id = hda.id AND jtod.job_id = :job_id
-            );
-        """
-            ),
-            text(
-                """
-            UPDATE dataset
-            SET
-                state = :state,
-                update_time = :update_time
-            WHERE id IN (
-                SELECT ldda.dataset_id FROM library_dataset_dataset_association ldda
-                INNER JOIN job_to_output_library_dataset jtold
-                ON jtold.ldda_id = ldda.id AND jtold.job_id = :job_id
-            );
+            WHERE
+                dataset.job_id = :job_id
         """
             ),
             text(
@@ -2022,11 +2010,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 info = :info,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT jtod.dataset_id
-                FROM job_to_output_dataset jtod
-                WHERE jtod.job_id = :job_id
-            );
+            FROM dataset
+            WHERE
+                history_dataset_association.dataset_id = dataset.id
+                AND dataset.job_id = :job_id;
         """
             ),
             text(
@@ -2035,11 +2022,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             SET
                 info = :info,
                 update_time = :update_time
-            WHERE id IN (
-                SELECT jtold.ldda_id
-                FROM job_to_output_library_dataset jtold
-                WHERE jtold.job_id = :job_id
-            );
+            FROM dataset
+            WHERE
+                library_dataset_dataset_association.dataset_id = dataset.id
+                AND dataset.job_id = :job_id;
         """
             ),
         ]
@@ -2576,7 +2562,7 @@ class FakeDatasetAssociation:
 
     def __init__(self, dataset=None):
         self.dataset = dataset
-        self.metadata = dict()
+        self.metadata = {}
 
     def get_file_name(self, sync_cache=True):
         return self.dataset.get_file_name(sync_cache)
@@ -4255,8 +4241,8 @@ class Dataset(Base, StorableObject, Serializable):
             total_size=to_int(self.total_size),
             created_from_basename=self.created_from_basename,
             uuid=str(self.uuid or "") or None,
-            hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes)),
-            sources=list(map(lambda s: s.serialize(id_encoder, serialization_options), self.sources)),
+            hashes=[h.serialize(id_encoder, serialization_options) for h in self.hashes],
+            sources=[s.serialize(id_encoder, serialization_options) for s in self.sources],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
@@ -4418,7 +4404,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.designation = designation
         # set private variable to None here, since the attribute may be needed in by MetadataCollection.__init__
         self._metadata = None
-        self.metadata = metadata or dict()
+        self.metadata = metadata or {}
         self.metadata_deferred = metadata_deferred
         self.extended_metadata = extended_metadata
         if (
@@ -6585,7 +6571,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             type=self.collection_type,
             populated_state=self.populated_state,
             populated_state_message=self.populated_state_message,
-            elements=list(map(lambda e: e.serialize(id_encoder, serialization_options), self.elements)),
+            elements=[e.serialize(id_encoder, serialization_options) for e in self.elements],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
@@ -7033,6 +7019,9 @@ class HistoryDatasetCollectionAssociation(
 
         results = qry.with_session(sa_session).all()
         return len(results) > 0
+
+
+HistoryItem: TypeAlias = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
 
 
 class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, RepresentById):
@@ -7511,7 +7500,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
     def invocation_counts(self) -> InvocationsStateCounts:
         sa_session = object_session(self)
         stmt = (
-            select([WorkflowInvocation.state, func.count(WorkflowInvocation.state)])
+            select(WorkflowInvocation.state, func.count(WorkflowInvocation.state))
             .select_from(StoredWorkflow)
             .join(Workflow, Workflow.stored_workflow_id == StoredWorkflow.id)
             .join(WorkflowInvocation, WorkflowInvocation.workflow_id == Workflow.id)
@@ -7741,7 +7730,7 @@ class WorkflowStep(Base, RepresentById):
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
-    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
 
     parent_comment = relationship(
         "WorkflowComment",
@@ -8188,7 +8177,7 @@ class WorkflowComment(Base, RepresentById):
     type = Column(String(16))
     color = Column(String(16))
     data = Column(JSONType)
-    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), index=True, nullable=True)
 
     workflow = relationship(
         "Workflow",
@@ -8504,7 +8493,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             .where(WorkflowInvocation.handler.is_(None))
             .order_by(WorkflowInvocation.id.asc())
         )
-        return [wid for wid in sa_session.scalars(stmt)]
+        return list(sa_session.scalars(stmt))
 
     @staticmethod
     def poll_active_workflow_ids(engine, scheduler=None, handler=None):
@@ -11148,23 +11137,27 @@ mapper_registry.map_imperatively(
 # ----------------------------------------------------------------------------------------
 # The following statements must not precede the mapped models defined above.
 
-Job.any_output_dataset_collection_instances_deleted = column_property(
-    exists(HistoryDatasetCollectionAssociation.id).where(
-        and_(
-            Job.id == JobToOutputDatasetCollectionAssociation.job_id,
-            HistoryDatasetCollectionAssociation.id == JobToOutputDatasetCollectionAssociation.dataset_collection_id,
-            HistoryDatasetCollectionAssociation.deleted == true(),
-        )
+Job.any_output_dataset_collection_instances_deleted = deferred(
+    column_property(
+        exists(HistoryDatasetCollectionAssociation.id).where(
+            and_(
+                Job.id == JobToOutputDatasetCollectionAssociation.job_id,
+                HistoryDatasetCollectionAssociation.id == JobToOutputDatasetCollectionAssociation.dataset_collection_id,
+                HistoryDatasetCollectionAssociation.deleted == true(),
+            )
+        ),
     )
 )
 
-Job.any_output_dataset_deleted = column_property(
-    exists(HistoryDatasetAssociation.id).where(
-        and_(
-            Job.id == JobToOutputDatasetAssociation.job_id,
-            HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
-            HistoryDatasetAssociation.table.c.deleted == true(),
-        )
+Job.any_output_dataset_deleted = deferred(
+    column_property(
+        exists(HistoryDatasetAssociation.id).where(
+            and_(
+                Job.id == JobToOutputDatasetAssociation.job_id,
+                HistoryDatasetAssociation.table.c.id == JobToOutputDatasetAssociation.dataset_id,
+                HistoryDatasetAssociation.table.c.deleted == true(),
+            )
+        ),
     )
 )
 

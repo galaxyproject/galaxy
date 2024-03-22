@@ -130,7 +130,7 @@ watch(
     }
 );
 
-const { showActivityBar, showToolbox } = usePanels();
+const { showToolbox } = usePanels();
 
 const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
 const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
@@ -156,7 +156,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="!props.embed && showActivityBar" />
+        <ActivityBar v-if="!props.embed" />
         <FlexPanel v-if="!props.embed && showToolbox" side="left">
             <ToolPanel />
         </FlexPanel>

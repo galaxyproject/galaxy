@@ -288,7 +288,7 @@ class JobManager:
             working_directory = trans.app.object_store.get_filename(
                 job, base_dir="job_work", dir_only=True, obj_dir=True
             )
-            if stdout_length > 0 and stdout_position > -1:
+            if stdout_length > -1 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION
                     stdout_file = open(stdout_path, "r")
@@ -296,7 +296,7 @@ class JobManager:
                     console_output["stdout"] = stdout_file.read(stdout_length)
                 except Exception as e:
                     log.error("Could not read STDOUT: %s", e)
-            if stderr_length > 0 and stderr_position > -1:
+            if stderr_length > -1 and stderr_position > -1:
                 try:
                     stderr_path = Path(working_directory) / STDERR_LOCATION
                     stderr_file = open(stderr_path, "r")

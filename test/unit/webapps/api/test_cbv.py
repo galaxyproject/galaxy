@@ -3,8 +3,6 @@ Original implementation by David Montague (@dmontagu)
 https://github.com/dmontagu/fastapi-utils
 """
 
-from __future__ import annotations
-
 from typing import (
     Any,
     ClassVar,
@@ -85,7 +83,7 @@ def test_multiple_decorators() -> None:
         @router.get("/items/?")
         @router.get("/items/{item_path:path}")
         @router.get("/database/{item_path:path}")
-        def root(self, item_path: Optional[str] = None, item_query: Optional[str] = None) -> Any:  # noqa: UP007
+        def root(self, item_path: Optional[str] = None, item_query: Optional[str] = None) -> Any:
             if item_path:
                 return {"item_path": item_path}
             if item_query:

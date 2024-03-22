@@ -385,24 +385,23 @@ class GalaxyInteractorApi:
                 except KeyError:
                     raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
 
-    def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
+    def wait_for_job(self, job_id: str, history_id: Optional[str] = None, maxseconds=DEFAULT_TOOL_TEST_WAIT) -> None:
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
-    def wait_for(self, func, what="tool test run", **kwd):
+    def wait_for(self, func: Callable, what: str = "tool test run", **kwd) -> None:
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
         wait_on(func, what, walltime_exceeded)
 
-    def get_job_stdio(self, job_id):
-        job_stdio = self.__get_job_stdio(job_id).json()
-        return job_stdio
+    def get_job_stdio(self, job_id: str) -> Dict[str, Any]:
+        return self.__get_job_stdio(job_id).json()
 
-    def __get_job(self, job_id):
+    def __get_job(self, job_id: str) -> Response:
         return self._get(f"jobs/{job_id}")
 
-    def __get_job_stdio(self, job_id):
+    def __get_job_stdio(self, job_id: str) -> Response:
         return self._get(f"jobs/{job_id}?full=true")
 
-    def get_history(self, history_name="test_history"):
+    def get_history(self, history_name: str = "test_history") -> Optional[Dict[str, Any]]:
         # Return the most recent non-deleted history matching the provided name
         filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
         response = self._get(f"histories?{filters}")
@@ -430,7 +429,7 @@ class GalaxyInteractorApi:
             if cleanup and cleanup_callback is not None:
                 cleanup_callback(history_id)
 
-    def new_history(self, history_name="test_history", publish_history=False):
+    def new_history(self, history_name: str = "test_history", publish_history: bool = False) -> str:
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
@@ -441,7 +440,7 @@ class GalaxyInteractorApi:
             self.publish_history(history_id)
         return history_id
 
-    def publish_history(self, history_id):
+    def publish_history(self, history_id: str) -> None:
         response = self._put(f"histories/{history_id}", json.dumps({"published": True}))
         response.raise_for_status()
 
@@ -710,10 +709,10 @@ class GalaxyInteractorApi:
     def output_hid(self, output_data):
         return output_data["id"]
 
-    def delete_history(self, history):
+    def delete_history(self, history: str) -> None:
         self._delete(f"histories/{history}")
 
-    def __job_ready(self, job_id, history_id=None):
+    def __job_ready(self, job_id: str, history_id: Optional[str] = None):
         if job_id is None:
             raise ValueError("__job_ready passed empty job_id")
         try:
@@ -803,7 +802,7 @@ class GalaxyInteractorApi:
         history_contents_response.raise_for_status()
         return history_contents_response.json()
 
-    def _state_ready(self, job_id, error_msg):
+    def _state_ready(self, job_id: str, error_msg: str):
         state_str = self.__get_job(job_id).json()["state"]
         if state_str == "ok":
             return True

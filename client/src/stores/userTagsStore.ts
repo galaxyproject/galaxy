@@ -20,13 +20,13 @@ class UserTagStoreDatabase extends Dexie {
 
     constructor() {
         super("userTagStoreDatabase");
-        this.version(1).stores({ tags: "++id, userHash, lastUsed" });
+        this.version(2).stores({ tags: "++id, userHash, lastUsed, tag" });
     }
 }
 
 const maxDbEntriesPerUser = 10000;
 
-function normalizeTag(tag: string) {
+export function normalizeTag(tag: string) {
     return tag.replace(/^#/, "name:");
 }
 
@@ -43,8 +43,6 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
         async (userHash) => {
             if (userHash) {
                 tags.value = await db.tags.where("userHash").equals(userHash).sortBy("lastUsed");
-
-                console.log(tags.value);
 
                 if (tags.value.length > maxDbEntriesPerUser) {
                     await removeOldestEntries(tags.value.length - maxDbEntriesPerUser);
@@ -113,12 +111,17 @@ export const useUserTagsStore = defineStore("userTagsStore", () => {
         await until(dbLoaded).toBe(true);
         tag = normalizeTag(tag);
 
-        const storedTag = tags.value.find((o) => o.tag === tag);
-        const id = storedTag?.id;
+        const dbTag = await db.tags.get({ tag });
 
-        if (id !== undefined) {
-            // put instead of update, because `removeOldestEntries` may have deleted this tag on init
-            await db.tags.put({ ...storedTag, lastUsed: Date.now() } as StoredTag, id);
+        if (dbTag) {
+            await db.tags.update(dbTag, { lastUsed: Date.now() });
+        } else {
+            const storedTag = tags.value.find((o) => o.tag === tag);
+            const id = storedTag?.id;
+
+            if (id !== undefined) {
+                await db.tags.add({ ...storedTag, lastUsed: Date.now() } as StoredTag);
+            }
         }
     }
 

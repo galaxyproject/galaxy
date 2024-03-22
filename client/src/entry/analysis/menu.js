@@ -243,10 +243,6 @@ export function fetchMenu(options = {}) {
                 url: "/interactivetool_entry_points/list",
             });
         }
-        userTab.menu.push({
-            title: _l("Archived Histories"),
-            url: "/histories/archived",
-        });
         if (Galaxy.config.enable_notification_system) {
             userTab.menu.push({
                 title: _l("Notifications"),
