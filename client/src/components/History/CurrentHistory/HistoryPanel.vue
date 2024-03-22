@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistorySummary } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -47,7 +47,7 @@ interface BackendFilterError {
 
 interface Props {
     listOffset?: number;
-    history: HistorySummary;
+    history: HistorySummaryExtended;
     filter?: string;
     canEditHistory?: boolean;
     filterable?: boolean;
