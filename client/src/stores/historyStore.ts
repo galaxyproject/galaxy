@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import type { HistorySummary } from "@/api";
+import type { AnyHistory, HistoryDevDetailed, HistorySummary, HistorySummaryExtended } from "@/api";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -29,7 +29,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const pinnedHistories = useUserLocalStorage<{ id: string }[]>("history-store-pinned-histories", []);
     const storedCurrentHistoryId = ref<string | null>(null);
     const storedFilterTexts = ref<{ [key: string]: string }>({});
-    const storedHistories = ref<{ [key: string]: HistorySummary }>({});
+    const storedHistories = ref<{ [key: string]: AnyHistory }>({});
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -41,9 +41,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return histories.value[0]?.id ?? null;
     });
 
-    const currentHistory = computed(() => {
+    const currentHistory = computed<HistorySummaryExtended | null>(() => {
         if (storedCurrentHistoryId.value !== null) {
-            return getHistoryById.value(storedCurrentHistoryId.value);
+            return getHistoryById.value(storedCurrentHistoryId.value) as HistorySummaryExtended;
         }
         return null;
     });
@@ -86,8 +86,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
     });
 
     async function setCurrentHistory(historyId: string) {
-        const currentHistory = await setCurrentHistoryOnServer(historyId);
-        selectHistory(currentHistory as HistorySummary);
+        const currentHistory = (await setCurrentHistoryOnServer(historyId)) as HistoryDevDetailed;
+        selectHistory(currentHistory);
         setFilterText(historyId, "");
     }
 
@@ -99,7 +99,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         set(storedFilterTexts.value, historyId, filterText);
     }
 
-    function setHistory(history: HistorySummary) {
+    function setHistory(history: AnyHistory) {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.assign(storedHistories.value[history.id]!, history);
@@ -108,7 +108,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         }
     }
 
-    function setHistories(histories: HistorySummary[]) {
+    function setHistories(histories: AnyHistory[]) {
         // The incoming history list may contain less information than the already stored
         // histories, so we ensure that already available details are not getting lost.
         const enrichedHistories = histories.map((history) => {
@@ -117,7 +117,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         });
         // Histories are provided as list but stored as map.
         const newMap = enrichedHistories.reduce((acc, h) => ({ ...acc, [h.id]: h }), {}) as {
-            [key: string]: HistorySummary;
+            [key: string]: AnyHistory;
         };
         // Ensure that already stored histories, which are not available in the incoming array,
         // are not lost. This happens e.g. with shared histories since they have different owners.
@@ -165,9 +165,9 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function createNewHistory() {
-        const newHistory = await createAndSelectNewHistory();
+        const newHistory = (await createAndSelectNewHistory()) as HistoryDevDetailed;
         await handleTotalCountChange(1);
-        return selectHistory(newHistory as HistorySummary);
+        return selectHistory(newHistory);
     }
 
     function getNextAvailableHistoryId(excludedIds: string[]) {
@@ -189,9 +189,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
         await handleTotalCountChange(1, true);
     }
 
-    async function loadCurrentHistory(since?: string) {
-        const history = await getCurrentHistoryFromServer(since);
-        selectHistory(history as HistorySummary);
+    async function loadCurrentHistory(since?: string): Promise<HistoryDevDetailed | undefined> {
+        try {
+            const history = (await getCurrentHistoryFromServer(since)) as HistoryDevDetailed;
+            if (!history) {
+                return; // There are no changes to the current history, nothing to set
+            }
+            selectHistory(history);
+            return history;
+        } catch (error) {
+            console.error(error);
+        }
     }
 
     /**
@@ -232,25 +240,26 @@ export const useHistoryStore = defineStore("historyStore", () => {
             }
             const offset = queryString ? 0 : historiesOffset.value;
             try {
-                const histories = await getHistoryList(offset, limit, queryString);
+                const histories = (await getHistoryList(offset, limit, queryString)) as HistorySummary[];
                 setHistories(histories);
                 if (paginate && !queryString && historiesOffset.value == offset) {
                     await handleTotalCountChange(histories.length);
                 }
             } catch (error) {
-                console.warn(error);
+                console.error(error);
             } finally {
                 setHistoriesLoading(false);
             }
         }
     }
 
-    async function loadHistoryById(historyId: string) {
+    async function loadHistoryById(historyId: string): Promise<HistorySummaryExtended | undefined> {
         if (!isLoadingHistory.has(historyId)) {
             isLoadingHistory.add(historyId);
             try {
-                const history = await getHistoryByIdFromServer(historyId);
-                setHistory(history as HistorySummary);
+                const history = (await getHistoryByIdFromServer(historyId)) as HistorySummaryExtended;
+                setHistory(history);
+                return history;
             } catch (error) {
                 console.error(error);
             } finally {
@@ -260,13 +269,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function secureHistory(history: HistorySummary) {
-        const securedHistory = await secureHistoryOnServer(history);
-        setHistory(securedHistory as HistorySummary);
+        const securedHistory = (await secureHistoryOnServer(history)) as HistorySummaryExtended;
+        setHistory(securedHistory);
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
         const history = await archiveHistory(historyId, archiveExportId, purgeHistory);
-        setHistory(history as HistorySummary);
+        setHistory(history);
         if (!history.archived) {
             return;
         }
@@ -282,13 +291,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
         const history = await unarchiveHistory(historyId, force);
-        setHistory(history as HistorySummary);
+        setHistory(history);
         return history;
     }
 
     async function updateHistory({ id, ...update }: HistorySummary) {
-        const savedHistory = await updateHistoryFields(id, update);
-        setHistory(savedHistory as HistorySummary);
+        const savedHistory = (await updateHistoryFields(id, update)) as HistorySummaryExtended;
+        setHistory(savedHistory);
     }
 
     return {
