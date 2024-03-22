@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { mapStores } from "pinia";
+import { mapActions } from "pinia";
 import Vue from "vue";
 
 import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
@@ -102,7 +102,6 @@ export default {
         };
     },
     computed: {
-        ...mapStores(useHelpModeTextStore),
         validation() {
             return validateInputs(this.formIndex, this.formData, this.allowEmptyValueOnRequiredInput);
         },
@@ -153,9 +152,14 @@ export default {
         // highlight initial errors
         this.onErrors();
     },
+    destroyed() {
+        // since the user is leaving the form, the help mode is reset
+        this.clearHelpModeText();
+    },
     methods: {
+        ...mapActions(useHelpModeTextStore, ["storeHelpModeText", "clearHelpModeText"]),
         callHelpMode() {
-            this.helpModeTextStore.addHelpModeText("tool_form_base");
+            this.storeHelpModeText("tool_form_base");
         },
         buildFormData() {
             const params = {};

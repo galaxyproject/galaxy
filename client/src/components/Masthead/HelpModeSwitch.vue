@@ -1,20 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { storeToRefs } from "pinia";
 
 import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
 
 const tooltip = "Enable/Disable Help Mode";
-const statusStore = useHelpModeStatusStore();
-const enabledStatus = computed({
-    get() {
-        return statusStore.helpmodestatus;
-    },
-    set(value: boolean) {
-        statusStore.setHelpModeStatus(value);
-    },
-});
+const { status } = storeToRefs(useHelpModeStatusStore());
 function toggleEnabledStatus() {
-    enabledStatus.value = !enabledStatus.value;
+    status.value = !status.value;
 }
 </script>
 
@@ -22,12 +14,12 @@ function toggleEnabledStatus() {
     <div>
         <button
             class="help-mode-button"
-            :class="{ highlight: enabledStatus }"
+            :class="{ highlight: status }"
             :title="tooltip"
             :aria-label="tooltip"
             @click="toggleEnabledStatus"
             @keydown.enter="toggleEnabledStatus">
-            <i class="fas fa-question-circle fa-lg" :class="{ highlight: enabledStatus }"> </i> Help Me
+            <i class="fas fa-question-circle fa-lg" :class="{ highlight: status }"> </i> Help Me
         </button>
     </div>
 </template>
