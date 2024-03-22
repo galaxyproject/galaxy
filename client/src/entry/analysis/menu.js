@@ -105,6 +105,7 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Datasets"),
                     url: "/datasets/list_published",
+                    hidden: !Galaxy.user.id,
                 },
                 {
                     title: _l("Histories"),
