@@ -41,18 +41,9 @@ export function fetchMenu(options = {}) {
     }
 
     //
-    // 'Data Items' or Libraries tab.
+    // 'Data' tab.
     //
-    if (Galaxy.config.single_user) {
-        // Single user can still use libraries, especially as we may grow that
-        // functionality as a representation for external data.  The rest is
-        // hidden though.
-        menu.push({
-            title: _l("Data Libraries"),
-            url: "/libraries",
-            id: "libraries",
-        });
-    } else if (Galaxy.user.id) {
+    if (Galaxy.user.id) {
         menu.push({
             id: "resources",
             title: _l("Data"),
