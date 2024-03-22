@@ -207,7 +207,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function loadTotalHistoryCount() {
-        await getHistoryCount().then((count) => (totalHistoryCount.value = count));
+        totalHistoryCount.value = await getHistoryCount();
     }
 
     /** TODO:
@@ -231,15 +231,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 }
             }
             const offset = queryString ? 0 : historiesOffset.value;
-            await getHistoryList(offset, limit, queryString)
-                .then(async (histories) => {
-                    setHistories(histories);
-                    if (paginate && !queryString && historiesOffset.value == offset) {
-                        await handleTotalCountChange(histories.length);
-                    }
-                })
-                .catch((error) => console.warn(error))
-                .finally(() => setHistoriesLoading(false));
+            try {
+                const histories = await getHistoryList(offset, limit, queryString);
+                setHistories(histories);
+                if (paginate && !queryString && historiesOffset.value == offset) {
+                    await handleTotalCountChange(histories.length);
+                }
+            } catch (error) {
+                console.warn(error);
+            } finally {
+                setHistoriesLoading(false);
+            }
         }
     }
 
