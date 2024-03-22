@@ -6273,7 +6273,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             inner_dce = alias(DatasetCollectionElement)
             inner_dc = alias(DatasetCollection)
             order_by_columns.append(inner_dce.c.element_index)
-            q = q.join(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
+            q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
             if collection_attributes:
                 q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
             q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
@@ -6294,11 +6294,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             or return_entities
             and not return_entities == (DatasetCollectionElement,)
         ):
-            q = q.join(HistoryDatasetAssociation)
-            if HistoryDatasetAssociation not in return_entities:
-                # if we do return HDAs we'll be joining on the dataset implicitly,
-                # so join here only if we're not already joining on dataset
-                q = q.join(Dataset)
+            q = q.join(HistoryDatasetAssociation).join(Dataset)
         if dataset_permission_attributes:
             q = q.join(DatasetPermissions)
         q = (
