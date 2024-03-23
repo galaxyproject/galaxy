@@ -9,6 +9,7 @@ import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
+import { Toast } from "@/composables/toast";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
@@ -238,7 +239,11 @@ function onClick(e?: Event) {
         return;
     }
     if (props.isDataset) {
-        emit("update:expand-dataset", !props.expandDataset);
+        if (props.item.accessible === false) {
+            Toast.error(`You are not allowed to access this dataset`);
+        } else {
+            emit("update:expand-dataset", !props.expandDataset);
+        }
     } else {
         emit("view-collection", props.item, props.name);
     }
