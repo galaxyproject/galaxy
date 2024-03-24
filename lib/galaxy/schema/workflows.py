@@ -10,6 +10,7 @@ from typing import (
 from pydantic import (
     Field,
     field_validator,
+    UUID4,
 )
 from typing_extensions import Annotated
 
@@ -424,11 +425,10 @@ class WorkflowDictEditorSteps(WorkflowDictStepsExtendedBase):
         description="The configuration form for the step.",
     )
     annotation: WorkflowAnnotationField
-    uuid: Optional[str] = Field(
+    uuid: Optional[UUID4] = Field(
         None,
         title="UUID",
         description="Universal unique identifier of the workflow.",
-        # description="The UUID (Universally Unique Identifier) of the step.",
     )
     tooltip: Optional[str] = Field(
         None,
@@ -453,11 +453,10 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Name",
         description="The descriptive name of the module or step.",
     )
-    uuid: str = Field(
+    uuid: UUID4 = Field(
         ...,
         title="UUID",
         description="Universal unique identifier of the workflow.",
-        # description="The UUID (Universally Unique Identifier) of the step.",
     )
     annotation: WorkflowAnnotationField = None
     # TODO - can be modeled see manager line 1483 or below
@@ -607,10 +606,10 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         title="Tags",
         description="The tags associated with the workflow.",
     )
-    uuid: Optional[str] = Field(
+    uuid: Optional[UUID4] = Field(
         None,
         title="UUID",
-        description="The UUID (Universally Unique Identifier) of the workflow, represented as a string.",
+        description="The UUID (Universally Unique Identifier) of the workflow.",
     )
     comments: Optional[List[Dict[str, Any]]] = Field(
         None,
@@ -668,10 +667,10 @@ class WorkflowDictFormat2Summary(Model):
         title="Tags",
         description="The tags associated with the workflow.",
     )
-    uuid: Optional[str] = Field(
+    uuid: Optional[UUID4] = Field(
         None,
         title="UUID",
-        description="The UUID (Universally Unique Identifier) of the workflow, represented as a string.",
+        description="The UUID (Universally Unique Identifier) of the workflow.",
     )
     report: Optional[Dict[str, Any]] = Field(
         None,
