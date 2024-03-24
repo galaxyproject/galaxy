@@ -30,9 +30,19 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Cache pip dir
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('requirements.txt') }}
+      - name: Cache galaxy venv
+        uses: actions/cache@v3
+        with:
+          path: '.venv'
+          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('requirements.txt') }}-integration
       - name: replace tpv galaxy dependencies with package paths from local galaxy build
         run: |
-          make setup-venv
+          GALAXY_SKIP_CLIENT_BUILD=1 make setup-venv
           # create local release
           echo "c" | ./scripts/release.sh -l
           # make requirements point to local wheels
