@@ -7291,6 +7291,24 @@ export interface components {
              */
             to_posix_lines?: "Yes" | boolean | null;
         };
+        /** InputConnection */
+        InputConnection: {
+            /**
+             * ID
+             * @description The identifier of the input.
+             */
+            id: number;
+            /**
+             * Input Subworkflow Step ID
+             * @description TODO
+             */
+            input_subworkflow_step_id?: number | null;
+            /**
+             * Output Name
+             * @description The name assigned to the output.
+             */
+            output_name: string;
+        };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
             /**
@@ -12696,7 +12714,7 @@ export interface components {
              * Position
              * @description Layout position of this step in the graph
              */
-            position?: Record<string, never> | null;
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
             /**
              * Post Job Actions
              * @description Set of actions that will be run when the job finishes.
@@ -12741,7 +12759,7 @@ export interface components {
              * Workflow Outputs
              * @description Workflow outputs associated with this step.
              */
-            workflow_outputs?: Record<string, never>[] | null;
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
         };
         /** WorkflowDictEditorSummary */
         WorkflowDictEditorSummary: {
@@ -12834,7 +12852,9 @@ export interface components {
              * @description The input connections of the step.
              */
             input_connections?: {
-                [key: string]: (Record<string, never> | Record<string, never>[]) | undefined;
+                [key: string]:
+                    | (components["schemas"]["InputConnection"] | components["schemas"]["InputConnection"][])
+                    | undefined;
             } | null;
             /**
              * Inputs
@@ -12860,7 +12880,7 @@ export interface components {
              * Position
              * @description Layout position of this step in the graph
              */
-            position?: Record<string, never> | null;
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
             /**
              * Post Job Actions
              * @description Set of actions that will be run when the job finishes.
@@ -12903,6 +12923,7 @@ export interface components {
             type: string;
             /**
              * UUID
+             * Format: uuid4
              * @description Universal unique identifier of the workflow.
              */
             uuid: string;
@@ -12915,7 +12936,7 @@ export interface components {
              * Workflow Outputs
              * @description Workflow outputs associated with this step.
              */
-            workflow_outputs?: Record<string, never>[] | null;
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
         };
         /** WorkflowDictExportSummary */
         WorkflowDictExportSummary: {
@@ -12980,7 +13001,7 @@ export interface components {
             tags?: string[] | null;
             /**
              * UUID
-             * @description The UUID (Universally Unique Identifier) of the workflow, represented as a string.
+             * @description The UUID (Universally Unique Identifier) of the workflow.
              */
             uuid?: string | null;
             /**
@@ -13050,7 +13071,7 @@ export interface components {
             tags?: string[] | null;
             /**
              * UUID
-             * @description The UUID (Universally Unique Identifier) of the workflow, represented as a string.
+             * @description The UUID (Universally Unique Identifier) of the workflow.
              */
             uuid?: string | null;
         };
@@ -13103,7 +13124,7 @@ export interface components {
              * Position
              * @description Layout position of this step in the graph
              */
-            position?: Record<string, never> | null;
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
             /**
              * Post Job Actions
              * @description Set of actions that will be run when the job finishes.
@@ -13138,7 +13159,7 @@ export interface components {
              * Workflow Outputs
              * @description Workflow outputs associated with this step.
              */
-            workflow_outputs?: Record<string, never>[] | null;
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
         };
         /** WorkflowDictPreviewSummary */
         WorkflowDictPreviewSummary: {
@@ -13199,7 +13220,7 @@ export interface components {
              * Position
              * @description Layout position of this step in the graph
              */
-            position?: Record<string, never> | null;
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
             /**
              * Post Job Actions
              * @description Set of actions that will be run when the job finishes.
@@ -13259,7 +13280,7 @@ export interface components {
              * Workflow Outputs
              * @description Workflow outputs associated with this step.
              */
-            workflow_outputs?: Record<string, never>[] | null;
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
         };
         /** WorkflowDictRunSummary */
         WorkflowDictRunSummary: {
@@ -13505,6 +13526,70 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
+        };
+        /** WorkflowOutput */
+        WorkflowOutput: {
+            /**
+             * Label
+             * @description Label of the output.
+             */
+            label?: string | null;
+            /**
+             * Output Name
+             * @description The name assigned to the output.
+             */
+            output_name: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the output.
+             */
+            uuid?: string | null;
+        };
+        /**
+         * WorkflowStepLayoutPosition
+         * @description Position and dimensions of the workflow step represented by a box on the graph.
+         */
+        WorkflowStepLayoutPosition: {
+            /**
+             * Bottom
+             * @description Position in pixels of the bottom of the box.
+             */
+            bottom?: number | null;
+            /**
+             * Height
+             * @description Height of the box in pixels.
+             */
+            height?: number | null;
+            /**
+             * Left
+             * @description Left margin or left-most position of the box.
+             */
+            left: number;
+            /**
+             * Right
+             * @description Right margin or right-most position of the box.
+             */
+            right?: number | null;
+            /**
+             * Top
+             * @description Position in pixels of the top of the box.
+             */
+            top: number;
+            /**
+             * Width
+             * @description Width of the box in pixels.
+             */
+            width?: number | null;
+            /**
+             * X
+             * @description Horizontal pixel coordinate of the top right corner of the box.
+             */
+            x?: number | null;
+            /**
+             * Y
+             * @description Vertical pixel coordinate of the top right corner of the box.
+             */
+            y?: number | null;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
