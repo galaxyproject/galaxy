@@ -28,7 +28,6 @@ from galaxy.schema.schema import (
     StoredWorkflowSummary,
     SubworkflowStep,
     ToolStep,
-    WorkflowInput,
 )
 
 WorkflowAnnotationField = Annotated[
@@ -47,6 +46,83 @@ WorkflowCreator = Annotated[
         description=("Additional information about the creator (or multiple creators) of this workflow."),
     ),
 ]
+
+
+class Input(Model):
+    name: str = Field(..., title="Name", description="The name of the input.")
+    description: str = Field(..., title="Description", description="The annotation or description of the input.")
+
+
+class Output(Model):
+    name: str = Field(..., title="Name", description="The name of the output.")
+    type: str = Field(..., title="Type", description="The extension or type of output.")
+
+
+class InputConnection(Model):
+    id: int = Field(..., title="ID", description="The identifier of the input.")
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name assigned to the output.",
+    )
+    input_subworkflow_step_id: Optional[int] = Field(
+        None,
+        title="Input Subworkflow Step ID",
+        description="TODO",
+    )
+
+
+class WorkflowStepLayoutPosition(Model):
+    """Position and dimensions of the workflow step represented by a box on the graph."""
+
+    bottom: Optional[int] = Field(None, title="Bottom", description="Position in pixels of the bottom of the box.")
+    top: Optional[int] = Field(None, title="Top", description="Position in pixels of the top of the box.")
+    left: Optional[int] = Field(None, title="Left", description="Left margin or left-most position of the box.")
+    right: Optional[int] = Field(None, title="Right", description="Right margin or right-most position of the box.")
+    x: Optional[int] = Field(
+        None, title="X", description="Horizontal pixel coordinate of the top right corner of the box."
+    )
+    y: Optional[int] = Field(
+        None, title="Y", description="Vertical pixel coordinate of the top right corner of the box."
+    )
+    height: Optional[int] = Field(None, title="Height", description="Height of the box in pixels.")
+    width: Optional[int] = Field(None, title="Width", description="Width of the box in pixels.")
+
+
+class WorkflowInput(Model):
+    label: Optional[str] = Field(
+        ...,
+        title="Label",
+        description="Label of the input.",
+    )
+    value: Optional[Any] = Field(
+        ...,
+        title="Value",
+        description="TODO",
+    )
+    uuid: Optional[UUID4] = Field(
+        ...,
+        title="UUID",
+        description="Universal unique identifier of the input.",
+    )
+
+
+class WorkflowOutput(Model):
+    label: Optional[str] = Field(
+        None,
+        title="Label",
+        description="Label of the output.",
+    )
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name assigned to the output.",
+    )
+    uuid: Optional[UUID4] = Field(
+        None,
+        title="UUID",
+        description="Universal unique identifier of the output.",
+    )
 
 
 class GetTargetHistoryPayload(Model):
