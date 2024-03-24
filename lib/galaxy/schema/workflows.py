@@ -76,8 +76,8 @@ class WorkflowStepLayoutPosition(Model):
     """Position and dimensions of the workflow step represented by a box on the graph."""
 
     bottom: Optional[int] = Field(None, title="Bottom", description="Position in pixels of the bottom of the box.")
-    top: Optional[int] = Field(None, title="Top", description="Position in pixels of the top of the box.")
-    left: Optional[int] = Field(None, title="Left", description="Left margin or left-most position of the box.")
+    top: int = Field(..., title="Top", description="Position in pixels of the top of the box.")
+    left: int = Field(..., title="Left", description="Left margin or left-most position of the box.")
     right: Optional[int] = Field(None, title="Right", description="Right margin or right-most position of the box.")
     x: Optional[int] = Field(
         None, title="X", description="Horizontal pixel coordinate of the top right corner of the box."
@@ -372,7 +372,7 @@ class WorkflowDictStepsBase(Model):
         title="Tool ID",
         description="The unique name of the tool associated with this step.",
     )
-    position: Optional[Any] = Field(
+    position: Optional[WorkflowStepLayoutPosition] = Field(
         None,
         title="Position",
         description="Layout position of this step in the graph",
