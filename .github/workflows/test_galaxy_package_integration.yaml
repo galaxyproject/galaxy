@@ -30,11 +30,13 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: replace tpv galaxy dependencies with local package paths from galaxy source
+      - name: replace tpv galaxy dependencies with package paths from local galaxy build
         run: |
-          sed -i'' -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|' tpv/requirements_test.txt
+          # create local release
+          echo "c" | ./scripts/release.sh -l
+          # make requirements point to local wheels
+          sed -i'' -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1/build/\*.whl|' tpv/requirements_test.txt
           cat tpv/requirements_test.txt
-        working-directory: 'tpv'
       - name: Install required packages
         run: pip install tox
       - name: Run tox
