@@ -32,6 +32,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: replace tpv galaxy dependencies with package paths from local galaxy build
         run: |
+          make setup-venv
           # create local release
           echo "c" | ./scripts/release.sh -l
           # make requirements point to local wheels
