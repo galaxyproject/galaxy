@@ -393,8 +393,7 @@ class WorkflowDictStepsBase(Model):
         title="Content ID",
         description="The content ID of the step.",
     )
-    # TODO - could be modeled further see manager
-    workflow_outputs: Optional[List[Dict[str, Any]]] = Field(
+    workflow_outputs: Optional[List[WorkflowOutput]] = Field(
         None,
         title="Workflow Outputs",
         description="Workflow outputs associated with this step.",
@@ -566,7 +565,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
     in_parameter: Optional[Dict[str, Any]] = Field(
         None, title="In", description="The input connections of the step.", alias="in"
     )
-    input_connections: Optional[Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]] = Field(
+    input_connections: Optional[Dict[str, Union[InputConnection, List[InputConnection]]]] = Field(
         None,
         title="Input Connections",
         description="The input connections of the step.",
