@@ -3,10 +3,10 @@ import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
 import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { Step, WorkflowStepStore } from "@/stores/workflowStepStore";
+import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
-class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
+export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoAction {
     key: K;
     fromValue: Step[K];
     toValue: Step[K];
@@ -227,7 +227,8 @@ export class RemoveStepAction extends UndoRedoAction {
 export class CopyStepAction extends UndoRedoAction {
     stepStore;
     stateStore;
-    step;
+    step: NewStep;
+    stepId?: number;
     onUndoRedo?: () => void;
 
     constructor(stepStore: WorkflowStepStore, stateStore: WorkflowStateStore, step: Step) {
@@ -235,6 +236,7 @@ export class CopyStepAction extends UndoRedoAction {
         this.stepStore = stepStore;
         this.stateStore = stateStore;
         this.step = structuredClone(step);
+        delete this.step.id;
     }
 
     get name() {
@@ -242,13 +244,15 @@ export class CopyStepAction extends UndoRedoAction {
     }
 
     run() {
-        this.step = this.stepStore.addStep(this.step);
-        this.stateStore.activeNodeId = this.step.id;
+        const newStep = this.stepStore.addStep(structuredClone(this.step));
+        this.stepId = newStep.id;
+        this.stateStore.activeNodeId = this.stepId;
         this.stateStore.hasChanges = true;
     }
 
     undo() {
-        this.stepStore.removeStep(this.step.id);
+        assertDefined(this.stepId);
+        this.stepStore.removeStep(this.stepId);
     }
 }
 
