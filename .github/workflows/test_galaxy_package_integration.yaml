@@ -61,7 +61,7 @@ jobs:
               row=$line
             fi
             echo $row >> tpv/requirements_local.txt
-          done < "$file"
+          done < "tpv/requirements_test.txt"
           cat tpv/requirements_local.txt
           mv tpv/requirements_local.txt tpv/requirements_test.txt
       - name: Install required packages
