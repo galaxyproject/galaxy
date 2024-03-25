@@ -1445,11 +1445,12 @@ class FastAPIInvocations:
         self,
         invocation_id: InvocationIDPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
+        view: SerializationViewQueryParam = None,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
     ) -> WorkflowInvocationResponse:
         serialization_params = InvocationSerializationParams(
-            step_details=step_details, legacy_job_state=legacy_job_state
+            view=view, step_details=step_details, legacy_job_state=legacy_job_state
         )
         return self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
 

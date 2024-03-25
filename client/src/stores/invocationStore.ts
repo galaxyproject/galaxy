@@ -1,7 +1,12 @@
 import { defineStore } from "pinia";
 
 import { GalaxyApi } from "@/api";
-import { type InvocationJobsSummary, type InvocationStep, type WorkflowInvocation } from "@/api/invocations";
+import {
+    type InvocationJobsSummary,
+    type InvocationStep,
+    type WorkflowInvocation,
+    type WorkflowInvocationStepStatesView,
+} from "@/api/invocations";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -36,8 +41,21 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         return data;
     }
 
+    async function fetchInvocationStepStateDetails(params: FetchParams): Promise<WorkflowInvocationStepStatesView> {
+        const { data, error } = await GalaxyApi().GET("/api/invocations/{invocation_id}", {
+            params: { path: { invocation_id: params.id }, view: "step_states" },
+        });
+        if (error) {
+            rethrowSimple(error);
+        }
+        return data;
+    }
+
     const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =
         useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+
+    const { getItemById: getInvocationWithStepStatesById, fetchItemById: fetchInvocationWithStepStatesForId } =
+        useKeyedCache<WorkflowInvocation>(fetchInvocationStepStateDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
@@ -52,5 +70,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         fetchInvocationJobsSummaryForId,
         getInvocationStepById,
         fetchInvocationStepById,
+        getInvocationWithStepStatesById,
+        fetchInvocationWithStepStatesForId,
     };
 });

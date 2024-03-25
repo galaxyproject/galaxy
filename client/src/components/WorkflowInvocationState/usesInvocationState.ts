@@ -7,11 +7,15 @@ import { isTerminal, jobCount } from "./util";
 
 type OptionalInterval = ReturnType<typeof setInterval> | null;
 
-export function useInvocationState(invocationId: Ref<string>) {
+export function useInvocationState(invocationId: Ref<string>, fetchMinimal: boolean = false) {
     const invocationStore = useInvocationStore();
 
     const invocation = computed(() => {
-        return invocationStore.getInvocationById(invocationId.value);
+        if (fetchMinimal) {
+            return invocationStore.getInvocationWithStepStatesById(invocationId.value);
+        } else {
+            return invocationStore.getInvocationById(invocationId.value);
+        }
     });
 
     let stepStatesInterval: OptionalInterval = null;
@@ -47,7 +51,11 @@ export function useInvocationState(invocationId: Ref<string>) {
 
     async function pollStepStatesUntilTerminal() {
         if (!invocation.value || !invocationSchedulingTerminal.value) {
-            await invocationStore.fetchInvocationForId({ id: invocationId.value });
+            if (fetchMinimal) {
+                await invocationStore.fetchInvocationWithStepStatesForId({ id: invocationId.value });
+            } else {
+                await invocationStore.fetchInvocationForId({ id: invocationId.value });
+            }
             stepStatesInterval = setTimeout(pollStepStatesUntilTerminal, 3000);
         }
     }

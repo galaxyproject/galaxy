@@ -9020,11 +9020,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         return invocation_attrs
 
     def to_dict(self, view="collection", value_mapper=None, step_details=False, legacy_job_state=False):
-        rval = super().to_dict(view=view, value_mapper=value_mapper)
+        base_view = view if view != "step_states" else "collection"
+        rval = super().to_dict(view=base_view, value_mapper=value_mapper)
         if rval["state"] is None:
             # bugs could result in no state being set
             rval["state"] = self.states.FAILED
-        if view == "element":
+        if view in ["element", "step_states"]:
             steps = []
             for step in self.steps:
                 if step_details:
@@ -9046,7 +9047,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                     v["implicit_collection_jobs_id"] = step.implicit_collection_jobs_id
                     steps.append(v)
             rval["steps"] = steps
-
+        if view == "element":
             inputs = {}
             for input_item_association in self.input_datasets + self.input_dataset_collections:
                 if input_item_association.history_content_type == "dataset":
