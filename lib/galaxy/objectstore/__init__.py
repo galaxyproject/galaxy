@@ -995,7 +995,7 @@ class NestedObjectStore(BaseObjectStore):
         return self._call_method("_get_concrete_store_badges", obj, [], False)
 
     def _is_private(self, obj):
-        return self._call_method("_is_private", obj, ObjectNotFound, True)
+        return self._call_method("_is_private", obj, False, False)
 
     def _get_store_by(self, obj):
         return self._call_method("_get_store_by", obj, None, False)
