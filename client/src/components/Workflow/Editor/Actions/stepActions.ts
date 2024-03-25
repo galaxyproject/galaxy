@@ -1,6 +1,5 @@
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
-import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
-import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
+import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
 import { WorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { NewStep, Step, WorkflowStepStore } from "@/stores/workflowStepStore";
