@@ -6270,16 +6270,17 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
         while ":" in depth_collection_type:
             nesting_level += 1
-            inner_dc = alias(DatasetCollection)
             inner_dce = alias(DatasetCollectionElement)
+            inner_dc = alias(DatasetCollection)
             order_by_columns.append(inner_dce.c.element_index)
-            q = q.join(
-                inner_dc, and_(inner_dc.c.id == dce.c.child_collection_id, dce.c.dataset_collection_id == dc.c.id)
-            ).outerjoin(inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id)
-            q = q.add_columns(
-                *attribute_columns(inner_dce.c, element_attributes, nesting_level),
-                *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
-            )
+            q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
+            if collection_attributes:
+                q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
+            q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
+            if collection_attributes:
+                q = q.add_columns(
+                    *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
+                )
             dce = inner_dce
             dc = inner_dc
             depth_collection_type = depth_collection_type.split(":", 1)[1]

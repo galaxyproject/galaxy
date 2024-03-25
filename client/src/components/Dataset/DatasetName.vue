@@ -33,10 +33,6 @@ const isPaused = computed(() => {
 function copyDataset() {
     emit("copyDataset", props.item);
 }
-
-function showDataset() {
-    emit("showDataset", props.item);
-}
 </script>
 
 <template>
@@ -65,12 +61,6 @@ function showDataset() {
         </BLink>
 
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a class="dropdown-item" href="#" @click.prevent="showDataset">
-                <FontAwesomeIcon :icon="faEye" class="mr-1" />
-
-                <span>Show in History containing dataset</span>
-            </a>
-
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
                 <FontAwesomeIcon :icon="faCopy" class="mr-1" />
 
