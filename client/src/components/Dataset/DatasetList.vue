@@ -8,8 +8,8 @@ import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
-import DatasetHistory from "@/components/Dataset/DatasetHistory.vue";
 import DatasetName from "@/components/Dataset/DatasetName.vue";
+import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -185,7 +185,9 @@ onMounted(() => {
             </template>
 
             <template v-slot:cell(history_id)="row">
-                <DatasetHistory :item="row.item" />
+                <SwitchToHistoryLink
+                    :history-id="row.item.history_id"
+                    :filters="{ deleted: row.item.deleted, visible: row.item.visible, hid: row.item.hid }" />
             </template>
 
             <template v-slot:cell(tags)="row">
