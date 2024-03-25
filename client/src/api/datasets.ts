@@ -62,7 +62,7 @@ export async function undeleteHistoryDataset(datasetId: string) {
 
 const deleteDataset = fetcher.path("/api/datasets/{dataset_id}").method("delete").create();
 
-export async function purgeHistoryDataset(datasetId: string) {
+export async function purgeDataset(datasetId: string) {
     const { data } = await deleteDataset({ dataset_id: datasetId, purge: true });
     return data;
 }
