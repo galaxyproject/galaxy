@@ -1,5 +1,4 @@
-import { UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
-import { LazyUndoRedoAction } from "@/stores/undoRedoStore/undoRedoAction";
+import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
