@@ -9,7 +9,7 @@ import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { type ItemSizeSummary, purgeDatasetById, undeleteDatasetById } from "./service";
 
 interface DataLoader {
-    (): Promise<undefined>;
+    (): Promise<void>;
 }
 
 interface DataReload {
