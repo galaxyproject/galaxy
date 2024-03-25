@@ -50,13 +50,13 @@ Enhancements
 * Add magres datatype
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 17499`_
-* add encode ID API endpoint
+* Add encode ID API endpoint
   (thanks to `@mira-miracoli <https://github.com/mira-miracoli>`__).
   `Pull Request 17510`_
 * Fixing data_source tools and incrementing tool profile
   (thanks to `@wm75 <https://github.com/wm75>`__).
   `Pull Request 17515`_
-* add npy datatype
+* Add npy datatype
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 17517`_
 * Add basic TIFF Image visualization
@@ -297,13 +297,13 @@ Enhancements
 * New Activity bar - Notifications
   (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
   `Pull Request 17300`_
-* fix s3fs templating
+* Fix s3fs templating
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 17311`_
 * Document SQLAlchemy session lifespan
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17322`_
-* add documentation for data source tool
+* Add documentation for data source tool
   (thanks to `@PlushZ <https://github.com/PlushZ>`__).
   `Pull Request 17327`_
 * Custom Multiselect
@@ -345,7 +345,7 @@ Enhancements
 * UI for "relocating" a dataset to a new object store (when safe)
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 17437`_
-* freeze (make sticky) header row in tabular files
+* Freeze (make sticky) header row in tabular files
   (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
   `Pull Request 17455`_
 * Move Activity Bar Settings to Activity
@@ -399,7 +399,7 @@ Enhancements
 * Add `image_diff` comparison method for test output verification using images
   (thanks to `@kostrykin <https://github.com/kostrykin>`__).
   `Pull Request 17556`_
-* add shm_size based on ShmSize
+* Add shm_size based on ShmSize
   (thanks to `@richard-burhans <https://github.com/richard-burhans>`__).
   `Pull Request 17565`_
 * Update Python dependencies
@@ -413,7 +413,7 @@ Enhancements
 * Drop release notes webhook
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 17675`_
-* port invocation API to fastapi
+* Port invocation API to fastapi
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 16707`_
 * SQLAlchemy 2.0 upgrades (part 5)
@@ -566,7 +566,7 @@ Fixes
 * Fix for converter tests
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 17188`_
-* correct dbkey for minerva display app
+* Correct dbkey for minerva display app
   (thanks to `@hexylena <https://github.com/hexylena>`__).
   `Pull Request 17196`_
 .. bug_tag_tools

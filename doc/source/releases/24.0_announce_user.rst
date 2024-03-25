@@ -93,7 +93,7 @@ Datatypes
 * Add magres datatype
   (thanks to `@martenson <https://github.com/martenson>`__).
   `Pull Request 17499`_
-* add npy datatype
+* Add npy datatype
   (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
   `Pull Request 17517`_
 
