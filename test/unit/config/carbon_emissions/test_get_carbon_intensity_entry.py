@@ -1,4 +1,4 @@
-from galaxy.carbon_emissions import get_carbon_intensity_entry
+from galaxy.config.carbon_emissions import get_carbon_intensity_entry
 
 
 def test_get_carbon_intensity_entry():
