@@ -10910,7 +10910,7 @@ HistoryDatasetAssociation.table = Table(
     Column("blurb", TrimmedString(255)),
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
-    Column("extension", TrimmedString(64)),
+    Column("extension", TrimmedString(64), index=True),
     Column("metadata", MetadataType, key="_metadata"),
     Column("metadata_deferred", Boolean, key="metadata_deferred"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
