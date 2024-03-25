@@ -1514,8 +1514,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
 
     job_stdio = galaxy_interactor.get_job_stdio(job["id"])
 
-    assert data_list or data_collection_list, "Tool produced no output datasets or collections"
-
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
@@ -1547,23 +1545,29 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             # Legacy - fall back on ordered data list access if data_list is
             # just a list (case with twill variant or if output changes its
             # name).
-            if hasattr(data_list, "values"):
-                output_data = list(data_list.values())[output_index]
-            else:
-                output_data = data_list[len(data_list) - len(testdef.outputs) + output_index]
-        assert output_data is not None
-        try:
-            galaxy_interactor.verify_output(
-                history,
-                jobs,
-                output_data,
-                output_testdef=output_testdef,
-                tool_id=job["tool_id"],
-                maxseconds=maxseconds,
-                tool_version=testdef.tool_version,
-            )
-        except Exception as e:
-            register_exception(e)
+            try:
+                if hasattr(data_list, "values"):
+                    output_data = list(data_list.values())[output_index]
+                else:
+                    output_data = data_list[len(data_list) - len(testdef.outputs) + output_index]
+            except IndexError:
+                pass
+        if output_data:
+            try:
+                galaxy_interactor.verify_output(
+                    history,
+                    jobs,
+                    output_data,
+                    output_testdef=output_testdef,
+                    tool_id=job["tool_id"],
+                    maxseconds=maxseconds,
+                    tool_version=testdef.tool_version,
+                )
+            except Exception as e:
+                register_exception(e)
+        else:
+            error = AssertionError(f"Tool did not produce an output with name '{name}' (or at index {output_index})")
+            register_exception(error)
 
     other_checks = {
         "command_line": "Command produced by the job",
