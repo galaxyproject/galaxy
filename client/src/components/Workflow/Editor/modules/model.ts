@@ -21,12 +21,7 @@ export interface Workflow {
  * @param appendData if true appends data to current workflow, making sure to create new uuids
  * @param defaultPosition where to position workflow in the editor
  */
-export async function fromSimple(
-    id: string,
-    data: Workflow,
-    appendData = false,
-    defaultPosition = { top: 0, left: 0 }
-) {
+export function fromSimple(id: string, data: Workflow, appendData = false, defaultPosition = { top: 0, left: 0 }) {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
 

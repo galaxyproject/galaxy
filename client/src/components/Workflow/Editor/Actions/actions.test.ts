@@ -18,6 +18,7 @@ import {
     LazyMoveMultipleAction,
 } from "./commentActions";
 import { mockComment, mockWorkflow } from "./mockData";
+import { CopyIntoWorkflowAction, LazySetValueAction } from "./workflowActions";
 
 const workflowId = "mock-workflow";
 
@@ -122,6 +123,27 @@ describe("Workflow Undo Redo Actions", () => {
                     { x: 0, y: 0 },
                     { x: 500, y: 500 }
                 );
+                testUndoRedo(action);
+            });
+        });
+
+        describe("Workflow Actions", () => {
+            it("LazySetValueAction", () => {
+                const setValueCallback = (tags: string[]) => {
+                    workflow.tags = tags;
+                };
+
+                const showCanvasCallback = jest.fn();
+
+                const action = new LazySetValueAction([], ["hello", "world"], setValueCallback, showCanvasCallback);
+                testUndoRedo(action);
+
+                expect(showCanvasCallback).toBeCalledTimes(2);
+            });
+
+            it("CopyIntoWorkflowAction", () => {
+                const other = mockWorkflow();
+                const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
                 testUndoRedo(action);
             });
         });

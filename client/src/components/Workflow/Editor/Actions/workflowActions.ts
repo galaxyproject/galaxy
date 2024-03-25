@@ -102,11 +102,11 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         return `Copy ${this.data.name} into workflow`;
     }
 
-    async run() {
+    run() {
         const commentIdsBefore = new Set(this.commentStore.comments.map((comment) => comment.id));
         const stepIdsBefore = new Set(Object.values(this.stepStore.steps).map((step) => step.id));
 
-        await fromSimple(this.workflowId, structuredClone(this.data), true, structuredClone(this.position));
+        fromSimple(this.workflowId, structuredClone(this.data), true, structuredClone(this.position));
 
         const commentIdsAfter = this.commentStore.comments.map((comment) => comment.id);
         const stepIdsAfter = Object.values(this.stepStore.steps).map((step) => step.id);
@@ -115,7 +115,7 @@ export class CopyIntoWorkflowAction extends UndoRedoAction {
         this.newStepIds = stepIdsAfter.filter((id) => !stepIdsBefore.has(id));
     }
 
-    async redo() {
+    redo() {
         fromSimple(this.workflowId, structuredClone(this.data), true, structuredClone(this.position));
     }
 
