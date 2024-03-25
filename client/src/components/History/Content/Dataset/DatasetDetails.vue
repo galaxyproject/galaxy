@@ -8,6 +8,7 @@ import { useDatasetStore } from "@/stores/datasetStore";
 import { type ItemUrls } from ".";
 
 import DatasetActions from "./DatasetActions.vue";
+import DatasetMiscInfo from "./DatasetMiscInfo.vue";
 
 const datasetStore = useDatasetStore();
 
@@ -56,9 +57,7 @@ function toggleHighlights() {
                             result.genome_build
                         }}</BLink>
                     </span>
-                    <div v-if="result.misc_info" class="info">
-                        <span class="value">{{ result.misc_info }}</span>
-                    </div>
+                    <DatasetMiscInfo v-if="result.misc_info" :misc-info="result.misc_info" />
                 </div>
                 <DatasetActions
                     :item="result"
