@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -41,6 +42,11 @@ router = Router(tags=["dataset collections"])
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
     default="history",
     description="The type of collection instance. Either `history` (default) or `library`.",
+)
+
+ViewTypeQueryParam: str = Query(
+    default="element",
+    description="The view of collection instance to return.",
 )
 
 
@@ -104,8 +110,9 @@ class FastAPIDatasetCollections:
         id: HistoryHDCAIDPathParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
-    ) -> HDCADetailed:
-        return self.service.show(trans, id, instance_type)
+        view: str = ViewTypeQueryParam,
+    ) -> AnyHDCA:
+        return self.service.show(trans, id, instance_type, view=view)
 
     @router.get(
         "/api/dataset_collections/{hdca_id}/contents/{parent_id}",
