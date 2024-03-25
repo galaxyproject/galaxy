@@ -182,7 +182,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
-import { logicOr } from "@vueuse/math";
+import { logicAnd, logicNot, logicOr } from "@vueuse/math";
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
@@ -278,8 +278,11 @@ export default {
         const { undo, redo } = undoRedoStore;
         const { ctrl_z, ctrl_shift_z, meta_z, meta_shift_z } = useMagicKeys();
 
-        whenever(logicOr(ctrl_z, meta_z), undo);
-        whenever(logicOr(ctrl_shift_z, meta_shift_z), redo);
+        const undoKeys = logicOr(ctrl_z, meta_z);
+        const redoKeys = logicOr(ctrl_shift_z, meta_shift_z);
+
+        whenever(logicAnd(undoKeys, logicNot(redoKeys)), undo);
+        whenever(redoKeys, redo);
 
         const isCanvas = ref(true);
 
