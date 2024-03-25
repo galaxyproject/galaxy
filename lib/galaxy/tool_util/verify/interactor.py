@@ -1500,9 +1500,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         if testdef.outputs:
             raise Exception("Cannot specify outputs in a test expecting failure.")
 
-    if not data_list and not data_collection_list:
-        Exception("Job did not produce any outputs")
-
     maxseconds = testdef.maxseconds
     # Wait for the job to complete and register expections if the final
     # status was not what test was expecting.
@@ -1516,9 +1513,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
 
     job_stdio = galaxy_interactor.get_job_stdio(job["id"])
 
-    if not (data_list or data_collection_list):
-        error = AssertionError("Tool produced no output datasets or collections")
-        register_exception(error)
+    assert data_list or data_collection_list, "Tool produced no output datasets or collections"
 
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs
