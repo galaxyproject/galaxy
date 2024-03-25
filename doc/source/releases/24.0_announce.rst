@@ -45,7 +45,18 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 Administration Notes
 ===========================================================
 
-[TODO: add items or drop section if none]
+* A new built-in tool has been added: "Harmonize two collections". It takes two collections as input. Outputs are two collections with the same identifiers, with identifiers that are specific to one or the other removed. The tool creates new history datasets from the collection, but the user's quota usage does not increase. ( #16662)
+* A new object store plugin for the Rucio data management system has been added. (#17156)
+* The wig_to_bigWig tool removed; replaced by Wigbigwig. (#17328)
+* Notification Broadcasts Admin Panel has been enhanced. (#17090)
+* Setting dataset permissions for typical users has been simplified. (#17166)
+* When a user is deleted, all active user jobs will be canceled. (#17390)
+* Job resubmissions have been enabled in the k8s runner. (#17324)
+* Documentation has been added for tool panel and panel view administration. (#17078)
+* Documentation has been added on how to use vault keys in file sources. (#17498)
+* The release notes webhook has been dropped in favor of utilizing the notification system. (#17675)
+* Python 3.8 is now a minimum requirement. (#16954)
+* Python 3.12 is now supported. (#16796)
 
 Configuration Changes
 ===========================================================
