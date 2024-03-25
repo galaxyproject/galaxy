@@ -56,7 +56,7 @@ jobs:
             package_path=`echo $line | sed -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|'`
             if [ -d "$package_path" ]; then
               # This is a local package. Replace it with the path to the local wheel
-              row=`find $package_path/dist -type d -exec find {} -depth -maxdepth 1 -type f -name '*.whl' -print -quit \;`
+              row=`find $package_path/dist -type f -name '*.whl'`
             else
               # pass original requirement line unchanged
               row="$line"
