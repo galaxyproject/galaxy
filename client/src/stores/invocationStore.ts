@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 
 import {
     fetchInvocationDetails,
+    fetchInvocationStepStateDetails,
     fetchInvocationJobsSummary,
     fetchInvocationStep,
     type WorkflowInvocation,
@@ -13,6 +14,9 @@ import { useKeyedCache } from "@/composables/keyedCache";
 export const useInvocationStore = defineStore("invocationStore", () => {
     const { getItemById: getInvocationById, fetchItemById: fetchInvocationForId } =
         useKeyedCache<WorkflowInvocation>(fetchInvocationDetails);
+
+    const { getItemById: getInvocationWithStepStatesById, fetchItemById: fetchInvocationWithStepStatesForId } =
+        useKeyedCache<WorkflowInvocation>(fetchInvocationStepStateDetails);
 
     const { getItemById: getInvocationJobsSummaryById, fetchItemById: fetchInvocationJobsSummaryForId } =
         useKeyedCache<InvocationJobsSummary>(fetchInvocationJobsSummary);
@@ -27,5 +31,7 @@ export const useInvocationStore = defineStore("invocationStore", () => {
         fetchInvocationJobsSummaryForId,
         getInvocationStepById,
         fetchInvocationStepById,
+        getInvocationWithStepStatesById,
+        fetchInvocationWithStepStatesForId,
     };
 });

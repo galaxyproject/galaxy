@@ -22,7 +22,7 @@ const {
     jobStatesSummary,
     monitorState,
     clearStateMonitor,
-} = useInvocationState(toRef(props, "invocationId"));
+} = useInvocationState(toRef(props, "invocationId"), true);
 
 onMounted(monitorState);
 onBeforeUnmount(clearStateMonitor);

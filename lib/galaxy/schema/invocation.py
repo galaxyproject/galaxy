@@ -566,6 +566,10 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
     model_class: INVOCATION_MODEL_CLASS = ModelClassField(INVOCATION_MODEL_CLASS)
 
 
+class WorkflowInvocationStepStatesView(WorkflowInvocationCollectionView):
+    steps: List[InvocationStep] = Field(default=..., title="Steps", description="Steps of the workflow invocation.")
+
+
 class BaseWorkflowInvocationElementView(WorkflowInvocationCollectionView):
     inputs: Dict[str, InvocationInput] = Field(
         default=..., title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
@@ -603,7 +607,12 @@ class WorkflowInvocationElementView(BaseWorkflowInvocationElementView):
 
 class WorkflowInvocationResponse(RootModel):
     root: Annotated[
-        Union[WorkflowInvocationElementView, LegacyWorkflowInvocationElementView, WorkflowInvocationCollectionView],
+        Union[
+            WorkflowInvocationElementView,
+            LegacyWorkflowInvocationElementView,
+            WorkflowInvocationCollectionView,
+            WorkflowInvocationStepStatesView,
+        ],
         Field(union_mode="left_to_right"),
     ]
 
@@ -614,6 +623,8 @@ class WorkflowInvocationResponse(RootModel):
         # performant, and will likely yield clearer error messages.
         if view == InvocationSerializationView.collection:
             root = WorkflowInvocationCollectionView(**as_dict)
+        elif view == InvocationSerializationView.step_states:
+            root = WorkflowInvocationStepStatesView(**as_dict)
         elif legacy_job_state:
             root = LegacyWorkflowInvocationElementView(**as_dict)
         else:
@@ -658,6 +669,7 @@ class CreateInvocationFromStore(StoreContentSource):
 class InvocationSerializationView(str, Enum):
     element = "element"
     collection = "collection"
+    step_states = "step_states"  # collection + steps - for monitoring, lighter than element
 
 
 class InvocationSerializationParams(BaseModel):

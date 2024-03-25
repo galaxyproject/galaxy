@@ -7869,7 +7869,7 @@ export interface components {
          * InvocationSerializationView
          * @enum {string}
          */
-        InvocationSerializationView: "element" | "collection";
+        InvocationSerializationView: "element" | "collection" | "step_states";
         /**
          * InvocationSortByEnum
          * @enum {string}
@@ -12917,7 +12917,8 @@ export interface components {
         WorkflowInvocationResponse:
             | components["schemas"]["WorkflowInvocationElementView"]
             | components["schemas"]["LegacyWorkflowInvocationElementView"]
-            | components["schemas"]["WorkflowInvocationCollectionView"];
+            | components["schemas"]["WorkflowInvocationCollectionView"]
+            | components["schemas"]["WorkflowInvocationStepStatesView"];
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
@@ -12944,6 +12945,60 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
+        };
+        /** WorkflowInvocationStepStatesView */
+        WorkflowInvocationStepStatesView: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "WorkflowInvocation";
+            /**
+             * Invocation state
+             * @description State of workflow invocation.
+             */
+            state: components["schemas"]["InvocationState"];
+            /**
+             * Steps
+             * @description Steps of the workflow invocation.
+             */
+            steps: components["schemas"]["InvocationStep"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow invocation.
+             */
+            uuid?: string | string | null;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -18602,6 +18657,7 @@ export interface operations {
     show_invocation_api_invocations__invocation_id__get: {
         /** Get detailed description of a workflow invocation. */
         parameters: {
+            /** @description View to be passed to the serializer */
             /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
             /**
              * @description Populate the invocation step state with the job state instead of the invocation step state.
@@ -18610,6 +18666,7 @@ export interface operations {
              *         are not the mapped over step outputs but the individual job outputs.
              */
             query?: {
+                view?: string | null;
                 step_details?: boolean;
                 legacy_job_state?: boolean;
             };

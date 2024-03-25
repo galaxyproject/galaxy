@@ -6,12 +6,16 @@ import { ApiResponse, components, fetcher } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
+export type WorkflowInvocationStepStatesView = components["schemas"]["WorkflowInvocationStepStatesView"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
 
 export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
 
-export type WorkflowInvocation = WorkflowInvocationElementView | WorkflowInvocationCollectionView;
+export type WorkflowInvocation =
+    | WorkflowInvocationElementView
+    | WorkflowInvocationCollectionView
+    | WorkflowInvocationStepStatesView;
 
 export interface WorkflowInvocationStep {
     id: string;
@@ -32,6 +36,15 @@ export async function fetchInvocationDetails(params: { id: string }): Promise<Ap
     return {
         data,
     } as ApiResponse<WorkflowInvocation>;
+}
+
+export async function fetchInvocationStepStateDetails(params: {
+    id: string;
+}): Promise<ApiResponse<WorkflowInvocationStepStatesView>> {
+    const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}?view=step_states`);
+    return {
+        data,
+    } as ApiResponse<WorkflowInvocationStepStatesView>;
 }
 
 export async function fetchInvocationJobsSummary(params: { id: string }): Promise<ApiResponse<InvocationJobsSummary>> {
