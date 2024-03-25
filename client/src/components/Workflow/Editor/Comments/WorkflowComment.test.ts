@@ -3,7 +3,7 @@ import { mount, shallowMount } from "@vue/test-utils";
 import { setActivePinia } from "pinia";
 import { nextTick } from "vue";
 
-import { UndoRedoAction } from "@/stores/undoRedoStore";
+import type { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
 import type { TextWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import MarkdownComment from "./MarkdownComment.vue";
@@ -31,7 +31,10 @@ jest.mock("@/composables/workflowStores", () => ({
         },
         undoRedoStore: {
             applyAction: (action: UndoRedoAction) => action.run(),
-            applyLazyAction: jest.fn(),
+            applyLazyAction: (action: LazyUndoRedoAction) => {
+                action.queued();
+                action.run();
+            },
         },
     }),
 }));
