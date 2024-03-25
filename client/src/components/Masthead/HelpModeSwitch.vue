@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 
-import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
+import localize from "@/utils/localization";
 
-const tooltip = "Enable/Disable Help Mode";
-const { status } = storeToRefs(useHelpModeStatusStore());
+library.add(faQuestionCircle);
+
+const tooltip = localize("Enable/Disable Help Mode");
+const { status } = storeToRefs(useHelpModeStore());
 function toggleEnabledStatus() {
     status.value = !status.value;
 }
@@ -13,20 +19,24 @@ function toggleEnabledStatus() {
 <template>
     <div>
         <button
+            v-b-tooltip.hover.bottom
             class="help-mode-button"
             :class="{ highlight: status }"
             :title="tooltip"
             :aria-label="tooltip"
             @click="toggleEnabledStatus"
             @keydown.enter="toggleEnabledStatus">
-            <i class="fas fa-question-circle fa-lg" :class="{ highlight: status }"> </i> Help Me
+            <!-- <i class="fas fa-question-circle fa-lg" :class="{ highlight: status }"> </i> Help Me -->
+            <FontAwesomeIcon :icon="faQuestionCircle" :class="{ highlight: status }" size="lg" /> Help Me
         </button>
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
 .highlight {
-    color: yellow;
+    color: var(--masthead-text-hover);
 }
 .help-mode-button {
     background-color: inherit;
@@ -36,6 +46,6 @@ function toggleEnabledStatus() {
     outline: none;
 }
 .help-mode-button.highlight {
-    color: yellow;
+    color: var(--masthead-text-hover);
 }
 </style>

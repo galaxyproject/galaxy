@@ -4,7 +4,7 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
-import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -16,7 +16,7 @@ import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
-const { status: helpModeStatus } = storeToRefs(useHelpModeStatusStore());
+const { status: helpModeStatus } = storeToRefs(useHelpModeStore());
 
 // methods
 function hideCenter() {

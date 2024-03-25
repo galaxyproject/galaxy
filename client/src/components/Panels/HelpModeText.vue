@@ -1,86 +1,122 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
-import { BButton } from "bootstrap-vue";
-import MarkdownIt from "markdown-it";
+import { BButton, BTab, BTabs } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref, watch } from "vue";
+import { reactive, ref, watch } from "vue";
 
-import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
-import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
+import { useMarkdown } from "@/composables/markdown";
+import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
+import { DEFAULT_HELP_TEXT, useHelpModeStore } from "@/stores/helpmode/helpModeStore";
+import localize from "@/utils/localization";
 
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
-library.add(faTimes);
+library.add(faTimes, faUndo);
 
-const md = MarkdownIt();
+const { renderMarkdown } = useMarkdown({
+    openLinksInNewPage: true,
+    html: true,
+    appendHrRuleToDetails: true,
+    replaceCodeWithIcon: true,
+});
 
 // local refs
-const { content, loading } = storeToRefs(useHelpModeTextStore());
-const { status, position } = storeToRefs(useHelpModeStatusStore());
+const { status, position, helpModeStyle, activeTab, contents, loading, currentTabs } = storeToRefs(useHelpModeStore());
 const el = ref<HTMLElement | null>(null);
 const helpModeHeader = ref<HTMLElement | null>(null);
-const helpTextRef = ref(null);
+const helpModeSize = reactive(useAnimationFrameSize(el));
 
-// local computed refs
-const helpText = computed({
-    get() {
-        return md.render(content.value);
-    },
-    set() {
-        //do nothing, this is set in components that add helptext
-    },
-});
+const noHelpTextMsg = localize("No help text available for this component");
 
 // draggable properties
-const {
-    x: dragX,
-    y: dragY,
-    style,
-} = useDraggable(helpModeHeader, {
-    initialValue: position.value,
-});
-// watch both x and y, and do something if they change:
+const { style } = useDraggable(helpModeHeader, { initialValue: position.value });
+
+// update store position on drag
 watch(
-    () => [dragX.value, dragY.value],
-    ([newX, newY]) => {
-        if (newX && newY) {
-            position.value = { x: newX, y: newY };
+    () => style.value,
+    (newStyle) => {
+        if (newStyle) {
+            // TODO: This might be a little hacky?...
+            // convert str of form "left:{...}px;top:{...}px;" to
+            // extract left and top and place in helpModeStyle
+            const [left, top] = newStyle.split(";");
+            let leftVal = left?.split(":")[1];
+            let topVal = top?.split(":")[1];
+            if (parseInt(leftVal || "") < 0) {
+                leftVal = "0";
+            }
+            if (parseInt(topVal || "") < 0) {
+                topVal = "0";
+            }
+            helpModeStyle.value = {
+                ...helpModeStyle.value,
+                left: leftVal,
+                top: topVal,
+            };
         }
     }
 );
 
-onMounted(() => {
-    const links = (helpTextRef.value as unknown as HTMLElement).querySelectorAll("a");
-    links.forEach((link: HTMLAnchorElement) => {
-        link.setAttribute("target", "_blank");
-    });
-});
+// update store dimensions on resize
+watch(
+    () => [helpModeSize.width, helpModeSize.height],
+    ([newWidth, newHeight]) => {
+        if (newWidth && newHeight) {
+            helpModeStyle.value = {
+                ...helpModeStyle.value,
+                width: `${newWidth}px`,
+                height: `${newHeight}px`,
+            };
+        }
+    }
+);
+
+/** Reset the position of the help mode to default */
+function resetPosition() {
+    helpModeStyle.value = {
+        width: "25%",
+        height: "30%",
+        left: "0",
+        top: "0",
+    };
+}
 </script>
 
 <template>
-    <div ref="el" :style="style" class="help-text unified-panel-body d-flex justify-content-between">
-        <div ref="helpModeHeader" class="header">
+    <div ref="el" :style="[style, helpModeStyle]" class="help-text justify-content-between">
+        <div ref="helpModeHeader" class="header unselectable">
             <Heading h4 inline size="sm" class="flex-grow-1 mx-2">Galaxy Help Mode</Heading>
-            <BButton class="close-button" size="sm" @click="status = false">
+            <BButton size="sm" @click="resetPosition">
+                <FontAwesomeIcon :icon="faUndo" />
+            </BButton>
+            <BButton size="sm" @click="status = false">
                 <FontAwesomeIcon :icon="faTimes" />
             </BButton>
         </div>
-        <!-- eslint-disable-next-line vue/no-v-html -->
-        <div v-if="!loading" ref="helpTextRef" class="help-mode-container" v-html="helpText" />
-        <LoadingSpan v-else message="Loading help text" />
+        <span v-if="!activeTab" v-localize class="help-mode-container">{{ DEFAULT_HELP_TEXT }}</span>
+        <BTabs v-else class="help-mode-container">
+            <BTab v-for="helpId of currentTabs" :key="helpId" :active="activeTab === helpId">
+                <template v-slot:title>
+                    <FontAwesomeIcon v-if="contents[helpId]?.icon" :icon="contents[helpId]?.icon" />
+                    {{ contents[helpId]?.title }}
+                </template>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div v-if="!loading" v-html="renderMarkdown(contents[helpId]?.content || noHelpTextMsg)" />
+                <LoadingSpan v-else message="Loading help text" />
+            </BTab>
+        </BTabs>
     </div>
 </template>
 
 <style scoped lang="scss">
+// TODO: Maybe use predefined variables for colors and sizes?
 .help-text {
     display: flex;
     flex-direction: column;
-    width: 25% !important;
-    height: 30% !important;
     z-index: 9999;
     background-color: aliceblue;
     border-color: black;
@@ -89,6 +125,8 @@ onMounted(() => {
     border: solid;
     opacity: 90%;
     position: fixed;
+    resize: both;
+    overflow: auto;
 }
 .header {
     display: flex;
@@ -98,7 +136,6 @@ onMounted(() => {
     align-items: center;
     border-bottom: 2px solid #868686;
     cursor: move;
-    /* padding-bottom: 10px; */
 }
 .help-mode-container {
     margin-top: 0;
