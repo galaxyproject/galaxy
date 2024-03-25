@@ -50,8 +50,17 @@ jobs:
           # create local release
           echo "c" | ./scripts/release.sh -l
           # make requirements point to local wheels
-          sed -i'' -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1/dist/\*.whl|' tpv/requirements_test.txt
-          cat tpv/requirements_test.txt
+          while read -r line; do
+            package_path=`echo $line | sed -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|'`
+            if [ -d $package_path ]; then
+              row=`find $package_path/dist -type d -exec find {} -depth -maxdepth 1 -type f -name '*.whl' -print -quit \;`
+            else
+              row=$line
+            fi
+            echo $row >> tpv/requirements_local.txt
+          done < "$file"
+          cat tpv/requirements_local.txt
+          mv tpv/requirements_local.txt tpv/requirements_test.txt
       - name: Install required packages
         run: pip install tox
       - name: Run tox
