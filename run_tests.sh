@@ -82,6 +82,19 @@ Run a selenium test against a running server while watching client (fastest iter
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
     pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
+To run the tool tests for a specific framework test tool
+listed in test/functional/tools/sample_tool_conf.xml.
+
+    ./run_tests.sh -framework -id <tool_id>
+
+If you'd like to skip this script and run it with pytest
+directly a command like the following can be used. Note
+the framework tools run with conda installation on but 99%
+of the tools do not require this so this example includes
+disabling that.
+
+    GALAXY_TEST_TOOL_CONF="test/functional/tools/sample_tool_conf.xml" GALAXY_CONFIG_OVERRIDE_CONDA_AUTO_INIT=false pytest test/functional/test_toolbox_pytest.py -k <tool_id> -m tool
+
 Note About Selenium Tests:
 
 If using a local selenium driver such as a Chrome or Firefox based one

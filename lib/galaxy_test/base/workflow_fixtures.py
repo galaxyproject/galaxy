@@ -1177,3 +1177,24 @@ steps:
           format: txt
           location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
 """
+
+
+WORKFLOW_FLAT_CROSS_PRODUCT = """
+class: GalaxyWorkflow
+inputs:
+  collection_a: collection
+  collection_b: collection
+steps:
+  cross_product:
+    tool_id: __CROSS_PRODUCT_FLAT__
+    in:
+      input_a:
+        collection_a
+      input_b:
+        collection_b
+outputs:
+  output_a:
+    outputSource: cross_product/output_a
+  output_b:
+    outputSource: cross_product/output_b
+"""

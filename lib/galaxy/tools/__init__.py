@@ -13,6 +13,7 @@ import tempfile
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
+    Any,
     cast,
     Dict,
     List,
@@ -3302,6 +3303,94 @@ class ZipCollectionTool(DatabaseOperationTool):
         self._add_datasets_to_history(history, [forward, reverse])
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
+        )
+
+
+class CrossProductFlatCollectionTool(DatabaseOperationTool):
+    tool_type = "cross_product_flat"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        input_a = incoming["input_a"]
+        input_b = incoming["input_b"]
+        join_identifier = incoming["join_identifier"]
+
+        output_a = {}
+        output_b = {}
+        all_copied_hdas = []
+
+        for input_a_dce in input_a.collection.elements:
+            element_identifier_a = input_a_dce.element_identifier
+            for input_b_dce in input_b.collection.elements:
+                element_identifier_b = input_b_dce.element_identifier
+                identifier = f"{element_identifier_a}{join_identifier}{element_identifier_b}"
+
+                hda_a_copy = input_a_dce.element_object.copy(copy_tags=input_a_dce.element_object.tags, flush=False)
+                hda_b_copy = input_b_dce.element_object.copy(copy_tags=input_b_dce.element_object.tags, flush=False)
+                all_copied_hdas.append(hda_a_copy)
+                all_copied_hdas.append(hda_b_copy)
+                output_a[identifier] = hda_a_copy
+                output_b[identifier] = hda_b_copy
+
+        self._add_datasets_to_history(history, all_copied_hdas)
+        output_collections.create_collection(
+            self.outputs["output_a"], "output_a", elements=output_a, propagate_hda_tags=False
+        )
+        output_collections.create_collection(
+            self.outputs["output_b"], "output_b", elements=output_b, propagate_hda_tags=False
+        )
+
+
+class CrossProductNestedCollectionTool(DatabaseOperationTool):
+    tool_type = "cross_product_nested"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        input_a = incoming["input_a"]
+        input_b = incoming["input_b"]
+
+        output_a = {}
+        output_b = {}
+        all_copied_hdas = []
+
+        for input_a_dce in input_a.collection.elements:
+            element_identifier_a = input_a_dce.element_identifier
+
+            iter_elements_a = {}
+            iter_elements_b = {}
+
+            for input_b_dce in input_b.collection.elements:
+                element_identifier_b = input_b_dce.element_identifier
+
+                hda_a_copy = input_a_dce.element_object.copy(copy_tags=input_a_dce.element_object.tags, flush=False)
+                hda_b_copy = input_b_dce.element_object.copy(copy_tags=input_b_dce.element_object.tags, flush=False)
+                all_copied_hdas.append(hda_a_copy)
+                all_copied_hdas.append(hda_b_copy)
+                iter_elements_a[element_identifier_b] = hda_a_copy
+                iter_elements_b[element_identifier_b] = hda_b_copy
+
+            sub_collection_a: Dict[str, Any] = {}
+            sub_collection_a["src"] = "new_collection"
+            sub_collection_a["collection_type"] = "list"
+            sub_collection_a["elements"] = iter_elements_a
+
+            output_a[element_identifier_a] = sub_collection_a
+
+            sub_collection_b: Dict[str, Any] = {}
+            sub_collection_b["src"] = "new_collection"
+            sub_collection_b["collection_type"] = "list"
+            sub_collection_b["elements"] = iter_elements_b
+
+            output_b[element_identifier_a] = sub_collection_b
+
+        self._add_datasets_to_history(history, all_copied_hdas)
+        output_collections.create_collection(
+            self.outputs["output_a"], "output_a", elements=output_a, propagate_hda_tags=False
+        )
+        output_collections.create_collection(
+            self.outputs["output_b"], "output_b", elements=output_b, propagate_hda_tags=False
         )
 
 
