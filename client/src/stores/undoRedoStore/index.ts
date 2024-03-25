@@ -4,7 +4,7 @@ import { defineScopedStore } from "@/stores/scopedStore";
 
 import { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
-export { UndoRedoAction } from "./undoRedoAction";
+export { LazyUndoRedoAction, UndoRedoAction } from "./undoRedoAction";
 
 export type UndoRedoStore = ReturnType<typeof useUndoRedoStore>;
 
