@@ -328,7 +328,7 @@ class InstallRepositoryManager:
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
-            clause_list.append(self.install_model.ToolShedRepository.table.c.id == tsr_id)
+            clause_list.append(self.install_model.ToolShedRepository.id == tsr_id)
         query = self.install_model.context.query(self.install_model.ToolShedRepository).filter(or_(*clause_list))
         return encoded_kwd, query, tool_shed_repositories, encoded_repository_ids
 

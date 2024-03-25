@@ -18,6 +18,7 @@ from sqlalchemy import (
     union,
     update,
 )
+from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
@@ -64,7 +65,7 @@ class NotificationManager:
         self.sa_session = sa_session
         self.config = config
         self.recipient_resolver = NotificationRecipientResolver(strategy=DefaultStrategy(sa_session))
-        self.user_notification_columns = [
+        self.user_notification_columns: List[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -77,7 +78,7 @@ class NotificationManager:
             UserNotificationAssociation.seen_time,
             UserNotificationAssociation.deleted,
         ]
-        self.broadcast_notification_columns = [
+        self.broadcast_notification_columns: List[InstrumentedAttribute] = [
             Notification.id,
             Notification.source,
             Notification.category,
@@ -126,7 +127,7 @@ class NotificationManager:
     def _send_to_users(self, notification: Notification, users: List[User]):
         # TODO: Move this potentially expensive operation to a task?
         for user in users:
-            if self._user_is_subscribed_to_notification(user, notification.category):
+            if self._user_is_subscribed_to_notification(user, notification.category):  # type:ignore[arg-type]
                 user_notification_association = UserNotificationAssociation(user, notification)
                 self.sa_session.add(user_notification_association)
 
@@ -199,8 +200,7 @@ class NotificationManager:
                 )
             )
         )
-        result = self.sa_session.execute(stmt).scalar()
-        return result
+        return self.sa_session.execute(stmt).scalar() or 0
 
     def get_broadcasted_notification(self, notification_id: int, active_only: Optional[bool] = True):
         stmt = (
@@ -275,8 +275,8 @@ class NotificationManager:
     def get_user_notification_preferences(self, user: User) -> UserNotificationPreferences:
         """Gets the user's current notification preferences or the default ones if no preferences are set."""
         current_notification_preferences = (
-            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]
-            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences
+            user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME]  # type:ignore[index]
+            if NOTIFICATION_PREFERENCES_SECTION_NAME in user.preferences  # type:ignore[operator]
             else None
         )
         try:
@@ -291,7 +291,7 @@ class NotificationManager:
         """Updates the user's notification preferences with the requested changes."""
         notification_preferences = self.get_user_notification_preferences(user)
         notification_preferences.update(request.preferences)
-        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.json()
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.json()  # type:ignore[index]
         with transaction(self.sa_session):
             self.sa_session.commit()
         return notification_preferences
@@ -304,7 +304,7 @@ class NotificationManager:
 
         expired_notifications_stmt = select(Notification.id).where(notification_has_expired)
         delete_stmt = delete(UserNotificationAssociation).where(
-            UserNotificationAssociation.notification_id.in_(expired_notifications_stmt.subquery())
+            UserNotificationAssociation.notification_id.in_(expired_notifications_stmt)
         )
         result = self.sa_session.execute(delete_stmt, execution_options={"synchronize_session": False})
         deleted_associations_count = result.rowcount
@@ -413,7 +413,7 @@ class DefaultStrategy(NotificationRecipientResolverStrategy):
         unique_user_ids.update(user_ids_from_groups_and_roles)
 
         stmt = select(User).where(User.id.in_(unique_user_ids))
-        return self.sa_session.scalars(stmt).all()
+        return self.sa_session.scalars(stmt).all()  # type:ignore[return-value]
 
     def _get_all_user_ids_from_roles_query(self, role_ids: Set[int]) -> Select:
         stmt = (

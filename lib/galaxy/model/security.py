@@ -80,22 +80,11 @@ class GalaxyRBACAgent(RBACAgent):
         intermed.sort()
         return [_[-1] for _ in intermed]
 
-    def _get_npns_roles(self, trans):
-        """
-        non-private, non-sharing roles
-        """
-        stmt = (
-            select(Role)
-            .where(and_(Role.deleted == false(), Role.type != Role.types.PRIVATE, Role.type != Role.types.SHARING))
-            .order_by(Role.name)
-        )
-        return trans.sa_session.scalars(stmt)
-
     def get_all_roles(self, trans, cntrller):
         admin_controller = cntrller in ["library_admin"]
         roles = set()
         if not trans.user:
-            return self._get_npns_roles(trans)
+            return get_npns_roles(trans.sa_session)
         if admin_controller:
             # The library is public and the user is an admin, so all roles are legitimate
             stmt = select(Role).where(Role.deleted == false()).order_by(Role.name)
@@ -108,7 +97,7 @@ class GalaxyRBACAgent(RBACAgent):
             for role in self.get_sharing_roles(trans.user):
                 roles.add(role)
             # Add all remaining non-private, non-sharing roles
-            for role in self._get_npns_roles(trans):
+            for role in get_npns_roles(trans.sa_session):
                 roles.add(role)
         return self.sort_by_attr(list(roles), "name")
 
@@ -189,7 +178,7 @@ class GalaxyRBACAgent(RBACAgent):
             for role in self.get_sharing_roles(trans.user):
                 roles.append(role)
             # Add all remaining non-private, non-sharing roles
-            for role in self._get_npns_roles(trans):
+            for role in get_npns_roles(trans.sa_session):
                 roles.append(role)
         # User will see all the roles derived from the access roles on the item
         else:
@@ -765,19 +754,9 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
-        stmt = select(Role).where(
-            and_(
-                UserRoleAssociation.user_id == user.id,
-                Role.id == UserRoleAssociation.role_id,
-                Role.type == Role.types.PRIVATE,
-            )
-        )
-        role = self.sa_session.execute(stmt).scalar_one_or_none()
-        if not role:
-            if auto_create:
-                return self.create_private_user_role(user)
-            else:
-                return None
+        role = get_private_user_role(user, self.sa_session)
+        if not role and auto_create:
+            role = self.create_private_user_role(user)
         return role
 
     def get_role(self, name, type=None):
@@ -1691,3 +1670,26 @@ def _walk_action_roles(permissions, query_action):
                 yield action, roles
         elif action == query_action.action and roles:
             yield action, roles
+
+
+def get_npns_roles(session):
+    """
+    non-private, non-sharing roles
+    """
+    stmt = (
+        select(Role)
+        .where(and_(Role.deleted == false(), Role.type != Role.types.PRIVATE, Role.type != Role.types.SHARING))
+        .order_by(Role.name)
+    )
+    return session.scalars(stmt)
+
+
+def get_private_user_role(user, session):
+    stmt = select(Role).where(
+        and_(
+            UserRoleAssociation.user_id == user.id,
+            Role.id == UserRoleAssociation.role_id,
+            Role.type == Role.types.PRIVATE,
+        )
+    )
+    return session.execute(stmt).scalar_one_or_none()

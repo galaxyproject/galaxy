@@ -10,8 +10,8 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import registry
+from sqlalchemy.sql.expression import FromClause
 
-from galaxy.model import _HasTable
 from galaxy.model.unittest_utils.mapping_testing_utils import (
     collection_consists_of_objects,
     has_index,
@@ -65,7 +65,7 @@ def test_collection_consists_of_objects(session):
     # contains wrong number of objects
     assert not collection_consists_of_objects([stored_foo1, stored_foo1, stored_foo2], foo1, foo2)
     # if an object's primary key is not set, it cannot be equal to another object
-    foo1.id, stored_foo1.id = None, None
+    foo1.id, stored_foo1.id = None, None  # type:ignore[assignment]
     assert not collection_consists_of_objects([stored_foo1], foo1)
 
 
@@ -75,14 +75,16 @@ mapper_registry = registry()
 
 
 @mapper_registry.mapped
-class Foo(_HasTable):
+class Foo:
+    __table__: FromClause
     __tablename__ = "foo"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)
 
 
 @mapper_registry.mapped
-class Bar(_HasTable):
+class Bar:
+    __table__: FromClause
     __tablename__ = "bar"
     id = Column(Integer, primary_key=True)
     field1 = Column(Integer)

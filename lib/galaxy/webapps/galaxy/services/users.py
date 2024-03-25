@@ -4,13 +4,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import (
-    false,
-    or_,
-    select,
-    true,
-)
-
 import galaxy.managers.base as managers_base
 from galaxy import (
     exceptions as glx_exceptions,
@@ -22,6 +15,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.users import (
+    get_users_for_index,
     UserDeserializer,
     UserManager,
     UserSerializer,
@@ -205,31 +199,11 @@ class UsersService(ServiceBase):
         f_name: Optional[str],
         f_any: Optional[str],
     ) -> List[Union[UserModel, LimitedUserModel]]:
-        rval = []
-        stmt = select(User)
-
-        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
-            stmt = stmt.filter(User.email.like(f"%{f_email}%"))
-
-        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
-            stmt = stmt.filter(User.username.like(f"%{f_name}%"))
-
-        if f_any:
-            if trans.user_is_admin:
-                stmt = stmt.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-            else:
-                if trans.app.config.expose_user_email and trans.app.config.expose_user_name:
-                    stmt = stmt.filter(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
-                elif trans.app.config.expose_user_email:
-                    stmt = stmt.filter(User.email.like(f"%{f_any}%"))
-                elif trans.app.config.expose_user_name:
-                    stmt = stmt.filter(User.username.like(f"%{f_any}%"))
-
+        # check for early return conditions
         if deleted:
-            # only admins can see deleted users
             if not trans.user_is_admin:
+                # only admins can see deleted users
                 return []
-            stmt = stmt.filter(User.deleted == true())
         else:
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
@@ -244,8 +218,19 @@ class UsersService(ServiceBase):
                     return [item]
                 else:
                     return []
-            stmt = stmt.filter(User.deleted == false())
-        for user in trans.sa_session.scalars(stmt).all():
+
+        users = get_users_for_index(
+            trans.sa_session,
+            deleted,
+            f_email,
+            f_name,
+            f_any,
+            trans.user_is_admin,
+            trans.app.config.expose_user_email,
+            trans.app.config.expose_user_name,
+        )
+        rval = []
+        for user in users:
             item = user.to_dict()
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin

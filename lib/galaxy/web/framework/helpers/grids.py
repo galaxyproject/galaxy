@@ -52,7 +52,7 @@ class GridColumn:
             column_name = self.key
         column = getattr(self.model_class, column_name)
         if column is None:
-            column = self.model_class.table.c.get(column_name)
+            column = self.model_class.__table__.c.get(column_name)
         if ascending:
             query = query.order_by(column.asc())
         else:

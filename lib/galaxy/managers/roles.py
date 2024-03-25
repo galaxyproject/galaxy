@@ -9,9 +9,9 @@ from sqlalchemy import (
     false,
     select,
 )
-from sqlalchemy.orm import (
-    exc as sqlalchemy_exceptions,
-    Session,
+from sqlalchemy.exc import (
+    MultipleResultsFound,
+    NoResultFound,
 )
 
 from galaxy import model
@@ -26,6 +26,7 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import Role
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import RoleDefinitionModel
 from galaxy.util import unicodify
 
@@ -58,9 +59,9 @@ class RoleManager(base.ModelManager[model.Role]):
         try:
             stmt = select(self.model_class).where(self.model_class.id == role_id)
             role = self.session().execute(stmt).scalar_one()
-        except sqlalchemy_exceptions.MultipleResultsFound:
+        except MultipleResultsFound:
             raise InconsistentDatabase("Multiple roles found with the same id.")
-        except sqlalchemy_exceptions.NoResultFound:
+        except NoResultFound:
             raise ObjectNotFound("No accessible role found with the id provided.")
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")
@@ -127,7 +128,8 @@ class RoleManager(base.ModelManager[model.Role]):
             raise RequestParameterInvalidException(f"Role '{role.name}' has not been deleted, so it cannot be purged.")
         # Delete UserRoleAssociations
         for ura in role.users:
-            user = sa_session.query(trans.app.model.User).get(ura.user_id)
+            user = sa_session.get(trans.app.model.User, ura.user_id)
+            assert user
             # Delete DefaultUserPermissions for associated users
             for dup in user.default_permissions:
                 if role == dup.role:
@@ -162,6 +164,6 @@ class RoleManager(base.ModelManager[model.Role]):
         return role
 
 
-def get_roles_by_ids(session: Session, role_ids):
+def get_roles_by_ids(session: galaxy_scoped_session, role_ids):
     stmt = select(Role).where(Role.id.in_(role_ids))
     return session.scalars(stmt).all()

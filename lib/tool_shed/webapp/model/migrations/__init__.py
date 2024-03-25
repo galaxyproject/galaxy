@@ -46,7 +46,7 @@ class RevisionNotFoundError(Exception):
 
 def verify_database(url, engine_options=None) -> None:
     engine_options = engine_options or {}
-    engine = create_engine(url, **engine_options, future=True)
+    engine = create_engine(url, **engine_options)
     verifier = DatabaseStateVerifier(engine)
     verifier.run()
     engine.dispose()

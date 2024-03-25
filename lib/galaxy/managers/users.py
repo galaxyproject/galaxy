@@ -20,12 +20,13 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
+    false,
     func,
+    or_,
     select,
     true,
 )
-from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from galaxy import (
     exceptions,
@@ -46,6 +47,7 @@ from galaxy.model import (
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
@@ -176,7 +178,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """Get all jobs that are not ready yet and belong to the given user."""
         stmt = select(Job).where(and_(Job.user_id == user.id, Job.state.in_(Job.non_ready_states)))
         jobs = self.session().scalars(stmt)
-        return jobs
+        return jobs  # type:ignore[return-value]
 
     def undelete(self, user, flush=True):
         """Remove the deleted flag for the given user."""
@@ -873,7 +875,7 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         self.fn_filter_parsers.update({})
 
 
-def get_users_by_ids(session: Session, user_ids):
+def get_users_by_ids(session: galaxy_scoped_session, user_ids):
     stmt = select(User).where(User.id.in_(user_ids))
     return session.scalars(stmt).all()
 
@@ -893,3 +895,35 @@ def get_user_by_email(session, email: str, model_class=User, case_sensitive=True
 def get_user_by_username(session, username: str, model_class=User):
     stmt = select(model_class).filter(model_class.username == username).limit(1)
     return session.scalars(stmt).first()
+
+
+def get_users_for_index(
+    session,
+    deleted: bool,
+    f_email: Optional[str] = None,
+    f_name: Optional[str] = None,
+    f_any: Optional[str] = None,
+    is_admin: bool = False,
+    expose_user_email: bool = False,
+    expose_user_name: bool = False,
+):
+    stmt = select(User)
+    if f_email and (is_admin or expose_user_email):
+        stmt = stmt.where(User.email.like(f"%{f_email}%"))
+    if f_name and (is_admin or expose_user_name):
+        stmt = stmt.where(User.username.like(f"%{f_name}%"))
+    if f_any:
+        if is_admin:
+            stmt = stmt.where(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
+        else:
+            if expose_user_email and expose_user_name:
+                stmt = stmt.where(or_(User.email.like(f"%{f_any}%"), User.username.like(f"%{f_any}%")))
+            elif expose_user_email:
+                stmt = stmt.where(User.email.like(f"%{f_any}%"))
+            elif expose_user_name:
+                stmt = stmt.where(User.username.like(f"%{f_any}%"))
+    if deleted:
+        stmt = stmt.where(User.deleted == true())
+    else:
+        stmt = stmt.where(User.deleted == false())
+    return session.scalars(stmt).all()

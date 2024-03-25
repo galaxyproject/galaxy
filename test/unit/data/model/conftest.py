@@ -30,7 +30,7 @@ def sqlite_memory_url():
 @pytest.fixture(scope="module")
 def engine():
     db_uri = "sqlite:///:memory:"
-    return create_engine(db_uri, future=True)
+    return create_engine(db_uri)
 
 
 @pytest.fixture

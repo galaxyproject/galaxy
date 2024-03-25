@@ -49,7 +49,7 @@ def find_missing_indexes():
     # create EMPTY metadata, then load from database
     db_url = get_config(sys.argv)["db_url"]
     metadata = MetaData()
-    engine = create_engine(db_url, future=True)
+    engine = create_engine(db_url)
     metadata.reflect(bind=engine)
     indexes_in_db = load_indexes(metadata)
 

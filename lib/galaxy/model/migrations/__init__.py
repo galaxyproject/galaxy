@@ -124,10 +124,10 @@ def verify_databases_via_script(
 ) -> None:
     # This function serves a use case when an engine has not been created yet
     # (e.g. when called from a script).
-    gxy_engine = create_engine(gxy_config.url, future=True)
+    gxy_engine = create_engine(gxy_config.url)
     tsi_engine = None
     if tsi_config.url and tsi_config.url != gxy_config.url:
-        tsi_engine = create_engine(tsi_config.url, future=True)
+        tsi_engine = create_engine(tsi_config.url)
 
     verify_databases(
         gxy_engine,

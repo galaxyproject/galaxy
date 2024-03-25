@@ -95,7 +95,7 @@ class GenomeFilterMixin:
             if self.database_connection.startswith("postgres"):
                 column = text("convert_from(metadata, 'UTF8')::json ->> 'dbkey'")
             else:
-                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")
+                column = func.json_extract(model_class.table.c._metadata, "$.dbkey")  # type:ignore[assignment]
             lower_val = val.lower()  # Ignore case
             # dbkey can either be "hg38" or '["hg38"]', so we need to check both
             if op == "eq":

@@ -1182,7 +1182,9 @@ class MinimalJobWrapper(HasResourceParameters):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
     def get_job(self) -> model.Job:
-        return self.sa_session.get(Job, self.job_id)
+        job = self.sa_session.get(Job, self.job_id)
+        assert job
+        return job
 
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
@@ -1552,7 +1554,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def get_state(self) -> str:
         job = self.get_job()
         self.sa_session.refresh(job)
-        return job.state
+        return job.state  # type:ignore[return-value]
 
     def set_runner(self, runner_url, external_id):
         log.warning("set_runner() is deprecated, use set_job_destination()")

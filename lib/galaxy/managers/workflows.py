@@ -39,7 +39,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     aliased,
     joinedload,
-    Query,
     subqueryload,
 )
 from typing_extensions import Annotated
@@ -193,7 +192,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         latest_workflow_load = joinedload(StoredWorkflow.latest_workflow)
         if not payload.skip_step_counts:
-            latest_workflow_load = latest_workflow_load.undefer(Workflow.step_count)
+            latest_workflow_load = latest_workflow_load.undefer(Workflow.step_count)  # type:ignore[arg-type]
         latest_workflow_load = latest_workflow_load.lazyload(Workflow.steps)
 
         stmt = stmt.options(joinedload(StoredWorkflow.annotations))
@@ -270,7 +269,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
         result = trans.sa_session.scalars(stmt).unique()
-        return result, total_matches
+        return result, total_matches  # type:ignore[return-value]
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
@@ -489,7 +488,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         sort_by=None,
         sort_desc=None,
         include_nested_invocations=True,
-    ) -> Tuple[Query, int]:
+    ) -> Tuple[List, int]:
         """Get invocations owned by the current user."""
 
         stmt = select(WorkflowInvocation)
@@ -537,7 +536,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             for inv in trans.sa_session.scalars(stmt)
             if self.check_security(trans, inv, check_ownership=True, check_accessible=False)
         ]
-        return invocations, total_matches
+        return invocations, total_matches  # type:ignore[return-value]
 
 
 MissingToolsT = List[Tuple[str, str, Optional[str], str]]
@@ -793,7 +792,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 elif not workflow_state_resolution_options.archive_source.startswith("file://"):  # URL import
                     source_metadata["url"] = workflow_state_resolution_options.archive_source
                 workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
-                workflow.source_metadata = source_metadata
+                workflow.source_metadata = source_metadata  # type:ignore[assignment]
 
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
@@ -1786,7 +1785,7 @@ class WorkflowContentsManager(UsesAnnotations):
         temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
             "input_connections", {}
         )
-        step.temp_input_connections = temp_input_connections
+        step.temp_input_connections = temp_input_connections  # type: ignore[assignment]
 
         # Create the model class for the step
         steps.append(step)
@@ -1884,7 +1883,7 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in steps:
             # Input connections
             if step.temp_input_connections:  # populated by __module_from_dict
-                for input_name, conn_list in step.temp_input_connections.items():
+                for input_name, conn_list in step.temp_input_connections.items():  # type:ignore[unreachable]
                     if not conn_list:
                         continue
                     if not isinstance(conn_list, list):  # Older style singleton connection

@@ -102,12 +102,12 @@ def handle_library_params(
     template: Optional[FormDefinition] = None
     if template_id not in [None, "None"]:
         template = session.get(FormDefinition, template_id)
-        assert template
-        for field in template.fields:
-            field_name = field["name"]
-            if params.get(field_name, False):
-                field_value = util.restore_text(params.get(field_name, ""))
-                template_field_contents[field_name] = field_value
+        if template and template.fields:
+            for field in template.fields:
+                field_name = field["name"]  # type:ignore[index]
+                if params.get(field_name, False):
+                    field_value = util.restore_text(params.get(field_name, ""))
+                    template_field_contents[field_name] = field_value
     roles: List[Role] = []
     for role_id in util.listify(params.get("roles", [])):
         role = session.get(Role, role_id)
@@ -441,7 +441,6 @@ def active_folders(trans, folder):
         select(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
         .options(joinedload(LibraryFolder.actions))
-        .unique()
         .order_by(LibraryFolder.name)
     )
-    return trans.sa_session.scalars(stmt).all()
+    return trans.sa_session.scalars(stmt).unique().all()
