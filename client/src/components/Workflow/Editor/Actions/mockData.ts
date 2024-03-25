@@ -3,7 +3,7 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import type { Workflow } from "../modules/model";
 
-export function mockToolStep(id: number) {
+export function mockToolStep(id: number): Step {
     return {
         id,
         type: "tool",

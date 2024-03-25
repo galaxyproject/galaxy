@@ -46,7 +46,7 @@ export interface CollectionOutput extends Omit<DataOutput, "type"> {
     collection_type_source: string | null;
 }
 
-export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | "color";
+export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | "color" | "data";
 export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
     type: typeof ParameterTypes;
     parameter: true;
@@ -350,7 +350,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         updateStep(inputStep);
     }
 
-    const { deleteStepPosition } = useWorkflowStateStore(workflowId);
+    const { deleteStepPosition, deleteStepTerminals } = useWorkflowStateStore(workflowId);
 
     function removeStep(stepId: number) {
         connectionStore
@@ -362,6 +362,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
         del(stepMapOver.value, stepId.toString());
 
         deleteStepPosition(stepId);
+        deleteStepTerminals(stepId);
     }
 
     return {

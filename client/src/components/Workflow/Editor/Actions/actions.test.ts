@@ -17,7 +17,14 @@ import {
     LazyChangeSizeAction,
     LazyMoveMultipleAction,
 } from "./commentActions";
-import { mockComment, mockWorkflow } from "./mockData";
+import { mockComment, mockToolStep, mockWorkflow } from "./mockData";
+import {
+    CopyStepAction,
+    InsertStepAction,
+    LazyMutateStepAction,
+    RemoveStepAction,
+    UpdateStepAction,
+} from "./stepActions";
 import { CopyIntoWorkflowAction, LazySetValueAction } from "./workflowActions";
 
 const workflowId = "mock-workflow";
@@ -38,114 +45,169 @@ describe("Workflow Undo Redo Actions", () => {
         await fromSimple(workflowId, workflow);
     });
 
-    describe("Single Actions", () => {
-        function testUndoRedo(action: UndoRedoAction | LazyUndoRedoAction, afterApplyCallback?: () => void) {
-            const beforeApplyAction = getWorkflowSnapshot(workflow);
+    function testUndoRedo(action: UndoRedoAction | LazyUndoRedoAction, afterApplyCallback?: () => void) {
+        const beforeApplyAction = getWorkflowSnapshot(workflow);
 
-            if (action instanceof LazyUndoRedoAction) {
-                undoRedoStore.applyLazyAction(action);
-                undoRedoStore.flushLazyAction();
-            } else {
-                undoRedoStore.applyAction(action);
-            }
-
-            afterApplyCallback?.();
-
-            const afterApplyActionSnapshot = getWorkflowSnapshot(workflow);
-            expect(afterApplyActionSnapshot).not.toEqual(beforeApplyAction);
-
-            stores.undoRedoStore.undo();
-
-            const undoSnapshot = getWorkflowSnapshot(workflow);
-            expect(undoSnapshot).toEqual(beforeApplyAction);
-
-            stores.undoRedoStore.redo();
-
-            const redoSnapshot = getWorkflowSnapshot(workflow);
-            expect(redoSnapshot).toEqual(afterApplyActionSnapshot);
+        if (action instanceof LazyUndoRedoAction) {
+            undoRedoStore.applyLazyAction(action);
+            undoRedoStore.flushLazyAction();
+        } else {
+            undoRedoStore.applyAction(action);
         }
 
-        const { commentStore, undoRedoStore } = stores;
+        afterApplyCallback?.();
 
-        describe("Comment Actions", () => {
-            function addComment() {
-                const comment = mockComment(commentStore.highestCommentId + 1);
-                commentStore.addComments([comment]);
-                return comment;
-            }
+        const afterApplyActionSnapshot = getWorkflowSnapshot(workflow);
+        expect(afterApplyActionSnapshot).not.toEqual(beforeApplyAction);
 
-            it("AddCommentAction", () => {
-                expect(commentStore.comments.length).toBe(0);
+        stores.undoRedoStore.undo();
 
-                const comment = mockComment(0);
-                const insertAction = new AddCommentAction(commentStore, comment);
+        const undoSnapshot = getWorkflowSnapshot(workflow);
+        expect(undoSnapshot).toEqual(beforeApplyAction);
 
-                testUndoRedo(insertAction, () => commentStore.addComments([comment]));
-            });
+        stores.undoRedoStore.redo();
 
-            it("DeleteCommentAction", () => {
-                const comment = addComment();
-                const action = new DeleteCommentAction(commentStore, comment);
-                testUndoRedo(action);
-            });
+        const redoSnapshot = getWorkflowSnapshot(workflow);
+        expect(redoSnapshot).toEqual(afterApplyActionSnapshot);
+    }
 
-            it("ChangeColorAction", () => {
-                const comment = addComment();
-                const action = new ChangeColorAction(commentStore, comment, "pink");
-                testUndoRedo(action);
-            });
+    const { commentStore, undoRedoStore, stepStore, stateStore, connectionStore } = stores;
 
-            it("LazyChangeDataAction", () => {
-                const comment = addComment();
-                const action = new LazyChangeDataAction(commentStore, comment, { text: "abc", size: 1 });
-                testUndoRedo(action);
-            });
+    describe("Comment Actions", () => {
+        function addComment() {
+            const comment = mockComment(commentStore.highestCommentId + 1);
+            commentStore.addComments([comment]);
+            return comment;
+        }
 
-            it("LazyChangePositionAction", () => {
-                const comment = addComment();
-                const action = new LazyChangePositionAction(commentStore, comment, [20, 80]);
-                testUndoRedo(action);
-            });
+        it("AddCommentAction", () => {
+            expect(commentStore.comments.length).toBe(0);
 
-            it("LazyChangeSizeAction", () => {
-                const comment = addComment();
-                const action = new LazyChangeSizeAction(commentStore, comment, [1000, 1000]);
-                testUndoRedo(action);
-            });
+            const comment = mockComment(0);
+            const insertAction = new AddCommentAction(commentStore, comment);
 
-            it("LazyMoveMultipleAction", () => {
-                addComment();
-                const action = new LazyMoveMultipleAction(
-                    commentStore,
-                    stores.stepStore,
-                    commentStore.comments,
-                    Object.values(stores.stepStore.steps) as any,
-                    { x: 0, y: 0 },
-                    { x: 500, y: 500 }
-                );
-                testUndoRedo(action);
-            });
+            testUndoRedo(insertAction, () => commentStore.addComments([comment]));
         });
 
-        describe("Workflow Actions", () => {
-            it("LazySetValueAction", () => {
-                const setValueCallback = (tags: string[]) => {
-                    workflow.tags = tags;
-                };
+        it("DeleteCommentAction", () => {
+            const comment = addComment();
+            const action = new DeleteCommentAction(commentStore, comment);
+            testUndoRedo(action);
+        });
 
-                const showCanvasCallback = jest.fn();
+        it("ChangeColorAction", () => {
+            const comment = addComment();
+            const action = new ChangeColorAction(commentStore, comment, "pink");
+            testUndoRedo(action);
+        });
 
-                const action = new LazySetValueAction([], ["hello", "world"], setValueCallback, showCanvasCallback);
-                testUndoRedo(action);
+        it("LazyChangeDataAction", () => {
+            const comment = addComment();
+            const action = new LazyChangeDataAction(commentStore, comment, { text: "abc", size: 1 });
+            testUndoRedo(action);
+        });
 
-                expect(showCanvasCallback).toBeCalledTimes(2);
+        it("LazyChangePositionAction", () => {
+            const comment = addComment();
+            const action = new LazyChangePositionAction(commentStore, comment, [20, 80]);
+            testUndoRedo(action);
+        });
+
+        it("LazyChangeSizeAction", () => {
+            const comment = addComment();
+            const action = new LazyChangeSizeAction(commentStore, comment, [1000, 1000]);
+            testUndoRedo(action);
+        });
+
+        it("LazyMoveMultipleAction", () => {
+            addComment();
+            const action = new LazyMoveMultipleAction(
+                commentStore,
+                stores.stepStore,
+                commentStore.comments,
+                Object.values(stores.stepStore.steps) as any,
+                { x: 0, y: 0 },
+                { x: 500, y: 500 }
+            );
+            testUndoRedo(action);
+        });
+    });
+
+    describe("Workflow Actions", () => {
+        it("LazySetValueAction", () => {
+            const setValueCallback = (tags: string[]) => {
+                workflow.tags = tags;
+            };
+
+            const showCanvasCallback = jest.fn();
+
+            const action = new LazySetValueAction([], ["hello", "world"], setValueCallback, showCanvasCallback);
+            testUndoRedo(action);
+
+            expect(showCanvasCallback).toBeCalledTimes(2);
+        });
+
+        it("CopyIntoWorkflowAction", () => {
+            const other = mockWorkflow();
+            const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
+            testUndoRedo(action);
+        });
+    });
+
+    describe("Step Actions", () => {
+        function addStep() {
+            const step = mockToolStep(stepStore.getStepIndex + 1);
+            stepStore.addStep(step);
+            return step;
+        }
+
+        it("LazyMutateStepAction", () => {
+            const step = addStep();
+            const action = new LazyMutateStepAction(stepStore, step.id, "annotation", "", "hello world");
+            testUndoRedo(action);
+        });
+
+        it("UpdateStepAction", () => {
+            const step = addStep();
+            const action = new UpdateStepAction(
+                stepStore,
+                stateStore,
+                step.id,
+                {
+                    outputs: step.outputs,
+                },
+                {
+                    outputs: [{ name: "output", extensions: ["input"], type: "data", optional: true }],
+                }
+            );
+            testUndoRedo(action);
+        });
+
+        it("InsertStepAction", () => {
+            const step = mockToolStep(1);
+            const action = new InsertStepAction(stepStore, stateStore, {
+                contentId: "mock",
+                name: "step",
+                type: "tool",
+                position: { left: 0, top: 0 },
             });
+            action.updateStepData = step;
+            testUndoRedo(action);
+        });
 
-            it("CopyIntoWorkflowAction", () => {
-                const other = mockWorkflow();
-                const action = new CopyIntoWorkflowAction(workflowId, other, { left: 10, top: 20 });
-                testUndoRedo(action);
-            });
+        it("RemoveStepAction", () => {
+            const step = addStep();
+            const showAttributesCallback = jest.fn();
+            const action = new RemoveStepAction(stepStore, stateStore, connectionStore, showAttributesCallback, step);
+            testUndoRedo(action);
+
+            expect(showAttributesCallback).toBeCalledTimes(2);
+        });
+
+        it("CopyStepAction", () => {
+            const step = addStep();
+            const action = new CopyStepAction(stepStore, stateStore, step);
+            testUndoRedo(action);
         });
     });
 });
@@ -193,7 +255,6 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
         stateStoreState: extractKeys(stateStore, [
             "inputTerminals",
             "outputTerminals",
-            "activeNodeId",
             "stepPosition",
             "stepLoadingState",
         ]),

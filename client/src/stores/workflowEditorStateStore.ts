@@ -94,6 +94,11 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         delete stepPosition.value[stepId];
     }
 
+    function deleteStepTerminals(stepId: number) {
+        delete inputTerminals.value[stepId];
+        delete outputTerminals.value[stepId];
+    }
+
     function setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
         set(stepLoadingState.value, stepId, { loading, error });
     }
@@ -117,6 +122,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         deleteInputTerminalPosition,
         deleteOutputTerminalPosition,
         deleteStepPosition,
+        deleteStepTerminals,
         setStepPosition,
         setLoadingState,
     };
