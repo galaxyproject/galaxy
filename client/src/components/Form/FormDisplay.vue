@@ -19,7 +19,7 @@
 import { mapActions } from "pinia";
 import Vue from "vue";
 
-import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import FormInputs from "./FormInputs";
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
@@ -154,10 +154,10 @@ export default {
     },
     destroyed() {
         // since the user is leaving the form, the help mode is reset
-        this.clearHelpModeText();
+        this.clearHelpModeText("tool_form_base");
     },
     methods: {
-        ...mapActions(useHelpModeTextStore, ["storeHelpModeText", "clearHelpModeText"]),
+        ...mapActions(useHelpModeStore, ["storeHelpModeText", "clearHelpModeText"]),
         callHelpMode() {
             this.storeHelpModeText("tool_form_base");
         },

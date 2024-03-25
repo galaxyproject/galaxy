@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faExchangeAlt } from "@fortawesome/free-solid-svg-icons";
 import { BButton, BFormGroup, BModal } from "bootstrap-vue";
 import { orderBy } from "lodash";
 import isEqual from "lodash.isequal";
@@ -7,12 +9,15 @@ import { computed, ref, watch } from "vue";
 
 import type { HistorySummary } from "@/api";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import HistoryList from "@/components/History/HistoryScrollList.vue";
+
+library.add(faCheckSquare, faExchangeAlt);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type PinnedHistory = { id: string };
@@ -54,14 +59,29 @@ const busy = ref(false);
 const showAdvanced = ref(false);
 const modal = ref<BModal | null>(null);
 
+const helpModeStore = useHelpModeStore();
 const { pinnedHistories } = storeToRefs(useHistoryStore());
 
 // retain previously selected histories when you reopen the modal in multi view
 watch(
     () => propShowModal.value,
     (show: boolean) => {
-        if (props.multiple && show) {
-            selectedHistories.value = [...pinnedHistories.value];
+        let helpModeId;
+        let helpModeIcon;
+        if (props.multiple) {
+            if (show) {
+                selectedHistories.value = [...pinnedHistories.value];
+            }
+            helpModeId = "selector_modal_multiview";
+            helpModeIcon = faCheckSquare;
+        } else {
+            helpModeId = "selector_modal_switch";
+            helpModeIcon = faExchangeAlt;
+        }
+        if (show) {
+            helpModeStore.storeHelpModeText(helpModeId, helpModeIcon);
+        } else {
+            helpModeStore.clearHelpModeText(helpModeId);
         }
     },
     {

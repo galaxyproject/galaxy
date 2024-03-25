@@ -1,2 +1,9 @@
-tool_form_base: tools/tool_form_base.md
-collection_builder: collections/collection_builder.md
+tool_form_base:
+  title: Tool Form
+  file_path: tools/tool_form_base.md
+collection_builder:
+  title: Collection Builder
+  file_path: collections/collection_builder.md
+selector_modal_switch:
+  title: History Selector
+  file_path: histories/selector_modal_switch.md
