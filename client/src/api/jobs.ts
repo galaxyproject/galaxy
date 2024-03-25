@@ -2,6 +2,8 @@ import { components, fetcher } from "@/api/schema";
 
 export type JobDestinationParams = components["schemas"]["JobDestinationParams"];
 
+export const getJobDetails = fetcher.path("/api/jobs/{job_id}").method("get").create();
+
 export const jobLockStatus = fetcher.path("/api/job_lock").method("get").create();
 export const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
 
