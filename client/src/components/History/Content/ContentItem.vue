@@ -4,7 +4,7 @@ import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge, BButton, BCollapse } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
@@ -35,6 +35,7 @@ interface Props {
     addHighlightBtn?: boolean;
     highlight?: string;
     isDataset?: boolean;
+    isRangeSelectAnchor?: boolean;
     isHistoryItem?: boolean;
     selected?: boolean;
     selectable?: boolean;
@@ -48,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
     addHighlightBtn: false,
     highlight: undefined,
     isDataset: true,
+    isRangeSelectAnchor: false,
     isHistoryItem: false,
     selected: false,
     selectable: false,
@@ -58,12 +60,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "update:selected", selected: boolean): void;
     (e: "update:expand-dataset", expand: boolean): void;
-    (e: "shift-select", direction: string): void;
+    (e: "shift-arrow-select", direction: string): void;
     (e: "init-key-selection"): void;
     (e: "arrow-navigate", direction: string): void;
     (e: "hide-selection"): void;
     (e: "select-all"): void;
-    (e: "selected-to", reset: boolean): void;
+    (e: "selected-to"): void;
     (e: "delete", item: any, recursive: boolean): void;
     (e: "undelete"): void;
     (e: "unhide"): void;
@@ -76,6 +78,8 @@ const emit = defineEmits<{
 
 const entryPointStore = useEntryPointStore();
 const eventStore = useEventStore();
+
+const contentItem = ref<HTMLElement | null>(null);
 
 const jobState = computed(() => {
     return new JobStateSummary(props.item);
@@ -171,6 +175,10 @@ const isBeingUsed = computed(() => {
     return Object.values(itemUrls.value).includes(route.path) ? "being-used" : "";
 });
 
+const rangeSelectClass = computed(() => {
+    return props.isRangeSelectAnchor ? "range-select-anchor" : "";
+});
+
 /** Based on the user's keyboard platform, checks if it is the
  * typical key for selection (ctrl for windows/linux, cmd for mac)
  */
@@ -197,7 +205,7 @@ function onKeyDown(event: KeyboardEvent) {
         } else {
             event.preventDefault();
             if ((event.key === "ArrowUp" || event.key === "ArrowDown") && event.shiftKey) {
-                emit("shift-select", event.key);
+                emit("shift-arrow-select", event.key);
             } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                 emit("init-key-selection");
             } else if (event.key === "Delete" && !props.selected && !props.item.deleted) {
@@ -215,15 +223,12 @@ function onKeyDown(event: KeyboardEvent) {
 function onClick(e?: Event) {
     const event = e as KeyboardEvent;
     if (event && props.writable) {
-        if (event.shiftKey && isSelectKey(event)) {
-            emit("selected-to", false);
-            return;
-        } else if (isSelectKey(event)) {
+        if (isSelectKey(event)) {
             emit("init-key-selection");
             emit("update:selected", !props.selected);
             return;
         } else if (event.shiftKey) {
-            emit("selected-to", true);
+            emit("selected-to");
             return;
         } else {
             emit("init-key-selection");
@@ -298,6 +303,17 @@ function onTagClick(tag: string) {
     }
 }
 
+function onButtonSelect(e: Event) {
+    const event = e as KeyboardEvent;
+    if (event.shiftKey) {
+        onClick(e);
+    } else {
+        emit("init-key-selection");
+    }
+    contentItem.value?.focus();
+    emit("update:selected", !props.selected);
+}
+
 function toggleHighlights() {
     emit("toggleHighlights", props.item);
 }
@@ -312,7 +328,8 @@ function unexpandedClick(event: Event) {
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
+        ref="contentItem"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed, rangeSelectClass]"
         :data-hid="id"
         :data-state="dataState"
         tabindex="0"
@@ -325,7 +342,7 @@ function unexpandedClick(event: Event) {
         <div class="p-1 cursor-pointer" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1" data-description="content item header info">
-                    <BButton v-if="selectable" class="selector p-0" @click.stop="emit('update:selected', !selected)">
+                    <BButton v-if="selectable" class="selector p-0" @click.stop="onButtonSelect">
                         <FontAwesomeIcon v-if="selected" fixed-width size="lg" :icon="faCheckSquare" />
                         <FontAwesomeIcon v-else fixed-width size="lg" :icon="faSquare" />
                     </BButton>
@@ -436,6 +453,10 @@ function unexpandedClick(event: Event) {
 
     // improve focus visibility
     &:deep(.btn:focus) {
+        box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.range-select-anchor {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
 

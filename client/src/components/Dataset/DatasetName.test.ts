@@ -20,14 +20,7 @@ describe("Dataset Name", () => {
         expect(state.length).toBe(1);
         expect(state.at(0).text()).toBe("name");
 
-        const $linkShow = wrapper.find(".dropdown-item:first-child");
-
-        $linkShow.trigger("click");
-
-        expect(Array.isArray(wrapper.emitted().showDataset)).toBe(true);
-
-        const $linkCopy = wrapper.find(".dropdown-item:last-child");
-
+        const $linkCopy = wrapper.find(".dropdown-item:first-child");
         $linkCopy.trigger("click");
 
         expect(Array.isArray(wrapper.emitted().copyDataset)).toBe(true);
