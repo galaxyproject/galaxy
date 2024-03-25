@@ -151,27 +151,32 @@ function onOk(selectedLabel: WorkflowLabel | undefined) {
     const labelText: string = selectedLabel ? selectedLabel.label : "<ENTER LABEL>";
     const labelType: string = selectedLabel ? selectedLabel.type : defaultLabelType;
     selectedShow.value = false;
+
+    function onInsertArgument() {
+        emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+    }
+
     if (props.argumentType == "history_dataset_id") {
         if (props.useLabels) {
-            emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+            onInsertArgument();
         } else {
             dataShow.value = true;
         }
     } else if (props.argumentType == "history_dataset_collection_id") {
         if (props.useLabels) {
-            emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+            onInsertArgument();
         } else {
             dataCollectionShow.value = true;
         }
     } else if (props.argumentType == "job_id") {
         if (props.useLabels) {
-            emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+            onInsertArgument();
         } else {
             jobShow.value = true;
         }
     } else if (props.argumentType == "invocation_id") {
         if (props.useLabels) {
-            emit("onInsert", `${props.argumentName}(${labelType}="${labelText}")`);
+            onInsertArgument();
         } else {
             invocationShow.value = true;
         }

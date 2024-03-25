@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import BootstrapVue from "bootstrap-vue";
-import Vue, { computed, ref } from "vue";
+import { BModal } from "bootstrap-vue";
+import { computed, ref } from "vue";
 
 import { WorkflowLabel } from "./labels";
 
@@ -28,8 +28,6 @@ const emit = defineEmits<{
     (e: "onCancel"): void;
 }>();
 
-Vue.use(BootstrapVue);
-
 function onOk() {
     emit("onOk", selectedValue.value);
 }
@@ -41,19 +39,13 @@ function onCancel() {
 
 <template>
     <span>
-        <b-modal
-            v-model="modalShow"
-            :title="title"
-            ok-title="Continue"
-            @ok="onOk"
-            @cancel="onCancel"
-            @hidden="onCancel">
+        <BModal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel" @hidden="onCancel">
             <LabelSelector
                 v-model="selectedValue"
                 class="ml-2"
                 :has-labels="hasLabels"
                 :label-title="labelTitle"
                 :labels="labels" />
-        </b-modal>
+        </BModal>
     </span>
 </template>
