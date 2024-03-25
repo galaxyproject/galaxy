@@ -1487,7 +1487,6 @@ def _handle_def_errors(testdef):
 def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, galaxy_interactor, quiet=False):
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
-
     found_exceptions: List[Exception] = []
 
     def register_exception(e: Exception):
@@ -1501,6 +1500,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
     if testdef.expect_failure:
         if testdef.outputs:
             raise Exception("Cannot specify outputs in a test expecting failure.")
+
+    if not data_list and not data_collection_list:
+        Exception("Job did not produce any outputs")
 
     maxseconds = testdef.maxseconds
     # Wait for the job to complete and register expections if the final
