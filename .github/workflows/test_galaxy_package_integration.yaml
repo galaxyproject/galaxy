@@ -20,14 +20,13 @@ jobs:
       matrix:
         python-version: ['3.10']
     steps:
+      - name: Checkout galaxy code
+        uses: actions/checkout@v3
       - name: Checkout tpv code
         uses: actions/checkout@v3
         with:
           repository: galaxyproject/total-perspective-vortex
           path: 'tpv'
-          persist-credentials: false
-      - name: Checkout galaxy code
-        uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
@@ -49,21 +48,23 @@ jobs:
         run: |
           GALAXY_SKIP_NODE=1 GALAXY_SKIP_CLIENT_BUILD=1 make setup-venv
           # create local release
-          echo "c" | ./scripts/release.sh -l
+          echo "c" | UPSTREAM_REMOTE_URL="https://github.com/galaxyproject/galaxy.git" ./scripts/release.sh -l
           # make requirements point to local wheels where possible
-          while read -r line; do
-            package_path=`echo $line | sed -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|'`            
-            if [ -d $package_path ]; then
+          cd tpv
+          while IFS= read -r line; do
+            # Handle galaxy- packages specifically
+            package_path=`echo $line | sed -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|'`
+            if [ -d "$package_path" ]; then
               # This is a local package. Replace it with the path to the local wheel
               row=`find $package_path/dist -type d -exec find {} -depth -maxdepth 1 -type f -name '*.whl' -print -quit \;`
             else
               # pass original requirement line unchanged
-              row=$line
+              row="$line"
             fi
-            echo $row >> tpv/requirements_local.txt
-          done < "tpv/requirements_test.txt"
-          cat tpv/requirements_local.txt
-          mv tpv/requirements_local.txt tpv/requirements_test.txt
+            echo "$row" >> requirements_local.txt
+          done < "requirements_test.txt"
+          cat requirements_local.txt
+          mv requirements_local.txt requirements_test.txt
       - name: Install required packages
         run: pip install tox
       - name: Run tox
