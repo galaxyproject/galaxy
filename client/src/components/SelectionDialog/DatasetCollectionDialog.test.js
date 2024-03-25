@@ -1,6 +1,7 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import { BAlert, BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 
 import DatasetCollectionDialog from "./DatasetCollectionDialog.vue";
@@ -35,31 +36,30 @@ describe("DatasetCollectionDialog.vue", () => {
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(200, collectionsResponse);
 
-        wrapper = shallowMount(DatasetCollectionDialog, {
+        wrapper = mount(DatasetCollectionDialog, {
             propsData: mockOptions,
             localVue: localVue,
         });
 
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
-        expect(wrapper.vm.optionsShow).toBe(false);
+        expect(wrapper.findComponent(BTable).exists()).toBe(false);
 
         await flushPromises();
 
-        // why not shown?
-        expect(wrapper.vm.errorMessage).toBeNull();
-        expect(wrapper.vm.optionsShow).toBe(true);
+        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
+        expect(wrapper.findComponent(BTable).exists()).toBe(true);
     });
 
     it("error message set on dataset collection fetch problems", async () => {
-        expect(wrapper.vm.errorMessage).toBeNull();
+        expect(wrapper.findComponent(BAlert).exists()).toBe(false);
         axiosMock
             .onGet(`/api/histories/${mockOptions.history}/contents?type=dataset_collection`)
             .reply(403, { err_msg: "Bad error" });
-        wrapper = shallowMount(DatasetCollectionDialog, {
+        wrapper = mount(DatasetCollectionDialog, {
             propsData: mockOptions,
             localVue: localVue,
         });
         await flushPromises();
-        expect(wrapper.vm.errorMessage).toBe("Bad error");
+        expect(wrapper.findComponent(BAlert).text()).toBe("Bad error");
     });
 });

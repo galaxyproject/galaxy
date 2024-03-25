@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BLink, BModal, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
@@ -24,7 +25,7 @@ interface Props {
     fileMode?: boolean;
     isBusy?: boolean;
     isEncoded?: boolean;
-    items: Array<SelectionItem>;
+    items?: Array<SelectionItem>;
     leafIcon?: string;
     modalShow?: boolean;
     modalStatic?: boolean;
@@ -44,6 +45,7 @@ const props = withDefaults(defineProps<Props>(), {
     fileMode: true,
     isBusy: false,
     isEncoded: false,
+    items: () => [],
     leafIcon: "fa fa-file-o",
     modalShow: true,
     modalStatic: false,
@@ -130,6 +132,7 @@ watch(
                 <BTable
                     small
                     hover
+                    class="selection-dialog-table"
                     primary-key="id"
                     :busy="isBusy"
                     :current-page="currentPage"
@@ -161,9 +164,9 @@ watch(
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
                                     <FontAwesomeIcon :icon="faFolder" />
-                                    <b-link :title="`label-${data.item.url}`">{{
+                                    <BLink :title="`label-${data.item.url}`">{{
                                         data.value ? data.value : "-"
-                                    }}</b-link>
+                                    }}</BLink>
                                 </div>
                             </span>
                         </div>
@@ -176,9 +179,9 @@ watch(
                     </template>
                 </BTable>
                 <div v-if="isBusy" class="text-center">
-                    <b-spinner small type="grow" />
-                    <b-spinner small type="grow" />
-                    <b-spinner small type="grow" />
+                    <BSpinner small type="grow" />
+                    <BSpinner small type="grow" />
+                    <BSpinner small type="grow" />
                 </div>
                 <div v-if="nItems === 0">
                     <div v-if="filter">
@@ -188,7 +191,7 @@ watch(
                     <div v-else>No entries.</div>
                 </div>
             </div>
-            <div v-else>
+            <div v-else data-description="selection dialog spinner">
                 <FontAwesomeIcon :icon="faSpinner" spin />
                 <span>Please wait...</span>
             </div>
@@ -210,15 +213,15 @@ watch(
                     :per-page="perPage"
                     :total-rows="nItems" />
                 <div>
-                    <BButton id="close-btn" size="sm" variant="secondary" @click="emit('onCancel')">
+                    <BButton data-description="selection dialog cancel" size="sm" variant="secondary" @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </BButton>
                     <BButton
                         v-if="multiple || !fileMode"
                         id="ok-btn"
+                        data-description="selection dialog ok"
                         size="sm"
-                        class="file-dialog-modal-ok"
                         variant="primary"
                         :disabled="disableOk"
                         @click="emit('onOk')">
