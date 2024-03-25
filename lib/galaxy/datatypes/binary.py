@@ -4297,11 +4297,9 @@ class Npz(CompressedArchive):
 
     def sniff(self, filename: str) -> bool:
         try:
-            npz = np.load(filename)
-            if isinstance(npz, np.lib.npyio.NpzFile):
-                for f in npz.files:
-                    if isinstance(npz[f], np.ndarray):
-                        return True
+            with np.load(filename) as npz:
+                if isinstance(npz, np.lib.npyio.NpzFile) and any(f.filename.endswith(".npy") for f in npz.zip.filelist):
+                    return True
         except Exception:
             return False
         return False
