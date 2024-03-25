@@ -61,7 +61,42 @@ Administration Notes
 Configuration Changes
 ===========================================================
 
-[TODO: add items or drop section if none]
+Added
+-----
+
+The following configuration options are new
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.object_store_config
+-  mapping.galaxy.mapping.oidc_scope_prefix
+-  mapping.galaxy.mapping.tus_upload_store_job_files
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.tus_upload_store.desc has changed from
+
+   ::
+
+    The upload store is a temporary directory in which files uploaded by the
+    tus middleware or server will be placed.
+    Defaults to new_file_path if not set.
+
+   to
+
+   ::
+
+    The upload store is a temporary directory in which files uploaded by the
+    tus middleware or server for user uploads will be placed.
+    Defaults to new_file_path if not set.
 
 Release Notes
 ===========================================================
