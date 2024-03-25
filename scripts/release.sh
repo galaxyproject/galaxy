@@ -8,7 +8,7 @@ shopt -s extglob
 : ${VENV:=.venv}
 : ${FORK_REMOTE:=origin}
 : ${UPSTREAM_REMOTE:=upstream}
-: ${UPSTREAM_REMOTE_URL:=https://github.com/galaxyproject/galaxy.git}
+: ${UPSTREAM_REMOTE_URL:=git@github.com:galaxyproject/galaxy.git}
 : ${DEV_BRANCH:=dev}
 : ${STABLE_BRANCH:=master}
 
