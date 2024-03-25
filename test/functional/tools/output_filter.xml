@@ -71,8 +71,6 @@ echo 'p2.reverse' > p2.reverse
             <assert_stdout>
                 <has_n_lines n="0"/>
             </assert_stdout>
-                <has_n_lines n="0"/>
-            </assert_stdout>
         </test>
         <test expect_num_outputs="3">
             <param name="produce_out_1" value="true" />
