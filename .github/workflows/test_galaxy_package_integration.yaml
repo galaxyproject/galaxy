@@ -44,12 +44,12 @@ jobs:
         with:
           path: '.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('requirements.txt') }}-integration
-      - name: replace tpv galaxy dependencies with package paths from local galaxy build
+      - name: Replace tpv galaxy dependencies with package paths from local galaxy build
         run: |
           GALAXY_SKIP_NODE=1 GALAXY_SKIP_CLIENT_BUILD=1 make setup-venv
           # create local release
           echo "c" | ./scripts/release.sh -l
-          # make requirements point to local wheels
+          # make requirements point to local wheels where possible
           while read -r line; do
             package_path=`echo $line | sed -e '/^galaxy-/ s/-/_/g' -e 's|^galaxy_\(.*\)$|../packages/\1|'`            
             if [ -d $package_path ]; then
