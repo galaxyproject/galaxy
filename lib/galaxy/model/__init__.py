@@ -671,7 +671,7 @@ per_hist_hdas AS (
     WHERE NOT purged
         AND history_id IN (SELECT id FROM per_user_histories)
 )
-SELECT COALESCE(SUM(COALESCE(dataset.total_size, dataset.file_size, 0)), 0), dataset.object_store_id
+SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) as usage, dataset.object_store_id
 FROM dataset
 LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
 WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
@@ -1178,7 +1178,11 @@ ON CONFLICT
     def dictify_objectstore_usage(self) -> List[UserObjectstoreUsage]:
         session = object_session(self)
         rows = calculate_disk_usage_per_objectstore(session, self.id)
-        return [UserObjectstoreUsage(object_store_id=r[1], total_disk_usage=r[0]) for r in rows if r[1]]
+        return [
+            UserObjectstoreUsage(object_store_id=r.object_store_id, total_disk_usage=r.usage)
+            for r in rows
+            if r.object_store_id
+        ]
 
     def dictify_usage(self, object_store=None) -> List[UserQuotaBasicUsage]:
         """Include object_store to include empty/unused usage info."""
