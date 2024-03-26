@@ -1539,6 +1539,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         outfile = output_dict["value"]
         attributes = output_dict["attributes"]
         output_testdef = Bunch(name=name, outfile=outfile, attributes=attributes)
+        output_data = None
         try:
             output_data = data_list[name]
         except (TypeError, KeyError):
@@ -1551,7 +1552,8 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                 else:
                     output_data = data_list[len(data_list) - len(testdef.outputs) + output_index]
             except IndexError:
-                pass
+                error = AssertionError(f"Tool did not produce an output with name '{name}' (or at index {output_index})")
+                register_exception(error)
         if output_data:
             try:
                 galaxy_interactor.verify_output(
@@ -1565,9 +1567,6 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                 )
             except Exception as e:
                 register_exception(e)
-        else:
-            error = AssertionError(f"Tool did not produce an output with name '{name}' (or at index {output_index})")
-            register_exception(error)
 
     other_checks = {
         "command_line": "Command produced by the job",
