@@ -6,16 +6,16 @@ import { ApiResponse, components, fetcher } from "./schema";
 
 export type WorkflowInvocationElementView = components["schemas"]["WorkflowInvocationElementView"];
 export type WorkflowInvocationCollectionView = components["schemas"]["WorkflowInvocationCollectionView"];
+export type WorkflowInvocationStepStatesView = components["schemas"]["WorkflowInvocationStepStatesView"];
 export type InvocationJobsSummary = components["schemas"]["InvocationJobsResponse"];
 export type InvocationStep = components["schemas"]["InvocationStep"];
 
 export const invocationsFetcher = fetcher.path("/api/invocations").method("get").create();
 
-export type WorkflowInvocation = WorkflowInvocationElementView | WorkflowInvocationCollectionView;
-
-export interface WorkflowInvocationJobsSummary {
-    id: string;
-}
+export type WorkflowInvocation =
+    | WorkflowInvocationElementView
+    | WorkflowInvocationCollectionView
+    | WorkflowInvocationStepStatesView;
 
 export interface WorkflowInvocationStep {
     id: string;
@@ -38,13 +38,20 @@ export async function fetchInvocationDetails(params: { id: string }): Promise<Ap
     } as ApiResponse<WorkflowInvocation>;
 }
 
-export async function fetchInvocationJobsSummary(params: {
+export async function fetchInvocationStepStateDetails(params: {
     id: string;
-}): Promise<ApiResponse<WorkflowInvocationJobsSummary>> {
+}): Promise<ApiResponse<WorkflowInvocationStepStatesView>> {
+    const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}?view=step_states`);
+    return {
+        data,
+    } as ApiResponse<WorkflowInvocationStepStatesView>;
+}
+
+export async function fetchInvocationJobsSummary(params: { id: string }): Promise<ApiResponse<InvocationJobsSummary>> {
     const { data } = await axios.get(`${getAppRoot()}api/invocations/${params.id}/jobs_summary`);
     return {
         data,
-    } as ApiResponse<WorkflowInvocationJobsSummary>;
+    } as ApiResponse<InvocationJobsSummary>;
 }
 
 export async function fetchInvocationStep(params: { id: string }): Promise<ApiResponse<WorkflowInvocationStep>> {

@@ -1,4 +1,4 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
 import invocationData from "../Workflow/test/json/invocation.json";
@@ -16,7 +16,7 @@ describe("WorkflowInvocationSummary.vue with terminal invocation", () => {
             invocationAndJobTerminal: true,
             invocationSchedulingTerminal: true,
         };
-        wrapper = shallowMount(WorkflowInvocationSummary, {
+        wrapper = mount(WorkflowInvocationSummary, {
             propsData,
             localVue,
         });
@@ -43,7 +43,7 @@ describe("WorkflowInvocationSummary.vue with invocation scheduling running", () 
             invocationAndJobTerminal: false,
             invocationSchedulingTerminal: false,
         };
-        wrapper = shallowMount(WorkflowInvocationSummary, {
+        wrapper = mount(WorkflowInvocationSummary, {
             store,
             propsData,
             localVue,
