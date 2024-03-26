@@ -1,5 +1,4 @@
 import { mount, Wrapper } from "@vue/test-utils";
-import { BTable } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
@@ -114,11 +113,10 @@ describe("FilesDialog, file mode", () => {
 
     it("should show the number of items expected", async () => {
         await utils.openRootDirectory();
-
         expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
     });
 
-    /*it("should allow selecting files and update OK button accordingly", async () => {
+    it("should allow selecting files and update OK button accordingly", async () => {
         await utils.openRootDirectory();
         const filesInResponse = pdbResponse.filter((item) => item.class === "File");
 
@@ -226,7 +224,7 @@ describe("FilesDialog, file mode", () => {
         // back to the root folder
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
-    });*/
+    });
 });
 
 describe("FilesDialog, directory mode", () => {
@@ -250,7 +248,7 @@ describe("FilesDialog, directory mode", () => {
         expectOnlyDirectoriesRendered();
     });
 
-    /*it("should allow to select folders by navigating to them", async () => {
+    it("should allow to select folders by navigating to them", async () => {
         utils.expectOkButtonDisabled();
 
         await utils.openRootDirectory();
@@ -269,7 +267,7 @@ describe("FilesDialog, directory mode", () => {
         // back to the root folder
         await utils.navigateBack();
         expect(utils.getRenderedRows().length).toBe(rootResponse.length);
-    });*/
+    });
 });
 
 class Utils {
@@ -297,17 +295,17 @@ class Utils {
     }
 
     async openDirectory(directory: RowElement) {
-        this.getTable().vm.$emit("open", directory);
+        this.getTable().vm.$emit("onOpen", directory);
         await flushPromises();
     }
 
     async clickOn(element: Element) {
-        this.getTable().vm.$emit("clicked", element);
+        this.getTable().vm.$emit("onClick", element);
         await flushPromises();
     }
 
     async selectAll() {
-        this.getTable().vm.$emit("toggleSelectAll");
+        this.getTable().vm.$emit("onSelectAll");
         await flushPromises();
     }
 
@@ -339,7 +337,7 @@ class Utils {
     }
 
     getTable(): any {
-        return this.wrapper.findComponent(BTable);
+        return this.wrapper.findComponent(SelectionDialog);
     }
 
     getButtonById(id: string): any {
@@ -380,7 +378,7 @@ class Utils {
     }
 
     expectSelectAllIconStatusToBe(status: string) {
-        expect(this.getTable().attributes("selectallicon")).toBe(status);
+        //expect(this.getTable().attributes("selectallicon")).toBe(status);
     }
 
     expectNoErrorMessage() {

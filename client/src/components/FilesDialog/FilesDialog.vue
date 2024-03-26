@@ -140,8 +140,8 @@ function selectDirectoryRecursive(record: SelectionItem) {
         // look for subdirectories
         const recursive = true;
         isBusy.value = true;
-        browseRemoteFiles(record.url, recursive).then((items) => {
-            items.forEach((item) => {
+        browseRemoteFiles(record.url, recursive).then((incoming) => {
+            incoming.forEach((item) => {
                 // construct record
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
