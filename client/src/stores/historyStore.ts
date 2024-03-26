@@ -68,25 +68,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const getHistoryById = computed(() => {
         return (historyId: string) => {
             if (!storedHistories.value[historyId]) {
-                // Create a placeholder to avoid multiple requests for the same history
-                // and reuse the reference to avoid reactivity issues
-                storedHistories.value[historyId] = createHistoryPlaceholder(historyId);
-
                 // TODO: Try to remove this as it can cause computed side effects
                 loadHistoryById(historyId);
             }
-            return storedHistories.value[historyId]!;
+            return storedHistories.value[historyId] ?? null;
         };
     });
-
-    function createHistoryPlaceholder(historyId: string) {
-        const history = {
-            id: historyId,
-            name: "Loading...",
-            contents_active: { active: 0, deleted: 0, hidden: 0 },
-        } as AnyHistory;
-        return history;
-    }
 
     const getHistoryNameById = computed(() => {
         return (historyId: string) => {
