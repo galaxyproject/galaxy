@@ -3,7 +3,7 @@ import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { useDetailedHistory } from "@/composables/detailedHistory";
+import { useExtendedHistory } from "@/composables/detailedHistory";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import CollectionPanel from "@/components/History/CurrentCollection/CollectionPanel.vue";
@@ -22,7 +22,7 @@ const props = defineProps<Props>();
 const historyStore = useHistoryStore();
 const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
 
-const { detailedHistory: history } = useDetailedHistory(props.source.id);
+const { history } = useExtendedHistory(props.source.id);
 
 const selectedCollections = ref<any[]>([]);
 
