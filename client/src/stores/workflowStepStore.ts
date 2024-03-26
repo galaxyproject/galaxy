@@ -5,6 +5,7 @@ import { type Connection, getConnectionId, useConnectionStore } from "@/stores/w
 import { assertDefined } from "@/utils/assertions";
 
 import { defineScopedStore } from "./scopedStore";
+import { useWorkflowStateStore } from "./workflowEditorStateStore";
 
 interface StepPosition {
     top: number;
@@ -205,13 +206,19 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
     const connectionStore = useConnectionStore(workflowId);
 
-    function addStep(newStep: NewStep): Step {
+    const stateStore = useWorkflowStateStore(workflowId);
+
+    function addStep(newStep: NewStep, select = false): Step {
         const stepId = newStep.id ? newStep.id : getStepIndex.value + 1;
         const step = Object.freeze({ ...newStep, id: stepId } as Step);
 
         set(steps.value, stepId.toString(), step);
         stepToConnections(step).map((connection) => connectionStore.addConnection(connection));
         stepExtraInputs.value[step.id] = findStepExtraInputs(step);
+
+        if (select) {
+            stateStore.setStepMultiSelected(step.id, true);
+        }
 
         return step;
     }
@@ -340,6 +347,7 @@ export const useWorkflowStepStore = defineScopedStore("workflowStepStore", (work
 
         del(steps.value, stepId.toString());
         del(stepExtraInputs.value, stepId);
+        del(stateStore.multiSelectedSteps, stepId);
     }
 
     return {

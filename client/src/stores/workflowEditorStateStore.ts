@@ -37,6 +37,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const scale = ref(1);
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
+    const multiSelectedSteps = ref<Record<number, boolean>>({});
 
     function $reset() {
         inputTerminals.value = {};
@@ -47,6 +48,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
+        multiSelectedSteps.value = {};
     }
 
     const getInputTerminalPosition = computed(
@@ -58,6 +60,26 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     );
 
     const getStepLoadingState = computed(() => (stepId: number) => stepLoadingState.value[stepId]);
+
+    const getStepMultiSelected = computed(() => (stepId: number) => Boolean(multiSelectedSteps.value[stepId]));
+
+    const multiSelectedStepIds = computed(() =>
+        Object.entries(multiSelectedSteps.value)
+            .filter(([_id, selected]) => selected)
+            .map(([id]) => parseInt(id))
+    );
+
+    function clearStepMultiSelection() {
+        multiSelectedSteps.value = {};
+    }
+
+    function toggleStepMultiSelected(stepId: number) {
+        setStepMultiSelected(stepId, !getStepMultiSelected.value(stepId));
+    }
+
+    function setStepMultiSelected(stepId: number, selected: boolean) {
+        set(multiSelectedSteps.value, stepId, selected);
+    }
 
     function setInputTerminalPosition(stepId: number, inputName: string, position: InputTerminalPosition) {
         if (!inputTerminals.value[stepId]) {
@@ -108,6 +130,12 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         getInputTerminalPosition,
         getOutputTerminalPosition,
         getStepLoadingState,
+        multiSelectedSteps,
+        multiSelectedStepIds,
+        getStepMultiSelected,
+        clearStepMultiSelection,
+        toggleStepMultiSelected,
+        setStepMultiSelected,
         setInputTerminalPosition,
         setOutputTerminalPosition,
         deleteInputTerminalPosition,

@@ -1,4 +1,5 @@
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 interface Workflow {
@@ -23,12 +24,14 @@ interface Workflow {
  */
 export async function fromSimple(
     id: string,
-    data: Workflow,
+    data: Pick<Workflow, "steps" | "comments">,
     appendData = false,
-    defaultPosition = { top: 0, left: 0 }
+    defaultPosition = { top: 0, left: 0 },
+    select = false
 ) {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
+    const toolbarStore = useWorkflowEditorToolbarStore(id);
 
     // If workflow being copied into another, wipe UUID and let
     // Galaxy assign new ones.
@@ -68,10 +71,11 @@ export async function fromSimple(
     }
 
     Object.values(data.steps).map((step) => {
-        stepStore.addStep(step);
+        stepStore.addStep(step, select);
     });
 
-    commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
+    commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top], select);
+    toolbarStore.currentTool = "pointer";
 }
 
 export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {

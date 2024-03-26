@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import { type UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
+
+import { useMultiSelect } from "../composables/multiSelect";
 
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
@@ -40,6 +42,7 @@ function onResize(size: [number, number]) {
 
 function onMove(position: [number, number]) {
     commentStore.changePosition(props.comment.id, position);
+    hasMoved = true;
 }
 
 function onPan(position: { x: number; y: number }) {
@@ -53,10 +56,28 @@ function onRemove() {
 function onSetColor(color: WorkflowCommentColor) {
     commentStore.changeColor(props.comment.id, color);
 }
+
+const { deselectAll } = useMultiSelect();
+let hasMoved = false;
+
+function toggleSelect(e: MouseEvent) {
+    if (!props.readonly && !(props.comment.type === "freehand") && !hasMoved) {
+        if (e.shiftKey) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            commentStore.toggleCommentMultiSelected(props.comment.id);
+        } else {
+            deselectAll();
+        }
+    }
+
+    hasMoved = false;
+}
 </script>
 
 <template>
-    <div class="workflow-editor-comment" :style="cssVariables">
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
+    <div class="workflow-editor-comment" :style="cssVariables" @click.capture="toggleSelect">
         <TextComment
             v-if="props.comment.type === 'text'"
             :comment="props.comment"
