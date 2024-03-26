@@ -8,20 +8,13 @@
 Highlights
 ===========================================================
 
-Feature1
---------
+**New Workflow List and Card View.** As part of our ongoing efforts to enhance user experience, we are proud to announce several new improvements to the workflows user interface, including workflow list view, workflow card view and workflow quick view. These improvements also include new tabs for "My workflows" (owned by the user), "Shared with me" (shared by other users) and "Published workflows" (publicly accessible workflows).
 
-Feature description.
+**New select component for selecting a large amount of options.** This new component addresses the need of selecting a very large number of options at once. The component features a list based layout which can be filtered using plain-text or a regular expression. Options can be added individually, in bulk via the filter value, or by first highlighting a range. 
 
-Feature2
---------
+**Multiple item drag and drop and keyboard navigation.** This new feature allows users to select multiple history items and drag and drop them into other histories or even tool forms! Users can also navigate their history using the arrow keys; multiple history items can be selected with the Shift + ArrowUp/ArrowDown key combination. 
 
-Feature description.
-
-Feature3
---------
-
-Feature description.
+Other notable improvements include consolidating resource grids for histories, visualizations and pages into tab views; the addition of a new UI feature for "relocating" a dataset to a new object store; and, for tool developers, a new comparison method for test output verification using images. Check out the `24.0 user release notes <24.0_announce_user.html>`__ for all the details.
 
 Are you an admin? See the Administration Notes below, and check out `some admin relevant PRs <https://github.com/galaxyproject/galaxy/pulls?q=label%3Ahighlight%2Fadmin+milestone%3A24.0+is%3Aclosed+is%3Apr>`__.
 
