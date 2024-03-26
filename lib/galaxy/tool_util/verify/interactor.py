@@ -1551,7 +1551,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                 else:
                     output_data = data_list[len(data_list) - len(testdef.outputs) + output_index]
             except IndexError:
-                error = AssertionError(f"Tool did not produce an output with name '{name}' (or at index {output_index})")
+                error = AssertionError(
+                    f"Tool did not produce an output with name '{name}' (or at index {output_index})"
+                )
                 register_exception(error)
         if output_data:
             try:
