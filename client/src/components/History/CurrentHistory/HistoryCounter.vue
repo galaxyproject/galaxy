@@ -12,12 +12,15 @@ import { useRouter } from "vue-router/composables";
 import type { HistorySummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { useConfig } from "@/composables/config";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { useUserStore } from "@/stores/userStore";
 
 import { useDetailedHistory } from "./usesDetailedHistory";
 
 import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
+
+const { isOnlyPreference } = useStorageLocationConfiguration();
 
 library.add(faDatabase, faEyeSlash, faHdd, faMapMarker, faSync, faTrash);
 
@@ -53,6 +56,14 @@ const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
+
+const storageLocationTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "History Preferred Storage Location";
+    } else {
+        return "History Storage Location";
+    }
+});
 
 function onDashboard() {
     router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
@@ -206,7 +217,7 @@ onMounted(() => {
 
             <BModal
                 v-model="showPreferredObjectStoreModal"
-                title="History Preferred Storage Location"
+                :title="storageLocationTitle"
                 modal-class="history-preferred-object-store-modal"
                 title-tag="h3"
                 size="sm"
