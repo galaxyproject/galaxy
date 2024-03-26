@@ -64,7 +64,7 @@ Keyboard navigation and selection:
 Resource grids have been consolidated into tab views
 -----------------------------------------------------------
 
-Grids for Histories, Visualizations and Pages have been consolidated into tab views.
+Your histories, visualisations, and pages are now consolidated into an easier to use interface. Switch between your results and published results easily.
 
 .. raw:: html
 
