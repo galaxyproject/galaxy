@@ -1,7 +1,14 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import type { AnyHistory, HistoryDevDetailed, HistorySummary, HistorySummaryExtended } from "@/api";
+import type {
+    AnyHistory,
+    HistoryContentsStats,
+    HistoryDevDetailed,
+    HistorySummary,
+    HistorySummaryExtended,
+} from "@/api";
+import { historyFetcher } from "@/api/histories";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
@@ -21,6 +28,7 @@ import { sortByObjectProp } from "@/utils/sorting";
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
+const CONTENT_STATS_KEYS = ["size", "contents_active", "update_time"] as const;
 
 export const useHistoryStore = defineStore("historyStore", () => {
     const historiesLoading = ref(false);
@@ -100,7 +108,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         set(storedFilterTexts.value, historyId, filterText);
     }
 
-    function setHistory(history: AnyHistory) {
+    function setHistory(history: AnyHistory | HistoryContentsStats) {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.assign(storedHistories.value[history.id]!, history);
@@ -301,6 +309,20 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setHistory(savedHistory);
     }
 
+    async function updateContentStats(historyId: string) {
+        try {
+            const { data } = await historyFetcher({
+                history_id: historyId,
+                keys: CONTENT_STATS_KEYS.join(","),
+            });
+            const contentStats = { id: historyId, ...data } as HistoryContentsStats;
+            setHistory(contentStats);
+            return contentStats;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     return {
         histories,
         currentHistory,
@@ -331,5 +353,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
         historiesLoading,
         historiesOffset,
         totalHistoryCount,
+        updateContentStats,
     };
 });

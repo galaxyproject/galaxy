@@ -294,6 +294,7 @@ async function onDelete(item: HistoryItem, recursive = false) {
 
     try {
         await deleteContent(item, { recursive: recursive });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
@@ -315,6 +316,7 @@ async function onUndelete(item: HistoryItem) {
 
     try {
         await updateContentFields(item, { deleted: false });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
@@ -326,9 +328,14 @@ async function onUnhide(item: HistoryItem) {
 
     try {
         await updateContentFields(item, { visible: true });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
+}
+
+function updateContentStats() {
+    historyStore.updateContentStats(props.history.id);
 }
 
 function reloadContents() {

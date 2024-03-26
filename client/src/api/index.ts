@@ -8,12 +8,22 @@ import { components } from "@/api/schema";
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
 /**
- * Contains additional details about the contents and owner of a History.
- * This is used by the client API to simplify the handling of History objects.
+ * Contains minimal information about a History with additional content stats.
+ * This is a subset of information that can be relatively frequently updated after
+ * certain actions are performed on the history.
  */
-export interface HistorySummaryExtended extends HistorySummary {
+export interface HistoryContentsStats {
+    id: string;
+    update_time: string;
     size: number;
     contents_active: components["schemas"]["HistoryActiveContentCounts"];
+}
+
+/**
+ * Contains summary information plus additional details about the contents and owner of a History.
+ * This is used by the client API to simplify the handling of History objects.
+ */
+export interface HistorySummaryExtended extends HistorySummary, HistoryContentsStats {
     user_id: string;
 }
 
