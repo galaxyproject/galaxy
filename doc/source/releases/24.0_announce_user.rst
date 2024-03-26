@@ -70,7 +70,7 @@ Your histories, visualisations, and pages are now consolidated into an easier to
 
    <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
-UI for "relocating" a dataset to a new object store
+Move datasets between storage locations
 -----------------------------------------------------------
 
 Relocate a dataset to a new object store with ease using this new UI feature! The example below uses an instance with four object stores defined, but only three of them declaring the same "device" ID. Clicking on the dataset information and scrolling to storage details has a "Relocate" option if the dataset is "safe" to relocate and there are valid targets to relocate it to. The UI utilizes the same visual language used for describing attributes of the storage and exposing admin provided details. This example also shows what the buttons look like with quota enabled object stores and object stores without quota enabled.
