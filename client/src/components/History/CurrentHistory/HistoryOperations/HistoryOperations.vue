@@ -14,6 +14,7 @@ interface Props {
     hasMatches: boolean;
     expandedCount: number;
     showSelection: boolean;
+    isMultiViewItem: boolean;
 }
 
 const props = defineProps<Props>();
@@ -60,6 +61,7 @@ function onUpdateOperationStatus(updateTime: number) {
             </BButtonGroup>
 
             <DefaultOperations
+                v-if="!isMultiViewItem"
                 v-show="!showSelection"
                 :history="history"
                 @update:operation-running="onUpdateOperationStatus" />

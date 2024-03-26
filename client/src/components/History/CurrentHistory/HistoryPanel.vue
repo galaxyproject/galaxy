@@ -549,6 +549,7 @@ function setItemDragstart(
                     <HistoryOperations
                         v-if="canEditHistory"
                         :history="history"
+                        :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
                         :has-matches="hasMatches(historyItems)"
@@ -558,6 +559,7 @@ function setItemDragstart(
                         <template v-slot:selection-operations>
                             <HistorySelectionOperations
                                 :history="history"
+                                :is-multi-view-item="isMultiViewItem"
                                 :filter-text="filterText"
                                 :content-selection="selectedItems"
                                 :selection-size="selectionSize"
@@ -577,7 +579,7 @@ function setItemDragstart(
                         </template>
                     </HistoryOperations>
 
-                    <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
+                    <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
 
                     <OperationErrorDialog
                         v-if="operationError"
