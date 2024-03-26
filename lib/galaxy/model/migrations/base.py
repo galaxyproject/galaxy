@@ -33,7 +33,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import (
     Connection,
-    CursorResult,
     Engine,
 )
 
@@ -398,10 +397,11 @@ class DatabaseStateCache:
         metadata.reflect(bind=conn)
         return metadata
 
-    def _load_sqlalchemymigrate_version(self, conn: Connection) -> CursorResult:
+    def _load_sqlalchemymigrate_version(self, conn: Connection) -> Optional[int]:
         if self.has_sqlalchemymigrate_version_table():
             sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
             return conn.execute(sql).scalar()
+        return None
 
 
 def pop_arg_from_args(args: List[str], arg_name) -> Optional[str]:

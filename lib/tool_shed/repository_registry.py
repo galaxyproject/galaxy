@@ -44,8 +44,12 @@ class Registry:
         self.viewable_suites_by_category = {}
         self.viewable_valid_repositories_and_suites_by_category = {}
         self.viewable_valid_suites_by_category = {}
-        self.load_viewable_repositories_and_suites_by_category()
-        self.load_repository_and_suite_tuples()
+        self.load()
+
+    def load(self):
+        with self.sa_session.begin():
+            self.load_viewable_repositories_and_suites_by_category()
+            self.load_repository_and_suite_tuples()
 
     def add_category_entry(self, category):
         category_name = str(category.name)

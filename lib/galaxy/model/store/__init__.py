@@ -716,7 +716,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
                                 try:
                                     if dataset_instance.has_metadata_files:
-                                        dataset_instance.datatype.set_meta(dataset_instance)
+                                        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore[arg-type]
                                 except Exception:
                                     log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
                                     dataset_instance.state = dataset_instance.dataset.states.FAILED_METADATA
@@ -1244,7 +1244,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 continue
 
             imported_job = model.Job()
-            imported_job.id = job_attrs.get("id")
+            imported_job.id = cast(int, job_attrs.get("id"))
             imported_job.user = self.user
             add_object_to_session(imported_job, history_sa_session)
             imported_job.history = history
@@ -2168,12 +2168,12 @@ class DirectoryModelExportStore(ModelExportStore):
         sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
-        stmt = (
+        stmt_hdca = (
             select(model.HistoryDatasetCollectionAssociation)
-            .where(model.HistoryDatasetCollectionAssociation.history == history)
+            .where(model.HistoryDatasetCollectionAssociation.history == history)  # type:ignore[arg-type]
             .where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
         )
-        collections = sa_session.scalars(stmt)
+        collections = sa_session.scalars(stmt_hdca)
 
         for collection in collections:
             # filter this ?
@@ -2187,7 +2187,7 @@ class DirectoryModelExportStore(ModelExportStore):
         # Write datasets' attributes to file.
         actions_backref = model.Dataset.actions  # type: ignore[attr-defined]
 
-        stmt = (
+        stmt_hda = (
             select(model.HistoryDatasetAssociation)
             .where(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
@@ -2195,7 +2195,7 @@ class DirectoryModelExportStore(ModelExportStore):
             .order_by(model.HistoryDatasetAssociation.hid)
             .where(model.Dataset.purged == expression.false())
         )
-        datasets = sa_session.scalars(stmt).unique()
+        datasets = sa_session.scalars(stmt_hda).unique()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)

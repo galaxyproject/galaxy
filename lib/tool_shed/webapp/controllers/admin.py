@@ -324,7 +324,7 @@ class AdminController(BaseUIController, Admin):
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
         if "regenerate_statistics_button" in kwd:
-            trans.app.shed_counter.generate_statistics()
+            trans.app.shed_counter.generate_statistics(trans.sa_session)
             message = "Successfully regenerated statistics"
         return trans.fill_template("/webapps/tool_shed/admin/statistics.mako", message=message, status=status)
 
