@@ -746,12 +746,16 @@ class GalaxyRBACAgent(RBACAgent):
         return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
-        stmt = select(Role).where(
-            and_(
-                UserRoleAssociation.user_id == user.id,
-                Role.id == UserRoleAssociation.role_id,
-                Role.type == Role.types.PRIVATE,
+        stmt = (
+            select(Role)
+            .where(
+                and_(
+                    UserRoleAssociation.user_id == user.id,
+                    Role.id == UserRoleAssociation.role_id,
+                    Role.type == Role.types.PRIVATE,
+                )
             )
+            .distinct()
         )
         role = self.sa_session.execute(stmt).scalar_one_or_none()
         if not role:
