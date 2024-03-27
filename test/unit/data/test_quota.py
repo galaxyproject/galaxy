@@ -152,7 +152,7 @@ class TestCalculateUsage(BaseModelTestCase):
         usage = u.dictify_objectstore_usage()
         assert len(usage) == 2
 
-        usage_dict = dict([(u.object_store_id, u.total_disk_usage) for u in usage])
+        usage_dict = {u.object_store_id: u.total_disk_usage for u in usage}
         assert int(usage_dict["not_tracked"]) == 10
         assert int(usage_dict["tracked"]) == 15
 
