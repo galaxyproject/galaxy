@@ -16,9 +16,7 @@ const knownErrors = [{ regex: sharingErrorRex, modalRef: sharingError }];
 const props = defineProps<Props>();
 
 const fixable = computed(() => {
-    // Assume the intent is to branch this out to other types of errors, so
-    // leaving the computed in.
-    return sharingError.value;
+    return knownErrors.some((error) => error.modalRef.value);
 });
 
 function checkForKnownErrors() {
