@@ -1,3 +1,57 @@
+<script setup lang="ts">
+import { computed, onMounted, onBeforeUnmount, toRef } from "vue";
+
+import { InvocationJobsSummary, WorkflowInvocationElementView } from "@/api/invocations";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+import { useInvocationStore } from "@/stores/invocationStore";
+
+import { cancelWorkflowScheduling } from "./services";
+import { isTerminal, jobCount } from "./util";
+import { useInvocationState } from "./usesInvocationState";
+
+import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
+import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+
+interface Props {
+    invocationId: string;
+    index?: Number;
+}
+
+const props = defineProps<Props>();
+
+const {
+    invocation,
+    invocationState,
+    invocationSchedulingTerminal,
+    invocationAndJobTerminal,
+    jobStatesSummary,
+    monitorState,
+    clearStateMonitor,
+} = useInvocationState(toRef(props, "invocationId"));
+
+onMounted(monitorState);
+onBeforeUnmount(clearStateMonitor);
+
+function onError(e: unknown) {
+    console.error(e);
+}
+
+const emit = defineEmits<{
+    (e: "invocation-cancelled"): void;
+}>();
+
+function onCancel() {
+    emit("invocation-cancelled");
+}
+
+function handleCancelWorkflowScheduling() {
+    cancelWorkflowScheduling(props.invocationId).then(onCancel).catch(onError);
+}
+</script>
+
 <template>
     <b-tabs v-if="invocation">
         <b-tab title="Summary" active>
@@ -8,7 +62,7 @@
                 :invocation-and-job-terminal="invocationAndJobTerminal"
                 :invocation-scheduling-terminal="invocationSchedulingTerminal"
                 :job-states-summary="jobStatesSummary"
-                @invocation-cancelled="cancelWorkflowScheduling" />
+                @invocation-cancelled="handleCancelWorkflowScheduling" />
         </b-tab>
         <b-tab title="Details">
             <WorkflowInvocationDetails :invocation="invocation" />
@@ -29,107 +83,3 @@
         <LoadingSpan message="Loading invocation" />
     </b-alert>
 </template>
-<script>
-import LoadingSpan from "components/LoadingSpan";
-
-import { useInvocationStore } from "@/stores/invocationStore";
-
-import { cancelWorkflowScheduling } from "./services";
-import { isTerminal, jobCount } from "./util";
-
-import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
-import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
-
-export default {
-    components: {
-        LoadingSpan,
-        WorkflowInvocationSummary,
-        WorkflowInvocationDetails,
-        WorkflowInvocationExportOptions,
-    },
-    props: {
-        invocationId: {
-            type: String,
-            required: true,
-        },
-        index: {
-            type: Number,
-            required: false,
-            default: null,
-        },
-    },
-    setup() {
-        const invocationStore = useInvocationStore();
-        return {
-            invocationStore,
-        };
-    },
-    data() {
-        return {
-            stepStatesInterval: null,
-            jobStatesInterval: null,
-        };
-    },
-    computed: {
-        invocation: function () {
-            return this.invocationStore.getInvocationById(this.invocationId);
-        },
-        invocationState: function () {
-            return this.invocation?.state || "new";
-        },
-        invocationAndJobTerminal: function () {
-            return !!(this.invocationSchedulingTerminal && this.jobStatesTerminal);
-        },
-        invocationSchedulingTerminal: function () {
-            return (
-                this.invocationState == "scheduled" ||
-                this.invocationState == "cancelled" ||
-                this.invocationState == "failed"
-            );
-        },
-        jobStatesTerminal: function () {
-            if (this.invocationSchedulingTerminal && jobCount(this.jobStatesSummary) === 0) {
-                // no jobs for this invocation (think subworkflow or just inputs)
-                return true;
-            }
-            return this.jobStatesSummary && isTerminal(this.jobStatesSummary);
-        },
-        jobStatesSummary() {
-            const jobsSummary = this.invocationStore.getInvocationJobsSummaryById(this.invocationId);
-            return !jobsSummary ? null : jobsSummary;
-        },
-    },
-    created: function () {
-        this.pollStepStatesUntilTerminal();
-        this.pollJobStatesUntilTerminal();
-    },
-    beforeDestroy: function () {
-        clearTimeout(this.jobStatesInterval);
-        clearTimeout(this.stepStatesInterval);
-    },
-    methods: {
-        pollStepStatesUntilTerminal: async function () {
-            if (!this.invocation || !this.invocationSchedulingTerminal) {
-                await this.invocationStore.fetchInvocationForId({ id: this.invocationId });
-                this.stepStatesInterval = setTimeout(this.pollStepStatesUntilTerminal, 3000);
-            }
-        },
-        pollJobStatesUntilTerminal: async function () {
-            if (!this.jobStatesTerminal) {
-                await this.invocationStore.fetchInvocationJobsSummaryForId({ id: this.invocationId });
-                this.jobStatesInterval = setTimeout(this.pollJobStatesUntilTerminal, 3000);
-            }
-        },
-        onError: function (e) {
-            console.error(e);
-        },
-        onCancel() {
-            this.$emit("invocation-cancelled");
-        },
-        cancelWorkflowScheduling: function () {
-            cancelWorkflowScheduling(this.invocationId).then(this.onCancel).catch(this.onError);
-        },
-    },
-};
-</script>
