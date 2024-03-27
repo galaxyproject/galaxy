@@ -181,12 +181,16 @@ export function getValidToolsInEachSection(
     validToolIdsInCurrentView: string[],
     currentPanel: Record<string, Tool | ToolSection>
 ) {
+    // use a set for fast membership lookup
+    const idSet = new Set(validToolIdsInCurrentView);
     return Object.entries(currentPanel).map(([id, section]) => {
         const validatedSection = { ...section } as ToolSection;
-        if (validatedSection.tools && Array.isArray(validatedSection.tools)) {
+        // assign sectionTools to avoid repeated getter access
+        const sectionTools = validatedSection.tools;
+        if (sectionTools && Array.isArray(sectionTools)) {
             // filter on valid tools and panel labels in this section
-            validatedSection.tools = validatedSection.tools.filter((toolId) => {
-                if (typeof toolId === "string" && validToolIdsInCurrentView.includes(toolId)) {
+            validatedSection.tools = sectionTools.filter((toolId) => {
+                if (typeof toolId === "string" && idSet.has(toolId)) {
                     return true;
                 } else if (typeof toolId !== "string") {
                     // is a special case where there is a label within a section
