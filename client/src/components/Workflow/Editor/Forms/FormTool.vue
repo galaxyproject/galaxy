@@ -25,11 +25,12 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional :step="step" v-on="$listeners" />
+            <FormConditional :step="step" @onUpdateStep="(id, step) => $emit('onUpdateStep', id, step)" />
             <div class="mt-2 mb-4">
                 <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                 <FormDisplay
                     :id="id"
+                    :key="formKey"
                     :inputs="inputs"
                     :errors="errors"
                     text-enable="Set in Advance"
@@ -41,6 +42,7 @@
                 <Heading h2 separator bold size="sm"> Additional Options </Heading>
                 <FormSection
                     :id="stepId"
+                    :key="formKey"
                     :node-inputs="stepInputs"
                     :node-outputs="stepOutputs"
                     :step="step"
@@ -53,10 +55,12 @@
 </template>
 
 <script>
+import { storeToRefs } from "pinia";
 import Utils from "utils/utils";
-import { toRef } from "vue";
+import { ref, toRef, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { useRefreshFromStore } from "@/stores/refreshFromStore";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
@@ -96,6 +100,14 @@ export default {
         const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
+        const { formKey } = storeToRefs(useRefreshFromStore());
+        const mainValues = ref(null);
+
+        watch(
+            () => formKey.value,
+            () => (mainValues.value = null)
+        );
+
         return {
             stepId,
             annotation,
@@ -105,11 +117,12 @@ export default {
             configForm,
             postJobActions,
             uniqueErrorLabel,
+            formKey,
+            mainValues,
         };
     },
     data() {
         return {
-            mainValues: null,
             messageText: "",
             messageVariant: "success",
         };

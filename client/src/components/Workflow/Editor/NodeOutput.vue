@@ -22,12 +22,13 @@ import {
     type PostJobActions,
     type Step,
 } from "@/stores/workflowStepStore";
-import { assertDefined, ensureDefined } from "@/utils/assertions";
+import { assertDefined } from "@/utils/assertions";
 
+import { UpdateStepAction } from "./Actions/stepActions";
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
 import { type CollectionTypeDescriptor, NULL_COLLECTION_TYPE_DESCRIPTION } from "./modules/collectionTypeDescription";
-import { OutputTerminals } from "./modules/terminals";
+import type { OutputTerminals } from "./modules/terminals";
 
 import DraggableWrapper from "./DraggablePan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -53,7 +54,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
-const { stateStore, stepStore } = useWorkflowStores();
+const { stateStore, stepStore, undoRedoStore } = useWorkflowStores();
 const { rootOffset, output, stepId, datatypesMapper } = toRefs(props);
 
 const terminalComponent: Ref<InstanceType<typeof DraggableWrapper> | null> = ref(null);
@@ -155,7 +156,15 @@ function onToggleActive() {
     } else {
         stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
     }
-    stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { workflow_outputs: step.workflow_outputs },
+        { workflow_outputs: stepWorkflowOutputs }
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onToggleVisible() {
@@ -164,25 +173,36 @@ function onToggleVisible() {
     }
 
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
+    const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
+
+    const oldPostJobActions = structuredClone(step.post_job_actions) ?? {};
+    let newPostJobActions;
+
     if (isVisible.value) {
-        step.post_job_actions = {
-            ...step.post_job_actions,
-            [actionKey]: {
-                action_type: "HideDatasetAction",
-                output_name: props.output.name,
-                action_arguments: {},
-            },
+        newPostJobActions = structuredClone(step.post_job_actions) ?? {};
+        newPostJobActions[actionKey] = {
+            action_type: "HideDatasetAction",
+            output_name: props.output.name,
+            action_arguments: {},
         };
     } else {
         if (step.post_job_actions) {
-            const { [actionKey]: _unused, ...newPostJobActions } = step.post_job_actions;
-            step.post_job_actions = newPostJobActions;
+            const { [actionKey]: _unused, ...remainingPostJobActions } = step.post_job_actions;
+            newPostJobActions = structuredClone(remainingPostJobActions);
         } else {
-            step.post_job_actions = {};
+            newPostJobActions = {};
         }
     }
-    stepStore.updateStep(step);
+
+    const action = new UpdateStepAction(
+        stepStore,
+        stateStore,
+        step.id,
+        { post_job_actions: oldPostJobActions },
+        { post_job_actions: newPostJobActions }
+    );
+    undoRedoStore.applyAction(action);
 }
 
 function onPanBy(panBy: XYPosition) {

@@ -1,15 +1,21 @@
 import simplify from "simplify-js";
-import { watch } from "vue";
+import { ref, watch } from "vue";
 
+import type { UndoRedoStore } from "@/stores/undoRedoStore";
 import type { BaseWorkflowComment, WorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { type WorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { assertDefined } from "@/utils/assertions";
 import { match } from "@/utils/utils";
 
+import { AddCommentAction } from "../Actions/commentActions";
 import { vecMax, vecMin, vecReduceFigures, vecSnap, vecSubtract, type Vector } from "../modules/geometry";
 
-export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentStore: WorkflowCommentStore) {
-    let comment: BaseWorkflowComment | null = null;
+export function useToolLogic(
+    toolbarStore: WorkflowEditorToolbarStore,
+    commentStore: WorkflowCommentStore,
+    undoRedoStore: UndoRedoStore
+) {
+    const comment = ref<BaseWorkflowComment | null>(null);
     let start: Vector | null = null;
 
     const { commentOptions } = toolbarStore;
@@ -17,10 +23,19 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
     watch(
         () => toolbarStore.currentTool,
         () => {
-            if (comment?.type === "freehand") {
-                finalizeFreehandComment(comment);
+            if (comment.value?.type === "freehand") {
+                finalizeFreehandComment(comment.value);
             } else {
-                comment = null;
+                comment.value = null;
+            }
+        }
+    );
+
+    watch(
+        () => comment.value,
+        (newComment, oldComment) => {
+            if (newComment === null && oldComment !== null) {
+                undoRedoStore.applyAction(new AddCommentAction(commentStore, oldComment));
             }
         }
     );
@@ -32,7 +47,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         }
 
-        if (comment?.type === "freehand" || !comment) {
+        if (comment.value?.type === "freehand" || !comment.value) {
             const baseComment = {
                 id: commentStore.highestCommentId + 1,
                 position: start,
@@ -40,7 +55,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
                 color: commentOptions.color,
             };
 
-            comment = match(toolbarStore.currentTool, {
+            comment.value = match(toolbarStore.currentTool, {
                 textComment: () => ({
                     ...baseComment,
                     type: "text",
@@ -78,7 +93,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
                 },
             });
 
-            commentStore.createComment(comment);
+            commentStore.createComment(comment.value);
         }
     });
 
@@ -87,11 +102,11 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         }
 
-        if (comment && start) {
-            if (comment.type === "freehand") {
-                commentStore.addPoint(comment.id, position);
+        if (comment.value && start) {
+            if (comment.value.type === "freehand") {
+                commentStore.addPoint(comment.value.id, position);
             } else {
-                positionComment(start, position, comment);
+                positionComment(start, position, comment.value);
             }
         }
     });
@@ -99,26 +114,26 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
     toolbarStore.onInputCatcherEvent("pointerup", () => {
         if (toolbarStore.currentTool === "freehandEraser") {
             return;
-        } else if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
+        } else if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
         } else if (toolbarStore.currentTool !== "freehandComment") {
             toolbarStore.currentTool = "pointer";
         }
 
-        comment = null;
+        comment.value = null;
     });
 
     toolbarStore.onInputCatcherEvent("pointerleave", () => {
-        if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
-            comment = null;
+        if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
+            comment.value = null;
         }
     });
 
     toolbarStore.onInputCatcherEvent("temporarilyDisabled", () => {
-        if (comment?.type === "freehand") {
-            finalizeFreehandComment(comment);
-            comment = null;
+        if (comment.value?.type === "freehand") {
+            finalizeFreehandComment(comment.value);
+            comment.value = null;
         }
     });
 

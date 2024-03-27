@@ -1,7 +1,7 @@
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-interface Workflow {
+export interface Workflow {
     name: string;
     annotation: string;
     license: string;
@@ -21,12 +21,7 @@ interface Workflow {
  * @param appendData if true appends data to current workflow, making sure to create new uuids
  * @param defaultPosition where to position workflow in the editor
  */
-export async function fromSimple(
-    id: string,
-    data: Workflow,
-    appendData = false,
-    defaultPosition = { top: 0, left: 0 }
-) {
+export function fromSimple(id: string, data: Workflow, appendData = false, defaultPosition = { top: 0, left: 0 }) {
     const stepStore = useWorkflowStepStore(id);
     const commentStore = useWorkflowCommentStore(id);
 
