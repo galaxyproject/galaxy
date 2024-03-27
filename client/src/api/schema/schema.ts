@@ -13230,7 +13230,7 @@ export interface components {
              * Replacement Parameters
              * @description Informal replacement parameters for the step.
              */
-            replacement_parameters?: Record<string, never>[] | null;
+            replacement_parameters?: (string | Record<string, never>)[] | null;
             /**
              * Step Index
              * @description The order index of the step.
@@ -13552,44 +13552,44 @@ export interface components {
         WorkflowStepLayoutPosition: {
             /**
              * Bottom
-             * @description Position in pixels of the bottom of the box.
+             * @description Position of the bottom of the box.
              */
-            bottom?: number | null;
+            bottom?: number | number | null;
             /**
              * Height
-             * @description Height of the box in pixels.
+             * @description Height of the box.
              */
-            height?: number | null;
+            height?: number | number | null;
             /**
              * Left
              * @description Left margin or left-most position of the box.
              */
-            left: number;
+            left: number | number;
             /**
              * Right
              * @description Right margin or right-most position of the box.
              */
-            right?: number | null;
+            right?: number | number | null;
             /**
              * Top
-             * @description Position in pixels of the top of the box.
+             * @description Position of the top of the box.
              */
-            top: number;
+            top: number | number;
             /**
              * Width
-             * @description Width of the box in pixels.
+             * @description Width of the box.
              */
-            width?: number | null;
+            width?: number | number | null;
             /**
              * X
-             * @description Horizontal pixel coordinate of the top right corner of the box.
+             * @description Horizontal coordinate of the top right corner of the box.
              */
-            x?: number | null;
+            x?: number | number | null;
             /**
              * Y
-             * @description Vertical pixel coordinate of the top right corner of the box.
+             * @description Vertical coordinate of the top right corner of the box.
              */
-            y?: number | null;
+            y?: number | number | null;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
