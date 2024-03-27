@@ -14,6 +14,11 @@ function string:split( inSplitPattern, outResults )
   return outResults
 end
 
+local shell_opts = VAR.SHELL_OPTS
+if shell_opts == '' then
+    shell_opts = '-c'
+end
+
 local repo = VAR.REPO
 
 local channel_args = ''
@@ -87,7 +92,7 @@ inv.task('build')
         .run('rm', '-rf', '/data/dist')
     .using(conda_image)
         .withHostConfig({binds = bind_args})
-        .run('/bin/sh', '-c', preinstall
+        .run('/bin/sh', shell_opts, preinstall
             .. conda_bin .. ' install '
             .. channel_args .. ' '
             .. target_args
@@ -103,7 +108,7 @@ if VAR.SINGULARITY ~= '' then
     inv.task('singularity')
         .using(singularity_image)
         .withHostConfig({binds = {"build:/data", singularity_image_dir .. ":/import"}, privileged = true})
-        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .withConfig({entrypoint = {'/bin/sh', shell_opts}})
         .run('mkdir -p /usr/local/var/singularity/mnt/container && '
             .. 'singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def && '
             .. 'chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
@@ -118,13 +123,13 @@ inv.task('cleanup')
 if VAR.TEST_BINDS == '' then
     inv.task('test')
         .using(repo)
-        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .withConfig({entrypoint = {'/bin/sh', shell_opts}})
         .run(VAR.TEST)
 else
     inv.task('test')
         .using(repo)
         .withHostConfig({binds = test_bind_args})
-        .withConfig({entrypoint = {'/bin/sh', '-c'}})
+        .withConfig({entrypoint = {'/bin/sh', shell_opts}})
         .run(VAR.TEST)
 end
 
