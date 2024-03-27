@@ -9519,8 +9519,6 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         rval["order_index"] = self.workflow_step.order_index
         rval["workflow_step_label"] = self.workflow_step.label
         rval["workflow_step_uuid"] = str(self.workflow_step.uuid)
-        # Following no longer makes sense...
-        # rval['state'] = self.job.state if self.job is not None else None
         if view == "element":
             jobs = []
             for job in self.jobs:
