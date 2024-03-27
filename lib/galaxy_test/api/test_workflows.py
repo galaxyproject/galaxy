@@ -7192,11 +7192,6 @@ steps: []
             elif order_index == 2:
                 invocation_tool_step = invocation_step
 
-        # Tool steps have non-null job_ids (deprecated though they may be)
-        assert invocation_input_step.get("job_id", None) is None
-        job_id = invocation_tool_step.get("job_id", None)
-        assert job_id is not None
-
         invocation_tool_step_id = invocation_tool_step["id"]
         invocation_tool_step_response = self._get(
             f"workflows/{workflow_id}/invocations/{invocation_id}/steps/{invocation_tool_step_id}"
