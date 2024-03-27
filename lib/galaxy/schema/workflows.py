@@ -75,18 +75,54 @@ class InputConnection(Model):
 class WorkflowStepLayoutPosition(Model):
     """Position and dimensions of the workflow step represented by a box on the graph."""
 
-    bottom: Optional[int] = Field(None, title="Bottom", description="Position in pixels of the bottom of the box.")
-    top: int = Field(..., title="Top", description="Position in pixels of the top of the box.")
-    left: int = Field(..., title="Left", description="Left margin or left-most position of the box.")
-    right: Optional[int] = Field(None, title="Right", description="Right margin or right-most position of the box.")
-    x: Optional[int] = Field(
-        None, title="X", description="Horizontal pixel coordinate of the top right corner of the box."
+    bottom: Optional[Union[int, float]] = Field(
+        None,
+        title="Bottom",
+        description="Position of the bottom of the box.",
+        # description="Position in pixels of the bottom of the box.",
     )
-    y: Optional[int] = Field(
-        None, title="Y", description="Vertical pixel coordinate of the top right corner of the box."
+    top: Union[int, float] = Field(
+        ...,
+        title="Top",
+        description="Position of the top of the box.",
+        # description="Position in pixels of the top of the box.",
     )
-    height: Optional[int] = Field(None, title="Height", description="Height of the box in pixels.")
-    width: Optional[int] = Field(None, title="Width", description="Width of the box in pixels.")
+    left: Union[int, float] = Field(
+        ...,
+        title="Left",
+        description="Left margin or left-most position of the box.",
+        # description="Left margin or left-most position of the box.",
+    )
+    right: Optional[Union[int, float]] = Field(
+        None,
+        title="Right",
+        description="Right margin or right-most position of the box.",
+        # description="Right margin or right-most position of the box.",
+    )
+    x: Optional[Union[int, float]] = Field(
+        None,
+        title="X",
+        description="Horizontal coordinate of the top right corner of the box.",
+        # description="Horizontal pixel coordinate of the top right corner of the box.",
+    )
+    y: Optional[Union[int, float]] = Field(
+        None,
+        title="Y",
+        description="Vertical coordinate of the top right corner of the box.",
+        # description="Vertical pixel coordinate of the top right corner of the box.",
+    )
+    height: Optional[Union[int, float]] = Field(
+        None,
+        title="Height",
+        description="Height of the box.",
+        # description="Height of the box in pixels.",
+    )
+    width: Optional[Union[int, float]] = Field(
+        None,
+        title="Width",
+        description="Width of the box.",
+        # description="Width of the box in pixels.",
+    )
 
 
 class WorkflowInput(Model):
