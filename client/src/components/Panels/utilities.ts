@@ -158,16 +158,22 @@ export function getValidToolsInCurrentView(
     isWorkflowPanel = false,
     excludedSectionIds: string[] = []
 ) {
-    const toolEntries = Object.entries(toolsById).filter(([, tool]) => {
-        // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
-        return (
-            !tool.hidden &&
-            tool.disabled !== true &&
-            !(isWorkflowPanel && !tool.is_workflow_compatible) &&
-            !excludedSectionIds.includes(tool.panel_section_id)
-        );
-    });
-    return Object.fromEntries(toolEntries);
+    const excludeSet = new Set(excludedSectionIds);
+    const validTools: Record<string, Tool> = {};
+
+    for (const [toolId, tool] of Object.entries(toolsById)) {
+        const { panel_section_id, hidden, disabled, is_workflow_compatible } = tool;
+        if (
+            !excludeSet.has(panel_section_id) &&
+            !hidden &&
+            disabled !== true &&
+            !(isWorkflowPanel && !is_workflow_compatible)
+        ) {
+            validTools[toolId] = tool;
+        }
+    }
+
+    return validTools;
 }
 
 /** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
