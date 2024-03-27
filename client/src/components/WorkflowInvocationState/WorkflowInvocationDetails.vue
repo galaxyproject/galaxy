@@ -3,6 +3,7 @@ import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 
 import ParameterStep from "./ParameterStep.vue";
 import WorkflowInvocationStep from "./WorkflowInvocationStep.vue";
+import InvocationGraph from "@/components/Workflow/Invocation/InvocationGraph.vue";
 import GenericHistoryItem from "components/History/Content/GenericItem.vue";
 
 const props = defineProps({

@@ -7,7 +7,13 @@
             @onZoom="onZoom"
             @update:pan="panBy" />
         <ToolBar v-if="!readonly" />
-        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
+        <div
+            id="canvas-container"
+            ref="canvas"
+            class="canvas-content"
+            :class="props.invocation ? 'fixed-window-height' : 'h-100'"
+            @drop.prevent
+            @dragover.prevent>
             <AdaptiveGrid
                 :viewport-bounds="elementBounding"
                 :viewport-bounding-box="viewportBoundingBox"
@@ -31,6 +37,7 @@
                     :scroll="scroll"
                     :scale="scale"
                     :readonly="readonly"
+                    :invocation="invocation"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -66,7 +73,7 @@ import { computed, type PropType, provide, reactive, type Ref, ref, watch, watch
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
+import type { Step as WorkflowStep } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { useD3Zoom } from "./composables/d3Zoom";
@@ -83,6 +90,16 @@ import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 
+// TODO: use schema or other better way to type
+interface InvocationGraphStep extends WorkflowStep {
+    invocation_outputs: any;
+    state?: string;
+    jobs?: {
+        [key: string]: number | undefined;
+    };
+}
+type Step = WorkflowStep | InvocationGraphStep;
+
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
@@ -93,6 +110,7 @@ const props = defineProps({
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
     showMinimap: { type: Boolean, default: true },
     showZoomControls: { type: Boolean, default: true },
+    invocation: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -198,11 +216,15 @@ const { comments } = storeToRefs(commentStore);
 
     .canvas-content {
         width: 100%;
-        height: 100%;
         position: relative;
         left: 0px;
         top: 0px;
         overflow: hidden;
+
+        /* TODO: w/out this, canvas height = 0 when width goes beyond a point */
+        &.fixed-window-height {
+            height: 50vh;
+        }
     }
 
     .node-area {

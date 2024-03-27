@@ -5,13 +5,14 @@
             <ContentItem
                 :id="item.hid ?? item.element_index + 1"
                 add-highlight-btn
-                is-history-item
+                :is-history-item="!unExpandable"
                 :item="item?.object || item"
                 :name="item.name || item.element_identifier"
                 :expand-dataset="expandDataset"
                 :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
-                @update:expand-dataset="expandDataset = $event"
-                @view-collection="viewCollection = !viewCollection"
+                @update:expand-dataset="onExpand"
+                @view-collection="viewCollection"
+                @open-in-history="openInHistory"
                 @delete="onDelete"
                 @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
@@ -53,6 +54,10 @@ export default {
             type: String,
             required: true,
         },
+        unExpandable: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -79,6 +84,11 @@ export default {
         onDelete(item, recursive = false) {
             deleteContent(item, { recursive: recursive });
         },
+        onExpand(expand) {
+            if (!this.unExpandable) {
+                this.expandDataset = expand;
+            }
+        },
         onUndelete(item) {
             updateContentFields(item, { deleted: false });
         },
@@ -99,6 +109,26 @@ export default {
                 await this.applyFilters(history_id, filters);
             } catch (error) {
                 this.onError(error);
+            }
+        },
+        onViewCollection() {
+            if (!this.unExpandable) {
+                this.viewCollection = !this.viewCollection;
+            }
+        },
+        async openInHistory(item) {
+            if (this.unExpandable) {
+                const { history_id, hid } = item;
+                const filters = {
+                    deleted: item.deleted,
+                    visible: item.visible,
+                    hid: hid,
+                };
+                try {
+                    await this.applyFilters(history_id, filters);
+                } catch (error) {
+                    this.onError(error);
+                }
             }
         },
     },

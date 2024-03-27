@@ -13,6 +13,11 @@ interface Workflow {
     tags: string[];
 }
 
+interface InvocationGraph {
+    steps: Steps;
+    comments: WorkflowComment[];
+}
+
 /**
  * Loads a workflow into the editor
  *
@@ -23,7 +28,7 @@ interface Workflow {
  */
 export async function fromSimple(
     id: string,
-    data: Workflow,
+    data: Workflow | InvocationGraph,
     appendData = false,
     defaultPosition = { top: 0, left: 0 }
 ) {

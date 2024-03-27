@@ -14,6 +14,7 @@
         @pan-by="onPanBy">
         <div
             class="node-header unselectable clearfix card-header py-1 px-2"
+            :class="[headerClass, { 'node-header-pointer': props.invocation, 'node-header-move': !readonly && !props.invocation }]"
             @click="makeActive"
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
@@ -83,6 +84,48 @@
             @click="makeActive">
             {{ errors }}
         </b-alert>
+        <div v-else-if="props.invocation" class="node-body card-body p-0 mx-2">
+            <NodeInvocationInput
+                v-for="(input, index) in inputs"
+                :key="`in-${index}-${input.name}`"
+                :input="input"
+                :step-id="id"
+                :datatypes-mapper="datatypesMapper"
+                :step-position="step.position ?? { top: 0, left: 0 }"
+                :root-offset="rootOffset"
+                :scroll="scroll"
+                :scale="scale"
+                :parent-node="elHtml"
+                :readonly="readonly"
+                @onChange="onChange" />
+            <div v-if="step.jobs">
+                <div v-if="step.jobs['ok'] !== undefined">
+                    {{ step.jobs["ok"] }} job{{ step.jobs["ok"] > 1 ? "s" : "" }} completed.
+                </div>
+                <div v-if="step.jobs['error'] !== undefined">
+                    {{ step.jobs["error"] }} job{{ step.jobs["error"] > 1 ? "s" : "" }} failed.
+                </div>
+            </div>
+            <div v-else>This step has not been executed.</div>
+            <NodeInvocationOutput
+                v-for="(output, index) in outputs"
+                :key="`out-${index}-${output.name}`"
+                :output="output"
+                :workflow-outputs="workflowOutputs"
+                :post-job-actions="postJobActions"
+                :step-id="id"
+                :step-type="step.type"
+                :step-position="step.position ?? { top: 0, left: 0 }"
+                :root-offset="reactive(rootOffset)"
+                :scroll="scroll"
+                :scale="scale"
+                :datatypes-mapper="datatypesMapper"
+                :parent-node="elHtml"
+                :readonly="readonly"
+                @onDragConnector="onDragConnector"
+                @stopDragging="onStopDragging"
+                @onChange="onChange" />
+        </div>
         <div v-else class="node-body card-body p-0 mx-2" @click="makeActive" @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
@@ -97,6 +140,25 @@
                 :parent-node="elHtml"
                 :readonly="readonly"
                 @onChange="onChange" />
+            <!-- <span v-if="props.invocation">
+                <div v-if="showRule && props.step.inputs?.length > 0" class="rule" />
+                <span v-for="output in props.step.invocation_outputs" :key="output.id">
+                    <GenericItem
+                        :key="output.id"
+                        v-b-tooltip.noninteractive.hover
+                        title="Click to open in history"
+                        :item-id="output.id"
+                        :item-src="output.src"
+                        un-expandable />
+                </span>
+                <span v-if="step.state === 'terminal'">
+                    <div v-for="job in step.jobs" :key="job.id">
+                        <div class="rule" />
+                        <pre v-if="job.tool_stderr" class="code">{{ job.tool_stderr }}</pre>
+                        <pre v-else-if="job.tool_stdout" class="code">{{ job.tool_stdout }}</pre>
+                    </div>
+                </span>
+            </span> -->
             <div v-if="showRule" class="rule" />
             <NodeOutput
                 v-for="(output, index) in outputs"
@@ -135,19 +197,31 @@ import { useNodePosition } from "@/components/Workflow/Editor/composables/useNod
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
-import type { Step } from "@/stores/workflowStepStore";
+import type { Step as WorkflowStep } from "@/stores/workflowStepStore";
 
 import type { OutputTerminals } from "./modules/terminals";
 
+import GenericItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeInvocationInput from "@/components/Workflow/Editor/NodeInvocationInput.vue";
+import NodeInvocationOutput from "@/components/Workflow/Editor/NodeInvocationOutput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 
 Vue.use(BootstrapVue);
 
 library.add(faCodeBranch);
+
+// TODO: use schema or other better way to type here
+interface Step extends WorkflowStep {
+    invocation_outputs?: any;
+    state?: string;
+    jobs?: {
+        [key: string]: number | undefined;
+    };
+}
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -165,6 +239,7 @@ const props = defineProps({
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
     readonly: { type: Boolean, default: false },
+    invocation: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -183,6 +258,23 @@ const emit = defineEmits([
 const popoverShow = ref(false);
 const popoverId = computed(() => `popover-${props.id}`);
 const scrolledTo = ref(false);
+
+const headerClass = computed(() => {
+    if (props.invocation) {
+        if (props.step.state === "ok") {
+            return "header-success";
+        } else if (props.step.state === "error") {
+            return "header-error";
+        } else if (props.step.state === "deleted") {
+            return "header-deleted";
+        } else if (props.step.state === "scheduled") {
+            return "header-warning";
+        }
+        return "header-primary";
+    } else {
+        return "header-primary";
+    }
+});
 
 function remove() {
     emit("onRemove", props.id);
@@ -203,7 +295,11 @@ useNodePosition(
 );
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
-const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
+const showRule = computed(
+    () =>
+        (props.invocation && (props.step.invocation_outputs || props.step.state === "terminal")) ||
+        (props.step.inputs?.length > 0 && props.step.outputs?.length > 0)
+);
 const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
 const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
@@ -318,9 +414,28 @@ function makeActive() {
     }
 
     .node-header {
-        cursor: move;
-        background: $brand-primary;
         color: $white;
+        &.node-header-pointer {
+            cursor: pointer;
+        }
+        &.node-header-move {
+            cursor: move;
+        }
+        &.header-primary {
+            background-color: $brand-primary;
+        }
+        &.header-success {
+            background-color: $brand-success;
+        }
+        &.header-error {
+            background-color: $brand-danger;
+        }
+        &.header-deleted {
+            background-color: $brand-light;
+        }
+        &.header-warning {
+            background-color: $brand-warning;
+        }
     }
 
     .node-body {
