@@ -8071,7 +8071,7 @@ export interface components {
              * Job State
              * @description The current job's state
              */
-            state?: string;
+            state?: components["schemas"]["JobState"] | null;
             /**
              * STDERR
              * @description Job STDERR text

@@ -6,8 +6,7 @@ import { rethrowSimple } from "utils/simple-error";
 import { cleanPaginationParameters, stateIsTerminal } from "./utils";
 
 async function jobDetails({ jobId }) {
-    const url =
-        `${getAppRoot()}api/jobs/${jobId}?full=True`;
+    const url = `${getAppRoot()}api/jobs/${jobId}?full=True`;
     try {
         const { data } = await axios.get(url);
         return data;
@@ -16,9 +15,16 @@ async function jobDetails({ jobId }) {
     }
 }
 
-async function jobConsoleOutput({ jobId, stdout_position = 0, stdout_length = 0, stderr_position = 0, stderr_length = 0 }) {
-    const url = `${getAppRoot()}api/jobs/${jobId}/console_output?stdout_position=${stdout_position}&stdout_length=${stdout_length}` + 
-                                `&stderr_position=${stderr_position}&stderr_length=${stderr_length}`;
+async function jobConsoleOutput({
+    jobId,
+    stdout_position = 0,
+    stdout_length = 0,
+    stderr_position = 0,
+    stderr_length = 0,
+}) {
+    const url =
+        `${getAppRoot()}api/jobs/${jobId}/console_output?stdout_position=${stdout_position}&stdout_length=${stdout_length}` +
+        `&stderr_position=${stderr_position}&stderr_length=${stderr_length}`;
     try {
         const { data } = await axios.get(url);
         return data;

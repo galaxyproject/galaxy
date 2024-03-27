@@ -277,7 +277,9 @@ class JobManager:
         trans.sa_session.refresh(job)
         return job
 
-    def get_job_console_output(self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0):
+    def get_job_console_output(
+        self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+    ):
         if job is None:
             raise ObjectNotFound()
 

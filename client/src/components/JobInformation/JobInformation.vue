@@ -23,13 +23,13 @@ const props = defineProps({
     includeTimes: {
         type: Boolean,
         default: false,
-    }
+    },
 });
 
 const stdout_length = ref(50000);
 const stdout_text = ref("");
 const stderr_length = ref(50000);
-const stderr_text =  ref("");
+const stderr_text = ref("");
 
 const stdout_position = computed(() => stdout_text.value.length);
 const stderr_position = computed(() => stderr_text.value.length);
@@ -97,7 +97,7 @@ async function fetchInvocation(jobId) {
 
 <template>
     <div>
-        <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob"/>
+        <JobDetailsProvider auto-refresh :job-id="props.job_id" @update:result="updateJob" />
         <JobConsoleOutputProvider
             auto-refresh
             :job-id="props.job_id"
@@ -105,7 +105,7 @@ async function fetchInvocation(jobId) {
             :stdout_length="stdout_length"
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
-            @update:result="updateConsoleOutputs"/>
+            @update:result="updateConsoleOutputs" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
