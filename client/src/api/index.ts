@@ -22,21 +22,42 @@ export interface HistoryContentsStats {
 /**
  * Contains summary information plus additional details about the contents and owner of a History.
  * This is used by the client API to simplify the handling of History objects.
+ *
+ * Data returned by the API when requesting `?view=summary&keys=size,contents_active,user_id`.
  */
 export interface HistorySummaryExtended extends HistorySummary, HistoryContentsStats {
     user_id: string;
 }
 
+type HistoryDetailedModel = components["schemas"]["HistoryDetailed"];
+
 /**
  * Contains additional details about a History.
+ *
+ * Data returned by the API when requesting `?view=detailed`.
  */
-export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
+export interface HistoryDetailed extends HistoryDetailedModel {
+    // TODO: these fields are not present in the backend schema model `HistoryDetailedModel` but are serialized by the API
+    // when requesting ?view=detailed. We should consider adding them to the backend schema.
+    email_hash?: string;
+    empty: boolean;
+    hid_counter: number;
+}
+
+type HistoryDetailedCommon = Omit<
+    HistoryDetailed,
+    "username" | "state" | "state_ids" | "state_details" | "email_hash" | "empty"
+>;
 
 /**
  * Alternative representation of history details used by the client API.
  * Shares most of the fields with HistoryDetailed but not all and adds some additional fields.
+ *
+ * Data returned by the API when requesting `?view=dev-detailed`.
  */
-export type HistoryDevDetailed = components["schemas"]["HistoryDevDetailed"];
+export interface HistoryDevDetailed extends HistoryDetailedCommon {
+    contents_active: components["schemas"]["HistoryActiveContentCounts"];
+}
 
 /**
  * Contains all available information about a History.
