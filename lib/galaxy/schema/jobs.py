@@ -213,7 +213,7 @@ class JobOutput(Model):
 
 
 class JobConsoleOutput(Model):
-    state: str = Field(None, title="Job State", description="The current job's state")
+    state: Optional[JobState] = Field(None, title="Job State", description="The current job's state")
     stdout: Optional[str] = Field(None, title="STDOUT", description="Job STDOUT text")
     stderr: Optional[str] = Field(None, title="STDERR", description="Job STDERR text")
 

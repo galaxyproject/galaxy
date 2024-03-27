@@ -1070,6 +1070,15 @@ export interface paths {
         /** Check inputs and job for common potential problems to aid in error reporting */
         get: operations["check_common_problems_api_jobs__job_id__common_problems_get"];
     };
+    "/api/jobs/{job_id}/console_output": {
+        /**
+         * Returns STDOUT and STDERR from job.
+         * @description Get the stdout and/or stderr of a job. The position parameters are the index
+         * of where to start reading stdout/stderr. The length parameterscontrol how much
+         * stdout/stderr is read.
+         */
+        get: operations["get_console_output_api_jobs__job_id__console_output_get"];
+    };
     "/api/jobs/{job_id}/destination_params": {
         /** Return destination parameters for specified job. */
         get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
@@ -8055,6 +8064,24 @@ export interface components {
              * @description The last time and date this item was updated.
              */
             update_time: string;
+        };
+        /** JobConsoleOutput */
+        JobConsoleOutput: {
+            /**
+             * Job State
+             * @description The current job's state
+             */
+            state?: string;
+            /**
+             * STDERR
+             * @description Job STDERR text
+             */
+            stderr?: string | null;
+            /**
+             * STDOUT
+             * @description Job STDOUT text
+             */
+            stdout?: string | null;
         };
         /** JobDestinationParams */
         JobDestinationParams: {
@@ -18822,6 +18849,43 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_console_output_api_jobs__job_id__console_output_get: {
+        /**
+         * Returns STDOUT and STDERR from job.
+         * @description Get the stdout and/or stderr of a job. The position parameters are the index
+         * of where to start reading stdout/stderr. The length parameterscontrol how much
+         * stdout/stderr is read.
+         */
+        parameters: {
+            query: {
+                stdout_position: number;
+                stdout_length: number;
+                stderr_position: number;
+                stderr_length: number;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobConsoleOutput"];
                 };
             };
             /** @description Validation Error */

@@ -650,8 +650,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 if tool_stdout and tool_stderr:
                     pass
                 try:
-                    file_path = Path(job_wrapper.working_directory) / "outputs" / file
-                    file_content = open(file_path, "r")
+                    file_path = os.path.join(job_wrapper.working_directory, "outputs", file)
+                    file_content = open(file_path)
                     if tool_stdout is None and file == "tool_stdout":
                         tool_stdout = file_content.read()
                     elif tool_stderr is None and file == "tool_stderr":

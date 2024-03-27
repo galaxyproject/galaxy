@@ -35,10 +35,10 @@ const stdout_position = computed(() => stdout_text.value.length);
 const stderr_position = computed(() => stderr_text.value.length);
 
 const runTime = computed(() =>
-    formatDuration(intervalToDuration({ start: new Date(job.create_time), end: new Date(job.update_time) }))
+    formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
 );
 
-const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.state));
+const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.value.state));
 
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 
@@ -52,7 +52,7 @@ function updateJob(newJob) {
     if (newJob) {
         fetchInvocation(newJob.id);
     }
-    if (jobIsTerminal) {
+    if (jobIsTerminal.value) {
         if (newJob.tool_stdout) {
             stdout_text.value = newJob.tool_stdout;
         }

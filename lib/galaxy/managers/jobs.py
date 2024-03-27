@@ -282,7 +282,7 @@ class JobManager:
             raise ObjectNotFound()
 
         # If stdout_length and stdout_position are good values, then load standard out and add it to status
-        console_output = dict()
+        console_output = {}
         console_output["state"] = job.state
         if job.state == job.states.RUNNING:
             working_directory = trans.app.object_store.get_filename(
@@ -291,7 +291,7 @@ class JobManager:
             if stdout_length > -1 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION
-                    stdout_file = open(stdout_path, "r")
+                    stdout_file = open(stdout_path)
                     stdout_file.seek(stdout_position)
                     console_output["stdout"] = stdout_file.read(stdout_length)
                 except Exception as e:
@@ -299,7 +299,7 @@ class JobManager:
             if stderr_length > -1 and stderr_position > -1:
                 try:
                     stderr_path = Path(working_directory) / STDERR_LOCATION
-                    stderr_file = open(stderr_path, "r")
+                    stderr_file = open(stderr_path)
                     stderr_file.seek(stderr_position)
                     console_output["stderr"] = stderr_file.read(stderr_length)
                 except Exception as e:
