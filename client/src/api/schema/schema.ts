@@ -14559,12 +14559,12 @@ export interface components {
              * X
              * @description Horizontal coordinate of the top right corner of the box.
              */
-            x?: number | null;
+            x?: number | number | null;
             /**
              * Y
              * @description Vertical coordinate of the top right corner of the box.
              */
-            y?: number | null;
+            y?: number | number | null;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
