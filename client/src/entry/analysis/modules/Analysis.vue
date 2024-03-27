@@ -1,18 +1,22 @@
 <script setup>
+import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HelpModeText from "@/components/Panels/HelpModeText.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
 const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
+const { status: helpModeStatus } = storeToRefs(useHelpModeStore());
 
 // methods
 function hideCenter() {
@@ -46,5 +50,6 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
+        <HelpModeText v-if="helpModeStatus" />
     </div>
 </template>

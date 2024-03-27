@@ -16,7 +16,10 @@
 </template>
 
 <script>
+import { mapActions } from "pinia";
 import Vue from "vue";
+
+import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
 
 import FormInputs from "./FormInputs";
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
@@ -138,6 +141,7 @@ export default {
         },
     },
     created() {
+        this.callHelpMode();
         this.onCloneInputs();
         // build flat formData that is ready to be submitted
         this.formData = this.buildFormData();
@@ -148,7 +152,15 @@ export default {
         // highlight initial errors
         this.onErrors();
     },
+    destroyed() {
+        // since the user is leaving the form, the help mode is reset
+        this.clearHelpModeText("tool_form_base");
+    },
     methods: {
+        ...mapActions(useHelpModeStore, ["storeHelpModeText", "clearHelpModeText"]),
+        callHelpMode() {
+            this.storeHelpModeText("tool_form_base");
+        },
         buildFormData() {
             const params = {};
             Object.entries(this.formIndex).forEach(([key, input]) => {
