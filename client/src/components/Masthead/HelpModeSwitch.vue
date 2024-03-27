@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 
 import { useHelpModeStore } from "@/stores/helpmode/helpModeStore";
@@ -18,17 +19,18 @@ function toggleEnabledStatus() {
 
 <template>
     <div>
-        <button
+        <BButton
             v-b-tooltip.hover.bottom
-            class="help-mode-button"
+            class="help-mode-button nav-link"
             :class="{ highlight: status }"
             :title="tooltip"
             :aria-label="tooltip"
+            variant="link"
             @click="toggleEnabledStatus"
             @keydown.enter="toggleEnabledStatus">
             <!-- <i class="fas fa-question-circle fa-lg" :class="{ highlight: status }"> </i> Help Me -->
-            <FontAwesomeIcon :icon="faQuestionCircle" :class="{ highlight: status }" size="lg" /> Help Me
-        </button>
+            <FontAwesomeIcon :icon="faQuestionCircle" :class="{ highlight: status }" size="lg" />
+        </BButton>
     </div>
 </template>
 
@@ -44,8 +46,8 @@ function toggleEnabledStatus() {
     cursor: pointer;
     color: inherit;
     outline: none;
-}
-.help-mode-button.highlight {
-    color: var(--masthead-text-hover);
+    &.highlight {
+        color: var(--masthead-text-hover);
+    }
 }
 </style>

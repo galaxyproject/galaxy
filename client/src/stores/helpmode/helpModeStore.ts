@@ -4,7 +4,7 @@
 
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 import { rethrowSimple } from "@/utils/simple-error";
 
@@ -40,8 +40,26 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
     const currentTabs = ref<string[]>([]);
     /** Component ids for which fetching the help text was unsuccessful */
     const invalidIds = ref<string[]>([]);
+    /** The ids of the components for which help text was requested while help mode was disabled */
+    const idsToStore = ref<string[]>([]);
+
+    // when help mode is enabled, store help for the ids requested while help mode was disabled
+    watch(status, async (newStatus) => {
+        if (newStatus) {
+            for (const id of idsToStore.value) {
+                await storeHelpModeText(id);
+            }
+            idsToStore.value = [];
+        }
+    });
 
     async function storeHelpModeText(id: string, icon?: IconDefinition) {
+        // if help mode is disabled, store the id in the temp array and return
+        if (!status.value) {
+            idsToStore.value.push(id);
+            return;
+        }
+
         loading.value = true;
         try {
             // Error handling
@@ -78,6 +96,14 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
     }
 
     function clearHelpModeText(id: string) {
+        // if help mode is disabled, remove the id from the temp array
+        if (!status.value) {
+            const idx = idsToStore.value.indexOf(id);
+            if (idx !== -1) {
+                idsToStore.value.splice(idx, 1);
+            }
+        }
+
         // remove id from currentTabs
         const idx = currentTabs.value.indexOf(id);
         if (idx !== -1) {
@@ -105,7 +131,7 @@ export const useHelpModeStore = defineStore("helpModeStore", () => {
         status,
         /** Removes the tab from the stack for the given component `id` */
         clearHelpModeText,
-        /** Adds help mode text for the given Galaxy component `id` */
+        /** Adds help mode text for the given Galaxy component `id` if help mode is enabled */
         storeHelpModeText,
     };
 });
