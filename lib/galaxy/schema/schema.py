@@ -1303,44 +1303,6 @@ class HistorySummary(Model, WithModelClass):
     preferred_object_store_id: Optional[str] = PreferredObjectStoreIdField
 
 
-class HistoryCommonDetailed(HistorySummary):
-    """Common detailed information provided by a History."""
-
-    contents_url: ContentsUrlField
-    size: int = Field(
-        ...,
-        title="Size",
-        description="The total size of the contents of this history in bytes.",
-    )
-    user_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="User ID",
-        description="The encoded ID of the user that owns this History.",
-    )
-    create_time: datetime = CreateTimeField
-    importable: bool = Field(
-        ...,
-        title="Importable",
-        description="Whether this History can be imported by other users with a shared link.",
-    )
-    slug: Optional[str] = Field(
-        None,
-        title="Slug",
-        description="Part of the URL to uniquely identify this History by link in a readable way.",
-    )
-    username_and_slug: Optional[str] = Field(
-        None,
-        title="Username and slug",
-        description="The relative URL in the form of /u/{username}/h/{slug}",
-    )
-    genome_build: Optional[str] = GenomeBuildField
-    hid_counter: int = Field(
-        ...,
-        title="HID Counter",
-        description="The current HID counter for this History.",
-    )
-
-
 class HistoryActiveContentCounts(Model):
     """Contains the number of active, deleted or hidden items in a History."""
 
@@ -1369,24 +1331,42 @@ HistoryContentStates = Union[DatasetState, DatasetCollectionPopulatedState]
 HistoryContentStateCounts = Dict[HistoryContentStates, int]
 
 
-class HistoryDetailed(HistoryCommonDetailed):
+class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
 
-    email_hash: Optional[str] = Field(
-        None,
-        title="Encoded Email",
-        description="Encoded owner email.",
-    )
-    empty: bool = Field(
+    contents_url: ContentsUrlField
+    size: int = Field(
         ...,
-        title="Empty",
-        description="Whether this history is empty.",
+        title="Size",
+        description="The total size of the contents of this history in bytes.",
+    )
+    user_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="User ID",
+        description="The encoded ID of the user that owns this History.",
+    )
+    create_time: datetime = CreateTimeField
+    importable: bool = Field(
+        ...,
+        title="Importable",
+        description="Whether this History can be imported by other users with a shared link.",
+    )
+    slug: Optional[str] = Field(
+        None,
+        title="Slug",
+        description="Part of the URL to uniquely identify this History by link in a readable way.",
     )
     username: Optional[str] = Field(
         None,
         title="Username",
         description="Owner of the history",
     )
+    username_and_slug: Optional[str] = Field(
+        None,
+        title="Username and slug",
+        description="The relative URL in the form of /u/{username}/h/{slug}",
+    )
+    genome_build: Optional[str] = GenomeBuildField
     state: DatasetState = Field(
         ...,
         title="State",
@@ -1410,21 +1390,8 @@ class HistoryDetailed(HistoryCommonDetailed):
     )
 
 
-class HistoryDevDetailed(HistoryCommonDetailed):
-    """View used by the client to display "some" detailed history information.
-
-    Currently used by the `HistoryController` endpoints.
-    """
-
-    contents_active: HistoryActiveContentCounts = Field(
-        ...,
-        title="Contents Active",
-        description=("Contains the number of active, deleted or hidden items in a History."),
-    )
-
-
 @partial_model()
-class CustomHistoryView(HistoryDetailed, HistoryDevDetailed):
+class CustomHistoryView(HistoryDetailed):
     """History Response with all optional fields.
 
     It is used for serializing only specific attributes using the "keys"
@@ -1432,7 +1399,12 @@ class CustomHistoryView(HistoryDetailed, HistoryDevDetailed):
     will be requested, so we have to allow all fields to be optional.
     """
 
-    # Define a few more useful fields to be optional that are not part of other views
+    # Define a few more useful fields to be optional that are not part of HistoryDetailed
+    contents_active: Optional[HistoryActiveContentCounts] = Field(
+        default=None,
+        title="Contents Active",
+        description=("Contains the number of active, deleted or hidden items in a History."),
+    )
     contents_states: Optional[HistoryContentStateCounts] = Field(
         default=None,
         title="Contents States",
@@ -1448,7 +1420,6 @@ class CustomHistoryView(HistoryDetailed, HistoryDevDetailed):
 AnyHistoryView = Annotated[
     Union[
         CustomHistoryView,
-        HistoryDevDetailed,
         HistoryDetailed,
         HistorySummary,
     ],
