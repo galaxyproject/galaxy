@@ -456,7 +456,7 @@ class WorkflowDictRunSteps(WorkflowDictStepsBase):
         title="Inputs",
         description="The inputs of the step.",
     )
-    replacement_parameters: Optional[List[Dict[str, Any]]] = Field(
+    replacement_parameters: Optional[List[Union[str, Dict[str, Any]]]] = Field(
         None,
         title="Replacement Parameters",
         description="Informal replacement parameters for the step.",
