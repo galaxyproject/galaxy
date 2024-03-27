@@ -81,6 +81,13 @@ export const useToolStore = defineStore("toolStore", () => {
     const panelViews = ref<Record<string, PanelView>>({});
     const loading = ref(false);
 
+    const searchWorker = ref<Worker | undefined>(undefined);
+    // TODO: Where do we terminate the worker?
+    // onScopeDispose(() => {
+    //     searchWorker.value?.terminate();
+    //     searchWorker.value = undefined;
+    // });
+
     const getToolForId = computed(() => {
         return (toolId: string) => toolsById.value[toolId];
     });
@@ -278,6 +285,7 @@ export const useToolStore = defineStore("toolStore", () => {
         currentPanel,
         isPanelPopulated,
         sectionDatalist,
+        searchWorker,
         fetchToolForId,
         fetchTools,
         fetchPanelViews,
