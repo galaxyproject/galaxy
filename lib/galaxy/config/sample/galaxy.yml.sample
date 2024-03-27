@@ -1438,6 +1438,9 @@ galaxy:
   # activation emails.
   #terms_url: null
 
+  # Enables the Galaxy Help Mode for this Galaxy Instance.
+  #enable_help_mode: false
+
   # Serve static content, which must be enabled if you're not serving it
   # via a proxy server.  These options should be self explanatory and so
   # are not documented individually.  You can use these paths (or ones

@@ -2360,6 +2360,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~
+``enable_help_mode``
+~~~~~~~~~~~~~
+
+:Description:
+    Enables the Galaxy Help Mode for this Galaxy Instance.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~
 ``static_enabled``
 ~~~~~~~~~~~~~~~~~~
