@@ -4,6 +4,12 @@ export const SELECTION_STATES = {
     MIXED: "secondary",
 };
 
+export interface FieldEntry {
+    key: string;
+    label?: string;
+    sortable?: boolean;
+}
+
 export interface SelectionItem {
     id: string;
     label: string;

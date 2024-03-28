@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, type Ref, ref } from "vue";
+import { computed, onMounted, type Ref, ref } from "vue";
 
 import { ApiResponse } from "@/api/schema";
 import { type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
@@ -35,6 +35,14 @@ const errorMessage = ref("");
 const items: Ref<Array<SelectionItem>> = ref([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
+
+const fields = computed(() => {
+    const fields = [{ key: "label", sortable: true }];
+    if (props.detailsKey) {
+        fields.push({ key: "details", sortable: true });
+    }
+    return fields;
+});
 
 async function load() {
     optionsShow.value = false;
@@ -74,12 +82,12 @@ onMounted(() => load());
 <template>
     <SelectionDialog
         :error-message="errorMessage"
+        :fields="fields"
         :options-show="optionsShow"
         :modal-show="modalShow"
         :is-encoded="isEncoded"
         :leaf-icon="leafIcon"
         :items="items"
-        :show-details="!!detailsKey"
         :title="title"
         @onCancel="emit('onCancel')"
         @onClick="emit('onOk', $event)" />

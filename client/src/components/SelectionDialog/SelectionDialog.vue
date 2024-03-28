@@ -8,21 +8,20 @@ import { computed, ref, watch } from "vue";
 
 import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
-import { type SelectionItem } from "./selectionTypes";
+import { type FieldEntry, type SelectionItem } from "./selectionTypes";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 
 library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
-const LABEL_FIELD = { key: "label", sortable: true };
-const DETAILS_FIELD = { key: "details", sortable: true };
-const TIME_FIELD = { key: "time", sortable: true };
-const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
+const LABEL_FIELD: FieldEntry = { key: "label", sortable: true };
+const SELECT_ICON_FIELD: FieldEntry = { key: "select_icon", label: "", sortable: false };
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
+    fields?: Array<FieldEntry>;
     isBusy?: boolean;
     isEncoded?: boolean;
     items?: Array<SelectionItem>;
@@ -33,9 +32,7 @@ interface Props {
     optionsShow?: boolean;
     undoShow?: boolean;
     selectAllIcon?: string;
-    showDetails?: boolean;
     showSelectIcon?: boolean;
-    showTime?: boolean;
     title?: string;
 }
 
@@ -43,6 +40,7 @@ const props = withDefaults(defineProps<Props>(), {
     disableOk: false,
     errorMessage: "",
     fileMode: true,
+    fields: () => [],
     isBusy: false,
     isEncoded: false,
     items: () => [],
@@ -53,9 +51,7 @@ const props = withDefaults(defineProps<Props>(), {
     optionsShow: false,
     undoShow: false,
     selectAllIcon: SELECTION_STATES.UNSELECTED,
-    showDetails: false,
     showSelectIcon: false,
-    showTime: false,
     title: "",
 });
 
@@ -73,17 +69,13 @@ const currentPage = ref(1);
 const nItems = ref(0);
 const perPage = ref(100);
 
-const fields = computed(() => {
-    const fields = [];
+const fieldDetails = computed(() => {
+    const fields = props.fields.slice();
+    if (fields.length === 0) {
+        fields.unshift(LABEL_FIELD);
+    }
     if (props.showSelectIcon) {
-        fields.push(SELECT_ICON_FIELD);
-    }
-    fields.push(LABEL_FIELD);
-    if (props.showDetails) {
-        fields.push(DETAILS_FIELD);
-    }
-    if (props.showTime) {
-        fields.push(TIME_FIELD);
+        fields.unshift(SELECT_ICON_FIELD);
     }
     return fields;
 });
@@ -137,7 +129,7 @@ watch(
                     :busy="isBusy"
                     :current-page="currentPage"
                     :items="items"
-                    :fields="fields"
+                    :fields="fieldDetails"
                     :filter="filter"
                     :per-page="perPage"
                     @filtered="filtered"

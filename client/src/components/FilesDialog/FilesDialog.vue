@@ -65,7 +65,20 @@ const showFTPHelper = ref(false);
 const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 
+const fields = computed(() => {
+    const fields = [];
+    fields.push({ key: "label", sortable: true });
+    if (showDetails.value) {
+        fields.push({ key: "details", sortable: true });
+    }
+    if (showTime.value) {
+        fields.push({ key: "time", sortable: true });
+    }
+    return fields;
+});
+
 const fileMode = computed(() => props.mode == "file");
+
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
@@ -339,6 +352,7 @@ onMounted(() => {
         :disable-ok="okButtonDisabled"
         :error-message="errorMessage"
         :file-mode="fileMode"
+        :fields="fields"
         :is-busy="isBusy"
         :items="items"
         :modal-show="modalShow"
@@ -347,7 +361,6 @@ onMounted(() => {
         :options-show="optionsShow"
         :select-all-icon="selectAllIcon"
         :show-select-icon="undoShow && multiple"
-        :show-time="showTime"
         :undo-show="undoShow"
         @onCancel="() => (modalShow = false)"
         @onClick="clicked"
