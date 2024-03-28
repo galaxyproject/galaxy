@@ -677,7 +677,7 @@ class WorkflowDictRunSummary(WorkflowDictBaseModel):
         # description="The encoded ID of the history associated with the workflow (or None if not applicable).",
         description="TODO",
     )
-    step_version_changes: Optional[List[Dict[str, Any]]] = Field(
+    step_version_changes: Optional[List[Union[str, Dict[str, Any]]]] = Field(
         None,
         title="Step Version Changes",
         description="Version changes for the workflow steps.",
