@@ -6,16 +6,19 @@ import SelectedItems from "./SelectedItems";
 
 const localVue = getLocalVue();
 
-const DEFAULT_PROPS = {
-    scopeKey: "scope",
-    getItemKey: (item) => `item-key-${item.id}`,
-    filterText: "",
-    totalItemsInQuery: 100,
-};
-
 describe("History SelectedItems", () => {
     let wrapper;
     let slotProps;
+
+    const numberOfLoadedItems = 10;
+    const allItems = generateTestItems(numberOfLoadedItems);
+    const DEFAULT_PROPS = {
+        scopeKey: "scope",
+        getItemKey: (item) => `item-key-${item.id}`,
+        filterText: "",
+        totalItemsInQuery: 100,
+        allItems,
+    };
 
     beforeEach(async () => {
         wrapper = shallowMount(SelectedItems, {
@@ -79,10 +82,8 @@ describe("History SelectedItems", () => {
     describe("Query Selection Mode", () => {
         it("is considered a query selection when we select `all items` and the query contains more items than we have currently loaded", async () => {
             const expectedTotalItemsInQuery = 100;
-            const numberOfLoadedItems = 10;
-            const loadedItems = generateTestItems(numberOfLoadedItems);
 
-            await selectAllItemsInCurrentQuery(loadedItems);
+            await selectAllItemsInCurrentQuery();
 
             expect(slotProps.isQuerySelection).toBe(true);
             expect(slotProps.selectionSize).toBe(expectedTotalItemsInQuery);
@@ -90,11 +91,9 @@ describe("History SelectedItems", () => {
 
         it("shouldn't be a query selection when we already have all items loaded", async () => {
             const expectedTotalItemsInQuery = 10;
-            const numberOfLoadedItems = 10;
-            const loadedItems = generateTestItems(numberOfLoadedItems);
             await wrapper.setProps({ totalItemsInQuery: expectedTotalItemsInQuery });
 
-            await selectAllItemsInCurrentQuery(loadedItems);
+            await selectAllItemsInCurrentQuery();
 
             expect(slotProps.isQuerySelection).toBe(false);
             expect(slotProps.selectionSize).toBe(expectedTotalItemsInQuery);
@@ -102,14 +101,12 @@ describe("History SelectedItems", () => {
 
         it("should `break` query selection mode when we unselect an item", async () => {
             const expectedTotalItemsInQuery = 100;
-            const numberOfLoadedItems = 10;
-            const loadedItems = generateTestItems(numberOfLoadedItems);
-            await selectAllItemsInCurrentQuery(loadedItems);
+            await selectAllItemsInCurrentQuery();
             expect(slotProps.isQuerySelection).toBe(true);
             expect(slotProps.selectionSize).toBe(expectedTotalItemsInQuery);
             expect(wrapper.emitted()["query-selection-break"]).toBeUndefined();
 
-            await unselectItem(loadedItems[0]);
+            await unselectItem(allItems[0]);
 
             expect(slotProps.isQuerySelection).toBe(false);
             expect(slotProps.selectionSize).toBe(numberOfLoadedItems - 1);
@@ -117,9 +114,7 @@ describe("History SelectedItems", () => {
         });
 
         it("should `break` query selection mode when the total number of items changes", async () => {
-            const numberOfLoadedItems = 10;
-            const loadedItems = generateTestItems(numberOfLoadedItems);
-            await selectAllItemsInCurrentQuery(loadedItems);
+            await selectAllItemsInCurrentQuery();
             expect(slotProps.isQuerySelection).toBe(true);
             expect(wrapper.emitted()["query-selection-break"]).toBeUndefined();
 
@@ -146,8 +141,8 @@ describe("History SelectedItems", () => {
 
         it("should match the number of items in query when selecting all items", async () => {
             const expectedTotalItemsInQuery = 100;
-            const loadedItems = []; // Even if there are no explicit items selected
-            await selectAllItemsInCurrentQuery(loadedItems);
+            await wrapper.setProps({ allItems: generateTestItems(0) }); // Even if there are no explicit items selected
+            await selectAllItemsInCurrentQuery();
             expect(slotProps.isQuerySelection).toBe(true);
             expect(slotProps.selectionSize).toBe(expectedTotalItemsInQuery);
         });

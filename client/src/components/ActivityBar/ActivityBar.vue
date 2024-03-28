@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, type Ref, ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
+import { useHashedUserId } from "@/composables/hashedUserId";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
@@ -25,14 +26,14 @@ const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
 const userStore = useUserStore();
+
+const { hashedUserId } = useHashedUserId();
+
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
-
-// sync built-in activities with cached activities
-activityStore.sync();
 
 // activities from store
 const { activities } = storeToRefs(activityStore);
@@ -43,6 +44,9 @@ const dragItem: Ref<Activity | null> = ref(null);
 
 // drag state
 const isDragging = ref(false);
+
+// sync built-in activities with cached activities
+activityStore.sync();
 
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
@@ -114,7 +118,7 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string, to: string | null = null) {
+function onToggleSidebar(toggle: string = "", to: string | null = null) {
     // if an activity's dedicated panel/sideBar is already active
     // but the route is different, don't collapse
     if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
@@ -122,6 +126,13 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
     }
     userStore.toggleSideBar(toggle);
 }
+
+watch(
+    () => hashedUserId.value,
+    () => {
+        activityStore.sync();
+    }
+);
 </script>
 
 <template>
@@ -143,7 +154,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     @start="isDragging = true"
                     @end="isDragging = false">
                     <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
-                        <div v-if="activity.visible">
+                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
                                 :id="`activity-${activity.id}`"
@@ -152,7 +163,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                                 :title="activity.title"
                                 :tooltip="activity.tooltip" />
                             <InteractiveItem
-                                v-else-if="activity.id === 'interactivetools'"
+                                v-else-if="activity.to && activity.id === 'interactivetools'"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -169,7 +180,7 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                                 :is-active="panelActivityIsActive(activity)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
+                                :to="activity.to || ''"
                                 @click="onToggleSidebar(activity.id, activity.to)" />
                             <ActivityItem
                                 v-else-if="activity.to"
@@ -185,9 +196,9 @@ function onToggleSidebar(toggle: string, to: string | null = null) {
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <NotificationItem
-                    v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system"
+                    v-if="isConfigLoaded && config.enable_notification_system"
                     id="activity-notifications"
                     icon="bell"
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"

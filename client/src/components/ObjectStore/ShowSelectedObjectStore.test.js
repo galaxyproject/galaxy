@@ -30,7 +30,7 @@ describe("ShowSelectedObjectStore", () => {
         });
         let loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeTruthy();
-        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading object store details");
+        expect(loadingEl.find(".loading-message").text()).toContainLocalizationOf("Loading storage location details");
         await flushPromises();
         loadingEl = wrapper.findComponent(LoadingSpan);
         expect(loadingEl.exists()).toBeFalsy();

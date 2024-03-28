@@ -33,7 +33,7 @@ class DynamicToolsController(BaseAPIController):
         ID (and optionally version) returned from this endpoint.
         """
         manager = self.app.dynamic_tools_manager
-        return list(map(lambda t: t.to_dict(), manager.list_tools()))
+        return [t.to_dict() for t in manager.list_tools()]
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):

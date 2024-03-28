@@ -135,12 +135,11 @@ async function onImportCopy(history: ArchivedHistorySummary) {
 </script>
 <template>
     <section id="archived-histories" class="d-flex flex-column">
-        <h1>Archived Histories</h1>
         <div>
             <DelayedInput
                 :query="searchText"
                 class="m-1 mb-3"
-                placeholder="Search by name"
+                placeholder="search by name"
                 @change="updateSearchQuery" />
             <BAlert v-if="isLoading" variant="info" show>
                 <LoadingSpan v-if="isLoading" message="Loading archived histories" />

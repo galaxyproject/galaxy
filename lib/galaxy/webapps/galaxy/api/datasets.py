@@ -141,6 +141,7 @@ class FastAPIDatasets:
     @router.get(
         "/api/datasets",
         summary="Search datasets or collections using a query system.",
+        response_model_exclude_unset=True,
     )
     def index(
         self,

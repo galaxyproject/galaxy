@@ -18,7 +18,6 @@ import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidTo
 
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
-import UploadButton from "@/components/Upload/UploadButton.vue";
 
 const SECTION_IDS_TO_EXCLUDE = ["expression_tools"]; // if this isn't the Workflow Editor panel
 
@@ -253,7 +252,6 @@ function setButtonText() {
                 @onQuery="(q) => (query = q)"
                 @onResults="onResults" />
             <section v-if="!propShowAdvanced">
-                <UploadButton />
                 <div v-if="hasResults && resultPanel" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <FontAwesomeIcon :icon="buttonIcon" />

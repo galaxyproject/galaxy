@@ -14,11 +14,11 @@ const MESSAGES = {
     restricted:
         "This dataset is stored on storage restricted to a single user. It can not be shared, published, or added to Galaxy data libraries.",
     user_defined: "This storage was user defined and is not managed by the Galaxy administrator.",
-    quota: "A Galaxy quota is enabled for this object store.",
-    no_quota: "No Galaxy quota is enabled for this object store.",
+    quota: "A Galaxy quota is enabled for this storage location.",
+    no_quota: "No Galaxy quota is enabled for this storage location.",
     faster: "This storage has been marked as a faster option by the Galaxy administrator.",
     slower: "This storage has been marked as a slower option by the Galaxy administrator.",
-    short_term: "This storage has been marked routinely purged by the Galaxy administrator.",
+    short_term: "This storage has been marked as routinely purged by the Galaxy administrator.",
     backed_up: "This storage has been marked as backed up by the Galaxy administrator.",
     not_backed_up: "This storage has been marked as not backed up by the Galaxy administrator.",
     more_secure:
@@ -136,6 +136,7 @@ const message = computed(() => {
             "
             triggers="hover"
             placement="bottom"
+            variant="secondary"
             class="object-store-badge-popover">
             <p v-localize>{{ stockMessage }}</p>
             <ConfigurationMarkdown v-if="message" :markdown="message" :admin="true" />

@@ -184,6 +184,7 @@ def collect_dynamic_outputs(
                 name=output_collection_def.name,
                 metadata_source_name=output_collection_def.metadata_source,
                 final_job_state=job_context.final_job_state,
+                change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
         except Exception:
@@ -244,6 +245,10 @@ class JobContext(BaseJobContext):
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
         self._tag_handler = None
+
+    @property
+    def change_datatype_actions(self):
+        return self.job.get_change_datatype_actions()
 
     @property
     def tag_handler(self):
@@ -418,6 +423,10 @@ class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
         self.final_job_state = final_job_state
         self.max_discovered_files = float("inf") if max_discovered_files is None else max_discovered_files
         self.discovered_file_count = 0
+
+    @property
+    def change_datatype_actions(self):
+        return self.metadata_params.get("change_datatype_actions", {})
 
     def output_collection_def(self, name):
         tool_as_dict = self.metadata_params["tool"]

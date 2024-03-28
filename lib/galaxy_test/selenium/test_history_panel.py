@@ -83,7 +83,7 @@ class TestHistoryPanel(SeleniumTestCase):
     @selenium_test
     def test_history_panel_tags_change(self):
         def create_tags(size):
-            history_panel_tags = list()
+            history_panel_tags = []
             for i in range(size):
                 history_panel_tags.append(self._get_random_name(prefix="arbitrary_tag_%s_") % i)
             return history_panel_tags

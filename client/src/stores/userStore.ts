@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { components } from "@/api/schema";
+import type { AnonymousUser, User } from "@/api";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -10,25 +10,6 @@ import {
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
-
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
-
-export interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
-    isAnonymous: false;
-    is_admin?: boolean;
-    username?: string;
-}
-
-export interface AnonymousUser {
-    isAnonymous: true;
-    username?: string;
-    is_admin?: false;
-}
-
-export type GenericUser = User | AnonymousUser;
 
 interface Preferences {
     theme: string;
@@ -43,7 +24,6 @@ export const useUserStore = defineStore("userStore", () => {
 
     // explicitly pass current User, because userStore might not exist yet
     const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
-    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
     const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid", currentUser);
 
     let loadPromise: Promise<void> | null = null;
@@ -135,16 +115,8 @@ export const useUserStore = defineStore("userStore", () => {
         preferredListViewMode.value = view;
     }
 
-    function toggleActivityBar() {
-        showActivityBar.value = !showActivityBar.value;
-    }
-
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
-    }
-
-    function isRegisteredUser(user: User | AnonymousUser | null): user is User {
-        return !user?.isAnonymous;
     }
 
     return {
@@ -153,7 +125,6 @@ export const useUserStore = defineStore("userStore", () => {
         isAnonymous,
         currentTheme,
         currentFavorites,
-        showActivityBar,
         toggledSideBar,
         preferredListViewMode,
         loadUser,
@@ -162,9 +133,7 @@ export const useUserStore = defineStore("userStore", () => {
         setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
-        toggleActivityBar,
         toggleSideBar,
-        isRegisteredUser,
         $reset,
     };
 });

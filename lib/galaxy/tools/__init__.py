@@ -765,10 +765,10 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.stdio_exit_codes: List = list()
-        self.stdio_regexes: List = list()
-        self.inputs_by_page: List[Dict] = list()
-        self.display_by_page: List = list()
+        self.stdio_exit_codes: List = []
+        self.stdio_regexes: List = []
+        self.inputs_by_page: List[Dict] = []
+        self.display_by_page: List = []
         self.action: Union[str, Tuple[str, str]] = "/tool_runner/index"
         self.target = "galaxy_main"
         self.method = "post"
@@ -1078,7 +1078,7 @@ class Tool(Dictifiable):
         if self.environment_variables:
             if not self.docker_env_pass_through:
                 self.docker_env_pass_through = []
-            self.docker_env_pass_through.extend(map(lambda x: x["name"], self.environment_variables))
+            self.docker_env_pass_through.extend(x["name"] for x in self.environment_variables)
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -2040,7 +2040,7 @@ class Tool(Dictifiable):
         require any user input. Will raise an exception if any parameter
         does require input.
         """
-        args = dict()
+        args = {}
         for key, param in self.inputs.items():
             # BaseURLToolParameter is now a subclass of HiddenToolParameter, so
             # we must check if param is a BaseURLToolParameter first
@@ -2875,7 +2875,7 @@ class ExpressionTool(Tool):
                         break
                 if copy_object is None:
                     raise exceptions.MessageException("Failed to find dataset output.")
-                out_data[key].copy_from(copy_object)
+                out_data[key].copy_from(copy_object, include_metadata=True)
 
     def parse_environment_variables(self, tool_source):
         """Setup environment variable for inputs file."""
@@ -3204,6 +3204,7 @@ class DatabaseOperationTool(Tool):
     require_terminal_states = True
     require_dataset_ok = True
     tool_type_local = True
+    require_terminal_or_paused_states = False
 
     @property
     def valid_input_states(self):
@@ -3211,6 +3212,8 @@ class DatabaseOperationTool(Tool):
             return (model.Dataset.states.OK,)
         elif self.require_terminal_states:
             return model.Dataset.terminal_states
+        elif self.require_terminal_or_paused_states:
+            return model.Dataset.terminal_states or model.Dataset.states.PAUSED
         else:
             return model.Dataset.valid_input_states
 
@@ -3503,6 +3506,22 @@ class FilterFailedDatasetsTool(FilterDatasetsTool):
         return element.element_object.is_ok
 
 
+class KeepSuccessDatasetsTool(FilterDatasetsTool):
+    tool_type = "keep_success_datasets_collection"
+    require_terminal_states = False
+    require_dataset_ok = False
+    require_terminal_or_paused_states = True
+
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        if (
+            element.element_object.state != model.Dataset.states.PAUSED
+            and element.element_object.state in model.Dataset.non_ready_states
+        ):
+            raise ToolInputsNotReadyException("An input dataset is pending.")
+        return element.element_object.is_ok
+
+
 class FilterEmptyDatasetsTool(FilterDatasetsTool):
     tool_type = "filter_empty_datasets_collection"
     require_dataset_ok = False
@@ -3688,7 +3707,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
             source_new_label = (line.strip().split("\t") for line in new_labels)
-            new_labels_dict = {source: new_label for source, new_label in source_new_label}
+            new_labels_dict = dict(source_new_label)
             for dce in hdca.collection.elements:
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier

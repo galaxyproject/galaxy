@@ -20,6 +20,8 @@ type SortKeyLiteral = "name" | "update_time" | undefined;
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data, headers } = await historiesFetcher({
+        view: "summary",
+        keys: "username",
         limit,
         offset,
         search,

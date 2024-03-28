@@ -88,7 +88,7 @@ class RepositoryDependencyAttributeHandler:
         prior_installation_required = elem.get("prior_installation_required")
         if prior_installation_required is not None and not asbool(prior_installation_required):
             del elem.attrib["prior_installation_required"]
-        sub_elems = [child_elem for child_elem in list(elem)]
+        sub_elems = list(elem)
         if len(sub_elems) > 0:
             # At this point, a <repository> tag will point only to a package.
             # <package name="xorg_macros" version="1.17.1" />

@@ -12,7 +12,6 @@ const props = defineProps({
     isVisible: { type: Boolean, default: true },
     state: { type: String, default: "" },
     itemUrls: { type: Object, required: true },
-    keyboardSelectable: { type: Boolean, default: true },
 });
 
 const emit = defineEmits<{
@@ -45,8 +44,6 @@ const isCollection = computed(() => !props.isDataset);
 const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
-
-const tabindex = computed(() => (props.keyboardSelectable ? "0" : "-1"));
 
 function onDelete($event: MouseEvent) {
     if (isCollection.value) {
@@ -94,7 +91,7 @@ function onDisplay($event: MouseEvent) {
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
-            :tabindex="tabindex"
+            tabindex="0"
             class="display-btn px-1"
             size="sm"
             variant="link"
@@ -106,7 +103,7 @@ function onDisplay($event: MouseEvent) {
             v-if="writable && isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
-            :tabindex="tabindex"
+            tabindex="0"
             class="edit-btn px-1"
             size="sm"
             variant="link"
@@ -116,7 +113,7 @@ function onDisplay($event: MouseEvent) {
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isDeleted"
-            :tabindex="tabindex"
+            :tabindex="isDataset ? '0' : '-1'"
             class="delete-btn px-1"
             title="Delete"
             size="sm"
@@ -139,7 +136,7 @@ function onDisplay($event: MouseEvent) {
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
-            :tabindex="tabindex"
+            tabindex="0"
             class="undelete-btn px-1"
             title="Undelete"
             size="sm"
@@ -149,7 +146,7 @@ function onDisplay($event: MouseEvent) {
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isVisible"
-            :tabindex="tabindex"
+            tabindex="0"
             class="unhide-btn px-1"
             title="Unhide"
             size="sm"

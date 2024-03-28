@@ -377,7 +377,7 @@ class MatchedRepositoryGrid(grids.Grid):
 
 
 class InstallMatchedRepositoryGrid(MatchedRepositoryGrid):
-    columns = [col for col in MatchedRepositoryGrid.columns]
+    columns = list(MatchedRepositoryGrid.columns)
     # Override the NameColumn
     columns[0] = MatchedRepositoryGrid.NameColumn(
         "Name", link=(lambda item: dict(operation="view_or_manage_repository", id=item.id)), attach_popup=False
@@ -748,7 +748,7 @@ class RepositoriesMissingToolTestComponentsGrid(RepositoryGrid):
 class MyWritableRepositoriesMissingToolTestComponentsGrid(RepositoriesMissingToolTestComponentsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with missing tool test components"
-    columns = [col for col in RepositoriesMissingToolTestComponentsGrid.columns]
+    columns = list(RepositoriesMissingToolTestComponentsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.
@@ -857,12 +857,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
             metadata = repository_metadata.metadata
             if invalid_tools := metadata.get("invalid_tools", []):
                 for invalid_tool_config in invalid_tools:
-                    href_str = '<a href="load_invalid_tool?repository_id={}&tool_config={}&changeset_revision={}">{}</a>'.format(
-                        trans.security.encode_id(repository.id),
-                        invalid_tool_config,
-                        repository_metadata.changeset_revision,
-                        invalid_tool_config,
-                    )
+                    href_str = f'<a href="load_invalid_tool?repository_id={trans.security.encode_id(repository.id)}&tool_config={invalid_tool_config}&changeset_revision={repository_metadata.changeset_revision}">{invalid_tool_config}</a>'
                     val += href_str
                     val += "<br/>"
                 val = val.rstrip("<br/>")
@@ -915,7 +910,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
 class MyWritableRepositoriesWithInvalidToolsGrid(RepositoriesWithInvalidToolsGrid):
     # This grid displays only the latest installable revision of each repository.
     title = "Repositories I can change with invalid tools"
-    columns = [col for col in RepositoriesWithInvalidToolsGrid.columns]
+    columns = list(RepositoriesWithInvalidToolsGrid.columns)
 
     def build_initial_query(self, trans, **kwd):
         # First get all repositories that the current user is authorized to update.

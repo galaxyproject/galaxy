@@ -749,7 +749,7 @@ class SQliteDataTableProvider(base.DataProvider):
             for i, row in enumerate(results):
                 if i >= self.limit:
                     break
-                yield [val for val in row]
+                yield list(row)
         else:
             yield
 

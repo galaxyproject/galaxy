@@ -132,6 +132,18 @@ export interface paths {
          * To get more information please check the source code.
          */
         get: operations["show_api_datasets__dataset_id__get"];
+        /**
+         * Updates the values for the history dataset (HDA) item with the given ``ID``.
+         * @description Updates the values for the history content item with the given ``ID``.
+         */
+        put: operations["datasets__update_dataset"];
+        /**
+         * Delete the history dataset content with the given ``ID``.
+         * @description Delete the history content with the given ``ID`` and path specified type.
+         *
+         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         */
+        delete: operations["datasets__delete"];
     };
     "/api/datasets/{dataset_id}/content/{content_type}": {
         /** Retrieve information about the content of a dataset. */
@@ -1705,6 +1717,10 @@ export interface paths {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
     };
+    "/api/users/{user_id}/objectstore_usage": {
+        /** Return the user's object store usage summary broken down by object store ID */
+        get: operations["get_user_objectstore_usage_api_users__user_id__objectstore_usage_get"];
+    };
     "/api/users/{user_id}/recalculate_disk_usage": {
         /** Triggers a recalculation of the current user disk usage. */
         put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
@@ -2336,7 +2352,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
         };
         /** ArchivedHistorySummary */
         ArchivedHistorySummary: {
@@ -2409,7 +2424,6 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
-            [key: string]: unknown | undefined;
         };
         /** AsyncFile */
         AsyncFile: {
@@ -3587,15 +3601,152 @@ export interface components {
              */
             installed_builds: components["schemas"]["LabelValuePair"][];
         };
-        /**
-         * CustomHistoryItem
-         * @description Can contain any serializable property of the item.
-         *
-         * Allows arbitrary custom keys to be specified in the serialization
-         * parameters without a particular view (predefined set of keys).
-         */
-        CustomHistoryItem: {
-            [key: string]: unknown | undefined;
+        /** CustomHistoryView */
+        CustomHistoryView: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived?: boolean | null;
+            /**
+             * Contents Active
+             * @description Contains the number of active, deleted or hidden items in a History.
+             */
+            contents_active?: components["schemas"]["HistoryActiveContentCounts"] | null;
+            /**
+             * Contents States
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            contents_states?: {
+                [key: string]: number | undefined;
+            } | null;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url?: string | null;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count?: number | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Genome Build
+             * @description TODO
+             */
+            genome_build?: string | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable?: boolean | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name?: string | null;
+            /**
+             * Nice Size
+             * @description The total size of the contents of this history in a human-readable format.
+             */
+            nice_size?: string | null;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string | null;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published?: boolean | null;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged?: boolean | null;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size?: number | null;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string | null;
+            /**
+             * State
+             * @description The current state of the History based on the states of the datasets it contains.
+             */
+            state?: components["schemas"]["DatasetState"] | null;
+            /**
+             * State Counts
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            state_details?: {
+                [key: string]: number | undefined;
+            } | null;
+            /**
+             * State IDs
+             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
+             */
+            state_ids?: {
+                [key: string]: string[] | undefined;
+            } | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             */
+            user_id?: string | null;
+            /**
+             * Username
+             * @description Owner of the history
+             */
+            username?: string | null;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string | null;
         };
         /**
          * DCESummary
@@ -3815,6 +3966,36 @@ export interface components {
          * @description A list of extra files associated with a dataset.
          */
         DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /** DatasetHash */
+        DatasetHash: {
+            /**
+             * Extra Files Path
+             * @description The path to the extra files used to generate the hash.
+             */
+            extra_files_path?: string | null;
+            /**
+             * Hash Function
+             * @description The hash function used to generate the hash.
+             */
+            hash_function: components["schemas"]["HashFunctionNames"];
+            /**
+             * Hash Value
+             * @description The hash value.
+             */
+            hash_value: string;
+            /**
+             * ID
+             * @description Encoded ID of the dataset hash.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class: "DatasetHash";
+        };
         /**
          * DatasetInheritanceChain
          * @default []
@@ -3850,6 +4031,30 @@ export interface components {
              * @default []
              */
             manage?: string[];
+        };
+        /** DatasetSource */
+        DatasetSource: {
+            /**
+             * Extra Files Path
+             * @description The path to the extra files.
+             */
+            extra_files_path?: string | null;
+            /**
+             * ID
+             * @description Encoded ID of the dataset source.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source URI
+             * @description The URI of the dataset source.
+             */
+            source_uri: string;
+            /**
+             * Transform
+             * @description The transformations applied to the dataset source.
+             */
+            transform?: Record<string, never>[] | null;
         };
         /** DatasetSourceId */
         DatasetSourceId: {
@@ -4232,7 +4437,6 @@ export interface components {
              * @description True if the item was successfully removed from disk.
              */
             purged?: boolean | null;
-            [key: string]: unknown | undefined;
         };
         /** DeleteHistoryPayload */
         DeleteHistoryPayload: {
@@ -5325,6 +5529,244 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** HDACustom */
+        HDACustom: {
+            /**
+             * Accessible
+             * @description Whether this item is accessible to the current user due to permissions.
+             */
+            accessible?: boolean | null;
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * API Type
+             * @deprecated
+             * @description TODO
+             */
+            api_type?: "file" | null;
+            /** Copied From Ldda Id */
+            copied_from_ldda_id?: string | null;
+            /**
+             * Create Time
+             * @description The time and date this item was created.
+             */
+            create_time?: string | null;
+            /**
+             * Created from basename
+             * @description The basename of the output that produced this dataset.
+             */
+            created_from_basename?: string | null;
+            /**
+             * Creating Job ID
+             * @description The encoded ID of the job that created this dataset.
+             */
+            creating_job?: string | null;
+            /**
+             * Data Type
+             * @description The fully qualified name of the class implementing the data type of this dataset.
+             */
+            data_type?: string | null;
+            /**
+             * Dataset ID
+             * @description The encoded ID of the dataset associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            dataset_id?: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean | null;
+            /**
+             * Display Applications
+             * @description Contains new-style display app urls.
+             */
+            display_apps?: components["schemas"]["DisplayApp"][] | null;
+            /**
+             * Legacy Display Applications
+             * @description Contains old-style display app urls.
+             */
+            display_types?: components["schemas"]["DisplayApp"][] | null;
+            /**
+             * Download URL
+             * @description The URL to download this item from the server.
+             */
+            download_url?: string | null;
+            /**
+             * DRS ID
+             * @description The DRS ID of the dataset.
+             */
+            drs_id?: string | null;
+            /**
+             * Extension
+             * @description The extension of the dataset.
+             */
+            extension?: string | null;
+            /**
+             * File extension
+             * @description The extension of the file.
+             */
+            file_ext?: string | null;
+            /**
+             * File Name
+             * @description The full path to the dataset file.
+             */
+            file_name?: string | null;
+            /**
+             * File Size
+             * @description The file size in bytes.
+             */
+            file_size?: number | null;
+            /**
+             * Genome Build
+             * @description TODO
+             */
+            genome_build?: string | null;
+            /**
+             * Hashes
+             * @description The list of hashes associated with this dataset.
+             */
+            hashes?: components["schemas"]["DatasetHash"][] | null;
+            /**
+             * HDA or LDDA
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
+            hda_ldda?: components["schemas"]["DatasetSourceType"] | null;
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid?: number | null;
+            /**
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             */
+            history_content_type?: "dataset" | null;
+            /**
+             * History ID
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id?: string;
+            /**
+             * Metadata Files
+             * @description Collection of metadata files associated with this dataset.
+             */
+            meta_files?: components["schemas"]["MetadataFile"][] | null;
+            /**
+             * Metadata
+             * @description The metadata associated with this dataset.
+             */
+            metadata?: Record<string, never> | null;
+            /**
+             * Miscellaneous Blurb
+             * @description TODO
+             */
+            misc_blurb?: string | null;
+            /**
+             * Miscellaneous Information
+             * @description TODO
+             */
+            misc_info?: string | null;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @constant
+             */
+            model_class?: "HistoryDatasetAssociation";
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name?: string | null;
+            /**
+             * Peek
+             * @description A few lines of contents from the start of the file.
+             */
+            peek?: string | null;
+            /**
+             * Permissions
+             * @description Role-based access and manage control permissions for the dataset.
+             */
+            permissions?: components["schemas"]["DatasetPermissions"] | null;
+            /**
+             * Purged
+             * @description Whether this dataset has been removed from disk.
+             */
+            purged?: boolean | null;
+            /**
+             * Rerunnable
+             * @description Whether the job creating this dataset can be run again.
+             */
+            rerunnable?: boolean | null;
+            /**
+             * Resubmitted
+             * @description Whether the job creating this dataset has been resubmitted.
+             */
+            resubmitted?: boolean | null;
+            /**
+             * Sources
+             * @description The list of sources associated with this dataset.
+             */
+            sources?: components["schemas"]["DatasetSource"][] | null;
+            /**
+             * State
+             * @description The current state of this dataset.
+             */
+            state?: components["schemas"]["DatasetState"] | null;
+            tags?: components["schemas"]["TagCollection"] | null;
+            /**
+             * Type
+             * @description This is always `file` for datasets.
+             */
+            type?: "file" | null;
+            /**
+             * Type - ID
+             * @description The type and the encoded ID of this item. Used for caching.
+             */
+            type_id?: string | null;
+            /**
+             * Update Time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string | null;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url?: string | null;
+            /** Uuid */
+            uuid?: string | null;
+            /**
+             * Validated State
+             * @description The state of the datatype validation for this dataset.
+             */
+            validated_state?: components["schemas"]["DatasetValidatedState"] | null;
+            /**
+             * Validated State Message
+             * @description The message with details about the datatype validation result for this dataset.
+             */
+            validated_state_message?: string | null;
+            /**
+             * Visible
+             * @description Whether this item is visible or hidden to the user by default.
+             */
+            visible?: boolean | null;
+            /**
+             * Visualizations
+             * @description The collection of visualizations that can be applied to this dataset.
+             */
+            visualizations?: components["schemas"]["Visualization"][] | null;
+            [key: string]: unknown | undefined;
+        };
         /**
          * HDADetailed
          * @description History Dataset Association detailed information.
@@ -5397,6 +5839,11 @@ export interface components {
              */
             download_url: string;
             /**
+             * DRS ID
+             * @description The DRS ID of the dataset.
+             */
+            drs_id: string;
+            /**
              * Extension
              * @description The extension of the dataset.
              */
@@ -5422,6 +5869,11 @@ export interface components {
              * @default ?
              */
             genome_build?: string | null;
+            /**
+             * Hashes
+             * @description The list of hashes associated with this dataset.
+             */
+            hashes: components["schemas"]["DatasetHash"][];
             /**
              * HDA or LDDA
              * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
@@ -5459,18 +5911,6 @@ export interface components {
              * @description The metadata associated with this dataset.
              */
             metadata?: Record<string, never> | null;
-            /**
-             * Metadata Data Lines
-             * @description TODO
-             * @default 0
-             */
-            metadata_data_lines?: number;
-            /**
-             * Metadata DBKey
-             * @description TODO
-             * @default ?
-             */
-            metadata_dbkey?: string | null;
             /**
              * Miscellaneous Blurb
              * @description TODO
@@ -5517,6 +5957,11 @@ export interface components {
              * @description Whether the job creating this dataset has been resubmitted.
              */
             resubmitted: boolean;
+            /**
+             * Sources
+             * @description The list of sources associated with this dataset.
+             */
+            sources: components["schemas"]["DatasetSource"][];
             /**
              * State
              * @description The current state of this dataset.
@@ -5567,12 +6012,6 @@ export interface components {
              * @description Whether this item is visible or hidden to the user by default.
              */
             visible: boolean;
-            /**
-             * Visualizations
-             * @description The collection of visualizations that can be applied to this dataset.
-             */
-            visualizations: components["schemas"]["Visualization"][];
-            [key: string]: unknown | undefined;
         };
         /**
          * HDAObject
@@ -5641,6 +6080,12 @@ export interface components {
              */
             extension: string | null;
             /**
+             * Genome Build
+             * @description TODO
+             * @default ?
+             */
+            genome_build?: string | null;
+            /**
              * HID
              * @description The index position of this item in the History.
              */
@@ -5703,7 +6148,6 @@ export interface components {
              * @description Whether this item is visible or hidden to the user by default.
              */
             visible: boolean;
-            [key: string]: unknown | undefined;
         };
         /**
          * HDCADetailed
@@ -5847,7 +6291,6 @@ export interface components {
              * @description Whether this item is visible or hidden to the user by default.
              */
             visible: boolean;
-            [key: string]: unknown | undefined;
         };
         /**
          * HDCASummary
@@ -5970,7 +6413,6 @@ export interface components {
              * @description Whether this item is visible or hidden to the user by default.
              */
             visible: boolean;
-            [key: string]: unknown | undefined;
         };
         /**
          * HDCJobStateSummary
@@ -6073,6 +6515,12 @@ export interface components {
          * @enum {string}
          */
         HashFunctionNameEnum: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
+        /**
+         * HashFunctionNames
+         * @description Hash function names that can be used to generate checksums for datasets.
+         * @enum {string}
+         */
+        HashFunctionNames: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
         /** HdaDestination */
         HdaDestination: {
             /**
@@ -6224,19 +6672,38 @@ export interface components {
          * This model is based on the Discourse API response for the search endpoint.
          */
         HelpForumSearchResponse: {
-            /** Categories */
-            categories: components["schemas"]["HelpForumCategory"][] | null;
-            grouped_search_result: components["schemas"]["HelpForumGroupedSearchResult"] | null;
-            /** Groups */
-            groups: components["schemas"]["HelpForumGroup"][] | null;
-            /** Posts */
-            posts: components["schemas"]["HelpForumPost"][] | null;
-            /** Tags */
-            tags: components["schemas"]["HelpForumTag"][] | null;
-            /** Topics */
-            topics: components["schemas"]["HelpForumTopic"][] | null;
-            /** Users */
-            users: components["schemas"]["HelpForumUser"][] | null;
+            /**
+             * Categories
+             * @description The list of categories returned by the search.
+             */
+            categories?: components["schemas"]["HelpForumCategory"][] | null;
+            /** @description The grouped search result. */
+            grouped_search_result?: components["schemas"]["HelpForumGroupedSearchResult"] | null;
+            /**
+             * Groups
+             * @description The list of groups returned by the search.
+             */
+            groups?: components["schemas"]["HelpForumGroup"][] | null;
+            /**
+             * Posts
+             * @description The list of posts returned by the search.
+             */
+            posts?: components["schemas"]["HelpForumPost"][];
+            /**
+             * Tags
+             * @description The list of tags returned by the search.
+             */
+            tags?: components["schemas"]["HelpForumTag"][] | null;
+            /**
+             * Topics
+             * @description The list of topics returned by the search.
+             */
+            topics?: components["schemas"]["HelpForumTopic"][];
+            /**
+             * Users
+             * @description The list of users returned by the search.
+             */
+            users?: components["schemas"]["HelpForumUser"][] | null;
         };
         /**
          * HelpForumTag
@@ -6264,7 +6731,7 @@ export interface components {
              * Bookmarked
              * @description Whether the topic is bookmarked.
              */
-            bookmarked: boolean | null;
+            bookmarked?: boolean | null;
             /**
              * Bumped
              * @description Whether the topic was bumped.
@@ -6319,7 +6786,7 @@ export interface components {
              * Liked
              * @description Whether the topic is liked.
              */
-            liked: boolean | null;
+            liked?: boolean | null;
             /**
              * Pinned
              * @description Whether the topic is pinned.
@@ -6349,7 +6816,7 @@ export interface components {
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.
              */
-            tags_descriptions: Record<string, never> | null;
+            tags_descriptions?: Record<string, never> | null;
             /**
              * Title
              * @description The title of the topic.
@@ -6359,7 +6826,7 @@ export interface components {
              * Unpinned
              * @description Whether the topic is unpinned.
              */
-            unpinned: boolean | null;
+            unpinned?: boolean | null;
             /**
              * Unseen
              * @description Whether the topic is unseen.
@@ -6377,6 +6844,27 @@ export interface components {
          */
         HelpForumUser: {
             [key: string]: unknown | undefined;
+        };
+        /**
+         * HistoryActiveContentCounts
+         * @description Contains the number of active, deleted or hidden items in a History.
+         */
+        HistoryActiveContentCounts: {
+            /**
+             * Active
+             * @description Number of active datasets.
+             */
+            active: number;
+            /**
+             * Deleted
+             * @description Number of deleted datasets.
+             */
+            deleted: number;
+            /**
+             * Hidden
+             * @description Number of hidden datasets.
+             */
+            hidden: number;
         };
         /** HistoryContentBulkOperationPayload */
         HistoryContentBulkOperationPayload: {
@@ -6449,11 +6937,11 @@ export interface components {
          * Can contain different views and kinds of items.
          */
         HistoryContentsResult: (
+            | components["schemas"]["HDACustom"]
             | components["schemas"]["HDADetailed"]
             | components["schemas"]["HDASummary"]
             | components["schemas"]["HDCADetailed"]
             | components["schemas"]["HDCASummary"]
-            | components["schemas"]["CustomHistoryItem"]
         )[];
         /**
          * HistoryContentsWithStatsResult
@@ -6465,11 +6953,11 @@ export interface components {
              * @description The items matching the search query. Only the items fitting in the current page limit will be returned.
              */
             contents: (
+                | components["schemas"]["HDACustom"]
                 | components["schemas"]["HDADetailed"]
                 | components["schemas"]["HDASummary"]
                 | components["schemas"]["HDCADetailed"]
                 | components["schemas"]["HDCASummary"]
-                | components["schemas"]["CustomHistoryItem"]
             )[];
             /**
              * Stats
@@ -6612,27 +7100,6 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
-            [key: string]: unknown | undefined;
-        };
-        /**
-         * HistoryMinimal
-         * @description Minimal History Response with optional fields
-         */
-        HistoryMinimal: {
-            /** Id */
-            id?: string | null;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @constant
-             */
-            model_class: "History";
-            /**
-             * User ID
-             * @description The encoded ID of the user that owns this History.
-             */
-            user_id?: string | null;
-            [key: string]: unknown | undefined;
         };
         /**
          * HistorySummary
@@ -6703,7 +7170,6 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
-            [key: string]: unknown | undefined;
         };
         /**
          * Hyperlink
@@ -6711,9 +7177,8 @@ export interface components {
          */
         Hyperlink: {
             /**
-             * HRef
-             * Format: uri
-             * @description Specifies the linked document, resource, or location.
+             * Href
+             * @description The URL of the linked document.
              */
             href: string;
             /**
@@ -6852,10 +7317,11 @@ export interface components {
             tool_version?: string | null;
             /**
              * Type
-             * @description The type of workflow module.
-             * @default data_collection_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "data_collection_input";
+            /** When */
+            when: string | null;
         };
         /** InputDataStep */
         InputDataStep: {
@@ -6893,10 +7359,11 @@ export interface components {
             tool_version?: string | null;
             /**
              * Type
-             * @description The type of workflow module.
-             * @default data_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "data_input";
+            /** When */
+            when: string | null;
         };
         /** InputParameterStep */
         InputParameterStep: {
@@ -6934,10 +7401,11 @@ export interface components {
             tool_version?: string | null;
             /**
              * Type
-             * @description The type of workflow module.
-             * @default parameter_input
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "parameter_input";
+            /** When */
+            when: string | null;
         };
         /** InputReferenceByLabel */
         InputReferenceByLabel: {
@@ -9704,11 +10172,27 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
-             * Type
-             * @description The type of workflow module.
-             * @default pause
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "pause";
+            /** When */
+            when: string | null;
         };
         /** Person */
         Person: {
@@ -9752,7 +10236,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */
@@ -11005,10 +11489,9 @@ export interface components {
             };
             /**
              * Latest workflow UUID
-             * Format: uuid4
              * @description TODO
              */
-            latest_workflow_uuid: string;
+            latest_workflow_uuid?: string | null;
             /**
              * License
              * @description SPDX Identifier of the license associated with this workflow.
@@ -11111,11 +11594,27 @@ export interface components {
                 [key: string]: components["schemas"]["InputStep"] | undefined;
             };
             /**
-             * Type
-             * @description The type of workflow module.
-             * @default subworkflow
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            tool_id?: string | null;
+            /**
+             * Tool Inputs
+             * @description TODO
+             */
+            tool_inputs?: Record<string, never>;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with this step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @constant
+             */
+            type: "subworkflow";
+            /** When */
+            when: string | null;
             /**
              * Workflow ID
              * @description The encoded ID of the workflow that will be run on this step.
@@ -11302,10 +11801,11 @@ export interface components {
             tool_version?: string | null;
             /**
              * Type
-             * @description The type of workflow module.
-             * @default tool
+             * @constant
              */
-            type?: components["schemas"]["WorkflowModuleType"];
+            type: "tool";
+            /** When */
+            when: string | null;
         };
         /** Tour */
         Tour: {
@@ -11994,6 +12494,13 @@ export interface components {
              */
             notification_ids: string[];
         };
+        /** UserObjectstoreUsage */
+        UserObjectstoreUsage: {
+            /** Object Store Id */
+            object_store_id: string;
+            /** Total Disk Usage */
+            total_disk_usage: number;
+        };
         /** UserQuota */
         UserQuota: {
             /**
@@ -12108,18 +12615,17 @@ export interface components {
              * Label
              * @description Label of the input.
              */
-            label: string;
+            label: string | null;
             /**
              * UUID
-             * Format: uuid4
              * @description Universal unique identifier of the input.
              */
-            uuid: string;
+            uuid: string | null;
             /**
              * Value
              * @description TODO
              */
-            value: string;
+            value: Record<string, never> | null;
         };
         /** WorkflowInvocationCollectionView */
         WorkflowInvocationCollectionView: {
@@ -12305,18 +12811,6 @@ export interface components {
                 [key: string]: number | undefined;
             };
         };
-        /**
-         * WorkflowModuleType
-         * @description Available types of modules that represent a step in a Workflow.
-         * @enum {string}
-         */
-        WorkflowModuleType:
-            | "data_input"
-            | "data_collection_input"
-            | "parameter_input"
-            | "subworkflow"
-            | "tool"
-            | "pause";
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
             /**
@@ -12475,7 +12969,7 @@ export interface components {
              * Name
              * @description The name of the creator.
              */
-            name: string;
+            name?: string | null;
             /** Telephone */
             telephone?: string | null;
             /** URL */
@@ -13056,11 +13550,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"]
                     )[];
                 };
             };
@@ -13137,6 +13631,116 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    datasets__update_dataset: {
+        /**
+         * Updates the values for the history dataset (HDA) item with the given ``ID``.
+         * @description Updates the values for the history content item with the given ``ID``.
+         */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the item (`HDA`/`HDCA`) */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateHistoryContentsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HDACustom"]
+                        | components["schemas"]["HDADetailed"]
+                        | components["schemas"]["HDASummary"]
+                        | components["schemas"]["HDCADetailed"]
+                        | components["schemas"]["HDCASummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    datasets__delete: {
+        /**
+         * Delete the history dataset content with the given ``ID``.
+         * @description Delete the history content with the given ``ID`` and path specified type.
+         *
+         * **Note**: Currently does not stop any active jobs for which this dataset is an output.
+         */
+        parameters: {
+            /**
+             * @deprecated
+             * @description Whether to remove from disk the target HDA or child HDAs of the target HDCA.
+             */
+            /**
+             * @deprecated
+             * @description When deleting a dataset collection, whether to also delete containing datasets.
+             */
+            /**
+             * @deprecated
+             * @description Whether to stop the creating job if all outputs of the job have been deleted.
+             */
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                purge?: boolean | null;
+                recursive?: boolean | null;
+                stop_job?: boolean | null;
+                view?: string | null;
+                keys?: string | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the item (`HDA`/`HDCA`) */
+            path: {
+                dataset_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteHistoryContentPayload"];
+            };
+        };
+        responses: {
+            /** @description Request has been executed. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
+                };
+            };
+            /** @description Request accepted, processing will finish later. */
+            202: {
+                content: {
+                    "application/json": components["schemas"]["DeleteHistoryContentResult"];
                 };
             };
             /** @description Validation Error */
@@ -13236,7 +13840,10 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HDADetailed"] | components["schemas"]["HDASummary"];
+                    "application/json":
+                        | components["schemas"]["HDACustom"]
+                        | components["schemas"]["HDADetailed"]
+                        | components["schemas"]["HDASummary"];
                 };
             };
             /** @description Validation Error */
@@ -15117,9 +15724,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15159,9 +15766,9 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15245,9 +15852,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15283,9 +15890,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15351,9 +15958,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15388,9 +15995,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15425,9 +16032,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15485,9 +16092,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15527,9 +16134,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15570,9 +16177,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"]
                     )[];
                 };
             };
@@ -15607,9 +16214,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15648,9 +16255,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15690,9 +16297,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15784,9 +16391,9 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["CustomHistoryView"]
                         | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | components["schemas"]["HistoryMinimal"];
+                        | components["schemas"]["HistorySummary"];
                 };
             };
             /** @description Validation Error */
@@ -15983,17 +16590,17 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"]
                         | (
+                              | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
-                              | components["schemas"]["CustomHistoryItem"]
                           )[];
                 };
             };
@@ -16572,11 +17179,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -16623,11 +17230,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -16855,17 +17462,17 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"]
                         | (
+                              | components["schemas"]["HDACustom"]
                               | components["schemas"]["HDADetailed"]
                               | components["schemas"]["HDASummary"]
                               | components["schemas"]["HDCADetailed"]
                               | components["schemas"]["HDCASummary"]
-                              | components["schemas"]["CustomHistoryItem"]
                           )[];
                 };
             };
@@ -16911,11 +17518,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -16961,11 +17568,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
-                        | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"];
+                        | components["schemas"]["HDCASummary"];
                 };
             };
             /** @description Validation Error */
@@ -17192,11 +17799,11 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
+                        | components["schemas"]["HDACustom"]
                         | components["schemas"]["HDADetailed"]
                         | components["schemas"]["HDASummary"]
                         | components["schemas"]["HDCADetailed"]
                         | components["schemas"]["HDCASummary"]
-                        | components["schemas"]["CustomHistoryItem"]
                     )[];
                 };
             };
@@ -22110,6 +22717,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_objectstore_usage_api_users__user_id__objectstore_usage_get: {
+        /** Return the user's object store usage summary broken down by object store ID */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            path: {
+                user_id: string | "current";
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserObjectstoreUsage"][];
                 };
             };
             /** @description Validation Error */

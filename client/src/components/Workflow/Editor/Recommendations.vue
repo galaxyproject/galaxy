@@ -22,6 +22,7 @@ import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { getShortToolId } from "@/utils/tool";
 
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
@@ -59,11 +60,7 @@ export default {
     },
     methods: {
         getToolId(toolId) {
-            if (toolId !== undefined && toolId !== null && toolId.indexOf("/") > -1) {
-                const toolIdSlash = toolId.split("/");
-                toolId = toolIdSlash[toolIdSlash.length - 2];
-            }
-            return toolId;
+            return getShortToolId(toolId ?? "");
         },
         getWorkflowPath(currentNodeId) {
             const steps = {};

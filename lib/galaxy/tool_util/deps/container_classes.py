@@ -320,7 +320,7 @@ class HasDockerLikeVolumes:
             return value
 
         template = string.Template(value)
-        variables = dict()
+        variables = {}
 
         def add_var(name, value):
             if value:

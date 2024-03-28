@@ -142,6 +142,20 @@ class TestCalculateUsage(BaseModelTestCase):
         u.calculate_and_set_disk_usage(object_store)
         self._refresh_user_and_assert_disk_usage_is(10)
 
+    def test_calculate_objectstore_usage(self):
+        # not strictly a quota check but such similar code and ideas...
+        u = self.u
+
+        self._add_dataset(10, "not_tracked")
+        self._add_dataset(15, "tracked")
+
+        usage = u.dictify_objectstore_usage()
+        assert len(usage) == 2
+
+        usage_dict = {u.object_store_id: u.total_disk_usage for u in usage}
+        assert int(usage_dict["not_tracked"]) == 10
+        assert int(usage_dict["tracked"]) == 15
+
     def test_calculate_usage_disabled_quota(self):
         u = self.u
 

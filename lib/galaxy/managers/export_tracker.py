@@ -64,7 +64,11 @@ class StoreExportTracker:
                 StoreExportAssociation,
             )
             .where(
-                and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
+                and_(
+                    StoreExportAssociation.object_type == object_type,
+                    StoreExportAssociation.object_id == object_id,
+                    StoreExportAssociation.task_uuid.is_not(None),
+                )
             )
             .order_by(StoreExportAssociation.create_time.desc())
         )

@@ -225,8 +225,10 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         parsed_url = parse.urlparse(response.url)
         provider = parse.parse_qs(parsed_url.query)["connect_external_provider"][0]
         assert "keycloak" == provider
+
+        # user should not have been logged in
         response = self._get("users/current")
-        self._assert_status_code_is(response, 400)
+        assert "id" not in response.json()
 
     def test_oidc_login_account_linkup(self):
         # pre-create a user account manually
@@ -294,7 +296,8 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = session.get(response.json()["redirect_uri"], verify=False)
         # make sure we can no longer request the user
         response = session.get(self._api_url("users/current"))
-        self._assert_status_code_is(response, 400)
+        self._assert_status_code_is(response, 200)
+        assert "email" not in response.json()
 
     def test_auth_by_access_token_logged_in_once(self):
         # login at least once
