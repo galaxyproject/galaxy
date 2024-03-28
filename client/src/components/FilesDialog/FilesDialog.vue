@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref } from "vue";
 
 import {
@@ -15,37 +12,36 @@ import {
 } from "@/api/remoteFiles";
 import { UrlTracker } from "@/components/DataDialog/utilities";
 import { isSubPath } from "@/components/FilesDialog/utilities";
-import { selectionStates } from "@/components/SelectionDialog/selectionStates";
+import { SELECTION_STATES, type SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { DirectoryRecord, Model, RecordItem } from "./model";
+import { Model } from "./model";
 
-import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
-import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
-library.add(faCaretLeft);
-
 interface FilesDialogProps {
-    /** Whether to allow multiple selections */
-    multiple?: boolean;
-    /** Browsing mode to define the selection behavior */
-    mode?: FileSourceBrowsingMode;
-    /** Whether to show only writable sources */
-    requireWritable?: boolean;
-    /** Options to filter the file sources */
-    filterOptions?: FilterFileSourcesOptions;
     /** Callback function to be called passing the results when selection is complete */
     callback?: (files: any) => void;
+    /** Options to filter the file sources */
+    filterOptions?: FilterFileSourcesOptions;
+    /** Decide wether to keep the underlying modal static or dynamic */
+    modalStatic?: boolean;
+    /** Browsing mode to define the selection behavior */
+    mode?: FileSourceBrowsingMode;
+    /** Whether to allow multiple selections */
+    multiple?: boolean;
+    /** Whether to show only writable sources */
+    requireWritable?: boolean;
 }
 
 const props = withDefaults(defineProps<FilesDialogProps>(), {
-    multiple: false,
-    mode: "file",
-    requireWritable: false,
-    filterOptions: undefined,
     callback: () => {},
+    filterOptions: undefined,
+    modalStatic: false,
+    mode: "file",
+    multiple: false,
+    requireWritable: false,
 });
 
 const { config, isConfigLoaded } = useConfig();
@@ -53,10 +49,10 @@ const { config, isConfigLoaded } = useConfig();
 const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const allSelected = ref(false);
-const selectedDirectories = ref<DirectoryRecord[]>([]);
+const selectedDirectories = ref<SelectionItem[]>([]);
 const errorMessage = ref<string>();
 const filter = ref();
-const items = ref<RecordItem[]>([]);
+const items = ref<SelectionItem[]>([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
 const undoShow = ref(false);
@@ -64,18 +60,31 @@ const hasValue = ref(false);
 const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
-const currentDirectory = ref<DirectoryRecord>();
+const currentDirectory = ref<SelectionItem>();
 const showFTPHelper = ref(false);
-const selectAllIcon = ref(selectionStates.unselected);
+const selectAllIcon = ref(SELECTION_STATES.UNSELECTED);
 const urlTracker = ref(new UrlTracker(""));
 
+const fields = computed(() => {
+    const fields = [];
+    fields.push({ key: "label" });
+    if (showDetails.value) {
+        fields.push({ key: "details" });
+    }
+    if (showTime.value) {
+        fields.push({ key: "time" });
+    }
+    return fields;
+});
+
 const fileMode = computed(() => props.mode == "file");
+
 const okButtonDisabled = computed(
     () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
 );
 
 /** Collects selected datasets in value array **/
-function clicked(record: RecordItem) {
+function clicked(record: SelectionItem) {
     // ignore the click during directory mode
     if (!fileMode.value) {
         return;
@@ -90,7 +99,7 @@ function clicked(record: RecordItem) {
     formatRows();
 }
 
-function selectSingleRecord(record: RecordItem, selectOnly = false) {
+function selectSingleRecord(record: SelectionItem, selectOnly = false) {
     const selected = selectionModel.value.exists(record.id);
     if (selected) {
         unselectPath(record.url, true);
@@ -102,7 +111,6 @@ function selectSingleRecord(record: RecordItem, selectOnly = false) {
     } else {
         selectionModel.value.add(record);
     }
-
     hasValue.value = selectionModel.value.count() > 0;
     if (props.multiple) {
         formatRows();
@@ -136,7 +144,7 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
     }
 }
 
-function selectDirectoryRecursive(record: DirectoryRecord) {
+function selectDirectoryRecursive(record: SelectionItem) {
     // if directory is `selected` or `mixed` unselect everything
     if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
@@ -145,8 +153,8 @@ function selectDirectoryRecursive(record: DirectoryRecord) {
         // look for subdirectories
         const recursive = true;
         isBusy.value = true;
-        browseRemoteFiles(record.url, recursive).then((items) => {
-            items.forEach((item) => {
+        browseRemoteFiles(record.url, recursive).then((incoming) => {
+            incoming.forEach((item) => {
                 // construct record
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
@@ -166,9 +174,9 @@ function selectDirectoryRecursive(record: DirectoryRecord) {
 function formatRows() {
     const getIcon = (isSelected: boolean, path: string) => {
         if (isSelected) {
-            return selectionStates.selected;
+            return SELECTION_STATES.SELECTED;
         } else {
-            return selectionModel.value.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
+            return selectionModel.value.pathExists(path) ? SELECTION_STATES.MIXED : SELECTION_STATES.UNSELECTED;
         }
     };
 
@@ -208,12 +216,12 @@ function checkIfAllSelected(): boolean {
     return isAllSelected;
 }
 
-function open(record: DirectoryRecord) {
+function open(record: SelectionItem) {
     load(record);
 }
 
 /** Performs server request to retrieve data records **/
-function load(record?: DirectoryRecord) {
+function load(record?: SelectionItem) {
     currentDirectory.value = urlTracker.value.getUrl(record);
     showFTPHelper.value = record?.url === "gxftp://";
     filter.value = undefined;
@@ -269,7 +277,7 @@ function filterByMode(results: RemoteEntry[]): RemoteEntry[] {
     return results;
 }
 
-function entryToRecord(entry: RemoteEntry): RecordItem {
+function entryToRecord(entry: RemoteEntry): SelectionItem {
     const result = {
         id: entry.uri,
         label: entry.name,
@@ -277,26 +285,24 @@ function entryToRecord(entry: RemoteEntry): RecordItem {
         details: entry.class === "File" ? entry.ctime : "",
         isLeaf: entry.class === "File",
         url: entry.uri,
-        labelTitle: entry.uri,
         size: entry.class === "File" ? entry.size : 0,
     };
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): RecordItem {
+function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): SelectionItem {
     const result = {
         id: plugin.id,
         label: plugin.label,
         details: plugin.doc,
         isLeaf: false,
         url: plugin.uri_root,
-        labelTitle: plugin.uri_root,
     };
     return result;
 }
 
 /** select all files in current folder**/
-function toggleSelectAll() {
+function onSelectAll() {
     if (!currentDirectory.value) {
         return;
     }
@@ -329,11 +335,6 @@ function finalize() {
     props.callback(results);
 }
 
-function goBack() {
-    // Loading without a record navigates back one level
-    load();
-}
-
 function onOk() {
     if (!fileMode.value && currentDirectory.value) {
         selectSingleRecord(currentDirectory.value);
@@ -348,15 +349,25 @@ onMounted(() => {
 
 <template>
     <SelectionDialog
+        :disable-ok="okButtonDisabled"
         :error-message="errorMessage"
-        :options-show="optionsShow"
+        :file-mode="fileMode"
+        :fields="fields"
+        :is-busy="isBusy"
+        :items="items"
         :modal-show="modalShow"
-        :hide-modal="() => (modalShow = false)"
-        :back-func="goBack"
-        :undo-show="undoShow">
-        <template v-slot:search>
-            <DataDialogSearch v-model="filter" />
-        </template>
+        :modal-static="modalStatic"
+        :multiple="multiple"
+        :options-show="optionsShow"
+        :select-all-icon="selectAllIcon"
+        :show-select-icon="undoShow && multiple"
+        :undo-show="undoShow"
+        @onCancel="() => (modalShow = false)"
+        @onClick="clicked"
+        @onOk="onOk"
+        @onOpen="open"
+        @onSelectAll="onSelectAll"
+        @onUndo="load()">
         <template v-slot:helper>
             <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
@@ -368,37 +379,6 @@ onMounted(() => {
                     form with your email to create a password for your account.</span
                 >
             </BAlert>
-        </template>
-        <template v-slot:options>
-            <DataDialogTable
-                v-if="optionsShow"
-                :items="items"
-                :multiple="multiple"
-                :filter="filter"
-                :select-all-icon="selectAllIcon"
-                :show-select-icon="undoShow && multiple"
-                :show-details="showDetails"
-                :show-time="showTime"
-                :is-busy="isBusy"
-                @clicked="clicked"
-                @open="open"
-                @toggleSelectAll="toggleSelectAll" />
-        </template>
-        <template v-slot:buttons>
-            <BButton v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
-                <FontAwesomeIcon :icon="['fas', 'caret-left']" />
-                Back
-            </BButton>
-            <BButton
-                v-if="multiple || !fileMode"
-                id="ok-btn"
-                size="sm"
-                class="float-right ml-1 file-dialog-modal-ok"
-                variant="primary"
-                :disabled="okButtonDisabled"
-                @click="onOk">
-                {{ fileMode ? "Ok" : "Select this folder" }}
-            </BButton>
         </template>
     </SelectionDialog>
 </template>

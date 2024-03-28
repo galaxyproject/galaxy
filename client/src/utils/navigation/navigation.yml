@@ -1079,7 +1079,7 @@ upload:
     composite_close_button: '#composite #btn-close'
     create_button: '#btn-new'
     file_dialog: '#btn-remote-files'
-    file_dialog_ok: '.file-dialog-modal-ok'
+    file_dialog_ok: '[data-description="selection dialog ok"]'
     file_source_selector:
       type: xpath
       selector: '//span[contains(@title, "${path}")]'
