@@ -29,6 +29,10 @@ const props = withDefaults(
     }
 );
 
+const emit = defineEmits<{
+    (e: "onOutputLabel", oldValue: string | null, newValue: string | null): void;
+}>();
+
 const { stepStore } = useWorkflowStores();
 
 const error: Ref<string | undefined> = ref(undefined);
@@ -54,12 +58,14 @@ function onInput(newLabel: string | undefined | null) {
     }
 
     if (newLabel === "") {
+        const oldLabel = label.value || null;
         // user deleted existing label, we inactivate this as output
         const strippedWorkflowOutputs = (props.step.workflow_outputs || []).filter(
             (workflowOutput) => workflowOutput.output_name !== props.name
         );
         stepStore.updateStep({ ...props.step, workflow_outputs: strippedWorkflowOutputs });
         error.value = undefined;
+        emit("onOutputLabel", oldLabel, null);
         return;
     }
 
@@ -74,6 +80,8 @@ function onInput(newLabel: string | undefined | null) {
             output_name: props.name,
         });
         stepStore.updateStep({ ...props.step, workflow_outputs: newWorkflowOutputs });
+        const oldLabel = label.value || null;
+        emit("onOutputLabel", oldLabel, newLabel || null);
         error.value = undefined;
     } else if (existingWorkflowOutput.stepId !== props.step.id) {
         error.value = `Duplicate output label '${newLabel}' will be ignored.`;

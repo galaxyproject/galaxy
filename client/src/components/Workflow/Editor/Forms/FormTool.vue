@@ -46,6 +46,7 @@
                     :step="step"
                     :datatypes="datatypes"
                     :post-job-actions="postJobActions"
+                    @onOutputLabel="onOutputLabel"
                     @onChange="onChangePostJobActions" />
             </div>
         </template>
@@ -88,7 +89,7 @@ export default {
             required: true,
         },
     },
-    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
+    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel", "onOutputLabel"],
     setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")
@@ -162,6 +163,9 @@ export default {
         },
         onLabel(newLabel) {
             this.$emit("onLabel", this.stepId, newLabel);
+        },
+        onOutputLabel(oldValue, newValue) {
+            this.$emit("onOutputLabel", oldValue, newValue);
         },
         /**
          * Change event is triggered on component creation and input changes.

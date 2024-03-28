@@ -95,6 +95,7 @@
                             @onChangePostJobActions="onChangePostJobActions"
                             @onAnnotation="onAnnotation"
                             @onLabel="onLabel"
+                            @onOutputLabel="onOutputLabel"
                             @onUpdateStep="onUpdateStep"
                             @onSetData="onSetData" />
                         <FormDefault
@@ -105,6 +106,7 @@
                             @onLabel="onLabel"
                             @onEditSubworkflow="onEditSubworkflow"
                             @onAttemptRefactor="onAttemptRefactor"
+                            @onOutputLabel="onOutputLabel"
                             @onUpdateStep="onUpdateStep"
                             @onSetData="onSetData" />
                         <WorkflowAttributes
@@ -642,6 +644,13 @@ export default {
                     this.onUpdateStep(step);
                 });
         },
+        onOutputLabel(oldValue, newValue) {
+            const newMarkdown = replaceLabel(this.markdownText, "output", oldValue, newValue);
+            if (newMarkdown !== this.markdownText) {
+                this.debouncedToast("Output label updated in workflow report.", 1500);
+            }
+            this.onReportUpdate(newMarkdown);
+        },
         onLabel(nodeId, newLabel) {
             const step = { ...this.steps[nodeId], label: newLabel };
             const oldLabel = this.steps[nodeId].label;
@@ -649,9 +658,10 @@ export default {
             const stepType = this.steps[nodeId].type;
             const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
             const labelType = isInput ? "input" : "step";
+            const labelTypeTitle = isInput ? "Input" : "Step";
             const newMarkdown = replaceLabel(this.markdownText, labelType, oldLabel, newLabel);
             if (newMarkdown !== this.markdownText) {
-                this.debouncedToast("Label updated in workflow report.", 1500);
+                this.debouncedToast(`${labelTypeTitle} label updated in workflow report.`, 1500);
             }
             this.onReportUpdate(newMarkdown);
         },
