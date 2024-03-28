@@ -688,7 +688,7 @@ class HDASummary(HDACommon):
 class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
-    accessible: bool = AccessibleField
+    accessible: Literal[False]
     state: DatasetStateField
 
 
@@ -3271,7 +3271,7 @@ class HDACustom(HDADetailed):
     model_config = ConfigDict(extra="allow")
 
 
-AnyHDA = Union[HDACustom, HDADetailed, HDASummary]
+AnyHDA = Union[HDACustom, HDADetailed, HDASummary, HDAInaccessible]
 AnyHDCA = Union[HDCADetailed, HDCASummary]
 AnyHistoryContentItem = Annotated[
     Union[
