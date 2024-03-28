@@ -173,11 +173,11 @@ watch(
         :multiple="multiple"
         :options-show="optionsShow"
         :undo-show="undoShow"
-        @onBack="load()"
         @onCancel="onCancel"
         @onClick="onClick"
         @onOk="onOk"
-        @onOpen="onOpen">
+        @onOpen="onOpen"
+        @onUndo="load()">
         <template v-slot:buttons>
             <BButton v-if="allowUpload" size="sm" @click="onUpload">
                 <Icon :icon="faUpload" />

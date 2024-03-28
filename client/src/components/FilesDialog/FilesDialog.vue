@@ -349,12 +349,12 @@ onMounted(() => {
         :show-select-icon="undoShow && multiple"
         :show-time="showTime"
         :undo-show="undoShow"
-        @onBack="load()"
         @onCancel="() => (modalShow = false)"
         @onClick="clicked"
         @onOk="onOk"
         @onOpen="open"
-        @onSelectAll="onSelectAll">
+        @onSelectAll="onSelectAll"
+        @onUndo="load()">
         <template v-slot:helper>
             <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at

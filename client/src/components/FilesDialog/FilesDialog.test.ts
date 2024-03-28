@@ -288,8 +288,8 @@ class Utils {
     }
 
     async navigateBack() {
-        const backBtn = this.getBackButton();
-        await backBtn.trigger("click");
+        const undoBtn = this.getUndoButton();
+        await undoBtn.trigger("click");
         await flushPromises();
     }
 
@@ -345,17 +345,17 @@ class Utils {
     }
 
     getButtonById(id: string): any {
-        const button = this.wrapper.find(id);
+        const button = this.wrapper.find(`[data-description='selection dialog ${id}']`);
         expect(button.exists()).toBe(true);
         return button;
     }
 
     getOkButton(): any {
-        return this.getButtonById("#ok-btn");
+        return this.getButtonById("ok");
     }
 
-    getBackButton(): any {
-        return this.getButtonById("#back-btn");
+    getUndoButton(): any {
+        return this.getButtonById("undo");
     }
 
     getRenderedRows(): RowElement[] {

@@ -60,12 +60,12 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const emit = defineEmits<{
-    (e: "onBack"): void;
     (e: "onCancel"): void;
     (e: "onClick", record: SelectionItem): void;
     (e: "onOk"): void;
     (e: "onOpen", record: SelectionItem): void;
     (e: "onSelectAll"): void;
+    (e: "onUndo"): void;
 }>();
 
 const filter = ref("");
@@ -197,7 +197,7 @@ watch(
         <template v-slot:modal-footer>
             <div class="d-flex justify-content-between w-100">
                 <div>
-                    <BButton v-if="undoShow" id="back-btn" size="sm" @click="emit('onBack')">
+                    <BButton v-if="undoShow" data-description="selection dialog undo" size="sm" @click="emit('onUndo')">
                         <FontAwesomeIcon :icon="faCaretLeft" />
                         Back
                     </BButton>
@@ -221,7 +221,6 @@ watch(
                     </BButton>
                     <BButton
                         v-if="multiple || !fileMode"
-                        id="ok-btn"
                         data-description="selection dialog ok"
                         size="sm"
                         variant="primary"
