@@ -85,6 +85,33 @@ describe("parse.ts", () => {
             expect(result).toBe(output);
         });
 
+        it("should work with double quotes for labels and spaces in the quotes", () => {
+            const input =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=\"from this\", title=dog)\n```\n";
+            const output =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=\"to that\", title=dog)\n```\n";
+            const result = replaceLabel(input, "output", "from this", "to that");
+            expect(result).toBe(output);
+        });
+
+        it("should work with single quotes for labels and spaces in the quotes", () => {
+            const input =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='from this', title=dog)\n```\n";
+            const output =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to that', title=dog)\n```\n";
+            const result = replaceLabel(input, "output", "from this", "to that");
+            expect(result).toBe(output);
+        });
+
+        it("should add quotes when refactoring to labels with spaces", () => {
+            const input =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output=fromthis, title=dog)\n```\n";
+            const output =
+                "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(footer='cow', output='to that', title=dog)\n```\n";
+            const result = replaceLabel(input, "output", "fromthis", "to that");
+            expect(result).toBe(output);
+        });
+
         it("should leave non-arguments alone", () => {
             const input =
                 "some random\n`markdown content`\n```galaxy\nhistory_dataset_embedded(title='cow from farm', output=from)\n```\n";

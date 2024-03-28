@@ -9,6 +9,9 @@ type Section = DefaultSection | GalaxyDirectiveSection;
 
 type WorkflowLabelKind = "input" | "output" | "step";
 
+const SINGLE_QUOTE = "'";
+const DOUBLE_QUOTE = '"';
+
 export function splitMarkdown(markdown: string, preserveWhitespace: boolean = false) {
     const sections: Section[] = [];
     const markdownErrors = [];
@@ -78,8 +81,20 @@ export function replaceLabel(
             const newArgs = { ...args };
             newArgs[labelType] = toLabel;
             const argRexExp = namedArgumentRegex(labelType);
-            const escapedToLabel = escapeRegExpReplacement(toLabel);
-            const content = directiveSection.content.replace(argRexExp, `$1${escapedToLabel}`);
+            let escapedToLabel = escapeRegExpReplacement(toLabel);
+            const incomingContent = directiveSection.content;
+            let content: string;
+            const match = incomingContent.match(argRexExp);
+            if (match) {
+                const firstMatch = match[0];
+                if (escapedToLabel.indexOf(" ") >= 0) {
+                    const quoteChar = getQuoteChar(firstMatch);
+                    escapedToLabel = `${quoteChar}${escapedToLabel}${quoteChar}`;
+                }
+                content = incomingContent.replace(argRexExp, `$1${escapedToLabel}`);
+            } else {
+                content = incomingContent;
+            }
             return {
                 name: directiveSection.name,
                 args: newArgs,
@@ -93,6 +108,15 @@ export function replaceLabel(
     const rewrittenSections = sections.map(rewriteSection);
     const rewrittenMarkdown = rewrittenSections.map((section) => section.content).join("");
     return rewrittenMarkdown;
+}
+
+function getQuoteChar(argMatch: string): string {
+    // this could be a lot stronger, handling escaping and such...
+    let quoteChar = SINGLE_QUOTE;
+    if (argMatch.indexOf(DOUBLE_QUOTE) >= 0) {
+        quoteChar = DOUBLE_QUOTE;
+    }
+    return quoteChar;
 }
 
 export function getArgs(content: string): GalaxyDirectiveSection {
