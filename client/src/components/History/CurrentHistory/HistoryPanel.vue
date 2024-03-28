@@ -418,7 +418,7 @@ function updateFilterValue(filterKey: string, newValue: any) {
 }
 
 function getItemKey(item: HistoryItem) {
-    return item.type_id;
+    return itemUniqueKey(item);
 }
 
 function itemUniqueKey(item: HistoryItem) {
