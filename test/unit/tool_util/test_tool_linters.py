@@ -6,7 +6,6 @@ import pytest
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
     lint_tool_source_with_modules,
-    lint_xml_with,
     LintContext,
     Linter,
     XMLLintMessageLine,
@@ -26,10 +25,7 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
-from galaxy.util import (
-    ElementTree,
-    parse_xml,
-)
+from galaxy.util import ElementTree
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy.util.xml_macros import load_with_references
 
@@ -116,6 +112,16 @@ GENERAL_VALID = """
 
 GENERAL_VALID_NEW_PROFILE_FMT = """
 <tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+</tool>
+"""
+
+GENERAL_TEXT_SPACES = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="21.09">
+    <xrefs>
+        <xref type="bio.tools">
+            bwa
+        </xref>
+    </xrefs>
 </tool>
 """
 
@@ -914,12 +920,14 @@ XML_ORDER = """
 """
 
 TOOL_WITH_COMMENTS = """
-<tool>
+<tool id="id" name="name" version="1" profile="22.01">
     <stdio>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <regex match="low space" source="both" level="warning" description="Low space on device" />
     </stdio>
     <outputs>
-    <!-- This is a comment -->
+        <!-- This is a comment -->
+        <data format="pdf" name="out_file1" />
     </outputs>
 </tool>
 """
@@ -945,15 +953,6 @@ def get_xml_tree(xml_string: str) -> ElementTree:
 
 def get_xml_tool_source(xml_string: str) -> XmlToolSource:
     return XmlToolSource(get_xml_tree(xml_string))
-
-
-def get_tool_xml_exact(xml_string: str):
-    """Returns the tool XML as it is, without stripping comments or anything else."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
-        tmp.write(xml_string)
-        tmp.flush()
-        tool_path = tmp.name
-        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
 def run_lint_module(lint_ctx, lint_module, lint_target):
@@ -1104,6 +1103,19 @@ def test_general_valid_new_profile_fmt(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_general_text_spaces(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_TEXT_SPACES)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert (
+        "XML node 'xref' has text with leading or trailing spaces ('\n            bwa\n        '!='bwa')"
+        in lint_ctx.warn_messages
+    )
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
 @skip_if_site_down("https://bio.tools/")
 def test_general_valid_biotools(lint_ctx):
     tool_source = get_xml_tool_source(GENERAL_VALID_BIOTOOLS)
@@ -1112,6 +1124,15 @@ def test_general_valid_biotools(lint_ctx):
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_general_text_spaces_comments(lint_ctx):
+    tool_source = get_xml_tool_source(TOOL_WITH_COMMENTS)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
@@ -2113,13 +2134,6 @@ def test_linting_cwl_tool(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
-
-
-def test_xml_comments_are_ignored(lint_ctx: LintContext):
-    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
-    lint_xml_with(lint_ctx, tool_xml)
-    for lint_message in lint_ctx.message_list:
-        assert "Comment" not in lint_message.message
 
 
 def test_list_linters():
