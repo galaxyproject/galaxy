@@ -51,7 +51,7 @@ export async function fetchDatasetDetails(params: { id: string }): Promise<Datas
 
 const updateDataset = fetcher.path("/api/datasets/{dataset_id}").method("put").create();
 
-export async function undeleteHistoryDataset(datasetId: string) {
+export async function undeleteDataset(datasetId: string) {
     const { data } = await updateDataset({
         dataset_id: datasetId,
         type: "dataset",

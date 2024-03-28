@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { useObjectStoreStore } from "@/stores/objectStoreStore";
+import { useSelectableObjectStores } from "@/composables/useObjectStores";
 import { ValidFilter } from "@/utils/filtering";
 
 import FilterObjectStoreLink from "./FilterObjectStoreLink.vue";
@@ -40,12 +39,7 @@ watch(
     }
 );
 
-const store = useObjectStoreStore();
-const { selectableObjectStores } = storeToRefs(store);
-
-const hasObjectStores = computed(() => {
-    return selectableObjectStores.value && selectableObjectStores.value.length > 0;
-});
+const { selectableObjectStores, hasSelectableObjectStores } = useSelectableObjectStores();
 
 function onChange(value: string | null) {
     localValue.value = (value || undefined) as FilterType;
@@ -53,7 +47,7 @@ function onChange(value: string | null) {
 </script>
 
 <template>
-    <div v-if="hasObjectStores">
+    <div v-if="hasSelectableObjectStores">
         <small>Filter by storage source:</small>
         <FilterObjectStoreLink :object-stores="selectableObjectStores" :value="localValue" @change="onChange" />
     </div>
