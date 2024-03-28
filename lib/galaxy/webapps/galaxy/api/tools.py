@@ -16,6 +16,7 @@ from fastapi import (
     UploadFile,
 )
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -30,6 +31,10 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
+)
+from galaxy.schema.tools import (
+    ExecuteToolPayload,
+    ToolResponse,
 )
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.util.zipstream import ZipstreamWrapper
@@ -46,6 +51,7 @@ from . import (
     APIContentTypeRoute,
     as_form,
     BaseGalaxyAPIController,
+    depend_on_either_json_or_form_data,
     depends,
     DependsOnTrans,
     Router,
@@ -53,11 +59,17 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-# Do not allow these tools to be called directly - they (it) enforces extra security and
-# provides access via a different API endpoint.
-PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
+
+CreateToolBody = Annotated[
+    ExecuteToolPayload,
+    Body(
+        default=...,
+        title="",
+        description="",
+    ),
+]
 
 
 class FormDataApiRoute(APIContentTypeRoute):
@@ -72,13 +84,17 @@ router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
 
+CreateDataForm = as_form(ExecuteToolPayload)
+
 
 @router.cbv
 class FetchTools:
     service: ToolsService = depends(ToolsService)
 
     @router.post("/api/tools/fetch", summary="Upload files to Galaxy", route_class_override=JsonApiRoute)
-    async def fetch_json(self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans):
+    async def fetch_json(
+        self, payload: FetchDataPayload = Body(...), trans: ProvidesHistoryContext = DependsOnTrans
+    ) -> ToolResponse:
         return self.service.create_fetch(trans, payload)
 
     @router.post(
@@ -92,7 +108,7 @@ class FetchTools:
         payload: FetchDataFormPayload = Depends(FetchDataForm.as_form),
         files: Optional[List[UploadFile]] = None,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> ToolResponse:
         files2: List[StarletteUploadFile] = cast(List[StarletteUploadFile], files or [])
 
         # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
@@ -102,6 +118,17 @@ class FetchTools:
                 if isinstance(value, StarletteUploadFile):
                     files2.append(value)
         return self.service.create_fetch(trans, payload, files2)
+
+    @router.post(
+        "/api/tools",
+        summary="Execute tool with a given parameter payload",
+    )
+    def execute(
+        self,
+        payload: ExecuteToolPayload = depend_on_either_json_or_form_data(ExecuteToolPayload),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> ToolResponse:
+        return self.service.execute(trans, payload)
 
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
@@ -568,29 +595,6 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Returns global tool error stack
         """
         return global_tool_errors.error_stack
-
-    @expose_api_anonymous
-    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
-        """
-        POST /api/tools
-        Execute tool with a given parameter payload
-
-        :param input_format: input format for the payload. Possible values are
-          the default 'legacy' (where inputs nested inside conditionals or
-          repeats are identified with e.g. '<conditional_name>|<input_name>') or
-          '21.01' (where inputs inside conditionals or repeats are nested
-          elements).
-        :type input_format: str
-        """
-        tool_id = payload.get("tool_id")
-        tool_uuid = payload.get("tool_uuid")
-        if tool_id in PROTECTED_TOOLS:
-            raise exceptions.RequestParameterInvalidException(
-                f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
-            )
-        if tool_id is None and tool_uuid is None:
-            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
-        return self.service._create(trans, payload, **kwd)
 
 
 def _kwd_or_payload(kwd: Dict[str, Any]) -> Dict[str, Any]:

@@ -1601,6 +1601,10 @@ export interface paths {
         /** Show installed tool shed repository. */
         get: operations["show_api_tool_shed_repositories__id__get"];
     };
+    "/api/tools": {
+        /** Execute tool with a given parameter payload */
+        post: operations["execute_api_tools_post"];
+    };
     "/api/tools/fetch": {
         /** Upload files to Galaxy */
         post: operations["fetch_form_api_tools_fetch_post"];
@@ -11764,6 +11768,48 @@ export interface components {
              * @description A `\t` (TAB) separated list of column __contents__. You must specify a value for each of the columns of the data table.
              */
             values: string;
+        };
+        /** ToolResponse */
+        ToolResponse: {
+            /**
+             * Errors
+             * @description Job errors related to the creation of the tool.
+             * @default []
+             */
+            errors?: Record<string, never>[];
+            /**
+             * Implicit Collections
+             * @description The implicit dataset collections of the tool.
+             * @default []
+             */
+            implicit_collections?: Record<string, never>[];
+            /**
+             * Jobs
+             * @description The jobs of the tool.
+             * @default []
+             */
+            jobs?: (
+                | components["schemas"]["ShowFullJobResponse"]
+                | components["schemas"]["EncodedJobDetails"]
+                | components["schemas"]["JobSummary"]
+            )[];
+            /**
+             * Output Collections
+             * @description The output dataset collections of the tool.
+             * @default []
+             */
+            output_collections?: Record<string, never>[];
+            /**
+             * Outputs
+             * @description The outputs of the tool.
+             * @default []
+             */
+            outputs?: Record<string, never>[];
+            /**
+             * Produces Entry Points
+             * @description Flag indicating whether the creation of the tool produces entry points.
+             */
+            produces_entry_points: boolean;
         };
         /** ToolStep */
         ToolStep: {
@@ -21981,6 +22027,29 @@ export interface operations {
             };
         };
     };
+    execute_api_tools_post: {
+        /** Execute tool with a given parameter payload */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ToolResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     fetch_form_api_tools_fetch_post: {
         /** Upload files to Galaxy */
         parameters?: {
@@ -21998,7 +22067,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["ToolResponse"];
                 };
             };
             /** @description Validation Error */

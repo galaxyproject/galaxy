@@ -59,7 +59,7 @@ class TestAdminToolDataIntegration(DataManagerIntegrationTestCase):
             inputs={"ignored_value": "moo"},
             history_id=history_id,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self._post("tools", data=payload, json=True)
         create_response.raise_for_status()
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         time.sleep(2)

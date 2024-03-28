@@ -17,7 +17,7 @@ class TestDataBundlesIntegration(BaseSwiftObjectStoreIntegrationTestCase, DataMa
             data_manager_mode="bundle",
             history_id=history_id,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self._post("tools", data=payload, json=True)
         create_response.raise_for_status()
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         data_manager_dataset = self.dataset_populator.get_history_dataset_details(history_id)
@@ -57,7 +57,7 @@ class TestDataBundlesIntegration(BaseSwiftObjectStoreIntegrationTestCase, DataMa
             data_manager_mode="bundle",
             history_id=history_id,
         )
-        create_response = self._post("tools", data=payload)
+        create_response = self._post("tools", data=payload, json=True)
         create_response.raise_for_status()
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         data_manager_dataset = self.dataset_populator.get_history_dataset_details(history_id)

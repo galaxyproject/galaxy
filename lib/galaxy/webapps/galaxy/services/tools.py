@@ -10,6 +10,7 @@ from typing import (
     Union,
 )
 
+from fastapi import HTTPException
 from starlette.datastructures import UploadFile
 
 from galaxy import (
@@ -33,6 +34,10 @@ from galaxy.schema.fetch_data import (
     FetchDataPayload,
     FilesPayload,
 )
+from galaxy.schema.tools import (
+    ExecuteToolPayload,
+    ToolResponse,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
@@ -40,6 +45,10 @@ from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_ta
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
+
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
 
 
 class ToolsService(ServiceBase):
@@ -55,27 +64,40 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def create_temp_file(self, trans, files) -> Dict[str, FilesPayload]:
+        files_payload = {}
+        for i, upload_file in enumerate(files):
+            with tempfile.NamedTemporaryFile(
+                dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+            ) as dest:
+                shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+            upload_file.file.close()
+            files_payload[f"files_{i}|file_data"] = FilesPayload(
+                filename=upload_file.filename, local_filename=dest.name
+            )
+        return files_payload
+
+    def create_temp_file_execute(self, trans, upload_file) -> FilesPayload:
+        with tempfile.NamedTemporaryFile(
+            dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
+        ) as dest:
+            shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+        upload_file.file.close()
+        return FilesPayload(filename=upload_file.filename, local_filename=dest.name)
+
     def create_fetch(
         self,
         trans: ProvidesHistoryContext,
         fetch_payload: Union[FetchDataFormPayload, FetchDataPayload],
         files: Optional[List[UploadFile]] = None,
-    ):
+    ) -> ToolResponse:
         payload = fetch_payload.model_dump(exclude_unset=True)
         request_version = "1"
         history_id = payload.pop("history_id")
         clean_payload = {}
         files_payload = {}
         if files:
-            for i, upload_file in enumerate(files):
-                with tempfile.NamedTemporaryFile(
-                    dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
-                ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
-                upload_file.file.close()
-                files_payload[f"files_{i}|file_data"] = FilesPayload(
-                    filename=upload_file.filename, local_filename=dest.name
-                )
+            files_payload = self.create_temp_file(trans, files)
         for key, value in payload.items():
             if key == "key":
                 continue
@@ -98,7 +120,30 @@ class ToolsService(ServiceBase):
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload, **kwd):
+    def execute(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: ExecuteToolPayload,
+    ) -> ToolResponse:
+        tool_id = payload.tool_id
+        tool_uuid = payload.tool_uuid
+        if tool_id in PROTECTED_TOOLS:
+            raise HTTPException(
+                status_code=400, detail=f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
+            )
+        if tool_id is None and tool_uuid is None:
+            raise HTTPException(status_code=400, detail="Must specify a valid tool_id to use this endpoint.")
+        create_payload = payload.model_dump(exclude_unset=True)
+
+        # process files, when they come in as multipart file data
+        files = {}
+        for key in list(create_payload.keys()):
+            if key.startswith("files_") and isinstance(create_payload[key], UploadFile):
+                files[key] = self.create_temp_file_execute(trans, create_payload.pop(key))
+        create_payload.update(files)
+        return self._create(trans, create_payload)
+
+    def _create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
@@ -135,7 +180,6 @@ class ToolsService(ServiceBase):
         # History not set correctly as part of this API call for
         # dataset upload.
         if history_id := payload.get("history_id"):
-            history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
             target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
@@ -195,7 +239,7 @@ class ToolsService(ServiceBase):
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 
-    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars):
+    def _handle_inputs_output_to_api_response(self, trans, tool, target_history, vars) -> ToolResponse:
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get("out_data", [])
         rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
@@ -213,9 +257,6 @@ class ToolsService(ServiceBase):
             # correspond with which tool file outputs
             output_dict["output_name"] = output_name
             outputs.append(output_dict)
-
-        for job in vars.get("jobs", []):
-            rval["jobs"].append(job.to_dict(view="collection"))
 
         for output_name, collection_instance in vars.get("output_collections", []):
             history = target_history or trans.history
@@ -240,7 +281,12 @@ class ToolsService(ServiceBase):
             rval["implicit_collections"].append(output_dict)
 
         trans.security.encode_all_ids(rval, recursive=True)
-        return rval
+
+        # Encoding the job ids is handled by the pydantic model
+        for job in vars.get("jobs", []):
+            rval["jobs"].append(job.to_dict(view="collection"))
+
+        return ToolResponse(**rval)
 
     def _search(self, q, view):
         """

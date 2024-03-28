@@ -1,17 +1,14 @@
 import logging
-from json import JSONDecodeError
 from typing import (
     AsyncGenerator,
     cast,
     List,
     Optional,
     Type,
-    TypeVar,
 )
 
 from fastapi import (
     Depends,
-    HTTPException,
     Path,
     Query,
     Request,
@@ -23,7 +20,6 @@ from fastapi.security import (
     APIKeyHeader,
     APIKeyQuery,
 )
-from pydantic import BaseModel
 from starlette_context import context as request_context
 
 from galaxy.exceptions import AdminRequiredException
@@ -159,32 +155,8 @@ class Router(FrameworkRouter):
     admin_user_dependency = AdminUserRequired
 
 
-B = TypeVar("B", bound=BaseModel)
-
-
 # async def depend_on_either_json_or_form_data(model: Type[T]):
 #    return Depends(get_body)
-
-
-def depend_on_either_json_or_form_data(model: Type[B]) -> B:
-    async def get_body(request: Request):
-        content_type = request.headers.get("Content-Type")
-        if content_type is None:
-            raise HTTPException(status_code=400, detail="No Content-Type provided!")
-        elif content_type == "application/json":
-            try:
-                return model(**await request.json())
-            except JSONDecodeError:
-                raise HTTPException(status_code=400, detail="Invalid JSON data")
-        elif content_type == "application/x-www-form-urlencoded" or content_type.startswith("multipart/form-data"):
-            try:
-                return model(**await request.form())
-            except Exception:
-                raise HTTPException(status_code=400, detail="Invalid Form data")
-        else:
-            raise HTTPException(status_code=400, detail="Content-Type not supported!")
-
-    return Depends(get_body)
 
 
 UserIdPathParam: str = Path(..., title="User ID", description="The encoded database identifier of the user.")
