@@ -72,6 +72,7 @@ class ToolsService(ServiceBase):
                     dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
                 ) as dest:
                     shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
+                    util.umask_fix_perms(dest.name, trans.app.config.umask, 0o0666)
                 upload_file.file.close()
                 files_payload[f"files_{i}|file_data"] = FilesPayload(
                     filename=upload_file.filename, local_filename=dest.name
