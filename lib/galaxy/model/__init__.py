@@ -657,6 +657,35 @@ WHERE user_id = :id AND quota_source_label IS NOT NULL
     return statements
 
 
+UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE = """
+WITH per_user_histories AS
+(
+    SELECT id
+    FROM history
+    WHERE user_id = :id
+        AND NOT purged
+),
+per_hist_hdas AS (
+    SELECT DISTINCT dataset_id
+    FROM history_dataset_association
+    WHERE NOT purged
+        AND history_id IN (SELECT id FROM per_user_histories)
+)
+SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0)) as usage, dataset.object_store_id
+FROM dataset
+LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
+    AND library_dataset_dataset_association.id IS NULL
+GROUP BY dataset.object_store_id
+"""
+
+
+def calculate_disk_usage_per_objectstore(sa_session, user_id: str):
+    statement = UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE
+    params = {"id": user_id}
+    return sa_session.execute(statement, params).all()
+
+
 # move these to galaxy.schema.schema once galaxy-data depends on
 # galaxy-schema.
 class UserQuotaBasicUsage(BaseModel):
@@ -668,6 +697,11 @@ class UserQuotaUsage(UserQuotaBasicUsage):
     quota_percent: Optional[float] = None
     quota_bytes: Optional[int] = None
     quota: Optional[str] = None
+
+
+class UserObjectstoreUsage(BaseModel):
+    object_store_id: str
+    total_disk_usage: float
 
 
 class User(Base, Dictifiable, RepresentById):
@@ -1140,6 +1174,15 @@ ON CONFLICT
         session.add(assoc)
         with transaction(session):
             session.commit()
+
+    def dictify_objectstore_usage(self) -> List[UserObjectstoreUsage]:
+        session = object_session(self)
+        rows = calculate_disk_usage_per_objectstore(session, self.id)
+        return [
+            UserObjectstoreUsage(object_store_id=r.object_store_id, total_disk_usage=r.usage)
+            for r in rows
+            if r.object_store_id
+        ]
 
     def dictify_usage(self, object_store=None) -> List[UserQuotaBasicUsage]:
         """Include object_store to include empty/unused usage info."""

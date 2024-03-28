@@ -38,6 +38,7 @@ from galaxy.model import (
     HistoryDatasetAssociation,
     Role,
     UserAddress,
+    UserObjectstoreUsage,
     UserQuotaUsage,
 )
 from galaxy.model.base import transaction
@@ -301,6 +302,21 @@ class FastAPIUsers:
         if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
+        else:
+            return []
+
+    @router.get(
+        "/api/users/{user_id}/objectstore_usage",
+        name="get_user_objectstore_usage",
+        summary="Return the user's object store usage summary broken down by object store ID",
+    )
+    def objectstore_usage(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
+    ) -> List[UserObjectstoreUsage]:
+        if user := self.service.get_user_full(trans, user_id, False):
+            return user.dictify_objectstore_usage()
         else:
             return []
 

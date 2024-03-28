@@ -811,6 +811,28 @@ class FastAPIHistoryContents:
         )
 
     @router.put(
+        "/api/datasets/{dataset_id}",
+        summary="Updates the values for the history dataset (HDA) item with the given ``ID``.",
+        operation_id="datasets__update_dataset",
+    )
+    def update_dataset(
+        self,
+        dataset_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        payload: UpdateHistoryContentsPayload = Body(...),
+    ) -> AnyHistoryContentItem:
+        """Updates the values for the history content item with the given ``ID``."""
+        return self.service.update(
+            trans,
+            None,
+            dataset_id,
+            payload.model_dump(exclude_unset=True),
+            serialization_params,
+            contents_type=HistoryContentType.dataset,
+        )
+
+    @router.put(
         "/api/histories/{history_id}/contents/{id}",
         summary="Updates the values for the history content item with the given ``ID`` and query specified type. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         deprecated=True,
@@ -896,6 +918,40 @@ class FastAPIHistoryContents:
             trans,
             id,
             type,
+            serialization_params,
+            purge,
+            recursive,
+            stop_job,
+            payload,
+        )
+
+    @router.delete(
+        "/api/datasets/{dataset_id}",
+        summary="Delete the history dataset content with the given ``ID``.",
+        responses=CONTENT_DELETE_RESPONSES,
+        operation_id="datasets__delete",
+    )
+    def delete_dataset(
+        self,
+        response: Response,
+        dataset_id: HistoryItemIDPathParam,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        purge: Optional[bool] = PurgeQueryParam,
+        recursive: Optional[bool] = RecursiveQueryParam,
+        stop_job: Optional[bool] = StopJobQueryParam,
+        payload: DeleteHistoryContentPayload = Body(None),
+    ):
+        """
+        Delete the history content with the given ``ID`` and path specified type.
+
+        **Note**: Currently does not stop any active jobs for which this dataset is an output.
+        """
+        return self._delete(
+            response,
+            trans,
+            dataset_id,
+            HistoryContentType.dataset,
             serialization_params,
             purge,
             recursive,
