@@ -1,4 +1,4 @@
-import { datasetsFetcher, purgeDataset, undeleteHistoryDataset } from "@/api/datasets";
+import { datasetsFetcher, purgeDataset, undeleteDataset } from "@/api/datasets";
 import { archivedHistoriesFetcher, deleteHistory, historiesFetcher, undeleteHistory } from "@/api/histories";
 
 export interface ItemSizeSummary {
@@ -75,7 +75,7 @@ export async function purgeHistoryById(historyId: string): Promise<PurgeableItem
 }
 
 export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSummary> {
-    const data = await undeleteHistoryDataset(datasetId);
+    const data = await undeleteDataset(datasetId);
     return data as unknown as ItemSizeSummary;
 }
 
