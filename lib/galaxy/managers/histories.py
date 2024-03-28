@@ -207,6 +207,17 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 self.model_class.deleted == (true() if show_deleted else false())
             )
 
+        # Handle archived histories
+        if show_published:
+            # Someone published a history and then archived it, it should still be returned
+            stmt = stmt.where(or_(self.model_class.archived == false(), self.model_class.published == true()))
+        elif show_shared:
+            # Someone shared a history with the current user and then archived it, it should still be returned
+            stmt = stmt.where(or_(self.model_class.archived == false(), self.user_share_model.user == user))
+        else:
+            # By default, only return non-archived histories
+            stmt = stmt.where(self.model_class.archived == false())
+
         stmt = stmt.distinct()
 
         if include_total_count:
