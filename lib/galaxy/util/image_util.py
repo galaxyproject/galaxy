@@ -10,7 +10,7 @@ from typing import (
 try:
     from PIL import Image
 except ImportError:
-    PIL = None
+    Image = None
 
 log = logging.getLogger(__name__)
 

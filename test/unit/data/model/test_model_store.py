@@ -827,6 +827,21 @@ def test_sessionless_import_edit_datasets():
     assert d2 is not None
 
 
+def test_import_job_with_output_copy():
+    app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
+    hda = h.active_datasets[-1]
+    # Simulate a copy being made of an output hda
+    copy = hda.copy(new_name="output copy")
+    # set extension to auto, should be changed to real extension when finalizing job
+    copy.extension = "auto"
+    app.add_and_commit(copy)
+    import_model_store = store.get_import_model_store_for_directory(
+        temp_directory, import_options=store.ImportOptions(allow_dataset_object_edit=True, allow_edit=True), app=app
+    )
+    import_model_store.perform_import()
+    assert copy.extension == "txt"
+
+
 def test_import_datasets_with_ids_fails_if_not_editing_models():
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
     u = h.user

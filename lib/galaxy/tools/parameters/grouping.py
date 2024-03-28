@@ -272,7 +272,7 @@ class UploadDataset(Group):
         if dataset_name is None:
             dataset_name = context.get("files_metadata", {}).get("base_name", None)
         if dataset_name is None:
-            filenames = list()
+            filenames = []
             for composite_file in context.get("files", []):
                 if not composite_file.get("ftp_files", ""):
                     filenames.append((composite_file.get("file_data") or {}).get("filename", ""))
@@ -748,7 +748,7 @@ class Conditional(Group):
     def value_to_basic(self, value, app, use_security=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval = dict()
+        rval = {}
         rval[self.test_param.name] = self.test_param.value_to_basic(value[self.test_param.name], app)
         current_case = rval["__current_case__"] = self.get_current_case(value[self.test_param.name])
         for input in self.cases[current_case].inputs.values():
@@ -759,7 +759,7 @@ class Conditional(Group):
     def value_from_basic(self, value, app, ignore_errors=False):
         if self.test_param is None:
             raise Exception("Must set 'test_param' attribute to use.")
-        rval = dict()
+        rval = {}
         try:
             rval[self.test_param.name] = self.test_param.value_from_basic(
                 value.get(self.test_param.name), app, ignore_errors

@@ -83,7 +83,7 @@ def test_dynamic_mapping_workflow_invocation_parameter():
 
 
 def test_dynamic_mapping_no_function():
-    dest = __dynamic_destination(dict())
+    dest = __dynamic_destination({})
     mapper = __mapper(dest)
     mapper.job_wrapper.tool.all_ids = ["no_such_function"]
     error_message = ERROR_MESSAGE_NO_RULE_FUNCTION % dest

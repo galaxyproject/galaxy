@@ -272,7 +272,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "job_source_type",
                 "job_state_summary",
                 "name",
-                "type_id",
                 "deleted",
                 "visible",
                 "type",

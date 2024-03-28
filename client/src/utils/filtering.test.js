@@ -14,6 +14,10 @@ const sampleFilters = [
         validFilters: {
             deleted: true,
         },
+        invalidFilters: {
+            invalid: "value",
+            visible: null,
+        },
         validText: "deleted:true visible:any",
     },
     {
@@ -27,6 +31,9 @@ const sampleFilters = [
             deleted: "any",
             related: 10,
             hid_gt: 5,
+        },
+        invalidFilters: {
+            hid_less_than: 20,
         },
         validText: "deleted:any related:10 hid>5 visible:any",
     },
@@ -90,7 +97,9 @@ describe("filtering", () => {
     });
     test("parse get valid filters and settings", () => {
         sampleFilters.forEach((sample) => {
-            expect(HistoryFilters.getValidFilters(sample.filters)).toEqual(sample.validFilters);
+            const { validFilters, invalidFilters } = HistoryFilters.getValidFilters(sample.filters);
+            expect(validFilters).toEqual(sample.validFilters);
+            expect(invalidFilters).toEqual(sample.invalidFilters);
             expect(HistoryFilters.getFilterText(sample.filters)).toEqual(sample.validText);
         });
     });

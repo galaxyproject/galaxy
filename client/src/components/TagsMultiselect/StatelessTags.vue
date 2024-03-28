@@ -111,7 +111,7 @@ function onTagClicked(tag: string) {
 
             <HeadlessMultiselect
                 :options="userTags"
-                :selected="tags"
+                :selected="props.value"
                 :placeholder="props.placeholder"
                 :validator="isValid"
                 @addOption="onAddTag"

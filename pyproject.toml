@@ -89,7 +89,7 @@ pillow = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = {version = ">=2, !=2.6.0, !=2.6.1, !=2.6.2, !=2.6.3", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
+pydantic = {version = ">=2, !=2.6.0, !=2.6.1, !=2.6.2, !=2.6.3, !=2.6.4", extras = ["email"]}  # https://github.com/pydantic/pydantic/issues/8760
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -106,7 +106,7 @@ requests = "*"
 rocrate = "*"
 Routes = "*"
 schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
-social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
+social-auth-core = ">=4.5.0"  # to drop dependency on abandoned python-jose
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
 sqlitedict = "*"
@@ -118,7 +118,7 @@ svgwrite = "*"
 tifffile = "*"
 tuswsgi = "*"
 typing-extensions = "*"
-uvicorn = "*"
+uvicorn = "!=0.28.0"  # https://github.com/galaxyproject/galaxy/issues/17669
 uvloop = "*"
 WebOb = "*"
 Whoosh = "*"
@@ -191,8 +191,8 @@ exclude = [
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
-# flake8-logging-format (G) and pyupgrade (UP)
-select = ["E", "F", "B", "G", "UP"]
+# flake8-comprehensions (C4), flake8-logging-format (G) and pyupgrade (UP)
+select = ["E", "F", "B", "C4", "G", "UP"]
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
@@ -200,6 +200,9 @@ select = ["E", "F", "B", "G", "UP"]
 # E501 is line length (delegated to black)
 # G* are TODOs
 ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
+
+[tool.ruff.lint.flake8-comprehensions]
+allow-dict-calls-with-keyword-arguments = true
 
 [tool.ruff.lint.isort]
 # We are not selecting "I" rules in ruff yet because support for all the isort

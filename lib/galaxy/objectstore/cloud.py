@@ -229,8 +229,9 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 raise Exception(msg)
 
             if len(missing_config) > 0:
-                msg = "The following configuration required for {} cloud backend " "are missing: {}".format(
-                    provider, missing_config
+                msg = (
+                    f"The following configuration required for {provider} cloud backend "
+                    f"are missing: {missing_config}"
                 )
                 log.error(msg)
                 raise Exception(msg)

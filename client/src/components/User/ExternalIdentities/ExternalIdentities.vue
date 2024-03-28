@@ -85,7 +85,7 @@
 
         <div v-if="enable_oidc" class="external-subheading">
             <h2 class="h-md">Connect Other External Identities</h2>
-            <ExternalLogin :login_page="false" />
+            <ExternalLogin />
         </div>
     </section>
 </template>

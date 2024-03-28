@@ -171,7 +171,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             .order_by(func.count().desc())
         )
         result_set = trans.sa_session.execute(query)
-        user_tag_names = list()
+        user_tag_names = []
         for row in result_set:
             user_tag_names.append(row[0])
         return user_tag_names

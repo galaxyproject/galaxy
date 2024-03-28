@@ -450,13 +450,11 @@ def send_report(rep, exc_data, html=True):
         output = StringIO()
         traceback.print_exc(file=output)
         if html:
-            return """
-            <p>Additionally an error occurred while sending the {} report:
+            return f"""
+            <p>Additionally an error occurred while sending the {markupsafe.escape(str(rep))} report:
 
-            <pre>{}</pre>
-            </p>""".format(
-                markupsafe.escape(str(rep)), output.getvalue()
-            )
+            <pre>{output.getvalue()}</pre>
+            </p>"""
         else:
             return f"Additionally an error occurred while sending the {rep} report:\n{output.getvalue()}"
     else:

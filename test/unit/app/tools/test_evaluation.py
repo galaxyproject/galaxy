@@ -219,7 +219,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
     def _setup_test_bwa_job(self):
         def hda(id, name, path):
-            hda = HistoryDatasetAssociation(name=name, metadata=dict())
+            hda = HistoryDatasetAssociation(name=name, metadata={})
             hda.dataset = Dataset(id=id, external_filename=path)
             return hda
 
@@ -232,7 +232,7 @@ class TestToolEvaluator(TestCase, UsesApp):
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
     def __init__(self, **kwds):
-        self._metadata = dict()
+        self._metadata = {}
         super().__init__(**kwds)
 
 

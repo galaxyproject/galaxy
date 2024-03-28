@@ -2,15 +2,9 @@
 import { BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { ValidFilter } from "@/utils/filtering";
+import { type ErrorType, type ValidFilter } from "@/utils/filtering";
 
 type FilterType = string | boolean | undefined;
-
-type ErrorType = {
-    index: string;
-    typeError: boolean;
-    msg: string;
-};
 
 interface Props {
     name: string;

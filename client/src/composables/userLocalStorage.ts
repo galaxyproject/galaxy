@@ -1,7 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { computed, customRef, type Ref, ref } from "vue";
 
-import type { GenericUser } from "@/stores/userStore";
+import type { GenericUser } from "@/api";
 
 import { useHashedUserId } from "./hashedUserId";
 

@@ -85,7 +85,7 @@ class WorkflowsService(ServiceBase):
         if missing_tools:
             workflows_missing_tools = []
             workflows = []
-            workflows_by_toolshed = dict()
+            workflows_by_toolshed = {}
             for value in rval:
                 stored_workflow = self._workflows_manager.get_stored_workflow(trans, value["id"], by_stored_id=True)
                 tools = self._workflow_contents_manager.get_all_tools(stored_workflow.latest_workflow)

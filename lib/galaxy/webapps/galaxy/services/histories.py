@@ -216,6 +216,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self,
         trans,
         payload: HistoryIndexQueryPayload,
+        serialization_params: SerializationParams,
         include_total_count: bool = False,
     ) -> Tuple[List[AnyHistoryView], int]:
         """Return a list of History accessible by the user
@@ -223,10 +224,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         :rtype:     list
         :returns:   dictionaries containing History details
         """
-        serialization_params = SerializationParams(default_view="detailed")
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            [self._serialize_history(trans, entry, serialization_params) for entry in entries],
+            [self._serialize_history(trans, entry, serialization_params, default_view="summary") for entry in entries],
             total_matches,
         )
 

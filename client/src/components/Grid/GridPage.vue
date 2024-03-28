@@ -17,9 +17,10 @@ library.add(faPlus);
 
 interface Props {
     activeList?: "my" | "published";
+    username?: string;
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
 });
 </script>
@@ -47,6 +48,6 @@ withDefaults(defineProps<Props>(), {
             <BNavItem :active="activeList === 'published'" to="/pages/list_published"> Public Pages </BNavItem>
         </BNav>
         <GridList v-if="activeList === 'my'" :grid-config="pagesGridConfig" embedded />
-        <GridList v-else :grid-config="pagesPublishedGridConfig" embedded />
+        <GridList v-else :grid-config="pagesPublishedGridConfig" :username-search="props.username" embedded />
     </div>
 </template>

@@ -6,6 +6,7 @@ import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { userOwnsHistory } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { Toast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -38,7 +39,7 @@ const selectedHistories = computed<PinnedHistory[]>(() => {
     } else {
         // get the latest four histories
         return [...histories.value]
-            .filter((h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id))
+            .filter((h) => userOwnsHistory(currentUser.value, h))
             .sort((a, b) => {
                 if (a.update_time < b.update_time) {
                     return 1;

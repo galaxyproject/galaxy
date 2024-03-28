@@ -110,7 +110,7 @@ class GalaxyRBACAgent(RBACAgent):
             # Add all remaining non-private, non-sharing roles
             for role in self._get_npns_roles(trans):
                 roles.add(role)
-        return self.sort_by_attr([role for role in roles], "name")
+        return self.sort_by_attr(list(roles), "name")
 
     def get_roles_for_action(self, item, action):
         """
@@ -218,7 +218,7 @@ class GalaxyRBACAgent(RBACAgent):
         return_roles = set(roles)
         if total_count is None:
             total_count = len(return_roles)
-        return self.sort_by_attr([role for role in return_roles], "name"), total_count
+        return self.sort_by_attr(list(return_roles), "name"), total_count
 
     def get_legitimate_roles(self, trans, item, cntrller):
         """
@@ -269,7 +269,7 @@ class GalaxyRBACAgent(RBACAgent):
                         for ura in user.roles:
                             if admin_controller or self.ok_to_display(trans.user, ura.role):
                                 roles.add(ura.role)
-        return self.sort_by_attr([role for role in roles], "name")
+        return self.sort_by_attr(list(roles), "name")
 
     def ok_to_display(self, user, role):
         """
@@ -765,12 +765,16 @@ WHERE history.user_id != :user_id and history_dataset_association.dataset_id = :
         return self.get_private_user_role(user)
 
     def get_private_user_role(self, user, auto_create=False):
-        stmt = select(Role).where(
-            and_(
-                UserRoleAssociation.user_id == user.id,
-                Role.id == UserRoleAssociation.role_id,
-                Role.type == Role.types.PRIVATE,
+        stmt = (
+            select(Role)
+            .where(
+                and_(
+                    UserRoleAssociation.user_id == user.id,
+                    Role.id == UserRoleAssociation.role_id,
+                    Role.type == Role.types.PRIVATE,
+                )
             )
+            .distinct()
         )
         role = self.sa_session.execute(stmt).scalar_one_or_none()
         if not role:

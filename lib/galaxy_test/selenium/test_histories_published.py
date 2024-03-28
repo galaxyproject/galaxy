@@ -80,7 +80,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.send_escape(input_element)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-        self.components.published_histories.advanced_search_submit.wait_for_and_click()
         self.assert_histories_present([self.history3_name])
 
     @retry_assertion_during_transitions

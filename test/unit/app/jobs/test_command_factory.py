@@ -64,12 +64,7 @@ class TestCommandFactory(TestCase):
         dep_commands = [". /opt/galaxy/tools/bowtie/default/env.sh"]
         self.job_wrapper.dependency_shell_commands = dep_commands
         self._assert_command_is(
-            self._surround_command(
-                "{} {}/tool_script.sh".format(
-                    self.job_wrapper.shell,
-                    self.job_wrapper.working_directory,
-                )
-            )
+            self._surround_command(f"{self.job_wrapper.shell} {self.job_wrapper.working_directory}/tool_script.sh")
         )
         self.__assert_tool_script_is(f"#!/bin/sh\n{dep_commands[0]}; {MOCK_COMMAND_LINE}")
 

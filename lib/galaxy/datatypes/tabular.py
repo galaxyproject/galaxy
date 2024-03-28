@@ -127,6 +127,7 @@ class TabularData(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
+        dataset.blurb = f"{dataset.blurb} {dataset.metadata.columns} columns"
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 

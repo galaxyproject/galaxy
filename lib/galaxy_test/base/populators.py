@@ -667,7 +667,7 @@ class BaseDatasetPopulator(BasePopulator):
         extra_files_path: Optional[str] = None,
         wait: bool = True,
     ) -> Response:
-        data: Dict[str, Any] = dict()
+        data: Dict[str, Any] = {}
         if hash_function:
             data["hash_function"] = hash_function
         if extra_files_path:

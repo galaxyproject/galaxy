@@ -97,7 +97,13 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         session = trans.sa_session
 
         user = session.scalars(select(model.User).filter_by(username=username).limit(1)).first()
-        history = session.scalars(select(model.History).filter_by(user=user, slug=slug, deleted=False).limit(1)).first()
+        history = session.scalars(
+            select(model.History)
+            .filter_by(user=user, slug=slug, deleted=False)
+            # return public histories first if slug is not unique
+            .order_by(model.History.importable.desc())
+            .limit(1)
+        ).first()
 
         if history is None:
             raise web.httpexceptions.HTTPNotFound()

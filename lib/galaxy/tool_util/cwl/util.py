@@ -146,8 +146,8 @@ def galactic_job_json(
     for Galaxy.
     """
 
-    datasets = []
-    dataset_collections = []
+    datasets: List[Dict[str, Any]] = []
+    dataset_collections: List[Dict[str, Any]] = []
 
     def response_to_hda(target: UploadTarget, upload_response: Dict[str, Any]) -> Dict[str, str]:
         assert isinstance(upload_response, dict), upload_response
@@ -277,7 +277,7 @@ def galactic_job_json(
 
         return upload_file(file_path, secondary_files_tar_path, filetype=filetype, **kwd)
 
-    def replacement_directory(value):
+    def replacement_directory(value: Dict[str, Any]) -> Dict[str, Any]:
         file_path = value.get("location", None) or value.get("path", None)
         if file_path is None:
             return value

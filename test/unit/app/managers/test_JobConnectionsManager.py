@@ -25,10 +25,10 @@ def job_connections_manager(sa_session) -> JobConnectionsManager:
 
 # =============================================================================
 def setup_connected_dataset(sa_session: galaxy_scoped_session):
-    center_hda = HistoryDatasetAssociation(sa_session=sa_session)
-    input_hda = HistoryDatasetAssociation(sa_session=sa_session)
+    center_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hdca = HistoryDatasetCollectionAssociation()
-    output_hda = HistoryDatasetAssociation(sa_session=sa_session)
+    output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     output_hdca = HistoryDatasetCollectionAssociation()
     input_job = Job()
     output_job = Job()
@@ -56,10 +56,10 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
 
 def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
     center_hdca = HistoryDatasetCollectionAssociation()
-    input_hda1 = HistoryDatasetAssociation(sa_session=sa_session)
-    input_hda2 = HistoryDatasetAssociation(sa_session=sa_session)
+    input_hda1 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
+    input_hda2 = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     input_hdca = HistoryDatasetCollectionAssociation()
-    output_hda = HistoryDatasetAssociation(sa_session=sa_session)
+    output_hda = HistoryDatasetAssociation(sa_session=sa_session, create_dataset=True)
     output_hdca = HistoryDatasetCollectionAssociation()
     input_job = Job()
     output_job = Job()

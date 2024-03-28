@@ -37,7 +37,6 @@
             v-else
             :history="history"
             :can-edit-history="canEditHistory"
-            :should-show-controls="false"
             filterable
             @view-collection="onViewCollection" />
 

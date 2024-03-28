@@ -42,9 +42,9 @@ class ApplyTagsHistory:
         Operate on datasets for a particular history and recursively find parents
         for a dataset
         """
-        datasets_inheritance_chain = dict()
-        own_tags = dict()
-        parent_tags = dict()
+        datasets_inheritance_chain = {}
+        own_tags = {}
+        parent_tags = {}
         count_datasets_updated = 0
         # get all datasets belonging to a history
         all_datasets = history.show_history(history_id, contents=True)
@@ -107,7 +107,7 @@ class ApplyTagsHistory:
                 for parent in dataset_parents:
                     find_parent_recursive(parent, recursive_parents)
 
-        recursive_parent_ids = dict()
+        recursive_parent_ids = {}
         for item in datasets_inheritance_chain:
             recursive_parents: List = []
 

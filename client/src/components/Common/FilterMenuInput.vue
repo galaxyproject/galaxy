@@ -14,17 +14,11 @@ import {
 import { capitalize } from "lodash";
 import { computed, ref, watch } from "vue";
 
-import { ValidFilter } from "@/utils/filtering";
+import { type ErrorType, type ValidFilter } from "@/utils/filtering";
 
 library.add(faQuestion);
 
 type FilterType = string | boolean | undefined;
-
-type ErrorType = {
-    index: string;
-    typeError: boolean;
-    msg: string;
-};
 
 interface Props {
     name: string;

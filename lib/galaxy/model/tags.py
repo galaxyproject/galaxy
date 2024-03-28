@@ -369,7 +369,7 @@ class TagHandler:
         """
         # Gracefully handle None.
         if not tag_str:
-            return dict()
+            return {}
         # Strip unicode control characters
         tag_str = strip_control_characters(tag_str)
         # Split tags based on separators.
@@ -423,7 +423,7 @@ class TagHandler:
 
     def _scrub_tag_name_list(self, tag_name_list):
         """Scrub a tag name list."""
-        scrubbed_tag_list = list()
+        scrubbed_tag_list = []
         for tag in tag_name_list:
             scrubbed_tag_list.append(self._scrub_tag_name(tag))
         return scrubbed_tag_list

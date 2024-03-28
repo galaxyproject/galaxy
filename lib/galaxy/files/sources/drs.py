@@ -8,13 +8,13 @@ from typing import (
 
 from typing_extensions import Unpack
 
-from galaxy.util.drs import fetch_drs_to_file
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
     PluginKind,
 )
+from .util import fetch_drs_to_file
 
 log = logging.getLogger(__name__)
 

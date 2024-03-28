@@ -164,8 +164,7 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
             # has been shared.
             raise exceptions.InsufficientPermissionsException("Cannot change dataset permissions...")
 
-        quota_source_map = self.app.object_store.get_quota_source_map()
-        if quota_source_map:
+        if quota_source_map := self.app.object_store.get_quota_source_map():
             old_label = quota_source_map.get_quota_source_label(old_object_store_id)
             new_label = quota_source_map.get_quota_source_label(new_object_store_id)
             if old_label != new_label:

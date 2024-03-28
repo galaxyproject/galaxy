@@ -1,5 +1,61 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar } from "@fortawesome/free-regular-svg-icons";
+import { faStar as faRegStar } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+
+import { useUserStore } from "@/stores/userStore";
+
+library.add(faStar, faRegStar);
+
+interface Props {
+    query: string;
+}
+const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "onFavorites", filter: string): void;
+}>();
+
+const { isAnonymous } = storeToRefs(useUserStore());
+
+const FAVORITES = ["#favorites", "#favs", "#favourites"];
+const toggle = ref(false);
+
+const tooltipText = computed(() => {
+    if (isAnonymous.value) {
+        return "Log in to Favorite Tools";
+    } else {
+        if (toggle.value) {
+            return "Clear";
+        } else {
+            return "Show favorites";
+        }
+    }
+});
+
+watch(
+    () => props.query,
+    () => {
+        toggle.value = FAVORITES.includes(props.query);
+    }
+);
+
+function onFavorites() {
+    toggle.value = !toggle.value;
+    if (toggle.value) {
+        emit("onFavorites", "#favorites");
+    } else {
+        emit("onFavorites", "");
+    }
+}
+</script>
+
 <template>
-    <b-button
+    <BButton
         v-b-tooltip.hover.top.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
@@ -8,58 +64,6 @@
         :disabled="isAnonymous"
         :title="tooltipText"
         @click="onFavorites">
-        <icon v-if="toggle" :icon="['fas', 'star']" />
-        <icon v-else :icon="['far', 'star']" />
-    </b-button>
+        <FontAwesomeIcon :icon="toggle ? faRegStar : faStar" />
+    </BButton>
 </template>
-
-<script>
-import { mapState } from "pinia";
-
-import { useUserStore } from "@/stores/userStore";
-
-export default {
-    name: "FavoritesButton",
-    props: {
-        query: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            searchKey: "#favorites",
-            toggle: false,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["isAnonymous"]),
-        tooltipText() {
-            if (this.isAnonymous) {
-                return this.l("Log in to Favorite Tools");
-            } else {
-                if (this.toggle) {
-                    return this.l("Clear");
-                } else {
-                    return this.l("Show favorites");
-                }
-            }
-        },
-    },
-    watch: {
-        query() {
-            this.toggle = this.query == this.searchKey;
-        },
-    },
-    methods: {
-        onFavorites() {
-            this.toggle = !this.toggle;
-            if (this.toggle) {
-                this.$emit("onFavorites", this.searchKey);
-            } else {
-                this.$emit("onFavorites", "");
-            }
-        },
-    },
-};
-</script>

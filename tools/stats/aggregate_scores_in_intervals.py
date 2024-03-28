@@ -85,7 +85,7 @@ class FileBinnedArrayDir(Mapping):
 
     def __init__(self, dir):
         self.dir = dir
-        self.cache = dict()
+        self.cache = {}
 
     def __getitem__(self, key):
         value = None
@@ -117,7 +117,7 @@ def load_scores_wiggle(fname, chrom_buffer_size=3):
     Read a wiggle file and return a dict of BinnedArray objects keyed
     by chromosome.
     """
-    scores_by_chrom = dict()
+    scores_by_chrom = {}
     try:
         for chrom, pos, val in bx.wiggle.Reader(UCSCOutWrapper(open(fname))):
             if chrom not in scores_by_chrom:

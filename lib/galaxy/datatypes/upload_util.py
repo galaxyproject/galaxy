@@ -101,8 +101,8 @@ def handle_upload(
         if registry.is_extension_unsniffable_binary(upload_ext):
             stdout = (
                 "Warning: The file's datatype cannot be determined from its contents and was guessed based on"
-                " its extension, to avoid this warning, manually set the file 'Type' to '{ext}' when uploading"
-                " this type of file".format(ext=upload_ext)
+                f" its extension, to avoid this warning, manually set the file 'Type' to '{upload_ext}' when uploading"
+                " this type of file"
             )
             ext = upload_ext
         else:

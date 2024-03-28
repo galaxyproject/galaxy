@@ -94,10 +94,13 @@ describe("History center panel View", () => {
         expect(tags.text()).toContain("tag_1");
         expect(tags.text()).toContain("tag_2");
         // HistoryCounter
-        expect(wrapper.find("[data-description='storage dashboard button']").attributes("disabled")).toBeTruthy();
         expect(wrapper.find("[data-description='show active items button']").text()).toEqual("8");
         expect(wrapper.find("[data-description='include deleted items button']").text()).toEqual("1");
         expect(wrapper.find("[data-description='include hidden items button']").text()).toEqual("2");
+    }
+
+    function storageDashboardButtonDisabled(wrapper) {
+        return wrapper.find("[data-description='storage dashboard button']").attributes("disabled");
     }
 
     it("current user's current history", async () => {
@@ -116,6 +119,9 @@ describe("History center panel View", () => {
 
         // parts of the layout that should be similar for all cases
         expectCorrectLayout(wrapper);
+
+        // storage dashboard button should be enabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         // make sure all history items show up
         const historyItems = wrapper.findAllComponents(ContentItem);
@@ -138,6 +144,9 @@ describe("History center panel View", () => {
         expect(switchButton.exists()).toBe(false);
         expect(importButton.attributes("disabled")).toBeFalsy();
 
+        // storage dashboard button should be disabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
+
         // parts of the layout that should be similar for all cases
         expectCorrectLayout(wrapper);
     });
@@ -152,6 +161,9 @@ describe("History center panel View", () => {
         const importButton = wrapper.find("[data-description='import history button']");
         expect(switchButton.attributes("disabled")).toBeFalsy();
         expect(importButton.exists()).toBe(false);
+
+        // storage dashboard button should be enabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeFalsy();
 
         // parts of the layout that should be similar for all cases
         expectCorrectLayout(wrapper);
@@ -168,6 +180,9 @@ describe("History center panel View", () => {
         expect(switchButton.attributes("disabled")).toBeTruthy();
         expect(importButton.exists()).toBe(false);
 
+        // storage dashboard button should be disabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
+
         // instead we have an alert
         expect(wrapper.find("[data-description='history state info']").text()).toBe("This history has been purged.");
     });
@@ -183,6 +198,9 @@ describe("History center panel View", () => {
         expect(importButton.exists()).toBe(true);
         expect(importButton.attributes("disabled")).toBeFalsy();
 
+        // storage dashboard button should be disabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
+
         expectCorrectLayout(wrapper);
         expect(wrapper.find("[data-description='history state info']").exists()).toBe(false);
     });
@@ -197,6 +215,9 @@ describe("History center panel View", () => {
         expect(switchButton.exists()).toBe(true);
         expect(switchButton.attributes("disabled")).toBeTruthy();
         expect(importButton.exists()).toBe(false);
+
+        // storage dashboard button should be disabled
+        expect(storageDashboardButtonDisabled(wrapper)).toBeTruthy();
 
         expectCorrectLayout(wrapper);
         expect(wrapper.find("[data-description='history state info']").text()).toBe("This history has been archived.");

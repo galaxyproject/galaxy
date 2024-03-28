@@ -157,8 +157,7 @@ def get_api_user(
         ),
     ),
 ) -> Optional[User]:
-    api_key = key or x_api_key
-    if api_key:
+    if api_key := key or x_api_key:
         user = user_manager.by_api_key(api_key=api_key)
     elif bearer_token:
         user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)

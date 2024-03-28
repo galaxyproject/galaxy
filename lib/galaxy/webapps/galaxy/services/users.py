@@ -122,11 +122,11 @@ class UsersService(ServiceBase):
     def _anon_user_api_value(self, trans: ProvidesHistoryContext):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         if not trans.user and not trans.history:
-            # Can't return info about this user, may not have a history yet.
-            # return {}
-            raise glx_exceptions.MessageException(err_msg="The user has no history, which should always be the case.")
-        usage = self.quota_agent.get_usage(trans, history=trans.history)
-        percent = self.quota_agent.get_percent(trans=trans, usage=usage)
+            usage: Optional[float] = 0.0
+            percent: Optional[int] = 0
+        else:
+            usage = self.quota_agent.get_usage(trans, history=trans.history)
+            percent = self.quota_agent.get_percent(trans=trans, usage=usage)
         usage = usage or 0
         return {
             "total_disk_usage": int(usage),
@@ -239,8 +239,11 @@ class UsersService(ServiceBase):
                 and not trans.app.config.expose_user_name
                 and not trans.app.config.expose_user_email
             ):
-                item = trans.user.to_dict()
-                return [item]
+                if trans.user:
+                    item = trans.user.to_dict()
+                    return [item]
+                else:
+                    return []
             stmt = stmt.filter(User.deleted == false())
         for user in trans.sa_session.scalars(stmt).all():
             item = user.to_dict()

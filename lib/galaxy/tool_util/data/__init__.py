@@ -1113,7 +1113,7 @@ class ToolDataTableManager(Dictifiable):
                 else:
                     raise
             root = tree.getroot()
-            out_elems = [elem for elem in root]
+            out_elems = list(root)
         except Exception as e:
             out_elems = []
             log.debug("Could not parse existing tool data table config, assume no existing elements: %s", e)

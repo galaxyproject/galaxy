@@ -217,7 +217,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         no_wrap_classes = list(no_wrap_classes) + list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
     else:
         no_wrap_classes = list(__DONT_SANITIZE_TYPES__) + [SafeStringWrapper]
-    no_wrap_classes = tuple(set(sorted(no_wrap_classes, key=str)))
+    no_wrap_classes = tuple(set(no_wrap_classes))
     return __do_wrap(value)
 
 

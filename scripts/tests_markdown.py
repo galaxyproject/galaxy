@@ -224,7 +224,7 @@ def __inject_api_timing_summary_test(test):
     internal_timings = {}
 
     def summarize_times(timings):
-        times = list(map(lambda t: t["time"], timings))
+        times = [t["time"] for t in timings]
         return __inject_statistics(
             {
                 "raw": times,
@@ -232,7 +232,7 @@ def __inject_api_timing_summary_test(test):
         )
 
     def summarize_counter(c):
-        counters = list(map(lambda t: t["n"], c))
+        counters = [t["n"] for t in c]
         return __inject_statistics(
             {
                 "raw": counters,

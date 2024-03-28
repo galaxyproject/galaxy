@@ -112,7 +112,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
 
         if "runner_param_specs" not in kwargs:
-            kwargs["runner_param_specs"] = dict()
+            kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
         # Start the job runner parent object
@@ -972,8 +972,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             log.debug(f"No service found for job with k8s_job_name {k8s_job_name}")
         # remove the interactive environment entrypoints
-        eps = job_wrapper.get_job().interactivetool_entry_points
-        if eps:
+        if eps := job_wrapper.get_job().interactivetool_entry_points:
             log.debug(f"Removing entry points for job with ID {job_wrapper.get_id_tag()}")
             self.app.interactivetool_manager.remove_entry_points(eps)
 
@@ -1003,9 +1002,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         except Exception as e:
             log.exception(
-                "({}/{}) User killed running job, but error encountered during termination: {}".format(
-                    job.id, job.get_job_runner_external_id(), e
-                )
+                "(%s/%s) User killed running job, but error encountered during termination: %s",
+                job.id,
+                job.get_job_runner_external_id(),
+                e,
             )
 
     def recover(self, job, job_wrapper):
@@ -1024,18 +1024,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
-                "({}/{}) is still in {} state, adding to the runner monitor queue".format(
-                    job.id, job.job_runner_external_id, job.state
-                )
+                "(%s/%s) is still in %s state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+                job.state,
             )
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
             log.debug(
-                "({}/{}) is still in queued state, adding to the runner monitor queue".format(
-                    job.id, job.job_runner_external_id
-                )
+                "(%s/%s) is still in queued state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
             )
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False

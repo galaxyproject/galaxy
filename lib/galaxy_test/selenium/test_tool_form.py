@@ -145,7 +145,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(1)
 
-        details = list(map(lambda d: d.text, self._get_dataset_tool_parameters(1)))
+        details = [d.text for d in self._get_dataset_tool_parameters(1)]
 
         assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
 

@@ -19,7 +19,12 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -61,6 +66,7 @@ from galaxy.tool_util.output_checker import (
     DETECTED_JOB_STATE,
 )
 from galaxy.tool_util.parser.stdio import (
+    StdioErrorLevel,
     ToolStdioExitCode,
     ToolStdioRegex,
 )
@@ -68,6 +74,7 @@ from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.util import (
     safe_contains,
     stringify_dictionary_keys,
+    unicodify,
 )
 from galaxy.util.expressions import ExpressionContext
 
@@ -216,7 +223,7 @@ def set_metadata_portable(
 
     export_store = None
     final_job_state = Job.states.OK
-    job_messages = []
+    job_messages: List[Dict[str, Any]] = []
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
@@ -237,25 +244,25 @@ def set_metadata_portable(
         for directory, prefix in locations:
             if directory and os.path.exists(os.path.join(directory, f"{prefix}stdout")):
                 with open(os.path.join(directory, f"{prefix}stdout"), "rb") as f:
-                    tool_stdout = f.read(MAX_STDIO_READ_BYTES)
+                    tool_stdout = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                 with open(os.path.join(directory, f"{prefix}stderr"), "rb") as f:
-                    tool_stderr = f.read(MAX_STDIO_READ_BYTES)
+                    tool_stderr = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                 break
         else:
             if os.path.exists(os.path.join(tool_job_working_directory, "task_0")):
                 # We have a task splitting job
-                tool_stdout = b""
-                tool_stderr = b""
+                tool_stdout = ""
+                tool_stderr = ""
                 paths = tool_job_working_directory.glob("task_*")
                 for path in paths:
                     with open(path / "outputs" / "tool_stdout", "rb") as f:
-                        task_stdout = f.read(MAX_STDIO_READ_BYTES)
+                        task_stdout = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stdout:
-                            tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                            tool_stdout = f"{tool_stdout}[{path.name} stdout]\n{task_stdout}\n"
                     with open(path / "outputs" / "tool_stderr", "rb") as f:
-                        task_stderr = f.read(MAX_STDIO_READ_BYTES)
+                        task_stderr = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stderr:
-                            tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+                            tool_stderr = f"{tool_stderr}[{path.name} stderr]\n{task_stderr}\n"
             else:
                 wdc = os.listdir(tool_job_working_directory)
                 odc = os.listdir(outputs_directory)
@@ -265,7 +272,7 @@ def set_metadata_portable(
                     log.warning(f"{error_desc}. {error_extra}")
                     raise Exception(error_desc)
                 else:
-                    tool_stdout = tool_stderr = b""
+                    tool_stdout = tool_stderr = ""
 
         job_id_tag = metadata_params["job_id_tag"]
 
@@ -273,7 +280,7 @@ def set_metadata_portable(
         tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
 
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(
-            stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag
+            stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = Job.states.OK
@@ -340,7 +347,15 @@ def set_metadata_portable(
             collect_dynamic_outputs(job_context, output_collections)
         except MaxDiscoveredFilesExceededError as e:
             final_job_state = Job.states.ERROR
-            job_messages.append(str(e))
+            job_messages.append(
+                {
+                    "type": "max_discovered_files",
+                    "desc": str(e),
+                    "code_desc": None,
+                    "error_level": StdioErrorLevel.FATAL,
+                }
+            )
+
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state

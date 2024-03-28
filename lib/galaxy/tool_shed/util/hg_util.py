@@ -19,7 +19,7 @@ def clone_repository(repository_clone_url: str, repository_file_dir: str, ctx_re
     Clone the repository up to the specified changeset_revision.  No subsequent revisions will be
     present in the cloned repository.
     """
-    cmd = ["hg", "clone"]
+    cmd = ["hg", "clone", "--stream"]
     if ctx_rev:
         cmd.extend(["-r", str(ctx_rev)])
     cmd.extend([repository_clone_url, repository_file_dir])

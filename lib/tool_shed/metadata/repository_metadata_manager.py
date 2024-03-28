@@ -365,19 +365,17 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
         def __data_manager_dict_to_tuple_list(metadata_dict):
             # we do not check tool_guid or tool conf file name
-            return set(
-                sorted(
-                    (
-                        name,
-                        tuple(sorted(value.get("data_tables", []))),
-                        value.get("guid"),
-                        value.get("version"),
-                        value.get("name"),
-                        value.get("id"),
-                    )
-                    for name, value in metadata_dict.items()
+            return {
+                (
+                    name,
+                    tuple(sorted(value.get("data_tables", []))),
+                    value.get("guid"),
+                    value.get("version"),
+                    value.get("name"),
+                    value.get("id"),
                 )
-            )
+                for name, value in metadata_dict.items()
+            }
 
         # only compare valid entries, any invalid entries are ignored
         ancestor_metadata = __data_manager_dict_to_tuple_list(ancestor_metadata.get("data_managers", {}))

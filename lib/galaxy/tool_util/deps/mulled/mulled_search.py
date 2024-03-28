@@ -88,7 +88,7 @@ class QuaySearch:
                     results_tmp = searcher.search(query)
                     results.extend(results_tmp)
 
-            out = list()
+            out = []
 
             for result in results:
                 title = result["title"]

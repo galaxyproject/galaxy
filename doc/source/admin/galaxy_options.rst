@@ -1521,6 +1521,20 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_always_respect_user_selection``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set this to true to indicate in the UI that a user's object store
+    selection isn't simply a "preference" that job destinations often
+    respect but in fact will always be respected. This should be set
+    to true to simplify the UI as long as job destinations never
+    override 'object_store_id's for a jobs.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_store_by``
 ~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -733,10 +733,7 @@ class RepositoryMetadata(Dictifiable):
     @property
     def repository_dependencies(self):
         if self.has_repository_dependencies:
-            return [
-                repository_dependency
-                for repository_dependency in self.metadata["repository_dependencies"]["repository_dependencies"]
-            ]
+            return list(self.metadata["repository_dependencies"]["repository_dependencies"])
         return []
 
 

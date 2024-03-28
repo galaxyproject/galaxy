@@ -36,7 +36,7 @@ fi
 
 # Install the latest version of poetry into the user account
 curl -sSL https://install.python-poetry.org | python3 -
-poetry self add poetry-plugin-export
+poetry self add 'poetry-plugin-export!=1.7.0'  # https://github.com/python-poetry/poetry-plugin-export/issues/269
 
 # Run poetry (this may update pyproject.toml and poetry.lock).
 if [ -z "$add" ]; then

@@ -433,7 +433,7 @@ def xml_element_to_dict(elem):
 
     sub_elems = list(elem)
     if sub_elems:
-        sub_elem_dict = dict()
+        sub_elem_dict = {}
         for sub_sub_elem_dict in map(xml_element_to_dict, sub_elems):
             for key, value in sub_sub_elem_dict.items():
                 if key not in sub_elem_dict:
@@ -1136,16 +1136,6 @@ def commaify(amount):
         return commaify(new)
 
 
-def roundify(amount, sfs=2):
-    """
-    Take a number in string form and truncate to 'sfs' significant figures.
-    """
-    if len(amount) <= sfs:
-        return amount
-    else:
-        return amount[0:sfs] + "0" * (len(amount) - sfs)
-
-
 @overload
 def unicodify(  # type: ignore[misc]
     value: Literal[None],
@@ -1290,8 +1280,8 @@ class ParamsWithSpecs(collections.defaultdict):
     """ """
 
     def __init__(self, specs=None, params=None):
-        self.specs = specs or dict()
-        self.params = params or dict()
+        self.specs = specs or {}
+        self.params = params or {}
         for name, value in self.params.items():
             if name not in self.specs:
                 self._param_unknown_error(name)
@@ -1422,9 +1412,12 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             os.chmod(path, perms)
         except Exception as e:
             log.warning(
-                "Unable to honor umask ({}) for {}, tried to set: {} but mode remains {}, error was: {}".format(
-                    oct(umask), path, oct(perms), oct(stat.S_IMODE(st.st_mode)), unicodify(e)
-                )
+                "Unable to honor umask (%s) for %s, tried to set: %s but mode remains %s, error was: %s",
+                oct(umask),
+                path,
+                oct(perms),
+                oct(stat.S_IMODE(st.st_mode)),
+                e,
             )
     # fix group
     if gid is not None and st.st_gid != gid:
@@ -1438,9 +1431,11 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                 desired_group = gid
                 current_group = st.st_gid
             log.warning(
-                "Unable to honor primary group ({}) for {}, group remains {}, error was: {}".format(
-                    desired_group, path, current_group, unicodify(e)
-                )
+                "Unable to honor primary group (%s) for %s, group remains %s, error was: %s",
+                desired_group,
+                path,
+                current_group,
+                e,
             )
 
 
@@ -1471,7 +1466,65 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def nice_size(size):
+def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
+    """
+    >>> metric_prefix(100, 1000)
+    (100.0, '')
+    >>> metric_prefix(999, 1000)
+    (999.0, '')
+    >>> metric_prefix(1000, 1000)
+    (1.0, 'K')
+    >>> metric_prefix(1001, 1000)
+    (1.001, 'K')
+    >>> metric_prefix(1000000, 1000)
+    (1.0, 'M')
+    >>> metric_prefix(1000**10, 1000)
+    (1.0, 'Q')
+    >>> metric_prefix(1000**11, 1000)
+    (1000.0, 'Q')
+    """
+    prefixes = ["", "K", "M", "G", "T", "P", "E", "Z", "Y", "R", "Q"]
+    if number < 0:
+        number = abs(number)
+        sign = -1
+    else:
+        sign = 1
+
+    for prefix in prefixes:
+        if number < base:
+            return sign * float(number), prefix
+        number /= base
+    else:
+        return sign * float(number) * base, prefix
+
+
+def shorten_with_metric_prefix(amount: int) -> str:
+    """
+    >>> shorten_with_metric_prefix(23000)
+    '23K'
+    >>> shorten_with_metric_prefix(2300000)
+    '2.3M'
+    >>> shorten_with_metric_prefix(23000000)
+    '23M'
+    >>> shorten_with_metric_prefix(1)
+    '1'
+    >>> shorten_with_metric_prefix(0)
+    '0'
+    >>> shorten_with_metric_prefix(100)
+    '100'
+    >>> shorten_with_metric_prefix(-100)
+    '-100'
+    """
+    m, prefix = metric_prefix(amount, 1000)
+    m_str = str(int(m)) if m.is_integer() else f"{m:.1f}"
+    exp = f"{m_str}{prefix}"
+    if len(exp) <= len(str(amount)):
+        return exp
+    else:
+        return str(amount)
+
+
+def nice_size(size: Union[float, int, str]) -> str:
     """
     Returns a readably formatted string with the size
 
@@ -1484,23 +1537,15 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ["bytes", "KB", "MB", "GB", "TB", "PB", "EB"]
-    prefix = ""
     try:
         size = float(size)
-        if size < 0:
-            size = abs(size)
-            prefix = "-"
-    except Exception:
+    except ValueError:
         return "??? bytes"
-    for ind, word in enumerate(words):
-        step = 1024 ** (ind + 1)
-        if step > size:
-            size = size / float(1024**ind)
-            if word == "bytes":  # No decimals for bytes
-                return "%s%d bytes" % (prefix, size)
-            return f"{prefix}{size:.1f} {word}"
-    return "??? bytes"
+    size, prefix = metric_prefix(size, 1024)
+    if prefix == "":
+        return "%d bytes" % size
+    else:
+        return f"{size:.1f} {prefix}B"
 
 
 def size_to_bytes(size):
@@ -1777,7 +1822,7 @@ def parse_non_hex_float(s):
 
 def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, doseq=False):
     if params is None:
-        params = dict()
+        params = {}
     if pathspec is None:
         pathspec = []
     parsed_url = urlparse(base_url)

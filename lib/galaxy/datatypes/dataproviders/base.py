@@ -128,7 +128,7 @@ class DataProvider(metaclass=HasSettings):
     # def readline( self ):
     #    return self.next()
     def readlines(self):
-        return [line for line in self]
+        return list(self)
 
     # iterator interface
     def __iter__(self):

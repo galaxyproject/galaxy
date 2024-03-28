@@ -183,7 +183,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 (r.name, trans.security.encode_id(r.id))
                 for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, "root")
             ]
-            data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
+            data_metadata = list(data.metadata.spec.items())
             converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
             can_manage_dataset = trans.app.security_agent.can_manage_dataset(
                 trans.get_current_user_roles(), data.dataset
@@ -268,7 +268,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ]
             # permissions
             permission_disable = True
-            permission_inputs = list()
+            permission_inputs = []
             if trans.user:
                 if not data.dataset.shareable:
                     permission_message = "The dataset is stored on private storage to you and cannot be shared."

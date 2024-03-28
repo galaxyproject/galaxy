@@ -33,7 +33,7 @@
                     <b-form-checkbox
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         v-model="splitObjectStore">
-                        Send outputs and intermediate to different object stores?
+                        Send outputs and intermediate to different storage locations?
                     </b-form-checkbox>
                     <WorkflowStorageConfiguration
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"

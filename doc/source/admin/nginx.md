@@ -248,6 +248,9 @@ To enable it, add the following to your Galaxy's `server {}` block:
         location /_x_accel_redirect/ {
             internal;
             alias /;
+            # Add upstream response headers that would otherwise be omitted
+            add_header Access-Control-Allow-Origin $upstream_http_access_control_allow_origin;
+            add_header Access-Control-Allow-Methods $upstream_http_access_control_allow_methods;
         }
 ```
 

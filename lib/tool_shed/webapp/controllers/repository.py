@@ -976,12 +976,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     return self.install_matched_repository_grid(trans, **kwd)
                 else:
                     kwd["message"] = (
-                        "tool id: <b>{}</b><br/>tool name: <b>{}</b><br/>tool version: <b>{}</b><br/>exact matches only: <b>{}</b>".format(
-                            basic_util.stringify(tool_ids),
-                            escape(basic_util.stringify(tool_names)),
-                            escape(basic_util.stringify(tool_versions)),
-                            exact_matches_checked,
-                        )
+                        f"tool id: <b>{basic_util.stringify(tool_ids)}</b><br/>tool name: <b>{escape(basic_util.stringify(tool_names))}</b><br/>tool version: <b>{escape(basic_util.stringify(tool_versions))}</b><br/>exact matches only: <b>{exact_matches_checked}</b>"
                     )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid(trans, **kwd)

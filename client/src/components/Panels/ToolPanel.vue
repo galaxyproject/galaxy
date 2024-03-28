@@ -34,7 +34,7 @@ const emit = defineEmits<{
 
 const arePanelsFetched = ref(false);
 const toolStore = useToolStore();
-const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panelViews } = storeToRefs(toolStore);
+const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panel, panelViews } = storeToRefs(toolStore);
 
 const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
@@ -62,7 +62,7 @@ watch(
 watch(
     () => currentPanelView.value,
     async (newVal) => {
-        if (!newVal && arePanelsFetched.value) {
+        if ((!newVal || !panel.value[newVal]) && arePanelsFetched.value) {
             await initializeTools();
         }
     }

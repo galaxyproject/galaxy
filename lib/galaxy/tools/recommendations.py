@@ -27,12 +27,12 @@ class ToolRecommendations:
     def __init__(self):
         self.tool_recommendation_model_path = None
         self.admin_tool_recommendations_path = None
-        self.deprecated_tools = dict()
-        self.admin_recommendations = dict()
-        self.model_data_dictionary = dict()
-        self.reverse_dictionary = dict()
-        self.all_tools = dict()
-        self.tool_weights_sorted = dict()
+        self.deprecated_tools = {}
+        self.admin_recommendations = {}
+        self.model_data_dictionary = {}
+        self.reverse_dictionary = {}
+        self.all_tools = {}
+        self.tool_weights_sorted = {}
         self.loaded_model = None
         self.compatible_tools = None
         self.standard_connections = None
@@ -117,7 +117,7 @@ class ToolRecommendations:
         """
         Compute tool predictions
         """
-        recommended_tools = dict()
+        recommended_tools = {}
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
         if self.model_ok is None:
             self.__set_model(trans, remote_model_url)
@@ -197,8 +197,8 @@ class ToolRecommendations:
             module.recover_state(module_state)
         inputs = module.get_all_inputs(connectable_only=True)
         outputs = module.get_all_outputs()
-        input_extensions = list()
-        output_extensions = list()
+        input_extensions = []
+        output_extensions = []
         for i_ext in inputs:
             input_extensions.extend(i_ext["extensions"])
         for o_ext in outputs:
@@ -210,7 +210,7 @@ class ToolRecommendations:
         Filter tool predictions based on datatype compatibility and tool connections.
         Add admin preferences to recommendations.
         """
-        last_compatible_tools = list()
+        last_compatible_tools = []
         if last_tool_name in self.model_data_dictionary:
             last_tool_name_id = self.model_data_dictionary[last_tool_name]
             if last_tool_name_id in self.compatible_tools:
@@ -225,7 +225,7 @@ class ToolRecommendations:
         t_ids_scores = zip(tool_ids, tool_scores)
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
-            c_dict = dict()
+            c_dict = {}
             for t_id in self.all_tools:
                 # select the name and tool id if it is installed in Galaxy
                 if (
@@ -285,7 +285,7 @@ class ToolRecommendations:
         """
         Sort predictions by usage/class weights
         """
-        tool_dict = dict()
+        tool_dict = {}
         for tool in t_list:
             t_id = d_dict[tool]
             tool_dict[tool] = class_weights[int(t_id)]
@@ -296,7 +296,7 @@ class ToolRecommendations:
         """
         Get predictions from published and normal workflows
         """
-        last_base_tools = list()
+        last_base_tools = []
         prediction_pos = np.argsort(predictions, axis=-1)
         topk_prediction_pos = prediction_pos[-topk:]
         # get tool ids
@@ -317,10 +317,10 @@ class ToolRecommendations:
         Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
         topk = trans.app.config.topk_recommendations
-        prediction_data = dict()
+        prediction_data = {}
         tool_sequence = tool_sequence.split(",")[::-1]
         prediction_data["name"] = ",".join(tool_sequence)
-        prediction_data["children"] = list()
+        prediction_data["children"] = []
         last_tool_name = tool_sequence[-1]
         # do prediction only if the last is present in the collections of tools
         if last_tool_name in self.model_data_dictionary:

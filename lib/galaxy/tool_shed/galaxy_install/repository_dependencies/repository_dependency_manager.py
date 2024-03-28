@@ -193,7 +193,7 @@ class RepositoryDependencyInstallManager:
         all_repo_info_dicts = all_required_repo_info_dict.get("all_repo_info_dicts", [])
         if not all_repo_info_dicts:
             # No repository dependencies were discovered so process the received repositories.
-            all_repo_info_dicts = [rid for rid in repo_info_dicts]
+            all_repo_info_dicts = list(repo_info_dicts)
         for repo_info_dict in all_repo_info_dicts:
             # If the user elected to install repository dependencies, all items in the
             # all_repo_info_dicts list will be processed.  However, if repository dependencies

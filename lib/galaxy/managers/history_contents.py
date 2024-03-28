@@ -183,9 +183,9 @@ class HistoryContentsManager(base.SortableManager):
         hdca_select = self._active_counts_statement(model.HistoryDatasetCollectionAssociation, history.id)
         subquery = hda_select.union_all(hdca_select).subquery()
         statement = select(
-            cast(func.sum(subquery.c.deleted), Integer).label("deleted"),
-            cast(func.sum(subquery.c.hidden), Integer).label("hidden"),
-            cast(func.sum(subquery.c.active), Integer).label("active"),
+            cast(func.coalesce(func.sum(subquery.c.deleted), 0), Integer).label("deleted"),
+            cast(func.coalesce(func.sum(subquery.c.hidden), 0), Integer).label("hidden"),
+            cast(func.coalesce(func.sum(subquery.c.active), 0), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
         return dict(returned._mapping)
@@ -236,9 +236,7 @@ class HistoryContentsManager(base.SortableManager):
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map: Dict[str, List[int]] = dict(
-            [(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])]
-        )
+        id_map: Dict[str, List[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)

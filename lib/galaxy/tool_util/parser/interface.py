@@ -35,7 +35,7 @@ NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool fea
 class AssertionDict(TypedDict):
     tag: str
     attributes: Dict[str, Any]
-    children: Optional[List[Dict[str, Any]]]
+    children: "AssertionList"
 
 
 AssertionList = Optional[List[AssertionDict]]

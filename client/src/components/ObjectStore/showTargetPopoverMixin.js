@@ -1,3 +1,7 @@
+import { mapState } from "pinia";
+
+import { useConfigStore } from "@/stores/configurationStore";
+
 import ShowSelectedObjectStore from "./ShowSelectedObjectStore";
 
 export default {
@@ -11,8 +15,16 @@ export default {
         },
     },
     computed: {
+        ...mapState(useConfigStore, ["config"]),
+        preferredOrEmptyString() {
+            if (this.config?.object_store_always_respect_user_selection) {
+                return "";
+            } else {
+                return "Preferred";
+            }
+        },
         title() {
-            return this.l(`Preferred Target Object Store ${this.titleSuffix || ""}`);
+            return this.l(`${this.preferredOrEmptyString} Target Storage Location ${this.titleSuffix || ""}`);
         },
     },
 };

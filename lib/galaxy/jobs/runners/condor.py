@@ -227,7 +227,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             try:
                 log.info(f"stop_job(): {job.id}: trying to stop container .... ({external_id})")
                 # self.watched = [cjs for cjs in self.watched if cjs.job_id != external_id]
-                new_watch_list = list()
+                new_watch_list = []
                 cjs = None
                 for tcjs in self.watched:
                     if tcjs.job_id != external_id:

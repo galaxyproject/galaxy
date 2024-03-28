@@ -600,6 +600,12 @@ class NavigatesGalaxy(HasDriver):
                 # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
                 self.driver.execute_script("$(arguments[0]).click();", checkbox)
 
+    def check_advanced_search_filter(self, filter_name):
+        filter_div = self.wait_for_selector(f"[data-description='filter {filter_name}']")
+        checkbox = filter_div.find_element(self.by.CSS_SELECTOR, "input")
+        # bootstrap vue checkbox seems to be hidden by label, but the label is not interactable
+        self.driver.execute_script("$(arguments[0]).click();", checkbox)
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             self.navigation.grids.free_text_search,

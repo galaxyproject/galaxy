@@ -651,7 +651,7 @@ class TestMappings(BaseModelTestCase):
             history = self.model.session.scalars(
                 select(model.History).filter(model.History.name == "HistoryContentsHistory1").limit(1)
             ).first()
-            return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
+            return [hda.name for hda in history.contents_iter(**kwds)]
 
         assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]

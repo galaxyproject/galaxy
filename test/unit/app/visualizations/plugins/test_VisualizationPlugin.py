@@ -59,7 +59,7 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
         A plugin that has neither template or static directory should serve neither.
         """
         vis_dir = galaxy_mock.MockDir({"config": {"vis1.xml": ""}})
-        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path, "myvis", dict())
+        plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path, "myvis", {})
         assert not plugin.serves_templates
         # not sure what this would do, but...
 
@@ -83,21 +83,21 @@ class TestVisualizationsPlugin(VisualizationsBase_TestCase):
 
     def test_build_config(self):
         """ """
-        plugin_config: dict = dict()
+        plugin_config: dict = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         config = plugin._build_config({})
         assert isinstance(config, vis_utils.OpenObject)
         assert config.__dict__ == {}
 
         # existing should flow through
-        plugin_config = dict()
+        plugin_config = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         existing_config = dict(wat=1)
         config = plugin._build_config(existing_config)
         assert config.wat == 1
 
         # unlisted/non-param kwargs should NOT overwrite existing
-        plugin_config = dict()
+        plugin_config = {}
         plugin = self.plugin_class(galaxy_mock.MockApp(), "", "myvis", plugin_config)
         existing_config = dict(wat=1)
         config = plugin._build_config(existing_config, wat=2)

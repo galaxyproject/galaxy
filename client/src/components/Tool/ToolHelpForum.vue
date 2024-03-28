@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { fetcher } from "@/api/schema";
 import { useConfigStore } from "@/stores/configurationStore";
+import { getShortToolId } from "@/utils/tool";
 
 import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumUrls";
 
@@ -26,7 +27,8 @@ const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
-const query = computed(() => `tags:${props.toolId}+${toolHelpTag} status:solved`);
+const shortToolId = computed(() => getShortToolId(props.toolId));
+const query = computed(() => `tags:${shortToolId.value}+${toolHelpTag} status:solved`);
 
 onMounted(async () => {
     const response = await helpFetcher({ query: query.value });
@@ -49,7 +51,7 @@ function blurbForTopic(topicId: number): string {
 
 const { createNewTopicUrl, searchTopicUrl } = useHelpURLs({
     title: computed(() => props.toolName),
-    tags: computed(() => [props.toolId, toolHelpTag]),
+    tags: computed(() => [shortToolId.value, toolHelpTag]),
     query,
 });
 

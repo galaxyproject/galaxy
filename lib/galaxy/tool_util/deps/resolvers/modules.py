@@ -227,9 +227,7 @@ class ModuleDependency(Dependency):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = f"{self.module_name}/{self.module_version}"
-        command = "MODULEPATH={}; export MODULEPATH; eval `{} sh load {}`".format(
-            self.module_dependency_resolver.modulepath, self.module_dependency_resolver.modulecmd, module_to_load
-        )
+        command = f"MODULEPATH={self.module_dependency_resolver.modulepath}; export MODULEPATH; eval `{self.module_dependency_resolver.modulecmd} sh load {module_to_load}`"
         return command
 
 

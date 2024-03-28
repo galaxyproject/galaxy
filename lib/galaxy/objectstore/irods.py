@@ -302,9 +302,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 # seconds ago, release the connection (as its stale)
                 if (curr_time - conn.create_time).total_seconds() > refresh_time:
                     log.debug(
-                        "Idle connection with id {} was created more than {} seconds ago. Releasing the connection.".format(
-                            id(conn), refresh_time
-                        )
+                        "Idle connection with id %s was created more than %s seconds ago. Releasing the connection.",
+                        id(conn),
+                        refresh_time,
                     )
                     self.session.pool.release_connection(conn, True)
             stop_connection_pool_monitor_event.wait(connection_pool_monitor_interval)

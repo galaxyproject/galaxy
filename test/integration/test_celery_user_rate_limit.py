@@ -39,7 +39,7 @@ def setup_users(dburl: str, num_users: int = 2):
     This is because the new celery_user_rate_limit table has
     a user_id with a foreign key pointing to galaxy_user table.
     """
-    expected_user_ids = [i for i in range(2, num_users + 2)]
+    expected_user_ids = list(range(2, num_users + 2))
     with sqlalchemy_engine(dburl) as engine:
         with engine.begin() as conn:
             found_user_ids = conn.scalars(
@@ -73,7 +73,7 @@ class TestCeleryUserRateLimitIntegration(IntegrationTestCase):
         super().setUp()
 
     def _test_mock_pass_user_id_task(self, num_users: int, num_calls: int, tasks_per_user_per_sec: float):
-        users = [i for i in range(2, num_users + 2)]
+        users = list(range(2, num_users + 2))
         expected_duration: float
         if tasks_per_user_per_sec == 0.0:
             expected_duration = 0.0

@@ -197,7 +197,12 @@ class StoredWorkflowDetailed(StoredWorkflowSummary):
             ToolStep,
             SubworkflowStep,
         ],
-    ] = Field({}, title="Steps", description="A dictionary with information about all the steps of the workflow.")
+    ] = Field(
+        {},
+        title="Steps",
+        description="A dictionary with information about all the steps of the workflow.",
+        discriminator="type",
+    )
     importable: Optional[bool] = Field(
         ...,
         title="Importable",

@@ -1,9 +1,9 @@
-import Vue from "vue";
+import { set } from "vue";
 
 /* This function merges the existing data with new incoming data. */
 export function mergeArray(id, payload, items, itemKey) {
     if (!items[id]) {
-        Vue.set(items, id, []);
+        set(items, id, []);
     }
     const itemArray = items[id];
     for (const item of payload) {
@@ -16,7 +16,7 @@ export function mergeArray(id, payload, items, itemKey) {
                 });
             }
         } else {
-            Vue.set(itemArray, itemIndex, item);
+            set(itemArray, itemIndex, item);
         }
     }
 }

@@ -451,7 +451,7 @@ def _get_static_settings():
 def get_webapp_global_conf():
     """Get the global_conf dictionary sent to ``app_factory``."""
     # (was originally sent 'dict()') - nothing here for now except static settings
-    global_conf = dict()
+    global_conf = {}
     global_conf.update(_get_static_settings())
     return global_conf
 

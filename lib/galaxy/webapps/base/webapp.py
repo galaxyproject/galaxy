@@ -665,10 +665,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             galaxy_session = self.__create_new_session(prev_galaxy_session, user_for_new_session)
             galaxy_session_requires_flush = True
             self.galaxy_session = galaxy_session
-            self.get_or_create_default_history()
             self.__update_session_cookie(name=session_cookie)
         else:
             self.galaxy_session = galaxy_session
+            if self.webapp.name == "galaxy":
+                self.get_or_create_default_history()
         # Do we need to flush the session?
         if galaxy_session_requires_flush:
             self.sa_session.add(galaxy_session)
@@ -678,10 +679,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
                 self.sa_session.add(prev_galaxy_session)
             with transaction(self.sa_session):
                 self.sa_session.commit()
-        # If the old session was invalid, get a new (or existing default,
-        # unused) history with our new session
-        if invalidate_existing_session:
-            self.get_or_create_default_history()
 
     def _ensure_logged_in_user(self, session_cookie: str) -> None:
         # The value of session_cookie can be one of
@@ -817,10 +814,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             and not users_last_session.current_history.deleted
         ):
             history = users_last_session.current_history
-        elif not history:
-            history = self.get_history(create=True, most_recent=True)
         if history not in self.galaxy_session.histories:
             self.galaxy_session.add_history(history)
+        if not history:
+            history = self.new_history()
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
@@ -931,32 +928,27 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         session.
         """
 
-        # There must be a user to fetch a default history.
-        if not self.galaxy_session.user:
-            return self.new_history()
+        # Just return the current history if one exists and is not deleted.
+        history = self.galaxy_session.current_history
+        if history and not history.deleted:
+            return history
 
-        # Look for default history that (a) has default name + is not deleted and
-        # (b) has no datasets. If suitable history found, use it; otherwise, create
-        # new history.
-        stmt = select(self.app.model.History).filter_by(
-            user=self.galaxy_session.user, name=self.app.model.History.default_name, deleted=False
-        )
-        unnamed_histories = self.sa_session.scalars(stmt)
-        default_history = None
-        for history in unnamed_histories:
-            if history.empty:
-                # Found suitable default history.
-                default_history = history
-                break
+        # Look for an existing history that has the default name, is not
+        # deleted, and is empty. If this exists, we associate it with the
+        # current session and return it.
+        user = self.galaxy_session.user
+        if user:
+            stmt = select(self.app.model.History).filter_by(
+                user=user, name=self.app.model.History.default_name, deleted=False
+            )
+            unnamed_histories = self.sa_session.scalars(stmt)
+            for history in unnamed_histories:
+                if history.empty:
+                    self.set_history(history)
+                    return history
 
-        # Set or create history.
-        if default_history:
-            history = default_history
-            self.set_history(history)
-        else:
-            history = self.new_history()
-
-        return history
+        # No suitable history found, create a new one.
+        return self.new_history()
 
     def get_most_recent_history(self):
         """
@@ -1008,7 +1000,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     @base.lazy_property
     def template_context(self):
-        return dict()
+        return {}
 
     def set_message(self, message, type=None):
         """

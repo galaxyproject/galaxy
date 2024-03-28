@@ -6,6 +6,7 @@ import { type EventData } from "@/stores/eventStore";
 
 export const Activities = [
     {
+        anonymous: false,
         description: "Displays currently active interactive tools (ITs), if these are enabled by the administrator.",
         icon: "fa-laptop",
         id: "interactivetools",
@@ -17,6 +18,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: true,
         description: "Opens a data dialog, allowing uploads from URL, pasted content or disk.",
         icon: "upload",
         id: "upload",
@@ -28,6 +30,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: true,
         description: "Displays the tool panel to search and access all available tools.",
         icon: "wrench",
         id: "tools",
@@ -39,6 +42,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays a panel to search and access workflows.",
         icon: "sitemap",
         id: "workflows",
@@ -50,6 +54,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays all workflow runs.",
         icon: "fa-list",
         id: "invocation",
@@ -61,6 +66,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays the list of available visualizations.",
         icon: "chart-bar",
         id: "visualizations",
@@ -72,6 +78,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays the list of all histories.",
         icon: "fa-hdd",
         id: "histories",
@@ -83,6 +90,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays the history selector panel and opens History Multiview in the center panel.",
         icon: "fa-columns",
         id: "multiview",
@@ -94,6 +102,7 @@ export const Activities = [
         visible: true,
     },
     {
+        anonymous: false,
         description: "Displays all of your datasets across all histories.",
         icon: "fa-folder",
         id: "datasets",
@@ -109,6 +118,7 @@ export const Activities = [
 export function convertDropData(data: EventData): Activity | null {
     if (data.history_content_type === "dataset") {
         return {
+            anonymous: true,
             description: "Displays this dataset.",
             icon: "fa-file",
             id: `dataset-${data.id}`,
@@ -122,6 +132,7 @@ export function convertDropData(data: EventData): Activity | null {
     }
     if (data.model_class === "StoredWorkflow") {
         return {
+            anonymous: false,
             description: data.description as string,
             icon: "fa-play",
             id: `workflow-${data.id}`,

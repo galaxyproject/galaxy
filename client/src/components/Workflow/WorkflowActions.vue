@@ -242,7 +242,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
             :data-workflow-actions-dropdown="workflow.id"
             right
             no-caret
-            class="workflow-actions-dropdown show-in-card"
+            class="workflow-actions-dropdown"
             toggle-class="inline-icon-button"
             title="Workflow actions"
             variant="link">

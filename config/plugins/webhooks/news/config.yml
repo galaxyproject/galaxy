@@ -1,7 +1,0 @@
-id: news
-type:
-  - masthead
-activate: true
-
-icon: fa-bullhorn
-tooltip: See the Galaxy Release Notes

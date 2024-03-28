@@ -33,7 +33,7 @@
             :argument-type="selectedType"
             :argument-name="selectedArgumentName"
             :argument-payload="selectedPayload"
-            :labels="selectedLabels"
+            :labels="workflowLabels"
             :use-labels="isWorkflow"
             @onInsert="onInsert"
             @onCancel="onCancel" />
@@ -48,6 +48,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 
 import { directiveEntry } from "./directives.ts";
+import { fromSteps } from "./labels.ts";
 import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
@@ -105,7 +106,6 @@ export default {
         return {
             selectedArgumentName: null,
             selectedType: null,
-            selectedLabels: undefined,
             selectedShow: false,
             selectedPayload: null,
             visualizationIndex: {},
@@ -244,33 +244,14 @@ export default {
                 ],
             };
         },
+        workflowLabels() {
+            return fromSteps(this.steps);
+        },
     },
     created() {
         this.getVisualizations();
     },
     methods: {
-        getSteps() {
-            const steps = [];
-            this.steps &&
-                Object.values(this.steps).forEach((step) => {
-                    if (step.label) {
-                        steps.push(step.label);
-                    }
-                });
-            return steps;
-        },
-        getOutputs() {
-            const outputLabels = [];
-            this.steps &&
-                Object.values(this.steps).forEach((step) => {
-                    step.workflow_outputs.forEach((workflowOutput) => {
-                        if (workflowOutput.label) {
-                            outputLabels.push(workflowOutput.label);
-                        }
-                    });
-                });
-            return outputLabels;
-        },
         getArgumentTitle(argumentName) {
             return (
                 argumentName[0].toUpperCase() +
@@ -320,7 +301,6 @@ export default {
             this.selectedArgumentName = argumentName;
             this.selectedType = "visualization_id";
             this.selectedPayload = this.visualizationIndex[argumentName];
-            this.selectedLabels = this.getOutputs();
             this.selectedShow = true;
         },
         onHistoryId(argumentName) {
@@ -331,13 +311,11 @@ export default {
         onHistoryDatasetId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_id";
-            this.selectedLabels = this.getOutputs();
             this.selectedShow = true;
         },
         onHistoryCollectionId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "history_dataset_collection_id";
-            this.selectedLabels = this.getOutputs();
             this.selectedShow = true;
         },
         onWorkflowId(argumentName) {
@@ -348,13 +326,11 @@ export default {
         onJobId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "job_id";
-            this.selectedLabels = this.getSteps();
             this.selectedShow = true;
         },
         onInvocationId(argumentName) {
             this.selectedArgumentName = argumentName;
             this.selectedType = "invocation_id";
-            this.selectedLabels = this.getSteps();
             this.selectedShow = true;
         },
         async getVisualizations() {

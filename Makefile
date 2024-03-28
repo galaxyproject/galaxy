@@ -53,9 +53,9 @@ remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
 pyupgrade:  ## Convert older code patterns to Python3.7/3.8 idiomatic ones
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
-	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/files/sources/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
-	ack --type=python -f lib/galaxy/files/sources/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs pyupgrade --py38-plus
+	ack --type=python -f | grep -v '^lib/galaxy/schema/bco/\|^lib/galaxy/schema/drs/\|^lib/tool_shed_client/schema/trs\|^tools/\|^.venv/\|^.tox/\|^lib/galaxy/exceptions/\|^lib/galaxy/job_metrics/\|^lib/galaxy/objectstore/\|^lib/galaxy/tool_util/\|^lib/galaxy/util/\|^test/functional/tools/cwl_tools/' | xargs auto-walrus
+	ack --type=python -f lib/galaxy/exceptions/ lib/galaxy/job_metrics/ lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/util/ | xargs pyupgrade --py37-plus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar

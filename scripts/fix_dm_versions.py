@@ -44,7 +44,7 @@ with open(args.shed_data_manager_conf) as fh:
     tree = etree.parse(args.shed_data_manager_conf)
 root = tree.getroot()
 
-guid_mapping = dict()
+guid_mapping = {}
 for dm in root.iter("data_manager"):
     guid = dm.attrib["guid"]
     if guid not in guid_mapping:

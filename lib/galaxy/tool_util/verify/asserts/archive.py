@@ -27,7 +27,7 @@ def _extract_from_tar(output_bytes, fn):
 
 
 def _list_from_tar(output_bytes, path):
-    lst = list()
+    lst = []
     with io.BytesIO(output_bytes) as temp:
         with tarfile.open(fileobj=temp, mode="r") as tar_temp:
             for fn in tar_temp.getnames():
@@ -45,7 +45,7 @@ def _extract_from_zip(output_bytes, fn):
 
 
 def _list_from_zip(output_bytes, path):
-    lst = list()
+    lst = []
     with io.BytesIO(output_bytes) as temp:
         with zipfile.ZipFile(temp, mode="r") as zip_temp:
             for fn in zip_temp.namelist():

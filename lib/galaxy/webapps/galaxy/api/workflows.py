@@ -1296,6 +1296,10 @@ class FastAPIInvocations:
         include_nested_invocations: bool = True,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[WorkflowInvocationResponse]:
+        if not trans.user:
+            # Anon users don't have accessible invocations (currently, though published invocations should be a thing)
+            response.headers["total_matches"] = "0"
+            return []
         invocation_payload = InvocationIndexPayload(
             workflow_id=workflow_id,
             history_id=history_id,

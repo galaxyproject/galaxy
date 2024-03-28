@@ -32,6 +32,10 @@ try:
     from PIL import Image
 except ImportError:
     pass
+try:
+    import tifffile
+except ImportError:
+    pass
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
@@ -496,14 +500,29 @@ def get_image_metric(
         raise ValueError(f'No such metric: "{metric_name}"')
 
 
+def _load_image(filepath: str) -> "numpy.typing.NDArray":
+    """
+    Reads the given image, trying tifffile and Pillow for reading.
+    """
+    # Try reading with tifffile first. It fails if the file is not a TIFF.
+    try:
+        arr = tifffile.imread(filepath)
+
+    # If tifffile failed, then the file is not a tifffile. In that case, try with Pillow.
+    except tifffile.TiffFileError:
+        with Image.open(filepath) as im:
+            arr = numpy.array(im)
+
+    # Return loaded image
+    return arr
+
+
 def files_image_diff(file1: str, file2: str, attributes: Optional[Dict[str, Any]] = None) -> None:
     """Check the pixel data of 2 image files for differences."""
     attributes = attributes or {}
 
-    with Image.open(file1) as im1:
-        arr1 = numpy.array(im1)
-    with Image.open(file2) as im2:
-        arr2 = numpy.array(im2)
+    arr1 = _load_image(file1)
+    arr2 = _load_image(file2)
 
     if arr1.dtype != arr2.dtype:
         raise AssertionError(f"Image data types did not match ({arr1.dtype}, {arr2.dtype}).")

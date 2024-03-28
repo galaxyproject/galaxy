@@ -450,7 +450,7 @@ class RemovesDatasets(RemovesObjects):
             extra_dir = f"dataset_{dataset.uuid}_files"
         else:
             extra_dir = f"dataset_{dataset.id}_files"
-        self.remove_from_object_store(dataset, dict())
+        self.remove_from_object_store(dataset, {})
         self.remove_from_object_store(
             dataset, dict(dir_only=True, extra_dir=extra_dir), entire_dir=True, check_exists=True
         )

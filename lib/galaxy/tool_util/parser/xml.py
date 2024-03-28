@@ -990,8 +990,8 @@ def __parse_param_elem(param_elem, i=0):
 class StdioParser:
     def __init__(self, root):
         try:
-            self.stdio_exit_codes = list()
-            self.stdio_regexes = list()
+            self.stdio_exit_codes = []
+            self.stdio_regexes = []
 
             # We should have a single <stdio> element, but handle the case for
             # multiples.

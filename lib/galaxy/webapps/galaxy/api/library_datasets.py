@@ -501,9 +501,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username
             ):
                 # the path is a dir and contains files that symlink outside the user dir
-                error = "User attempted to import a path that resolves to a path outside of their import dir: {} -> {}".format(
-                    path, os.path.realpath(path)
-                )
+                error = f"User attempted to import a path that resolves to a path outside of their import dir: {path} -> {os.path.realpath(path)}"
                 if trans.app.config.user_library_import_check_permissions:
                     error += " or is not readable for them."
                 log.error(error)

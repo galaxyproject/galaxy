@@ -1,4 +1,4 @@
-type QueuedAction<T extends (...args: any) => R, R = unknown> = {
+type QueuedAction<T extends (...args: any) => R, R = ReturnType<T>> = {
     action: T;
     arg: Parameters<T>[0];
     resolve: (value: R) => void;
@@ -13,7 +13,7 @@ export class ActionSkippedError extends Error {}
  * This is useful when promises earlier enqueued become obsolete.
  * See also: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
-export class LastQueue<T extends (arg: any) => R, R = unknown> {
+export class LastQueue<T extends (arg: any) => R, R = ReturnType<T>> {
     throttlePeriod: number;
     /** Throw an error if a queued action is skipped. This avoids dangling promises */
     rejectSkipped: boolean;
@@ -34,7 +34,7 @@ export class LastQueue<T extends (arg: any) => R, R = unknown> {
         promise?.reject(new ActionSkippedError());
     }
 
-    async enqueue(action: T, arg: Parameters<T>[0], key: string | number = 0) {
+    async enqueue(action: T, arg: Parameters<T>[0], key: string | number = 0): Promise<R> {
         return new Promise((resolve, reject) => {
             this.skipPromise(key);
             this.queuedPromises[key] = { action, arg, resolve, reject };

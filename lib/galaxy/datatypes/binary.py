@@ -2210,8 +2210,8 @@ class HexrdMaterials(H5):
         try:
             with h5py.File(dataset.get_file_name(), "r") as mat_file:
                 dataset.metadata.materials = list(mat_file.keys())
-                sgn = dict()
-                lp = dict()
+                sgn = {}
+                lp = {}
                 for m in mat_file.keys():
                     if "SpaceGroupNumber" in mat_file[m] and len(mat_file[m]["SpaceGroupNumber"]) > 0:
                         sgn[m] = mat_file[m]["SpaceGroupNumber"][0].item()
@@ -2401,8 +2401,8 @@ class SQlite(Binary):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         try:
             tables = []
-            columns = dict()
-            rowcounts = dict()
+            columns = {}
+            rowcounts = {}
             conn = sqlite.connect(dataset.get_file_name())
             c = conn.cursor()
             tables_query = "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name"
@@ -4329,11 +4329,9 @@ class Npz(CompressedArchive):
 
     def sniff(self, filename: str) -> bool:
         try:
-            npz = np.load(filename)
-            if isinstance(npz, np.lib.npyio.NpzFile):
-                for f in npz.files:
-                    if isinstance(npz[f], np.ndarray):
-                        return True
+            with np.load(filename) as npz:
+                if isinstance(npz, np.lib.npyio.NpzFile) and any(f.filename.endswith(".npy") for f in npz.zip.filelist):
+                    return True
         except Exception:
             return False
         return False

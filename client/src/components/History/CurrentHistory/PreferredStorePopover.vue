@@ -2,7 +2,11 @@
 import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+
 import ShowSelectedObjectStore from "@/components/ObjectStore/ShowSelectedObjectStore.vue";
+
+const { isOnlyPreference } = useStorageLocationConfiguration();
 
 interface Props {
     historyId: string;
@@ -19,27 +23,45 @@ const preferredObjectStoreId = computed(() => {
     }
     return id;
 });
+
+const title = computed(() => {
+    if (isOnlyPreference.value) {
+        return "Preferred Storage Location";
+    } else {
+        return "Storage Location";
+    }
+});
 </script>
 
 <template>
-    <BPopover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft">
-        <template v-slot:title>Preferred Target Object Store</template>
+    <BPopover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft" boundary="window">
+        <template v-slot:title>{{ title }}</template>
+        <div class="popover-wide">
+            <p>
+                <b
+                    >This option only affects new datasets created in this history. Existing history datasets will
+                    remain at their current storage location.</b
+                >
+            </p>
 
-        <p v-if="historyPreferredObjectStoreId" class="history-preferred-object-store-inherited">
-            This target object store has been set at the history level.
-        </p>
-        <p v-else class="history-preferred-object-store-not-inherited">
-            This target object store has been inherited from your user preferences (set in User -> Preferences ->
-            Preferred Object Store). If that option is updated, this history will target that new default.
-        </p>
+            <p v-if="historyPreferredObjectStoreId" class="history-preferred-object-store-inherited">
+                This storage location has been set at the history level.
+            </p>
+            <p v-else class="history-preferred-object-store-not-inherited">
+                This storage location has been inherited from your user preferences (set in
+                <router-link to="/user">User -> Preferences</router-link> -> {{ title }}). If that option is updated,
+                this history will target that new default.
+            </p>
 
-        <ShowSelectedObjectStore
-            v-if="preferredObjectStoreId"
-            :preferred-object-store-id="preferredObjectStoreId"
-            for-what="Galaxy will default to storing this history's datasets in " />
-
-        <div v-localize>
-            Change this preference object store target by clicking on the storage button in the history panel.
+            <ShowSelectedObjectStore
+                v-if="preferredObjectStoreId"
+                :preferred-object-store-id="preferredObjectStoreId"
+                for-what="Galaxy will default to storing this history's datasets in " />
         </div>
     </BPopover>
 </template>
+<style scoped lang="scss">
+.popover-wide {
+    max-width: 30rem;
+}
+</style>

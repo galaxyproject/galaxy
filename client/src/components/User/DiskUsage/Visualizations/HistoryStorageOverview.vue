@@ -1,71 +1,61 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { useConfirmDialog } from "@/composables/confirmDialog";
-import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
-import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
-import {
-    fetchHistoryContentsSizeSummary,
-    type ItemSizeSummary,
-    purgeDatasetById,
-    undeleteDatasetById,
-} from "./service";
+import { fetchHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
+import { buildTopNDatasetsBySizeData, byteFormattingForChart, useDataLoading, useDatasetsToDisplay } from "./util";
 
 import BarChart from "./Charts/BarChart.vue";
+import OverviewPage from "./OverviewPage.vue";
 import RecoverableItemSizeTooltip from "./RecoverableItemSizeTooltip.vue";
 import SelectedItemActions from "./SelectedItemActions.vue";
-import Heading from "@/components/Common/Heading.vue";
+import WarnDeletedDatasets from "./WarnDeletedDatasets.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const router = useRouter();
-const { success: successToast, error: errorToast } = useToast();
-const { confirm } = useConfirmDialog();
 const { getHistoryNameById } = useHistoryStore();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    historyId: string;
+}
 
-const datasetsSizeSummaryMap = new Map<string, ItemSizeSummary>();
-const topTenDatasetsBySizeData = ref<DataValuePoint[] | null>(null);
+const props = defineProps<Props>();
+
 const activeVsDeletedTotalSizeData = ref<DataValuePoint[] | null>(null);
-const isLoading = ref(true);
-const numberOfDatasetsToDisplayOptions = [10, 20, 50];
-const numberOfDatasetsToDisplay = ref(numberOfDatasetsToDisplayOptions[0]);
+const {
+    numberOfDatasetsToDisplayOptions,
+    numberOfDatasetsToDisplay,
+    numberOfDatasetsLimit,
+    datasetsSizeSummaryMap,
+    topNDatasetsBySizeData,
+    isRecoverableDataPoint,
+    onUndeleteDataset,
+    onPermanentlyDeleteDataset,
+} = useDatasetsToDisplay();
 
-onMounted(async () => {
-    isLoading.value = true;
-    const limit = Math.max(...numberOfDatasetsToDisplayOptions);
-    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(props.historyId, limit);
+const { isLoading, loadDataOnMount } = useDataLoading();
+
+loadDataOnMount(async () => {
+    const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
+        props.historyId,
+        numberOfDatasetsLimit
+    );
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
 
     buildGraphsData();
-    isLoading.value = false;
 });
 
 function buildGraphsData() {
     const allDatasetsInHistorySizeSummary = Array.from(datasetsSizeSummaryMap.values());
-    topTenDatasetsBySizeData.value = buildTopTenDatasetsBySizeData(allDatasetsInHistorySizeSummary);
+    topNDatasetsBySizeData.value = buildTopNDatasetsBySizeData(
+        allDatasetsInHistorySizeSummary,
+        numberOfDatasetsToDisplay.value
+    );
     activeVsDeletedTotalSizeData.value = buildActiveVsDeletedTotalSizeData(allDatasetsInHistorySizeSummary);
-}
-
-function buildTopTenDatasetsBySizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
-    const topTenDatasetsBySize = datasetsSizeSummary
-        .sort((a, b) => b.size - a.size)
-        .slice(0, numberOfDatasetsToDisplay.value);
-    return topTenDatasetsBySize.map((dataset) => ({
-        id: dataset.id,
-        label: dataset.name,
-        value: dataset.size,
-    }));
 }
 
 function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[]): DataValuePoint[] {
@@ -89,14 +79,6 @@ function buildActiveVsDeletedTotalSizeData(datasetsSizeSummary: ItemSizeSummary[
     ];
 }
 
-function isRecoverableDataPoint(dataPoint?: DataValuePoint): boolean {
-    if (dataPoint) {
-        const historiesSizeSummary = datasetsSizeSummaryMap.get(dataPoint.id || "");
-        return historiesSizeSummary?.deleted || dataPoint.id === "deleted";
-    }
-    return false;
-}
-
 async function onViewDataset(datasetId: string) {
     router.push({
         name: "DatasetDetails",
@@ -107,51 +89,16 @@ async function onViewDataset(datasetId: string) {
     });
 }
 
-async function onUndeleteDataset(datasetId: string) {
-    try {
-        const result = await undeleteDatasetById(props.historyId, datasetId);
-        const dataset = datasetsSizeSummaryMap.get(datasetId);
-        if (dataset && !result.deleted) {
-            dataset.deleted = result.deleted;
-            datasetsSizeSummaryMap.set(datasetId, dataset);
-            successToast(localize("Dataset undeleted successfully."));
-            buildGraphsData();
-        }
-    } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while undeleting the dataset."));
-    }
+function onPermDelete(datasetId: string) {
+    onPermanentlyDeleteDataset(buildGraphsData, datasetId);
 }
 
-async function onPermanentlyDeleteDataset(datasetId: string) {
-    const confirmed = await confirm(
-        localize("Are you sure you want to permanently delete this dataset? This action cannot be undone."),
-        {
-            title: localize("Permanently delete dataset?"),
-            okVariant: "danger",
-            okTitle: localize("Permanently delete"),
-            cancelTitle: localize("Cancel"),
-        }
-    );
-    if (!confirmed) {
-        return;
-    }
-    try {
-        const result = await purgeDatasetById(props.historyId, datasetId);
-        const dataset = datasetsSizeSummaryMap.get(datasetId);
-        if (dataset && result) {
-            datasetsSizeSummaryMap.delete(datasetId);
-            successToast(localize("Dataset permanently deleted successfully."));
-            buildGraphsData();
-        }
-    } catch (error) {
-        errorToast(`${error}`, localize("An error occurred while permanently deleting the dataset."));
-    }
+function onUndelete(datasetId: string) {
+    onUndeleteDataset(buildGraphsData, datasetId);
 }
 </script>
 <template>
-    <div class="mx-3 history-storage-overview">
-        <router-link :to="{ name: 'StorageDashboard' }">{{ localize("Back to Dashboard") }}</router-link>
-        <Heading h1 bold class="my-3"> History Storage Overview </Heading>
+    <OverviewPage class="history-storage-overview" title="History Storage Overview">
         <p class="text-justify">
             Here you will find some Graphs displaying the storage taken by datasets in your history:
             <b>{{ getHistoryNameById(props.historyId) }}</b
@@ -160,36 +107,28 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
             <router-link :to="{ name: 'HistoriesOverview' }"><b>Histories Storage Overview</b></router-link> page to see
             the storage taken by <b>all your histories</b>.
         </p>
-        <p class="text-justify">
-            Note: these graphs include <b>deleted datasets</b>. Remember that, even if you delete datasets, they still
-            take up storage space. However, you can free up the storage space by permanently deleting them from the
-            <i>Discarded Items</i> section of the
-            <router-link :to="{ name: 'StorageManager' }"><b>Storage Manager</b></router-link> page or by selecting them
-            individually in the graph and clicking the <b>Permanently Delete</b> button.
-        </p>
-
+        <WarnDeletedDatasets />
         <div v-if="isLoading" class="text-center">
             <LoadingSpan class="mt-5" :message="localize('Loading your storage data. This may take a while...')" />
         </div>
         <div v-else>
             <BarChart
-                v-if="topTenDatasetsBySizeData"
+                v-if="topNDatasetsBySizeData"
                 :description="
                     localize(
                         `These are the ${numberOfDatasetsToDisplay} datasets that take the most space in this history. Click on a bar to see more information about the dataset.`
                     )
                 "
+                :data="topNDatasetsBySizeData"
                 :enable-selection="true"
-                :data="topTenDatasetsBySizeData"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:title>
                     <b>{{ localize(`Top ${numberOfDatasetsToDisplay} Datasets by Size`) }}</b>
                     <b-form-select
                         v-model="numberOfDatasetsToDisplay"
                         :options="numberOfDatasetsToDisplayOptions"
                         :disabled="isLoading"
-                        title="Number of histories to show"
+                        title="Number of datasets to show"
                         class="float-right w-auto"
                         size="sm"
                         @change="buildGraphsData()">
@@ -207,8 +146,8 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                         item-type="dataset"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         @view-item="onViewDataset"
-                        @undelete-item="onUndeleteDataset"
-                        @permanently-delete-item="onPermanentlyDeleteDataset" />
+                        @undelete-item="onUndelete"
+                        @permanently-delete-item="onPermDelete" />
                 </template>
             </BarChart>
 
@@ -221,8 +160,7 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                     )
                 "
                 :data="activeVsDeletedTotalSizeData"
-                :label-formatter="bytesLabelFormatter"
-                :value-formatter="bytesValueFormatter">
+                v-bind="byteFormattingForChart">
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
                         v-if="data"
@@ -231,5 +169,5 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 </template>
             </BarChart>
         </div>
-    </div>
+    </OverviewPage>
 </template>

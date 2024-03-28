@@ -16,11 +16,11 @@ from galaxy.files import (
     ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
-from galaxy.util.config_parsers import parse_allowlist_ips
-from galaxy.util.drs import (
+from galaxy.files.sources.util import (
     fetch_drs_to_file,
     RetryOptions,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 

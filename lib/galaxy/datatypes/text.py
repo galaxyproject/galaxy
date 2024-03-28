@@ -471,7 +471,7 @@ class Biom1(Json):
                                     for k, v in column["metadata"].items():
                                         if v is not None:
                                             keep_columns.add(k)
-                            final_list = sorted(list(keep_columns))
+                            final_list = sorted(keep_columns)
                             dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
                             metadata_value = b_transform[b_name](metadata_value)

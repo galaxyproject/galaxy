@@ -100,6 +100,17 @@ function selectHistories() {
 function setFilterValue(newFilter: string, newValue: string) {
     filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
 }
+
+// hacky workaround for popovers in date pickers being cutoff
+// https://github.com/galaxyproject/galaxy/issues/17711
+const modalBodyClasses = computed(() => {
+    return [
+        "history-selector-modal-body",
+        showAdvanced.value
+            ? "history-selector-modal-body-allow-overflow"
+            : "history-selector-modal-body-prevent-overflow",
+    ];
+});
 </script>
 
 <template>
@@ -107,9 +118,9 @@ function setFilterValue(newFilter: string, newValue: string) {
         <BModal
             ref="modal"
             v-model="propShowModal"
-            body-class="history-selector-modal-body"
             content-class="history-selector-modal-content"
             v-bind="$attrs"
+            :body-class="modalBodyClasses"
             static
             centered
             hide-footer
@@ -174,9 +185,16 @@ function setFilterValue(newFilter: string, newValue: string) {
 with scoped or lang="scss" */
 
 .history-selector-modal-body {
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+}
+
+.history-selector-modal-body-allow-overflow {
+    overflow: visible;
+}
+
+.history-selector-modal-body-prevent-overflow {
+    overflow: hidden;
 }
 
 .history-selector-modal-content {

@@ -54,14 +54,16 @@ class HelpForumTopic(Model):
     archetype: Annotated[Any, Field(description="The archetype of the topic.")]
     unseen: Annotated[bool, Field(description="Whether the topic is unseen.")]
     pinned: Annotated[bool, Field(description="Whether the topic is pinned.")]
-    unpinned: Annotated[Optional[bool], Field(description="Whether the topic is unpinned.")]
+    unpinned: Annotated[Optional[bool], Field(default=None, description="Whether the topic is unpinned.")]
     visible: Annotated[bool, Field(description="Whether the topic is visible.")]
     closed: Annotated[bool, Field(description="Whether the topic is closed.")]
     archived: Annotated[bool, Field(description="Whether the topic is archived.")]
-    bookmarked: Annotated[Optional[bool], Field(description="Whether the topic is bookmarked.")]
-    liked: Annotated[Optional[bool], Field(description="Whether the topic is liked.")]
+    bookmarked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is bookmarked.")]
+    liked: Annotated[Optional[bool], Field(default=None, description="Whether the topic is liked.")]
     tags: Annotated[List[str], Field(description="The tags of the topic.")]
-    tags_descriptions: Annotated[Optional[Any], Field(description="The descriptions of the tags of the topic.")]
+    tags_descriptions: Annotated[
+        Optional[Any], Field(default=None, description="The descriptions of the tags of the topic.")
+    ]
     category_id: Annotated[int, Field(description="The ID of the category of the topic.")]
     has_accepted_answer: Annotated[bool, Field(description="Whether the topic has an accepted answer.")]
 
@@ -102,10 +104,23 @@ class HelpForumSearchResponse(Model):
     This model is based on the Discourse API response for the search endpoint.
     """
 
-    posts: Optional[List[HelpForumPost]]
-    topics: Optional[List[HelpForumTopic]]
-    users: Optional[List[HelpForumUser]]
-    categories: Optional[List[HelpForumCategory]]
-    tags: Optional[List[HelpForumTag]]
-    groups: Optional[List[HelpForumGroup]]
-    grouped_search_result: Optional[HelpForumGroupedSearchResult]
+    posts: Annotated[List[HelpForumPost], Field(default=None, description="The list of posts returned by the search.")]
+    topics: Annotated[
+        List[HelpForumTopic], Field(default=None, description="The list of topics returned by the search.")
+    ]
+    users: Annotated[
+        Optional[List[HelpForumUser]], Field(default=None, description="The list of users returned by the search.")
+    ]
+    categories: Annotated[
+        Optional[List[HelpForumCategory]],
+        Field(default=None, description="The list of categories returned by the search."),
+    ]
+    tags: Annotated[
+        Optional[List[HelpForumTag]], Field(default=None, description="The list of tags returned by the search.")
+    ]
+    groups: Annotated[
+        Optional[List[HelpForumGroup]], Field(default=None, description="The list of groups returned by the search.")
+    ]
+    grouped_search_result: Annotated[
+        Optional[HelpForumGroupedSearchResult], Field(default=None, description="The grouped search result.")
+    ]

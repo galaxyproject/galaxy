@@ -306,7 +306,7 @@ class GroupGrid(grids.Grid):
 
 
 class ManageCategoryGrid(CategoryGrid):
-    columns = [col for col in CategoryGrid.columns]
+    columns = list(CategoryGrid.columns)
     # Override the NameColumn to include an Edit link
     columns[0] = CategoryGrid.NameColumn(
         "Name",
@@ -355,7 +355,7 @@ class AdminRepositoryGrid(RepositoryGrid):
             filterable="standard",
         )
     )
-    operations = [operation for operation in RepositoryGrid.operations]
+    operations = list(RepositoryGrid.operations)
     operations.append(
         grids.GridOperation(
             "Delete", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=False

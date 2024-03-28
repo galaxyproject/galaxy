@@ -21,6 +21,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const emit = defineEmits<{
+    (e: "update-filter", key: string, value: any): void;
+}>();
+
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -69,28 +73,37 @@ function onCopyLink() {
 
 function onViewMySharedByUser() {
     router.push(`/workflows/list_shared_with_me?owner=${props.workflow.owner}`);
+    emit("update-filter", "user", `'${props.workflow.owner}'`);
 }
 
 function onViewUserPublished() {
     router.push(`/workflows/list_published?owner=${props.workflow.owner}`);
+    emit("update-filter", "user", `'${props.workflow.owner}'`);
 }
 </script>
 
 <template>
     <div>
         <BButton
-            v-if="workflow.published"
-            v-b-tooltip.noninteractive
+            v-if="workflow.published && !publishedView"
+            v-b-tooltip.noninteractive.hover
             size="sm"
             class="workflow-published-icon inline-icon-button"
-            to="/workflows/list_published"
-            title="Published workflow. Click to view all published workflows">
+            title="Published workflow. Click to filter published workflows"
+            @click="emit('update-filter', 'published', true)">
             <FontAwesomeIcon :icon="faGlobe" fixed-width />
         </BButton>
+        <FontAwesomeIcon
+            v-else-if="workflow.published"
+            v-b-tooltip.noninteractive.hover
+            title="Published workflow"
+            :icon="faGlobe"
+            fixed-width
+            size="sm" />
 
         <BButton
             v-if="sourceType.includes('trs')"
-            v-b-tooltip.noninteractive
+            v-b-tooltip.noninteractive.hover
             size="sm"
             class="workflow-trs-icon inline-icon-button"
             :title="sourceTitle">
@@ -99,7 +112,7 @@ function onViewUserPublished() {
 
         <BButton
             v-if="sourceType == 'url'"
-            v-b-tooltip.noninteractive
+            v-b-tooltip.noninteractive.hover
             size="sm"
             class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
@@ -115,7 +128,7 @@ function onViewUserPublished() {
 
         <BBadge
             v-if="shared && !publishedView"
-            v-b-tooltip.noninteractive
+            v-b-tooltip.noninteractive.hover
             class="outline-badge cursor-pointer mx-1"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
             @click="onViewMySharedByUser">
@@ -125,7 +138,7 @@ function onViewUserPublished() {
 
         <BBadge
             v-if="publishedView"
-            v-b-tooltip.noninteractive
+            v-b-tooltip.noninteractive.hover
             class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
             @click="onViewUserPublished">
