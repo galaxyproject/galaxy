@@ -105,9 +105,6 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
-            ...AdminRoutes,
-            ...LibraryRoutes,
-            ...StorageDashboardRoutes,
             /** Login entry route */
             {
                 path: "/login/start",
@@ -171,6 +168,9 @@ export function getRouter(Galaxy) {
                 path: "/",
                 component: Analysis,
                 children: [
+                    ...AdminRoutes,
+                    ...LibraryRoutes,
+                    ...StorageDashboardRoutes,
                     {
                         path: "",
                         alias: "root",

@@ -53,7 +53,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Data Libraries"),
                     url: "/libraries",
-                    target: "_top",
                 },
                 {
                     title: _l("Datasets"),
@@ -91,7 +90,6 @@ export function fetchMenu(options = {}) {
                 {
                     title: _l("Data Libraries"),
                     url: "/libraries",
-                    target: "_top",
                 },
                 {
                     title: _l("Histories"),
@@ -123,7 +121,6 @@ export function fetchMenu(options = {}) {
             url: "/admin",
             tooltip: _l("Administer this Galaxy"),
             cls: "admin-only",
-            target: "_top",
         });
     }
 
