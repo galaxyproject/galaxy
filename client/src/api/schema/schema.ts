@@ -13308,7 +13308,7 @@ export interface components {
              * Step Version Changes
              * @description Version changes for the workflow steps.
              */
-            step_version_changes?: Record<string, never>[] | null;
+            step_version_changes?: (string | Record<string, never>)[] | null;
             /**
              * Steps
              * @description Information about all the steps of the workflow.
