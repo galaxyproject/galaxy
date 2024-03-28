@@ -9,7 +9,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { HistoryDetailed, HistorySummary } from "@/api";
+import { type AnyHistory, type HistorySummary, userOwnsHistory } from "@/api";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -121,11 +121,9 @@ watch(
 /** `historyStore` histories for current user */
 const historiesProxy = ref<HistorySummary[]>([]);
 watch(
-    () => histories.value as HistoryDetailed[],
-    (h: HistoryDetailed[]) => {
-        historiesProxy.value = h.filter(
-            (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)
-        );
+    () => histories.value as AnyHistory[],
+    (h: AnyHistory[]) => {
+        historiesProxy.value = h.filter((h) => userOwnsHistory(currentUser.value, h));
     },
     {
         immediate: true,
