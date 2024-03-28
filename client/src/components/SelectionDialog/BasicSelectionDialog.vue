@@ -35,11 +35,15 @@ const errorMessage = ref("");
 const items: Ref<Array<SelectionItem>> = ref([]);
 const modalShow = ref(true);
 const optionsShow = ref(false);
+const showTime = ref(false);
 
 const fields = computed(() => {
     const fields = [{ key: "label", sortable: true }];
     if (props.detailsKey) {
         fields.push({ key: "details", sortable: true });
+    }
+    if (showTime.value) {
+        fields.push({ key: "time", sortable: true });
     }
     return fields;
 });
@@ -51,6 +55,7 @@ async function load() {
         const incoming = response.data;
         items.value = incoming.map((item: any) => {
             let timeStamp = item[props.timeKey];
+            showTime.value = !!timeStamp;
             if (timeStamp) {
                 const date = new Date(timeStamp);
                 timeStamp = date.toLocaleString("default", {
