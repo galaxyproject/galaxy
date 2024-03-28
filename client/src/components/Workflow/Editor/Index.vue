@@ -169,6 +169,7 @@ import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
 
+import { replaceLabel } from "@/components/Markdown/parse";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -337,6 +338,7 @@ export default {
             showSaveAsModal: false,
             transform: { x: 0, y: 0, k: 1 },
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
+            debounceTimer: null,
         };
     },
     computed: {
@@ -642,7 +644,20 @@ export default {
         },
         onLabel(nodeId, newLabel) {
             const step = { ...this.steps[nodeId], label: newLabel };
+            const oldLabel = this.steps[nodeId].label;
             this.onUpdateStep(step);
+            const stepType = this.steps[nodeId].type;
+            const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
+            const labelType = isInput ? "input" : "step";
+            const newMarkdown = replaceLabel(this.markdownText, labelType, oldLabel, newLabel);
+            if (newMarkdown !== this.markdownText) {
+                this.debouncedToast("Label updated in workflow report.", 1500);
+            }
+            this.onReportUpdate(newMarkdown);
+        },
+        debouncedToast(message, delay) {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => Toast.success(message), delay);
         },
         onScrollTo(stepId) {
             this.scrollToId = stepId;
