@@ -9,7 +9,6 @@ import { useRoute, useRouter } from "vue-router/composables";
 
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
-import { Toast } from "@/composables/toast";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useEventStore } from "@/stores/eventStore";
 import { clearDrag } from "@/utils/setDrag";
@@ -92,7 +91,9 @@ const contentId = computed(() => {
 
 const contentCls = computed(() => {
     const status = contentState.value && contentState.value.status;
-    if (props.selected) {
+    if (props.item.accessible === false) {
+        return "alert-inaccessible";
+    } else if (props.selected) {
         return "alert-info";
     } else if (!status) {
         return `alert-success`;
@@ -100,7 +101,6 @@ const contentCls = computed(() => {
         return `alert-${status}`;
     }
 });
-
 const contentState = computed(() => {
     return STATES[state.value] && STATES[state.value];
 });
@@ -116,6 +116,9 @@ const hasStateIcon = computed(() => {
 const state = computed<keyof StateMap>(() => {
     if (props.isPlaceholder) {
         return "placeholder";
+    }
+    if (props.item.accessible === false) {
+        return "inaccessible";
     }
     if (props.item.populated_state === "failed") {
         return "failed_populated_state";
@@ -136,7 +139,13 @@ const state = computed<keyof StateMap>(() => {
 });
 
 const dataState = computed(() => {
-    return state.value === "new_populated_state" ? "new" : state.value;
+    if (props.item.accessible === false) {
+        return "inaccessible";
+    } else if (state.value === "new_populated_state") {
+        return "new";
+    } else {
+        return state.value;
+    }
 });
 
 const tags = computed(() => {
@@ -239,11 +248,7 @@ function onClick(e?: Event) {
         return;
     }
     if (props.isDataset) {
-        if (props.item.accessible === false) {
-            Toast.error(`You are not allowed to access this dataset`);
-        } else {
-            emit("update:expand-dataset", !props.expandDataset);
-        }
+        emit("update:expand-dataset", !props.expandDataset);
     } else {
         emit("view-collection", props.item, props.name);
     }
@@ -433,8 +438,12 @@ function unexpandedClick(event: Event) {
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <BCollapse :visible="expandDataset" class="px-2 pb-2">
+            <div v-if="item.accessible === false">
+                You are not allowed to access this dataset
+                {{ item.id }}
+            </div>
             <DatasetDetails
-                v-if="expandDataset && item.id"
+                v-else-if="expandDataset && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
