@@ -6656,19 +6656,38 @@ export interface components {
          * This model is based on the Discourse API response for the search endpoint.
          */
         HelpForumSearchResponse: {
-            /** Categories */
-            categories: components["schemas"]["HelpForumCategory"][] | null;
-            grouped_search_result: components["schemas"]["HelpForumGroupedSearchResult"] | null;
-            /** Groups */
-            groups: components["schemas"]["HelpForumGroup"][] | null;
-            /** Posts */
-            posts: components["schemas"]["HelpForumPost"][] | null;
-            /** Tags */
-            tags: components["schemas"]["HelpForumTag"][] | null;
-            /** Topics */
-            topics: components["schemas"]["HelpForumTopic"][] | null;
-            /** Users */
-            users: components["schemas"]["HelpForumUser"][] | null;
+            /**
+             * Categories
+             * @description The list of categories returned by the search.
+             */
+            categories?: components["schemas"]["HelpForumCategory"][] | null;
+            /** @description The grouped search result. */
+            grouped_search_result?: components["schemas"]["HelpForumGroupedSearchResult"] | null;
+            /**
+             * Groups
+             * @description The list of groups returned by the search.
+             */
+            groups?: components["schemas"]["HelpForumGroup"][] | null;
+            /**
+             * Posts
+             * @description The list of posts returned by the search.
+             */
+            posts?: components["schemas"]["HelpForumPost"][];
+            /**
+             * Tags
+             * @description The list of tags returned by the search.
+             */
+            tags?: components["schemas"]["HelpForumTag"][] | null;
+            /**
+             * Topics
+             * @description The list of topics returned by the search.
+             */
+            topics?: components["schemas"]["HelpForumTopic"][];
+            /**
+             * Users
+             * @description The list of users returned by the search.
+             */
+            users?: components["schemas"]["HelpForumUser"][] | null;
         };
         /**
          * HelpForumTag
@@ -6696,7 +6715,7 @@ export interface components {
              * Bookmarked
              * @description Whether the topic is bookmarked.
              */
-            bookmarked: boolean | null;
+            bookmarked?: boolean | null;
             /**
              * Bumped
              * @description Whether the topic was bumped.
@@ -6751,7 +6770,7 @@ export interface components {
              * Liked
              * @description Whether the topic is liked.
              */
-            liked: boolean | null;
+            liked?: boolean | null;
             /**
              * Pinned
              * @description Whether the topic is pinned.
@@ -6781,7 +6800,7 @@ export interface components {
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.
              */
-            tags_descriptions: Record<string, never> | null;
+            tags_descriptions?: Record<string, never> | null;
             /**
              * Title
              * @description The title of the topic.
@@ -6791,7 +6810,7 @@ export interface components {
              * Unpinned
              * @description Whether the topic is unpinned.
              */
-            unpinned: boolean | null;
+            unpinned?: boolean | null;
             /**
              * Unseen
              * @description Whether the topic is unseen.

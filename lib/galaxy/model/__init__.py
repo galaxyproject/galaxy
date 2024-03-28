@@ -6276,11 +6276,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             q = q.outerjoin(inner_dce, inner_dce.c.dataset_collection_id == dce.c.child_collection_id)
             if collection_attributes:
                 q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id)
-            q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
-            if collection_attributes:
                 q = q.add_columns(
                     *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
                 )
+            q = q.add_columns(*attribute_columns(inner_dce.c, element_attributes, nesting_level))
             dce = inner_dce
             dc = inner_dc
             depth_collection_type = depth_collection_type.split(":", 1)[1]
@@ -10913,7 +10912,7 @@ HistoryDatasetAssociation.table = Table(
     Column("blurb", TrimmedString(255)),
     Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
-    Column("extension", TrimmedString(64)),
+    Column("extension", TrimmedString(64), index=True),
     Column("metadata", MetadataType, key="_metadata"),
     Column("metadata_deferred", Boolean, key="metadata_deferred"),
     Column("parent_id", Integer, ForeignKey("history_dataset_association.id"), nullable=True),
