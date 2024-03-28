@@ -310,7 +310,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 4
 
-            # Archived histories should not be included in the index
+            # Archived histories should not be included by default
             self.dataset_populator.archive_history(archived_history_id)
             data = dict(search=name_contains, show_published=False)
             index_response = self._get("histories", data=data).json()
@@ -328,13 +328,13 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 0
 
-            # Archived public histories should be included when filtering by published
-            data = dict(search="is:published")
+            # Archived public histories should be included when filtering by show_published and show_archived
+            data = dict(search="is:published", show_archived=True)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 2
 
             name_contains = "Archived"
-            data = dict(search=name_contains, show_published=True)
+            data = dict(search=name_contains, show_published=True, show_archived=True)
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 

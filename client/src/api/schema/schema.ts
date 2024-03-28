@@ -15519,6 +15519,7 @@ export interface operations {
         parameters?: {
             /** @description The maximum number of items to return. */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Whether to include archived histories. */
             /** @description Sort index by this specified attribute */
             /** @description Sort in descending order? */
             /**
@@ -15570,6 +15571,7 @@ export interface operations {
                 show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
+                show_archived?: boolean | null;
                 sort_by?: "create_time" | "name" | "update_time" | "username";
                 sort_desc?: boolean;
                 search?: string | null;
