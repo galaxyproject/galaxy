@@ -15,7 +15,7 @@ import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue"
 library.add(faCaretLeft, faCheck, faCheckSquare, faFolder, faMinusSquare, faSpinner, faSquare, faTimes);
 
 const LABEL_FIELD: FieldEntry = { key: "label", sortable: true };
-const SELECT_ICON_FIELD: FieldEntry = { key: "select_icon", label: "", sortable: false };
+const SELECT_ICON_FIELD: FieldEntry = { key: "__select_icon__", label: "", sortable: false };
 
 interface Props {
     disableOk?: boolean;
@@ -70,7 +70,10 @@ const nItems = ref(0);
 const perPage = ref(100);
 
 const fieldDetails = computed(() => {
-    const fields = props.fields.slice();
+    const fields = props.fields.slice().map((x) => {
+        x.sortable = x.sortable === undefined ? true : x.sortable;
+        return x;
+    });
     if (fields.length === 0) {
         fields.unshift(LABEL_FIELD);
     }
@@ -134,14 +137,14 @@ watch(
                     :per-page="perPage"
                     @filtered="filtered"
                     @row-clicked="emit('onClick', $event)">
-                    <template v-slot:head(select_icon)="">
+                    <template v-slot:head(__select_icon__)="">
                         <FontAwesomeIcon
                             class="select-checkbox cursor-pointer"
                             title="Check to select all datasets"
                             :icon="selectionIcon(selectAllIcon)"
                             @click="$emit('onSelectAll')" />
                     </template>
-                    <template v-slot:cell(select_icon)="data">
+                    <template v-slot:cell(__select_icon__)="data">
                         <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
                     </template>
                     <template v-slot:cell(label)="data">

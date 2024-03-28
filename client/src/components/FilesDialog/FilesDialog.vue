@@ -67,12 +67,12 @@ const urlTracker = ref(new UrlTracker(""));
 
 const fields = computed(() => {
     const fields = [];
-    fields.push({ key: "label", sortable: true });
+    fields.push({ key: "label" });
     if (showDetails.value) {
-        fields.push({ key: "details", sortable: true });
+        fields.push({ key: "details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time", sortable: true });
+        fields.push({ key: "time" });
     }
     return fields;
 });

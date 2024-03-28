@@ -38,12 +38,12 @@ const optionsShow = ref(false);
 const showTime = ref(false);
 
 const fields = computed(() => {
-    const fields = [{ key: "label", sortable: true }];
+    const fields = [{ key: "label" }];
     if (props.detailsKey) {
-        fields.push({ key: "details", sortable: true });
+        fields.push({ key: "details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time", sortable: true });
+        fields.push({ key: "time" });
     }
     return fields;
 });
