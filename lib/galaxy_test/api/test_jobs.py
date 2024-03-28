@@ -7,9 +7,9 @@ from operator import itemgetter
 from unittest import SkipTest
 
 import pytest
-import requests
 from dateutil.parser import isoparse
 
+from galaxy.util import requests
 from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.populators import (

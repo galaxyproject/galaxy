@@ -10,7 +10,7 @@ import warnings
 
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
-import requests
+from galaxy.util import requests
 
 try:
     from cwltool import (

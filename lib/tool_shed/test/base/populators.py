@@ -8,9 +8,9 @@ from typing import (
     Union,
 )
 
-import requests
 from typing_extensions import Protocol
 
+from galaxy.util import requests
 from galaxy.util.resources import (
     as_file,
     resource_path,

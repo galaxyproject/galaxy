@@ -3,8 +3,6 @@ import logging
 import time
 from datetime import datetime
 
-import requests
-
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -12,6 +10,7 @@ from galaxy.jobs.runners import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
     unicodify,
 )
 

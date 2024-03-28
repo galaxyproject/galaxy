@@ -5,14 +5,16 @@ import time
 from typing import Optional
 
 import pytest
-import requests
 import uvicorn
 from fastapi import status
 from fastapi.applications import FastAPI
 from requests import ReadTimeout
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from galaxy.util import sockets
+from galaxy.util import (
+    requests,
+    sockets,
+)
 
 error_encountered: Optional[str] = None
 

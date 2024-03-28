@@ -6,11 +6,10 @@ import logging
 import sys
 import tempfile
 
-import requests
-
 from galaxy.tool_util.deps.conda_util import CondaContext
 from galaxy.util import (
     check_github_api_response_rate_limit,
+    requests,
     which,
 )
 from .mulled_list import get_singularity_containers

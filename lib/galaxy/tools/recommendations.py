@@ -6,12 +6,14 @@ import os
 
 import h5py
 import numpy as np
-import requests
 import yaml
 
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.workflow.modules import module_factory
 
 log = logging.getLogger(__name__)

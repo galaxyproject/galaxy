@@ -5,8 +5,7 @@ import logging
 from glob import glob
 from html.parser import HTMLParser
 
-import requests
-
+from galaxy.util import requests
 from .util import MULLED_SOCKET_TIMEOUT
 
 QUAY_API_ENDPOINT = "https://quay.io/api/v1/repository"

@@ -24,7 +24,6 @@ from typing import (
     Union,
 )
 
-import requests
 from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
@@ -41,6 +40,7 @@ from galaxy.tool_util.parser.interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
 )
+from galaxy.util import requests
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import (
     memory_bound_hexdigest,

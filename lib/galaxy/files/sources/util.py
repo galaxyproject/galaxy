@@ -7,8 +7,6 @@ from typing import (
     Union,
 )
 
-import requests
-
 from galaxy import exceptions
 from galaxy.files import (
     ConfiguredFileSources,
@@ -17,7 +15,10 @@ from galaxy.files import (
 from galaxy.files.sources import FilesSourceOptions
 from galaxy.files.sources.http import HTTPFilesSourceProperties
 from galaxy.files.uris import stream_url_to_file
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from galaxy.util.config_parsers import IpAllowedListEntryT
 
 TargetPathT = Union[str, PathLike]

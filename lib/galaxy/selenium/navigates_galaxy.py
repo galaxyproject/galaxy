@@ -24,7 +24,6 @@ from typing import (
     Union,
 )
 
-import requests
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -36,7 +35,10 @@ from galaxy.navigation.components import (
     HasText,
 )
 from galaxy.navigation.data import load_root_component
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    requests,
+)
 from . import sizzle
 from .has_driver import (
     exception_indicates_click_intercepted,

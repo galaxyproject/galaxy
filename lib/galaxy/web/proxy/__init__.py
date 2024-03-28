@@ -4,9 +4,8 @@ import os
 import time
 from collections import namedtuple
 
-import requests
-
 from galaxy.util import (
+    requests,
     sockets,
     sqlite,
     unique_id,

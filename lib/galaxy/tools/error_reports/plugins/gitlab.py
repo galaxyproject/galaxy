@@ -4,7 +4,7 @@ import logging
 import os
 import urllib.parse
 
-import requests
+from galaxy.util import requests
 
 try:
     import gitlab

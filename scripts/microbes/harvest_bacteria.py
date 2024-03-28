@@ -11,7 +11,7 @@ import time
 from ftplib import FTP
 from urllib.request import urlretrieve
 
-import requests
+from galaxy.util import requests
 
 try:
     from bs4 import BeautifulSoup

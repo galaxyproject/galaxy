@@ -1,9 +1,11 @@
 import pytest
-import requests
 import responses
 from werkzeug.wrappers.response import Response
 
-from galaxy.util import url_get
+from galaxy.util import (
+    requests,
+    url_get,
+)
 
 
 @responses.activate

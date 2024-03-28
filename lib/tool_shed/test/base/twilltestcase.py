@@ -25,7 +25,6 @@ from urllib.parse import (
 )
 
 import pytest
-import requests
 from mercurial import (
     commands,
     hg,
@@ -53,6 +52,7 @@ from galaxy.tool_shed.util.dependency_display import build_manage_repository_dic
 from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    requests,
     smart_str,
 )
 from galaxy_test.base.api_asserts import assert_status_code_is_ok

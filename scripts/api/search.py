@@ -5,7 +5,7 @@ Sample script for Galaxy Search API
 import json
 import sys
 
-import requests
+from galaxy.util import requests
 
 
 class RemoteGalaxy:
