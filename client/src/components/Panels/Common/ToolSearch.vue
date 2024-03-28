@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, type ComputedRef, onMounted, type PropType, watch } from "vue";
+import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
@@ -124,7 +124,7 @@ onMounted(() => {
     if (!searchWorker.value) {
         searchWorker.value = new Worker(new URL("components/Panels/toolSearch.worker.js", import.meta.url));
     }
-    searchWorker.value!.onmessage = ({ data }) => {
+    searchWorker.value.onmessage = ({ data }) => {
         const { type, payload, sectioned, query, closestTerm } = data;
         if (type === "searchToolsByKeysResult" && query === props.query) {
             emit("onResults", payload, sectioned, closestTerm);
@@ -134,6 +134,13 @@ onMounted(() => {
             emit("onResults", currentFavorites.value.tools, null, null);
         }
     };
+});
+
+onUnmounted(() => {
+    // The worker is not terminated but it will not be listening to messages
+    if (searchWorker.value?.onmessage) {
+        searchWorker.value.onmessage = null;
+    }
 });
 
 watch(

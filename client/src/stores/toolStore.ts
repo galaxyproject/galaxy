@@ -82,11 +82,6 @@ export const useToolStore = defineStore("toolStore", () => {
     const loading = ref(false);
 
     const searchWorker = ref<Worker | undefined>(undefined);
-    // TODO: Where do we terminate the worker?
-    // onScopeDispose(() => {
-    //     searchWorker.value?.terminate();
-    //     searchWorker.value = undefined;
-    // });
 
     const getToolForId = computed(() => {
         return (toolId: string) => toolsById.value[toolId];
