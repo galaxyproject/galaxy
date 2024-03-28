@@ -1815,9 +1815,15 @@ export interface paths {
          */
         get: operations["index_api_workflows_get"];
     };
+    "/api/workflows/download/{workflow_id}": {
+        /** Returns a selected workflow. */
+        get: operations["workflow_dict_api_workflows_download__workflow_id__get"];
+    };
     "/api/workflows/menu": {
         /** Get workflows present in the tools panel. */
         get: operations["get_workflow_menu_api_workflows_menu_get"];
+        /** Save workflow menu to be shown in the tool panel */
+        put: operations["set_workflow_menu_api_workflows_menu_put"];
     };
     "/api/workflows/{workflow_id}": {
         /** Displays information needed to run a workflow. */
@@ -1835,6 +1841,10 @@ export interface paths {
          * @description Makes this item inaccessible by a URL link and return the current sharing status.
          */
         put: operations["disable_link_access_api_workflows__workflow_id__disable_link_access_put"];
+    };
+    "/api/workflows/{workflow_id}/download": {
+        /** Returns a selected workflow. */
+        get: operations["workflow_dict_api_workflows__workflow_id__download_get"];
     };
     "/api/workflows/{workflow_id}/enable_link_access": {
         /**
@@ -7281,6 +7291,24 @@ export interface components {
              */
             to_posix_lines?: "Yes" | boolean | null;
         };
+        /** InputConnection */
+        InputConnection: {
+            /**
+             * ID
+             * @description The identifier of the input.
+             */
+            id: number;
+            /**
+             * Input Subworkflow Step ID
+             * @description TODO
+             */
+            input_subworkflow_step_id?: number | null;
+            /**
+             * Output Name
+             * @description The name assigned to the output.
+             */
+            output_name: string;
+        };
         /** InputDataCollectionStep */
         InputDataCollectionStep: {
             /**
@@ -10927,6 +10955,27 @@ export interface components {
              */
             new_slug: string;
         };
+        /** SetWorkflowMenuPayload */
+        SetWorkflowMenuPayload: {
+            /**
+             * Workflow IDs
+             * @description The list of workflow IDs to set the menu entry for.
+             */
+            workflow_ids: string[] | string;
+        };
+        /** SetWorkflowMenuSummary */
+        SetWorkflowMenuSummary: {
+            /**
+             * Message
+             * @description The message of the operation.
+             */
+            message: Record<string, never> | null;
+            /**
+             * Status
+             * @description The status of the operation.
+             */
+            status: string;
+        };
         /** ShareHistoryExtra */
         ShareHistoryExtra: {
             /**
@@ -12609,6 +12658,673 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** WorkflowDictEditorSteps */
+        WorkflowDictEditorSteps: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * Config Form
+             * @description The configuration form for the step.
+             */
+            config_form?: Record<string, never> | null;
+            /**
+             * Content ID
+             * @description The content ID of the step.
+             */
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description An message indicating possible errors in the step.
+             */
+            errors?: string[] | string | Record<string, never> | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * Input Connections
+             * @description The input connections for the step.
+             */
+            input_connections?: Record<string, never> | null;
+            /**
+             * Inputs
+             * @description The inputs of the step.
+             */
+            inputs?: Record<string, never>[] | null;
+            /**
+             * Label
+             * @description The label of the step.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description The descriptive name of the module or step.
+             */
+            name?: string | null;
+            /**
+             * Outputs
+             * @description The outputs of the step.
+             */
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description Layout position of this step in the graph
+             */
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
+            /**
+             * Post Job Actions
+             * @description Set of actions that will be run when the job finishes.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with the step.
+             */
+            tool_version?: string | null;
+            /**
+             * Tooltip
+             * @description The tooltip for the step.
+             */
+            tooltip?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow.
+             */
+            uuid?: string | null;
+            /**
+             * When
+             * @description The when expression for the step.
+             */
+            when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description Workflow outputs associated with this step.
+             */
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
+        };
+        /** WorkflowDictEditorSummary */
+        WorkflowDictEditorSummary: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * Comments
+             * @description Comments on the workflow.
+             */
+            comments: Record<string, never>[];
+            /**
+             * Creator
+             * @description Additional information about the creator (or multiple creators) of this workflow.
+             */
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
+            /**
+             * License
+             * @description SPDX Identifier of the license associated with this workflow.
+             */
+            license?: string | null;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Report
+             * @description The reports configuration for the workflow.
+             */
+            report: Record<string, never>;
+            /**
+             * Source Metadata
+             * @description Metadata about the source of the workflow
+             */
+            source_metadata?: Record<string, never> | null;
+            /**
+             * Steps
+             * @description Information about all the steps of the workflow.
+             */
+            steps: {
+                [key: string]: components["schemas"]["WorkflowDictEditorSteps"] | undefined;
+            };
+            /**
+             * Upgrade Messages
+             * @description Upgrade messages for each step in the workflow.
+             */
+            upgrade_messages: {
+                [key: string]: string | undefined;
+            };
+            /**
+             * Version
+             * @description The version of the workflow represented by an incremental number.
+             */
+            version: number;
+        };
+        /** WorkflowDictExportSteps */
+        WorkflowDictExportSteps: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Content ID
+             * @description The content ID of the step.
+             */
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description An message indicating possible errors in the step.
+             */
+            errors?: string[] | string | Record<string, never> | null;
+            /**
+             * ID
+             * @description The identifier of the step. It matches the index order of the step inside the workflow.
+             */
+            id: number;
+            /**
+             * In
+             * @description The input connections of the step.
+             */
+            in?: Record<string, never> | null;
+            /**
+             * Input Connections
+             * @description The input connections of the step.
+             */
+            input_connections?: {
+                [key: string]:
+                    | (components["schemas"]["InputConnection"] | components["schemas"]["InputConnection"][])
+                    | undefined;
+            } | null;
+            /**
+             * Inputs
+             * @description The inputs of the step.
+             */
+            inputs?: Record<string, never>[] | null;
+            /**
+             * Label
+             * @description The label of the step.
+             */
+            label?: string | null;
+            /**
+             * Name
+             * @description The descriptive name of the module or step.
+             */
+            name: string;
+            /**
+             * Outputs
+             * @description The outputs of the step.
+             */
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description Layout position of this step in the graph
+             */
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
+            /**
+             * Post Job Actions
+             * @description Set of actions that will be run when the job finishes.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Sub Workflow
+             * @description Full information about the subworkflow associated with this step.
+             */
+            subworkflow?: Record<string, never> | null;
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool Representation
+             * @description The representation of the tool associated with the step.
+             */
+            tool_representation?: Record<string, never> | null;
+            /**
+             * Tool Shed Repository
+             * @description Information about the tool shed repository associated with the tool.
+             */
+            tool_shed_repository?: Record<string, never> | null;
+            /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with the step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the workflow.
+             */
+            uuid: string;
+            /**
+             * When
+             * @description The when expression for the step.
+             */
+            when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description Workflow outputs associated with this step.
+             */
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
+        };
+        /** WorkflowDictExportSummary */
+        WorkflowDictExportSummary: {
+            /**
+             * A Galaxy Workflow
+             * @description Whether this workflow is a Galaxy Workflow.
+             */
+            a_galaxy_workflow?: string | null;
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string | null;
+            /**
+             * Comments
+             * @description Comments associated with the workflow.
+             */
+            comments?: Record<string, never>[] | null;
+            /**
+             * Creator
+             * @description Additional information about the creator (or multiple creators) of this workflow.
+             */
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
+            /**
+             * Format Version
+             * @description The version of the workflow format being used.
+             */
+            "format-version"?: string | null;
+            /**
+             * License
+             * @description SPDX Identifier of the license associated with this workflow.
+             */
+            license?: string | null;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Report
+             * @description The configuration for generating a report for the workflow.
+             */
+            report?: Record<string, never> | null;
+            /**
+             * Source Metadata
+             * @description Metadata about the source of the workflow.
+             */
+            source_metadata?: Record<string, never> | null;
+            /**
+             * Steps
+             * @description Information about all the steps of the workflow.
+             */
+            steps: {
+                [key: string]: components["schemas"]["WorkflowDictExportSteps"] | undefined;
+            };
+            /**
+             * Tags
+             * @description The tags associated with the workflow.
+             */
+            tags?: string[] | null;
+            /**
+             * UUID
+             * @description The UUID (Universally Unique Identifier) of the workflow.
+             */
+            uuid?: string | null;
+            /**
+             * Version
+             * @description The version of the workflow represented by an incremental number.
+             */
+            version: number;
+        };
+        /** WorkflowDictFormat2Summary */
+        WorkflowDictFormat2Summary: {
+            /**
+             * Class
+             * @description The class of the workflow.
+             */
+            class: string;
+            /**
+             * Creator
+             * @description Additional information about the creator (or multiple creators) of this workflow.
+             */
+            creator?:
+                | (components["schemas"]["Person"] | components["schemas"]["galaxy__schema__schema__Organization"])[]
+                | null;
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            doc?: string | null;
+            /**
+             * Inputs
+             * @description The inputs of the workflow.
+             */
+            inputs?: Record<string, never> | null;
+            /**
+             * Label
+             * @description The label or name of the workflow.
+             */
+            label?: string | null;
+            /**
+             * License
+             * @description SPDX Identifier of the license associated with this workflow.
+             */
+            license?: string | null;
+            /**
+             * Outputs
+             * @description The outputs of the workflow.
+             */
+            outputs?: Record<string, never> | null;
+            /**
+             * Release
+             * @description The release information for the workflow.
+             */
+            release?: string | null;
+            /**
+             * Report
+             * @description The configuration for generating a report for the workflow.
+             */
+            report?: Record<string, never> | null;
+            /**
+             * Steps
+             * @description Information about all the steps of the workflow.
+             */
+            steps: Record<string, never>;
+            /**
+             * Tags
+             * @description The tags associated with the workflow.
+             */
+            tags?: string[] | null;
+            /**
+             * UUID
+             * @description The UUID (Universally Unique Identifier) of the workflow.
+             */
+            uuid?: string | null;
+        };
+        /** WorkflowDictFormat2WrappedYamlSummary */
+        WorkflowDictFormat2WrappedYamlSummary: {
+            /**
+             * YAML Content
+             * @description The content of the workflow in YAML format.
+             */
+            yaml_content: Record<string, never>;
+        };
+        /** WorkflowDictPreviewSteps */
+        WorkflowDictPreviewSteps: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Content ID
+             * @description The content ID of the step.
+             */
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description An message indicating possible errors in the step.
+             */
+            errors?: string[] | string | Record<string, never> | null;
+            /**
+             * Inputs
+             * @description The inputs of the step.
+             */
+            inputs: Record<string, never>[];
+            /**
+             * Label
+             * @description The label of the step.
+             */
+            label: string;
+            /**
+             * Order Index
+             * @description The order index of the step.
+             */
+            order_index: number;
+            /**
+             * Outputs
+             * @description The outputs of the step.
+             */
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description Layout position of this step in the graph
+             */
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
+            /**
+             * Post Job Actions
+             * @description Set of actions that will be run when the job finishes.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with the step.
+             */
+            tool_version?: string | null;
+            /**
+             * Type
+             * @description The type of the module that represents a step in the workflow.
+             */
+            type: string;
+            /**
+             * When
+             * @description The when expression for the step.
+             */
+            when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description Workflow outputs associated with this step.
+             */
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
+        };
+        /** WorkflowDictPreviewSummary */
+        WorkflowDictPreviewSummary: {
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Steps
+             * @description Information about all the steps of the workflow.
+             */
+            steps: components["schemas"]["WorkflowDictPreviewSteps"][];
+            /**
+             * Version
+             * @description The version of the workflow represented by an incremental number.
+             */
+            version: number;
+        };
+        /** WorkflowDictRunSteps */
+        WorkflowDictRunSteps: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation?: string | null;
+            /**
+             * Content ID
+             * @description The content ID of the step.
+             */
+            content_id?: string | null;
+            /**
+             * Errors
+             * @description An message indicating possible errors in the step.
+             */
+            errors?: string[] | string | Record<string, never> | null;
+            /**
+             * Inputs
+             * @description The inputs of the step.
+             */
+            inputs: Record<string, never>[];
+            /**
+             * Messages
+             * @description Upgrade messages for the step.
+             */
+            messages?: string[] | null;
+            /**
+             * Output Connections
+             * @description The output connections of the step.
+             */
+            output_connections: Record<string, never>[];
+            /**
+             * Outputs
+             * @description The outputs of the step.
+             */
+            outputs?: Record<string, never>[] | null;
+            /**
+             * Position
+             * @description Layout position of this step in the graph
+             */
+            position?: components["schemas"]["WorkflowStepLayoutPosition"] | null;
+            /**
+             * Post Job Actions
+             * @description Set of actions that will be run when the job finishes.
+             */
+            post_job_actions?: Record<string, never> | Record<string, never>[] | null;
+            /**
+             * Replacement Parameters
+             * @description Informal replacement parameters for the step.
+             */
+            replacement_parameters?: (string | Record<string, never>)[] | null;
+            /**
+             * Step Index
+             * @description The order index of the step.
+             */
+            step_index: number;
+            /**
+             * Step Label
+             * @description The label of the step.
+             */
+            step_label?: string | null;
+            /**
+             * Step Name
+             * @description The descriptive name of the module or step.
+             */
+            step_name: string;
+            /**
+             * Step Type
+             * @description The type of the step.
+             */
+            step_type: string;
+            /**
+             * Step Version
+             * @description The version of the step's module.
+             */
+            step_version?: string | null;
+            /**
+             * Tool ID
+             * @description The unique name of the tool associated with this step.
+             */
+            tool_id?: string | null;
+            /**
+             * Tool State
+             * @description The state of the tool associated with the step
+             */
+            tool_state?: Record<string, never> | string | null;
+            /**
+             * Tool Version
+             * @description The version of the tool associated with the step.
+             */
+            tool_version?: string | null;
+            /**
+             * When
+             * @description The when expression for the step.
+             */
+            when?: string | null;
+            /**
+             * Workflow Outputs
+             * @description Workflow outputs associated with this step.
+             */
+            workflow_outputs?: components["schemas"]["WorkflowOutput"][] | null;
+        };
+        /** WorkflowDictRunSummary */
+        WorkflowDictRunSummary: {
+            /**
+             * Has Upgrade Messages
+             * @description Whether the workflow has upgrade messages.
+             */
+            has_upgrade_messages?: boolean | null;
+            /**
+             * History ID
+             * @description TODO
+             */
+            history_id?: string | null;
+            /**
+             * ID
+             * @description TODO
+             */
+            id?: string | null;
+            /**
+             * Name
+             * @description The name of the workflow.
+             */
+            name: string;
+            /**
+             * Step Version Changes
+             * @description Version changes for the workflow steps.
+             */
+            step_version_changes?: (string | Record<string, never>)[] | null;
+            /**
+             * Steps
+             * @description Information about all the steps of the workflow.
+             */
+            steps: components["schemas"]["WorkflowDictRunSteps"][];
+            /**
+             * Version
+             * @description The version of the workflow represented by an incremental number.
+             */
+            version: number;
+            /**
+             * Workflow Resource Parameters
+             * @description The resource parameters of the workflow.
+             */
+            workflow_resource_parameters?: Record<string, never> | null;
+        };
         /** WorkflowInput */
         WorkflowInput: {
             /**
@@ -12810,6 +13526,70 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
+        };
+        /** WorkflowOutput */
+        WorkflowOutput: {
+            /**
+             * Label
+             * @description Label of the output.
+             */
+            label?: string | null;
+            /**
+             * Output Name
+             * @description The name assigned to the output.
+             */
+            output_name: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the output.
+             */
+            uuid?: string | null;
+        };
+        /**
+         * WorkflowStepLayoutPosition
+         * @description Position and dimensions of the workflow step represented by a box on the graph.
+         */
+        WorkflowStepLayoutPosition: {
+            /**
+             * Bottom
+             * @description Position of the bottom of the box.
+             */
+            bottom?: number | number | null;
+            /**
+             * Height
+             * @description Height of the box.
+             */
+            height?: number | number | null;
+            /**
+             * Left
+             * @description Left margin or left-most position of the box.
+             */
+            left: number | number;
+            /**
+             * Right
+             * @description Right margin or right-most position of the box.
+             */
+            right?: number | number | null;
+            /**
+             * Top
+             * @description Position of the top of the box.
+             */
+            top: number | number;
+            /**
+             * Width
+             * @description Width of the box.
+             */
+            width?: number | number | null;
+            /**
+             * X
+             * @description Horizontal coordinate of the top right corner of the box.
+             */
+            x?: number | number | null;
+            /**
+             * Y
+             * @description Vertical coordinate of the top right corner of the box.
+             */
+            y?: number | number | null;
         };
         /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
@@ -23311,6 +24091,51 @@ export interface operations {
             };
         };
     };
+    workflow_dict_api_workflows_download__workflow_id__get: {
+        /** Returns a selected workflow. */
+        parameters: {
+            /** @description The history id to import a workflow from. */
+            /** @description The default is 'export', which is the meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are more tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download. */
+            /** @description The format to download the workflow in. */
+            /** @description The version of the workflow to fetch. */
+            query?: {
+                history_id?: string | null;
+                style?: string | null;
+                format?: string | null;
+                version?: number | null;
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_workflow_menu_api_workflows_menu_get: {
         /** Get workflows present in the tools panel. */
         parameters?: {
@@ -23334,6 +24159,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_workflow_menu_api_workflows_menu_put: {
+        /** Save workflow menu to be shown in the tool panel */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetWorkflowMenuPayload"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["SetWorkflowMenuSummary"];
                 };
             };
             /** @description Validation Error */
@@ -23394,7 +24247,14 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json":
+                        | components["schemas"]["WorkflowDictEditorSummary"]
+                        | components["schemas"]["StoredWorkflowDetailed"]
+                        | components["schemas"]["WorkflowDictRunSummary"]
+                        | components["schemas"]["WorkflowDictPreviewSummary"]
+                        | components["schemas"]["WorkflowDictFormat2Summary"]
+                        | components["schemas"]["WorkflowDictExportSummary"]
+                        | components["schemas"]["WorkflowDictFormat2WrappedYamlSummary"];
                 };
             };
             /** @description Validation Error */
@@ -23456,6 +24316,44 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workflow_dict_api_workflows__workflow_id__download_get: {
+        /** Returns a selected workflow. */
+        parameters: {
+            /** @description The history id to import a workflow from. */
+            /** @description The default is 'export', which is the meant to be used with workflow import endpoints. Other formats such as 'instance', 'editor', 'run' are more tied to the GUI and should not be considered stable APIs. The default format for 'export' is specified by the admin with the `default_workflow_export_format` config option. Style can be specified as either 'ga' or 'format2' directly to be explicit about which format to download. */
+            /** @description The format to download the workflow in. */
+            /** @description The version of the workflow to fetch. */
+            query?: {
+                history_id?: string | null;
+                style?: string | null;
+                format?: string | null;
+                version?: number | null;
+                instance?: boolean | null;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
