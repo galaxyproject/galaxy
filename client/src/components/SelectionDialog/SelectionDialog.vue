@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BModal, BSpinner, BTable } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BModal, BPagination, BSpinner, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
@@ -203,7 +203,7 @@ watch(
                     </BButton>
                     <slot v-if="!errorMessage" name="buttons" />
                 </div>
-                <b-pagination
+                <BPagination
                     v-if="nItems > perPage"
                     v-model="currentPage"
                     class="justify-content-md-center m-0"
