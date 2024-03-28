@@ -438,10 +438,7 @@ function unexpandedClick(event: Event) {
         </span>
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <BCollapse :visible="expandDataset" class="px-2 pb-2">
-            <div v-if="item.accessible === false">
-                You are not allowed to access this dataset
-                {{ item.id }}
-            </div>
+            <div v-if="item.accessible === false">You are not allowed to access this dataset</div>
             <DatasetDetails
                 v-else-if="expandDataset && item.id"
                 :id="item.id"
