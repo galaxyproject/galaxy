@@ -20,6 +20,7 @@ This documentation is in the midst of being ported and unified based on resource
    job_metrics
    authentication
    tool_panel
+   data_tables
    mq
    dependency_resolvers
    container_resolvers
