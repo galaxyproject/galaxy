@@ -32,7 +32,7 @@ def time_ago(x):
         return x.strftime("%b %d, %Y")
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
-        kwargs = dict()
+        kwargs = {}
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
         return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676

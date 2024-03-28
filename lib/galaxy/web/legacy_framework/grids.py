@@ -848,7 +848,7 @@ class Grid:
             # Only include sort/filter arguments if not linking to another
             # page. This is a bit of a hack.
             if "action" in kwargs:
-                new_kwargs = dict()
+                new_kwargs = {}
             else:
                 new_kwargs = dict(extra_url_args)
             # Extend new_kwargs with first argument if found

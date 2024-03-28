@@ -2,6 +2,7 @@
 import axios from "axios";
 import { computed, ref } from "vue";
 
+import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -48,7 +49,26 @@ const emit = defineEmits<{
     (e: "updated", id: string | null): void;
 }>();
 
-async function handleSubmit(preferredObjectStoreId: string | null) {
+async function handleSubmit(preferredObjectStoreId: string | null, isPrivate: boolean) {
+    if (isPrivate) {
+        const { data } = await getPermissions(props.history.id);
+        const permissionResponse = data as PermissionsResponse;
+        const historyPrivate = await isHistoryPrivate(permissionResponse);
+        if (!historyPrivate) {
+            if (
+                confirm(
+                    "Your history is set to create sharable datasets, but the target storage location is private. Change the history configuration so new datasets are private by default?"
+                )
+            ) {
+                try {
+                    await makePrivate(props.history.id, permissionResponse);
+                } catch {
+                    error.value = "Failed to update default permissions for history.";
+                }
+            }
+        }
+    }
+
     const payload = { preferred_object_store_id: preferredObjectStoreId };
     const url = prependPath(`api/histories/${props.history.id}`);
     try {

@@ -539,8 +539,12 @@ class BaseAppConfiguration(HasDynamicProperties):
                 if self._path_exists(new_path):  # That's a bingo!
                     resolves_to = self.schema.paths_to_resolve.get(key)
                     log.warning(
-                        "Paths for the '{0}' option should be relative to '{1}'. To suppress this warning, "
-                        "move '{0}' into '{1}', or set it's value to an absolute path.".format(key, resolves_to)
+                        "Paths for the '%s' option should be relative to '%s'. To suppress this warning, "
+                        "move '%s' into '%s', or set its value to an absolute path.",
+                        key,
+                        resolves_to,
+                        key,
+                        resolves_to,
                     )
                     return new_path
             return current_path

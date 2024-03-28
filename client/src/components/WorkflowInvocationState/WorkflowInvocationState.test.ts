@@ -5,7 +5,6 @@ import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import type { WorkflowInvocation } from "@/api/invocations";
-import JOB_STATES_MODEL from "@/utils/job-states-model";
 
 import invocationData from "../Workflow/test/json/invocation.json";
 
@@ -34,7 +33,7 @@ async function mountWorkflowInvocationState(invocation: WorkflowInvocation | nul
         },
         computed: {
             invocation: () => invocation,
-            jobStatesSummary: () => new JOB_STATES_MODEL.JobStatesSummary(invocationJobsSummaryById),
+            jobStatesSummary: () => invocationJobsSummaryById,
         },
         pinia,
         localVue,
@@ -45,7 +44,7 @@ async function mountWorkflowInvocationState(invocation: WorkflowInvocation | nul
 
 describe("WorkflowInvocationState.vue", () => {
     it("determines that invocation and job states are terminal with terminal invocation", async () => {
-        const wrapper = await mountWorkflowInvocationState(invocationData);
+        const wrapper = await mountWorkflowInvocationState(invocationData as WorkflowInvocation);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(true);
     });
 
@@ -58,7 +57,7 @@ describe("WorkflowInvocationState.vue", () => {
         const invocation = {
             ...invocationData,
             state: "new",
-        };
+        } as WorkflowInvocation;
         const wrapper = await mountWorkflowInvocationState(invocation);
         expect(isInvocationAndJobTerminal(wrapper)).toBe(false);
     });

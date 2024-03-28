@@ -32,6 +32,8 @@ type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data, headers } = await historiesFetcher({
+        view: "summary",
+        keys: "create_time",
         limit,
         offset,
         search,
@@ -241,7 +243,7 @@ const fields: FieldArray = [
         ],
     },
     {
-        key: "hid_counter",
+        key: "count",
         title: "Items",
         type: "text",
     },
@@ -291,28 +293,28 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         menuItem: true,
     },
     published: {
-        placeholder: "Filter on published entries",
+        placeholder: "Published",
         type: Boolean,
         boolType: "is",
         handler: equals("published", "published", toBool),
         menuItem: true,
     },
     importable: {
-        placeholder: "Filter on importable entries",
+        placeholder: "Importable",
         type: Boolean,
         boolType: "is",
         handler: equals("importable", "importable", toBool),
         menuItem: true,
     },
     deleted: {
-        placeholder: "Filter on deleted entries",
+        placeholder: "Deleted",
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),
         menuItem: true,
     },
     purged: {
-        placeholder: "Filter on purged entries",
+        placeholder: "Purged entries",
         type: Boolean,
         boolType: "is",
         handler: equals("purged", "purged", toBool),

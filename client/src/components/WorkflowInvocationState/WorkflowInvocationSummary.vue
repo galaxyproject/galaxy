@@ -1,3 +1,154 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+import { InvocationJobsSummary, InvocationStep, WorkflowInvocationElementView } from "@/api/invocations";
+import { getRootFromIndexLink } from "@/onload";
+
+import {
+    errorCount as jobStatesSummaryErrorCount,
+    jobCount as jobStatesSummaryJobCount,
+    numTerminal,
+    okCount as jobStatesSummaryOkCount,
+    runningCount as jobStatesSummaryRunningCount,
+} from "./util";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import ProgressBar from "@/components/ProgressBar.vue";
+import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
+
+function getUrl(path: string): string {
+    return getRootFromIndexLink() + path;
+}
+
+interface Props {
+    invocation?: WorkflowInvocationElementView;
+    invocationAndJobTerminal: boolean;
+    invocationSchedulingTerminal: boolean;
+    jobStatesSummary: InvocationJobsSummary;
+    index?: number;
+}
+
+const props = defineProps<Props>();
+
+const reportTooltip = "View report for this workflow invocation";
+const generatePdfTooltip = "Generate PDF report for this workflow invocation";
+
+const invocationId = computed<string | undefined>(() => props.invocation?.id);
+
+const indexStr = computed(() => {
+    if (props.index == undefined) {
+        return "";
+    } else {
+        return `${props.index + 1}`;
+    }
+});
+
+const invocationState = computed(() => {
+    return props.invocation?.state || "new";
+});
+
+const invocationStateSuccess = computed(() => {
+    return invocationState.value == "scheduled" && runningCount.value === 0 && props.invocationAndJobTerminal;
+});
+
+const disabledReportTooltip = computed(() => {
+    const state = invocationState.value;
+    const runCount = runningCount.value;
+    if (state != "scheduled") {
+        return `This workflow is not currently scheduled. The current state is ${state}. Once the workflow is fully scheduled and jobs have complete this option will become available.`;
+    } else if (runCount != 0) {
+        return `The workflow invocation still contains ${runCount} running job(s). Once these jobs have completed this option will become available.`;
+    } else {
+        return "Steps for this workflow are still running. A report will be available once complete.";
+    }
+});
+
+const stepCount = computed<number>(() => {
+    return props.invocation?.steps.length || 0;
+});
+
+type StepStateType = { [state: string]: number };
+
+const stepStates = computed<StepStateType>(() => {
+    const stepStates: StepStateType = {};
+    if (!props.invocation) {
+        return {};
+    }
+    const steps: InvocationStep[] = props.invocation?.steps || [];
+    for (const step of steps) {
+        if (!step) {
+            continue;
+        }
+        // the API defined state here allowing null and undefined is odd...
+        const stepState: string = step.state || "unknown";
+        if (!stepStates[stepState]) {
+            stepStates[stepState] = 1;
+        } else {
+            stepStates[stepState] += 1;
+        }
+    }
+    return stepStates;
+});
+
+const invocationLink = computed<string | null>(() => {
+    const id = invocationId.value;
+    if (id) {
+        return getUrl(`workflows/invocations/report?id=${id}`);
+    } else {
+        return null;
+    }
+});
+
+const invocationPdfLink = computed<string | null>(() => {
+    const id = invocationId.value;
+    if (id) {
+        return getUrl(`api/invocations/${id}/report.pdf`);
+    } else {
+        return null;
+    }
+});
+
+const stepStatesStr = computed<string>(() => {
+    return `${stepStates.value?.scheduled || 0} of ${stepCount.value} steps successfully scheduled.`;
+});
+
+const okCount = computed<number>(() => {
+    return jobStatesSummaryOkCount(props.jobStatesSummary);
+});
+
+const runningCount = computed<number>(() => {
+    return jobStatesSummaryRunningCount(props.jobStatesSummary);
+});
+
+const jobCount = computed<number>(() => {
+    return jobStatesSummaryJobCount(props.jobStatesSummary);
+});
+
+const errorCount = computed<number>(() => {
+    return jobStatesSummaryErrorCount(props.jobStatesSummary);
+});
+
+const newCount = computed<number>(() => {
+    return jobCount.value - okCount.value - runningCount.value - errorCount.value;
+});
+
+const jobStatesStr = computed(() => {
+    let jobStr = `${numTerminal(props.jobStatesSummary) || 0} of ${jobCount.value} jobs complete`;
+    if (!props.invocationSchedulingTerminal) {
+        jobStr += " (total number of jobs will change until all steps fully scheduled)";
+    }
+    return `${jobStr}.`;
+});
+
+const emit = defineEmits<{
+    (e: "invocation-cancelled"): void;
+}>();
+
+function onCancel() {
+    emit("invocation-cancelled");
+}
+</script>
+
 <template>
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
@@ -71,129 +222,3 @@
             class="jobs-progress" />
     </div>
 </template>
-<script>
-import mixin from "components/JobStates/mixin";
-import LoadingSpan from "components/LoadingSpan";
-import ProgressBar from "components/ProgressBar";
-import { getRootFromIndexLink } from "onload";
-
-import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
-
-const getUrl = (path) => getRootFromIndexLink() + path;
-
-export default {
-    components: {
-        InvocationMessage,
-        ProgressBar,
-        LoadingSpan,
-    },
-    mixins: [mixin],
-    props: {
-        invocation: {
-            type: Object,
-            required: true,
-        },
-        invocationAndJobTerminal: {
-            type: Boolean,
-            required: true,
-        },
-        invocationSchedulingTerminal: {
-            type: Boolean,
-            required: true,
-        },
-        jobStatesSummary: {
-            type: Object,
-            required: false,
-            default: null,
-        },
-        index: {
-            type: Number,
-            required: false,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            stepStatesInterval: null,
-            jobStatesInterval: null,
-            reportTooltip: "View report for this workflow invocation",
-            generatePdfTooltip: "Generate PDF report for this workflow invocation",
-        };
-    },
-    computed: {
-        invocationId() {
-            return this.invocation?.id;
-        },
-        indexStr() {
-            if (this.index == null) {
-                return "";
-            } else {
-                return `${this.index + 1}`;
-            }
-        },
-        invocationState: function () {
-            return this.invocation?.state || "new";
-        },
-        invocationStateSuccess: function () {
-            return this.invocationState == "scheduled" && this.runningCount === 0 && this.invocationAndJobTerminal;
-        },
-        disabledReportTooltip: function () {
-            const state = this.invocationState;
-            const runCount = this.runningCount;
-            if (this.invocationState != "scheduled") {
-                return (
-                    "This workflow is not currently scheduled. The current state is ",
-                    state,
-                    ". Once the workflow is fully scheduled and jobs have complete this option will become available."
-                );
-            } else if (runCount != 0) {
-                return (
-                    "The workflow invocation still contains ",
-                    runCount,
-                    " running job(s). Once these jobs have completed this option will become available. "
-                );
-            } else {
-                return "Steps for this workflow are still running. A report will be available once complete.";
-            }
-        },
-        stepCount: function () {
-            return this.invocation?.steps.length;
-        },
-        stepStates: function () {
-            const stepStates = {};
-            if (!this.invocation) {
-                return {};
-            }
-            for (const step of this.invocation.steps) {
-                if (!stepStates[step.state]) {
-                    stepStates[step.state] = 1;
-                } else {
-                    stepStates[step.state] += 1;
-                }
-            }
-            return stepStates;
-        },
-        invocationLink: function () {
-            return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
-        },
-        invocationPdfLink: function () {
-            return getUrl(`api/invocations/${this.invocationId}/report.pdf`);
-        },
-        stepStatesStr: function () {
-            return `${this.stepStates.scheduled || 0} of ${this.stepCount} steps successfully scheduled.`;
-        },
-        jobStatesStr: function () {
-            let jobStr = `${this.jobStatesSummary?.numTerminal() || 0} of ${this.jobCount} jobs complete`;
-            if (!this.invocationSchedulingTerminal) {
-                jobStr += " (total number of jobs will change until all steps fully scheduled)";
-            }
-            return `${jobStr}.`;
-        },
-    },
-    methods: {
-        onCancel() {
-            this.$emit("invocation-cancelled");
-        },
-    },
-};
-</script>

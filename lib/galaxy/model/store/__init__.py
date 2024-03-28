@@ -34,6 +34,10 @@ from typing import (
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+)
 from rocrate.model.computationalworkflow import (
     ComputationalWorkflow,
     WorkflowDescription,
@@ -96,7 +100,10 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
-from galaxy.schema.schema import ModelStoreFormat
+from galaxy.schema.schema import (
+    DatasetStateField,
+    ModelStoreFormat,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -175,6 +182,20 @@ class ImportDiscardedDataType(Enum):
     ALLOW = "allow"
     # Import all datasets as discarded regardless of whether file data is available in the store.
     FORCE = "force"
+
+
+class DatasetAttributeImportModel(BaseModel):
+    state: Optional[DatasetStateField] = None
+    deleted: Optional[bool] = None
+    purged: Optional[bool] = None
+    external_filename: Optional[str] = None
+    _extra_files_path: Optional[str] = None
+    file_size: Optional[int] = None
+    object_store_id: Optional[str] = None
+    total_size: Optional[int] = None
+    created_from_basename: Optional[str] = None
+    uuid: Optional[str] = None
+    model_config = ConfigDict(extra="ignore")
 
 
 DEFAULT_DISCARDED_DATA_TYPE = ImportDiscardedDataType.FORBID
@@ -447,22 +468,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         def handle_dataset_object_edit(dataset_instance, dataset_attrs):
             if "dataset" in dataset_attrs:
                 assert self.import_options.allow_dataset_object_edit
-                dataset_attributes = [
-                    "state",
-                    "deleted",
-                    "purged",
-                    "external_filename",
-                    "_extra_files_path",
-                    "file_size",
-                    "object_store_id",
-                    "total_size",
-                    "created_from_basename",
-                    "uuid",
-                ]
-
-                for attribute in dataset_attributes:
-                    if attribute in dataset_attrs["dataset"]:
-                        setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
+                dataset_attributes = DatasetAttributeImportModel(**dataset_attrs["dataset"]).model_dump(
+                    exclude_unset=True,
+                )
+                for attribute, value in dataset_attributes.items():
+                    setattr(dataset_instance.dataset, attribute, value)
                 self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
@@ -471,12 +481,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if (
                             dataset_association is not dataset_instance
                             and dataset_association.extension == dataset_instance.extension
+                            or dataset_association.extension == "auto"
                         ):
-                            dataset_association.metadata = dataset_instance.metadata
-                            dataset_association.blurb = dataset_instance.blurb
-                            dataset_association.peek = dataset_instance.peek
-                            dataset_association.info = dataset_instance.info
-                            dataset_association.tool_version = dataset_instance.tool_version
+                            copy_dataset_instance_metadata_attributes(
+                                source=dataset_instance, target=dataset_association
+                            )
                 if job:
                     dataset_instance.dataset.job_id = job.id
 
@@ -2385,10 +2394,8 @@ class DirectoryModelExportStore(ModelExportStore):
                         f"Expected a HistoryDatasetAssociation or LibraryDatasetDatasetAssociation, but got a {type(hda)}: {hda}"
                     )
                 job_hda = hda
-                while getattr(
-                    job_hda, "copied_from_history_dataset_association", None
-                ):  # should this check library datasets as well?
-                    job_hda = job_hda.copied_from_history_dataset_association  # type: ignore[union-attr]
+                while job_hda.copied_from_history_dataset_association:  # should this check library datasets as well?
+                    job_hda = job_hda.copied_from_history_dataset_association
                 if not job_hda.creating_job_associations:
                     # No viable HDA found.
                     continue
@@ -3075,3 +3082,12 @@ def payload_to_source_uri(payload) -> str:
             dump(store_dict, f)
         source_uri = f"file://{import_json}"
     return source_uri
+
+
+def copy_dataset_instance_metadata_attributes(source: model.DatasetInstance, target: model.DatasetInstance) -> None:
+    target.metadata = source.metadata
+    target.blurb = source.blurb
+    target.peek = source.peek
+    target.info = source.info
+    target.tool_version = source.tool_version
+    target.extension = source.extension

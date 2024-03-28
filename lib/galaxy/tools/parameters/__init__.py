@@ -260,7 +260,7 @@ def params_to_strings(
     is then json encoded (this allowing complex nested parameters and
     such).
     """
-    rval = dict()
+    rval = {}
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app, use_security=use_security)
@@ -275,7 +275,7 @@ def params_from_strings(params: Dict[str, Union[Group, ToolParameter]], param_va
     allow each parameter to convert the basic types into the parameters
     preferred form).
     """
-    rval = dict()
+    rval = {}
     param_values = param_values or {}
     for key, value in param_values.items():
         param = params.get(key)
@@ -633,7 +633,7 @@ def _get_incoming_value(incoming, key, default):
     """
     if f"__{key}__is_composite" in incoming:
         composite_keys = incoming[f"__{key}__keys"].split()
-        value = dict()
+        value = {}
         for composite_key in composite_keys:
             value[composite_key] = incoming[f"{key}_{composite_key}"]
         return value

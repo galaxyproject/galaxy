@@ -248,9 +248,7 @@ class EmailErrorReporter(ErrorReporter):
             to += f", {email.strip()}"
         subject = f"Galaxy tool error report from {email}"
         try:
-            subject = "{} ({})".format(
-                subject, self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id
-            )
+            subject = f"{subject} ({self.app.toolbox.get_tool(self.job.tool_id, self.job.tool_version).old_id})"
         except Exception:
             pass
 

@@ -26,6 +26,7 @@ from galaxy.tool_util.linters import (
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import ElementTree
+from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
@@ -121,6 +122,28 @@ GENERAL_TEXT_SPACES = """
             bwa
         </xref>
     </xrefs>
+</tool>
+"""
+
+GENERAL_VALID_BIOTOOLS = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <xrefs>
+        <xref type="bio.tools">bwa</xref>
+        <xref type="bio.tools">johnscoolbowtie</xref>
+    </xrefs>
+</tool>
+"""
+
+GENERAL_VALID_EDAM = """
+<tool name="valid name" id="valid_id" version="1.0+galaxy1" profile="23.0">
+    <edam_topics>
+        <edam_topic>topic_2269</edam_topic>
+        <edam_topic>topic_000</edam_topic>
+    </edam_topics>
+    <edam_operations>
+        <edam_operation>operation_3434</edam_operation>
+        <edam_operation>operation_000</edam_operation>
+    </edam_operations>
 </tool>
 """
 
@@ -933,7 +956,7 @@ def get_xml_tool_source(xml_string: str) -> XmlToolSource:
 
 
 def run_lint_module(lint_ctx, lint_module, lint_target):
-    lint_tool_source_with_modules(lint_ctx, lint_target, list(set([lint_module, xsd])))
+    lint_tool_source_with_modules(lint_ctx, lint_target, list({lint_module, xsd}))
 
 
 def run_lint(lint_ctx, lint_func, lint_target):
@@ -1093,6 +1116,17 @@ def test_general_text_spaces(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+@skip_if_site_down("https://bio.tools/")
+def test_general_valid_biotools(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_BIOTOOLS)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "No entry johnscoolbowtie in bio.tools." in lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
 def test_general_text_spaces_comments(lint_ctx):
     tool_source = get_xml_tool_source(TOOL_WITH_COMMENTS)
     run_lint_module(lint_ctx, general, tool_source)
@@ -1100,6 +1134,19 @@ def test_general_text_spaces_comments(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+def test_general_valid_edam(lint_ctx):
+    tool_source = get_xml_tool_source(GENERAL_VALID_EDAM)
+    run_lint_module(lint_ctx, general, tool_source)
+    assert "No entry 'operation_000' in EDAM." in lint_ctx.warn_messages
+    assert "No entry 'topic_000' in EDAM." in lint_ctx.warn_messages
+    assert not lint_ctx.info_messages
+    assert len(lint_ctx.valid_messages) == 4
+    assert len(lint_ctx.warn_messages) == 2
+    # accept 2 xsd errors due to malformed topic/operation ID
+    # which should make sure that the id never becomes valid
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_help_multiple(lint_ctx):
@@ -2092,7 +2139,7 @@ def test_linting_cwl_tool(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 131
+    assert len(linter_names) == 132
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

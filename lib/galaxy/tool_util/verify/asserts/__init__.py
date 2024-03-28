@@ -11,7 +11,7 @@ from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size"]
+assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size", "image"]
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python

@@ -30,13 +30,12 @@
     </b-alert>
 </template>
 <script>
-import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
-import JOB_STATES_MODEL from "utils/job-states-model";
 
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import { cancelWorkflowScheduling } from "./services";
+import { isTerminal, jobCount } from "./util";
 
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
@@ -49,7 +48,6 @@ export default {
         WorkflowInvocationDetails,
         WorkflowInvocationExportOptions,
     },
-    mixins: [mixin],
     props: {
         invocationId: {
             type: String,
@@ -91,15 +89,15 @@ export default {
             );
         },
         jobStatesTerminal: function () {
-            if (this.invocationSchedulingTerminal && this.JobStatesSummary?.jobCount === 0) {
+            if (this.invocationSchedulingTerminal && jobCount(this.jobStatesSummary) === 0) {
                 // no jobs for this invocation (think subworkflow or just inputs)
                 return true;
             }
-            return this.jobStatesSummary && this.jobStatesSummary.terminal();
+            return this.jobStatesSummary && isTerminal(this.jobStatesSummary);
         },
         jobStatesSummary() {
             const jobsSummary = this.invocationStore.getInvocationJobsSummaryById(this.invocationId);
-            return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
+            return !jobsSummary ? null : jobsSummary;
         },
     },
     created: function () {

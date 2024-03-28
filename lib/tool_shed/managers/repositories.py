@@ -205,7 +205,7 @@ def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
 
 def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
     repository_found = []
-    all_metadata = dict()
+    all_metadata = {}
     for tool_id in tool_ids:
         repository = guid_to_repository(app, tool_id)
         owner = repository.user.username

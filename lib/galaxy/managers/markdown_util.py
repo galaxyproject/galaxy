@@ -849,42 +849,34 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
                     continue
 
                 if output_assoc.history_content_type == "dataset":
-                    section_markdown += """#### Output Dataset: {}
+                    section_markdown += f"""#### Output Dataset: {output_assoc.workflow_output.label}
 ```galaxy
-history_dataset_display(output="{}")
+history_dataset_display(output="{output_assoc.workflow_output.label}")
 ```
-""".format(
-                        output_assoc.workflow_output.label, output_assoc.workflow_output.label
-                    )
+"""
                 else:
-                    section_markdown += """#### Output Dataset Collection: {}
+                    section_markdown += f"""#### Output Dataset Collection: {output_assoc.workflow_output.label}
 ```galaxy
-history_dataset_collection_display(output="{}")
+history_dataset_collection_display(output="{output_assoc.workflow_output.label}")
 ```
-""".format(
-                        output_assoc.workflow_output.label, output_assoc.workflow_output.label
-                    )
+"""
         elif container == "invocation_inputs":
             for input_assoc in invocation.input_associations:
                 if not input_assoc.workflow_step.label:
                     continue
 
                 if input_assoc.history_content_type == "dataset":
-                    section_markdown += """#### Input Dataset: {}
+                    section_markdown += f"""#### Input Dataset: {input_assoc.workflow_step.label}
 ```galaxy
-history_dataset_display(input="{}")
+history_dataset_display(input="{input_assoc.workflow_step.label}")
 ```
-""".format(
-                        input_assoc.workflow_step.label, input_assoc.workflow_step.label
-                    )
+"""
                 else:
-                    section_markdown += """#### Input Dataset Collection: {}
+                    section_markdown += f"""#### Input Dataset Collection: {input_assoc.workflow_step.label}
 ```galaxy
-history_dataset_collection_display(input={})
+history_dataset_collection_display(input={input_assoc.workflow_step.label})
 ```
-""".format(
-                        input_assoc.workflow_step.label, input_assoc.workflow_step.label
-                    )
+"""
         else:
             return line, False
         return section_markdown, True

@@ -1,4 +1,4 @@
-import { datasetsFetcher, purgeHistoryDataset, undeleteHistoryDataset } from "@/api/datasets";
+import { datasetsFetcher, purgeDataset, undeleteHistoryDataset } from "@/api/datasets";
 import { archivedHistoriesFetcher, deleteHistory, historiesFetcher, undeleteHistory } from "@/api/histories";
 
 export interface ItemSizeSummary {
@@ -45,6 +45,17 @@ export async function fetchHistoryContentsSizeSummary(historyId: string, limit =
     return response.data as unknown as ItemSizeSummary[];
 }
 
+export async function fetchObjectStoreContentsSizeSummary(objectStoreId: string, limit = 5000) {
+    const response = await datasetsFetcher({
+        keys: itemSizeSummaryFields,
+        limit,
+        order: "size-dsc",
+        q: ["purged", "history_content_type", "object_store_id"],
+        qv: ["false", "dataset", objectStoreId],
+    });
+    return response.data as unknown as ItemSizeSummary[];
+}
+
 export async function undeleteHistoryById(historyId: string): Promise<ItemSizeSummary> {
     const response = await undeleteHistory({ history_id: historyId });
     return response.data as unknown as ItemSizeSummary;
@@ -55,12 +66,12 @@ export async function purgeHistoryById(historyId: string): Promise<PurgeableItem
     return response.data as unknown as PurgeableItemSizeSummary;
 }
 
-export async function undeleteDatasetById(historyId: string, datasetId: string): Promise<ItemSizeSummary> {
-    const data = await undeleteHistoryDataset(historyId, datasetId);
+export async function undeleteDatasetById(datasetId: string): Promise<ItemSizeSummary> {
+    const data = await undeleteHistoryDataset(datasetId);
     return data as unknown as ItemSizeSummary;
 }
 
-export async function purgeDatasetById(historyId: string, datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const data = await purgeHistoryDataset(historyId, datasetId);
+export async function purgeDatasetById(datasetId: string): Promise<PurgeableItemSizeSummary> {
+    const data = await purgeDataset(datasetId);
     return data as unknown as PurgeableItemSizeSummary;
 }

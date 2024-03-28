@@ -3,8 +3,8 @@ import CopyToClipboard from "components/CopyToClipboard";
 import HelpText from "components/Help/HelpText";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
+import { NON_TERMINAL_STATES } from "components/WorkflowInvocationState/util";
 import { formatDuration, intervalToDuration } from "date-fns";
-import JOB_STATES_MODEL from "utils/job-states-model";
 import { computed, ref } from "vue";
 
 import { invocationForJob } from "@/api/invocations";
@@ -30,7 +30,7 @@ const runTime = computed(() =>
     formatDuration(intervalToDuration({ start: new Date(job.value.create_time), end: new Date(job.value.update_time) }))
 );
 
-const jobIsTerminal = computed(() => job.value && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(job.value.state));
+const jobIsTerminal = computed(() => job.value && !NON_TERMINAL_STATES.includes(job.value.state));
 
 const routeToInvocation = computed(() => `/workflows/invocations/${invocationId.value}`);
 

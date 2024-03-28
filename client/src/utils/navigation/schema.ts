@@ -262,7 +262,6 @@ interface Rootpublished_histories extends Component {
     advanced_search_toggle: SelectorTemplate;
     advanced_search_name_input: SelectorTemplate;
     advanced_search_tag_input: SelectorTemplate;
-    advanced_search_submit: SelectorTemplate;
     tag_content: SelectorTemplate;
     column_header: SelectorTemplate;
 }

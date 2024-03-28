@@ -610,7 +610,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def update(
         self,
         trans,
-        history_id: DecodedDatabaseIdField,
+        history_id: Optional[DecodedDatabaseIdField],
         id: DecodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
@@ -627,6 +627,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
+        if history_id is None:
+            hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+            history_id = hda.history.id
+
         history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         if contents_type == HistoryContentType.dataset:
             return self.__update_dataset(trans, history, id, payload, serialization_params)
@@ -666,7 +670,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 hda_ids.append(item.id)
             else:
                 hdca_ids.append(item.id)
-        payload_dict = payload.dict(exclude_unset=True)
+        payload_dict = payload.model_dump(exclude_unset=True)
         hdas = self.__datasets_for_update(trans, history, hda_ids, payload_dict)
         rval = []
         for hda in hdas:
@@ -1365,7 +1369,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         contents: List["HistoryItem"] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
-        datasets_ids = map(lambda dataset: dataset.id, dataset_items)
+        datasets_ids = (dataset.id for dataset in dataset_items)
         contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
 
         collection_items = filter(

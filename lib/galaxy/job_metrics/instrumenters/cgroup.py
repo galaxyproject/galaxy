@@ -1,8 +1,6 @@
 """The module describes the ``cgroup`` job metrics plugin."""
 
-import decimal
 import logging
-import numbers
 from collections import namedtuple
 from typing import (
     Any,
@@ -123,8 +121,13 @@ class CgroupPluginFormatter(formatting.JobMetricFormatter):
                 return formatting.FormattedMetric(title, nice_size(value))
             except ValueError:
                 pass
-        elif isinstance(value, (decimal.Decimal, numbers.Integral, numbers.Real)) and value == int(value):
-            value = int(value)
+        else:
+            try:
+                int_value = int(value)
+                if value == int_value:
+                    value = int_value
+            except TypeError:
+                pass
         return formatting.FormattedMetric(title, str(value))
 
 

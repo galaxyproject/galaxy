@@ -63,7 +63,6 @@ import { patchRouterPush } from "./router-push";
 
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import GridVisualization from "@/components/Grid/GridVisualization.vue";
-import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
@@ -124,7 +123,11 @@ export function getRouter(Galaxy) {
                 }),
             },
             /** Workflow editor */
-            { path: "/workflows/edit", component: WorkflowEditorModule },
+            {
+                path: "/workflows/edit",
+                component: WorkflowEditorModule,
+                redirect: redirectAnon(),
+            },
             /** Published resources routes */
             {
                 path: "/published/history",
@@ -281,13 +284,18 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/list_published",
                         component: GridHistory,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "histories/archived",
-                        component: HistoryArchive,
+                        component: GridHistory,
+                        props: {
+                            activeList: "archived",
+                        },
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "histories/list",
@@ -381,9 +389,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "pages/list_published",
                         component: GridPage,
-                        props: {
+                        props: (route) => ({
                             activeList: "published",
-                        },
+                            username: route.query["f-username"],
+                        }),
                     },
                     {
                         path: "storage/history/:historyId",
@@ -516,6 +525,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/import",
                         component: WorkflowImport,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/invocations",
@@ -559,6 +569,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/run",
                         component: Home,
+                        redirect: redirectAnon(),
                         props: (route) => ({
                             config: Galaxy.config,
                             query: { workflow_id: route.query.id },
