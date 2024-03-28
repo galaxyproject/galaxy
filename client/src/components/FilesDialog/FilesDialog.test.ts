@@ -6,6 +6,26 @@ import { mockFetcher } from "@/api/schema/__mocks__";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 
+/**
+ * The following imports mock a remote file resource directory structure,
+ * which is navigated throughout the test cases further below.
+ * The directory tree path is as follows:
+ *
+ * |-- directory1
+ * |   |-- directory1file1
+ * |   |-- directory1file2
+ * |   |-- directory1file3
+ * |   |-- subdirectory1
+ * |   |   `-- subsubdirectory
+ * |   |       `-- subsubfile
+ * |   `-- subdirectory2
+ * |       `-- subdirectory2file
+ * |-- directory2
+ * |   |-- directory2file1
+ * |   `-- directory2file2
+ * |-- file1
+ * |-- file2
+ */
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -71,7 +91,7 @@ function getMockedBrowseResponse(param: RemoteFilesParams) {
     return { data: result };
 }
 
-const initComponent = async (props: { multiple: boolean; mode?: string; }) => {
+const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     const localVue = getLocalVue();
 
     mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
@@ -85,22 +105,6 @@ const initComponent = async (props: { multiple: boolean; mode?: string; }) => {
     await flushPromises();
     return wrapper;
 };
-// PLEASE NOTE
-// during this test we assume this path tree:
-// |-- directory1
-// |   |-- directory1file1
-// |   |-- directory1file2
-// |   |-- directory1file3
-// |   |-- subdirectory1
-// |   |   `-- subsubdirectory
-// |   |       `-- subsubfile
-// |   `-- subdirectory2
-// |       `-- subdirectory2file
-// |-- directory2
-// |   |-- directory2file1
-// |   `-- directory2file2
-// |-- file1
-// |-- file2
 
 describe("FilesDialog, file mode", () => {
     let wrapper: Wrapper<any>;
@@ -295,17 +299,17 @@ class Utils {
     }
 
     async openDirectory(directory: RowElement) {
-        this.getTable().vm.$emit("onOpen", directory);
+        this.getSelectionDialog().vm.$emit("onOpen", directory);
         await flushPromises();
     }
 
     async clickOn(element: Element) {
-        this.getTable().vm.$emit("onClick", element);
+        this.getSelectionDialog().vm.$emit("onClick", element);
         await flushPromises();
     }
 
     async selectAll() {
-        this.getTable().vm.$emit("onSelectAll");
+        this.getSelectionDialog().vm.$emit("onSelectAll");
         await flushPromises();
     }
 
@@ -336,7 +340,7 @@ class Utils {
         await flushPromises();
     }
 
-    getTable(): any {
+    getSelectionDialog(): any {
         return this.wrapper.findComponent(SelectionDialog);
     }
 
@@ -355,7 +359,7 @@ class Utils {
     }
 
     getRenderedRows(): RowElement[] {
-        return this.getTable().props("items") as RowElement[];
+        return this.getSelectionDialog().props("items") as RowElement[];
     }
 
     expectAllRenderedItemsSelected() {
@@ -378,7 +382,7 @@ class Utils {
     }
 
     expectSelectAllIconStatusToBe(status: string) {
-        //expect(this.getTable().attributes("selectallicon")).toBe(status);
+        expect(this.getSelectionDialog().props("selectAllIcon")).toBe(status);
     }
 
     expectNoErrorMessage() {

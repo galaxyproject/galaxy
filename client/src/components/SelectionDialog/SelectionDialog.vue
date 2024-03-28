@@ -164,9 +164,7 @@ watch(
                                 </div>
                                 <div v-else @click.stop="emit('onOpen', data.item)">
                                     <FontAwesomeIcon :icon="faFolder" />
-                                    <BLink :title="`label-${data.item.url}`">{{
-                                        data.value ? data.value : "-"
-                                    }}</BLink>
+                                    <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
                                 </div>
                             </span>
                         </div>
@@ -213,7 +211,11 @@ watch(
                     :per-page="perPage"
                     :total-rows="nItems" />
                 <div>
-                    <BButton data-description="selection dialog cancel" size="sm" variant="secondary" @click="emit('onCancel')">
+                    <BButton
+                        data-description="selection dialog cancel"
+                        size="sm"
+                        variant="secondary"
+                        @click="emit('onCancel')">
                         <FontAwesomeIcon :icon="faTimes" />
                         Cancel
                     </BButton>
