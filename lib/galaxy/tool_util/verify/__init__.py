@@ -457,6 +457,13 @@ def files_contains(file1, file2, attributes=None):
             raise AssertionError(f"Failed to find '{contains}' in history data. (lines_diff={lines_diff}).")
 
 
+def _singleobject_intersection_over_union(
+    mask1: "numpy.typing.NDArray",
+    mask2: "numpy.typing.NDArray",
+) -> "numpy.floating":
+    return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
+
+
 def _multiobject_intersection_over_union(
     mask1: "numpy.typing.NDArray",
     mask2: "numpy.typing.NDArray",
@@ -470,14 +477,16 @@ def _multiobject_intersection_over_union(
         # If the label is in `pin_labels`, then use the same label value to find the corresponding object in the second mask.
         if pin_labels is not None and label1 in pin_labels:
             cc2 = mask2 == label1
-            iou_list.append(intersection_over_union(cc1, cc2))
+            iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
 
-        # Otherwise, use the object with the largest IoU value.
+        # Otherwise, use the object with the largest IoU value, excluding the pinned labels.
         else:
             cc1_iou_list = []
             for label2 in numpy.unique(mask2[cc1]):
+                if pin_labels is not None and label2 in pin_labels:
+                    continue
                 cc2 = mask2 == label2
-                cc1_iou_list.append(intersection_over_union(cc1, cc2))
+                cc1_iou_list.append(_singleobject_intersection_over_union(cc1, cc2))
             iou_list.append(max(cc1_iou_list))
 
     if repeat_reverse:
@@ -491,15 +500,14 @@ def intersection_over_union(
 ) -> "numpy.floating":
     """Compute the intersection over union (IoU) for the objects in two masks containing lables.
 
-    Generally, the IoU is computed for each uniquely labeled image region (object).
-    For each object each mask, the corresponding object in the other mask is determined as the one with the largest IoU value.
-    This yields a series of IoU values, one for each object in the two masks. The final IoU value is the overall lowest value obtained.
+    The IoU is computed for each uniquely labeled image region (object), and the overall minimum value is returned (i.e. the worst value).
+    To compute the IoU for each object, the corresponding object in the other mask needs to be determined.
+    The object correspondences are not necessarily symmetric.
 
-    Note that the argument `pin_labels` changes how the object correspondences are determined.
+    By default, the corresponding object in the other mask is determined as the one with the largest IoU value.
     If the label of an object is listed in `pin_labels`, then the corresponding object in the other mask is determined as the object with the same label value.
+    Objects with labels listed in `pin_labels` also cannot correspond to objects with different labels.
     This is particularly useful when specific image regions must always be labeled with a designated label value (e.g., the image background is often labeled with 0 or -1).
-
-    For masks with bool data type, the only possible labels `True` and `False` are always assumed to be pinned, and the arugment `pin_labels` is ignored.
     """
     assert mask1.dtype == mask2.dtype
     assert mask1.ndim == mask2.ndim == 2
@@ -508,10 +516,7 @@ def intersection_over_union(
         count = sum(label in mask for mask in (mask1, mask2))
         count_str = {1: "one", 2: "both"}
         assert count == 2, f"Label {label} is pinned but missing in {count_str[2 - count]} of the images."
-    if mask1.dtype == bool:
-        return numpy.logical_and(mask1, mask2).sum() / numpy.logical_or(mask1, mask2).sum()
-    else:
-        return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
+    return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
 
 
 def _parse_label_list(label_list_str: str) -> List[int]:

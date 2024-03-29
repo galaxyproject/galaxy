@@ -1827,7 +1827,7 @@ If you specify a `checksum`, it will be also used to check the integrity of the 
     </xs:attribute>
     <xs:attribute name="pin_labels" type="xs:string" use="optional">
       <xs:annotation>
-        <xs:documentation xml:lang="en">If ``comparpe`` is set to ``image_diff`` and ``metric`` is set to ``iou``, by default, object correspondances are established by maximizing the pairwise intersection over the union. If, however, the label of an object is listed in ``pin_labels``, then the corresponding object is determined according to the same label value.</xs:documentation>
+        <xs:documentation xml:lang="en">If ``comparpe`` is set to ``image_diff`` and ``metric`` is set to ``iou``, by default, object correspondances are established by maximizing the pairwise intersection over the union. If, however, the label of an object is listed in ``pin_labels``, then the corresponding object is determined according to the same label value (and that object cannot be the corresponding object of any other with a different label).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
