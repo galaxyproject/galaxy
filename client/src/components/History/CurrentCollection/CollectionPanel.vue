@@ -76,7 +76,7 @@ function updateDsc(collection: any, fields: Object | undefined) {
 }
 
 function getItemKey(item: DCESummary) {
-    return item.id;
+    return `${item.element_type}-${item.id}`;
 }
 
 function onScroll(newOffset: number) {
