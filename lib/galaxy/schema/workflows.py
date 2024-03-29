@@ -27,6 +27,7 @@ from galaxy.schema.schema import (
     PreferredObjectStoreIdField,
     StoredWorkflowSummary,
     SubworkflowStep,
+    TagCollection,
     ToolStep,
 )
 
@@ -199,6 +200,11 @@ class PostJobAction(Model):
         ...,
         title="Action Arguments",
         description="Any additional arguments needed by the action.",
+    )
+    short_str: Optional[str] = Field(
+        None,
+        title="Short String",
+        description="A short string representation of the action.",
     )
 
 
@@ -428,8 +434,7 @@ class WorkflowDictStepsBase(Model):
         title="When",
         description="The when expression for the step.",
     )
-    # TODO - could be modeled further see manager
-    post_job_actions: Optional[Union[Dict[str, Any], List[Dict[str, Any]]]] = Field(
+    post_job_actions: Optional[Union[PostJobAction, List[PostJobAction]]] = Field(
         None,
         title="Post Job Actions",
         description="Set of actions that will be run when the job finishes.",
@@ -611,16 +616,11 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         description="Universal unique identifier of the workflow.",
     )
     annotation: WorkflowAnnotationField = None
-    # TODO - can be modeled see manager line 1483 or below
-    tool_shed_repository: Optional[Dict[str, Any]] = Field(
+    tool_shed_repository: Optional[ToolShedRepositorySummary] = Field(
         None,
         title="Tool Shed Repository",
         description="Information about the tool shed repository associated with the tool.",
     )
-    # "name" (type: str): The name of the tool shed repository.
-    # "owner" (type: str): The owner of the tool shed repository.
-    # "changeset_revision" (type: str): The changeset revision of the tool shed repository.
-    # "tool_shed" (type: str): The tool shed URL.
     tool_representation: Optional[Dict[str, Any]] = Field(
         None,
         title="Tool Representation",
@@ -632,8 +632,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Sub Workflow",
         description="Full information about the subworkflow associated with this step.",
     )
-    # TODO - can be modeled see manager line 1516 -1532
-    inputs: Optional[List[Dict[str, Any]]] = Field(
+    inputs: Optional[List[Input]] = Field(
         None,
         title="Inputs",
         description="The inputs of the step.",
@@ -747,13 +746,14 @@ class WorkflowDictExportSummary(WorkflowDictBaseModel):
         description="Whether this workflow is a Galaxy Workflow.",
     )
     format_version: Optional[str] = Field(
+        # "0.1",
         None,
         alias="format-version",
         title="Format Version",
         description="The version of the workflow format being used.",
     )
     annotation: WorkflowAnnotationField
-    tags: Optional[List[str]] = Field(
+    tags: Optional[TagCollection] = Field(
         None,
         title="Tags",
         description="The tags associated with the workflow.",
@@ -814,7 +814,7 @@ class WorkflowDictFormat2Summary(Model):
         title="Release",
         description="The release information for the workflow.",
     )
-    tags: Optional[List[str]] = Field(
+    tags: Optional[TagCollection] = Field(
         None,
         title="Tags",
         description="The tags associated with the workflow.",
@@ -883,7 +883,7 @@ class WorkflowStepToExportBase(Model):
         title="Inputs",
         description="TODO",
     )
-    outputs: List[Output] = Field(
+    outputs: List[Output] = Field(                                  # TODO not yet used in models above
         ...,
         title="Outputs",
         description="TODO",
