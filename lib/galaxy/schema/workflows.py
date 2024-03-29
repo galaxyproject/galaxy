@@ -161,6 +161,47 @@ class WorkflowOutput(Model):
     )
 
 
+class ToolShedRepositorySummary(Model):
+    name: str = Field(
+        ...,
+        title="Name",
+        description="The name of the repository.",
+    )
+    owner: str = Field(
+        ...,
+        title="Owner",
+        description="The owner of the repository.",
+    )
+    changeset_revision: str = Field(
+        ...,
+        title="Changeset Revision",
+        description="TODO",
+    )
+    tool_shed: str = Field(
+        ...,
+        title="Tool Shed",
+        description="The Tool Shed base URL.",
+    )
+
+
+class PostJobAction(Model):
+    action_type: str = Field(
+        ...,
+        title="Action Type",
+        description="The type of action to run.",
+    )
+    output_name: str = Field(
+        ...,
+        title="Output Name",
+        description="The name of the output that will be affected by the action.",
+    )
+    action_arguments: Dict[str, Any] = Field(
+        ...,
+        title="Action Arguments",
+        description="Any additional arguments needed by the action.",
+    )
+
+
 class GetTargetHistoryPayload(Model):
     # TODO - Are the descriptions correct?
     history: Optional[str] = Field(
