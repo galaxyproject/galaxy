@@ -208,8 +208,10 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 self.model_class.deleted == (true() if show_deleted else false())
             )
 
-        # By default, only return non-archived histories
-        if not show_archived:
+        # By default, only return non-archived histories when we are showing the current user's histories
+        # if listing other users' histories, we don't filter out archived histories as they may be
+        # public or shared with the current user
+        if not show_archived and show_own:
             stmt = stmt.where(self.model_class.archived == false())
 
         stmt = stmt.distinct()
