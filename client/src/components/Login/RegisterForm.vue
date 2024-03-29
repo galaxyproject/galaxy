@@ -51,7 +51,7 @@ const labelPassword = ref(localize("Password"));
 const labelPublicName = ref(localize("Public name"));
 const labelEmailAddress = ref(localize("Email address"));
 const labelConfirmPassword = ref(localize("Confirm password"));
-const labelSubscribe = ref(localize("Subscribe to mailing list"));
+const labelSubscribe = ref(localize("Stay in the loop and join the galaxy-announce mailing list."));
 
 const custosPreferred = computed(() => {
     return props.enableOidc && props.preferCustosLogin;
@@ -180,6 +180,10 @@ async function submit() {
                                         type="checkbox">
                                         {{ labelSubscribe }}
                                     </BFormCheckbox>
+                                    <BFormText v-localize>
+                                        This list is used for important Galaxy updates and newsletter access. We keep it
+                                        streamlined, you should expect only 2-3 emails per month.
+                                    </BFormText>
                                 </BFormGroup>
 
                                 <BButton v-localize name="create" type="submit" :disabled="disableCreate">
