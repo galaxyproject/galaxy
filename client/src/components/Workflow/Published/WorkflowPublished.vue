@@ -187,7 +187,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                         </Heading>
 
                         <span v-if="props.showButtons">
-                            <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
+                            <b-button :href="downloadUrl" title="Download Workflow" variant="secondary" size="md">
                                 <FontAwesomeIcon icon="fa-download" />
                                 Download
                             </b-button>
