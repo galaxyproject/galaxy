@@ -344,7 +344,7 @@ function unexpandedClick(event: Event) {
         :data-state="dataState"
         tabindex="0"
         role="button"
-        draggable
+        :draggable="props.item.accessible === false ? false : true"
         @dragstart="onDragStart"
         @dragend="onDragEnd"
         @keydown="onKeyDown">
