@@ -3,7 +3,7 @@ import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, set as VueSet, unref, watch } from "vue";
 
-import type { HistorySummary } from "@/api";
+import type { HistorySummaryExtended } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import SelectedItems from "@/components/History/Content/SelectedItems";
@@ -47,7 +47,7 @@ interface BackendFilterError {
 
 interface Props {
     listOffset?: number;
-    history: HistorySummary;
+    history: HistorySummaryExtended;
     filter?: string;
     canEditHistory?: boolean;
     filterable?: boolean;
@@ -294,6 +294,7 @@ async function onDelete(item: HistoryItem, recursive = false) {
 
     try {
         await deleteContent(item, { recursive: recursive });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
@@ -315,6 +316,7 @@ async function onUndelete(item: HistoryItem) {
 
     try {
         await updateContentFields(item, { deleted: false });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
@@ -326,9 +328,14 @@ async function onUnhide(item: HistoryItem) {
 
     try {
         await updateContentFields(item, { visible: true });
+        updateContentStats();
     } finally {
         isLoading.value = false;
     }
+}
+
+function updateContentStats() {
+    historyStore.updateContentStats(props.history.id);
 }
 
 function reloadContents() {
@@ -542,6 +549,7 @@ function setItemDragstart(
                     <HistoryOperations
                         v-if="canEditHistory"
                         :history="history"
+                        :is-multi-view-item="isMultiViewItem"
                         :show-selection="showSelection"
                         :expanded-count="expandedCount"
                         :has-matches="hasMatches(historyItems)"
@@ -551,6 +559,7 @@ function setItemDragstart(
                         <template v-slot:selection-operations>
                             <HistorySelectionOperations
                                 :history="history"
+                                :is-multi-view-item="isMultiViewItem"
                                 :filter-text="filterText"
                                 :content-selection="selectedItems"
                                 :selection-size="selectionSize"
@@ -570,7 +579,7 @@ function setItemDragstart(
                         </template>
                     </HistoryOperations>
 
-                    <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
+                    <SelectionChangeWarning v-if="!isMultiViewItem" :query-selection-break="querySelectionBreak" />
 
                     <OperationErrorDialog
                         v-if="operationError"

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 
+import { useExtendedHistory } from "@/composables/detailedHistory";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import CollectionPanel from "@/components/History/CurrentCollection/CollectionPanel.vue";
@@ -21,17 +22,12 @@ const props = defineProps<Props>();
 const historyStore = useHistoryStore();
 const { currentHistoryId, pinnedHistories } = storeToRefs(historyStore);
 
-onMounted(() => {
-    historyStore.loadHistoryById(props.source.id);
-});
+const { history } = useExtendedHistory(props.source.id);
 
 const selectedCollections = ref<any[]>([]);
 
 const sameToCurrent = computed(() => {
     return currentHistoryId.value === props.source.id;
-});
-const getHistory = computed(() => {
-    return historyStore.getHistoryById(props.source.id);
 });
 
 function onViewCollection(collection: object) {
@@ -40,7 +36,7 @@ function onViewCollection(collection: object) {
 </script>
 
 <template>
-    <div v-if="!getHistory" class="container">
+    <div v-if="!history" class="container">
         <div class="row align-items-center h-100">
             <LoadingSpan class="mx-auto" message="Loading History" />
         </div>
@@ -49,14 +45,14 @@ function onViewCollection(collection: object) {
     <div v-else id="list-item" class="d-flex flex-column align-items-center w-100">
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0]?.history_id === source.id"
-            :history="getHistory"
+            :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
 
         <HistoryPanel
             v-else
-            :history="getHistory"
+            :history="history"
             :filter="filter"
             :show-controls="false"
             is-multi-view-item

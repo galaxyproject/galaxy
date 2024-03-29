@@ -7,18 +7,72 @@ import { components } from "@/api/schema";
  */
 export type HistorySummary = components["schemas"]["HistorySummary"];
 
-export interface HistorySummaryExtended extends HistorySummary {
+/**
+ * Contains minimal information about a History with additional content stats.
+ * This is a subset of information that can be relatively frequently updated after
+ * certain actions are performed on the history.
+ */
+export interface HistoryContentsStats {
+    id: string;
+    update_time: string;
     size: number;
     contents_active: components["schemas"]["HistoryActiveContentCounts"];
-    user_id: string;
 }
 
 /**
- * Contains additional details about a History.
+ * Contains summary information plus additional details about the contents and owner of a History.
+ * This is used by the client API to simplify the handling of History objects.
+ *
+ * Data returned by the API when requesting `?view=summary&keys=size,contents_active,user_id`.
  */
-export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
+export interface HistorySummaryExtended extends HistorySummary, HistoryContentsStats {
+    user_id: string;
+}
 
-export type AnyHistory = HistorySummary | HistorySummaryExtended | HistoryDetailed;
+type HistoryDetailedModel = components["schemas"]["HistoryDetailed"];
+
+/**
+ * Contains additional details about a History.
+ *
+ * Data returned by the API when requesting `?view=detailed`.
+ */
+export interface HistoryDetailed extends HistoryDetailedModel {
+    // TODO: these fields are not present in the backend schema model `HistoryDetailedModel` but are serialized by the API
+    // when requesting ?view=detailed. We should consider adding them to the backend schema.
+    email_hash?: string;
+    empty: boolean;
+    hid_counter: number;
+}
+
+type HistoryDetailedCommon = Omit<
+    HistoryDetailed,
+    "username" | "state" | "state_ids" | "state_details" | "email_hash" | "empty"
+>;
+
+/**
+ * Alternative representation of history details used by the client API.
+ * Shares most of the fields with HistoryDetailed but not all and adds some additional fields.
+ *
+ * Data returned by the API when requesting `?view=dev-detailed`.
+ */
+export interface HistoryDevDetailed extends HistoryDetailedCommon {
+    contents_active: components["schemas"]["HistoryActiveContentCounts"];
+}
+
+/**
+ * Contains all available information about a History.
+ */
+export type HistoryExtended = HistoryDevDetailed & HistoryDetailed;
+
+/**
+ * Represents any amount of information about a History with the minimal being a HistorySummary.
+ */
+export type AnyHistory =
+    | HistorySummary
+    | HistorySummaryExtended
+    | HistoryDetailed
+    | HistoryDevDetailed
+    | HistoryExtended;
 
 /**
  * Contains minimal information about a HistoryContentItem.
