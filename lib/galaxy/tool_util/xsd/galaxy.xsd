@@ -1825,6 +1825,11 @@ If you specify a `checksum`, it will be also used to check the integrity of the 
         <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the maximum allowed distance between the data set that is generated in the test and the file in ``test-data/`` that is referenced by the ``file`` attribute, with distances computed with respect to the specified ``metric``. Default value is 0.01.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="pin_labels" type="xs:string" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``comparpe`` is set to ``image_diff`` and ``metric`` is set to ``iou``, by default, object correspondances are established by maximizing the pairwise intersection over the union. If, however, the label of an object is listed in ``pin_labels``, then the corresponding object is determined according to the same label value.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:group name="TestOutputElement">
     <xs:choice>
@@ -7788,7 +7793,7 @@ favour of a ``has_size`` assertion.</xs:documentation>
   </xs:simpleType>
   <xs:simpleType name="TestOutputMetricType">
     <xs:annotation>
-      <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the metric used to compute the distance between images for quantification of their difference. For intensity images, possible metrics are *mean absolute error* (``mae``, the default), *mean squared error* (``mse``), *root mean squared* error (``rms``), and the *Frobenius norm* (``fro``). In addition, for binary images and label maps (with multiple objects), ``iou`` can be used to compute *one minus* the *intersection over the union* (IoU). Object correspondances are established by taking the pair of objects, for which the IoU is highest, and the distance of the images is the worst value determined for any pair of corresponding objects.</xs:documentation>
+      <xs:documentation xml:lang="en">If ``compare`` is set to ``image_diff``, this is the metric used to compute the distance between images for quantification of their difference. For intensity images, possible metrics are *mean absolute error* (``mae``, the default), *mean squared error* (``mse``), *root mean squared* error (``rms``), and the *Frobenius norm* (``fro``). In addition, for binary images and label maps (with multiple objects), ``iou`` can be used to compute *one minus* the *intersection over the union* (IoU). Object correspondances are established by taking the pair of objects, for which the IoU is highest (also see the ``pin_labels`` attribute), and the distance of the images is the worst value determined for any pair of corresponding objects.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="mae"/>
