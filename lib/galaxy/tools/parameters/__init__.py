@@ -29,6 +29,7 @@ from .grouping import (
     Section,
     UploadDataset,
 )
+from .wrapped import flat_to_nested_state
 
 REPLACE_ON_TRUTHY = object()
 
@@ -515,9 +516,13 @@ def populate_state(
 def _populate_state_legacy(
     request_context, inputs, incoming, state, errors, prefix="", context=None, check=True, simple_errors=True
 ):
+    nested_state = flat_to_nested_state(incoming)
     context = ExpressionContext(state, context)
     for input in inputs.values():
-        state[input.name] = input.get_initial_value(request_context, context)
+        if input.name not in nested_state:
+            state[input.name] = input.get_initial_value(request_context, context)
+        else:
+            state[input.name] = nested_state[input.name]
         key = prefix + input.name
         group_state = state[input.name]
         group_prefix = f"{key}|"
@@ -600,8 +605,8 @@ def _populate_state_legacy(
                 for upload_item in input.inputs.values():
                     new_state[upload_item.name] = upload_item.get_initial_value(request_context, context)
                 group_state.append(new_state)
-            for rep_state in group_state:
-                rep_index = rep_state["__index__"]
+            for rep_index, rep_state in enumerate(group_state):
+                rep_index = rep_state.get("__index__", rep_index)
                 rep_prefix = "%s_%d|" % (key, rep_index)
                 _populate_state_legacy(
                     request_context,
