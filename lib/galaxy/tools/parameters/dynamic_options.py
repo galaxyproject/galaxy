@@ -737,16 +737,20 @@ class DynamicOptions:
                 if not hasattr(dataset, "get_file_name"):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-                path = dataset.get_file_name()
-                if os.path.getsize(path) < 1048576:
-                    with open(path) as fh:
-                        options += self.parse_file_fields(fh)
-                else:
-                    # Pass just the first megabyte to parse_file_fields.
-                    log.warning("Attempting to load options from large file, reading just first megabyte")
-                    with open(path) as fh:
-                        contents = fh.read(1048576)
-                    options += self.parse_file_fields(StringIO(contents))
+                try:
+                    path = dataset.get_file_name()
+                    if os.path.getsize(path) < 1048576:
+                        with open(path) as fh:
+                            options += self.parse_file_fields(fh)
+                    else:
+                        # Pass just the first megabyte to parse_file_fields.
+                        log.warning("Attempting to load options from large file, reading just first megabyte")
+                        with open(path) as fh:
+                            contents = fh.read(1048576)
+                        options += self.parse_file_fields(StringIO(contents))
+                except Exception as e:
+                    log.warning("Could not read contents from %s: %s", dataset, str(e))
+                    continue
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
             if trans and trans.user and trans.workflow_building_mode != workflow_building_modes.ENABLED:
