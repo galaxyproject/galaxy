@@ -15,7 +15,7 @@ As part of our ongoing efforts to enhance user experience, we are proud to annou
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://youtu.be/YKTiTIBCi1E?si=tRGyurzIMxeAfL9-" title="Galaxy 24.0 - Workflow cards" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 My workflows: card view
 
@@ -53,13 +53,13 @@ Drag and drop:
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://youtu.be/CL6AJkSmkf4?si=pV1U404pP4HkTjwt" title="Galaxy 24.0 - Multiselect / drag and drop enhancements" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Keyboard navigation and selection:
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://youtu.be/tzTxmPzl6qU?si=J4Ge1KDinjEwbOcR" title="Galaxy 24.0 - Multiselect / keyboard navigation" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Resource grids have been consolidated into tab views
 -----------------------------------------------------------
@@ -68,7 +68,7 @@ Your histories, visualisations, and pages are now consolidated into an easier to
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://youtu.be/mkwLAYdncRs?si=dmZmM9TmBMIW_dE0" title="Galaxy 24.0 - Resource grids" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Move datasets between storage locations
 -----------------------------------------------------------
@@ -77,7 +77,7 @@ Relocate a dataset to a new object store with ease using this new UI feature! Th
 
 .. raw:: html
 
-   <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+   <iframe width="560" height="315" src="https://youtu.be/uas3zdg-Ea0?si=5GS2tQhWQuIZQfHx" title="Galaxy 24.0 - Moving datasets between storage locations" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
 Visualizations
 ===========================================================
