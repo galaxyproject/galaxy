@@ -444,7 +444,7 @@ class WorkflowDictStepsBase(Model):
         title="When",
         description="The when expression for the step.",
     )
-    post_job_actions: Optional[Union[PostJobAction, List[PostJobAction]]] = Field(
+    post_job_actions: Optional[Union[List[PostJobAction], Dict[str, PostJobAction]]] = Field(
         None,
         title="Post Job Actions",
         description="Set of actions that will be run when the job finishes.",
