@@ -7,7 +7,6 @@ import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
-import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
 import type { Workflow } from "@/stores/workflowStore";
@@ -17,8 +16,6 @@ import { withPrefix } from "@/utils/redirect";
 import WorkflowInformation from "./WorkflowInformation.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
@@ -130,8 +127,6 @@ watch(
     }
 );
 
-const { showToolbox } = usePanels();
-
 const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.id}/download?format=json-download`));
 const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.id}`));
 const runUrl = computed(() => withPrefix(`/workflows/run?id=${props.id}`));
@@ -157,9 +152,6 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
 <template>
     <div id="columns" class="d-flex">
         <ActivityBar v-if="!props.embed" />
-        <FlexPanel v-if="!props.embed && showToolbox" side="left">
-            <ToolPanel />
-        </FlexPanel>
 
         <div id="center" class="container-root m-3 w-100 overflow-auto d-flex flex-column">
             <div v-if="loading">
