@@ -1,4 +1,5 @@
 const FUNCTION_ARGUMENT_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
+const FUNCTION_ARGUMENT_VALUE_TO_VALUE_REGEX = `\\s*(?:\\"(?<unquoted>[^\\"]+)\\"|\\'(?<squoted>[^\\']+)\\'|(?<dquoted>[\\w_\\-]+))\\s*`;
 const FUNCTION_ARGUMENT_REGEX = `\\s*[\\w\\|]+\\s*=` + FUNCTION_ARGUMENT_VALUE_REGEX;
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_ARGUMENT_REGEX})(,${FUNCTION_ARGUMENT_REGEX})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
@@ -87,6 +88,7 @@ export function replaceLabel(
             const match = incomingContent.match(argRexExp);
             if (match) {
                 const firstMatch = match[0];
+                // TODO: handle whitespace more broadly here...
                 if (escapedToLabel.indexOf(" ") >= 0) {
                     const quoteChar = getQuoteChar(firstMatch);
                     escapedToLabel = `${quoteChar}${escapedToLabel}${quoteChar}`;
@@ -135,11 +137,20 @@ export function getArgs(content: string): GalaxyDirectiveSection {
         }
         const arguments_str = function_arguments[i]?.toString().replace(/,/g, "").trim();
         if (arguments_str) {
-            const [key, val] = arguments_str.split("=");
-            if (key == undefined || val == undefined) {
+            const [keyStr, valStr] = arguments_str.split("=");
+            if (keyStr == undefined || keyStr == undefined) {
                 throw Error("Failed to parse galaxy directive");
             }
-            args[key.trim()] = val.replace(/['"]+/g, "").trim();
+            const key = keyStr.trim();
+            let val: string = valStr?.trim() ?? "";
+            if (val) {
+                const strippedValueMatch = val.match(FUNCTION_ARGUMENT_VALUE_TO_VALUE_REGEX);
+                const groups = strippedValueMatch?.groups;
+                if (groups) {
+                    val = groups.unquoted ?? groups.squoted ?? groups.dquoted ?? val;
+                }
+            }
+            args[key] = val;
         }
     }
     return {
