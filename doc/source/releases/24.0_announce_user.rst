@@ -20,12 +20,12 @@ As part of our ongoing efforts to enhance user experience, we are proud to annou
 My workflows: card view
 
 .. figure:: images/24.0-wf-cardview.png
-   :alt: TODO.
+   :alt: Workflow card view.
 
 My workflows: list view
 
 .. figure:: images/24.0-wf-listview.png
-   :alt: TODO.
+   :alt: Workflow list view.
 
 New select component for selecting a large amount of options
 -----------------------------------------------------------
@@ -37,12 +37,12 @@ The component is fully keyboard accessible. All methods of selection and highlig
 The size of the table can be increased to allow for seeing more options at once.The options in the list are limited to 1000 for performance reasons, but this can be temporarily increased in steps of 500, when reaching the end of a list.
 
 .. figure:: images/24.0-selectview.png
-   :alt: TODO.
+   :alt: Using the new select component.
 
 The component can be chosen when multiple options are available; a local preference for which component to choose can be set. If no preference is set, the component will be used if there are more than 15 options selected, or more than 500 options are available.
 
 .. figure:: images/24.0-selectdropdown.png
-   :alt: TODO.
+   :alt: Choosing the new select component.
 
 Multiple item drag and drop and keyboard navigation
 -----------------------------------------------------------
