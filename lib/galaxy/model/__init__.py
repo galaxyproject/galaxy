@@ -1968,26 +1968,29 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def update_hdca_update_time_for_job(self, update_time, sa_session, supports_skip_locked):
         subq = (
-            sa_session.query(HistoryDatasetCollectionAssociation.id)
+            select(HistoryDatasetCollectionAssociation.id)
             .join(ImplicitCollectionJobs)
             .join(ImplicitCollectionJobsJobAssociation)
             .filter(ImplicitCollectionJobsJobAssociation.job_id == self.id)
         )
         if supports_skip_locked:
-            subq = subq.with_for_update(skip_locked=True).subquery()
+            subq = subq.with_for_update(skip_locked=True)
+        subq = subq.subquery()
         implicit_statement = (
-            HistoryDatasetCollectionAssociation.table.update()
-            .where(HistoryDatasetCollectionAssociation.table.c.id.in_(select(subq)))
+            update(HistoryDatasetCollectionAssociation)
+            .where(HistoryDatasetCollectionAssociation.id.in_(subq))
             .values(update_time=update_time)
         )
         explicit_statement = (
-            HistoryDatasetCollectionAssociation.table.update()
-            .where(HistoryDatasetCollectionAssociation.table.c.job_id == self.id)
+            update(HistoryDatasetCollectionAssociation)
+            .where(HistoryDatasetCollectionAssociation.job_id == self.id)
             .values(update_time=update_time)
         )
         sa_session.execute(explicit_statement)
         if supports_skip_locked:
             sa_session.execute(implicit_statement)
+            with transaction(sa_session):
+                sa_session.commit()
         else:
             conn = sa_session.connection(execution_options={"isolation_level": "SERIALIZABLE"})
             with conn.begin() as trans:
