@@ -54,6 +54,7 @@ class Input(Model):
     description: str = Field(..., title="Description", description="The annotation or description of the input.")
 
 
+# TODO - Not in use
 class Output(Model):
     name: str = Field(..., title="Name", description="The name of the output.")
     type: str = Field(..., title="Type", description="The extension or type of output.")
@@ -205,6 +206,15 @@ class PostJobAction(Model):
         None,
         title="Short String",
         description="A short string representation of the action.",
+    )
+
+
+class StepIn(Model):
+    # TODO - add proper type and description - see _workflow_to_dict_export in manager for more details
+    default: Any = Field(
+        ...,
+        title="Default",
+        description="TODO",
     )
 
 
@@ -449,7 +459,7 @@ class WorkflowDictStepsBase(Model):
         title="Errors",
         description="An message indicating possible errors in the step.",
     )
-    tool_id: Optional[str] = Field(
+    tool_id: Optional[str] = Field(  # Duplicate of `content_id` or viceversa?
         None,
         title="Tool ID",
         description="The unique name of the tool associated with this step.",
@@ -465,6 +475,7 @@ class WorkflowDictStepsBase(Model):
         title="Outputs",
         description="The outputs of the step.",
     )
+    # TODO - could be JSON type but works like
     tool_state: Optional[Union[Dict[str, Any], str]] = Field(
         None,
         title="Tool State",
@@ -637,8 +648,7 @@ class WorkflowDictExportSteps(WorkflowDictStepsExtendedBase):
         title="Inputs",
         description="The inputs of the step.",
     )
-    # TODO - can be modeled see manager line 1551
-    in_parameter: Optional[Dict[str, Any]] = Field(
+    in_parameter: Optional[Dict[str, StepIn]] = Field(
         None, title="In", description="The input connections of the step.", alias="in"
     )
     input_connections: Optional[Dict[str, Union[InputConnection, List[InputConnection]]]] = Field(
