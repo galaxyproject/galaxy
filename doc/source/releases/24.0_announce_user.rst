@@ -79,11 +79,6 @@ Relocate a dataset to a new object store with ease using this new UI feature! Th
 
    <iframe width="560" height="315" src="TODO" title="Galaxy 24.0 - " frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 
-A new comparison method for test output verification using images 
------------------------------------------------------------
-
-For tool developers, image_diff, a new comparison method for test output verification using images has been added. Unlike previously used comparison methods, image_diff is specifically tailored for single-channel and multi-channel image data (e.g. RGB). The difference of a pair of images is quantified as the pixel-wise distance between the images, for which different metrics can be used. A pair of images is considered to be equal in terms of the specified metric, if the distance between the images computed with respect to the metric is not above a given threshold. For more details, see `the original pull request <https://github.com/galaxyproject/galaxy/pull/17556>`__).
-
 Visualizations
 ===========================================================
 
