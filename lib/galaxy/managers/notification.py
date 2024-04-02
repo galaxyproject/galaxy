@@ -291,7 +291,9 @@ class NotificationManager:
         """Updates the user's notification preferences with the requested changes."""
         notification_preferences = self.get_user_notification_preferences(user)
         notification_preferences.update(request.preferences)
-        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.json()  # type:ignore[index]
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = (
+            notification_preferences.model_dump_json()
+        )  # type:ignore[index]
         with transaction(self.sa_session):
             self.sa_session.commit()
         return notification_preferences
