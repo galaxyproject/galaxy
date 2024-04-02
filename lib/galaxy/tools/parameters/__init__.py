@@ -517,12 +517,9 @@ def _populate_state_legacy(
     request_context, inputs, incoming, state, errors, prefix="", context=None, check=True, simple_errors=True
 ):
     nested_state = flat_to_nested_state(incoming)
-    context = ExpressionContext(state, context)
+    context = ExpressionContext(state, nested_state)
     for input in inputs.values():
-        if input.name not in nested_state:
-            state[input.name] = input.get_initial_value(request_context, context)
-        else:
-            state[input.name] = nested_state[input.name]
+        state[input.name] = input.get_initial_value(request_context, context)
         key = prefix + input.name
         group_state = state[input.name]
         group_prefix = f"{key}|"
