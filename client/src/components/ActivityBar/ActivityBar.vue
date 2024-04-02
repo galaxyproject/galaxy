@@ -206,20 +206,20 @@ watch(
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
-                    id="activity-admin"
-                    icon="user-cog"
-                    :is-active="panelActivityIsActive('admin')"
-                    title="Admin"
-                    tooltip="Configure this Instance"
-                    @click="onToggleSidebar('admin')" />
-                <ActivityItem
                     id="activity-settings"
                     icon="cog"
                     :is-active="isActiveSideBar('settings')"
                     title="Settings"
                     tooltip="Edit preferences"
-                    to="/admin"
                     @click="onToggleSidebar('settings')" />
+                <ActivityItem
+                    id="activity-admin"
+                    icon="user-cog"
+                    :is-active="isActiveSideBar('admin')"
+                    title="Admin"
+                    tooltip="Configure this Instance"
+                    variant="danger"
+                    @click="onToggleSidebar('admin')" />
             </b-nav>
         </div>
         <FlexPanel v-if="isSideBarOpen" side="left" :collapsible="false">
