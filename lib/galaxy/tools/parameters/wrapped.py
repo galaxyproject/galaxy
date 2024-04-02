@@ -1,5 +1,9 @@
 from collections import UserDict
-from typing import Dict
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -158,7 +162,7 @@ def make_list_copy(from_list):
     return new_list
 
 
-def process_key(incoming_key, incoming_value, d):
+def process_key(incoming_key: str, incoming_value: Any, d: Dict[str, Any]):
     key_parts = incoming_key.split("|")
     if len(key_parts) == 1:
         # Regular parameter
@@ -168,10 +172,10 @@ def process_key(incoming_key, incoming_value, d):
         d[incoming_key] = incoming_value
     elif key_parts[0].rsplit("_", 1)[-1].isdigit():
         # Repeat
-        input_name, index = key_parts[0].rsplit("_", 1)
-        index = int(index)
+        input_name, _index = key_parts[0].rsplit("_", 1)
+        index = int(_index)
         d.setdefault(input_name, [])
-        newlist = [{} for _ in range(index + 1)]
+        newlist: List[Dict[Any, Any]] = [{} for _ in range(index + 1)]
         d[input_name].extend(newlist[len(d[input_name]) :])
         subdict = d[input_name][index]
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
@@ -183,8 +187,8 @@ def process_key(incoming_key, incoming_value, d):
         process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
 
-def flat_to_nested_state(incoming):
-    nested_state = {}
+def flat_to_nested_state(incoming: Dict[str, Any]):
+    nested_state: Dict[str, Any] = {}
     for key, value in incoming.items():
         process_key(key, value, nested_state)
     return nested_state
