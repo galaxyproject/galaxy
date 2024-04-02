@@ -64,7 +64,11 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
-    def create_temp_file(self, trans, files) -> Dict[str, FilesPayload]:
+    def create_temp_file(
+        self,
+        trans: ProvidesHistoryContext,
+        files: List[UploadFile],
+    ) -> Dict[str, FilesPayload]:
         files_payload = {}
         for i, upload_file in enumerate(files):
             with tempfile.NamedTemporaryFile(
@@ -77,7 +81,11 @@ class ToolsService(ServiceBase):
             )
         return files_payload
 
-    def create_temp_file_execute(self, trans, upload_file) -> FilesPayload:
+    def create_temp_file_execute(
+        self,
+        trans: ProvidesHistoryContext,
+        upload_file: UploadFile,
+    ) -> FilesPayload:
         with tempfile.NamedTemporaryFile(
             dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
         ) as dest:
@@ -143,7 +151,11 @@ class ToolsService(ServiceBase):
         create_payload.update(files)
         return self._create(trans, create_payload)
 
-    def _create(self, trans: ProvidesHistoryContext, payload) -> ToolResponse:
+    def _create(
+        self,
+        trans: ProvidesHistoryContext,
+        payload: Dict[str, Any],
+    ) -> ToolResponse:
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can execute tools or run jobs.")
         action = payload.get("action")
