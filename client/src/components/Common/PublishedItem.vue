@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { usePanels } from "@/composables/usePanels";
-
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Item {
@@ -45,17 +42,11 @@ const owner = computed(() => props.item?.owner ?? props.item?.username ?? "Unava
 const pluralPath = computed(() => plural.value.toLowerCase());
 const publishedByUser = computed(() => `/${pluralPath.value}/list_published?f-username=${owner.value}`);
 const urlAll = computed(() => `/${pluralPath.value}/list_published`);
-
-const { showToolbox } = usePanels();
 </script>
 
 <template>
     <div id="columns" class="d-flex">
         <ActivityBar />
-
-        <FlexPanel v-if="showToolbox" side="left">
-            <ToolPanel />
-        </FlexPanel>
 
         <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
             <slot />
