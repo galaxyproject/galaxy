@@ -139,6 +139,9 @@ Enhancements
   `Pull Request 17324`_
 .. enhancement_tag_admin
 
+* Proxy Access-Control-* headers when using x-accel-redirect
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17842`_
 * Add docs for tool panel and panel view administration
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 17078`_
@@ -150,6 +153,15 @@ Enhancements
   `Pull Request 17498`_
 .. enhancement
 
+* Allow admin to sharpen language about selected object stores
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 17806`_
+* Fix activity bar unreachable in some pages
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17860`_
+* Record missing outputs as test errors
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 17874`_
 * Moves archived histories from Masthead to Histories Grid
   (thanks to `@guerler <https://github.com/guerler>`__).
   `Pull Request 17649`_
@@ -632,6 +644,21 @@ Fixes
   `Pull Request 17243`_
 .. bug
 
+* Minor refactor of query building logic for readability
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17835`_
+* Fix help forum integration uses long ID
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17844`_
+* Embed fix
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17852`_
+* Embed download fix
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 17861`_
+* Wait for config to load with user prefs options
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 17865`_
 * Fix bugs relating to history keyboard navigation
   (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
   `Pull Request 17587`_
