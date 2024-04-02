@@ -98,7 +98,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext import hybrid
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.ext.associationproxy import (
+    association_proxy,
+    AssociationProxy,
+)
 from sqlalchemy.ext.orderinglist import ordering_list
 from sqlalchemy.orm import (
     aliased,
@@ -816,7 +819,7 @@ class User(Base, Dictifiable, RepresentById):
         ),
     )
 
-    preferences = None
+    preferences: AssociationProxy[Any]
 
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ["id", "email", "username", "deleted", "active", "last_password_change"]
@@ -11457,7 +11460,7 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(  # type:igno
 
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
-User.preferences = association_proxy("_preferences", "value", creator=UserPreference)  # type:ignore[assignment]
+User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
 
 # Optimized version of getting the current Galaxy session.
 # See https://github.com/sqlalchemy/sqlalchemy/discussions/7638 for approach
