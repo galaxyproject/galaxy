@@ -903,6 +903,33 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         workflow_dict = self.workflow_populator.download_workflow(workflow["id"])
         assert workflow_dict["name"] == original_name
 
+    @skip_without_tool("select_from_dataset_in_conditional")
+    def test_workflow_run_form_with_broken_dataset(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  dataset: data
+steps:
+  select_from_dataset_in_conditional:
+    tool_id: select_from_dataset_in_conditional
+    in:
+      single: dataset
+    state:
+      cond:
+        cond: single
+        select_single: abc
+        inner_cond:
+          inner_cond: single
+          select_single: abc
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.new_dataset(history_id, content="a", file_type="tabular", wait=True)
+            workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+            assert not workflow["has_upgrade_messages"]
+            assert workflow["steps"][1]["inputs"][0]["value"] == {"__class__": "ConnectedValue"}
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
