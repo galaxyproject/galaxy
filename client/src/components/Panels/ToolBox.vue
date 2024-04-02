@@ -134,8 +134,6 @@ const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = c
     }
 });
 
-const sectionIds = computed(() => Object.keys(localPanel.value || {}));
-
 const favWorkflows = computed(() => {
     const Galaxy = getGalaxyInstance();
     const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
@@ -296,10 +294,10 @@ function setButtonText() {
                         :query-filter="queryFilter || undefined"
                         :disable-filter="true"
                         @onClick="onToolClick" />
-                    <div v-for="(sectionId, key) in sectionIds" :key="key">
+                    <div v-for="(panel, key) in localPanel" :key="key">
                         <ToolSection
-                            v-if="localPanel[sectionId]"
-                            :category="localPanel[sectionId] || {}"
+                            v-if="panel"
+                            :category="panel || {}"
                             :query-filter="queryFilter || undefined"
                             @onClick="onToolClick" />
                     </div>

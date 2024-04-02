@@ -66,7 +66,6 @@ export const useUserStore = defineStore("userStore", () => {
                     }
                     if (includeHistories) {
                         const historyStore = useHistoryStore();
-                        await historyStore.loadCurrentHistory();
                         // load first few histories for user to start pagination
                         await historyStore.loadHistories();
                     }
