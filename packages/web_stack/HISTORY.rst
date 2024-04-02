@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
----------
-24.0.dev0
----------
+-------------------
+24.0.0 (2024-04-02)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Update to black 2024 stable style by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17391 <https://github.com/galaxyproject/galaxy/pull/17391>`_
 
 -------------------
 23.2.1 (2024-02-21)
