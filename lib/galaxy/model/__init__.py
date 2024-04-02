@@ -691,7 +691,7 @@ GROUP BY dataset.object_store_id
 def calculate_disk_usage_per_objectstore(sa_session, user_id: str):
     statement = UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE
     params = {"id": user_id}
-    return sa_session.execute(statement, params).all()
+    return sa_session.execute(text(statement), params).all()
 
 
 # move these to galaxy.schema.schema once galaxy-data depends on
