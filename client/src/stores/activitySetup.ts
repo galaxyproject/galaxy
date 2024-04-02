@@ -121,7 +121,7 @@ export const Activities = [
         mutable: false,
         optional: false,
         title: "Admin",
-        to: null,
+        to: "/admin",
         tooltip: "Search and run tools",
         visible: true,
     },
