@@ -688,7 +688,7 @@ GROUP BY dataset.object_store_id
 """
 
 
-def calculate_disk_usage_per_objectstore(sa_session, user_id: str):
+def calculate_disk_usage_per_objectstore(sa_session, user_id: int):
     statement = UNIQUE_DATASET_USER_USAGE_PER_OBJECTSTORE
     params = {"id": user_id}
     return sa_session.execute(text(statement), params).all()
