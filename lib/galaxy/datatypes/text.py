@@ -5,6 +5,7 @@ import gzip
 import json
 import logging
 import os
+from jsonschema import validate
 import re
 import shlex
 import subprocess
@@ -83,6 +84,63 @@ class Html(Text):
                 return True
         return False
 
+
+@build_sniff_from_prefix
+class Svif(Text):
+    """
+    Software Visualization Interchange Format (Satrio Adi Rukmono).
+    """
+
+    file_ext = "svif"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "SVIF"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        # Schema for SVIF files
+        schema = {
+            "type": "object", "properties": {
+                # Elements
+                "elements": {"type": "object", "properties": {
+                    # Nodes
+                    "nodes": {"type": "array", "properties": {
+                        "data": {"type": "object", "properties": {
+                            "id": {"type": "string"},
+                            "labels": {"type": "array"},
+                            "properties": {"type": "object", "properties": {
+                                "simpleName": {"type": "string"},
+                                "metaSrc": {"type": "string"}
+                            }}
+                            # Required object of node data
+                        }, "required": ["id"]}
+                        # Required in node
+                    }, "required": ["data"]},
+                    # Edges
+                    "edges": {"type": "array", "properties": {
+                        "data": {"type": "object", "properties": {
+                            "id": {"type": "string"},
+                            "source": {"type": "string"},
+                            "target": {"type": "string"},
+                            "label": {"type": "string"},
+                            "properties": {"type": "object"}
+                            # Required objects of edge data
+                        }, "required": ["id", "source", "target"]}
+                        # Required in edge
+                    }, "required": ["data"]}
+                    # Required in elements. ClassViz still accepts file without edges
+                }, "required": ["nodes"]}
+            }
+        }
+        # Validate input file type
+        try:
+            # Load input file
+            is_svif = json.loads(file_prefix.contents_header)
+            validate(instance=is_svif, schema=schema)
+            return True
+        except:
+            return False
 
 @build_sniff_from_prefix
 class Json(Text):
