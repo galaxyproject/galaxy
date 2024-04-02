@@ -3,6 +3,8 @@ import { computed } from "vue";
 
 import { useConfig } from "@/composables/config";
 
+import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+
 const { config, isConfigLoaded } = useConfig();
 
 const adminProperties = computed(() => {
@@ -122,30 +124,26 @@ const sections = computed(() => {
 </script>
 
 <template>
-    <div v-if="isConfigLoaded" class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Galaxy Version {{ config.version_major }}</div>
-            </div>
-        </div>
+    <ActivityPanel v-if="isConfigLoaded" title="Administration" go-to-all-title="Admin Home" href="/admin">
+        <h3>Galaxy Version {{ adminProperties.versionMajor }}</h3>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolSectionWrapper">
-                    <div
-                        v-for="(section, sectionIndex) in sections"
-                        :key="sectionIndex"
-                        class="toolSectionTitle pt-1 px-3">
-                        <h2 class="font-weight-bold h-text mb-0">{{ section.title }}</h2>
-                        <div class="toolSectionBody">
-                            <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
-                                    <small class="name">{{ item.title }}</small>
-                                </router-link>
-                            </div>
-                        </div>
+            <div
+                v-for="(section, sectionIndex) in sections"
+                :key="sectionIndex"
+                class="toolSectionTitle pt-2">
+                <h2 class="font-weight-bold h-text mb-0">{{ section.title }}</h2>
+                <div class="toolSectionBody">
+                    <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
+                        <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
+                            <small class="name">{{ item.title }}</small>
+                        </router-link>
                     </div>
                 </div>
             </div>
+                </div>
+            </div>
         </div>
-    </div>
+    </ActivityPanel>
 </template>
