@@ -304,6 +304,62 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             index_response = self._get("histories", data=data).json()
             assert len(index_response) == 1
 
+            archived_history_id = self._create_history(f"Archived history_{uuid4()}")["id"]
+            name_contains = "history"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 4
+
+            # Archived histories should not be included by default
+            self.dataset_populator.archive_history(archived_history_id)
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+            name_contains = "Archived"
+            data = dict(search=name_contains, show_published=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 0
+
+            # Archived public histories should be included when filtering by show_published and show_archived
+            data = dict(search="is:published", show_archived=True)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 2
+
+            # Searching all published histories will NOT include the archived if show_archived is not set
+            data = dict(search="is:published")
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 1
+
+            # Searching all published histories will include our own archived when show_own is false
+            # as long as they are published
+            data = dict(search="is:published", show_own=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 2
+
+            # Publish a history and archive it by a different user
+            with self._different_user(f"other_user_{uuid4()}@bx.psu.edu"):
+                self._create_history_then_publish_and_archive_it(f"Public Archived history_{uuid4()}")
+
+            # Searching all published histories will include archived from other users and our own
+            # as long as they are published
+            data = dict(search="is:published", show_own=False)
+            index_response = self._get("histories", data=data).json()
+            assert len(index_response) == 3
+
+    def _create_history_then_publish_and_archive_it(self, name):
+        history_id = self._create_history(name)["id"]
+        response = self._update(history_id, {"published": True})
+        self._assert_status_code_is_ok(response)
+        response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is_ok(response)
+        return history_id
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]

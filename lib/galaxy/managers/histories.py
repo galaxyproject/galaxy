@@ -127,6 +127,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         show_published = payload.show_published
         show_purged = False
         show_shared = payload.show_shared
+        show_archived = payload.show_archived
         is_admin = trans.user_is_admin
         user = trans.user
 
@@ -206,6 +207,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             stmt = stmt.where(self.model_class.purged == false()).where(
                 self.model_class.deleted == (true() if show_deleted else false())
             )
+
+        # By default, return only non-archived histories when we are showing the current user's histories
+        # if listing other users' histories, we don't filter out archived histories as they may be
+        # public or shared with the current user
+        if show_own and not show_archived:
+            stmt = stmt.where(self.model_class.archived == false())
 
         stmt = stmt.distinct()
 
