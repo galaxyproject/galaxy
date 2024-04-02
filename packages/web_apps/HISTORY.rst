@@ -4,10 +4,89 @@ History
 .. to_doc
 
 ---------
-24.0.dev0
+24.1.dev0
 ---------
 
 
+
+-------------------
+24.0.0 (2024-04-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* tus wants a json response from v2.0.0 by `@mira-miracoli <https://github.com/mira-miracoli>`_ in `#17246 <https://github.com/galaxyproject/galaxy/pull/17246>`_
+* Fix quotas ID encoding by `@davelopez <https://github.com/davelopez>`_ in `#17335 <https://github.com/galaxyproject/galaxy/pull/17335>`_
+* Fixes for flake8-bugbear 24.1.17 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17340 <https://github.com/galaxyproject/galaxy/pull/17340>`_
+* Fix data_source and data_source_async bugs by `@wm75 <https://github.com/wm75>`_ in `#17422 <https://github.com/galaxyproject/galaxy/pull/17422>`_
+* Only check access permissions in ``/api/{history_dataset_collection_id}/contents/{dataset_collection_id}`` by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#17444 <https://github.com/galaxyproject/galaxy/pull/17444>`_
+* Associate default history with session when creating a new session by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17557 <https://github.com/galaxyproject/galaxy/pull/17557>`_
+* Fix tool shed webapp by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17597 <https://github.com/galaxyproject/galaxy/pull/17597>`_
+* Don't call ``get_or_create_default_history()`` twice for invalidated sessions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17613 <https://github.com/galaxyproject/galaxy/pull/17613>`_
+* Fix tool panel workflow and favorites button bugs by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#17634 <https://github.com/galaxyproject/galaxy/pull/17634>`_
+* Fix DataResult type by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17639 <https://github.com/galaxyproject/galaxy/pull/17639>`_
+* Prevent 500 for anon /api/invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17640 <https://github.com/galaxyproject/galaxy/pull/17640>`_
+* Don't fail for anon /api/users request by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17645 <https://github.com/galaxyproject/galaxy/pull/17645>`_
+* Limit new anon histories by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17657 <https://github.com/galaxyproject/galaxy/pull/17657>`_
+* Fix histories API index_query serialization by `@davelopez <https://github.com/davelopez>`_ in `#17726 <https://github.com/galaxyproject/galaxy/pull/17726>`_
+* Handle missing indexer for a dataset by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#17736 <https://github.com/galaxyproject/galaxy/pull/17736>`_
+* Don't require history to calculate anon disk usage by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17765 <https://github.com/galaxyproject/galaxy/pull/17765>`_
+* Fix anon user values again by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17772 <https://github.com/galaxyproject/galaxy/pull/17772>`_
+* Fix new default history creation when in remote or single user mode by `@dannon <https://github.com/dannon>`_ in `#17796 <https://github.com/galaxyproject/galaxy/pull/17796>`_
+* Return published histories first in display_by_username_and_slug by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17808 <https://github.com/galaxyproject/galaxy/pull/17808>`_
+* Fix archived histories mixing with active in histories list by `@davelopez <https://github.com/davelopez>`_ in `#17856 <https://github.com/galaxyproject/galaxy/pull/17856>`_
+
+============
+Enhancements
+============
+
+* New Workflow List and Card View by `@itisAliRH <https://github.com/itisAliRH>`_ in `#16607 <https://github.com/galaxyproject/galaxy/pull/16607>`_
+* port invocation API to fastapi by `@martenson <https://github.com/martenson>`_ in `#16707 <https://github.com/galaxyproject/galaxy/pull/16707>`_
+* Python 3.8 as minimum by `@mr-c <https://github.com/mr-c>`_ in `#16954 <https://github.com/galaxyproject/galaxy/pull/16954>`_
+* Support for OIDC API Auth and OIDC integration tests by `@nuwang <https://github.com/nuwang>`_ in `#16977 <https://github.com/galaxyproject/galaxy/pull/16977>`_
+* Toward declarative help for Galaxy markdown directives. by `@jmchilton <https://github.com/jmchilton>`_ in `#16979 <https://github.com/galaxyproject/galaxy/pull/16979>`_
+* Vueify Admin User Grid by `@guerler <https://github.com/guerler>`_ in `#17030 <https://github.com/galaxyproject/galaxy/pull/17030>`_
+* Remove web framework dependency from tools by `@davelopez <https://github.com/davelopez>`_ in `#17058 <https://github.com/galaxyproject/galaxy/pull/17058>`_
+* Vueify Admin Roles Grid by `@guerler <https://github.com/guerler>`_ in `#17118 <https://github.com/galaxyproject/galaxy/pull/17118>`_
+* SA2.0 updates: handling "object is being merged into a Session along the backref cascade path" by `@jdavcs <https://github.com/jdavcs>`_ in `#17122 <https://github.com/galaxyproject/galaxy/pull/17122>`_
+* Vueify Admin Groups Grid by `@guerler <https://github.com/guerler>`_ in `#17126 <https://github.com/galaxyproject/galaxy/pull/17126>`_
+* Towards SQLAlchemy 2.0: fix last cases of RemovedIn20Warning by `@jdavcs <https://github.com/jdavcs>`_ in `#17132 <https://github.com/galaxyproject/galaxy/pull/17132>`_
+* Vueify Admin Forms and Quota grids by `@guerler <https://github.com/guerler>`_ in `#17141 <https://github.com/galaxyproject/galaxy/pull/17141>`_
+* Migrate dataset extra files store to Pinia by `@davelopez <https://github.com/davelopez>`_ in `#17145 <https://github.com/galaxyproject/galaxy/pull/17145>`_
+* Create pydantic model for the return of show operation -  get: `/api/jobs/{job_id}`  by `@heisner-tillman <https://github.com/heisner-tillman>`_ in `#17153 <https://github.com/galaxyproject/galaxy/pull/17153>`_
+* Remove legacy tool versions list from admin panel by `@guerler <https://github.com/guerler>`_ in `#17155 <https://github.com/galaxyproject/galaxy/pull/17155>`_
+* Don't require admin user to list ``/api/tool_data`` by `@jozh2008 <https://github.com/jozh2008>`_ in `#17161 <https://github.com/galaxyproject/galaxy/pull/17161>`_
+* Drop fastapi-utils.InferringRouter in favor of fastapi.APIRouter  by `@jdavcs <https://github.com/jdavcs>`_ in `#17184 <https://github.com/galaxyproject/galaxy/pull/17184>`_
+* Vendorize fastapi-utls.cbv by `@jdavcs <https://github.com/jdavcs>`_ in `#17205 <https://github.com/galaxyproject/galaxy/pull/17205>`_
+* Vueifiy History Grids by `@guerler <https://github.com/guerler>`_ in `#17219 <https://github.com/galaxyproject/galaxy/pull/17219>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17235 <https://github.com/galaxyproject/galaxy/pull/17235>`_
+* Refactor two of the missing invocation routes to FastAPI by `@heisner-tillman <https://github.com/heisner-tillman>`_ in `#17237 <https://github.com/galaxyproject/galaxy/pull/17237>`_
+* Allow job files to consume TUS uploads by `@jmchilton <https://github.com/jmchilton>`_ in `#17242 <https://github.com/galaxyproject/galaxy/pull/17242>`_
+* Migrate models to pydantic 2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17262 <https://github.com/galaxyproject/galaxy/pull/17262>`_
+* Adds delete, purge and undelete batch operations to History Grid by `@guerler <https://github.com/guerler>`_ in `#17282 <https://github.com/galaxyproject/galaxy/pull/17282>`_
+* Fix any type for tool_data_file_path by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17293 <https://github.com/galaxyproject/galaxy/pull/17293>`_
+* API endpoint that allows "changing" the objectstore for "safe" scenarios.  by `@jmchilton <https://github.com/jmchilton>`_ in `#17329 <https://github.com/galaxyproject/galaxy/pull/17329>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#17333 <https://github.com/galaxyproject/galaxy/pull/17333>`_
+* Combines legacy qv-pattern and advanced filter pattern in history index endpoint by `@guerler <https://github.com/guerler>`_ in `#17368 <https://github.com/galaxyproject/galaxy/pull/17368>`_
+* Update to black 2024 stable style by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17391 <https://github.com/galaxyproject/galaxy/pull/17391>`_
+* Replaces Trackster Grids with Data Dialog, Removes Phyloviz, Circster and Sweepster by `@guerler <https://github.com/guerler>`_ in `#17415 <https://github.com/galaxyproject/galaxy/pull/17415>`_
+* Removes outdated Grid controller and backbone modules by `@guerler <https://github.com/guerler>`_ in `#17434 <https://github.com/galaxyproject/galaxy/pull/17434>`_
+* Allow using tool data bundles as inputs to reference data select parameters by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17435 <https://github.com/galaxyproject/galaxy/pull/17435>`_
+* Modernize bits and pieces of storage display by `@jmchilton <https://github.com/jmchilton>`_ in `#17436 <https://github.com/galaxyproject/galaxy/pull/17436>`_
+* UI for "relocating" a dataset to a new object store (when safe) by `@jmchilton <https://github.com/jmchilton>`_ in `#17437 <https://github.com/galaxyproject/galaxy/pull/17437>`_
+* Refactor Workflow API routes - Part 1 by `@heisner-tillman <https://github.com/heisner-tillman>`_ in `#17463 <https://github.com/galaxyproject/galaxy/pull/17463>`_
+* Consolidate resource grids into tab views by `@guerler <https://github.com/guerler>`_ in `#17487 <https://github.com/galaxyproject/galaxy/pull/17487>`_
+* Display workflow invocation counts. by `@jmchilton <https://github.com/jmchilton>`_ in `#17488 <https://github.com/galaxyproject/galaxy/pull/17488>`_
+* Removes legacy history xml makos by `@guerler <https://github.com/guerler>`_ in `#17505 <https://github.com/galaxyproject/galaxy/pull/17505>`_
+* add encode ID API endpoint by `@mira-miracoli <https://github.com/mira-miracoli>`_ in `#17510 <https://github.com/galaxyproject/galaxy/pull/17510>`_
+* Fixing data_source tools and incrementing tool profile by `@wm75 <https://github.com/wm75>`_ in `#17515 <https://github.com/galaxyproject/galaxy/pull/17515>`_
+* Filter out subworkflow invocations by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17558 <https://github.com/galaxyproject/galaxy/pull/17558>`_
+* Links to individual invocations. by `@jmchilton <https://github.com/jmchilton>`_ in `#17566 <https://github.com/galaxyproject/galaxy/pull/17566>`_
+* Restore histories API behavior for `keys` query parameter by `@davelopez <https://github.com/davelopez>`_ in `#17779 <https://github.com/galaxyproject/galaxy/pull/17779>`_
+* Fix datasets API custom keys encoding by `@davelopez <https://github.com/davelopez>`_ in `#17793 <https://github.com/galaxyproject/galaxy/pull/17793>`_
 
 -------------------
 23.2.1 (2024-02-21)

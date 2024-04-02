@@ -4,10 +4,27 @@ History
 .. to_doc
 
 ---------
-24.0.dev0
+24.1.dev0
 ---------
 
 
+
+-------------------
+24.0.0 (2024-04-02)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Stringify cgroups metrics formatted value return by `@dannon <https://github.com/dannon>`_ in `#17520 <https://github.com/galaxyproject/galaxy/pull/17520>`_
+
+============
+Enhancements
+============
+
+* Update to black 2024 stable style by `@nsoranzo <https://github.com/nsoranzo>`_ in `#17391 <https://github.com/galaxyproject/galaxy/pull/17391>`_
 
 -------------------
 23.2.1 (2024-02-21)
