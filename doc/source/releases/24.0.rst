@@ -14,6 +14,9 @@ Enhancements
 
 .. feature
 
+* 24.0 release notes
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 17610`_
 * New Workflow List and Card View
   (thanks to `@itisAliRH <https://github.com/itisAliRH>`__).
   `Pull Request 16607`_
@@ -153,6 +156,9 @@ Enhancements
   `Pull Request 17498`_
 .. enhancement
 
+* Fix Multi-History status bar reactivity
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17812`_
 * Allow admin to sharpen language about selected object stores
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 17806`_
@@ -634,6 +640,9 @@ Fixes
   `Pull Request 17485`_
 .. bug_tag_jobs
 
+* Ignore user data table errors for now
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 17880`_
 * Also set extension and metadata on copies of job outputs when finishing job
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 17777`_
@@ -644,6 +653,12 @@ Fixes
   `Pull Request 17243`_
 .. bug
 
+* Fix tool panel loading delay
+  (thanks to `@ahmedhamidawan <https://github.com/ahmedhamidawan>`__).
+  `Pull Request 17847`_
+* Fix archived histories mixing with active in histories list
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 17856`_
 * Minor refactor of query building logic for readability
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 17835`_
