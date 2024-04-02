@@ -11,6 +11,7 @@ import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
+import AdminPanel from "@/components/admin/AdminPanel.vue";
 import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
@@ -173,7 +174,7 @@ watch(
                                 :to="activity.to"
                                 @click="onToggleSidebar()" />
                             <ActivityItem
-                                v-else-if="['tools', 'visualizations', 'multiview'].includes(activity.id)"
+                                v-else-if="['admin', 'tools', 'visualizations', 'multiview'].includes(activity.id)"
                                 :id="`activity-${activity.id}`"
                                 :key="activity.id"
                                 :icon="activity.icon"
@@ -219,6 +220,7 @@ watch(
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
+            <AdminPanel v-else-if="isActiveSideBar('admin')" />
         </FlexPanel>
     </div>
 </template>
