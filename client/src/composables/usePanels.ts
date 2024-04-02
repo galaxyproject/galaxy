@@ -12,10 +12,7 @@ export function usePanels() {
         return true;
     });
 
-    const showToolbox = computed(() => showPanels.value);
-
     return {
         showPanels,
-        showToolbox,
     };
 }
