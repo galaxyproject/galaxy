@@ -48,6 +48,7 @@ import {
     faTrash,
     faTrashRestore,
     faUndo,
+    faUserCog,
     faUserLock,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
@@ -102,6 +103,7 @@ library.add(
     faTrashRestore,
     faExclamationTriangle,
     faUndo,
+    faUserCog,
     faUserLock,
     faWrench
 );

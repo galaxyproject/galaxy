@@ -207,7 +207,7 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-admin"
-                    icon="key"
+                    icon="user-cog"
                     :is-active="panelActivityIsActive('admin')"
                     title="Admin"
                     tooltip="Configure this Instance"
