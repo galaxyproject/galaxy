@@ -11,12 +11,12 @@ import { type Activity, useActivityStore } from "@/stores/activityStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUserStore } from "@/stores/userStore";
 
-import AdminPanel from "@/components/admin/AdminPanel.vue";
 import VisualizationPanel from "../Panels/VisualizationPanel.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
+import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
@@ -48,7 +48,6 @@ const isDragging = ref(false);
 
 // sync built-in activities with cached activities
 activityStore.sync();
-
 
 const adminProperties = computed(() => {
     return {
@@ -214,6 +213,14 @@ watch(
                     :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
                     @click="onToggleSidebar('notifications')" />
+                <ActivityItem
+                    id="activity-admin"
+                    icon="cog"
+                    :is-active="panelActivityIsActive('admin')"
+                    title="Admin"
+                    tooltip="Configure this Instance"
+                    to="/admin"
+                    @click="onToggleSidebar('admin', '/admin')" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"

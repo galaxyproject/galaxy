@@ -113,18 +113,6 @@ export const Activities = [
         to: "/datasets/list",
         visible: false,
     },
-    {
-        anonymous: true,
-        description: "Adminstration.",
-        icon: "wrench",
-        id: "admin",
-        mutable: false,
-        optional: false,
-        title: "Admin",
-        to: "/admin",
-        tooltip: "Search and run tools",
-        visible: true,
-    },
 ];
 
 export function convertDropData(data: EventData): Activity | null {
