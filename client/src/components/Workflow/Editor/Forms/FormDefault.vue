@@ -51,7 +51,8 @@
                     :key="index"
                     :name="output.name"
                     :step="step"
-                    :show-details="true" />
+                    :show-details="true"
+                    @onOutputLabel="onOutputLabel" />
             </div>
         </template>
     </FormCard>
@@ -78,7 +79,14 @@ const props = defineProps<{
     step: Step;
     datatypes: DatatypesMapperModel["datatypes"];
 }>();
-const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
+const emit = defineEmits([
+    "onAnnotation",
+    "onLabel",
+    "onAttemptRefactor",
+    "onEditSubworkflow",
+    "onSetData",
+    "onOutputLabel",
+]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const { stepStore } = useWorkflowStores();
@@ -116,5 +124,8 @@ function onChange(values: any) {
         content_id: contentId!.value,
         inputs: values,
     });
+}
+function onOutputLabel(oldValue: string | null, newValue: string | null) {
+    emit("onOutputLabel", oldValue, newValue);
 }
 </script>
