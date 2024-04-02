@@ -49,14 +49,6 @@ const isDragging = ref(false);
 // sync built-in activities with cached activities
 activityStore.sync();
 
-const adminProperties = computed(() => {
-    return {
-        enableQuotas: config.value.enable_quotas,
-        isToolshedInstalled: config.value.tool_shed_urls && config.value.tool_shed_urls.length > 0,
-        versionMajor: config.value.version_major,
-    };
-});
-
 /**
  * Checks if the route of an activity is currently being visited and panels are collapsed
  */
@@ -215,18 +207,18 @@ watch(
                     @click="onToggleSidebar('notifications')" />
                 <ActivityItem
                     id="activity-admin"
-                    icon="cog"
+                    icon="key"
                     :is-active="panelActivityIsActive('admin')"
                     title="Admin"
                     tooltip="Configure this Instance"
-                    to="/admin"
-                    @click="onToggleSidebar('admin', '/admin')" />
+                    @click="onToggleSidebar('admin')" />
                 <ActivityItem
                     id="activity-settings"
                     icon="cog"
                     :is-active="isActiveSideBar('settings')"
                     title="Settings"
                     tooltip="Edit preferences"
+                    to="/admin"
                     @click="onToggleSidebar('settings')" />
             </b-nav>
         </div>
@@ -236,7 +228,7 @@ watch(
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <SettingsPanel v-else-if="isActiveSideBar('settings')" />
-            <AdminPanel v-else-if="isActiveSideBar('admin')" v-bind="adminProperties" />
+            <AdminPanel v-else-if="isActiveSideBar('admin')" />
         </FlexPanel>
     </div>
 </template>
