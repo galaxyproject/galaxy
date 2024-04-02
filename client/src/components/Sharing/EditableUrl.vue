@@ -84,6 +84,7 @@ function onCopyOut() {
         </BButton>
 
         <BButton
+            v-if="!editing"
             id="tooltip-clipboard"
             v-b-tooltip.hover
             size="md"
