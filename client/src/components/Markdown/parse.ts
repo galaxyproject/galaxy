@@ -138,7 +138,7 @@ export function getArgs(content: string): GalaxyDirectiveSection {
         const arguments_str = function_arguments[i]?.toString().replace(/,/g, "").trim();
         if (arguments_str) {
             const [keyStr, valStr] = arguments_str.split("=");
-            if (keyStr == undefined || keyStr == undefined) {
+            if (keyStr == undefined || valStr == undefined) {
                 throw Error("Failed to parse galaxy directive");
             }
             const key = keyStr.trim();
