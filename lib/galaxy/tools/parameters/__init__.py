@@ -518,8 +518,9 @@ def populate_state(
 def _populate_state_legacy(
     request_context, inputs, incoming, state, errors, prefix="", context=None, check=True, simple_errors=True
 ):
-    nested_state = flat_to_nested_state(incoming)
-    context = ExpressionContext(state, nested_state)
+    if context is None:
+        context = flat_to_nested_state(incoming)
+    context = ExpressionContext(state, context)
     for input in inputs.values():
         state[input.name] = input.get_initial_value(request_context, context)
         key = prefix + input.name
