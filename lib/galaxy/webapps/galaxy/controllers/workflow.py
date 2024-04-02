@@ -17,7 +17,7 @@ from galaxy.managers.workflows import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for

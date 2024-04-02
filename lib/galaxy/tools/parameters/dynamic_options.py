@@ -28,7 +28,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.tools.expressions import do_eval
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    is_runtime_value,
+    workflow_building_modes,
+)
 from galaxy.util import (
     Element,
     string_as_bool,
@@ -962,6 +965,8 @@ def _get_ref_data(other_values, ref_name):
             list,
         ),
     ):
+        if is_runtime_value(ref):
+            return []
         raise ValueError
     if isinstance(ref, DatasetCollectionElement) and ref.hda:
         ref = ref.hda

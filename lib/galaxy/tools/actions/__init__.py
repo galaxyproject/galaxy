@@ -33,9 +33,9 @@ from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    RuntimeValue,
     SelectToolParameter,
 )
+from galaxy.tools.parameters.workflow_utils import RuntimeValue
 from galaxy.tools.parameters.wrapped import (
     LegacyUnprefixedDict,
     WrappedParameters,

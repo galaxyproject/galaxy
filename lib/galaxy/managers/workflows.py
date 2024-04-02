@@ -90,12 +90,14 @@ from galaxy.tools.parameters import (
     visit_input_values,
 )
 from galaxy.tools.parameters.basic import (
-    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
-    RuntimeValue,
 )
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    ConnectedValue,
+    RuntimeValue,
+    workflow_building_modes,
+)
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,

@@ -68,16 +68,13 @@ from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
     ColorToolParameter,
-    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
-    is_runtime_value,
     parameter_types,
     raw_to_galaxy,
-    runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
 )
@@ -86,7 +83,12 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    ConnectedValue,
+    is_runtime_value,
+    runtime_to_json,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import (
     listify,

@@ -16,9 +16,7 @@ from galaxy.util.json import safe_loads
 from .basic import (
     DataCollectionToolParameter,
     DataToolParameter,
-    is_runtime_value,
     ParameterValueError,
-    runtime_to_json,
     SelectToolParameter,
     ToolParameter,
 )
@@ -28,6 +26,10 @@ from .grouping import (
     Repeat,
     Section,
     UploadDataset,
+)
+from .workflow_utils import (
+    is_runtime_value,
+    runtime_to_json,
 )
 from .wrapped import flat_to_nested_state
 
