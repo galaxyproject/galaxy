@@ -1,5 +1,5 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDoubleDown,faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { computed, onMounted, ref } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";

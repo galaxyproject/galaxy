@@ -33,7 +33,11 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
     return allHistoriesTakingStorageResponse;
 }
 
-export async function fetchHistoryContentsSizeSummary(historyId: string, limit : number = 5000, objectStoreId : string | null = null) {
+export async function fetchHistoryContentsSizeSummary(
+    historyId: string,
+    limit: number = 5000,
+    objectStoreId: string | null = null
+) {
     const q = ["purged", "history_content_type"];
     const qv = ["false", "dataset"];
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BForm, BFormGroup, BFormSelect,BInputGroup } from "bootstrap-vue";
+import { BButton, BForm, BFormGroup, BFormSelect, BInputGroup } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -10,7 +10,13 @@ import localize from "@/utils/localization";
 
 import type { DataValuePoint } from "./Charts";
 import { fetchHistoryContentsSizeSummary, type ItemSizeSummary } from "./service";
-import { buildTopNDatasetsBySizeData, byteFormattingForChart, useAdvancedFiltering,useDataLoading, useDatasetsToDisplay } from "./util";
+import {
+    buildTopNDatasetsBySizeData,
+    byteFormattingForChart,
+    useAdvancedFiltering,
+    useDataLoading,
+    useDatasetsToDisplay,
+} from "./util";
 
 import BarChart from "./Charts/BarChart.vue";
 import OverviewPage from "./OverviewPage.vue";
@@ -57,7 +63,7 @@ async function reloadDataFromServer() {
     const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
         props.historyId,
         numberOfDatasetsLimit,
-        objectStore.value,
+        objectStore.value
     );
     datasetsSizeSummaryMap.clear();
     allDatasetsInHistorySizeSummary.forEach((dataset) => datasetsSizeSummaryMap.set(dataset.id, dataset));
@@ -170,8 +176,7 @@ function onUndelete(datasetId: string) {
                                 id="input-group-num-histories"
                                 label="Number of histories:"
                                 label-for="input-num-histories"
-                                description="This is the maximum number of histories that will be displayed."
-                            >
+                                description="This is the maximum number of histories that will be displayed.">
                                 <BFormSelect
                                     v-model="numberOfDatasetsToDisplay"
                                     :options="numberOfDatasetsToDisplayOptions"
@@ -185,9 +190,11 @@ function onUndelete(datasetId: string) {
                                 id="input-group-object-store"
                                 label="Storage location:"
                                 label-for="input-object-store"
-                                description="This will constrain history size calculations to a particular object store."
-                            >
-                                <FilterObjectStoreLink :object-stores="selectableObjectStores" :value="objectStore" @change="onChangeObjectStore" />
+                                description="This will constrain history size calculations to a particular object store.">
+                                <FilterObjectStoreLink
+                                    :object-stores="selectableObjectStores"
+                                    :value="objectStore"
+                                    @change="onChangeObjectStore" />
                             </BFormGroup>
                         </BForm>
                     </div>
