@@ -766,7 +766,12 @@ class DynamicOptions:
             hdas = user.get_user_data_tables(self.tool_data_table_name)
             by_dbkey = {}
             for hda in hdas:
-                by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
+                try:
+                    by_dbkey.update(self.hda_to_table_entries(hda, self.tool_data_table_name))
+                except Exception as e:
+                    # This is a bug, `hda_to_table_entries` is not generic enough for certain loc file
+                    # structures, such as for the dada2_species, which doesn't have a dbkey column
+                    log.warning("Failed to read data table bundle entries: %s", e)
             for data_table_entry in by_dbkey.values():
                 field_entry = []
                 for column_key in self.tool_data_table.columns.keys():
