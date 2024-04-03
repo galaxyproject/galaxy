@@ -1,4 +1,6 @@
-import { onMounted, ref } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+import { computed, onMounted, ref } from "vue";
 
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
@@ -7,6 +9,8 @@ import localize from "@/utils/localization";
 import type { DataValuePoint } from "./Charts";
 import { bytesLabelFormatter, bytesValueFormatter } from "./Charts/formatters";
 import { type ItemSizeSummary, purgeDatasetById, undeleteDatasetById } from "./service";
+
+library.add(faAngleDoubleUp, faAngleDoubleDown);
 
 interface DataLoader {
     (): Promise<void>;
@@ -117,3 +121,23 @@ export const byteFormattingForChart = {
     labelFormatter: bytesLabelFormatter,
     valueFormatter: bytesValueFormatter,
 };
+
+export function useAdvancedFiltering() {
+    const isAdvanced = ref<boolean>(false);
+
+    function toggleAdvanced() {
+        isAdvanced.value = !isAdvanced.value;
+    }
+
+    const inputGroupClasses = computed(() => {
+        return ["float-right", "auto"];
+    });
+
+    return {
+        faAngleDoubleUp,
+        faAngleDoubleDown,
+        isAdvanced,
+        inputGroupClasses,
+        toggleAdvanced,
+    };
+}
