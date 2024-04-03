@@ -228,5 +228,5 @@ export function userOwnsHistory(user: User | AnonymousUser | null, history: AnyH
 }
 
 function hasOwner(history: AnyHistory): history is HistorySummaryExtended {
-    return "user_id" in history;
+    return "user_id" in history && history.user_id !== null;
 }
