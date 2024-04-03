@@ -519,8 +519,11 @@ def intersection_over_union(
     return min(_multiobject_intersection_over_union(mask1, mask2, pin_labels))
 
 
-def _parse_label_list(label_list_str: str) -> List[int]:
-    return [int(label.strip()) for label in label_list_str.split(",") if len(label_list_str) > 0]
+def _parse_label_list(label_list_str: Optional[str]) -> List[int]:
+    if label_list_str is None:
+        return []
+    else:
+        return [int(label.strip()) for label in label_list_str.split(",") if len(label_list_str) > 0]
 
 
 def get_image_metric(
