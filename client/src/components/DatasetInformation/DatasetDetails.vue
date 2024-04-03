@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import { type AxiosError } from "axios";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
+import { onMounted, onUnmounted, ref } from "vue";
 
-import { DatasetProvider } from "@/components/providers";
-import { JobDetailsProvider } from "@/components/providers/JobProvider";
+import { DatasetDetails } from "@/api";
+import { fetchDatasetDetails } from "@/api/datasets";
+import { fetchJobDetails, JobDetails } from "@/api/jobs";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { stateIsTerminal } from "@/utils/utils";
 
-import Alert from "@/components/Alert.vue";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import InheritanceChain from "@/components/InheritanceChain//InheritanceChain.vue";
@@ -21,77 +25,132 @@ interface Props {
     datasetId: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const { config, isConfigLoaded } = useConfig(true);
 
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
+
+const loading = ref(false);
+const jobLoading = ref(true);
+const jobTimeOut = ref<any>(null);
+const jobDetails = ref<JobDetails>();
+const dataset = ref<DatasetDetails | null>(null);
+const jobLoadingError = ref<string | null>(null);
+const datasetLoadingError = ref<string | null>(null);
+
+async function getDatasetDetails() {
+    loading.value = true;
+
+    try {
+        const data = await fetchDatasetDetails({ id: props.datasetId });
+
+        dataset.value = data;
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+
+        datasetLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function loadJobDetails() {
+    jobLoading.value = true;
+
+    try {
+        const data = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
+
+        if (stateIsTerminal(data)) {
+            jobLoading.value = false;
+
+            clearTimeout(jobTimeOut.value);
+        } else {
+            jobTimeOut.value = setTimeout(loadJobDetails, 3000);
+        }
+
+        jobDetails.value = data as unknown as JobDetails;
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+
+        jobLoadingError.value = error.response?.data?.err_msg || "Unable to fetch available dataset details.";
+    } finally {
+        jobLoading.value = false;
+    }
+}
+
+onMounted(async () => {
+    await getDatasetDetails();
+
+    if (dataset.value?.creating_job !== null) {
+        await loadJobDetails();
+    }
+});
+
+onUnmounted(() => {
+    clearTimeout(jobTimeOut.value);
+});
 </script>
 
 <template>
-    <DatasetProvider
-        :id="datasetId"
-        v-slot="{ result: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
-        <div aria-labelledby="dataset-details-heading">
-            <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
+    <div aria-labelledby="dataset-details-heading">
+        <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
 
-            <LoadingSpan v-if="isDatasetLoading" />
-            <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
-            <div v-else>
-                <JobDetailsProvider
-                    v-if="!isDatasetLoading && dataset.creating_job !== null"
-                    v-slot="{ result: job, loading: isJobLoading }"
-                    :job-id="dataset.creating_job"
-                    auto-refresh>
-                    <div v-if="!isJobLoading" class="details">
-                        <DatasetInformation :hda-id="datasetId" />
+        <BAlert v-if="loading" variant="info" show>
+            <LoadingSpan message="Loading dataset details..." />
+        </BAlert>
+        <BAlert v-else-if="datasetLoadingError" variant="error">
+            {{ datasetLoadingError }}
+        </BAlert>
+        <div v-else>
+            <div v-if="dataset?.creating_job && !jobLoading" class="details">
+                <DatasetInformation :hda-id="datasetId" />
 
-                        <JobParameters dataset_type="hda" :dataset-id="datasetId" />
+                <JobParameters dataset_type="hda" :dataset-id="datasetId" />
 
-                        <JobInformation :job_id="dataset.creating_job" />
+                <JobInformation :job_id="dataset.creating_job" />
 
-                        <DatasetStorage :dataset-id="datasetId" />
+                <DatasetStorage :dataset-id="datasetId" />
 
-                        <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
+                <InheritanceChain :dataset-id="datasetId" :dataset-name="dataset.name" />
 
-                        <JobMetrics
-                            v-if="isConfigLoaded"
-                            :dataset-id="datasetId"
-                            :carbon-intensity="config.carbon_intensity"
-                            :geographical-server-location-name="config.geographical_server_location_name"
-                            :power-usage-effectiveness="config.power_usage_effectiveness"
-                            :should-show-aws-estimate="config.aws_estimate"
-                            :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
+                <JobMetrics
+                    v-if="isConfigLoaded"
+                    :dataset-id="datasetId"
+                    :carbon-intensity="config.carbon_intensity"
+                    :geographical-server-location-name="config.geographical_server_location_name"
+                    :power-usage-effectiveness="config.power_usage_effectiveness"
+                    :should-show-aws-estimate="config.aws_estimate"
+                    :should-show-carbon-emission-estimates="config.carbon_emission_estimates" />
 
-                        <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
+                <JobDestinationParams v-if="currentUser?.is_admin" :job-id="dataset.creating_job" />
 
-                        <JobDependencies :dependencies="job.dependencies"></JobDependencies>
+                <JobDependencies v-if="jobDetails.dependencies" :dependencies="jobDetails.dependencies" />
 
-                        <div v-if="dataset.peek">
-                            <h2 class="h-md">Dataset Peek</h2>
+                <div v-if="dataset.peek">
+                    <h2 class="h-md">Dataset Peek</h2>
 
-                            <div v-html="dataset.peek" />
-                        </div>
-                    </div>
-                </JobDetailsProvider>
-                <div v-else-if="!isDatasetLoading" class="details">
-                    <DatasetInformation :hda-id="datasetId" />
+                    <div class="dataset-peek" v-html="dataset.peek" />
+                </div>
+            </div>
 
-                    <DatasetStorage :dataset-id="datasetId" />
+            <div v-if="!dataset?.creating_job" class="details">
+                <DatasetInformation :hda-id="datasetId" />
 
-                    <div>
-                        <h2 class="h-md">Job Not Found</h2>
+                <DatasetStorage :dataset-id="datasetId" />
 
-                        <p>
-                            No job associated with this dataset is recorded in Galaxy. Galaxy cannot determine full
-                            dataset provenance and history for this dataset.
-                        </p>
-                    </div>
+                <div>
+                    <h2 class="h-md">Job Not Found</h2>
+
+                    <p>
+                        No job associated with this dataset is recorded in Galaxy. Galaxy cannot determine full dataset
+                        provenance and history for this dataset.
+                    </p>
                 </div>
             </div>
         </div>
-    </DatasetProvider>
+    </div>
 </template>
 
 <style scoped>
@@ -99,5 +158,9 @@ const { currentUser } = storeToRefs(userStore);
     display: flex;
     flex-direction: column;
     gap: 1rem;
+
+    .dataset-peek {
+        word-break: break-all;
+    }
 }
 </style>
