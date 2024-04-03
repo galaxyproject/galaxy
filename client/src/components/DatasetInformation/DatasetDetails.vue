@@ -60,17 +60,15 @@ async function loadJobDetails() {
     jobLoading.value = true;
 
     try {
-        const data = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
+        const { data } = await fetchJobDetails({ job_id: dataset.value?.creating_job as string, full: true });
 
         if (stateIsTerminal(data)) {
-            jobLoading.value = false;
-
             clearTimeout(jobTimeOut.value);
         } else {
             jobTimeOut.value = setTimeout(loadJobDetails, 3000);
         }
 
-        jobDetails.value = data as unknown as JobDetails;
+        jobDetails.value = data;
     } catch (e) {
         const error = e as AxiosError<{ err_msg?: string }>;
 
