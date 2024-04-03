@@ -103,9 +103,9 @@ onUnmounted(() => {
         <BAlert v-else-if="datasetLoadingError" variant="error">
             {{ datasetLoadingError }}
         </BAlert>
-        <div v-else>
-            <div v-if="dataset?.creating_job && !jobLoading" class="details">
-                <DatasetInformation :hda-id="datasetId" />
+        <div v-else-if="dataset">
+            <div v-if="dataset.creating_job && !jobLoading" class="details">
+                <DatasetInformation :dataset="dataset" />
 
                 <JobParameters dataset_type="hda" :dataset-id="datasetId" />
 
@@ -135,8 +135,8 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <div v-if="!dataset?.creating_job" class="details">
-                <DatasetInformation :hda-id="datasetId" />
+            <div v-if="!dataset.creating_job" class="details">
+                <DatasetInformation :dataset="dataset" />
 
                 <DatasetStorage :dataset-id="datasetId" />
 
