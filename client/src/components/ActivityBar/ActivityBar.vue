@@ -32,7 +32,7 @@ const { hashedUserId } = useHashedUserId();
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore();
-const { isAnonymous } = storeToRefs(userStore);
+const { isAdmin, isAnonymous } = storeToRefs(userStore);
 
 const emit = defineEmits(["dragstart"]);
 
@@ -213,6 +213,7 @@ watch(
                     tooltip="Edit preferences"
                     @click="onToggleSidebar('settings')" />
                 <ActivityItem
+                    v-if="isAdmin"
                     id="activity-admin"
                     icon="user-cog"
                     :is-active="isActiveSideBar('admin')"
