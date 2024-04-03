@@ -37,7 +37,7 @@ ToolOutputName = Annotated[
 
 
 class ExecuteToolPayload(Model):
-    tool_id: Optional[Any] = Field(
+    tool_id: Optional[str] = Field(
         default=None,
         title="Tool ID",
         description="The ID of the tool to execute.",
