@@ -1694,7 +1694,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             # generate statement that will not revert DELETING or DELETED back to anything non-terminal
             rval = session.execute(
                 update(Job.table)
-                .where(Job.id == self.id, ~Job.state.in_((Job.states.DELETING, Job.states.DELETED)))
+                .where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states)))
                 .values(state=state)
             )
             if rval.rowcount == 1:
