@@ -418,8 +418,12 @@ class NotificationChannelSettings(Model):
         title="Push",
         description="Whether the user wants to receive push notifications in the browser for this category.",
     )
-    # TODO: Add more channels
-    # email: bool # Not supported for now
+    email: bool = Field(
+        default=True,
+        title="Email",
+        description="Whether the user wants to receive email notifications for this category.",
+    )
+    # TODO: Add more channels here and implement the corresponding plugin in lib/galaxy/managers/notification.py
     # matrix: bool # Possible future Matrix.org integration?
 
 

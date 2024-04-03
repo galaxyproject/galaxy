@@ -1,14 +1,24 @@
 import logging
-from datetime import datetime
+from datetime import (
+    datetime,
+    UTC,
+)
+from enum import Enum
 from typing import (
+    cast,
+    Dict,
     List,
     NamedTuple,
     Optional,
     Set,
     Tuple,
+    Type,
 )
 
-from pydantic import ValidationError
+from pydantic import (
+    BaseModel,
+    ValidationError,
+)
 from sqlalchemy import (
     and_,
     delete,
@@ -23,11 +33,15 @@ from sqlalchemy.orm import InstrumentedAttribute
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
-from galaxy.config import GalaxyAppConfiguration
+from galaxy.config import (
+    GalaxyAppConfiguration,
+    templates,
+)
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
     ObjectNotFound,
 )
+from galaxy.managers.markdown_util import to_html
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,
@@ -39,11 +53,15 @@ from galaxy.model import (
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.notifications import (
+    AnyNotificationContent,
     BroadcastNotificationCreateRequest,
     GenericNotificationCreateRequest,
     MandatoryNotificationCategory,
+    MessageNotificationContent,
+    NewSharedItemNotificationContent,
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
+    NotificationChannelSettings,
     NotificationCreateData,
     NotificationRecipients,
     PersonalNotificationCategory,
@@ -51,7 +69,10 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    send_mail,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -95,6 +116,11 @@ class NotificationManager:
             Notification.expiration_time,
             Notification.content,
         ]
+        # Register the supported notification channels here
+        self.channel_plugins: Dict[str, NotificationChannelPlugin] = {
+            "push": NoOpNotificationChannelPlugin(self.config),  # Push notifications are handled by the client
+            "email": EmailNotificationChannelPlugin(self.config),
+        }
 
     @property
     def notifications_enabled(self):
@@ -102,7 +128,7 @@ class NotificationManager:
 
     @property
     def _now(self):
-        return datetime.utcnow()
+        return datetime.now(UTC)
 
     @property
     def _notification_is_active(self):
@@ -133,6 +159,8 @@ class NotificationManager:
         recipient_users = self.recipient_resolver.resolve(request.recipients)
         notification = self._create_notification_model(request.notification)
         self.sa_session.add(notification)
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
         notifications_sent = self._send_notifications(notification, recipient_users)
         with transaction(self.sa_session):
@@ -154,9 +182,22 @@ class NotificationManager:
     def _send_notification_to_user(self, notification: Notification, user: User):
         category_settings = self._get_user_category_settings(user, notification.category)
         if self._is_subscribed_to_category(category_settings):
-            # Send the in-app notification
+            # Send the in-app notification always
             user_notification_association = UserNotificationAssociation(user, notification)
             self.sa_session.add(user_notification_association)
+            # Send the notification via any other configured channels
+            self._send_via_channels(notification, user, category_settings.channels)
+
+    def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
+        channels = channel_settings.model_fields_set
+        for channel in channels:
+            if channel not in self.channel_plugins:
+                log.warning(f"Notification channel '{channel}' is not supported.")
+                continue
+            if getattr(channel_settings, channel, False) is False:
+                continue  # User opted out of this channel
+            plugin = self.channel_plugins[channel]
+            plugin.send(notification, user)
 
     def _is_subscribed_to_category(self, category_settings: NotificationCategorySettings) -> bool:
         return category_settings.enabled
@@ -312,7 +353,7 @@ class NotificationManager:
             else None
         )
         try:
-            return UserNotificationPreferences.parse_raw(current_notification_preferences)
+            return UserNotificationPreferences.model_validate_json(current_notification_preferences)
         except ValidationError:
             # Gracefully return default preferences is they don't exist or get corrupted
             return UserNotificationPreferences.default()
@@ -512,3 +553,146 @@ class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
     def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
         # TODO Implement resolver using recursive CTEs?
         return []
+
+
+# --------------------------------------
+# Notification Channel Plugins
+
+
+class NotificationChannelPlugin(Protocol):
+    config: GalaxyAppConfiguration
+
+    def __init__(self, config: GalaxyAppConfiguration):
+        self.config = config
+
+    def send(self, notification: Notification, user: User):
+        raise NotImplementedError
+
+
+class NoOpNotificationChannelPlugin(NotificationChannelPlugin):
+    def send(self, notification: Notification, user: User):
+        pass
+
+
+class TemplateFormats(str, Enum):
+    HTML = "html"
+    TXT = "txt"
+
+
+class NotificationContext(BaseModel):
+    """Information passed to the email template to render the body."""
+
+    name: str
+    user_email: str
+    date: str
+    hostname: str
+    contact_email: str
+    notification_settings_url: str
+    content: AnyNotificationContent
+
+
+class EmailNotificationTemplateBuilder(Protocol):
+    config: GalaxyAppConfiguration
+    notification: Notification
+    user: User
+
+    def __init__(self, config: GalaxyAppConfiguration, notification: Notification, user: User):
+        self.config = config
+        self.notification = notification
+        self.user = user
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        """Processes the notification content to be rendered in the email body.
+
+        This should be implemented by each concrete template builder.
+        """
+        raise NotImplementedError
+
+    def get_subject(self) -> str:
+        """Returns the subject of the email to be sent.
+
+        This should be implemented by each concrete template builder.
+        """
+        raise NotImplementedError
+
+    def build_context(self, template_format: TemplateFormats) -> NotificationContext:
+        notification = self.notification
+        user = self.user
+        notification_date = notification.publication_time if notification.publication_time else notification.create_time
+        return NotificationContext(
+            name=user.username,
+            user_email=user.email,
+            date=notification_date.strftime("%B %d, %Y"),
+            hostname=self.config.server_name,
+            contact_email=self.config.error_email_to or "",
+            # TODO: How to build the proper URL without access to trans?
+            notification_settings_url=f"https://{self.config.server_name}/user/notifications",
+            content=self.get_content(template_format),
+        )
+
+    def get_body(self, template_format: TemplateFormats) -> str:
+        template_path = f"mail/notifications/{self.notification.category}-email.{template_format.value}"
+        context = self.build_context(template_format)
+        return templates.render(
+            template_path,
+            context.model_dump(),
+            self.config.templates_dir,
+        )
+
+
+class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+
+    markdown_to = {
+        TemplateFormats.HTML: to_html,
+        TemplateFormats.TXT: lambda x: x,  # TODO: strip markdown?
+    }
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = MessageNotificationContent.model_construct(**self.notification.content)
+        content.message = self.markdown_to[template_format](content.message)
+        return content
+
+    def get_subject(self) -> str:
+        return "[Galaxy] New message received"
+
+
+class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)
+        return content
+
+    def get_subject(self) -> str:
+        content = cast(NewSharedItemNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] New {content.item_type} shared with you"
+
+
+class EmailNotificationChannelPlugin(NotificationChannelPlugin):
+
+    # Register the supported email templates here
+    email_templates_by_category: Dict[PersonalNotificationCategory, Type[EmailNotificationTemplateBuilder]] = {
+        PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
+    }
+
+    def send(self, notification: Notification, user: User):
+        try:
+            email_template_builder = self.email_templates_by_category.get(notification.category)
+            if email_template_builder is None:
+                log.warning(f"No email template found for notification category '{notification.category}'.")
+                return
+            template_builder = email_template_builder(self.config, notification, user)
+            subject = template_builder.get_subject()
+            text_body = template_builder.get_body(TemplateFormats.TXT)
+            html_body = template_builder.get_body(TemplateFormats.HTML)
+            send_mail(
+                frm=self.config.email_from,
+                to=user.email,
+                subject=subject,
+                body=text_body,
+                config=self.config,
+                html=html_body,
+            )
+        except Exception as e:
+            log.error(f"Error sending email notification to user {user.id}. Reason: {unicodify(e)}")
+            pass
