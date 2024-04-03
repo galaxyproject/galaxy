@@ -1691,7 +1691,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return False
         session = object_session(self)
         if session and self.id and state not in Job.finished_states:
-            # generate statement that will not revert DELETING or DELETED back to anything non-terminal
+            # Do not update if job is in a terminal state
             rval = session.execute(
                 update(Job.table)
                 .where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states)))
@@ -1700,7 +1700,6 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             with transaction(session):
                 session.commit()
             if rval.rowcount == 1:
-                # Need to expire state since we just updated it, but ORM doesn't know about it.
                 self.state_history.append(JobStateHistory(self))
                 return True
             else:
