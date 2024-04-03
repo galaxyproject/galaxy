@@ -4996,6 +4996,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     Resource class that creates a relation between a dataset and a user history.
     """
 
+    history_id: Optional[int]
+
     def __init__(
         self,
         hid=None,
@@ -7153,7 +7155,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         return self.element_type == "dataset_collection"
 
     @property
-    def element_object(self):
+    def element_object(
+        self,
+    ) -> Optional[Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]]:
         if self.hda:
             return self.hda
         elif self.ldda:
