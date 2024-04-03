@@ -12,6 +12,7 @@ from pydantic import (
     Field,
     field_validator,
 )
+from typing_extensions import Annotated
 
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
@@ -19,9 +20,20 @@ from galaxy.schema.jobs import (
     ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
+    HDCADetailed,
+    HDCASummary,
     JobSummary,
     Model,
 )
+
+ToolOutputName = Annotated[
+    str,
+    Field(
+        ...,
+        title="Output Name",
+        description="The name of the tool output",
+    ),
+]
 
 
 class ExecuteToolPayload(Model):
@@ -96,13 +108,24 @@ class ExecuteToolPayload(Model):
     model_config = ConfigDict(extra="allow")
 
 
+class ExtendedHDCASummary(HDCASummary):
+    output_name: ToolOutputName
+
+
+class ExtendedHDCADetailed(HDCADetailed):
+    output_name: ToolOutputName
+
+
+ExtendedAnyHDCA = Union[ExtendedHDCADetailed, ExtendedHDCASummary]
+
+
 class ToolResponse(Model):
     outputs: List[Dict[str, Any]] = Field(
         default=[],
         title="Outputs",
         description="The outputs of the tool.",
     )
-    output_collections: List[Dict[str, Any]] = Field(
+    output_collections: List[ExtendedAnyHDCA] = Field(
         default=[],
         title="Output Collections",
         description="The output dataset collections of the tool.",
@@ -112,7 +135,7 @@ class ToolResponse(Model):
         title="Jobs",
         description="The jobs of the tool.",
     )
-    implicit_collections: List[Dict[str, Any]] = Field(
+    implicit_collections: List[ExtendedAnyHDCA] = Field(
         default=[],
         title="Implicit Collections",
         description="The implicit dataset collections of the tool.",
