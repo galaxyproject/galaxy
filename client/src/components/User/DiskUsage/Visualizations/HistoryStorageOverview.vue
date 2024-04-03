@@ -59,7 +59,6 @@ function onChangeObjectStore(value: string | null) {
 }
 
 async function reloadDataFromServer() {
-    console.log("reloading with " + objectStore.value);
     const allDatasetsInHistorySizeSummary = await fetchHistoryContentsSizeSummary(
         props.historyId,
         numberOfDatasetsLimit,
