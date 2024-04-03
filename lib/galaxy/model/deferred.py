@@ -9,9 +9,11 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import (
+    object_session,
+    Session,
+)
 from sqlalchemy.orm.exc import DetachedInstanceError
-from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.datatypes.sniff import (
     convert_function,
@@ -75,7 +77,7 @@ class DatasetInstanceMaterializer:
         object_store_populator: Optional[ObjectStorePopulator] = None,
         transient_path_mapper: Optional[TransientPathMapper] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[scoped_session] = None,
+        sa_session: Optional[Session] = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
@@ -123,6 +125,7 @@ class DatasetInstanceMaterializer:
                 sa_session = self._sa_session
                 if sa_session is None:
                     sa_session = object_session(dataset_instance)
+                assert sa_session
                 sa_session.add(materialized_dataset)
                 with transaction(sa_session):
                     sa_session.commit()
@@ -153,6 +156,7 @@ class DatasetInstanceMaterializer:
             sa_session = self._sa_session
             if sa_session is None:
                 sa_session = object_session(dataset_instance)
+            assert sa_session
             sa_session.add(materialized_dataset_instance)
         materialized_dataset_instance.copy_from(
             dataset_instance, new_dataset=materialized_dataset, include_tags=attached, include_metadata=True
@@ -174,12 +178,12 @@ class DatasetInstanceMaterializer:
 
     def _stream_source(self, target_source: DatasetSource, datatype) -> str:
         path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
-        transform = target_source.transform or []
+        transform = target_source.transform or []  # type:ignore[var-annotated]
         to_posix_lines = False
         spaces_to_tabs = False
         datatype_groom = False
         for transform_action in transform:
-            action = transform_action["action"]
+            action = transform_action["action"]  # type:ignore[index]
             if action == "to_posix_lines":
                 to_posix_lines = True
             elif action == "spaces_to_tabs":
@@ -278,7 +282,7 @@ def materializer_factory(
     transient_path_mapper: Optional[TransientPathMapper] = None,
     transient_directory: Optional[str] = None,
     file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[scoped_session] = None,
+    sa_session: Optional[Session] = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)

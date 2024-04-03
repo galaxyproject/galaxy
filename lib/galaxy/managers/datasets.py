@@ -112,8 +112,8 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.error_unless_dataset_purge_allowed()
         with self.session().begin():
             for dataset_id in request.dataset_ids:
-                dataset: Dataset = self.session().get(Dataset, dataset_id)
-                if dataset.user_can_purge:
+                dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+                if dataset and dataset.user_can_purge:
                     try:
                         dataset.full_delete()
                     except Exception:

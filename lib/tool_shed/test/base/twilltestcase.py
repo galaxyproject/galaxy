@@ -1300,8 +1300,11 @@ class ShedTwillTestCase(ShedApiTestCase):
             self.check_for_strings(strings_displayed)
         if revert:
             strings_displayed = []
+            # assert original_information[input_elem_name]
             for input_elem_name in ["repo_name", "description", "long_description"]:
-                self._browser.fill_form_value("edit_repository", input_elem_name, original_information[input_elem_name])
+                self._browser.fill_form_value(
+                    "edit_repository", input_elem_name, original_information[input_elem_name]  # type:ignore[arg-type]
+                )
                 strings_displayed.append(self.escape_html(original_information[input_elem_name]))
             self._browser.submit_form_with_name("edit_repository", "edit_repository_button")
             if self._browser.is_twill:
@@ -2050,7 +2053,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         )
         tools = installed_repository.metadata_["tools"]
         found_it = False
-        for tool in tools:
+        for tool in tools:  # type:ignore[attr-defined]
             if "id" not in tool:
                 continue
             if tool["id"] == tool_id:

@@ -220,6 +220,8 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
+
+        sort_column: Any
         if payload.sort_by == "username":
             sort_column = model.User.username
             stmt = stmt.add_columns(sort_column)
@@ -228,11 +230,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if payload.sort_desc:
             sort_column = sort_column.desc()
         stmt = stmt.order_by(sort_column)
+
         if payload.limit is not None:
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     def copy(self, history, user, **kwargs):
         """
@@ -487,7 +490,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
             .where(HistoryUserShareAssociation.user_id == user.id)
             .where(HistoryUserShareAssociation.history_id == history.id)
         )
-        return self.session().scalar(stmt)
+        return bool(self.session().scalar(stmt))
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
@@ -568,6 +571,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
@@ -602,6 +606,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             model.History.purged == false(),
         )
         result = self.history_manager.session().execute(stmt).fetchone()
+        assert result
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
