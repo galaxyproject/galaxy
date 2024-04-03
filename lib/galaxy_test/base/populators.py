@@ -1199,8 +1199,12 @@ class BaseDatasetPopulator(BasePopulator):
 
     def update_user(self, properties: Dict[str, Any]) -> Dict[str, Any]:
         update_response = self.update_user_raw(properties)
-        update_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(update_response)
         return update_response.json()
+
+    def set_user_preferred_object_store_id(self, store_id: Optional[str]) -> None:
+        user_properties = self.update_user({"preferred_object_store_id": store_id})
+        assert user_properties["preferred_object_store_id"] == store_id
 
     def update_user_raw(self, properties: Dict[str, Any]) -> Response:
         update_response = self.galaxy_interactor.put("users/current", properties, json=True)
@@ -1492,6 +1496,36 @@ class BaseDatasetPopulator(BasePopulator):
             assert_ok=assert_ok,
             timeout=timeout,
         )
+
+    def create_object_store_raw(self, payload: Dict[str, Any]) -> Response:
+        response = self._post(
+            "/api/object_store_instances",
+            payload,
+            json=True,
+        )
+        return response
+
+    def create_object_store(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.create_object_store_raw(payload)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def upgrade_object_store_raw(self, id: Union[str, int], payload: Dict[str, Any]) -> Response:
+        response = self._put(
+            f"/api/object_store_instances/{id}",
+            payload,
+            json=True,
+        )
+        return response
+
+    def upgrade_object_store(self, id: Union[str, int], payload: Dict[str, Any]) -> Dict[str, Any]:
+        response = self.upgrade_object_store_raw(id, payload)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    # same implementation client side, slightly different types...
+    update_object_store_raw = upgrade_object_store_raw
+    update_object_store = upgrade_object_store
 
     def selectable_object_stores(self) -> List[Dict[str, Any]]:
         selectable_object_stores_response = self._get("object_stores?selectable=true")

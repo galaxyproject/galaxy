@@ -8,10 +8,20 @@ export async function getSelectableObjectStores() {
 }
 
 const getObjectStore = fetcher.path("/api/object_stores/{object_store_id}").method("get").create();
+const getUserObjectStoreInstance = fetcher
+    .path("/api/object_store_instances/{user_object_store_id}")
+    .method("get")
+    .create();
 
 export async function getObjectStoreDetails(id: string) {
-    const { data } = await getObjectStore({ object_store_id: id });
-    return data;
+    if (id.startsWith("user_objects://")) {
+        const userObjectStoreId = id.substring("user_objects://".length);
+        const { data } = await getUserObjectStoreInstance({ user_object_store_id: userObjectStoreId });
+        return data;
+    } else {
+        const { data } = await getObjectStore({ object_store_id: id });
+        return data;
+    }
 }
 
 const updateObjectStoreFetcher = fetcher.path("/api/datasets/{dataset_id}/object_store_id").method("put").create();

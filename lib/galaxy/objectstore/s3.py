@@ -160,6 +160,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "aws_s3"
+    cloud = True
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)

@@ -19,13 +19,9 @@ const title = computed(() => {
 </script>
 
 <template>
-    <span v-b-tooltip.hover class="stored-how" :title="title">{{ text }}</span>
+    <span v-b-tooltip.hover class="stored-how object-store-help-on-hover" :title="title">{{ text }}</span>
 </template>
 
 <style scoped>
-/* Give visual indication of mouseover info */
-.stored-how {
-    text-decoration-line: underline;
-    text-decoration-style: dashed;
-}
+@import "./style.css";
 </style>

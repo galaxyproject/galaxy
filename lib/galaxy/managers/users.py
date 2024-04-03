@@ -799,9 +799,9 @@ class UserDeserializer(base.ModelDeserializer):
         }
         self.deserializers.update(user_deserializers)
 
-    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
+    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, trans=None, **context):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(trans, self.app.object_store, preferred_object_store_id)
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)

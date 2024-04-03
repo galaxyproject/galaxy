@@ -1005,7 +1005,9 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
 
     def deserialize_preferred_object_store_id(self, item, key, val, **context):
         preferred_object_store_id = val
-        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        validation_error = validate_preferred_object_store_id(
+            context["trans"], self.app.object_store, preferred_object_store_id
+        )
         if validation_error:
             raise ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, preferred_object_store_id, **context)

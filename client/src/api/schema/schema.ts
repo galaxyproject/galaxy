@@ -1245,6 +1245,22 @@ export interface paths {
          */
         delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
     };
+    "/api/object_store_instances": {
+        /** Get a list of persisted object store instances defined by the requesting user. */
+        get: operations["object_stores__instances_index"];
+        /** Create a user-bound object store. */
+        post: operations["object_stores__create_instance"];
+    };
+    "/api/object_store_instances/{user_object_store_id}": {
+        /** Get a persisted object store instances owned by the requesting user. */
+        get: operations["object_stores__instances_get"];
+        /** Update or upgrade user object store instance. */
+        put: operations["object_stores__instances_update"];
+    };
+    "/api/object_store_templates": {
+        /** Get a list of object store templates available to build user defined object stores from */
+        get: operations["object_stores__templates_index"];
+    };
     "/api/object_stores": {
         /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
         get: operations["index_api_object_stores_get"];
@@ -2452,7 +2468,7 @@ export interface components {
                       | "more_stable"
                       | "less_stable"
                   )
-                | ("cloud" | "quota" | "no_quota" | "restricted");
+                | ("cloud" | "quota" | "no_quota" | "restricted" | "user_defined");
         };
         /** BasicRoleModel */
         BasicRoleModel: {
@@ -3156,6 +3172,25 @@ export interface components {
             store_content_uri?: string | null;
             /** Store Dict */
             store_dict?: Record<string, never> | null;
+        };
+        /** CreateInstancePayload */
+        CreateInstancePayload: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+            /** Secrets */
+            secrets: {
+                [key: string]: string | undefined;
+            };
+            /** Template Id */
+            template_id: string;
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            };
         };
         /** CreateInvocationsFromStorePayload */
         CreateInvocationsFromStorePayload: {
@@ -9875,6 +9910,57 @@ export interface components {
              */
             up_to_date: boolean;
         };
+        /** ObjectStoreTemplateSecret */
+        ObjectStoreTemplateSecret: {
+            /** Help */
+            help: string | null;
+            /** Name */
+            name: string;
+        };
+        /** ObjectStoreTemplateSummaries */
+        ObjectStoreTemplateSummaries: components["schemas"]["ObjectStoreTemplateSummary"][];
+        /** ObjectStoreTemplateSummary */
+        ObjectStoreTemplateSummary: {
+            /** Badges */
+            badges: components["schemas"]["BadgeDict"][];
+            /** Description */
+            description: string | null;
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden?: boolean;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Secrets */
+            secrets?: components["schemas"]["ObjectStoreTemplateSecret"][] | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "s3" | "azure_blob" | "disk" | "generic_s3";
+            /** Variables */
+            variables?: components["schemas"]["ObjectStoreTemplateVariable"][] | null;
+            /**
+             * Version
+             * @default 0
+             */
+            version?: number;
+        };
+        /** ObjectStoreTemplateVariable */
+        ObjectStoreTemplateVariable: {
+            /** Help */
+            help: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "string" | "boolean" | "integer";
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -12093,6 +12179,24 @@ export interface components {
             visible?: boolean | null;
             [key: string]: unknown | undefined;
         };
+        /** UpdateInstancePayload */
+        UpdateInstancePayload: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name?: string | null;
+            /** Variables */
+            variables?: {
+                [key: string]: (string | boolean | number) | undefined;
+            } | null;
+        };
+        /** UpdateInstanceSecretPayload */
+        UpdateInstanceSecretPayload: {
+            /** Secret Name */
+            secret_name: string;
+            /** Secret Value */
+            secret_value: string;
+        };
         /** UpdateLibraryFolderPayload */
         UpdateLibraryFolderPayload: {
             /**
@@ -12274,6 +12378,19 @@ export interface components {
              */
             action_type: "upgrade_all_steps";
         };
+        /** UpgradeInstancePayload */
+        UpgradeInstancePayload: {
+            /** Secrets */
+            secrets: {
+                [key: string]: string | undefined;
+            };
+            /** Template Version */
+            template_version: number;
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            };
+        };
         /** UpgradeSubworkflowAction */
         UpgradeSubworkflowAction: {
             /**
@@ -12374,6 +12491,39 @@ export interface components {
              * @description True if beacon sharing is enabled
              */
             enabled: boolean;
+        };
+        /** UserConcreteObjectStoreModel */
+        UserConcreteObjectStoreModel: {
+            /** Badges */
+            badges: components["schemas"]["BadgeDict"][];
+            /** Description */
+            description?: string | null;
+            /** Device */
+            device?: string | null;
+            /** Id */
+            id: number;
+            /** Name */
+            name?: string | null;
+            /** Object Store Id */
+            object_store_id?: string | null;
+            /** Private */
+            private: boolean;
+            quota: components["schemas"]["QuotaModel"];
+            /** Secrets */
+            secrets: string[];
+            /** Template Id */
+            template_id: string;
+            /** Template Version */
+            template_version: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "s3" | "azure_blob" | "disk" | "generic_s3";
+            /** Variables */
+            variables: {
+                [key: string]: (string | boolean | number) | undefined;
+            } | null;
         };
         /** UserCreationPayload */
         UserCreationPayload: {
@@ -20314,6 +20464,142 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__instances_index: {
+        /** Get a list of persisted object store instances defined by the requesting user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserConcreteObjectStoreModel"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__create_instance: {
+        /** Create a user-bound object store. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__instances_get: {
+        /** Get a persisted object store instances owned by the requesting user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The model ID for a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__instances_update: {
+        /** Update or upgrade user object store instance. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+            /** @description The model ID for a persisted UserObjectStore object. */
+            path: {
+                user_object_store_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json":
+                    | components["schemas"]["UpdateInstanceSecretPayload"]
+                    | components["schemas"]["UpgradeInstancePayload"]
+                    | components["schemas"]["UpdateInstancePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserConcreteObjectStoreModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    object_stores__templates_index: {
+        /** Get a list of object store templates available to build user defined object stores from */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string | null;
+            };
+        };
+        responses: {
+            /** @description A list of the configured object store templates. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ObjectStoreTemplateSummaries"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {

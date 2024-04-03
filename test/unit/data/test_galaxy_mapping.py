@@ -50,7 +50,8 @@ class BaseModelTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         # Start the database and connect the mapping
-        cls.model = mapping.init("/tmp", cls._db_uri(), create_tables=True, object_store=MockObjectStore())
+        cls.model = mapping.init("/tmp", cls._db_uri(), create_tables=True)
+        model.setup_global_object_store_for_models(MockObjectStore())
         assert cls.model.engine is not None
 
     @classmethod

@@ -18,6 +18,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    Set,
     Tuple,
     Type,
     TYPE_CHECKING,
@@ -25,8 +26,10 @@ from typing import (
 
 import yaml
 from pydantic import BaseModel
+from typing_extensions import Protocol
 
 from galaxy.exceptions import (
+    ConfigDoesNotAllowException,
     MalformedContents,
     ObjectInvalid,
     ObjectNotFound,
@@ -53,6 +56,7 @@ from .badges import (
     StoredBadgeDict,
 )
 from .caching import CacheTarget
+from .templates import ObjectStoreConfiguration
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -65,6 +69,27 @@ DEFAULT_QUOTA_SOURCE = None  # Just track quota right on user object in Galaxy.
 DEFAULT_QUOTA_ENABLED = True  # enable quota tracking in object stores by default
 DEFAULT_DEVICE_ID = None
 log = logging.getLogger(__name__)
+
+
+class UserObjectStoreResolver(Protocol):
+    def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
+        pass
+
+    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+        pass
+
+
+class BaseUserObjectStoreResolver(UserObjectStoreResolver, metaclass=abc.ABCMeta):
+    _app_config: "UserObjectStoresAppConfig"
+
+    @abc.abstractmethod
+    def resolve_object_store_uri_config(self, uri: str) -> ObjectStoreConfiguration:
+        """Resolve the supplied object store URI into a concrete object store configuration."""
+        pass
+
+    def resolve_object_store_uri(self, uri: str) -> "ConcreteObjectStore":
+        object_store_configuration = self.resolve_object_store_uri_config(uri)
+        return concrete_object_store(object_store_configuration, self._app_config)
 
 
 class ObjectStore(metaclass=abc.ABCMeta):
@@ -294,6 +319,11 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """Return True if this object store respects object_store_id and allow selection of this."""
         return False
 
+    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+        if object_store_id and not self.object_store_allows_id_selection():
+            return "The current configuration doesn't allow selecting preferred object stores."
+        return None
+
     def object_store_ids_allowing_selection(self) -> List[str]:
         """Return a non-emtpy list of allowed selectable object store IDs during creation."""
         return []
@@ -508,6 +538,7 @@ class ConcreteObjectStore(BaseObjectStore):
 
     badges: List[StoredBadgeDict]
     device_id: Optional[str] = None
+    cloud: bool = False
 
     def __init__(self, config, config_dict=None, **kwargs):
         """
@@ -568,6 +599,8 @@ class ConcreteObjectStore(BaseObjectStore):
             self.badges,
             self.galaxy_enable_quotas and self.quota_enabled,
             self.private,
+            False,
+            self.cloud,
         )
 
     def _get_concrete_store_name(self, obj):
@@ -794,7 +827,8 @@ class DiskObjectStore(ConcreteObjectStore):
             # construct and check hashed path.
             if os.path.exists(path):
                 return True
-        return os.path.exists(self._construct_path(obj, **kwargs))
+        path = self._construct_path(obj, **kwargs)
+        return os.path.exists(path)
 
     def _create(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by creating any files and folders on disk."""
@@ -1031,8 +1065,12 @@ class DistributedObjectStore(NestedObjectStore):
     """
 
     store_type = "distributed"
+    _quota_source_map: Optional["QuotaSourceMap"]
+    _device_source_map: Optional["DeviceSourceMap"]
 
-    def __init__(self, config, config_dict, fsmon=False):
+    def __init__(
+        self, config, config_dict, fsmon=False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
+    ):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -1078,8 +1116,9 @@ class DistributedObjectStore(NestedObjectStore):
                 self.weighted_backend_ids.append(backened_id)
 
         self.original_weighted_backend_ids = self.weighted_backend_ids
+        self.user_object_store_resolver = user_object_store_resolver
         self.user_selection_allowed = user_selection_allowed
-        self.allow_user_selection = bool(user_selection_allowed)
+        self.allow_user_selection = bool(user_selection_allowed) or (user_object_store_resolver is not None)
         self.sleeper = None
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
@@ -1124,7 +1163,14 @@ class DistributedObjectStore(NestedObjectStore):
         return config_dict
 
     @classmethod
-    def from_xml(clazz, config, config_xml, fsmon=False):
+    def from_xml(
+        clazz,
+        config,
+        config_xml,
+        fsmon=False,
+        user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
+        **kwd,
+    ):
         legacy = False
         if config_xml is None:
             distributed_config = config.distributed_object_store_config_file
@@ -1141,9 +1187,9 @@ class DistributedObjectStore(NestedObjectStore):
             log.debug("Loading backends for distributed object store from %s", config_xml.get("id"))
 
         config_dict = clazz.parse_xml(config_xml, legacy=legacy)
-        return clazz(config, config_dict, fsmon=fsmon)
+        return clazz(config, config_dict, fsmon=fsmon, user_object_store_resolver=user_object_store_resolver)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self, object_store_uris: Optional[Set[str]] = None) -> Dict[str, Any]:
         as_dict = super().to_dict()
         as_dict["global_max_percent_full"] = self.global_max_percent_full
         as_dict["search_for_missing"] = self.search_for_missing
@@ -1154,6 +1200,21 @@ class DistributedObjectStore(NestedObjectStore):
             backend_as_dict["max_percent_full"] = self.max_percent_full[backend_id]
             backend_as_dict["weight"] = len([i for i in self.original_weighted_backend_ids if i == backend_id])
             backends.append(backend_as_dict)
+        if object_store_uris:
+            for user_object_store_uri in object_store_uris:
+                if not self.user_object_store_resolver:
+                    raise ConfigDoesNotAllowException()
+
+                object_store_config = self.user_object_store_resolver.resolve_object_store_uri_config(
+                    user_object_store_uri
+                )
+                dynamic_object_store_as_dict = object_store_config.model_dump()
+                dynamic_object_store_as_dict["id"] = user_object_store_uri
+                dynamic_object_store_as_dict["weight"] = 0
+                # these are all forward facing object stores...
+                dynamic_object_store_as_dict["store_by"] = "uuid"
+                backends.append(dynamic_object_store_as_dict)
+
         as_dict["backends"] = backends
         return as_dict
 
@@ -1175,13 +1236,13 @@ class DistributedObjectStore(NestedObjectStore):
             sleeper.sleep(120)  # Test free space every 2 minutes
 
     def _construct_path(self, obj, **kwargs):
-        return self.backends[obj.object_store_id].construct_path(obj, **kwargs)
+        return self._resolve_backend(obj.object_store_id).construct_path(obj, **kwargs)
 
     def _create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
         object_store_id = obj.object_store_id
         if object_store_id is None or not self._exists(obj, **kwargs):
-            if object_store_id is None or object_store_id not in self.backends:
+            if object_store_id is None or (object_store_id not in self.backends and "://" not in object_store_id):
                 try:
                     object_store_id = random.choice(self.weighted_backend_ids)
                     obj.object_store_id = object_store_id
@@ -1199,14 +1260,14 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.__class__.__name__,
                     obj.id,
                 )
-            return self.backends[object_store_id].create(obj, **kwargs)
+            return self._resolve_backend(object_store_id).create(obj, **kwargs)
         else:
-            return self.backends[object_store_id]
+            return self._resolve_backend(object_store_id)
 
     def _call_method(self, method, obj, default, default_is_exception, **kwargs):
         object_store_id = self.__get_store_id_for(obj, **kwargs)
         if object_store_id is not None:
-            return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
+            return self._resolve_backend(object_store_id).__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default(
                 f"objectstore, _call_method failed: {method} on {self._repr_object_for_exception(obj)}, kwargs: {kwargs}"
@@ -1214,11 +1275,20 @@ class DistributedObjectStore(NestedObjectStore):
         else:
             return default
 
-    def get_quota_source_map(self):
+    def _resolve_backend(self, object_store_id: str):
+        try:
+            return self.backends[object_store_id]
+        except KeyError:
+            if object_store_id.startswith("user_objects://") and self.user_object_store_resolver:
+                return self.user_object_store_resolver.resolve_object_store_uri(object_store_id)
+            raise
+
+    def get_quota_source_map(self) -> "QuotaSourceMap":
         if self._quota_source_map is None:
             quota_source_map = QuotaSourceMap()
             self._merge_quota_source_map(quota_source_map, self)
             self._quota_source_map = quota_source_map
+        assert self._quota_source_map is not None
         return self._quota_source_map
 
     def get_device_source_map(self) -> "DeviceSourceMap":
@@ -1226,6 +1296,7 @@ class DistributedObjectStore(NestedObjectStore):
             device_source_map = DeviceSourceMap()
             self._merge_device_source_map(device_source_map, self)
             self._device_source_map = device_source_map
+        assert self._device_source_map is not None
         return self._device_source_map
 
     @classmethod
@@ -1246,7 +1317,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def __get_store_id_for(self, obj, **kwargs):
         if obj.object_store_id is not None:
-            if obj.object_store_id in self.backends:
+            if obj.object_store_id in self.backends or obj.object_store_id.startswith("user_objects://"):
                 return obj.object_store_id
             else:
                 log.warning(
@@ -1280,8 +1351,26 @@ class DistributedObjectStore(NestedObjectStore):
         """Return True if this object store respects object_store_id and allow selection of this."""
         return self.allow_user_selection
 
+    def validate_selected_object_store_id(self, user, object_store_id: Optional[str]) -> Optional[str]:
+        parent_check = super().validate_selected_object_store_id(user, object_store_id)
+        if parent_check or object_store_id is None:
+            return parent_check
+        # user selection allowed and object_store_id is not None
+        if object_store_id.startswith("user_objects://"):
+            if not user:
+                return "Supplied object store id is not accessible"
+            rest_of_uri = object_store_id.split("://", 1)[1]
+            user_object_store_id = int(rest_of_uri)
+            for user_object_store in user.object_stores:
+                if user_object_store.id == user_object_store_id:
+                    return None
+            return "Supplied object store id was not found"
+        if object_store_id not in self.object_store_ids_allowing_selection():
+            return "Supplied object store id is not an allowed object store selection"
+        return None
+
     def object_store_ids_allowing_selection(self) -> List[str]:
-        """Return a non-emtpy list of allowed selectable object store IDs during creation."""
+        """Return a non-empty list of allowed selectable object store IDs during creation."""
         return self.user_selection_allowed
 
     def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
@@ -1380,6 +1469,24 @@ class HierarchicalObjectStore(NestedObjectStore):
         return quota_source_map
 
 
+def serialize_static_object_store_config(object_store: ObjectStore, object_store_uris: Set[str]) -> Dict[str, Any]:
+    """Serialize a static object store configuration for database-less serialization.
+
+    The database-less part here comes from the fact these are used in job directories
+    during extended metadata collection. Any database/vault/app config details should
+    be unpacked and the result should be an object store configuration that doesn't
+    depend on those entities but which resolves to the same locations.
+    """
+    if len(object_store_uris) == 0:
+        return object_store.to_dict()
+    if not isinstance(object_store, DistributedObjectStore):
+        # TODO: Not for the MVP or first iteration - but potentially we could allow
+        # a concrete store here and then build a Distributed store from that and
+        # concrete stores represented by object_store_uris
+        raise ConfigDoesNotAllowException("ObjectStore configuration does not allow per-user object stores")
+    return object_store.to_dict(object_store_uris=object_store_uris)
+
+
 class QuotaModel(BaseModel):
     source: Optional[str] = None
     enabled: bool
@@ -1395,9 +1502,11 @@ class ConcreteObjectStoreModel(BaseModel):
     device: Optional[str] = None
 
 
-def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
+def type_to_object_store_class(
+    store: str, fsmon: bool = False, user_object_store_resolver: Optional[UserObjectStoreResolver] = None
+) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
     objectstore_class: Type[BaseObjectStore]
-    objectstore_constructor_kwds = {}
+    objectstore_constructor_kwds: Dict[str, Any] = {}
     if store == "disk":
         objectstore_class = DiskObjectStore
     elif store in ["s3", "aws_s3"]:
@@ -1415,6 +1524,7 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
     elif store == "distributed":
         objectstore_class = DistributedObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
+        objectstore_constructor_kwds["user_object_store_resolver"] = user_object_store_resolver
     elif store == "hierarchical":
         objectstore_class = HierarchicalObjectStore
         objectstore_constructor_kwds["fsmon"] = fsmon
@@ -1445,7 +1555,12 @@ def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[Ba
 
 
 def build_object_store_from_config(
-    config, fsmon=False, config_xml=None, config_dict=None, disable_process_management=False
+    config,
+    fsmon=False,
+    config_xml=None,
+    config_dict=None,
+    disable_process_management=False,
+    user_object_store_resolver: Optional[UserObjectStoreResolver] = None,
 ):
     """
     Invoke the appropriate object store.
@@ -1495,11 +1610,57 @@ def build_object_store_from_config(
         from_object = "dict"
         store = config_dict.get("type")
 
-    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
+    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(
+        store, fsmon=fsmon, user_object_store_resolver=user_object_store_resolver
+    )
     if from_object == "xml":
         return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
     else:
         return objectstore_class(config=config, config_dict=config_dict, **objectstore_constructor_kwds)
+
+
+# View into the application configuration that is shared between the global object store
+# and user defined object stores as produced by concrete_object_store.
+class UserObjectStoresAppConfig(BaseModel):
+    object_store_cache_path: str
+    object_store_cache_size: int
+    jobs_directory: str
+    new_file_path: str
+    umask: int
+
+
+# TODO: this will need app details...
+# TODO: unit test from configuration dict...
+def concrete_object_store(
+    object_store_configuration: ObjectStoreConfiguration, app_config: UserObjectStoresAppConfig
+) -> ConcreteObjectStore:
+    # Adapt structured UserObjectStoresAppConfig into a more full configuration object as expected by
+    # the object stores
+    class GalaxyConfigAdapter:
+        # Hard code these, these will not support legacy features
+        object_store_check_old_style = False
+        object_store_store_by = "uuid"
+
+        # Set this to false for now... not sure but we may want to revisit this
+        enable_quotas = False
+
+        # These need to come in from Galaxy's config
+        jobs_directory = app_config.jobs_directory
+        new_file_path = app_config.new_file_path
+        umask = app_config.umask
+        object_store_cache_size = app_config.object_store_cache_size
+        object_store_cache_path = app_config.object_store_cache_path
+
+    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(
+        store=object_store_configuration.type,
+        fsmon=False,
+    )
+    assert issubclass(objectstore_class, ConcreteObjectStore)
+    return objectstore_class(
+        config=GalaxyConfigAdapter(),
+        config_dict=object_store_configuration.model_dump(),
+        **objectstore_constructor_kwds,
+    )
 
 
 def local_extra_dirs(func):

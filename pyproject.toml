@@ -69,6 +69,7 @@ h5grove = ">=1.2.1"
 h5py = "*"
 importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
 isa-rwval = ">=0.10.10"
+Jinja2 = "*"
 kombu = ">=5.3"  # for importlib-metadata fix
 isal = "*"
 lagom = "*"
