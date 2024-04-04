@@ -630,7 +630,8 @@ class BaseDatasetPopulator(BasePopulator):
             raise TimeoutAssertionError(message)
 
         if assert_ok:
-            self.wait_for_history(history_id, assert_ok=True, timeout=timeout)
+            for job in self.history_jobs(history_id=history_id):
+                assert job["state"] in ("ok", "skipped"), f"Job {job} not in expected state"
 
     def wait_for_jobs(
         self,

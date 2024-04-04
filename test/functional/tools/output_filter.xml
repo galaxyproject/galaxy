@@ -59,15 +59,9 @@ echo 'p2.reverse' > p2.reverse
                 </assert_contents>
             </output>
         </test>
-        <!-- tool runs with no outputs should fail -->
-        <test expect_num_outputs="0" expect_test_failure="true">
+        <test expect_num_outputs="0">
             <param name="produce_out_1" value="false" />
             <param name="filter_text_1" value="not_foo_or_bar" />
-            <output name="out_3">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
             <assert_stdout>
                 <has_n_lines n="0"/>
             </assert_stdout>

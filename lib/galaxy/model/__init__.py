@@ -1757,15 +1757,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             return False
         session = object_session(self)
         if session and self.id and state not in Job.finished_states:
-            # generate statement that will not revert DELETING or DELETED back to anything non-terminal
+            # Do not update if job is in a terminal state
             rval = session.execute(
-                update(Job)
-                .where(Job.id == self.id, ~Job.state.in_((Job.states.DELETING, Job.states.DELETED)))
-                .values(state=state)
+                update(Job).where(Job.id == self.id, ~Job.state.in_((state, *Job.finished_states))).values(state=state)
             )
+            with transaction(session):
+                session.commit()
             if rval.rowcount == 1:
-                # Need to expire state since we just updated it, but ORM doesn't know about it.
-                session.expire(self, ["state"])
                 self.state_history.append(JobStateHistory(self))
                 return True
             else:
@@ -3065,7 +3063,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "HistoryDatasetAssociation",
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
                 not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
             )
         ),
@@ -3090,7 +3088,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "HistoryDatasetAssociation",
         primaryjoin=(
             lambda: and_(
-                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[attr-defined]
+                HistoryDatasetAssociation.history_id == History.id,  # type: ignore[arg-type]
                 not_(HistoryDatasetAssociation.deleted),  # type: ignore[has-type]
                 HistoryDatasetAssociation.visible,  # type: ignore[has-type]
             )
@@ -5107,6 +5105,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     """
     Resource class that creates a relation between a dataset and a user history.
     """
+
+    history_id: Optional[int]
 
     def __init__(
         self,
@@ -7301,7 +7301,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         return self.element_type == "dataset_collection"
 
     @property
-    def element_object(self):
+    def element_object(
+        self,
+    ) -> Optional[Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]]:
         if self.hda:
             return self.hda
         elif self.ldda:
