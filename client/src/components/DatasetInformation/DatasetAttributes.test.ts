@@ -1,39 +1,36 @@
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
-
-import MockProvider from "@/components/providers/MockProvider";
 
 import DatasetAttributes from "./DatasetAttributes.vue";
 
+const DATASET_ID = "dataset_id";
+
 const localVue = getLocalVue();
 
-async function buildWrapper(conversion_disable = false) {
+async function montDatasetAttributes(conversion_disable = false) {
     const pinia = createTestingPinia();
     setActivePinia(pinia);
 
+    const axiosMock = new MockAdapter(axios);
+    axiosMock.onPut(`/dataset/set_edit`).reply(200, { message: "success", status: "success" });
+    axiosMock.onGet(`/dataset/get_edit?dataset_id=${DATASET_ID}`).reply(200, {
+        attribute_inputs: [{ name: "attribute_text", type: "text" }],
+        conversion_inputs: [{ name: "conversion_text", type: "text" }],
+        conversion_disable: conversion_disable,
+        datatype_inputs: [{ name: "datatype_text", type: "text" }],
+        permission_inputs: [{ name: "permission_text", type: "text" }],
+    });
+
     const wrapper = mount(DatasetAttributes as object, {
         propsData: {
-            datasetId: "dataset_id",
+            datasetId: DATASET_ID,
         },
         localVue,
-        stubs: {
-            DatasetAttributesProvider: MockProvider({
-                result: {
-                    attribute_inputs: [{ name: "attribute_text", type: "text" }],
-                    conversion_inputs: [{ name: "conversion_text", type: "text" }],
-                    conversion_disable: conversion_disable,
-                    datatype_inputs: [{ name: "datatype_text", type: "text" }],
-                    permission_inputs: [{ name: "permission_text", type: "text" }],
-                },
-            }),
-            FontAwesomeIcon: false,
-            FormElement: false,
-        },
         pinia,
     });
 
@@ -44,10 +41,7 @@ async function buildWrapper(conversion_disable = false) {
 
 describe("DatasetAttributes", () => {
     it("check rendering", async () => {
-        const axiosMock = new MockAdapter(axios);
-        axiosMock.onPut(`/dataset/set_edit`).reply(200, { message: "success", status: "success" });
-
-        const wrapper = await buildWrapper();
+        const wrapper = await montDatasetAttributes();
 
         expect(wrapper.findAll("button").length).toBe(6);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
@@ -57,16 +51,19 @@ describe("DatasetAttributes", () => {
         expect(wrapper.findAll(".tab-pane").length).toBe(3);
         expect(wrapper.findAll(".ui-portlet-section").length).toBe(2);
 
-        const $button = wrapper.find("#dataset-attributes-default-save");
+        const saveButton = wrapper.find("#dataset-attributes-default-save");
 
-        await $button.trigger("click");
+        await saveButton.trigger("click");
+
         await flushPromises();
 
         expect(wrapper.find("[role=alert]").text()).toBe("success");
     });
 
     it("check rendering without conversion option", async () => {
-        const wrapper = await buildWrapper(true);
+        const wrapper = await montDatasetAttributes(true);
+
+        await flushPromises();
 
         expect(wrapper.findAll("button").length).toBe(5);
         expect(wrapper.findAll("#attribute_text").length).toBe(1);
