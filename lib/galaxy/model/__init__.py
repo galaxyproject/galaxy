@@ -2937,12 +2937,14 @@ class Notification(Base, Dictifiable, RepresentById):
     expiration_time: Mapped[Optional[datetime]] = mapped_column(
         default=now() + timedelta(days=30 * 6)
     )  # The expiration date, expired notifications will be permanently removed from DB regularly
-    source: Mapped[Optional[str]] = mapped_column(String(32), index=True)  # Who (or what) generated the notification
-    category: Mapped[Optional[str]] = mapped_column(
-        String(64), index=True
+    source: Mapped[str] = mapped_column(
+        String(32), index=True, nullable=True
+    )  # Who (or what) generated the notification
+    category: Mapped[str] = mapped_column(
+        String(64), index=True, nullable=True
     )  # Category of the notification, defines its contents. Used for filtering, un/subscribing, etc
-    variant: Mapped[Optional[str]] = mapped_column(
-        String(16), index=True
+    variant: Mapped[str] = mapped_column(
+        String(16), index=True, nullable=True
     )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
     dispatched: Mapped[Boolean] = mapped_column(
         Boolean, index=True, nullable=False, default=False
