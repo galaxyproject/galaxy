@@ -5,19 +5,37 @@ import MockAdapter from "axios-mock-adapter";
 import { format, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 
-import datasetResponse from "./testData/datasetResponse.json";
-
 import DatasetInformation from "./DatasetInformation.vue";
 
 const HDA_ID = "FOO_HDA_ID";
 
-const mockDatasetProvider = {
-    render() {
-        return this.$scopedSlots.default({
-            loading: false,
-            result: datasetResponse,
-        });
-    },
+interface DatasetResponse {
+    id: string;
+    hid: number;
+    uuid: string;
+    name: string;
+    file_ext: string;
+    file_name: string;
+    file_size: number;
+    dataset_id: string;
+    history_id: string;
+    create_time: string;
+    metadata_dbkey: string;
+    [key: string]: any;
+}
+
+const datasetResponse: DatasetResponse = {
+    id: "FOO_HDA_ID",
+    hid: 32,
+    uuid: "5e89abe4-e8f7-468a-9ef1-d4e322183fa5",
+    name: "Add column on data 31",
+    file_size: 93,
+    file_ext: "txt",
+    dataset_id: "201592c8e20dac24",
+    history_id: "6fc9fbb81c497f69",
+    create_time: "2020-09-28T15:54:04.803756",
+    metadata_dbkey: "?",
+    file_name: "/home/oleg/galaxy/database/objects/5/e/8/dataset_5e89abe4-e8f7-468a-9ef1-d4e322183fa5.dat",
 };
 
 const localVue = getLocalVue();
@@ -27,24 +45,17 @@ describe("DatasetInformation/DatasetInformation", () => {
     let axiosMock: MockAdapter;
     let datasetInfoTable: Wrapper<Vue>;
 
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
-    });
-
     afterEach(() => {
         axiosMock.restore();
     });
 
     beforeEach(async () => {
-        const propsData = {
-            hda_id: HDA_ID,
-        };
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(new RegExp(`api/configuration/decode/*`)).reply(200, { decoded_id: 123 });
 
         wrapper = mount(DatasetInformation as object, {
-            propsData,
-            stubs: {
-                DatasetProvider: mockDatasetProvider,
+            propsData: {
+                dataset: datasetResponse,
             },
             localVue,
         });
