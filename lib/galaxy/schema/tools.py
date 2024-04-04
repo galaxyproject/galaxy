@@ -20,6 +20,9 @@ from galaxy.schema.jobs import (
     ShowFullJobResponse,
 )
 from galaxy.schema.schema import (
+    HDACustom,
+    HDADetailed,
+    HDASummary,
     HDCADetailed,
     HDCASummary,
     JobSummary,
@@ -108,24 +111,39 @@ class ExecuteToolPayload(Model):
     model_config = ConfigDict(extra="allow")
 
 
-class ExtendedHDCASummary(HDCASummary):
+class HDACustomWithOutputName(HDACustom):
     output_name: ToolOutputName
 
 
-class ExtendedHDCADetailed(HDCADetailed):
+class HDADetailedWithOutputName(HDADetailed):
     output_name: ToolOutputName
 
 
-ExtendedAnyHDCA = Union[ExtendedHDCADetailed, ExtendedHDCASummary]
+class HDASummaryWithOutputName(HDASummary):
+    output_name: ToolOutputName
+
+
+AnyHDAWithOutputName = Union[HDACustomWithOutputName, HDADetailedWithOutputName, HDASummaryWithOutputName]
+
+
+class HDCASummaryWithOutputName(HDCASummary):
+    output_name: ToolOutputName
+
+
+class HDCADetailedWithOutputName(HDCADetailed):
+    output_name: ToolOutputName
+
+
+AnyHDCAWithOutputName = Union[HDCADetailedWithOutputName, HDCASummaryWithOutputName]
 
 
 class ToolResponse(Model):
-    outputs: List[Dict[str, Any]] = Field(
+    outputs: List[AnyHDAWithOutputName] = Field(
         default=[],
         title="Outputs",
         description="The outputs of the tool.",
     )
-    output_collections: List[ExtendedAnyHDCA] = Field(
+    output_collections: List[AnyHDCAWithOutputName] = Field(
         default=[],
         title="Output Collections",
         description="The output dataset collections of the tool.",
@@ -135,7 +153,7 @@ class ToolResponse(Model):
         title="Jobs",
         description="The jobs of the tool.",
     )
-    implicit_collections: List[ExtendedAnyHDCA] = Field(
+    implicit_collections: List[AnyHDCAWithOutputName] = Field(
         default=[],
         title="Implicit Collections",
         description="The implicit dataset collections of the tool.",
