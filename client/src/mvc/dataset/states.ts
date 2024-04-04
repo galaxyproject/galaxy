@@ -2,7 +2,7 @@
 /** Map of possible HDA/collection/job states to their string equivalents.
  *      A port of galaxy.model.Dataset.states.
  */
-var STATES = {
+const STATES = {
     // NOT ready states
     /** is uploading and not ready */
     UPLOAD: "upload",
@@ -34,6 +34,9 @@ var STATES = {
     DEFERRED: "deferred",
     /** the tool producing this dataset failed */
     ERROR: "error",
+
+    READY_STATES: [] as string[],
+    NOT_READY_STATES: [] as string[],
 };
 
 STATES.READY_STATES = [
