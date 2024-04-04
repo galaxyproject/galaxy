@@ -2944,6 +2944,9 @@ class Notification(Base, Dictifiable, RepresentById):
     variant: Mapped[Optional[str]] = mapped_column(
         String(16), index=True
     )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
+    dispatched: Mapped[Boolean] = mapped_column(
+        Boolean, index=True, nullable=False, default=False
+    )  # Whether the notification has been dispatched to users via other channels
     # A bug in early 23.1 led to values being stored as json string, so we use this special type to process the result value twice.
     # content should always be a dict
     content: Mapped[Optional[bytes]] = mapped_column(DoubleEncodedJsonType)
