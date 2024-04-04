@@ -14,8 +14,6 @@ import datetime
 import os
 import sys
 
-import sphinx_rtd_theme
-
 # Set GALAXY_DOCS_SKIP_VIEW_CODE=1 to skip embedding highlighted source
 # code into docs.
 SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
@@ -161,11 +159,10 @@ html_theme_options = {
     "collapse_navigation": False,
     "display_version": True,
     "navigation_depth": 2,
-    "canonical_url": "https://docs.galaxyproject.org/en/master/",
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme_path = []
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -173,6 +170,8 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 # html_short_title = None
+
+html_baseurl = "https://docs.galaxyproject.org/en/master/"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
