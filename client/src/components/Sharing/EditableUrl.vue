@@ -86,6 +86,7 @@ function onCopyOut() {
         <BButton
             id="tooltip-clipboard"
             v-b-tooltip.hover
+            :disabled="editing"
             size="md"
             class="inline-icon-button"
             :title="clipboardTitle"
@@ -98,10 +99,16 @@ function onCopyOut() {
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .editable-url {
     height: 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.25rem;
+}
+.inline-icon-button:disabled:hover {
+    background-color: $brand-secondary;
+    color: unset;
 }
 </style>
