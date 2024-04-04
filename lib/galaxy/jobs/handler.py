@@ -18,7 +18,10 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import (
+    DBAPIError,
+    OperationalError,
+)
 from sqlalchemy.sql.expression import (
     and_,
     func,
@@ -395,6 +398,10 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.__handle_waiting_jobs()
         except StopSignalException:
             pass
+        except DBAPIError as e:
+            log.exception(f"Execution of a database operation failed due to the following exception: {e}")
+            self.sa_session.remove()
+
         log.trace(monitor_step_timer.to_str())
 
     def __handle_waiting_jobs(self):
