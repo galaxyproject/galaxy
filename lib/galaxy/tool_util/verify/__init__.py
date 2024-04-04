@@ -31,7 +31,7 @@ except ImportError:
 try:
     from PIL import Image
 except ImportError:
-    pass
+    Image = None  # type: ignore[assignment]
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
