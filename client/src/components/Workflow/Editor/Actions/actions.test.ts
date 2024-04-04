@@ -21,6 +21,8 @@ import {
     CopyStepAction,
     InsertStepAction,
     LazyMutateStepAction,
+    LazySetLabelAction,
+    LazySetOutputLabelAction,
     RemoveStepAction,
     UpdateStepAction,
 } from "./stepActions";
@@ -208,6 +210,24 @@ describe("Workflow Undo Redo Actions", () => {
             const action = new CopyStepAction(stepStore, stateStore, step);
             testUndoRedo(action);
         });
+
+        it("LazySetLabelAction", () => {
+            const step = addStep();
+            const action = new LazySetLabelAction(stepStore, stateStore, step.id, step.label, "custom_label");
+            testUndoRedo(action);
+        });
+
+        it("LazySetOutputLabelAction", () => {
+            const step = addStep();
+            const action = new LazySetOutputLabelAction(stepStore, stateStore, step.id, null, "abc", [
+                {
+                    label: "abc",
+                    output_name: "out_file1",
+                },
+            ]);
+
+            testUndoRedo(action);
+        });
     });
 });
 
@@ -256,6 +276,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "outputTerminals",
             "stepPosition",
             "stepLoadingState",
+            "report",
         ]),
         connectionStoreState: extractKeys(connectionStore, [
             "connections",

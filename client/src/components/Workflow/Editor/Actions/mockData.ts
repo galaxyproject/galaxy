@@ -206,7 +206,9 @@ export function mockWorkflow(): Workflow {
         comments: [],
         creator: [],
         license: "",
-        report: {},
+        report: {
+            markdown: "",
+        },
         steps: {
             "0": structuredClone(inputStep),
         },
