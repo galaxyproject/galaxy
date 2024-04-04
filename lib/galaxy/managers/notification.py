@@ -648,7 +648,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
     }
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = MessageNotificationContent.model_construct(**self.notification.content)
+        content = MessageNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
         content.message = self.markdown_to[template_format](content.message)
         return content
 
@@ -659,7 +659,7 @@ class MessageEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)
+        content = NewSharedItemNotificationContent.model_construct(**self.notification.content)  # type:ignore[arg-type]
         return content
 
     def get_subject(self) -> str:
@@ -677,7 +677,8 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
 
     def send(self, notification: Notification, user: User):
         try:
-            email_template_builder = self.email_templates_by_category.get(notification.category)
+            category = cast(PersonalNotificationCategory, notification.category)
+            email_template_builder = self.email_templates_by_category.get(category)
             if email_template_builder is None:
                 log.warning(f"No email template found for notification category '{notification.category}'.")
                 return
