@@ -57,11 +57,12 @@ def order_workflow_steps(steps, comments):
                 else:
                     sortable_comments.append(comment)
 
-            # consider comments to find normalization position
-            min_left_comments = min(comment.position[0] for comment in sortable_comments)
-            min_top_comments = min(comment.position[1] for comment in sortable_comments)
-            min_left = min(min_left_comments, min_left)
-            min_top = min(min_top_comments, min_top)
+            if sortable_comments:
+                # consider comments to find normalization position
+                min_left_comments = min(comment.position[0] for comment in sortable_comments)
+                min_top_comments = min(comment.position[1] for comment in sortable_comments)
+                min_left = min(min_left_comments, min_left)
+                min_top = min(min_top_comments, min_top)
 
             # normalize comments by min_left and min_top
             for comment_list in [sortable_comments, freehand_comments]:
