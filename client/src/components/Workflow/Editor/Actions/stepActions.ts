@@ -1,3 +1,5 @@
+import { replaceLabel } from "@/components/Markdown/parse";
+import { useToast } from "@/composables/toast";
 import { useRefreshFromStore } from "@/stores/refreshFromStore";
 import { LazyUndoRedoAction, UndoRedoAction, UndoRedoStore } from "@/stores/undoRedoStore";
 import { Connection, WorkflowConnectionStore } from "@/stores/workflowConnectionStore";
@@ -47,6 +49,111 @@ export class LazyMutateStepAction<K extends keyof Step> extends LazyUndoRedoActi
     redo() {
         this.stepStore.updateStepValue(this.stepId, this.key, this.toValue);
         this.onUndoRedo?.();
+    }
+}
+
+export class LazySetLabelAction extends LazyMutateStepAction<"label"> {
+    labelType: "input" | "step";
+    labelTypeTitle: "Input" | "Step";
+    stateStore: WorkflowStateStore;
+    success;
+
+    constructor(
+        stepStore: WorkflowStepStore,
+        stateStore: WorkflowStateStore,
+        stepId: number,
+        fromValue: Step["label"],
+        toValue: Step["label"]
+    ) {
+        super(stepStore, stepId, "label", fromValue, toValue);
+
+        const step = this.stepStore.getStep(this.stepId);
+        assertDefined(step);
+
+        const stepType = step.type;
+        const isInput = ["data_input", "data_collection_input", "parameter_input"].indexOf(stepType) >= 0;
+        this.labelType = isInput ? "input" : "step";
+        this.labelTypeTitle = isInput ? "Input" : "Step";
+        this.stateStore = stateStore;
+        this.success = useToast().success;
+    }
+
+    private toast(from: string, to: string) {
+        this.success(`${this.labelTypeTitle} label updated from "${from}" to "${to}" in workflow report.`);
+    }
+
+    run() {
+        const markdown = this.stateStore.report.markdown ?? "";
+        const newMarkdown = replaceLabel(markdown, this.labelType, this.fromValue as string, this.toValue as string);
+        this.stateStore.report.markdown = newMarkdown;
+        this.toast(this.fromValue ?? "", this.toValue ?? "");
+    }
+
+    undo() {
+        super.undo();
+
+        const markdown = this.stateStore.report.markdown ?? "";
+        const newMarkdown = replaceLabel(markdown, this.labelType, this.toValue as string, this.fromValue as string);
+        this.stateStore.report.markdown = newMarkdown;
+        this.toast(this.toValue ?? "", this.fromValue ?? "");
+    }
+
+    redo() {
+        super.redo();
+        this.run();
+    }
+}
+
+export class LazySetOutputLabelAction extends LazyMutateStepAction<"workflow_outputs"> {
+    success;
+    fromLabel;
+    toLabel;
+    stateStore;
+
+    constructor(
+        stepStore: WorkflowStepStore,
+        stateStore: WorkflowStateStore,
+        stepId: number,
+        fromValue: string | null,
+        toValue: string | null,
+        toOutputs: Step["workflow_outputs"]
+    ) {
+        const step = stepStore.getStep(stepId);
+        assertDefined(step);
+        const fromOutputs = structuredClone(step.workflow_outputs);
+
+        super(stepStore, stepId, "workflow_outputs", fromOutputs, structuredClone(toOutputs));
+
+        this.fromLabel = fromValue;
+        this.toLabel = toValue;
+        this.stateStore = stateStore;
+        this.success = useToast().success;
+    }
+
+    private toast(from: string, to: string) {
+        this.success(`Output label updated from "${from}" to "${to}" in workflow report.`);
+    }
+
+    run() {
+        const markdown = this.stateStore.report.markdown ?? "";
+        const newMarkdown = replaceLabel(markdown, "output", this.fromLabel, this.toLabel);
+        this.stateStore.report.markdown = newMarkdown;
+        this.toast(this.fromLabel ?? "", this.toLabel ?? "");
+    }
+
+    undo() {
+        super.undo();
+
+        const markdown = this.stateStore.report.markdown ?? "";
+        const newMarkdown = replaceLabel(markdown, "output", this.toLabel, this.fromLabel);
+        this.stateStore.report.markdown = newMarkdown;
+
+        this.toast(this.toLabel ?? "", this.fromLabel ?? "");
+    }
+
+    redo() {
+        this.run();
+        super.redo();
     }
 }
 
@@ -279,13 +386,24 @@ export function useStepActions(
      * Mutates a queued lazy action, if a matching one exists,
      * otherwise creates a new lazy action ans queues it.
      */
-    function changeValueOrCreateAction<K extends keyof Step>(step: Step, key: K, value: Step[K], name?: string) {
+    function changeValueOrCreateAction<K extends keyof Step>(
+        step: Step,
+        key: K,
+        value: Step[K],
+        name?: string,
+        actionConstructor?: () => LazyMutateStepAction<K>
+    ): InstanceType<typeof LazyMutateStepAction<K>> {
         const actionForKey = actionForIdAndKey(step.id, key);
 
         if (actionForKey) {
             actionForKey.changeValue(value);
+
+            return actionForKey;
         } else {
-            const action = new LazyMutateStepAction(stepStore, step.id, key, step[key], value);
+            actionConstructor =
+                actionConstructor ?? (() => new LazyMutateStepAction(stepStore, step.id, key, step[key], value));
+
+            const action = actionConstructor();
 
             if (name) {
                 action.name = name;
@@ -297,6 +415,8 @@ export function useStepActions(
                 stateStore.activeNodeId = step.id;
                 stateStore.hasChanges = true;
             };
+
+            return action;
         }
     }
 
@@ -308,8 +428,27 @@ export function useStepActions(
         changeValueOrCreateAction(step, "annotation", annotation, "modify step annotation");
     }
 
+    function setOutputLabel(
+        step: Step,
+        workflowOutputs: Step["workflow_outputs"],
+        fromLabel: string | null,
+        toLabel: string | null
+    ) {
+        const actionConstructor = () =>
+            new LazySetOutputLabelAction(stepStore, stateStore, step.id, fromLabel, toLabel, workflowOutputs);
+
+        changeValueOrCreateAction(
+            step,
+            "workflow_outputs",
+            workflowOutputs,
+            "modify step output label",
+            actionConstructor
+        );
+    }
+
     function setLabel(step: Step, label: Step["label"]) {
-        changeValueOrCreateAction(step, "label", label, "modify step label");
+        const actionConstructor = () => new LazySetLabelAction(stepStore, stateStore, step.id, step.label, label);
+        changeValueOrCreateAction(step, "label", label, "modify step label", actionConstructor);
     }
 
     const { refresh } = useRefreshFromStore();
@@ -363,6 +502,7 @@ export function useStepActions(
         setAnnotation,
         setLabel,
         setData,
+        setOutputLabel,
         removeStep,
         updateStep,
         copyStep,

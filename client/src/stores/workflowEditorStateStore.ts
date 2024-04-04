@@ -28,6 +28,10 @@ type OutputTerminalPositions = { [index: number]: { [index: string]: OutputTermi
 type StepPosition = { [index: number]: UnwrapRef<UseElementBoundingReturn> };
 type StepLoadingState = { [index: number]: { loading?: boolean; error?: string } };
 
+export type WorkflowReport = {
+    markdown?: string;
+};
+
 export type WorkflowStateStore = ReturnType<typeof useWorkflowStateStore>;
 
 export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () => {
@@ -40,6 +44,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
     const hasChanges = ref(false);
+    const report = ref<WorkflowReport>({});
 
     function $reset() {
         inputTerminals.value = {};
@@ -50,6 +55,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
+        report.value = {};
     }
 
     const getInputTerminalPosition = computed(
@@ -110,6 +116,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         draggingTerminal,
         activeNodeId,
         scale,
+        report,
         hasChanges,
         stepPosition,
         stepLoadingState,

@@ -23,7 +23,6 @@
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
-            @onOutputLabel="onOutputLabel"
             @onDatatype="onDatatype" />
     </div>
 </template>
@@ -146,9 +145,6 @@ export default {
             } else if (this.emailPayloadKey in pjas) {
                 delete pjas[this.emailPayloadKey];
             }
-        },
-        onOutputLabel(oldValue, newValue) {
-            this.$emit("onOutputLabel", oldValue, newValue);
         },
         onInput(value, pjaKey) {
             let changed = false;

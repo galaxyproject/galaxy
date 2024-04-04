@@ -48,7 +48,6 @@
                     :step="step"
                     :datatypes="datatypes"
                     :post-job-actions="postJobActions"
-                    @onOutputLabel="onOutputLabel"
                     @onChange="onChangePostJobActions" />
             </div>
         </template>
@@ -176,9 +175,6 @@ export default {
         },
         onLabel(newLabel) {
             this.$emit("onLabel", this.stepId, newLabel);
-        },
-        onOutputLabel(oldValue, newValue) {
-            this.$emit("onOutputLabel", oldValue, newValue);
         },
         /**
          * Change event is triggered on component creation and input changes.

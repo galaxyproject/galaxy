@@ -157,8 +157,8 @@
     </div>
     <MarkdownEditor
         v-else
-        :markdown-text="markdownText"
-        :markdown-config="report"
+        :markdown-text="report.markdown"
+        :markdown-config="markdownConfig"
         mode="report"
         :title="'Workflow Report: ' + name"
         :steps="steps"
@@ -187,7 +187,6 @@ import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
 
-import { replaceLabel } from "@/components/Markdown/parse";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -314,19 +313,7 @@ export default {
             }
         }
 
-        const report = ref({});
-
-        // TODO: move report undo redo to report editor
-        const setReportActionHandler = new SetValueActionHandler(
-            undoRedoStore,
-            (value) => (report.value = structuredClone(value)),
-            showAttributes,
-            "modify report"
-        );
-        /** user set report. queues an undo/redo action */
-        function setReport(newReport) {
-            setReportActionHandler.set(report.value, newReport);
-        }
+        const { report } = storeToRefs(stateStore);
 
         const license = ref(null);
         const setLicenseHandler = new SetValueActionHandler(
@@ -432,7 +419,6 @@ export default {
             showAttributes,
             setName,
             report,
-            setReport,
             license,
             setLicense,
             creator,
@@ -463,7 +449,6 @@ export default {
     data() {
         return {
             markdownConfig: null,
-            markdownText: null,
             versions: [],
             labels: {},
             services: null,
@@ -594,28 +579,6 @@ export default {
             this.resetStores();
             await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
-        },
-        onUpdate(step) {
-            getModule(
-                {
-                    type: step.type,
-                    content_id: step.contentId,
-                    _: "true",
-                },
-                this.id,
-                this.stateStore.setLoadingState
-            ).then((response) => {
-                this.stepStore.updateStep({
-                    ...this.steps[step.id],
-                    config_form: response.config_form,
-                    content_id: response.content_id,
-                    errors: response.errors,
-                    inputs: response.inputs,
-                    outputs: response.outputs,
-                    tool_state: response.tool_state,
-                    tool_version: response.tool_version,
-                });
-            });
         },
         onChange() {
             this.hasChanges = true;
@@ -780,13 +743,6 @@ export default {
                     this.stepActions.updateStep(stepId, partialStep);
                 });
         },
-        onOutputLabel(oldValue, newValue) {
-            const newMarkdown = replaceLabel(this.markdownText, "output", oldValue, newValue);
-            if (newMarkdown !== this.markdownText) {
-                this.debouncedToast("Output label updated in workflow report.", 1500);
-            }
-            this.onReportUpdate(newMarkdown);
-        },
         onLabel(nodeId, newLabel) {
             this.stepActions.setLabel(this.steps[nodeId], newLabel);
         },
@@ -817,7 +773,6 @@ export default {
         onReportUpdate(markdown) {
             this.hasChanges = true;
             this.report.markdown = markdown;
-            this.markdownText = markdown;
         },
         onRun() {
             const runUrl = `/workflows/run?id=${this.id}`;
@@ -920,8 +875,8 @@ export default {
 
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
-            this.report = report;
-            this.markdownText = markdown;
+            this.report.markdown = markdown;
+            this.markdownConfig = report;
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;

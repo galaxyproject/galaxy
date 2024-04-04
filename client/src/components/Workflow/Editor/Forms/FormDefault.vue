@@ -55,8 +55,7 @@
                     :key="index"
                     :name="output.name"
                     :step="step"
-                    :show-details="true"
-                    @onOutputLabel="onOutputLabel" />
+                    :show-details="true" />
             </div>
         </template>
     </FormCard>
