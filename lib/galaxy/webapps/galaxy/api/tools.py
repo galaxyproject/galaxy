@@ -16,7 +16,6 @@ from fastapi import (
     UploadFile,
 )
 from starlette.datastructures import UploadFile as StarletteUploadFile
-from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -62,15 +61,6 @@ log = logging.getLogger(__name__)
 # Tool search bypasses the fulltext for the following list of terms
 SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
-CreateToolBody = Annotated[
-    ExecuteToolPayload,
-    Body(
-        default=...,
-        title="",
-        description="",
-    ),
-]
-
 
 class FormDataApiRoute(APIContentTypeRoute):
     match_content_type = "multipart/form-data"
@@ -83,8 +73,6 @@ class JsonApiRoute(APIContentTypeRoute):
 router = Router(tags=["tools"])
 
 FetchDataForm = as_form(FetchDataFormPayload)
-
-CreateDataForm = as_form(ExecuteToolPayload)
 
 
 @router.cbv
