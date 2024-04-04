@@ -21,6 +21,7 @@ from galaxy.model.dataset_collections import (
 )
 from galaxy.util import permutations
 from . import visit_input_values
+from .wrapped import process_key
 
 log = logging.getLogger(__name__)
 
@@ -151,31 +152,6 @@ def expand_workflow_inputs(param_inputs, inputs=None):
         input_combinations.append(new_inputs)
 
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
-
-
-def process_key(incoming_key, incoming_value, d):
-    key_parts = incoming_key.split("|")
-    if len(key_parts) == 1:
-        # Regular parameter
-        if incoming_key in d and not incoming_value:
-            # In case we get an empty repeat after we already filled in a repeat element
-            return
-        d[incoming_key] = incoming_value
-    elif key_parts[0].rsplit("_", 1)[-1].isdigit():
-        # Repeat
-        input_name, index = key_parts[0].rsplit("_", 1)
-        index = int(index)
-        d.setdefault(input_name, [])
-        newlist = [{} for _ in range(index + 1)]
-        d[input_name].extend(newlist[len(d[input_name]) :])
-        subdict = d[input_name][index]
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
-    else:
-        # Section / Conditional
-        input_name = key_parts[0]
-        subdict = {}
-        d[input_name] = subdict
-        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
 
 ExpandedT = Tuple[List[Dict[str, Any]], Optional[matching.MatchingCollections]]

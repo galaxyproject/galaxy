@@ -68,16 +68,13 @@ from galaxy.tools.parameters.basic import (
     BaseDataToolParameter,
     BooleanToolParameter,
     ColorToolParameter,
-    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
-    is_runtime_value,
     parameter_types,
     raw_to_galaxy,
-    runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
 )
@@ -86,7 +83,12 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import (
+    ConnectedValue,
+    is_runtime_value,
+    runtime_to_json,
+    workflow_building_modes,
+)
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import (
     listify,
@@ -1989,18 +1991,6 @@ class ToolModule(WorkflowModule):
                     and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY
                 ):
                     if prefixed_name in input_connections_by_name:
-                        connection = input_connections_by_name[prefixed_name]
-                        output_step = next(
-                            output_step for output_step in steps if connection.output_step_id == output_step.id
-                        )
-                        if output_step.type.startswith("data"):
-                            output_inputs = output_step.module.get_runtime_inputs(output_step, connections=connections)
-                            output_value = output_inputs["input"].get_initial_value(self.trans, context)
-                            if input_type == "data" and isinstance(
-                                output_value, self.trans.app.model.HistoryDatasetCollectionAssociation
-                            ):
-                                return output_value.to_hda_representative()
-                            return output_value
                         return ConnectedValue()
                     else:
                         return input.get_initial_value(self.trans, context)
