@@ -1,45 +1,58 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import MockProvider from "@/components/providers/MockProvider";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import DatasetError from "./DatasetError.vue";
 
-jest.mock("@/components/providers", () => {
-    return {};
-});
-
 const localVue = getLocalVue();
 
-async function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
+const DATASET_ID = "dataset_id";
+
+async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
     const pinia = createPinia();
+
+    mockFetcher
+        .path("/api/datasets/{dataset_id}")
+        .method("get")
+        .mock({
+            data: {
+                id: DATASET_ID,
+                creating_job: "creating_job",
+            },
+        });
+
+    mockFetcher
+        .path("/api/jobs/{job_id}")
+        .method("get")
+        .mock({
+            data: {
+                tool_id: "tool_id",
+                tool_stderr: "tool_stderr",
+                job_stderr: "job_stderr",
+                job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
+                user_email: user_email,
+            },
+        });
+
+    mockFetcher
+        .path("/api/jobs/{job_id}/common_problems")
+        .method("get")
+        .mock({
+            data: {
+                has_duplicate_inputs: has_duplicate_inputs,
+                has_empty_inputs: has_empty_inputs,
+            },
+        });
 
     const wrapper = await mount(DatasetError as object, {
         propsData: {
-            datasetId: "dataset_id",
+            datasetId: DATASET_ID,
         },
         localVue,
-        stubs: {
-            JobDetailsProvider: MockProvider({
-                result: {
-                    tool_id: "tool_id",
-                    tool_stderr: "tool_stderr",
-                    job_stderr: "job_stderr",
-                    job_messages: [{ desc: "message_1" }, { desc: "message_2" }],
-                    user_email: user_email,
-                },
-            }),
-            JobProblemProvider: MockProvider({
-                result: { has_duplicate_inputs: has_duplicate_inputs, has_empty_inputs: has_empty_inputs },
-            }),
-            DatasetProvider: MockProvider({
-                result: { id: "dataset_id", creating_job: "creating_job" },
-            }),
-            FontAwesomeIcon: false,
-            FormElement: false,
-        },
         pinia,
     });
 
@@ -52,14 +65,14 @@ async function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true
         total_disk_usage: 0,
     };
 
+    await flushPromises();
+
     return wrapper;
 }
 
 describe("DatasetError", () => {
     it("check props with common problems", async () => {
-        const wrapper = await buildWrapper();
-
-        console.log(wrapper.html());
+        const wrapper = await montDatasetError();
 
         expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
         expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
@@ -73,42 +86,40 @@ describe("DatasetError", () => {
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
     });
 
-    // it("check props without common problems", async () => {
-    //     const wrapper = await buildWrapper(false, false, "user_email");
+    it("check props without common problems", async () => {
+        const wrapper = await montDatasetError(false, false, "user_email");
 
-    //     expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
-    //     expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
-    //     expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
+        expect(wrapper.find("#dataset-error-tool-id").text()).toBe("tool_id");
+        expect(wrapper.find("#dataset-error-tool-stderr").text()).toBe("tool_stderr");
+        expect(wrapper.find("#dataset-error-job-stderr").text()).toBe("job_stderr");
 
-    //     expect(wrapper.findAll("#dataset-error-has-empty-inputs").length).toBe(0);
-    //     expect(wrapper.findAll("#dataset-error-has-duplicate-inputs").length).toBe(0);
-    //     expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
-    // });
+        expect(wrapper.findAll("#dataset-error-has-empty-inputs").length).toBe(0);
+        expect(wrapper.findAll("#dataset-error-has-duplicate-inputs").length).toBe(0);
+        expect(wrapper.findAll("#dataset-error-email").length).toBe(0);
+    });
 
-    // it("hides form fields and button on success", async () => {
-    //     const wrapper = await buildWrapper();
+    it("hides form fields and button on success", async () => {
+        const wrapper = await montDatasetError();
 
-    //     const fieldsAndButton = "#fieldsAndButton";
-    //     expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
+        mockFetcher
+            .path("/api/jobs/{job_id}/error")
+            .method("post")
+            .mock({
+                data: {
+                    messages: ["message", "success"],
+                },
+            });
 
-    //     await wrapper.setData({ resultMessages: [["message", "success"]] });
+        const FormAndSubmitButton = "#dataset-error-form";
+        expect(wrapper.find(FormAndSubmitButton).exists()).toBe(true);
 
-    //     expect(wrapper.find(fieldsAndButton).exists()).toBe(false);
-    // });
+        const submitButton = "#dataset-error-submit";
+        expect(wrapper.find(submitButton).exists()).toBe(true);
 
-    // it("does not hide form fields and button on error", async () => {
-    //     const wrapper = await buildWrapper();
+        await wrapper.find(submitButton).trigger("click");
 
-    //     const fieldsAndButton = "#fieldsAndButton";
-    //     expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
+        await flushPromises();
 
-    //     const messages = [
-    //         ["message", "success"],
-    //         ["message", "danger"],
-    //     ]; // at least one has "danger"
-
-    //     await wrapper.setData({ resultMessages: messages });
-
-    //     expect(wrapper.find(fieldsAndButton).exists()).toBe(true);
-    // });
+        expect(wrapper.find(FormAndSubmitButton).exists()).toBe(false);
+    });
 });

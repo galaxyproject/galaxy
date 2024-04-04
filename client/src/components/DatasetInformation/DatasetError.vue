@@ -91,17 +91,20 @@ async function getJobProblems() {
     }
 }
 
-function submit(dataset: DatasetDetails, userEmailJob?: string | null) {
+async function submit(dataset: DatasetDetails, userEmailJob?: string | null) {
     const email = userEmailJob;
 
-    sendErrorReport(dataset.creating_job, { dataset_id: dataset.id, message: message.value, email }).then(
-        (resMsg) => {
-            resultMessages.value = resMsg;
-        },
-        (errMsg) => {
-            errorMessage.value = errMsg;
-        }
-    );
+    try {
+        const res = await sendErrorReport(dataset.creating_job, {
+            dataset_id: dataset.id,
+            message: message.value,
+            email,
+        });
+
+        resultMessages.value = res as string[][];
+    } catch (error: any) {
+        resultMessages.value = error;
+    }
 }
 
 onMounted(async () => {
@@ -174,7 +177,7 @@ onMounted(async () => {
                 <span v-html="renderMarkdown(resultMessage[0])" />
             </BAlert>
 
-            <div v-if="showForm" id="fieldsAndButton">
+            <div v-if="showForm" id="dataset-error-form">
                 <span class="mr-2 font-weight-bold">{{ localize("Your email address") }}</span>
                 <span v-if="currentUser?.email">{{ currentUser.email }}</span>
                 <span v-else>{{ localize("You must be logged in to receive emails") }}</span>
