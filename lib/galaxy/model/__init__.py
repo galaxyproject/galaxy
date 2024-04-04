@@ -206,7 +206,11 @@ log = logging.getLogger(__name__)
 
 _datatypes_registry = None
 
-mapper_registry = registry()
+OPTIONAL_STR_TO_STR_DICT = Optional[Dict[str, str]]
+
+mapper_registry = registry(
+    type_annotation_map={OPTIONAL_STR_TO_STR_DICT: JSONType},
+)
 
 # When constructing filters with in for a fixed set of ids, maximum
 # number of items to place in the IN statement. Different databases
@@ -1392,7 +1396,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     params: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
     preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
-    object_store_id_overrides: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    object_store_id_overrides: Mapped[OPTIONAL_STR_TO_STR_DICT] = mapped_column(JSONType)
 
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
