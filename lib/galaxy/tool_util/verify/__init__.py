@@ -31,11 +31,12 @@ except ImportError:
 try:
     from PIL import Image
 except ImportError:
-    pass
+    Image = None  # type: ignore[assignment]
 try:
     import tifffile
 except ImportError:
-    pass
+    tifffile = None  # type: ignore[assignment]
+
 
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
@@ -193,7 +194,12 @@ def verify(
             elif compare == "contains":
                 files_contains(local_name, temp_name, attributes=attributes)
             elif compare == "image_diff":
-                files_image_diff(local_name, temp_name, attributes=attributes)
+                if Image and tifffile:
+                    files_image_diff(local_name, temp_name, attributes=attributes)
+                else:
+                    raise Exception(
+                        "pillow and tifffile are not installed, but required to compare files using the 'image_diff' method"
+                    )
             else:
                 raise Exception(f"Unimplemented Compare type: {compare}")
         except AssertionError as err:

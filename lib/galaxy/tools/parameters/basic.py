@@ -42,7 +42,7 @@ from galaxy.model import (
 from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -61,6 +61,12 @@ from . import (
 )
 from .dataset_matcher import get_dataset_matcher_factory
 from .sanitize import ToolParameterSanitizer
+from .workflow_utils import (
+    is_runtime_value,
+    runtime_to_json,
+    runtime_to_object,
+    RuntimeValue,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
@@ -90,12 +96,6 @@ def contains_workflow_parameter(value, search=False):
     if not search and WORKFLOW_PARAMETER_REGULAR_EXPRESSION.match(value):
         return True
     return False
-
-
-def is_runtime_value(value):
-    return isinstance(value, RuntimeValue) or (
-        isinstance(value, MutableMapping) and value.get("__class__") in ["RuntimeValue", "ConnectedValue"]
-    )
 
 
 def is_runtime_context(trans, other_values):
@@ -2778,36 +2778,6 @@ parameter_types = dict(
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,
 )
-
-
-def runtime_to_json(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return {"__class__": "ConnectedValue"}
-    else:
-        return {"__class__": "RuntimeValue"}
-
-
-def runtime_to_object(runtime_value):
-    if isinstance(runtime_value, ConnectedValue) or (
-        isinstance(runtime_value, MutableMapping) and runtime_value["__class__"] == "ConnectedValue"
-    ):
-        return ConnectedValue()
-    else:
-        return RuntimeValue()
-
-
-class RuntimeValue:
-    """
-    Wrapper to note a value that is not yet set, but will be required at runtime.
-    """
-
-
-class ConnectedValue(RuntimeValue):
-    """
-    Wrapper to note a value that is not yet set, but will be inferred from a connection.
-    """
 
 
 def history_item_dict_to_python(value, app, name):

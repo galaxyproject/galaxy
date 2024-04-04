@@ -34,7 +34,7 @@ from galaxy.tools.actions import (
     on_text_for_names,
     ToolExecutionCache,
 )
-from galaxy.tools.parameters.basic import is_runtime_value
+from galaxy.tools.parameters.workflow_utils import is_runtime_value
 
 if typing.TYPE_CHECKING:
     from galaxy.tools import Tool

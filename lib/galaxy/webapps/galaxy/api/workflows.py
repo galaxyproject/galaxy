@@ -86,7 +86,7 @@ from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
-from galaxy.tools.parameters.workflow_building_modes import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
