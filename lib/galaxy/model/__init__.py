@@ -208,8 +208,18 @@ _datatypes_registry = None
 
 OPTIONAL_STR_TO_STR_DICT = Optional[Dict[str, str]]
 
+
+class TransformAction(TypedDict):
+    action: str
+
+
+TRANSFORM_ACTIONS = Optional[List[TransformAction]]
+
 mapper_registry = registry(
-    type_annotation_map={OPTIONAL_STR_TO_STR_DICT: JSONType},
+    type_annotation_map={
+        OPTIONAL_STR_TO_STR_DICT: JSONType,
+        TRANSFORM_ACTIONS: MutableJSONType,
+    },
 )
 
 # When constructing filters with in for a fixed set of ids, maximum
@@ -4354,7 +4364,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
     dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
     source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
     extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    transform: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    transform: Mapped[TRANSFORM_ACTIONS] = mapped_column(MutableJSONType)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="sources")
     hashes: Mapped[List["DatasetSourceHash"]] = relationship(back_populates="source")
     dict_collection_visible_keys = ["id", "source_uri", "extra_files_path", "transform"]

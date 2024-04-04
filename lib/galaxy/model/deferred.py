@@ -178,12 +178,12 @@ class DatasetInstanceMaterializer:
 
     def _stream_source(self, target_source: DatasetSource, datatype) -> str:
         path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
-        transform = target_source.transform or []  # type:ignore[var-annotated]
+        transform = target_source.transform or []
         to_posix_lines = False
         spaces_to_tabs = False
         datatype_groom = False
         for transform_action in transform:
-            action = transform_action["action"]  # type:ignore[index]
+            action = transform_action["action"]
             if action == "to_posix_lines":
                 to_posix_lines = True
             elif action == "spaces_to_tabs":
@@ -191,7 +191,7 @@ class DatasetInstanceMaterializer:
             elif action == "datatype_groom":
                 datatype_groom = True
             else:
-                raise Exception(f"Failed to materialize dataest, unknown transformation action {action} applied.")
+                raise Exception(f"Failed to materialize dataset, unknown transformation action {action} applied.")
         if to_posix_lines or spaces_to_tabs:
             convert_fxn = convert_function(to_posix_lines, spaces_to_tabs)
             convert_result = convert_fxn(path, False)
