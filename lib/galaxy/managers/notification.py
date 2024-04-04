@@ -152,8 +152,8 @@ class NotificationManager:
         """
         Creates a new notification and associates it with all the recipient users.
 
-        It takes into account the user's notification preferences to decide if the notification should be sent to them,
-        and also uses the configured channels to send the notification via different means (e.g. email, etc).
+        It takes into account the user's notification preferences to decide if the notification should be sent to them.
+        No other notification channel is used here, only the internal database associations are created.
         """
         self.ensure_notifications_enabled()
         recipient_users = self.recipient_resolver.resolve(request.recipients)
@@ -162,31 +162,79 @@ class NotificationManager:
         with transaction(self.sa_session):
             self.sa_session.commit()
 
-        notifications_sent = self._send_notifications(notification, recipient_users)
+        notifications_sent = self._create_associations(notification, recipient_users)
         with transaction(self.sa_session):
             self.sa_session.commit()
 
         return notification, notifications_sent
 
-    def _send_notifications(self, notification: Notification, users: List[User]) -> int:
+    def _create_associations(self, notification: Notification, users: List[User]) -> int:
         success_count = 0
         for user in users:
             try:
-                self._send_notification_to_user(notification, user)
-                success_count += 1
+                if self._is_user_subscribed_to_category(user, notification.category):  # type:ignore[arg-type]
+                    user_notification_association = UserNotificationAssociation(user, notification)
+                    self.sa_session.add(user_notification_association)
+                    success_count += 1
             except Exception as e:
                 log.error(f"Error sending notification to user {user.id}. Reason: {unicodify(e)}")
                 continue
         return success_count
 
-    def _send_notification_to_user(self, notification: Notification, user: User):
-        category_settings = self._get_user_category_settings(user, notification.category)
-        if self._is_subscribed_to_category(category_settings):
-            # Send the in-app notification always
-            user_notification_association = UserNotificationAssociation(user, notification)
-            self.sa_session.add(user_notification_association)
-            # Send the notification via any other configured channels
+    def dispatch_pending_notifications_via_channels(self) -> int:
+        """
+        Dispatches all pending notifications to the users depending on the configured channels.
+
+        This is meant to be called periodically by a background task.
+        """
+        self.ensure_notifications_enabled()
+        pending_notifications = self.get_pending_notifications()
+
+        # Mark all pending notifications as dispatched
+        for notification in pending_notifications:
+            notification.dispatched = True
+
+        with transaction(self.sa_session):
+            self.sa_session.commit()
+
+        # Do the actual dispatching
+        for notification in pending_notifications:
+            self._dispatch_notification_to_users(notification)
+
+        return len(pending_notifications)
+
+    def get_pending_notifications(self):
+        """
+        Returns all pending notifications that have not been dispatched yet
+        but are due and ready to be sent to the users.
+        """
+        stmt = select(Notification).where(Notification.dispatched == false(), self._notification_is_active)
+        return self.sa_session.execute(stmt).scalars().all()
+
+    def _dispatch_notification_to_users(self, notification: Notification):
+        users = self._get_associated_users(notification)
+        for user in users:
+            category_settings = self._get_user_category_settings(user, notification.category)  # type:ignore[arg-type]
+            if not self._is_subscribed_to_category(category_settings):
+                continue
             self._send_via_channels(notification, user, category_settings.channels)
+
+    def _get_associated_users(self, notification: Notification):
+        stmt = (
+            select(User)
+            .join(
+                UserNotificationAssociation,
+                UserNotificationAssociation.user_id == User.id,
+            )
+            .where(
+                UserNotificationAssociation.notification_id == notification.id,
+            )
+        )
+        return self.sa_session.execute(stmt).scalars().all()
+
+    def _is_user_subscribed_to_category(self, user: User, category: PersonalNotificationCategory) -> bool:
+        category_settings = self._get_user_category_settings(user, category)
+        return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
         channels = channel_settings.model_fields_set
