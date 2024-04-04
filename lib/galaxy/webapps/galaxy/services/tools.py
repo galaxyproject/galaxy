@@ -292,8 +292,6 @@ class ToolsService(ServiceBase):
             output_dict["output_name"] = output_name
             rval["implicit_collections"].append(output_dict)
 
-        trans.security.encode_all_ids(rval, recursive=True)
-
         # Encoding the job ids is handled by the pydantic model
         for job in vars.get("jobs", []):
             rval["jobs"].append(job.to_dict(view="collection"))
