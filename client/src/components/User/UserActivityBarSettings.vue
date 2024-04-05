@@ -11,13 +11,13 @@ const enableActivityBar: WritableComputedRef<Boolean> = computed({
     get: () => {
         return userStore.showActivityBar;
     },
-    set: () => {
+    set: (toggle) => {
         // always toggle tool side panel when enabling activity bar
         if (userStore.toggledSideBar !== "tools") {
             userStore.toggleSideBar("tools");
         }
         // toggle activity bar
-        userStore.toggleActivityBar();
+        userStore.showActivityBar = toggle;
     },
 });
 </script>
