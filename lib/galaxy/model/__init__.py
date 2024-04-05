@@ -10164,8 +10164,8 @@ class CustosAuthnzToken(Base, RepresentById):
     access_token: Mapped[Optional[str]] = mapped_column(Text)
     id_token: Mapped[Optional[str]] = mapped_column(Text)
     refresh_token: Mapped[Optional[str]] = mapped_column(Text)
-    expiration_time: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    refresh_expiration_time: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    expiration_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    refresh_expiration_time: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     user = relationship("User", back_populates="custos_auth")
 
 
