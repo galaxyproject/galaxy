@@ -3,6 +3,7 @@ import type { UnwrapRef } from "vue";
 import { computed, reactive, ref, set } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 
 import { defineScopedStore } from "./scopedStore";
 
@@ -44,7 +45,9 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const stepPosition = ref<StepPosition>({});
     const stepLoadingState = ref<StepLoadingState>({});
     const hasChanges = ref(false);
-    const report = ref<WorkflowReport>({});
+    const report = ref<WorkflowReport>({
+        markdown: reportDefault,
+    });
 
     function $reset() {
         inputTerminals.value = {};
@@ -55,7 +58,9 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         scale.value = 1;
         stepPosition.value = {};
         stepLoadingState.value = {};
-        report.value = {};
+        report.value = {
+            markdown: reportDefault,
+        };
     }
 
     const getInputTerminalPosition = computed(

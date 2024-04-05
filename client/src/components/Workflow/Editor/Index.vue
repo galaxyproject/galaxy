@@ -158,7 +158,6 @@
     <MarkdownEditor
         v-else
         :markdown-text="report.markdown"
-        :markdown-config="markdownConfig"
         mode="report"
         :title="'Workflow Report: ' + name"
         :steps="steps"
@@ -448,7 +447,6 @@ export default {
     },
     data() {
         return {
-            markdownConfig: null,
             versions: [],
             labels: {},
             services: null,
@@ -876,7 +874,6 @@ export default {
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.report.markdown = markdown;
-            this.markdownConfig = report;
             this.hideModal();
             this.stateMessages = getStateUpgradeMessages(data);
             const has_changes = this.stateMessages.length > 0;

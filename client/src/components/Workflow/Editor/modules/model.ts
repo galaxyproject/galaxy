@@ -1,3 +1,4 @@
+import reportDefault from "@/components/Workflow/Editor/reportDefault";
 import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
@@ -70,7 +71,9 @@ export function fromSimple(id: string, data: Workflow, appendData = false, defau
 
     commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
 
-    stateStore.report = data.report ?? {};
+    stateStore.report = data.report ?? {
+        markdown: reportDefault,
+    };
 }
 
 export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {

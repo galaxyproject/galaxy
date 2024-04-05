@@ -67,10 +67,6 @@ export default {
             type: String,
             default: null,
         },
-        markdownConfig: {
-            type: Object,
-            default: null,
-        },
         steps: {
             type: Object,
             default: null,
