@@ -13,6 +13,7 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
+        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
         <b-modal
             v-model="showSaveAsModal"
             title="Save As a New Workflow"
@@ -167,7 +168,7 @@
 <script>
 import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
-import Vue, { computed, onUnmounted, ref, unref } from "vue";
+import Vue, { computed, nextTick, onUnmounted, ref, unref } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
@@ -192,6 +193,7 @@ import WorkflowLint from "./Lint.vue";
 import MessagesModal from "./MessagesModal.vue";
 import WorkflowOptions from "./Options.vue";
 import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import SaveChangesModal from "./SaveChangesModal.vue";
 import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
@@ -204,6 +206,7 @@ export default {
     components: {
         MarkdownEditor,
         FlexPanel,
+        SaveChangesModal,
         StateUpgradeModal,
         ToolPanel,
         FormDefault,
@@ -337,6 +340,8 @@ export default {
             showSaveAsModal: false,
             transform: { x: 0, y: 0, k: 1 },
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
+            showSaveChangesModal: false,
+            navUrl: "",
         };
     },
     computed: {
@@ -677,14 +682,21 @@ export default {
             const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        async onNavigate(url) {
+        async onNavigate(url, forceSave = false, ignoreChanges = false) {
             if (this.isNewTempWorkflow) {
                 await this.onCreate();
-            } else {
-                await this.onSave(true);
+            } else if (this.hasChanges && !forceSave && !ignoreChanges) {
+                // if there are changes, prompt user to save or discard or cancel
+                this.navUrl = url;
+                this.showSaveChangesModal = true;
+                return;
+            } else if (forceSave) {
+                // when forceSave is true, save the workflow before navigating
+                await this.onSave();
             }
 
             this.hasChanges = false;
+            await nextTick();
             this.$router.push(url);
         },
         onSave(hideProgress = false) {
