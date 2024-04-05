@@ -52,6 +52,7 @@ class TestNotificationsIntegration(IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
+        config["enable_celery_tasks"] = False
         config["enable_notification_system"] = True
 
     def setUp(self):
