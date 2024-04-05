@@ -421,7 +421,10 @@ class NotificationChannelSettings(Model):
     email: bool = Field(
         default=True,
         title="Email",
-        description="Whether the user wants to receive email notifications for this category.",
+        description=(
+            "Whether the user wants to receive email notifications for this category. "
+            "This setting will be ignored unless the server supports asynchronous tasks."
+        ),
     )
     # TODO: Add more channels here and implement the corresponding plugin in lib/galaxy/managers/notification.py
     # matrix: bool # Possible future Matrix.org integration?

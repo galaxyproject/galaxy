@@ -82,6 +82,21 @@ class CleanupResultSummary(NamedTuple):
     deleted_associations_count: int
 
 
+class NotificationRecipientResolverStrategy(Protocol):
+    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
+        pass
+
+
+class NotificationChannelPlugin(Protocol):
+    config: GalaxyAppConfiguration
+
+    def __init__(self, config: GalaxyAppConfiguration):
+        self.config = config
+
+    def send(self, notification: Notification, user: User):
+        raise NotImplementedError
+
+
 class NotificationManager:
     """Manager class to interact with the database models related with Notifications."""
 
@@ -113,11 +128,7 @@ class NotificationManager:
             Notification.expiration_time,
             Notification.content,
         ]
-        # Register the supported notification channels here
-        self.channel_plugins: Dict[str, NotificationChannelPlugin] = {
-            "push": NoOpNotificationChannelPlugin(self.config),  # Push notifications are handled by the client
-            "email": EmailNotificationChannelPlugin(self.config),
-        }
+        self.channel_plugins = self._register_supported_channels()
 
     @property
     def notifications_enabled(self):
@@ -407,12 +418,30 @@ class NotificationManager:
         self, user: User, request: UpdateUserNotificationPreferencesRequest
     ) -> UserNotificationPreferences:
         """Updates the user's notification preferences with the requested changes."""
-        notification_preferences = self.get_user_notification_preferences(user)
-        notification_preferences.update(request.preferences)
-        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = notification_preferences.model_dump_json()
+        preferences = self.get_user_notification_preferences(user)
+        preferences.update(request.preferences)
+        user.preferences[NOTIFICATION_PREFERENCES_SECTION_NAME] = preferences.model_dump_json()
         with transaction(self.sa_session):
             self.sa_session.commit()
-        return notification_preferences
+        return preferences
+
+    def _register_supported_channels(self) -> Dict[str, NotificationChannelPlugin]:
+        """Registers the supported notification channels in this server."""
+        supported_channels: Dict[str, NotificationChannelPlugin] = {
+            # Push notifications are handled client-side so no real plugin is needed
+            "push": NoOpNotificationChannelPlugin(self.config),
+        }
+
+        if self.can_send_notifications_async:
+            # Most additional channels require asynchronous processing and will be
+            # handled by Celery tasks. Add their plugins here.
+            supported_channels["email"] = EmailNotificationChannelPlugin(self.config)
+
+        return supported_channels
+
+    def get_supported_channels(self) -> Set[str]:
+        """Returns the set of supported notification channels in this server."""
+        return set(self.channel_plugins.keys())
 
     def cleanup_expired_notifications(self) -> CleanupResultSummary:
         """
@@ -490,9 +519,8 @@ class NotificationManager:
         return stmt
 
 
-class NotificationRecipientResolverStrategy(Protocol):
-    def resolve_users(self, recipients: NotificationRecipients) -> List[User]:
-        pass
+# --------------------------------------
+# Notification Recipients Resolver Implementations
 
 
 class NotificationRecipientResolver:
@@ -601,17 +629,7 @@ class RecursiveCTEStrategy(NotificationRecipientResolverStrategy):
 
 
 # --------------------------------------
-# Notification Channel Plugins
-
-
-class NotificationChannelPlugin(Protocol):
-    config: GalaxyAppConfiguration
-
-    def __init__(self, config: GalaxyAppConfiguration):
-        self.config = config
-
-    def send(self, notification: Notification, user: User):
-        raise NotImplementedError
+# Notification Channel Plugins Implementations
 
 
 class NoOpNotificationChannelPlugin(NotificationChannelPlugin):

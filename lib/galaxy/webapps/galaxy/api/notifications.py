@@ -70,10 +70,20 @@ class FastAPINotifications:
     )
     def get_notification_preferences(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> UserNotificationPreferences:
-        """Anonymous users cannot have notification preferences. They will receive only broadcasted notifications."""
-        return self.service.get_user_notification_preferences(trans)
+        """Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+
+        - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+          The supported channels are returned in the `supported-channels` header.
+        """
+        result = self.service.get_user_notification_preferences(trans)
+        # Inform the client which channels are really supported by the server since the settings will contain all possible channels.
+        response.headers["supported-channels"] = str.join(
+            ",", self.service.notification_manager.get_supported_channels()
+        )
+        return result
 
     @router.put(
         "/api/notifications/preferences",

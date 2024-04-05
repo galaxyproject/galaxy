@@ -1255,6 +1255,9 @@ export interface paths {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         get: operations["get_notification_preferences_api_notifications_preferences_get"];
         /**
@@ -20160,6 +20163,9 @@ export interface operations {
         /**
          * Returns the current user's preferences for notifications.
          * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - The settings will contain all possible channels, but the client should only show the ones that are really supported by the server.
+         *   The supported channels are returned in the `supported-channels` header.
          */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
