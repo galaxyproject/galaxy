@@ -2757,6 +2757,11 @@ galaxy:
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+  # Offload long-running tasks to a Celery task queue. Activate this
+  # only if you have setup a Celery worker for Galaxy. For details, see
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  #enable_celery_tasks: false
+
   # Configuration options passed to Celery.
   # To refer to a task by name, use the template `galaxy.foo` where
   # `foo` is the function name of the task defined in the
@@ -2773,11 +2778,6 @@ galaxy:
   #  task_routes:
   #    galaxy.fetch_data: galaxy.external
   #    galaxy.set_job_metadata: galaxy.external
-
-  # Offload long-running tasks to a Celery task queue. Activate this
-  # only if you have setup a Celery worker for Galaxy. For details, see
-  # https://docs.galaxyproject.org/en/master/admin/production.html
-  #enable_celery_tasks: false
 
   # If set to a non-0 value, upper limit on number of tasks that can be
   # executed per user per second.
