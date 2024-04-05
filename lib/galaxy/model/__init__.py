@@ -246,7 +246,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(_HasTable, DeclarativeBase):
+class Base(DeclarativeBase, _HasTable):
     __abstract__ = True
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
     mapper_registry.metadata = metadata
