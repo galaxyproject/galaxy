@@ -9402,7 +9402,9 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Se
     dataset_collection_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("history_dataset_collection_association.id", name="fk_wiodca_dci"), index=True
     )
-    workflow_output_id: Mapped[int] = mapped_column(ForeignKey("workflow_output.id", name="fk_wiodca_woi"), index=True)
+    workflow_output_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("workflow_output.id", name="fk_wiodca_woi"), index=True
+    )
 
     workflow_invocation = relationship("WorkflowInvocation", back_populates="output_dataset_collections")
     workflow_step = relationship("WorkflowStep")
