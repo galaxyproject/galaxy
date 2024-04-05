@@ -2911,6 +2911,10 @@ galaxy:
   # a Celery task.
   #expired_notifications_cleanup_interval: 86400
 
+  # The interval in seconds between attempts to dispatch notifications
+  # to users (every 10 minutes by default). Runs in a Celery task.
+  #dispatch_notifications_interval: 600
+
   # The URL pointing to the Galaxy Help Forum API base URL. The API must
   # be compatible with Discourse API (https://docs.discourse.org/).
   #help_forum_api_url: https://help.galaxyproject.org/

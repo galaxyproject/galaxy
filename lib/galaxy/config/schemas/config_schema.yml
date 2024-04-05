@@ -3990,6 +3990,13 @@ mapping:
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
 
+      dispatch_notifications_interval:
+        type: int
+        required: false
+        default: 600
+        desc: |
+          The interval in seconds between attempts to dispatch notifications to users (every 10 minutes by default). Runs in a Celery task.
+
       help_forum_api_url:
         type: str
         required: false
