@@ -9598,6 +9598,7 @@ export interface components {
              * Channels
              * @description The channels that the user wants to receive notifications from for this category.
              * @default {
+             *   "email": true,
              *   "push": true
              * }
              */
@@ -9614,6 +9615,12 @@ export interface components {
          * @description The settings for each channel of a notification category.
          */
         NotificationChannelSettings: {
+            /**
+             * Email
+             * @description Whether the user wants to receive email notifications for this category. This setting will be ignored unless the server supports asynchronous tasks.
+             * @default true
+             */
+            email?: boolean;
             /**
              * Push
              * @description Whether the user wants to receive push notifications in the browser for this category.
