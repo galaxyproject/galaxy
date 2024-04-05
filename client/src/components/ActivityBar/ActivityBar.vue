@@ -218,7 +218,7 @@ watch(
                     icon="user-cog"
                     :is-active="isActiveSideBar('admin')"
                     title="Admin"
-                    tooltip="Configure this Instance"
+                    tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="onToggleSidebar('admin')" />
             </b-nav>
