@@ -8,21 +8,19 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-import type { HDASummary, HDCASummary } from "@/api";
+import type { HistoryItemSummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
 import { ActionSkippedError, LastQueue } from "@/utils/lastQueue";
 import { urlData } from "@/utils/url";
 
-export type HistoryItem = HDASummary | HDCASummary;
-
 const limit = 100;
 
-type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItem[] };
+type ExpectedReturn = { stats: { total_matches: number }; contents: HistoryItemSummary[] };
 const queue = new LastQueue<typeof urlData>(1000, true);
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
-    const items = ref<Record<string, HistoryItem[]>>({});
+    const items = ref<Record<string, HistoryItemSummary[]>>({});
     const itemKey = ref("hid");
     const totalMatchesCount = ref<number | undefined>(undefined);
     const lastCheckedTime = ref(new Date());
@@ -37,7 +35,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
                 (filter: [string, string]) => !filter[0].includes("related")
             );
             const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
-            const filtered = itemArray.filter((item: HistoryItem) => {
+            const filtered = itemArray.filter((item: HistoryItemSummary) => {
                 if (!item) {
                     return false;
                 }
@@ -74,12 +72,12 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
         }
     }
 
-    function saveHistoryItems(historyId: string, payload: HistoryItem[], relatedHid = null) {
+    function saveHistoryItems(historyId: string, payload: HistoryItemSummary[], relatedHid = null) {
         // merges incoming payload into existing state
         mergeArray(historyId, payload, items.value, itemKey.value);
         // if related filter is included, set keys in state
         if (relatedHid) {
-            payload.forEach((item: HistoryItem) => {
+            payload.forEach((item: HistoryItemSummary) => {
                 // current `item.hid` is related to item with hid = `relatedHid`
                 const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
                 set(relatedItems.value, relationKey, true);

@@ -6,12 +6,12 @@ import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 
+import { HistoryItemSummary } from "@/api";
 import { copyDataset } from "@/api/datasets";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import { useEventStore } from "@/stores/eventStore";
-import type { HistoryItem } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -75,12 +75,12 @@ async function onDrop(evt: any) {
     }
     processingDrop.value = true;
     showDropZone.value = false;
-    let data: HistoryItem[] | undefined;
+    let data: HistoryItemSummary[] | undefined;
     let originalHistoryId: string | undefined;
     const multiple = eventStore.multipleDragData;
     try {
         if (multiple) {
-            const dragData = eventStore.getDragData() as Record<string, HistoryItem>;
+            const dragData = eventStore.getDragData() as Record<string, HistoryItemSummary>;
             // set originalHistoryId to the first history_id in the multiple drag data
             const firstItem = Object.values(dragData)[0];
             if (firstItem) {
@@ -88,7 +88,7 @@ async function onDrop(evt: any) {
             }
             data = Object.values(dragData);
         } else {
-            data = [eventStore.getDragData() as HistoryItem];
+            data = [eventStore.getDragData() as HistoryItemSummary];
             if (data[0]) {
                 originalHistoryId = data[0].history_id;
             }

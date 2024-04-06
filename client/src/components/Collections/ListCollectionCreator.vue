@@ -8,7 +8,7 @@ import { BAlert, BButton } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import draggable from "vuedraggable";
 
-import type { HDASummary, HDCADetailed, HDCASummary } from "@/api";
+import type { HDCADetailed, HistoryItemSummary } from "@/api";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
@@ -116,7 +116,7 @@ function _validateElements() {
 }
 
 /** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HDASummary | HDCASummary) {
+function _isElementInvalid(element: HistoryItemSummary) {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }

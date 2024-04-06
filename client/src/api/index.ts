@@ -90,6 +90,11 @@ export type HDASummary = components["schemas"]["HDASummary"];
 export type HDADetailed = components["schemas"]["HDADetailed"];
 
 /**
+ * Represents either an HDA or an HDCA with minimal information.
+ */
+export type HistoryItemSummary = HDASummary | HDCASummary;
+
+/**
  * Contains storage (object store, quota, etc..) details for a dataset.
  */
 export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails"];
