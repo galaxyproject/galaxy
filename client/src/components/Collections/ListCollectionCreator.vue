@@ -93,7 +93,7 @@ function _elementsSetUp() {
 function _ensureElementIds() {
     workingElements.value.forEach((element) => {
         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-            element.id = element._uid as string;
+            console.warn("Element missing id", element);
         }
     });
 
