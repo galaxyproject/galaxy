@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { type HDCADetailed } from "@/api";
+import type { HDCADetailed, HistoryItemSummary } from "@/api";
 import STATES from "@/mvc/dataset/states";
 import localize from "@/utils/localization";
 
@@ -58,7 +58,7 @@ function _elementsSetUp() {
 function _ensureElementIds() {
     workingElements.value.forEach((element) => {
         if (!Object.prototype.hasOwnProperty.call(element, "id")) {
-            element.id = element._uid as string;
+            console.warn("Element missing id", element);
         }
     });
 
@@ -81,7 +81,7 @@ function _validateElements() {
 }
 
 /** describe what is wrong with a particular element if anything */
-function _isElementInvalid(element: HDCADetailed) {
+function _isElementInvalid(element: HistoryItemSummary) {
     if (element.history_content_type === "dataset_collection") {
         return localize("is a collection, this is not allowed");
     }
