@@ -395,6 +395,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.__handle_waiting_jobs()
         except StopSignalException:
             pass
+        finally:
+            self.sa_session.remove()
         log.trace(monitor_step_timer.to_str())
 
     def __handle_waiting_jobs(self):
@@ -582,9 +584,6 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Commit updated state
         with transaction(self.sa_session):
             self.sa_session.commit()
-
-        # Done with the session
-        self.sa_session.remove()
 
     def __filter_jobs_with_invalid_input_states(self, jobs):
         """
