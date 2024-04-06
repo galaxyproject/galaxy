@@ -82,12 +82,12 @@ export type HistoryContentItemBase = components["schemas"]["EncodedHistoryConten
 /**
  * Contains summary information about a HistoryDatasetAssociation.
  */
-export type DatasetSummary = components["schemas"]["HDASummary"];
+export type HDASummary = components["schemas"]["HDASummary"];
 
 /**
  * Contains additional details about a HistoryDatasetAssociation.
  */
-export type DatasetDetails = components["schemas"]["HDADetailed"];
+export type HDADetailed = components["schemas"]["HDADetailed"];
 
 /**
  * Contains storage (object store, quota, etc..) details for a dataset.
@@ -97,7 +97,7 @@ export type DatasetStorageDetails = components["schemas"]["DatasetStorageDetails
 /**
  * Represents a HistoryDatasetAssociation with either summary or detailed information.
  */
-export type DatasetEntry = DatasetSummary | DatasetDetails;
+export type DatasetEntry = HDASummary | HDADetailed;
 
 /**
  * Contains summary information about a DCE (DatasetCollectionElement).
@@ -179,7 +179,7 @@ export function isCollectionElement(element: DCESummary): element is DCECollecti
 /**
  * Returns true if the given dataset entry is an instance of DatasetDetails.
  */
-export function hasDetails(entry: DatasetEntry): entry is DatasetDetails {
+export function hasDetails(entry: DatasetEntry): entry is HDADetailed {
     return "peek" in entry;
 }
 
