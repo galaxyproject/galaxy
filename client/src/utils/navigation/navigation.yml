@@ -952,6 +952,7 @@ admin:
       allowlist: '#admin-link-allowlist'
 
   selectors:
+    activity: '#activity-admin'
     warning: '#center .alert-warning'
     # TODO: place betters IDS or something on this in these grids in the DOM
     jobs_title: '#jobs-title'

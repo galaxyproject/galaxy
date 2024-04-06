@@ -1237,7 +1237,7 @@ class NavigatesGalaxy(HasDriver):
         self.components.masthead.pages.wait_for_and_click()
 
     def admin_open(self):
-        self.components.masthead.admin.wait_for_and_click()
+        self.components.admin.activity.wait_for_and_click()
 
     def create_quota(
         self,
